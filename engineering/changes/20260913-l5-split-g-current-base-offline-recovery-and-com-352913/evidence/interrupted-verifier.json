@@ -1,0 +1,7 @@
+{
+  "head": "7e7b7453d12b59d690f51a4519a1ee5aceb63985",
+  "route_id": "3529132ae173",
+  "status": "interrupted_not_acceptance",
+  "reason": "Required F predecessor conflict-policy repair; future G reconstructed from genuine corrected F",
+  "process_exit": 130
+}

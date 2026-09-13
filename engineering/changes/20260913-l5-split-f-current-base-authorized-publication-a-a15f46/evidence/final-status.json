@@ -1,0 +1,109 @@
+{
+  "route": {
+    "allowed_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "data_architect",
+      "integration_architect",
+      "code_reviewer",
+      "test_reviewer",
+      "security_reviewer",
+      "release_reviewer",
+      "data_reviewer",
+      "data_implementer"
+    ],
+    "analysis_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "data_architect",
+      "integration_architect"
+    ],
+    "base_commit": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+    "base_fingerprint": "51779c0ff12044c794cd706c892e6881c194c9fb13af84c6f147f5e921dbe885",
+    "change_id": "20260913-l5-split-f-current-base-authorized-publication-a-a15f46",
+    "complexity": "high-risk",
+    "created_at": "2026-09-13T14:52:52+00:00",
+    "delivery_expected": true,
+    "domains": [
+      "data",
+      "security",
+      "api"
+    ],
+    "human_gates": [
+      "scope_and_design_approval",
+      "migration_or_external_write_approval"
+    ],
+    "intent": "bugfix",
+    "primary_skill": "adaptive-delivery",
+    "quality_profiles": [
+      "base",
+      "contracts",
+      "data"
+    ],
+    "rationale": [
+      "high-risk intent/domain: bugfix",
+      "intent=bugfix",
+      "domains=data,security,api",
+      "repository=generic",
+      "write-owner=data_implementer",
+      "analysis-wave=5/10"
+    ],
+    "repo": {
+      "bitrix_modules": [],
+      "domains": [
+        "api"
+      ],
+      "kind": "generic",
+      "languages": [],
+      "package_scripts": [],
+      "signals": [
+        "contract:engineering/contracts/openapi"
+      ]
+    },
+    "required_evidence": [
+      "verification",
+      "code_review",
+      "test_review",
+      "security_review",
+      "data_review",
+      "release_review"
+    ],
+    "review_agents": [
+      "code_reviewer",
+      "test_reviewer",
+      "security_reviewer",
+      "release_reviewer",
+      "data_reviewer"
+    ],
+    "risk": "high",
+    "route_id": "a15f467e4575",
+    "schema_version": 1,
+    "session_id": "l5-split-f-current-base",
+    "status": "verifying",
+    "task": "Implement approved L5 delivery slice F from repaired E: offline filesystem publication, SQLite intent reconciliation and exact delegated external-write authorization. Source extraction only.",
+    "task_domains": [
+      "data",
+      "security"
+    ],
+    "updated_at": "2026-09-13T14:58:51+00:00",
+    "workflow_skills": [
+      "adaptive-delivery",
+      "bugfix-workflow",
+      "api-event-change",
+      "data-change",
+      "security-sensitive-change"
+    ],
+    "write_agent": "data_implementer"
+  },
+  "change": {
+    "change_id": "20260913-l5-split-f-current-base-authorized-publication-a-a15f46",
+    "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46"
+  },
+  "agents": {
+    "active": {},
+    "history": []
+  },
+  "evidence_gaps": []
+}

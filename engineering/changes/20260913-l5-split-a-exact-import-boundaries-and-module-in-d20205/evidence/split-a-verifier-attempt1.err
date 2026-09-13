@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a/scripts/grok_verify.py", line 21, in <module>
+    report = verify(find_root(), args.mode, args.profiles, record=not args.no_record)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a/.grok-stack/adaptive_grok/verification.py", line 1036, in verify
+    write_receipt(
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a/.grok-stack/adaptive_grok/receipts.py", line 508, in write_receipt
+    current = _active_spec_binding(root, route, kind)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a/.grok-stack/adaptive_grok/receipts.py", line 474, in _active_spec_binding
+    raise RuntimeError('active change spec is invalid: ' + '; '.join(errors))
+RuntimeError: active change spec is invalid: /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a/engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/change-spec.yaml: $.forbidden_outcomes[0]: expected type object

@@ -1,0 +1,135 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Bounded Qwen/Grok HTTP, media and SSE transports preserve refusal and uncertain-outcome handling.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        },
+        {
+          "test": "factory/tests/test_landing_media.py"
+        },
+        {
+          "test": "factory/tests/test_landing_sse.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "SQLite ownership precedes quarantine and credential acquisition; startup and lifespan failures release ownership.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py"
+        },
+        {
+          "test": "factory/tests/test_landing_sqlite_store.py"
+        },
+        {
+          "test": "factory/tests/test_landing_server.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Every actual landing source has explicit import boundaries and an owner.",
+      "evidence": [
+        {
+          "test": "tests/test_landing_architecture_boundaries.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "scope_and_design_approval",
+      "migration_or_external_write_approval"
+    ]
+  },
+  "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+      "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json"
+    ],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No actual provider request, operator credential acquisition, production mutation or migration in source extraction.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No offline module gains transport access and no future E/F/G module is imported.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "No surviving constructor failure retains the process writer lock.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Public v1 API and SQL schema remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Existing v1/v2 persisted readers and original v1 schema bytes remain compatible.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Deployed trust policy, holdouts and code budgets remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement approved L5 delivery slice D: integrate bounded HTTP/Qwen/media adapters with durable SQLite API composition and explicit private provider credential selection. Source extraction only.",
+    "success_metric": "bounded HTTP normalization and durable single-owner SQLite composition pass independently of future host/publication/backup modules",
+    "target": "19 classified production landing modules; unchanged SQL schema; no credential access before source validation and writer ownership"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "data"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

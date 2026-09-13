@@ -1,0 +1,98 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "356c7f991ee6835506255e823c06124068fc4e0e",
+  "base_fingerprint": "43f016bf13f90f849a3db0ce6fc86c534cdf24f0716fedd327d46e5e8a3b98ab",
+  "complexity": "high-risk",
+  "created_at": "2026-09-13T14:27:15+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=data,security,api",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "5bc0f4cdffc5",
+  "schema_version": 1,
+  "session_id": "l5-split-f",
+  "status": "routed",
+  "task": "Implement approved L5 delivery slice F: offline filesystem publication, SQLite intent reconciliation and exact delegated external-write authorization. Source extraction only.",
+  "task_domains": [
+    "data",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}

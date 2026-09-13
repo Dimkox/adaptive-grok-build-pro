@@ -1,0 +1,23 @@
+# L5 seven-PR delivery evidence
+
+This ledger records exact immutable source heads, local checks and separately observed GitHub App checks. No local receipt, source package or reviewer creates merge authority. Runtime installation, provider/service activation, real site publication and merge/release were not performed by this delivery.
+
+| Slice | Source HEAD | PR | Full verifier | Independent reviews | External Trust CI |
+| --- | --- | --- | --- | --- | --- |
+| A | `450d62d41ab5f94b72217a1e18f9f60231d6af6f` | [#65](https://github.com/Dimkox/adaptive-grok-build-pro/pull/65) | [PASS](../changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-full-final.json) | code: PASS, test: PASS | success |
+| B | `d4d070a2defd9d0f8921331e38fb746fc95f38fe` | [#66](https://github.com/Dimkox/adaptive-grok-build-pro/pull/66) | [PASS](../changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-full-final.json) | code: PASS, test: PASS | success |
+| C | `9ce156e0128b4f18b3fccfeca9a8edc7175da090` | [#67](https://github.com/Dimkox/adaptive-grok-build-pro/pull/67) | [PASS](../changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-full-final.json) | code: PASS, test: PASS | success |
+| D | `bb93885034e52b80653efd96602fec182f7db10a` | [#68](https://github.com/Dimkox/adaptive-grok-build-pro/pull/68) | [PASS](../changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-full-final.json) | code: PASS, test: PASS, security: PASS, data: PASS, release: PASS | success |
+| E | `d33e8d8b2aa06a76f32724d08d79a21f3604ce42` | [#69](https://github.com/Dimkox/adaptive-grok-build-pro/pull/69) | [PASS](../changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-full-final.json) | code: PASS, test: PASS | in_progress |
+| F | `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6` | [#70](https://github.com/Dimkox/adaptive-grok-build-pro/pull/70) | [PASS](../changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-full-final.json) | code: PASS, test: PASS, security: PASS, data: PASS, release: PASS | not_observed |
+| G | `e6a813e4c16543f262ced2d9ea353caaad9452d1` | [#71](https://github.com/Dimkox/adaptive-grok-build-pro/pull/71) | [PASS](../changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-full-final.json) | code: PASS, test: PASS, data: PASS | not_observed |
+
+The [machine-readable ledger](l5-delivery-stack.json) retains actual route bases, PR bases, required review kinds, current fingerprints, check IDs/App identity and observation times. Reports are under the matching `engineering/changes/<change>/evidence` directory in this evidence checkout. Source checkouts remain unchanged after their corresponding verifier.
+
+Final assembled source: `feat/l5-split-g-final-runtime`. The full Git union audit covers 2,523 entries against frozen `f31406e970d67f7cd59694da5de88915adb0fa68`. Exactly ten product/test differences have explicit dispositions (C reader evidence, D ownership/path/cleanup, F schema/intent integrity, G restore budget and their regressions); no unexplained source/schema/package/runtime mode change remains. Nine shared documents and the historical monolith evidence package have separate documented dispositions.
+
+The old F route and initial F conflict-policy reviews, G2 interruption and G3 documentation correction remain historical records. Their passes do not certify a changed source head.
+
+Residual P3: malformed SSE object/list values in scalar fields may map to `internal_failure` or a probe-CLI traceback. The application-level disposable reproduction records `needs_human`, produces no artifact/provider evidence and purges quarantine. This is not a demonstrated authorization bypass or confirmed Qwen moderation trigger.
+
+The historical live probe used `qwen-intl` / `qwen-plus`, 735 input and 117 output units in 8,598 ms on its recorded prior source. It is not current-head connectivity, Omni/multimodal or hosting acceptance. Current deploy inventory is 22 files; retained 19/20 epochs remain supported.

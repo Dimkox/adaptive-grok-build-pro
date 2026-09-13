@@ -1,0 +1,6 @@
+{
+  "encoding": "utf-8",
+  "original_filename": "split-f2-conflict-green28.out",
+  "raw_sha256": "b6115356e33150007df08cdb408b72370cbea06a142a98bd903064b562e88afa",
+  "raw_text": "bringing up nodes...\nbringing up nodes...\n\nuuuuu.uuu.uu.uu.uuu..uuuu.....uu.uuuuuuuuuuu.uu.uu.uuuuuuuuuuuuuuuu.uu.u [ 90%]\nu.uuuuuuuuuuuuuuuuuuuuuuuuuu.uuuuuu.                                     [100%]\n20 passed, 88 subtests passed in 8.21s\n"
+}

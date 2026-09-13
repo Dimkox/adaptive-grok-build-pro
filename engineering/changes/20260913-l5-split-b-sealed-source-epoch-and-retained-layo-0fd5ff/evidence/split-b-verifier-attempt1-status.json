@@ -1,0 +1,9 @@
+{
+  "status": "interrupted",
+  "exit": 130,
+  "cause": "Root-generated typed spec used strings where schema requires evidence objects. A receipt recording threw; B was stopped before the same failure.",
+  "completed_report_available": false,
+  "passing_test_claim": false,
+  "corrected_source_head": "63351be5ed814353cd1e8da4089edef2ca9a013f",
+  "product_unchanged": true
+}

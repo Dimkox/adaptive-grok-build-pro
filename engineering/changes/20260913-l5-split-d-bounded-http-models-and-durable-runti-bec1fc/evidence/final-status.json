@@ -1,0 +1,109 @@
+{
+  "route": {
+    "allowed_agents": [
+      "repo_explorer",
+      "task_analyst",
+      "architect",
+      "docs_researcher",
+      "integration_architect",
+      "data_architect",
+      "code_reviewer",
+      "test_reviewer",
+      "security_reviewer",
+      "release_reviewer",
+      "data_reviewer",
+      "data_implementer"
+    ],
+    "analysis_agents": [
+      "repo_explorer",
+      "task_analyst",
+      "architect",
+      "docs_researcher",
+      "integration_architect",
+      "data_architect"
+    ],
+    "base_commit": "a75b3cd639a1483533069e8634759cdfc6612310",
+    "base_fingerprint": "a02f7ad86f48d636dbe18ee14d949169afe3c088f2225925133a8bf3faf1d447",
+    "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
+    "complexity": "high-risk",
+    "created_at": "2026-09-13T14:02:18+00:00",
+    "delivery_expected": true,
+    "domains": [
+      "api",
+      "data"
+    ],
+    "human_gates": [
+      "scope_and_design_approval",
+      "migration_or_external_write_approval"
+    ],
+    "intent": "feature",
+    "primary_skill": "adaptive-delivery",
+    "quality_profiles": [
+      "base",
+      "contracts",
+      "data"
+    ],
+    "rationale": [
+      "high-risk signal: credential",
+      "intent=feature",
+      "domains=api,data",
+      "repository=generic",
+      "write-owner=data_implementer",
+      "analysis-wave=6/10"
+    ],
+    "repo": {
+      "bitrix_modules": [],
+      "domains": [
+        "api"
+      ],
+      "kind": "generic",
+      "languages": [],
+      "package_scripts": [],
+      "signals": [
+        "contract:engineering/contracts/openapi"
+      ]
+    },
+    "required_evidence": [
+      "verification",
+      "code_review",
+      "test_review",
+      "security_review",
+      "data_review",
+      "release_review"
+    ],
+    "review_agents": [
+      "code_reviewer",
+      "test_reviewer",
+      "security_reviewer",
+      "release_reviewer",
+      "data_reviewer"
+    ],
+    "risk": "high",
+    "route_id": "bec1fcdde794",
+    "schema_version": 1,
+    "session_id": "l5-split-d",
+    "status": "verifying",
+    "task": "Implement approved L5 delivery slice D: integrate bounded HTTP/Qwen/media adapters with durable SQLite API composition and explicit private provider credential selection. Source extraction only.",
+    "task_domains": [
+      "api",
+      "data"
+    ],
+    "updated_at": "2026-09-13T14:20:50+00:00",
+    "workflow_skills": [
+      "adaptive-delivery",
+      "feature-workflow",
+      "api-event-change",
+      "data-change"
+    ],
+    "write_agent": "data_implementer"
+  },
+  "change": {
+    "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
+    "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc"
+  },
+  "agents": {
+    "active": {},
+    "history": []
+  },
+  "evidence_gaps": []
+}

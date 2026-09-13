@@ -1,0 +1,3 @@
+# Dedicated-host documentation correction
+
+Independent documentation analysis on 36e96367121595617ac432682b59730acc7c1df3 found one material contradiction across the nine common documents: factory/README.md promised authenticated metrics on the dedicated host, whereas api.py and test_landing_host.py return/assert 404 for /metrics in landing_only mode. The final README now states authenticated landing routes and health endpoints, with /metrics excluded. Source product/tests are unchanged; the interrupted verifier is not completion evidence. The fresh full verifier and selected reviews bind the corrected source commit.

@@ -1,0 +1,7 @@
+{
+  "head": "36e96367121595617ac432682b59730acc7c1df3",
+  "status": "interrupted_not_acceptance",
+  "process_exit": 130,
+  "reason": "Independent documentation analysis found dedicated /metrics claim contradicted implemented404; root corrects docs before final source freeze",
+  "product_changes": false
+}

@@ -1,0 +1,100 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Original v1 schema/dispositions/digest domain remain unchanged; v2 is independent with strict integer version dispatch.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_contracts.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Matching v1/v2 retained records persist and reopen with legacy bytes unchanged; mixed/unknown versions and tampered digests reject.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_runtime.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "All architecture and semantic catalogs include exactly the new v2 contract and no future producer imports.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_semantic_bridge.py"
+        },
+        {
+          "test": "factory/tests/test_semantic_contracts.py"
+        },
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+      "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json"
+    ],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The public landing API and SQL schema remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Original evidence v1 byte identity remains intact.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Code budgets and deployed trust policy remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement approved L5 delivery slice C: preserve original provider evidence v1 and introduce separately versioned v2 retained readers.",
+    "success_metric": "original v1 bytes and digests preserved while strict v2 retained records roundtrip independently",
+    "target": "all version/cross-version/persistence cases pass within unchanged budgets"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

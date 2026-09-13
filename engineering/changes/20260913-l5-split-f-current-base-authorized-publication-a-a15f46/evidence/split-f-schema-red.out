@@ -1,0 +1,620 @@
+...                                      [100%]
+=================================== FAILURES ===================================
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='missing-unique', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='missing-unique', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='missing-primary', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='missing-primary', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='nullable', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='nullable', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='wrong-type', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='wrong-type', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='default', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='default', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='not-strict', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='not-strict', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='without-rowid', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='without-rowid', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='collation', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='collation', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='trigger', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='trigger', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='view', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='view', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='index', readonly=False) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+_ PublicationStoreSchemaTests.test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed (schema='index', readonly=True) _
+
+self = <tests.test_landing_publication_cli.PublicationStoreSchemaTests testMethod=test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed>
+
+    def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
+        cases = {
+            "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
+            "missing-primary": (self.SCHEMA.replace("TEXT PRIMARY KEY", "TEXT NOT NULL"), None),
+            "nullable": (self.SCHEMA.replace("body BLOB NOT NULL", "body BLOB"), None),
+            "wrong-type": (self.SCHEMA.replace("body BLOB", "body TEXT"), None),
+            "default": (self.SCHEMA.replace("phase TEXT NOT NULL", "phase TEXT NOT NULL DEFAULT 'prepared'"), None),
+            "not-strict": (self.SCHEMA.replace(") STRICT", ")"), None),
+            "without-rowid": (self.SCHEMA.replace(") STRICT", ") STRICT, WITHOUT ROWID"), None),
+            "collation": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL COLLATE NOCASE UNIQUE"), None),
+            "trigger": (self.SCHEMA, "CREATE TRIGGER publication_noop AFTER INSERT ON publication_intents BEGIN SELECT 1; END"),
+            "view": (self.SCHEMA, "CREATE VIEW publication_view AS SELECT request_id FROM publication_intents"),
+            "index": (self.SCHEMA, "CREATE INDEX publication_phase ON publication_intents(phase)"),
+            "table": (self.SCHEMA, "CREATE TABLE publication_other (value TEXT) STRICT"),
+        }
+        for name, (schema, extra) in cases.items():
+            root = self.database(name, schema, extra)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+>                   with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+E                   AssertionError: PublicationError not raised
+
+factory/tests/test_landing_publication_cli.py:345: AssertionError
+=========================== short test summary info ============================
+SUBFAILED(schema='missing-unique', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='missing-unique', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='missing-primary', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='missing-primary', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='nullable', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='nullable', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='wrong-type', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='wrong-type', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='default', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='default', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='not-strict', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='not-strict', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='without-rowid', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='without-rowid', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='collation', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='collation', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='trigger', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='trigger', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='view', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='view', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='index', readonly=False) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+SUBFAILED(schema='index', readonly=True) factory/tests/test_landing_publication_cli.py::PublicationStoreSchemaTests::test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed
+22 failed, 3 passed, 11 deselected, 10 subtests passed in 2.11s

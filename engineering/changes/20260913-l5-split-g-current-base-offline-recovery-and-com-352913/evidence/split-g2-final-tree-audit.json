@@ -1,0 +1,4228 @@
+{
+  "schema_version": 1,
+  "head": "7e7b7453d12b59d690f51a4519a1ee5aceb63985",
+  "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2",
+  "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "actual_initial_base": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "base_entries": 2136,
+  "reference_entries": 2260,
+  "actual_entries": 2405,
+  "complete_union_entry_count": 2502,
+  "reference_manifest_sha256": "cba954729d3c3b33d6bd92c3c90a6e13e38687bcc401d379815beceb5f22e6fb",
+  "status": "all_product_differences_explicitly_dispositioned",
+  "product_differences": [
+    {
+      "path": "architecture/system.yaml",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "337c5d99d28e5bf89d842d8d8a18bb7f6986b101"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "264a540c46cccb830b7f6edfd28fa8f6f38792c8"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d5fb50f5f7bd1ec4a853b760c0cbbeda678227d6"
+      }
+    },
+    {
+      "path": "delivery/src/adaptive_delivery/landing_publication.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1a4fbe0f129f7e5de2c5dac84043354c26a59807"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9e282e684d8744cfee984f35ca34152fedcb5867"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_backup.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bd7b42909512fde6b53382516d29adb19de0c1d5"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "314968afbc7691f9b3d1328f4a73cc627761b3f3"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_sqlite_store.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f6bee01b0847de5b6e1368214145f6342995165a"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8bfbcc02b2218fb4192cad0351e0d559fe365019"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "af13e460d0dab16261315caf6a9cce34b22a1907"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/server.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "73d585f6bd5da85b835871f1f917b6170bbca4ce"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a4f08e80c7b22bf0dd1263129022edff02a497f3"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7952366ebb31c3e1e9bdac86500e70d5ef8275f8"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/settings.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7b3f45468bc546799dd84153d92e2e6ad19fa0a7"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "37e11ca1057ca7188670aabf3b0283c3f860241b"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ac121c1828fbeabf590351711c9e78f97487d605"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_backup.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a442229838ebcc64ea86524fc9a583dbfef7452c"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "758176cc6137ae5ea8a4dc3652cb2a4a705d8444"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_publication_cli.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "49e8c50f64987095cb1cb531561aa7032e9b68b8"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c0087e0d84140cdfc1c9b279f377ef44a766ec6a"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_runtime.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d35f522444cda0e040433926130208b7eac99a99"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d35f522444cda0e040433926130208b7eac99a99"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "96615590b494283057d7b53ea0ed1596dd3e46bf"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_server.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7cfdb666fc62b45bb966e4d22836e185adc10eef"
+      }
+    }
+  ],
+  "all_differences": [
+    {
+      "path": "PROJECT_STATE.json",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "308080a7742d224c6eff7a1cbc5c6f2768544a58"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "34092775a7f4da93ef48534e45c6eda5e1a20a3e"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a5adc858c731c8a6b5703d58699905c8dd84fb3b"
+      }
+    },
+    {
+      "path": "README.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b6f1b7cb7c51d56f3a2ba7b298823eddf3150ac9"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4a1e9ca4d71bbbe2942ee327fbb5d2e6e48d3298"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f1a0bf9cda15098708d1f2a9f3c49d6bd0e8ac59"
+      }
+    },
+    {
+      "path": "START_HERE.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "de6d00c97ba13e4d2c02cf3492bbb34dc6b92cb8"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "65cc3fd261fe1ec71eff6580d2c2ea7d1c31c988"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1b05e6a15ee8db1e37ad051bc8ef02efe7089773"
+      }
+    },
+    {
+      "path": "architecture/system.yaml",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "337c5d99d28e5bf89d842d8d8a18bb7f6986b101"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "264a540c46cccb830b7f6edfd28fa8f6f38792c8"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d5fb50f5f7bd1ec4a853b760c0cbbeda678227d6"
+      }
+    },
+    {
+      "path": "decisions.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "48730e36421f76d61b2d3c422a003092fbf86458"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1e573ba28082846518cd520cf6aeb39a99b16694"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e9c3c3cb443cce46ff03aade696a8dfe7511b0eb"
+      }
+    },
+    {
+      "path": "delivery/src/adaptive_delivery/landing_publication.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1a4fbe0f129f7e5de2c5dac84043354c26a59807"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9e282e684d8744cfee984f35ca34152fedcb5867"
+      }
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-l5-production-runtime.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "013973540e18f266c6da92ab46a9e82d9bdce542"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "48029cd8bd6bc1936cdb302716e33df5f4a28f25"
+      }
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture-continuation-plan.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c6e0aacf2c1afce6bc57c760a7d1a798d33181c7"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0b5952e0ed99766ddba1f33d333097ef84abb45a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/brief.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "254330a462867bb8135d95b38d620c47dc0046d2"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/change-spec.yaml",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6ef066b72f042380f775eecce70006a493455090"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/README.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "79cef33e3bc46ab0f24df3a1319b2e121871f0d8"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-architect.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "54d3375e020530b2bd103108d3578bbcdb32e69d"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-docs_researcher.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3f88b3dc88d6ba6c25e5f867b6fb3ebf82db4ab1"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-integration_architect.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "91f9cdb61987c31b2353d30bc6a9fbe2fe0f5c1a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-repo_explorer.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cf86ee63152ef7c403695749974074939466488c"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-task_analyst.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3b47e4aa457a524390bf68c832958b8dc0fd2cf4"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-identity-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e99b17d28a1e27507df37a95bfe697a46bf6d08f"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4ca3b20defa531cfd7e1b60960619ed735019ad2"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-boundary-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d320ede7bfb4f7ae3fe4bef33cd7de0fcfa97a73"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-code-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "54701cd2da20c7b4ee7cee8b5253938d881d1004"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-slice.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0e4d8b86451d382544a67accc1dbe715305bddbe"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-verification.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e95f52cbedd4f43bc8b791c8f95d08c8ff5e378b"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-core28-final.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6441119ed8d2a68dab710e99f6878462ae691ab9"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-delivery28-verified.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a8f6ce84c6baf6bf203ce8942f17de33b490d095"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-evidence-v2-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7e0f5ca875a81daed755a2f4f1acef3551c3cf22"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-factory28-verified.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3942f303cd77fe042f974f85dcee9776a3cb906a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-final-focused.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a76eceb09b1c378fc58e8feeeabc22f23369f50b"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-frozen-source-complete.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f09c0ba3c307896842f523bc4043a2e915f0b2c9"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-full-verifier-complete.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3eee197b3aba8d206e364d487fc4d8f182ab23ea"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-implementation-report.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "560903a1786aa43bbc434fb254503ea7b3d54c31"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-io-inventory-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "18124cd4507ce5a1731b9945675c3d24807cfd74"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-namespace-final-green.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "07cb38b7f8e1f36365c2d9bd7d4ac53a6b424831"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-package-root-spoof-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "66d551d9b3d7ea152ce19de171e908cfbb88064a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-pr-complete-fitness.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bb1893b6550927bdb9ebbf58e1f86a75320d3036"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-publication-alias-remote-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8c5313f128e3bd9bd41aa7556ca97f8dd4c376af"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-remote-double-suffix-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "412afb462a4f225b37497a1f770b6edae4800161"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-route-complete-fitness.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "852c348c059c61ed608eb6e6c6003b12cbba90ae"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-schema-catalog-green.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8fdaa50050dcc714ec82deab151d952b26396979"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-test-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5085c6a7bc2e634f53ef68c11487a9b5dc9f4d1a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-verification-interrupted.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "87000be58b579797a12cd926a4a3532fee3a0539"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-architect.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a4e888400f8e53ff591cb1af670071caccf277dc"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-docs_researcher.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0a2c77b5e4e0957f3165f3e9596e1f75e7c3e8d9"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-integration_architect.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "58e9eb895c15233975b0831604c5458fa0f05e70"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-repo_explorer.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "16a216cc5aee0f1e50c36c7d7ebf159630a89109"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-task_analyst.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "89dde4b6548232acca148e6be4c1ebe0e6bead87"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-boundary-design.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5f76e1662c98012e8d4db566aed62c72dc5e8713"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-budget-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f27e13d10343c1f6ddf39b6f40ffea36690ace6f"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split-estimates.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0e32abba9b18241b3a08419501fef8c4a2ebac2a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4a86b3a01ebcc8f66743ebd5c91ccf19f2c34301"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-integration-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5df7e8cdbebaf2879d8af5e747fc93685808f071"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-publication-alias-red.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "976ce5fb1733b0df14510a13b45a37c09400c5f3"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-repo-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "66fa65bbb3afecf47113188cafda873a6001dbb2"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/executor-followup-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "24dbd0b85c5c175ea6bc2cb1972f69fb5e7ff175"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-code-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "05e0afcd5790ff0ebba60b1e552c4bc88059236f"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-continuation-verification.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5ba2808450908d47dece88e2c288295f837d5611"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-coverage.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ffd678c0038a0b349f1425d9cf6914989844b1db"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-final-tests.txt",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4556f2eb9e6dd7edc7d5d35eb1466e729aa57f7a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-fitness-followup.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ff7938bb6c725a3fb106f99b9000cff529265832"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-full-verifier-before-followups.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4f597639a1dfc98303618d6c89603f0df7430c98"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-red-confirmed.txt",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f839c97964a6b59949baa9b790e7e81bac603957"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-slice-evidence.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "70ea14cea9377eb040380402d29064764209a9ec"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-test-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "139f8983bd934851c7c4e78c2275bd0f301568af"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/implementation-progress.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c35f44bbc3a2281f8d973ac524c81c936609b917"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b3d77d7c461ec45db864522c698096292883cc53"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-code-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ebd68a2acecb6af60a99c1c84214393bd3ca196c"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-focused28.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f84c73e168404823d8e0de8e4af87f437922ef36"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-slice.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2ed0c604dc8d2b0e1fa87d1afefd66beb1906d9c"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-factory28-final.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "db3357fa6fd6994d0aa56b4a82b693c1d2a581ab"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-final-live-probe.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7068ef1718ac7527eb1c5650559a30d31cd65e26"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-live-probe.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ccac919624739547bebf77c7d6de204e50c4e41a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-green.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "41d514b4576b0d52f3f0d3d92966bd0e70348647"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d7f9098d5f561c96437be77eb64710b7ce7f84aa"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-test-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7a2c14b64b316d6167af4cf15fadf4ca2866ee7a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-architecture-analysis.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0de0cd531b1cf3f92771a957aafa38131313f98c"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red-confirmed.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "194898f010e27db5d85c3c559c80e95ed87352ec"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8de8e4cdc3831e2696f78df21032c7c3fd4bdb3e"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-code-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2dba1537f1119d66d5698e992402756d74868581"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-factory28-final.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f6ce7e8fa509cdddb45bb310b884c490aad06cf5"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-final-live-probe.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bf334fb9a8eb1a96d4bb6ea02c21c075b5fa91d6"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-first-four-green.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a7dd0c4e77091c84eccacf39b7a14bd3ab6598e6"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-full-verifier.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b2cad1e42f45454a54d876d636974c7fa71e335e"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-harness-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "93a49037a791c3bc3ca7c7024ea0c4f0baea65cd"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red-confirmed.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "acf66138810bb6c6e60df9acbed1ae013646be38"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6616eb485e3efe5548bd3c57f0e98ce9698b7713"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-slice.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b888097e5601ece57acf4e0f5751b0e2b8056147"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-verification.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b33336f2b8dafd3b4f71e75e8631f3ae4a997092"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-sse-unicode-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cefed2f5e2936fd7bdf9bf0accaee39edb478b54"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-test-review.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "13b76cd7c1bdcaf760fa8bcb1478fa2241176ae3"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-unicode-red.out",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "77f281bc03f79df3941674e66590bd61fd069c08"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/git-delivery.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "07f585470c5fcd40001be84966167722d97354f3"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/host-continuation-plan.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1c562f134053b32113077d27083f5b253392f631"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/production-followup.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c568dfec90abf5ff7b0a1cde91b1dac76be89e4a"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/pull-request-body.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8d5c4ca0cd1fc8a207ffb0172e5d93dfd702f1eb"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/qwen-connector-plan.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "25c73e8f82e5c95ba07475f01441368dc570f6d2"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/release.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "dc585cb587a1dd158b44e5b3d74e4345f6b37ef4"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/requirements.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2087688b78959a06799871882a7d2ffdad8bc0e8"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/rollback.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6363289697b7a0a1020f03e3b897bc2f75ac8aa8"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/route.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6f74e458d97e3c24d77b7e17e8e978e14a682b91"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/security-priority-plan.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f3bc2dfba9bf832538bec245727b9598cb191938"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/six-point-continuation.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "de52a2fcec63d9b0f0101e5de5cbe57b0da28dce"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/state.json",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d6e4e685c8c28b9d8ee2f59923398515d5354592"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/tasks.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4a67dae7b681aece525d041b5bd5108b76c62bf5"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/test-plan.md",
+      "category": "historical_monolith_evidence_preserved_in_frozen_reference",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c5fc6e654893c846de014aecb6a81229d32ef3c7"
+      },
+      "actual": null
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "55e18fb17bac9c521a3c80d257a03653c697eaff"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "083b553112bd7d7c046ec861afc26b3969c09c22"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "01247ea0a5cbf3412c0f48c13ed46ddf034bd5c1"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/delivery-stack.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "654807647f7b2fd74664e7c083df606787e91f18"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5b6000f6e3d1f68c1d7b7e5ac69646986661312"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-baseline-tests.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6b07fd909202a946ab7196fa308b95227ba930d3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a5a0511ab8ba6b1664221d5087d44819cc378c5a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "acbb45cf82c0dd5babbf04fd853512c16c01f6ed"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3086ed8a79a3f7a3929a45d1c3fc687d2bc3c8da"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4db98637fc874e3a072f1432b97fd76bb812ee73"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-schema-catalog-red28.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "849cf5b9b2f2bb8363f576bad4cfcdeacd9ae40c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3eedd70c79904d9ba90e5b5d827c2353cb58b33d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-frozen-manifest.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f0edff9ce545919ef8fdfdcd6677a7a01fd13402"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0d48d3fbf1ce6d125f10a9a567e33a293b50de48"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "96d27a29aa7877764d300064da8ca3faeb6e2984"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1e7da9a9c0866c05b1170b840eeee2160c864f01"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f79de7ab0c4197ba550529ec6a33a96985b9f6f4"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9f232d53111cc3c3d467f6bfe0dcda9652ba360c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cb115c0e65b3e06b7a5358ae1ed5fdb39a89908e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7d79c37ce8b75c3750299568cad0a6da82491b89"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3e8e4b7d014f1c03a00548e2a8d8e89dff6f644d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "93f7ab00bb6c0c46a2772b4ab0ed9a9d15c16c24"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bb74a5d8ee68fe458c6f0c9f624b0f7c17b2302f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6925437241a3bd8d6acf031ce4b0cf3b3cae4145"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-analytics-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cabf7c78ad022363be1304a09f103d6beebe26fd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-epoch-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "364ce8d95a66f7a4d24d453381ff9fe55302cb58"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-factory-baseline.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d3ad21520971fe63a19806e924debd62723184e5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0d83645e2132d966ade6ef14382ab79c19fb2056"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-focused-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9064ad400735a289edd5f51505c4ad559599d187"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d05970aca20ca6f57c3718f3ccc64f3ff4d961ee"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-layout-characterization.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b97bf4703ddcd41dc65747c07825dbfd88419960"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-layout-characterization.py",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b4ac838e4f0b4806a6bd1ef2351ab3db29fc8423"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ff905055f5c422fffb6260bff2274121f16db742"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f7cfe0e707f78294de377ef9a5730ddc63d55da7"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f332727b81f1a985eb3a5d9a6e600cd46b3ce04f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e6ac7a92d5b3e5ee292067fb3a4de86d882e0645"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "36fe8b4fe82e1b3d2d997ecadec81c40d930ff4f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "094f57d4e47f988d4551258cac1f2e3515ae7ff2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "56857950ac6b457f7fe924fce3cde70bb09047e2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "fe2cd88ccee58c91c6002b5da44e85f2e6cad670"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f1cb6f1cfb4adfefa6ac47df840b5c9605d9c481"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0ed1c44ca61c52d939765f145031aca4b6ae014f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3ee0fe1ba709917feb430ff76307b970a27f6093"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f0d783bb11bb7f4bc8624fa1be0871f700d208fc"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-baseline.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a79ddb70f9196f64e9917826a2fe8f5779b74628"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-core-catalog-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "686f66f8a5a6f91844de27652aa1ec151c063d4b"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-diagrams.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c62cc813646e5901c2270faec28542850698ddbd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-fitness-final.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b0ca053fd6e9d167820653f6599304e2c6f91308"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "47b79507254d03a84a3ca61785f5abfc96eec405"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-focused-green-final.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "942b7fc7ed558d1fadd5253fb69cfa45639ab2cf"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-focused-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5299a34546e92bbaea5aa5079d86a50d8a94e53"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3318e6fcaefb769a4e8eac1886a9d8b6949192f3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-provider-targeted-recovery.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1757fa6ae52754d3c884f013ed3b1d525d618444"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-readers-green-final.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7cb97ff090441598377357fe521dbc866759c50f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-readers-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6fd52bb9e416c3a819713780772bc52be92672c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-readers-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9c3533ffbf57930c873d439801ba806fdedc1b4e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-source-audit.py",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "25366a636a4019bbbc75f375050bf640e6b2a29e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "47e01fb9ee44896301e5a5e4ac43b05fffabbf43"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "61f96ff3ac9feb00a51b1ccd05897b039ca860c0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "73043feccd6d8fa97b6245086414d020e0f95fd9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "519b03347826ec1f3bfcb68ae4edfdd13ae67760"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2aca32b8471fa7a24591ce5660a6d6a694bdf621"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8301f0818ef3900f8075493db142c973a8a11e41"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "59b4b920f1489ded697e633fa12b7cdcc05d7bae"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cec8d044369b999bbbe0fdefc14d5872abe0bb9e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "028f06d1e4c903debb5567a2cbaa60aaf4315de6"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "63c9342ad58039de05e4b9f580c48f3b0f1bf81c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2af96ab67e43c2676bcafbfa1b5d91be077094ea"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/code-review-before-entrypoint-repair.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "68d170ed86dca234bf54b3f026d8db6e5ecf3086"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-a-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5b6000f6e3d1f68c1d7b7e5ac69646986661312"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-cleanup-red-bounded.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6da4bd64960cf09c75725e0fb6102054a930c78e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-cleanup-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b2be16c1a25cdda52276e9e95dae7b8987f801f9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "02bebaa17b06c7e3413b9224cf3d089f088ba022"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0b571b03b7885562068778380b044ce02c617db1"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "23c964af18bf670f8c5284adbcaf19561fbc06ee"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4ab0e615593daa57e69b15a254290e6d8b347f32"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-server-frozen-deviation.patch.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "fdbdec9be83b4a8a674cadbf970c6988c3a3540c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-settings-frozen-deviation.patch",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9f4dde835023643a41e33a2b073b673ba4304c43"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-alias-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6a904ba842312d9ce7ce24f00ef0aae0297078c0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-architecture-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d4662e96f9f3d5ce48a097011dc411609461a79f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-data-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "93d7181c906aa23fa147b478007d932e0e268673"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-diagrams.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c62cc813646e5901c2270faec28542850698ddbd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-extraction-red28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9546c94c290ed55860f1859570b88dec4a3022e9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-fitness-final.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "734eb1326a1f7b865394db18052d85c825512711"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5c1d06ad1f463297267b5433a3a2b75397e0474d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-focused-green-final28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b319ea6bfd7590f7926c1f0b7a38bcb4946e32ca"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-focused-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2abc9703f5062b5eea2a25749e8c2e9e3a542fd9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "669be067230af36b595331bdbbf08adaabdde1d5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-ruff-final.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8d396ac042dc7a800be974b0bb4fcb6f5018f2b8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-source-sha256-before-alias.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "888ad355bd016f897873d9d482db6da0be6532e5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6a904ba842312d9ce7ce24f00ef0aae0297078c0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-sqlite-all-constructor-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "abe9408e1a1af64f0e8280b3a39aa86d9af14d05"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-sqlite-frozen-deviation.patch.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "99ed1b3892b591b00c8519aa96ad8f543c83d916"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-sqlite-ownership-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8ffbc89ee396e4974d646149dcf3b1033491482e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-writer-acquire-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9bc7a62f28a9808444f0245eb9549b0af73be0b6"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-de-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e448ac36bc662ebb8007f927be3515a02ec16da0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/test-review-before-entrypoint-repair.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "77a0f0802e4e306e972a58dc4bced534100f8f05"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "17a2fb166e737119b7a90d09c6b378f68103e928"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "aebb9e045542e767992f2a5b27acea1fba894743"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "cd690b36f9bb714703cd4e5ae6a6e9d5ea5aa471"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "59c9b18bf526f629bea7d06e45fb6f939341bc07"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2b071b21c4787d10a768d6a43b00b0e784238c66"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f60c54a1842e9af462ebfa5116c275e382a533c2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a6a26984af915d330fda7e3717645fd7f33c6cee"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9606737edb26af8313bcb78908ed5cf3e2cdd840"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ac0464d0c3833000bed7c94dfb550b25e6940528"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "64547c0d66bcf210b5c18261244dd2841998f807"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-a-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5b6000f6e3d1f68c1d7b7e5ac69646986661312"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-de-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e448ac36bc662ebb8007f927be3515a02ec16da0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-architecture-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "869c2a48f3c3df21282e3fd5a97c7f0ec66a377c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-factory-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "25cfb77d53a92d8e32db30fcbb93e7effaf4a2f2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "54ee827357301f3e13d0dd62b3b0b793c73b3838"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1fb6231e85d28a0ebdd65a202e47d549fc4668fb"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-predecessor-product-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "67f66371e851a1200a773aac070ef7cd44686c67"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7598ca442d461a48559fedf73d2dd6abce40e8b3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-red.py",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e61167baeaf64ca21296e8e6ec27fa80cc338933"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-seam-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ff49480c3d32a0aeecef9ee25c82caf9dd263b70"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "2bb910282c7e2aa896acdc10ecfd9252047355e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "50f7d5e4814f6af9a6b9f69513998f01168c78d1"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c56d03d4ec47ff55504558924e9b18546f0b0ba9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "63a337e544644a2033f3017c1712635566ccc5fb"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b084f0994e27d9e0498a237043ae04b771e7fd43"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "09eed12eda6b6e7744b8986d90703b53ca0dc3e9"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "fea708f409738862f4c8a08ab470fedffee6a386"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ba446b813f005d18c79f453360f8706c4aa01221"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "570fb7086714c01187e7356762fa6226fc578afd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a70311190a8516ef16c800242160812556c3af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "51b0c18856568961b52f1f84082d54abea69e0ce"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-a-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5b6000f6e3d1f68c1d7b7e5ac69646986661312"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-a-docs-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "854cfef7e348deb75f998d038fd9fbb02788f090"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-after-d-architecture.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d4c8868afbbd96b28876fdf3b95a6ce5952a1205"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-architecture-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "09e7c52f7d29013aba699bd6b1261bfe4eae5608"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-current-base-ruling.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "732aac22fb37adc24dafe088536cfc4e4d764292"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-data-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1813fc391a938b5f67561c7ce11e88da242b55fc"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-delivery-full-final28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "017bca0aa1ec4acfa089f207c80324909e740b78"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-delivery-full28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "157087568ed2c1a9474b2900da23452bbe072076"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-diagrams.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c62cc813646e5901c2270faec28542850698ddbd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-extraction-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6d09d2752680162c9030e686d64d71231aefe7d2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-factory-focused-final28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8109141e284cd1deb9b55f90d80c2d39f54db67b"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-factory-focused28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "fb3ad302b155de02c388bdbf15d973e073275ceb"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-fitness-final.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c0b46c05f85970f34f2e11d1b93367ceb4d4b862"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e24a3321a7dab33f4e01e2e21ab9294a366abc39"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b561f8c5e0885f7833c71e7040a495f7da5542c0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-inherited-change-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0c88d9a7ab2c1a12ac3cd62b3f46693963f968ab"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-publication-frozen-deviation.patch.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6693d55de468566ce9ec4862acf3cae4db0aefc3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-ruff-final.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-schema-green.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d008792ed28869098295c30f049d78c4132c17fe"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-schema-prefix-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "209665336d4faa6dd9fc9253b0325b372d3cc258"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-schema-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5bc98eb1f98f2822a0fe87dc5d9bbd78b01c61c2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "189332a0e57c6a4dd324edcfad9bde00ab82113f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-extraction-red.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "63aaf72fb3c8938e26b8bd8144a588658411962c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-factory-focused28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "745cac1989ad2f16a82f3bf6844f67356ac92e71"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-fitness.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d22912fa969592e726577e00dcf40d790d825e47"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3d1e0c582cb07d007c8a11738eab8ea9a27b0309"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-inventory-green28.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1a6001c995b1b0f704d00fb7f51d35e471bdf890"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-ruff.out",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1f5f344d054fae10f39140fb7199c99321d9190a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "02b6d907ad1924bdc65c45dd1599c26155af88c8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "70ca88b77824d6d03dfc22e629f817c5492c38ad"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "70cd512574bb49d1f8777d0b1858a4b047b4839d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "5206e1f6c954eb93e8e7f5d5845951d2ba3ffd5c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d1512a49d6ea92aecef512b1cf28cdb218c8ddaf"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "6a09846896b5d4d9412be6c4ceeb2dbc6a4c9331"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "83ee3928cb0774c46308edb50c8ed8625895a646"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "530ed5f4adf2f6cc08450750ee208a991a6e5f67"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/architecture.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "82c834ee769ac5bf69384ed53a013397c49db244"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/brief.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4027fe7cb2f3e041510f6c90d6a5bc874c785818"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/change-spec.yaml",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d51db90c60aa76db78b1f628d14666e01e3acc13"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/README.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "540fa28d13e58dbc26a4c6fc4902725069233f8c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/check-split-parity.py.txt",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "49f446dafb1a48ee725df8b4ce7ce493e1b5fdc5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/final-product-dispositions.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e877fdff6f34820d969e9880edadce1bb8dbf2c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/historical-qwen-probe.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bf334fb9a8eb1a96d4bb6ea02c21c075b5fa91d6"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/known-nonblocking-observations.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d62d84c57f7f7fa20b36ca08df128097161818b4"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-a-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b5b6000f6e3d1f68c1d7b7e5ac69646986661312"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-acceptance-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e144f14f08e5a1aec6c2694a70d40ecc5ab8c7e3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-baseline-exploration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "927c625135b5d36ec5cf255bd486c35d3d65acf8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-bc-architect.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "e42d424b8481c6fe68b13f37e7e6180979f2af7d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-d-security-sse-observation.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1601da230ee4aea538c282944ee0f74d46d1ce5a"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-f-current-base-ruling.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "732aac22fb37adc24dafe088536cfc4e4d764292"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-final-integration.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "78658a02cac644795cd56d8994a838728adfa9c5"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-frozen-manifest.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f0edff9ce545919ef8fdfdcd6677a7a01fd13402"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-full-tree-manifests.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "495624221aedfd56222ba36ba5a39926078780d3"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g-data-analysis.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d1f4e77f7843bba6f8c207fa94483fa4ef042fa2"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g-docs-preparation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a6a4f3ff820c5caf38eafa7d82091f87a953faaa"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-backup-frozen-deviation.patch.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b104e4c9cea6dfe7aa39b9a1c1e40f04f870dba4"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-budget-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9a66dc8ffdec7760cdcc057460a56074812a927e"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-data-provenance.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "99b26be946ba599600dea01b4ae8290ed434de24"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-diagrams.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c62cc813646e5901c2270faec28542850698ddbd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-extraction-red.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ce7c8cb784a217f7d928e571071d9e987a0d6b74"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-factory-focused28.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "18e5cb052d76879d8fb15b540d123df1bcad5d90"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-fitness-final.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1140333ba2d658a2b5bf816a107507a46b12bbae"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-implementation.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "dabb09d3ee2043fc5c0bcd98fe6a5412b5e06e6c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-inventory-green28.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "065c06627876b499b8eccf2fe7ea8678e047cd3d"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-ruff.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "61dc66ba0833de22a850739a8d2839256455d661"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-source-sha256.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "fe49449bea95f8acd7e1af277823c642c58d306f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/split-g2-wal-final.out.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4e3be6c866e324a164ce0b9d63b7efdf515107f8"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/release.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "9a899c6b48b5af9559d76d41221383dc7da50d0f"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/requirements.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "3df0a4ede86d21bfe5549213889c2c6beefd43d0"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/rollback.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "017ccf28e9f84a72dafa2dfd41a663fba37749dd"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/route.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d55df6bcc85bc3dead0a7f35343a5bc8ab998a93"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/state.json",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "72399b1fec9367f0af5d7b0f4eeb0e47bfac048c"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/tasks.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "4475065edc3f95265cd75db58ec8a88e8f3928f4"
+      }
+    },
+    {
+      "path": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/test-plan.md",
+      "category": "new_slice_workflow_evidence",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "b9f574c617dc420bfa72c2af67e006e22bf9225f"
+      }
+    },
+    {
+      "path": "engineering/runbooks/l5-filesystem-publication.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "43c75c9ad05e6b728f13e8ad36a3b47e85ad7a46"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "eaaade4bed00a650ee07a849723b6cb737badee5"
+      }
+    },
+    {
+      "path": "engineering/runbooks/l5-production-runtime.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f2b4ecccceba8e5375f86e27e557ac06afe19a0e"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1bfaa96dd515a041c1e46f31c5d85bc365f2ad82"
+      }
+    },
+    {
+      "path": "factory/README.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "0dd5f8234c0005f5ff8747607524989f2ca04ff6"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1cd19ad0fefa2fc69dcaf34fb759a07a5e41f238"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c3cd73b9d0e645e1203a9fc8205d52d9597a220a"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_backup.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "bd7b42909512fde6b53382516d29adb19de0c1d5"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "314968afbc7691f9b3d1328f4a73cc627761b3f3"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_sqlite_store.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "f6bee01b0847de5b6e1368214145f6342995165a"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "8bfbcc02b2218fb4192cad0351e0d559fe365019"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "af13e460d0dab16261315caf6a9cce34b22a1907"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/server.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "73d585f6bd5da85b835871f1f917b6170bbca4ce"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a4f08e80c7b22bf0dd1263129022edff02a497f3"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7952366ebb31c3e1e9bdac86500e70d5ef8275f8"
+      }
+    },
+    {
+      "path": "factory/src/adaptive_factory/settings.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7b3f45468bc546799dd84153d92e2e6ad19fa0a7"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "37e11ca1057ca7188670aabf3b0283c3f860241b"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "ac121c1828fbeabf590351711c9e78f97487d605"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_backup.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "a442229838ebcc64ea86524fc9a583dbfef7452c"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "758176cc6137ae5ea8a4dc3652cb2a4a705d8444"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_publication_cli.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "49e8c50f64987095cb1cb531561aa7032e9b68b8"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "c0087e0d84140cdfc1c9b279f377ef44a766ec6a"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_runtime.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d35f522444cda0e040433926130208b7eac99a99"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d35f522444cda0e040433926130208b7eac99a99"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "96615590b494283057d7b53ea0ed1596dd3e46bf"
+      }
+    },
+    {
+      "path": "factory/tests/test_landing_server.py",
+      "category": "product_difference_requires_explicit_disposition",
+      "base": null,
+      "reference": null,
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "7cfdb666fc62b45bb966e4d22836e185adc10eef"
+      }
+    },
+    {
+      "path": "mistakes.md",
+      "category": "shared_documentation_requires_truthful_content_review",
+      "base": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "d16fbc91d748b44ada0d23f9ef8b7323ce168a3c"
+      },
+      "reference": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1aa556a945c7d1c4cc6eb83c2b2c71ea05f32ce5"
+      },
+      "actual": {
+        "mode": "100644",
+        "type": "blob",
+        "oid": "1fdc58813cc00494dc249c4bc78444469d14fbd7"
+      }
+    }
+  ],
+  "disposition_report": "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/final-product-dispositions.md",
+  "unexplained_product_differences": []
+}

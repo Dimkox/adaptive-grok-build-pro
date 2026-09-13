@@ -1,0 +1,27 @@
+{
+  "elapsed_ms": 8598,
+  "input_digest": "02121c7d20f0c3c2f48bce38dd507c565b047534a070f148d579a272e446ec6d",
+  "model_id": "qwen-plus",
+  "profile_digest": "2616a276a5a6257515dc30e40d27fe32a667aa7d75f8205990c567166116de08",
+  "profile_id": "qwen-intl",
+  "response_digest": "155545109000a76b2765cd26a5bf4dd7d86f529a3fe1f3413b71a918a156eac9",
+  "spec_digest": "7b60edd272f30af03fc03534d1ccfc96f93534ebbd8b9d4d8839726d42ec5d99",
+  "state": "normalized",
+  "usage_input_units": 735,
+  "usage_output_units": 117,
+  "source_parent": "63418202d74cbf583d15eabd4df03e5e75f816c2",
+  "authorization_id": "ec3603eb914259a5",
+  "authorization_tree_fingerprint": "d01113eb325cd13787cbccb135f73af5843013bb7f0de7c31eaf625180550025",
+  "source_sha256": {
+    "factory/src/adaptive_factory/landing_backup.py": "7fe6629fc9443c3e1d2272c7cce351659a5ff3fee01d1581356dd2e66fd04675",
+    "factory/src/adaptive_factory/landing_host.py": "315c4e1a3f503a551dcd47a2328b35acd1e0deb1180729989004a610555d105d",
+    "factory/src/adaptive_factory/landing_http.py": "180528987260f3fa3fbb041e036375947a1b413057e545ea5f148f68c7b5a0ba",
+    "factory/src/adaptive_factory/landing_intake.py": "b7e19e75a0014be85b098bb8c9b4bdd0b5b87def83ffd5e3e47a43db13f0cc19",
+    "factory/src/adaptive_factory/landing_live_executors.py": "bc5d65baac30e8b0447c965df89af2a73f29627025955ef60e01552ed527a620",
+    "factory/src/adaptive_factory/landing_media.py": "fde1e88a2b22edc58b598b8ec4a5ddda14414cd78e93dfe9e01303fb44cf8efa",
+    "factory/src/adaptive_factory/landing_server.py": "92becfe45d95e6887fa9cf6533031bd9faf61b1062fd298f7b32f978c106802e",
+    "factory/src/adaptive_factory/landing_sse.py": "e9b92b75601d67aaf478c1f7bf702578c223773156d3cc4b6883821f00c75861",
+    "factory/src/adaptive_factory/settings.py": "78c2b5f91edc08bf18bff58ad25a26749097c38022fbba3a1890cbc1bfe29a5b"
+  },
+  "scope": "One fixed synthetic brief through final hardened executor and strict draft decoder. No defensive attack fixture, customer data, service activation or publication."
+}

@@ -1,0 +1,9 @@
+{
+  "status": "exception_no_report",
+  "exit": 1,
+  "cause": "Root-generated typed spec used strings where schema requires evidence objects. A receipt recording threw; B was stopped before the same failure.",
+  "completed_report_available": false,
+  "passing_test_claim": false,
+  "corrected_source_head": "c2caa0589b0b14fd070aa4b243f3140c139a2bdd",
+  "product_unchanged": true
+}
