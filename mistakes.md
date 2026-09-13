@@ -801,6 +801,39 @@ I generated invariant/forbidden-outcome strings although change-spec v2 requires
 
 - 2026-09-13: Exact source extraction and passing host tests did not establish the direct FactorySettings/server entrypoint invariants: // aliases bypassed lexical disjointness and one cleanup exception skipped later cleanup. Independent real-SQLite review reproduced both; validate shared path shape before I/O and isolate every owned cleanup stage with finally, then add direct-entrypoint regressions.
 
+
+## Preserved L5 reconstruction history
+
+These dated notes retain earlier decisions and mistakes. Temporary deferrals and old active-package references describe past phases; current G scope/evidence takes precedence.
+
+## 2026-09-13 — Read the writer-lock error contract before asserting it
+
+The first host regression draft expected `store_in_use` although SQLite writer acquisition emits `store_writer_active`. The root cause was guessing a domain error identifier instead of reading the acquisition path; correct the fixture expectation and rerun the unchanged production source before counting the regression failures.
+
+## 2026-09-13 — Generate ephemeral actor tokens in host fixtures
+
+A hardcoded synthetic actor token matched the repository's generic credential-literal scanner and made the first full verifier report fail its secret check. The fixture mirrored a committed credential shape; generating a fresh UUID token for each test removed the false positive without changing or excluding the scanner.
+
+### 2026-09-13 — Exercise decoder failures through real protocol envelopes
+
+The first Qwen probe redaction test injected a provider exception directly and missed a Unicode encoding error from a syntactically valid HTTP response. The missing step was testing malformed content through the actual decoder; independent review reproduced the escaped surrogate path and required a regression at that boundary.
+
+### 2026-09-13 — Match backup fixtures to parent-directory isolation
+
+The first normal backup/restore fixture placed its control checkout beneath the runtime parent, which the production isolation rule deliberately rejects. Moving the synthetic control checkout into an independent temporary root made the fixture representative; the actual double-slash regression was then reproduced independently of setup errors.
+
+## 2026-09-13 — Publication grant tests missed the issuer contract
+
+The previous synthetic grant fixtures copied the consumer's production/external-write pair without checking whether the issuer could create it; this left real publication unable to authorize. Test an issuer-compatible positive case alongside rejection cases and retain exact resource, current-source and expiry binding.
+
+## 2026-09-13 — Test roots and namespace packages need explicit context
+
+Combining the core, factory and delivery test roots with pytest prepend mode collided on their top-level tests packages, causing 53 collection errors; run the suites separately without changing product packaging. The first boundary resolver also assumed a regular-package initializer below src, but delivery is a namespace package: support an unambiguous src identity and prove it with a real fitness fixture before freezing source.
+
+## 2026-09-13 — Finish broad fast checks before the long verifier
+
+Two closed Factory schema catalogs still omitted additive evidence v2 after focused contract tests passed, forcing a second full-verifier interruption; delivery also needed its existing factory/src import root in the standalone test environment. Keep catalogs exact, run each test root with its required source paths, and finish those fast checks before the long prescribed run.
+
 ## 2026-09-13 — PRAGMA shape does not capture SQLite conflict semantics
 
 The publication schema validator checked column/index structure but SQLite PRAGMAs omit ON CONFLICT behavior; REPLACE could pass and overwrite a durable request. Bind the complete supported declaration and explicitly abort insertion collisions, then prove stored-intent preservation with altered-schema regressions.

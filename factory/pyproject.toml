@@ -13,6 +13,7 @@ adaptive-factory = "adaptive_factory.cli:main"
 adaptive-factory-server = "adaptive_factory.server:main"
 adaptive-factory-admin = "adaptive_factory.admin:main"
 adaptive-landing-server = "adaptive_factory.landing_host:main"
+adaptive-landing-state = "adaptive_factory.landing_backup:main"
 
 [tool.setuptools.package-data]
 adaptive_factory = ["resources/*.json", "resources/*.sql", "resources/landing_pdf_worker.py"]

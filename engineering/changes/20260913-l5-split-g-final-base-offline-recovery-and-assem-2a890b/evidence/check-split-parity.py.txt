@@ -1,0 +1,43 @@
+"""Audit all committed tree entries against frozen reference, with explicit exclusions."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument('checkout', type=Path)
+parser.add_argument('--output', type=Path, required=True)
+args = parser.parse_args()
+manifest = json.loads(Path('/tmp/agbp-sweep/split-full-tree-manifests.json').read_text())
+reference = manifest['reference']['entries']
+base = manifest['base']['entries']
+raw = subprocess.check_output(['git', 'ls-tree', '-rz', 'HEAD'], cwd=args.checkout)
+actual = {}
+for item in raw.split(b'\0'):
+    if not item:
+        continue
+    header, name = item.decode().split('\t', 1)
+    mode, kind, oid = header.split()
+    actual[name] = {'mode': mode, 'type': kind, 'oid': oid}
+shared_docs = {'PROJECT_STATE.json', 'README.md', 'START_HERE.md', 'decisions.md', 'mistakes.md', 'factory/README.md', 'docs/superpowers/plans/2026-09-12-l5-production-runtime.md', 'engineering/runbooks/l5-filesystem-publication.md', 'engineering/runbooks/l5-production-runtime.md'}
+history = 'engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/'
+new_packages = tuple('engineering/changes/20260913-l5-split-'+letter+'-' for letter in 'abcdefg')
+differences = []
+for path in sorted(set(base) | set(reference) | set(actual)):
+    expected, observed = reference.get(path), actual.get(path)
+    if expected == observed:
+        continue
+    if path in shared_docs:
+        category = 'shared_documentation_requires_truthful_content_review'
+    elif path.startswith(history):
+        category = 'historical_monolith_evidence_preserved_in_frozen_reference'
+    elif path.startswith(new_packages):
+        category = 'new_slice_workflow_evidence'
+    else:
+        category = 'product_difference_requires_explicit_disposition'
+    differences.append({'path': path, 'category': category, 'base': base.get(path), 'reference': expected, 'actual': observed})
+product = [d for d in differences if d['category'] == 'product_difference_requires_explicit_disposition']
+report = {'schema_version': 1, 'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=args.checkout, text=True).strip(), 'checkout': str(args.checkout), 'frozen_reference': manifest['reference']['sha'], 'actual_initial_base': manifest['base']['sha'], 'base_entries': len(base), 'reference_entries': len(reference), 'actual_entries': len(actual), 'complete_union_entry_count': len(set(base) | set(reference) | set(actual)), 'reference_manifest_sha256': hashlib.sha256(Path('/tmp/agbp-sweep/split-full-tree-manifests.json').read_bytes()).hexdigest(), 'status': 'requires_product_dispositions' if product else 'product_projection_equal', 'product_differences': product, 'all_differences': differences}
+args.output.write_text(json.dumps(report, indent=2)+'\n')
+print(json.dumps({'head': report['head'], 'union': report['complete_union_entry_count'], 'status': report['status'], 'product_difference_paths': [d['path'] for d in product]}, indent=2))

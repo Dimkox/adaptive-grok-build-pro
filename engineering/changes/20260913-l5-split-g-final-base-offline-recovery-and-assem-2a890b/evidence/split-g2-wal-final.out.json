@@ -1,0 +1,6 @@
+{
+  "encoding": "utf-8",
+  "original_filename": "split-g2-wal-final.out",
+  "raw_sha256": "8e49220109c9232d97e4f23a83c2a1fce4b6ff59f328f8cf5bf25fb9a033791a",
+  "raw_text": ".                                                                        [100%]\n=============================== warnings summary ===============================\n../../../../tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45\n  /tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.\n    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1 passed, 14 deselected, 1 warning in 0.98s\n"
+}

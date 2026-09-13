@@ -1,0 +1,41 @@
+{
+  "change_id": "20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
+  "created_at": "2026-09-13T15:25:05+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T15:25:05+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T15:25:15+00:00",
+      "from": "draft",
+      "reason": "Same approved final G scope and ten exact product blobs; fresh architect predecessor ruling and preserved analyses",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T15:25:15+00:00",
+      "from": "scoped",
+      "reason": "User approved seven-PR execution; source-only G has no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T15:25:15+00:00",
+      "from": "approved",
+      "reason": "Selected data_implementer alone copies exact ten G blobs while preserving corrected F predecessor",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T15:28:47+00:00",
+      "from": "implementing",
+      "reason": "Final ten G blobs and corrected F predecessor preserved; fresh focused80+160, inventory and true-base fitness pass; docs frozen",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "2a890b6485a5",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 split G final base: offline recovery and assembled runtime",
+  "updated_at": "2026-09-13T15:28:47+00:00"
+}

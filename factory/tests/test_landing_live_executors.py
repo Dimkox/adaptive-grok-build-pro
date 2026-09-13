@@ -336,6 +336,40 @@ class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
             legacy = reopened.get("tenant-1", TARGET_REPOSITORY_ID, "legacy-job")
             self.assertEqual(legacy_bytes, canonical_json(legacy.sealed_artifact.to_dict()))
             reopened.close()
+            from adaptive_factory.landing_backup import create_snapshot, restore_snapshot
+            from adaptive_factory.landing_host import LandingHostConfig
+            from adaptive_factory.settings import FactorySettings
+            from adaptive_factory.landing_publication_cli import _bundle
+            from adaptive_delivery.landing_publication_contracts import PublicationTargetV1
+            publication = self.root / "publication"
+            publication.mkdir(mode=0o700)
+            backup_config = LandingHostConfig(FactorySettings(
+                database_url="", socket_path=self.root / "socket", actors_file=self.root / "actors",
+                landing_state_path=self.root / "state", landing_output_path=self.root / "artifacts",
+                landing_source_path=target, landing_scratch_path=self.root / "scratch",
+                landing_quarantine_path=self.root / "blobs",
+            ), REPO_ROOT, publication)
+            snapshot = self.root / "snapshot space%?#é"
+            saved = create_snapshot(backup_config, snapshot)
+            for root in (self.root / "state", self.root / "artifacts", publication):
+                root.rename(root.with_name(root.name + "-old"))
+            restore_snapshot(backup_config, snapshot, saved["manifest_sha256"])
+            restored = SQLiteLandingJobStore(self.root / "state", repository_root=REPO_ROOT)
+            self.addCleanup(restored.close)
+            published_root = self.root / "publication-target"
+            published_root.mkdir(mode=0o700)
+            metadata = published_root.stat()
+            import os
+            publication_target = PublicationTargetV1(1, "fixture-target", str(published_root),
+                "https://therealaidarkfactory.online", os.geteuid(), metadata.st_dev, metadata.st_ino)
+            for job_id, version in (("legacy-job", 1), ("job-qwen-ready", 2)):
+                result = restored.get("tenant-1", TARGET_REPOSITORY_ID, job_id)
+                self.assertEqual(version, result.sealed_artifact.provider_evidence.schema_version)
+                bundle = _bundle({"tenant_id": "tenant-1", "repository_id": TARGET_REPOSITORY_ID,
+                                  "control_repository": str(REPO_ROOT), "publication_state_root": str(publication),
+                                  "landing_state_root": str(self.root / "state")}, publication_target,
+                                 {"tenant_id": "tenant-1", "repository_id": TARGET_REPOSITORY_ID, "job_id": job_id})
+                self.assertEqual(result.artifact.artifact_digest, bundle.artifact_digest)
             self.assertIsNone(created.job.result_view()["live_url"])
             self.assertEqual(
                 tuple(sorted(DEPLOY_MEMBERS)),

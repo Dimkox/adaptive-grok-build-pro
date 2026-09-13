@@ -14,9 +14,9 @@ OFFLINE = frozenset(PREFIX + name for name in (
     "landing_artifact.py", "landing_artifact_retention.py", "landing_contracts.py",
     "landing_coordinator.py", "landing_evaluation.py", "landing_intake.py",
     "landing_normalizer.py", "landing_provider.py", "landing_renderer.py",
-    "landing_runtime.py", "landing_service.py", "landing_http.py",
-    "landing_media.py", "landing_sse.py", "landing_publication_cli.py", "landing_host_config.py",
-    "resources/landing_pdf_worker.py",
+    "landing_runtime.py", "landing_service.py", "landing_http.py", "landing_backup.py",
+    "landing_media.py", "landing_sse.py", "landing_publication_cli.py",
+    "landing_host_config.py", "resources/landing_pdf_worker.py",
 ))
 GROUPS = {
     "offline": OFFLINE,
@@ -67,7 +67,7 @@ class LandingArchitectureBoundaryTests(unittest.TestCase):
         for name in ("landing_unclassified.py", "resources/landing_other_worker.py"):
             with self.subTest(path=name), self.assertRaisesRegex(ValueError, "incomplete"):
                 classified_inventory(inventory | {PREFIX + name}, GROUPS)
-        groups = {**GROUPS, "accidental-live": {PREFIX + "landing_artifact.py"}}
+        groups = {**GROUPS, "accidental-live": {PREFIX + "landing_backup.py"}}
         with self.assertRaisesRegex(ValueError, "overlapping"):
             classified_inventory(inventory, groups)
 

@@ -1,0 +1,109 @@
+{
+  "route_id": "2a890b6485a5",
+  "base_commit": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+  "checkout_head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+  "archive_source": "7e7b7453d12b59d690f51a4519a1ee5aceb63985",
+  "archive_equivalent": true,
+  "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "paths": {
+    "architecture/rules.yaml": {
+      "sha256": "28d1b6ac60ecfd22db094b800e5be02864e2fc37080edd9fc9c25c7ec76b6a10",
+      "git_blob": "1ac466a110a13c0913fe5043b727ddab29c7fb18",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "architecture/system.yaml": {
+      "sha256": "7c14e36980642e4694d94d5ed4173960c94964f5457270ec6cbda7d0f09f00ef",
+      "git_blob": "d5fb50f5f7bd1ec4a853b760c0cbbeda678227d6",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "final model plus independent D test_landing_server owner"
+    },
+    "factory/pyproject.toml": {
+      "sha256": "fd4c7c90af68f5644f82453b494edbbc8ba06f31eee606c183069deefa57d82f",
+      "git_blob": "1470d1925f164425878923d8958792e765bc26f8",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/runtime/adaptive-l5.service.in": {
+      "sha256": "5e287944a6e8c58b46a0b119f3064b655df0bc5f4e152712f5a7312455979ebd",
+      "git_blob": "ebf78186e934cad9f565fa8eddd3083063ec3ebe",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/runtime/install-claw.sh": {
+      "sha256": "65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91",
+      "git_blob": "d8bcd8325addccde05edbad49d6b0f688b10e621",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/runtime/landing-host.example.json": {
+      "sha256": "5e7c334ba90c21a578cab19f292c6037d5709f0424554dca67f5bfe0360ea604",
+      "git_blob": "46076857760ff2e5145a951e6209a99883bec777",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_backup.py": {
+      "sha256": "d3c0a22fc0a84705ff8505b8b2e06d6730a899d24ed90ca553fa405be51f5b99",
+      "git_blob": "314968afbc7691f9b3d1328f4a73cc627761b3f3",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "frozen plus remaining second-pass budget preflight"
+    },
+    "factory/tests/test_landing_backup.py": {
+      "sha256": "84183519c4aefa9e4518744d81c30b9dca045c50812956721a3999f55036cbd3",
+      "git_blob": "758176cc6137ae5ea8a4dc3652cb2a4a705d8444",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "frozen plus budget/writer/WAL/publication-intent regressions"
+    },
+    "factory/tests/test_landing_live_executors.py": {
+      "sha256": "2cc7b45945f05a2cc15bf87c8a0462e32e86ba4c51785252a3a9bd7be085a71c",
+      "git_blob": "088f7937b5ffa1a3e593da413a5d1109509398ed",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    },
+    "tests/test_landing_architecture_boundaries.py": {
+      "sha256": "c83af1d6752afb4af07d75427bd60c52db947b44ebe7d6ba22a9a876f310fa48",
+      "git_blob": "207267f60b54e08bb9d4c803c4cc3a5b47415723",
+      "git_mode": "100644",
+      "selection": "exact_committed_G2_blob",
+      "original_selection": "whole_frozen"
+    }
+  },
+  "production_deviations": [
+    {
+      "path": "factory/src/adaptive_factory/landing_backup.py",
+      "evidence": "split-g2-backup-frozen-deviation.patch",
+      "reason": "Reject known-insufficient remaining accounted I/O before creating restore roots, preserving existing byte cap/common deadline."
+    }
+  ],
+  "final_product_differences_from_frozen": [
+    "architecture/system.yaml",
+    "delivery/src/adaptive_delivery/landing_publication.py",
+    "factory/src/adaptive_factory/landing_backup.py",
+    "factory/src/adaptive_factory/landing_sqlite_store.py",
+    "factory/src/adaptive_factory/server.py",
+    "factory/src/adaptive_factory/settings.py",
+    "factory/tests/test_landing_backup.py",
+    "factory/tests/test_landing_publication_cli.py",
+    "factory/tests/test_landing_runtime.py",
+    "factory/tests/test_landing_server.py"
+  ],
+  "preserved_f_review_repair": {
+    "delivery/src/adaptive_delivery/landing_publication.py": {
+      "sha256": "e17cdf766e17ad8da5136a70bc457e0caddadc44746efa8b239b2c5b2396aebb",
+      "git_blob": "2e6d29796ad7c0485cfe3692f85f7e206e8d06d7"
+    },
+    "factory/tests/test_landing_publication_cli.py": {
+      "sha256": "e7575e3abd1d1f68af83f2728b82945c14750fe0b057cf38b9bbf8ed27877b7f",
+      "git_blob": "2e86becbb37494a526e66d696545a64621ba03c7"
+    }
+  }
+}

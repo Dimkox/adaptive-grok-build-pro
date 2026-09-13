@@ -1,0 +1,3 @@
+# Bounded residual observation
+
+D independent security review reproduced a malformed synthetic SSE frame with object/list values where finish_reason or delta.role expects scalars. Set membership can raise TypeError instead of LandingProviderError. Real disposable SQLite + mocked HTTP composition still persists needs_human/internal_failure with no artifact/provider evidence and purges quarantined input; no authority boundary is bypassed. This is a P3 error-classification/diagnostic follow-up, including possible probe-CLI traceback, and does not establish a live Qwen moderation trigger. The checked D source stays unchanged; do not claim all malformed SSE values share one domain error.
