@@ -611,7 +611,7 @@
       "method": "squash",
       "merged_at": "2026-09-13T17:35:51Z",
       "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
-      "exact_sha_check": "adaptive-trust-ci/verified@06ecf1c875bc success 17:33:28 UTC",
+      "exact_sha_check": "adaptive-trust-ci/verified@06ecf1c875bc success 17:33:02 UTC",
       "tree_identity": "tree(eb9df64) == tree(e6a813e) == 1c8d72a50c0631c0222d111de1403ace4347aab2 (verified post-merge)"
     },
     "slices_B_to_G": {
@@ -621,5 +621,20 @@
     "release_tagged": false,
     "operational_activation": false
   },
-  "delivery_state": "stack_landed_main_eb9df64_all_seven_slice_attestations_and_union_check_success_release_activation_separate"
+  "delivery_state": "v2_0_16_released_repository_source_operational_activation_separate",
+  "release_v2_0_16": {
+    "tag": "v2.0.16",
+    "tag_object": "8486ddb648f97e79a5f3a81d9b539378d2d4b301",
+    "target_merge": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
+    "published_at": "2026-09-13T22:04:08Z",
+    "pull_request": 79,
+    "checked_head": "2b1517986b9b5b83a95b1286baac161074c58175",
+    "gate_check_run": 103797448701,
+    "attestation": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
+    "signer": "0519cf1d47436f2e",
+    "zip_sha256": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
+    "sidecar_sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
+    "note": "Repository release complete; operational activation remains separate and unclaimed."
+  },
+  "observed_at": "2026-09-13T23:14:06.214979+00:00"
 }

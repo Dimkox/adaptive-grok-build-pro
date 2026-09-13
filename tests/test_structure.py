@@ -13,8 +13,30 @@ from tests.json_schema_subset import SubsetValidator
 
 ROOT = Path(__file__).resolve().parents[1]
 
+ROOT_ENTRIES = frozenset(
+    {
+        ".agents", ".coveragerc", ".gitignore", ".grok-stack", ".grok", ".superpowers",
+        "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
+        "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
+        "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
+        "delivery", "docs", "engineering", "examples", "factory", "governance",
+        "mistakes.md", "packages", "pilot", "post_tool_use.py", "pre_compact.py",
+        "pre_tool_use.py", "ruff.toml", "schemas", "scripts", "session_end.py",
+        "session_start.py", "side-projects", "stop_gate.py", "subagent_start.py",
+        "subagent_stop.py", "tests", "trust-ci", "user_prompt_submit.py",
+    }
+)
+
 
 class StructureTests(unittest.TestCase):
+    def test_repository_root_holds_only_canonical_entries(self):
+        tracked = subprocess.run(
+            ("git", "ls-tree", "--name-only", "HEAD"),
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        ).stdout.split()
+        self.assertEqual(sorted(set(tracked) - ROOT_ENTRIES), [])
+        self.assertEqual(sorted(ROOT_ENTRIES - set(tracked)), [])
+
     @staticmethod
     def _resolve_openapi_schema(openapi: dict, schema: dict) -> dict:
         reference = schema.get("$ref")
@@ -256,7 +278,7 @@ class StructureTests(unittest.TestCase):
         self.assertIn("Identity: **2.0.16**", readme)
         self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.16 — 2026-09-13\n"))
         self.assertIn(
-            "product version: 2.0.16 (unreleased assembled-L5 release candidate; published release v2.0.15 and v2.0.14 retained as immutable history)",
+            "product version: 2.0.16 (assembled-L5 release candidate published as repository source; published release v2.0.16/v2.0.15/v2.0.14 retained as immutable history)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))

@@ -1,0 +1,3 @@
+PASS source-stability: repository fingerprint remained stable
+RESULT: PASS | profiles=base,contracts | changed=21
+EXIT=0

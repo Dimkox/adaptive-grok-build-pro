@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "change_id": "20260913-v2-0-16-release-record-successor-published-ident-dcace1",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Record the completed v2.0.16 publication truthfully: PROJECT_STATE published_release=real v2.0.16 record with re-derived tag/check/attestation/asset identities, v2.0.15 demoted to prior[0], local_candidate flipped to published-by-repository-delivery, docs/roadmap/ledger aligned, union gate time corrected to the API value.",
+    "success_metric": "tests.test_structure/test_project_state/test_manifest_package/test_architecture_model/test_governance green plus exact-head App check on the successor PR",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "published_release describes v2.0.16 (tag object 8486ddb…, merge 969c4f6…, PR 79, run 103797448701, attestation 90cb34aa…, GitGuardian SUCCESS) with prior list length 3 starting v2.0.15.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "local_candidate states published/repository-delivery only; operational_activation stays false; no doc claims installation or hosting.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Identity prose across README/START_HERE/CHANGELOG/ROADMAP matches the published reality and the derived structural test.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Historical milestone/inventory records (M0-M9, v2.0.13/v2.0.14 fields, work inventory, schedule, forbidden phrases) remain byte-unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Immutable packages v2.0.13/14/15/16 and the tagged release target are not re-tagged or replaced by this commit.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Any claim of operational activation, installation, hosting publication, or model spend beyond what is verifiable.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on the successor PR",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}
