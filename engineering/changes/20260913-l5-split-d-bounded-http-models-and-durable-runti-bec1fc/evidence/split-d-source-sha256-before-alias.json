@@ -1,6 +1,6 @@
 {
   "base_commit": "a75b3cd639a1483533069e8634759cdfc6612310",
-  "checkout_head": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+  "checkout_head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
   "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
   "route_id": "bec1fcdde794",
   "paths": {
@@ -75,14 +75,14 @@
       "selection": "whole_frozen"
     },
     "factory/src/adaptive_factory/server.py": {
-      "sha256": "825e594624e35b4459cf66d35873eaf62c854391aba70ea31f94c7ec41dae358",
-      "git_blob": "7952366ebb31c3e1e9bdac86500e70d5ef8275f8",
-      "selection": "frozen plus independent nested listener/runtime/socket cleanup stages"
+      "sha256": "0ffd557e7e33c9b9fefc541f394c791ae1c6563dc45a6363871da49df8dffe7e",
+      "git_blob": "a4f08e80c7b22bf0dd1263129022edff02a497f3",
+      "selection": "whole_frozen"
     },
     "factory/src/adaptive_factory/settings.py": {
-      "sha256": "0241a3e27200444bc3114da6e9c2940c6551d6db9e2112e74d6ab4c056c6dd02",
-      "git_blob": "ac121c1828fbeabf590351711c9e78f97487d605",
-      "selection": "frozen plus shared validation rejects double-slash landing-root anchors"
+      "sha256": "78c2b5f91edc08bf18bff58ad25a26749097c38022fbba3a1890cbc1bfe29a5b",
+      "git_blob": "37e11ca1057ca7188670aabf3b0283c3f860241b",
+      "selection": "whole_frozen"
     },
     "factory/tests/test_landing_live_executors.py": {
       "sha256": "3e8ac9c037309b14c154359098d9de5fd6ffb1220f67d3e7e7ff8e972d1afa67",
@@ -100,9 +100,9 @@
       "selection": "whole_frozen"
     },
     "factory/tests/test_landing_server.py": {
-      "sha256": "1a70c29bc8a5436017cb1b25d5b7ec2d780f90a15210af3249e5e1885dfcd671",
-      "git_blob": "7cfdb666fc62b45bb966e4d22836e185adc10eef",
-      "selection": "independent ownership regression strengthening, including alias and main cleanup review fixes"
+      "sha256": "d186a9e0ee262f872f07c57798c5c0f68f389cb1e1904b500ed0dea6110fc0c5",
+      "git_blob": "4bdffd4ab9ef0f8862fdd786eb4f0833f0bb28bc",
+      "selection": "independent D ownership/cleanup/lifespan regression strengthening"
     },
     "factory/tests/test_landing_sse.py": {
       "sha256": "9218d4cbde9c7ce11e9e27ed38ade06ad1c61aa9616844e4ac5bf5b5e36d3e67",
@@ -131,25 +131,6 @@
       "path": "factory/src/adaptive_factory/landing_sqlite_store.py",
       "evidence": "split-d-sqlite-frozen-deviation.patch",
       "reason": "Release lifetime writer on BaseException during lock acquisition/connect/initialization and if connection close fails during initialization unwind."
-    },
-    {
-      "path": "factory/src/adaptive_factory/settings.py",
-      "evidence": "split-d-alias-settings-frozen-deviation.patch",
-      "reason": "Reject // aliases before shared landing-root disjointness and I/O."
-    },
-    {
-      "path": "factory/src/adaptive_factory/server.py",
-      "evidence": "split-d-alias-server-frozen-deviation.patch",
-      "reason": "Run owned-runtime close and socket cleanup despite failures in preceding cleanup stages."
     }
-  ],
-  "review_repairs": {
-    "reviewed_head": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
-    "changed_paths": [
-      "factory/src/adaptive_factory/server.py",
-      "factory/src/adaptive_factory/settings.py",
-      "factory/tests/test_landing_server.py"
-    ],
-    "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68"
-  }
+  ]
 }
