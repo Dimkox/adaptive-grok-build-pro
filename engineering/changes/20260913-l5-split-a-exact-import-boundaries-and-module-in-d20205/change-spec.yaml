@@ -38,12 +38,44 @@
     "openapi": []
   },
   "forbidden_outcomes": [
-    "Unclassified landing module silently escapes the inventory.",
-    "Comparison refs or existing route baselines are substituted to hide cumulative changes."
+    {
+      "id": "FORBID-001",
+      "statement": "Unclassified landing module silently escapes the inventory.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Comparison refs or existing route baselines are substituted to hide cumulative changes.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
   ],
   "invariants": [
-    "All code budgets and deployed trust boundaries remain unchanged.",
-    "Future L5 modules and schemas are introduced only in their owning delivery slice."
+    {
+      "id": "INV-001",
+      "statement": "All code budgets and deployed trust boundaries remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Future L5 modules and schemas are introduced only in their owning delivery slice.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
   ],
   "objective": {
     "id": "OBJ-001",
