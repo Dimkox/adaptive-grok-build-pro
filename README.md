@@ -4,7 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-Active L5 split B (`feat/l5-split-b-source-epoch`) follows the import-boundary prerequisite and aligns renderer, evaluator and retained artifact layouts with the sealed landing source epoch. The publishable inventory contains 22 files, including approved analytics assets; older explicitly supported layouts remain readable. Evidence v2, live HTTP, dedicated host, publication and backup follow in separate branches. See [the slice B change package](engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/brief.md). Local verification and reviews do not establish external Trust CI acceptance or operational readiness.
+Active L5 split C (`feat/l5-split-c-evidence-v2`) follows the sealed source update and introduces strict provider-evidence v2 readers alongside the unchanged v1 schema and digest domain. Retained envelopes require matching versions; native/fixture producers remain v1. The HTTP producer and later runtime/publication/backup slices are still separate. See [the slice C package](engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/brief.md). Local checks do not establish external Trust CI acceptance or operational readiness.
 
 
 Execution usage accounting supports the legacy V1 aggregate payload and a closed V2 payload with input, output, reasoning, cached-input, and cache-write buckets. V2 binds a canonical price table digest and derives integer micro-USD cost server-side; it never accepts an adapter total.

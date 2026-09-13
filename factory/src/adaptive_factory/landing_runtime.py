@@ -15,7 +15,7 @@ from .landing_artifact import (
 from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_contracts import (
     LandingInputV1,
-    LandingProviderEvidenceV1,
+    LandingProviderEvidence,
     SiteArtifactV1,
     StaticLandingSpecV1,
     landing_digest,
@@ -82,12 +82,12 @@ class CoordinatedLandingArtifactBuilder:
         self,
         source: LandingInputV1,
         spec: StaticLandingSpecV1,
-        evidence: LandingProviderEvidenceV1,
+        evidence: LandingProviderEvidence,
     ) -> CoordinatedLandingArtifactResult:
         if (
             not isinstance(source, LandingInputV1)
             or not isinstance(spec, StaticLandingSpecV1)
-            or not isinstance(evidence, LandingProviderEvidenceV1)
+            or not isinstance(evidence, LandingProviderEvidence)
             or source.repository_id != TARGET_REPOSITORY_ID
             or source.input_digest != spec.input_digest
             or source.input_digest != evidence.input_digest

@@ -406,7 +406,7 @@ class StaticLandingSpecV1(_LandingRecord):
 
 
 @dataclass(frozen=True)
-class LandingProviderEvidenceV1(_LandingRecord):
+class _LandingProviderEvidence(_LandingRecord):
     schema_version: int
     input_digest: str
     profile_digest: str
@@ -428,26 +428,29 @@ class LandingProviderEvidenceV1(_LandingRecord):
     provider_evidence_digest: str
 
     DOMAIN = "provider-evidence"
+    SCHEMA_VERSION = 0
+    DISPOSITIONS = frozenset()
+    CONTRACT = ""
     DIGEST_FIELD = "provider_evidence_digest"
 
     @classmethod
-    def from_facts(cls, data: Mapping[str, Any]) -> "LandingProviderEvidenceV1":
+    def from_facts(cls, data: Mapping[str, Any]) -> Self:
         data = _object(data, "landing_provider_evidence")
         fields = set(cls.__dataclass_fields__) - {"provider_evidence_digest"}
         _closed(data, fields)
-        if data["schema_version"] != 1:
+        if type(data["schema_version"]) is not int or data["schema_version"] != cls.SCHEMA_VERSION:
             raise LandingContractError("unsupported_version", "provider_evidence")
         version = _text(data["adapter_version"], "adapter_version", 64)
         if not _VERSION.fullmatch(version):
             raise LandingContractError("adapter_version")
-        if data["disposition"] not in {"fixture_ready", "provider_unavailable", "rejected"}:
+        if data["disposition"] not in cls.DISPOSITIONS:
             raise LandingContractError("provider_disposition")
         started = _time(data["started_at"], "started_at")
         completed = _time(data["completed_at"], "completed_at")
         if completed < started:
             raise LandingContractError("provider_time_order")
         values = {
-            "schema_version": 1,
+            "schema_version": cls.SCHEMA_VERSION,
             "input_digest": _hex(data["input_digest"], "input_digest", HEX64),
             "profile_digest": _hex(data["profile_digest"], "profile_digest", HEX64),
             "provider_id": _identifier(data["provider_id"], "provider_id"),
@@ -466,16 +469,42 @@ class LandingProviderEvidenceV1(_LandingRecord):
             "completed_at": completed,
             "disposition": data["disposition"],
         }
-        digest = landing_digest(cls.DOMAIN, json.loads(canonical_json(values)))
+        digest = canonical_digest({"contract": cls.CONTRACT, **json.loads(canonical_json(values))})
         return cls(**values, provider_evidence_digest=digest)
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "LandingProviderEvidenceV1":
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
         data = _object(data, "landing_provider_evidence")
         _closed(data, set(cls.__dataclass_fields__))
         result = cls.from_facts({key: data[key] for key in data if key != "provider_evidence_digest"})
         _validate_supplied(result, data["provider_evidence_digest"], "provider_evidence_digest")
         return result
+
+
+@dataclass(frozen=True)
+class LandingProviderEvidenceV1(_LandingProviderEvidence):
+    SCHEMA_VERSION = 1
+    DISPOSITIONS = frozenset({"fixture_ready", "provider_unavailable", "rejected"})
+    CONTRACT = "adaptive-factory.landing-provider-evidence/v1"
+
+
+@dataclass(frozen=True)
+class LandingProviderEvidenceV2(_LandingProviderEvidence):
+    SCHEMA_VERSION = 2
+    DISPOSITIONS = frozenset({"normalized", "provider_unavailable", "rejected"})
+    CONTRACT = "adaptive-factory.landing-provider-evidence/v2"
+
+
+LandingProviderEvidence = LandingProviderEvidenceV1 | LandingProviderEvidenceV2
+
+
+def decode_provider_evidence(data: Mapping[str, Any]) -> LandingProviderEvidence:
+    data = _object(data, "landing_provider_evidence")
+    version = data.get("schema_version")
+    if type(version) is not int or version not in (1, 2):
+        raise LandingContractError("unsupported_version", "provider_evidence")
+    record = LandingProviderEvidenceV1 if version == 1 else LandingProviderEvidenceV2
+    return record.from_dict(data)
 
 
 @dataclass(frozen=True)

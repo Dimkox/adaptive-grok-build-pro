@@ -4078,7 +4078,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
             for contract in source.system["contracts"]
             if contract["id"].startswith("CONTRACT-FACTORY-LANDING-")
         ]
-        self.assertEqual(7, len(contracts))
+        self.assertEqual({contract["id"] for contract in contracts}, {
+            "CONTRACT-FACTORY-LANDING-ATTEMPT-V1", "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
+            "CONTRACT-FACTORY-LANDING-INPUT-V1", "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+            "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1", "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
+            "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1", "CONTRACT-FACTORY-LANDING-SPEC-V1",
+        })
         system = _system()
         rules = _rules()
         rules["contract_policies"] = [

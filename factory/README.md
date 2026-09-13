@@ -1,6 +1,6 @@
 # Adaptive Factory M4-M8 control/evaluation and offline L5 landing source
 
-L5 delivery slice B updates the sealed landing source epoch to `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91`, preserves approved analytics/privacy and emits the exact 22-file publication inventory. Older explicitly supported retained layouts remain readable; provider evidence is still v1 in this slice. This source preparation does not activate a model or host.
+L5 delivery slice C preserves original evidence v1 identities and adds strict independent v2 readers and matching retained envelopes. Native and fixture producers still emit v1; live HTTP production arrives in D. The sealed source remains `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91` with 22 publishable files. After v2 records exist, rollback requires a compatible reader or a consistent pre-v2 snapshot.
 
 
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.

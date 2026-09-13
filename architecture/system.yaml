@@ -251,6 +251,14 @@
     },
     {
       "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
       "id": "CONTRACT-FACTORY-LANDING-ATTEMPT-V1",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
@@ -1926,6 +1934,7 @@
         "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
         "CONTRACT-FACTORY-LANDING-INPUT-V1",
         "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
+        "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
         "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
         "CONTRACT-FACTORY-LANDING-SPEC-V1"
       ],
@@ -1934,6 +1943,7 @@
         "factory/contracts/jsonschema/landing-evaluation.v1.schema.json",
         "factory/contracts/jsonschema/landing-input.v1.schema.json",
         "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+        "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json",
         "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
         "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
         "factory/src/adaptive_factory/landing_artifact.py",

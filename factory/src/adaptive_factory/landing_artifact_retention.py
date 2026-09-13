@@ -26,6 +26,8 @@ from .landing_contracts import (
     LandingEvaluationV1,
     LandingInputV1,
     LandingProviderEvidenceV1,
+    LandingProviderEvidence,
+    decode_provider_evidence,
     SiteArtifactV1,
     strict_json_object,
 )
@@ -60,7 +62,7 @@ class RetainedLandingArtifact:
     sidecar_bytes: bytes
     manifest_bytes: bytes
     member_names: tuple[str, ...]
-    provider_evidence: LandingProviderEvidenceV1
+    provider_evidence: LandingProviderEvidence
     attempt: LandingAttemptV1
     evaluation: LandingEvaluationV1
 
@@ -76,7 +78,7 @@ class RetainedLandingArtifact:
     def capture(
         cls,
         sealed: LandingArtifactResult,
-        provider_evidence: LandingProviderEvidenceV1,
+        provider_evidence: LandingProviderEvidence,
         attempt: LandingAttemptV1,
         evaluation: LandingEvaluationV1,
         source: LandingInputV1,
@@ -103,7 +105,10 @@ class RetainedLandingArtifact:
         if not isinstance(data, Mapping) or set(data) != _FIELDS:
             raise LandingArtifactError("artifact_integrity")
         try:
-            if data["schema_version"] != 1:
+            if type(data["schema_version"]) is not int or data["schema_version"] not in (1, 2):
+                raise LandingArtifactError("artifact_integrity")
+            evidence = decode_provider_evidence(data["provider_evidence"])
+            if evidence.schema_version != data["schema_version"]:
                 raise LandingArtifactError("artifact_integrity")
             root_text = data["output_root"]
             zip_name = data["zip_name"]
@@ -125,7 +130,7 @@ class RetainedLandingArtifact:
                 _hex_bytes(data["sidecar_hex"], 1_024),
                 _hex_bytes(data["manifest_hex"], 1_048_576),
                 tuple(members),
-                LandingProviderEvidenceV1.from_dict(data["provider_evidence"]),
+                evidence,
                 LandingAttemptV1.from_dict(data["attempt"]),
                 LandingEvaluationV1.from_dict(data["evaluation"]),
             )
@@ -134,7 +139,7 @@ class RetainedLandingArtifact:
 
     def to_dict(self) -> dict[str, object]:
         return {
-            "schema_version": 1,
+            "schema_version": self.provider_evidence.schema_version,
             "artifact": self.artifact.to_dict(),
             "output_root": str(self.output_root),
             "zip_name": self.zip_name,
@@ -170,10 +175,11 @@ class RetainedLandingArtifact:
         if (
             not isinstance(source, LandingInputV1)
             or not isinstance(artifact, SiteArtifactV1)
-            or not isinstance(evidence, LandingProviderEvidenceV1)
+            or not isinstance(evidence, LandingProviderEvidence)
             or not isinstance(attempt, LandingAttemptV1)
             or not isinstance(evaluation, LandingEvaluationV1)
-            or evidence.disposition != "fixture_ready"
+            or evidence.disposition != ("fixture_ready" if isinstance(evidence, LandingProviderEvidenceV1) else "normalized")
+            or evidence.schema_version != (1 if isinstance(evidence, LandingProviderEvidenceV1) else 2)
             or evidence.input_digest != source.input_digest
             or artifact.source_sha != source.exact_base_sha
             or artifact.source_tree != source.exact_base_tree

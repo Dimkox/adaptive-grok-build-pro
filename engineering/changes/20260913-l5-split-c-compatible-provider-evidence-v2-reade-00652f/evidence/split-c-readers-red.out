@@ -1,0 +1,43 @@
+..........E..F...........F....F
+======================================================================
+ERROR: test_v2_evidence_roundtrip_uses_independent_version_domain (factory.tests.test_landing_contracts.LandingContractTests.test_v2_evidence_roundtrip_uses_independent_version_domain)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_landing_contracts.py", line 184, in test_v2_evidence_roundtrip_uses_independent_version_domain
+    record = landing_contracts.LandingProviderEvidenceV2.from_facts(facts)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'adaptive_factory.landing_contracts' has no attribute 'LandingProviderEvidenceV2'. Did you mean: 'LandingProviderEvidenceV1'?
+
+======================================================================
+FAIL: test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields (factory.tests.test_semantic_bridge.SemanticBridgeTests.test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_semantic_bridge.py", line 175, in test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields
+    self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
+AssertionError: Items in the second set but not the first:
+'landing-provider-evidence.v2.schema.json'
+
+======================================================================
+FAIL: test_public_schemas_are_closed_bounded_and_have_exact_versions (factory.tests.test_semantic_contracts.SemanticContractTests.test_public_schemas_are_closed_bounded_and_have_exact_versions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_semantic_contracts.py", line 130, in test_public_schemas_are_closed_bounded_and_have_exact_versions
+    self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
+AssertionError: Items in the second set but not the first:
+'landing-provider-evidence.v2.schema.json'
+
+======================================================================
+FAIL: test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http (factory.tests.test_landing_runtime.CoordinatedLandingArtifactBuilderTests.test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_landing_runtime.py", line 193, in test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http
+    self.assertEqual("artifact_ready", created.job.state, created.job)
+AssertionError: 'artifact_ready' != 'needs_human'
+- artifact_ready
++ needs_human
+ : LandingJobRecord(source=LandingInputV1(schema_version=1, job_id='job-reader-v2', tenant_id='tenant-1', repository_id='github.com/Dimkox/ai-dark-factory-landing', exact_base_sha='af88d62077563d5a2093600e6b41dcb3e49808c3', exact_base_tree='df64206015639c5ebae53c42ffc53e22733aac79', site_id='therealaidarkfactory.online', media_kind='text', media_type='text/plain', byte_length=44, content_sha256='e65d163589bde7630f0c14f392b14dc920b4dc152ac4f7ca7341d001261d7f22', quarantine_ref_digest='9b82a18c765e419091c4cb9c5d42b046b54d35d9fc32003994aa4930ee8de9a7', received_at=datetime.datetime(2026, 9, 5, 14, 0, tzinfo=datetime.timezone.utc), expires_at=datetime.datetime(2026, 9, 6, 14, 0, tzinfo=datetime.timezone.utc), input_digest='b9a4bc4051a186ca72fb9d12dc14fd87d177d9a10e53e745bc0d7bfd854599dd'), state='needs_human', artifact=None, provider_evidence_digest=None, reason_code='internal_failure', revision=2, sealed_artifact=None)
+
+----------------------------------------------------------------------
+Ran 31 tests in 0.954s
+
+FAILED (failures=3, errors=1)
