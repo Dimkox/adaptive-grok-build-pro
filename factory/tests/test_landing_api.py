@@ -34,10 +34,10 @@ from factory.tests.test_landing_provider import profile as fixture_profile
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
 TOKEN_A = "landing-tenant-a-credential"
 TOKEN_B = "landing-tenant-b-credential"
-CURRENT_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
-CURRENT_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
-PRIOR_BASE_SHA = "176efcaab931c2482781ff163c621b10aa05dee9"
-PRIOR_BASE_TREE = "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
+CURRENT_BASE_SHA = "fde60e040167c10975b00d11f578c4da6763069a"
+CURRENT_BASE_TREE = "21817e70e079b772e1f3114a80dfc0320d1ada91"
+PRIOR_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+PRIOR_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 
 
 class CountingBlobStore(PrivateLandingBlobStore):

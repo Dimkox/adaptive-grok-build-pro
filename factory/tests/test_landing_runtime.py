@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import closing
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
@@ -8,8 +10,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from adaptive_factory import landing_contracts
+from adaptive_factory.contracts import canonical_json
+from adaptive_factory.landing_artifact_retention import RetainedLandingArtifact
 from adaptive_factory.landing_artifact import (
     DEPLOY_MEMBERS,
+    LandingArtifactError,
     ExactGitLandingArtifactSource,
     LandingArtifactPackager,
 )
@@ -35,7 +41,7 @@ from adaptive_factory.landing_runtime import (
     CoordinatedLandingArtifactResult,
 )
 from adaptive_factory.landing_service import LandingArtifactBuildResult
-from adaptive_factory.landing_service import LandingApplicationService
+from adaptive_factory.landing_service import LandingApplicationService, LandingServiceError
 from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
 from adaptive_factory.models import Actor
 from factory.tests.test_landing_renderer import landing_spec, sealed_target
@@ -143,6 +149,92 @@ class RecordingBuilder:
 
 
 class CoordinatedLandingArtifactBuilderTests(unittest.TestCase):
+    def test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http(self):
+        class V2Provider(BoundProvider):
+            def normalize(self, request, read_blob):
+                outcome = super().normalize(request, read_blob)
+                facts = outcome.evidence.to_dict()
+                facts.pop("provider_evidence_digest")
+                facts.update(schema_version=2, disposition="normalized")
+                evidence = landing_contracts.LandingProviderEvidenceV2.from_facts(facts)
+                return LandingNormalizationOutcome(outcome.spec, evidence)
+
+        actor = Actor("tenant-1", "operator", frozenset({"landing:submit", "landing:read"}),
+                      frozenset({TARGET_REPOSITORY_ID}))
+        repository = Path(__file__).resolve().parents[2]
+        with sealed_target() as (target, base_sha, base_tree), tempfile.TemporaryDirectory(
+            prefix="landing-reader-versions-",
+        ) as directory, patch.multiple(
+            "adaptive_factory.landing_service", TARGET_BASE_SHA=base_sha, TARGET_BASE_TREE=base_tree,
+        ):
+            root = Path(directory)
+            (root / "scratch").mkdir(mode=0o700)
+            builder = CoordinatedLandingArtifactBuilder(
+                LandingCoordinator(
+                    ExactGitLandingWorkspace(target, scratch_root=root / "scratch"),
+                    DeterministicLandingRenderer(),
+                    DeterministicLandingEvaluator(clock=lambda: FIXED_TIME),
+                    clock=lambda: FIXED_TIME,
+                ),
+                LandingArtifactPackager(ExactGitLandingArtifactSource(target)), root / "artifacts",
+            )
+            blobs = PrivateLandingBlobStore(root / "blobs", repository_root=repository, clock=lambda: FIXED_TIME)
+            providers = (BoundProvider(), V2Provider())
+            jobs = {}
+            with closing(SQLiteLandingJobStore(root / "state", repository_root=repository)) as store:
+                for version, provider in enumerate(providers, 1):
+                    service = LandingApplicationService(store, blobs, provider, profile_digest=PROFILE_DIGEST,
+                                                        artifact_builder=builder, clock=lambda: FIXED_TIME)
+                    created = service.submit(
+                        job_id=f"job-reader-v{version}", repository_id=TARGET_REPOSITORY_ID,
+                        exact_base_sha=base_sha, exact_base_tree=base_tree, media_type="text/plain",
+                        chunks=(b"Synthetic offline reader compatibility brief",), actor=actor,
+                    )
+                    self.assertEqual("artifact_ready", created.job.state, created.job)
+                    retained = created.job.sealed_artifact
+                    self.assertEqual(version, retained.provider_evidence.schema_version)
+                    self.assertEqual(version, retained.to_dict()["schema_version"])
+                    jobs[version] = created.job
+                with closing(sqlite3.connect(store.database_path)) as connection:
+                    before = dict(connection.execute("SELECT job_id, sealed_artifact_json FROM landing_jobs"))
+                self.assertEqual(canonical_json(jobs[1].sealed_artifact.to_dict()), before["job-reader-v1"])
+
+            with closing(SQLiteLandingJobStore(root / "state", repository_root=repository)) as reopened:
+                for version in (1, 2):
+                    loaded = reopened.get(actor.actor_id, TARGET_REPOSITORY_ID, f"job-reader-v{version}")
+                    self.assertEqual(jobs[version].sealed_artifact, loaded.sealed_artifact)
+                    loaded.sealed_artifact.validate(loaded.source)
+                with closing(sqlite3.connect(reopened.database_path)) as connection:
+                    after = dict(connection.execute("SELECT job_id, sealed_artifact_json FROM landing_jobs"))
+                self.assertEqual(before, after, "opening mixed evidence must not rewrite legacy envelope bytes")
+            self.assertEqual((1, 1), tuple(provider.calls for provider in providers))
+
+            legacy = jobs[1].sealed_artifact.to_dict()
+            current = jobs[2].sealed_artifact.to_dict()
+            tampered = deepcopy(current)
+            tampered["provider_evidence"]["usage_input_units"] += 1
+            invalid = [
+                {**current, "schema_version": version} for version in (1, 3, True)
+            ] + [
+                {**legacy, "schema_version": 2},
+                {**current, "provider_evidence": {**current["provider_evidence"], "schema_version": 3}},
+                {**legacy, "provider_evidence": {**legacy["provider_evidence"], "disposition": "normalized"}},
+                tampered,
+            ]
+            for index, payload in enumerate(invalid):
+                with self.subTest(invalid=index), self.assertRaises(LandingArtifactError):
+                    RetainedLandingArtifact.from_dict(payload)
+
+            with closing(sqlite3.connect(root / "state" / "landing.sqlite3")) as connection:
+                connection.execute("UPDATE landing_jobs SET sealed_artifact_json=? WHERE job_id=?",
+                                   (canonical_json(tampered), "job-reader-v2"))
+                connection.commit()
+            with closing(SQLiteLandingJobStore(root / "state", repository_root=repository)) as corrupted:
+                with self.assertRaisesRegex(LandingServiceError, "store_record"):
+                    corrupted.get(actor.actor_id, TARGET_REPOSITORY_ID, "job-reader-v2")
+                self.assertEqual(jobs[1].sealed_artifact,
+                                 corrupted.get(actor.actor_id, TARGET_REPOSITORY_ID, "job-reader-v1").sealed_artifact)
+
     def test_offline_fixture_reaches_artifact_and_retains_full_sealed_metadata(self):
         with sealed_target() as (target, base_sha, base_tree), tempfile.TemporaryDirectory(
             prefix="landing-runtime-scratch-"

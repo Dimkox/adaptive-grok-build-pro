@@ -11,7 +11,7 @@ from .landing_contracts import (
     MEDIA_TYPES,
     LandingContractError,
     LandingInputV1,
-    LandingProviderEvidenceV1,
+    LandingProviderEvidence,
     SiteArtifactV1,
     StaticLandingSpecV1,
     landing_digest,
@@ -57,7 +57,7 @@ class LandingArtifactBuilder(Protocol):
         self,
         source: LandingInputV1,
         spec: StaticLandingSpecV1,
-        evidence: LandingProviderEvidenceV1,
+        evidence: LandingProviderEvidence,
     ) -> SiteArtifactV1 | LandingArtifactBuildResult: ...
 
 
@@ -457,7 +457,7 @@ class LandingApplicationService:
     def _validate_artifact(
         source: LandingInputV1,
         spec: StaticLandingSpecV1,
-        evidence: LandingProviderEvidenceV1,
+        evidence: LandingProviderEvidence,
         artifact: SiteArtifactV1,
     ) -> None:
         if (

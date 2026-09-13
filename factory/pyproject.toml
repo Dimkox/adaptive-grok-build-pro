@@ -6,12 +6,14 @@ build-backend = "setuptools.build_meta"
 name = "adaptive-factory"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["fastapi==0.128.2", "httpx==0.28.1", "uvicorn==0.48.0", "psycopg[binary]==3.3.4"]
+dependencies = ["fastapi==0.128.2", "httpx==0.28.1", "uvicorn==0.48.0", "psycopg[binary]==3.3.4", "pypdf==6.18.1"]
 
 [project.scripts]
 adaptive-factory = "adaptive_factory.cli:main"
 adaptive-factory-server = "adaptive_factory.server:main"
 adaptive-factory-admin = "adaptive_factory.admin:main"
+adaptive-landing-server = "adaptive_factory.landing_host:main"
+adaptive-landing-state = "adaptive_factory.landing_backup:main"
 
 [tool.setuptools.package-data]
-adaptive_factory = ["resources/*.json", "resources/*.sql"]
+adaptive_factory = ["resources/*.json", "resources/*.sql", "resources/landing_pdf_worker.py"]

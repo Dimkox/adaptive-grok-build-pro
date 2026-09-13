@@ -653,9 +653,12 @@ class ArchitectureModelTests(unittest.TestCase):
             for index, object_schema in enumerate(objects):
                 with self.subTest(schema=schema_name, object=index):
                     self.assertIs(object_schema.get("additionalProperties"), False)
+                    optional = ({"allowed_dependency_modules"}
+                                if schema_name == "architecture-rules.schema.json"
+                                and object_schema is schema["$defs"]["path_boundary"] else set())
                     self.assertEqual(
                         set(object_schema.get("required", [])),
-                        set(object_schema.get("properties", {})),
+                        set(object_schema.get("properties", {})) - optional,
                     )
 
     def test_unknown_versions_and_non_from_to_direction_fail(self) -> None:
@@ -1315,7 +1318,15 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 40)
+        self.assertEqual(len(records), 41)
+        evidence_records = {record.id: (record.version, record.path) for record in records
+                            if record.id.startswith("CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-")}
+        self.assertEqual(evidence_records, {
+            "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1":
+                ("1", "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json"),
+            "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2":
+                ("2", "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json"),
+        })
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1368,6 +1379,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "CONTRACT-FACTORY-LANDING-INPUT-V1",
                 "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
                 "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
+                "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
                 "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
                 "CONTRACT-FACTORY-LANDING-SPEC-V1",
             },

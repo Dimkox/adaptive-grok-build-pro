@@ -84,7 +84,7 @@ class LandingArtifactTests(unittest.TestCase):
         self.assertEqual(first_result.sidecar_bytes, second_result.sidecar_bytes)
         self.assertEqual(first_result.manifest_bytes, second_result.manifest_bytes)
         self.assertEqual(tuple(sorted(DEPLOY_MEMBERS)), first_result.member_names)
-        self.assertEqual(20, len(first_result.member_names))
+        self.assertEqual(len(DEPLOY_MEMBERS), len(first_result.member_names))
         self.assertIn("index.css", first_result.member_names)
         self.assertTrue(PROHIBITED_MEMBERS.isdisjoint(first_result.member_names))
         self.assertEqual(

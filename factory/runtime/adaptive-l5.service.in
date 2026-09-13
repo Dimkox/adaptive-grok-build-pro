@@ -1,0 +1,42 @@
+[Unit]
+Description=Adaptive L5 dedicated landing Unix socket
+After=network.target
+ConditionPathExists=/etc/adaptive-l5/actors.json
+
+[Service]
+Type=simple
+User=adaptive-l5
+Group=adaptive-l5
+UMask=0077
+WorkingDirectory=@RELEASE_ROOT@/repository
+ExecStart=@RELEASE_ROOT@/venv/bin/adaptive-landing-server --config @RELEASE_ROOT@/landing-host.json
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/adaptive-l5/provider.conf
+RuntimeDirectory=adaptive-l5
+RuntimeDirectoryMode=0750
+ReadWritePaths=/var/lib/adaptive-l5 /run/adaptive-l5
+ReadOnlyPaths=/opt/adaptive-l5 /etc/adaptive-l5
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+TasksMax=64
+MemoryMax=1G
+LimitNOFILE=1024
+TimeoutStopSec=360
+KillMode=control-group
+Restart=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

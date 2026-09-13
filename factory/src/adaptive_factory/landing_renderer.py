@@ -22,12 +22,13 @@ from .landing_contracts import (
 
 
 TARGET_REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
-TARGET_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
-TARGET_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
+TARGET_BASE_SHA = "fde60e040167c10975b00d11f578c4da6763069a"
+TARGET_BASE_TREE = "21817e70e079b772e1f3114a80dfc0320d1ada91"
 TARGET_DEFAULT_BRANCH = "main"
 LANDING_WRITE_PATHS = frozenset({"index.html", "content.css"})
 MAX_LANDING_FILE_BYTES = 2 * 1_048_576
-RENDERER_VERSION = "1.0.1"
+RENDERER_VERSION = "1.1.0"
+APPROVED_ANALYTICS_SCRIPT = '<script src="/analytics.js" defer></script>'
 FIXED_COMMIT_TIME = "2000-01-01T00:00:00Z"
 FIXED_COMMIT_NAME = "Adaptive Landing Renderer"
 FIXED_COMMIT_EMAIL = "landing-renderer@invalid.local"
@@ -54,6 +55,9 @@ class LandingSourceSurfaceFacts:
     alternate_tags: tuple[str, ...]
     index_stylesheet_sha256: str
     jsonld_sha256: str
+    analytics_stylesheet_sha256: str
+    analytics_script_sha256: str
+    analytics_settings_sha256: str
 
 
 @dataclass(frozen=True)
@@ -130,34 +134,52 @@ def source_surface_facts(html_text: str) -> LandingSourceSurfaceFacts:
     )
     index_stylesheet = '<link rel="stylesheet" href="/index.css">'
     content_stylesheet = '<link rel="stylesheet" href="/content.css">'
+    analytics_stylesheet = '<link rel="stylesheet" href="/analytics.css">'
     if (
         stylesheet_tags.count(index_stylesheet) != 1
+        or stylesheet_tags.count(analytics_stylesheet) != 1
         or stylesheet_tags.count(content_stylesheet) > 1
         or any(
-            tag not in {index_stylesheet, content_stylesheet}
+            tag not in {index_stylesheet, content_stylesheet, analytics_stylesheet}
             for tag in stylesheet_tags
         )
     ):
         raise LandingRenderError("source_active_content")
-    scripts = re.findall(r"<script(?:\s[^>]*)?>.*?</script>", html_text, re.DOTALL)
+    scripts = approved_source_scripts(html_text)
     lowered = html_text.lower()
     if (
         re.search(r"<style\b", lowered)
         or re.search(r"\sstyle\s*=", lowered)
-        or len(scripts) != 1
     ):
-        raise LandingRenderError("source_active_content")
-    if not scripts[0].startswith('<script type="application/ld+json">'):
         raise LandingRenderError("source_active_content")
     if "<form" in lowered or "google-analytics" in lowered or "gtag(" in lowered:
         raise LandingRenderError("source_active_content")
+    settings = exactly_one(
+        r'<a href="/cookies\.html#future" data-analytics-settings>Analytics settings</a>',
+        "source_analytics_settings",
+    )
     return LandingSourceSurfaceFacts(
         robots,
         canonical,
         alternates,
         hashlib.sha256(index_stylesheet.encode("utf-8")).hexdigest(),
         hashlib.sha256(scripts[0].encode("utf-8")).hexdigest(),
+        hashlib.sha256(analytics_stylesheet.encode("utf-8")).hexdigest(),
+        hashlib.sha256(scripts[1].encode("utf-8")).hexdigest(),
+        hashlib.sha256(settings.encode("utf-8")).hexdigest(),
     )
+
+
+def approved_source_scripts(html_text: str) -> tuple[str, str]:
+    scripts = re.findall(r"<script(?:\s[^>]*)?>.*?</script>", html_text, re.DOTALL | re.IGNORECASE)
+    jsonld = [item for item in scripts if item.startswith('<script type="application/ld+json">')]
+    if (
+        len(scripts) != 2 or len(jsonld) != 1
+        or scripts.count(APPROVED_ANALYTICS_SCRIPT) != 1
+        or len(re.findall(r"<script\b", html_text, re.IGNORECASE)) != 2
+    ):
+        raise LandingRenderError("source_active_content")
+    return jsonld[0], APPROVED_ANALYTICS_SCRIPT
 
 
 class DeterministicLandingRenderer:
@@ -196,6 +218,10 @@ class DeterministicLandingRenderer:
             prefix = prefix[:head_end] + stylesheet + prefix[head_end:]
         rendered_main = _render_main(spec, repairs)
         rendered_html = prefix + rendered_main + suffix
+        rendered_html = rendered_html.replace(
+            "No tracking on this page.",
+            "Analytics may run on page load; use Analytics settings to turn it off.",
+        )
         rendered_css = source_css.rstrip("\n") + "\n\n" + _render_css(spec, repairs)
         if source_surface_facts(rendered_html) != facts:
             raise LandingRenderError("source_fact_drift")
@@ -256,6 +282,7 @@ def _render_main(spec: StaticLandingSpecV1, repairs: tuple[str, ...]) -> str:
     )
     lines = [
         f'  <main id="content" class="l5-generated" {attributes}>',
+        '    <span id="top" class="l5-anchor" aria-hidden="true"></span>',
         '    <span id="product" class="l5-anchor" aria-hidden="true"></span>',
         '    <span id="automation" class="l5-anchor" aria-hidden="true"></span>',
         '    <section class="l5-hero" aria-labelledby="l5-title">',
@@ -312,11 +339,7 @@ def _render_css(spec: StaticLandingSpecV1, repairs: tuple[str, ...]) -> str:
 
 def _validate_generated_surface(html_text: str, css_text: str) -> None:
     lowered = html_text.lower()
-    scripts = re.findall(r"<script(?:\s[^>]*)?>.*?</script>", html_text, re.DOTALL)
-    if len(scripts) != 1 or not scripts[0].startswith(
-        '<script type="application/ld+json">'
-    ):
-        raise LandingRenderError("active_content")
+    approved_source_scripts(html_text)
     for forbidden in ("<form", "google-analytics", "gtag(", "javascript:"):
         if forbidden in lowered:
             raise LandingRenderError("active_content")
@@ -345,6 +368,16 @@ class ExactGitLandingWorkspace:
             raise LandingRenderError("git_unavailable")
         self._git_executable = str(Path(git).resolve())
         self._upload_pack = str(Path(upload_pack).absolute())
+
+    def validate_source(self) -> None:
+        """Reject a stale or dirty source before a live provider receives input."""
+        self._source_guard()
+        status = self._git(
+            ("--no-optional-locks", "status", "--porcelain", "--untracked-files=normal"),
+            cwd=self._source, env=self._environment(self._source),
+        )
+        if status:
+            raise LandingRenderError("source_dirty")
 
     def build_candidate(
         self,

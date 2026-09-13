@@ -4,6 +4,9 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
+The assembled L5 source on `feat/l5-split-g-final-runtime` completes seven delivery slices: exact import boundaries, sealed source epochs, compatible v1/v2 readers, bounded Qwen/Grok HTTP and media handling, a dedicated SQLite/Unix host, authorized filesystem publication, and offline recovery with inactive installation templates. The current artifact has 22 deploy members. The landing v1 API retains `live_url=null`; separate publication uses its own versioned request/result. See [the final G package](engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/brief.md), [runtime handoff](engineering/runbooks/l5-production-runtime.md), and [source/evidence policy](engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/README.md). Full verification and independent reviews are recorded against each immutable source head in the separate evidence checkout; source availability alone does not establish external Trust CI acceptance or operational readiness.
+
+
 Execution usage accounting supports the legacy V1 aggregate payload and a closed V2 payload with input, output, reasoning, cached-input, and cache-write buckets. V2 binds a canonical price table digest and derives integer micro-USD cost server-side; it never accepts an adapter total.
 
 - Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
@@ -92,8 +95,8 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [investor demo guide](docs/INVESTOR_DEMO.md)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
-- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the unreleased Stage 3/5 L5 normalizer, single-operator SQLite state and deterministic local artifact runtime; operational providers remain disabled by default
-- [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery source plus the transport-free unavailable landing publisher; no production authority
+- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the L5 HTTP/media normalizer, dedicated SQLite/Unix host, deterministic artifacts and offline recovery; operational providers remain disabled by default
+- [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery source plus the explicit owner-controlled filesystem publication adapter and durable reconciliation; operational effects require exact authority
 - [`pilot/`](pilot/) — unreleased single-operator exact-issue/Codex/candidate/validation/draft-proposal vertical; disabled by default and without merge/deploy authority
 - [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and acceptance-relative schedule
 - [`engineering/runbooks/`](engineering/runbooks/)
@@ -394,12 +397,12 @@ graph TD
 | Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
-| Factory | Integrated local M4-M8 control/evaluation plus offline L5 landing intake/render/evaluation/artifact source under `factory/`; no operational provider, external write, deployment or merge authority |
+| Factory | M4-M8 control/evaluation plus default-off L5 HTTP/media normalization, dedicated SQLite/Unix host, retained artifacts and offline backup/restore under `factory/`; live transfer is explicitly enabled |
 | M5Execution | Integrated bounded execution packet/result, offline adapter, broker and workspace boundary; disabled by default and no live provider capability |
 | M6Semantic | Integrated independent semantic verdict, artifact validation and bounded-repair boundary; cannot self-approve implementation |
 | M7Shadow | Integrated deterministic shadow bundle/outcome/cohort boundary; human merge remains mandatory |
 | M8Autonomy | Integrated earned-autonomy profile/recommendation boundary over actual M7 records; no factual cohort or activation and authority is capped at L2 |
-| M9Delivery | Integrated immutable staged-delivery/recovery source plus an unavailable landing publisher; sealed local environment only, with no transport, signed real input, operational adapter or production authority |
+| M9Delivery | Immutable staged-delivery/recovery plus owner-controlled filesystem landing publication, strict SQLite intent and observation-only reconciliation; each publication effect needs exact authority |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 

@@ -623,6 +623,126 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(result.findings)
 
+    def test_boundary_exact_module_exception_never_permits_siblings_or_children(self) -> None:
+        for allowed in ([], ["urllib.parse"]):
+            with self.subTest(allowed=allowed):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["src"],
+                    "forbidden_dependency_prefixes": ["urllib"], "severity": "error",
+                    **({"allowed_dependency_modules": allowed} if allowed else {}),
+                }]
+                repo, base = self._repo(rules=rules)
+                sources = {
+                    "exact": "import urllib.parse as parser\n",
+                    "symbol": "from urllib.parse import urlsplit\n",
+                    "parent": "import urllib\n",
+                    "sibling": "import urllib.request as parse\n",
+                    "from_sibling": "from urllib import request as parse\n",
+                    "mixed": "from urllib import parse, request\n",
+                    "star": "from urllib import *\n",
+                    "child": "import urllib.parse.child\n",
+                    "nested": "def bad():\n    import urllib.request\n",
+                }
+                for name, source in sources.items():
+                    repo.write_text(f"src/{name}.py", source)
+                head = repo.commit("exact module boundaries")
+                result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+                self.assertEqual(result.status, "fail")
+                for name in sources:
+                    with self.subTest(source=name):
+                        found = any(f"src/{name}.py imports" in item for item in result.findings)
+                        self.assertEqual(found, not (allowed and name in {"exact", "symbol"}))
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+                self.assertEqual(found, name != "safe")
+
+    def test_boundary_src_namespace_packages_keep_runtime_module_identity(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["delivery/src"], "severity": "error",
+            "forbidden_dependency_prefixes": ["adaptive_delivery.landing_publication"],
+        }]
+        repo, base = self._repo(rules=rules)
+        # The real delivery package is a namespace package: no __init__.py.
+        repo.write_text("delivery/__init__.py", "")
+        sources = {
+            "worker": "from . import landing_publication\n",
+            "resources/worker": "from ..landing_publication import X\n",
+            "safe": "from .landing_publication_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"delivery/src/adaptive_delivery/{name}.py", source)
+        result = self._results(self._evaluate(repo, base, repo.commit("namespace import boundaries")))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in sources:
+            with self.subTest(path=name):
+                self.assertEqual(any(f"adaptive_delivery/{name}.py imports" in item for item in result.findings),
+                                 name != "safe")
+
+    def test_boundary_relative_escape_or_missing_package_context_fails_closed(self) -> None:
+        for source_path, source, package in (
+            ("factory/src/adaptive_factory/worker.py", "from .. import store\n", True),
+            ("factory/src/adaptive_factory/resources/worker.py", "from ... import store\n", True),
+            ("src/worker.py", "from . import store\n", False),
+        ):
+            with self.subTest(path=source_path):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["factory/src", "src"],
+                    "forbidden_dependency_prefixes": ["adaptive_factory.store"], "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                if package:
+                    repo.write_text("factory/src/adaptive_factory/__init__.py", "")
+                repo.write_text(source_path, source)
+                report = self._evaluate(repo, base, repo.commit("relative escape"))
+                self.assertEqual(self._results(report)["module_boundary"].status, "unsupported")
+                self.assertEqual(report.status, "fail")
+
+    def test_boundary_exception_schema_accepts_only_exact_python_modules(self) -> None:
+        for value in (["urllib.*"], ["urllib/parse"], [".urllib.parse"], ["urllib..parse"],
+                      ["urllib.parse", "urllib.parse"], ["urllib.parse."]):
+            with self.subTest(value=value):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["src"], "severity": "error",
+                    "forbidden_dependency_prefixes": ["urllib"], "allowed_dependency_modules": value,
+                }]
+                repo, _base = self._repo(rules=rules)
+                with self.assertRaises(ARCHITECTURE.ArchitectureError):
+                    ARCHITECTURE.load_architecture(repo.root)
+
     def test_nested_test_sources_are_not_classified_as_production_importers(self) -> None:
         system = _system()
         system["nodes"][0]["repository_paths"] = ["pilot"]
@@ -3958,7 +4078,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
             for contract in source.system["contracts"]
             if contract["id"].startswith("CONTRACT-FACTORY-LANDING-")
         ]
-        self.assertEqual(7, len(contracts))
+        self.assertEqual({contract["id"] for contract in contracts}, {
+            "CONTRACT-FACTORY-LANDING-ATTEMPT-V1", "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
+            "CONTRACT-FACTORY-LANDING-INPUT-V1", "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+            "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1", "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
+            "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1", "CONTRACT-FACTORY-LANDING-SPEC-V1",
+        })
         system = _system()
         rules = _rules()
         rules["contract_policies"] = [

@@ -6,10 +6,11 @@ import io
 from pathlib import Path
 import tempfile
 import unittest
+import warnings
 import zipfile
 
 from adaptive_factory.contracts import canonical_json
-from adaptive_factory.landing_contracts import LandingInputV1
+from adaptive_factory.landing_contracts import LandingInputV1, LandingContractError
 from adaptive_factory.landing_normalizer import (
     LANDING_NORMALIZATION_DRAFT_SCHEMA_SHA256,
     LANDING_NORMALIZER_PROMPT_SHA256,
@@ -17,6 +18,7 @@ from adaptive_factory.landing_normalizer import (
     CodexLandingNormalizer,
     CodexLandingProfile,
     unavailable_codex_landing_profile,
+    normalize_landing_text,
 )
 from adaptive_factory.landing_provider import LandingNormalizationRequest
 
@@ -176,6 +178,21 @@ class CodexLandingNormalizerTests(unittest.TestCase):
         self.assertIsNone(outcome.spec)
         self.assertEqual([], reads)
         self.assertEqual([], runner.requests)
+
+    def test_duplicate_docx_document_members_are_rejected_in_both_orders(self):
+        for names in (("word/document.xml", "word/document.xml"),
+                      ("word/document.xml", "WORD/DOCUMENT.XML")):
+            for texts in (("First text", "Second text"), ("Second text", "First text")):
+                with self.subTest(names=names, texts=texts):
+                    output = io.BytesIO()
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", UserWarning)
+                        with zipfile.ZipFile(output, "w") as archive:
+                            archive.writestr("[Content_Types].xml", "<Types/>")
+                            for name, text in zip(names, texts):
+                                archive.writestr(name, '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>' + text + '</w:t></w:r></w:p></w:body></w:document>')
+                    with self.assertRaisesRegex(LandingContractError, "docx_path"):
+                        normalize_landing_text("docx", output.getvalue())
 
     def test_pdf_and_audio_need_human_before_blob_or_executor(self):
         cases = (
