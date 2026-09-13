@@ -800,3 +800,7 @@ I generated invariant/forbidden-outcome strings although change-spec v2 requires
 - 2026-09-13: Validating only the staged delta missed whitespace already committed in inherited raw RED logs; A/B full suites passed but cumulative git-diff-check failed. Preserve noisy logs losslessly in JSON and check both genuine route and actual-main ranges before starting a full verification run.
 
 - 2026-09-13: Exact source extraction and passing host tests did not establish the direct FactorySettings/server entrypoint invariants: // aliases bypassed lexical disjointness and one cleanup exception skipped later cleanup. Independent real-SQLite review reproduced both; validate shared path shape before I/O and isolate every owned cleanup stage with finally, then add direct-entrypoint regressions.
+
+## 2026-09-13 — PRAGMA shape does not capture SQLite conflict semantics
+
+The publication schema validator checked column/index structure but SQLite PRAGMAs omit ON CONFLICT behavior; REPLACE could pass and overwrite a durable request. Bind the complete supported declaration and explicitly abort insertion collisions, then prove stored-intent preservation with altered-schema regressions.

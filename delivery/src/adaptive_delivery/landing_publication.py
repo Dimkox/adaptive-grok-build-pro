@@ -33,6 +33,15 @@ _COLUMNS = (
 
 
 def _validate_schema(connection):
+    declaration = connection.execute(
+        "SELECT sql FROM sqlite_schema WHERE type='table' AND name='publication_intents'"
+    ).fetchone()
+    # PRAGMAs do not expose conflict algorithms. Accept the complete supported
+    # v1 declaration, allowing only case/whitespace variation; comments and
+    # quoted or extra tokens remain significant and fail closed.
+    if (declaration is None or not isinstance(declaration[0], str)
+            or " ".join(declaration[0].split()).upper() != " ".join(_SCHEMA.split()).upper()):
+        raise PublicationError("publication_state_schema")
     inventory = connection.execute(
         "SELECT type, name, tbl_name FROM sqlite_schema "
         "WHERE name NOT GLOB 'sqlite_*' ORDER BY type, name"
@@ -173,7 +182,7 @@ class PublicationStore:
         body = canonical(request.to_dict())
         try:
             self._connection.execute(
-                "INSERT INTO publication_intents "
+                "INSERT OR ABORT INTO publication_intents "
                 "(request_digest,request_id,body,phase,updated_at) VALUES (?,?,?,?,?)",
                 (request.request_digest, request.request_id, body, "prepared", _now()),
             )

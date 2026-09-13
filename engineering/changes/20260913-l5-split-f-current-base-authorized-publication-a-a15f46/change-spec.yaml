@@ -44,7 +44,7 @@
     },
     {
       "id": "AC-005",
-      "statement": "Publication SQLite v1 validation rejects missing uniqueness/primary-key/strict/type constraints and unexpected schema objects before accepting unsupported state.",
+      "statement": "Publication SQLite v1 accepts the supported complete CREATE TABLE declaration (case/whitespace normalization only) plus exact PRAGMA shape, rejects changed conflict semantics and unexpected schema objects, and preserves a stored intent on request-ID collision.",
       "evidence": [
         {
           "test": "factory/tests/test_landing_publication_cli.py"

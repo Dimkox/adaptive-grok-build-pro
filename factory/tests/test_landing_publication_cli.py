@@ -420,6 +420,62 @@ class PublicationStoreSchemaTests(unittest.TestCase):
                 self.assertEqual(request.to_dict(), reopened.find_id(request.request_id)["request"])
                 reopened.close()
 
+    def test_conflict_policies_and_obfuscated_declarations_are_unsupported_in_both_modes(self):
+        variants = {
+            "unique-replace": self.SCHEMA.replace("UNIQUE", "UNIQUE ON CONFLICT REPLACE"),
+            "unique-ignore": self.SCHEMA.replace("UNIQUE", "UNIQUE ON CONFLICT IGNORE"),
+            "primary-replace": self.SCHEMA.replace("PRIMARY KEY", "PRIMARY KEY ON CONFLICT REPLACE"),
+            "primary-ignore": self.SCHEMA.replace("PRIMARY KEY", "PRIMARY KEY ON CONFLICT IGNORE"),
+            "block-comment": self.SCHEMA.replace("UNIQUE", "UNIQUE ON/**/CONFLICT REPLACE"),
+            "line-comment": self.SCHEMA.replace("UNIQUE", "UNIQUE ON-- clause\n CONFLICT IGNORE"),
+            "quoted-identifier": self.SCHEMA.replace("UNIQUE", "UNIQUE ON CONFLICT REPLACE").replace("request_id", '"request_id"'),
+            "bracketed-identifier": self.SCHEMA.replace("UNIQUE", "UNIQUE ON CONFLICT IGNORE").replace("request_id", "[request_id]"),
+        }
+        for name, schema in variants.items():
+            root = self.database(name, schema)
+            for readonly in (False, True):
+                with self.subTest(schema=name, readonly=readonly):
+                    with self.assertRaisesRegex(PublicationError, "publication_state_schema"):
+                        store = PublicationStore(root, readonly=readonly)
+                        self.addCleanup(store.close)
+                        store.close()
+
+    def test_supported_declaration_preserves_case_and_whitespace_compatibility(self):
+        root = self.database("formatted", self.SCHEMA.lower().replace("\n        ", "\n\t"))
+        for readonly in (False, True):
+            with self.subTest(readonly=readonly):
+                store = PublicationStore(root, readonly=readonly)
+                self.addCleanup(store.close)
+                store.close()
+
+    def test_changed_request_cannot_replace_an_existing_intent_under_altered_unique_policy(self):
+        request = PublicationRequestV1(
+            1, "immutable-request", "stage", "a" * 64,
+            {"tenant_id": "tenant", "repository_id": "repository", "job_id": "job"},
+            "b" * 64, "b" * 64, "c" * 64, None, None,
+        )
+        original = canonical_json(request.to_dict())
+        for policy in ("REPLACE", "IGNORE"):
+            with self.subTest(policy=policy):
+                root = self.database("immutable-" + policy, self.SCHEMA.replace("UNIQUE", "UNIQUE ON CONFLICT " + policy))
+                database = root / "publication.sqlite3"
+                with closing(sqlite3.connect(database)) as connection:
+                    connection.execute(
+                        "INSERT INTO publication_intents (request_digest,request_id,body,phase,updated_at) VALUES (?,?,?,?,?)",
+                        (request.request_digest, request.request_id, original, "prepared", "2026-09-13T00:00:00Z"),
+                    )
+                    connection.commit()
+                with self.assertRaisesRegex(PublicationError, "publication_state_schema|publication_idempotency_conflict"):
+                    store = PublicationStore(root)
+                    self.addCleanup(store.close)
+                    try:
+                        store.prepare(replace(request, baseline_release="d" * 64, baseline_manifest="e" * 64))
+                    finally:
+                        store.close()
+                with closing(sqlite3.connect(database)) as connection:
+                    rows = connection.execute("SELECT request_digest,body,phase FROM publication_intents").fetchall()
+                self.assertEqual([(request.request_digest, original, "prepared")], rows)
+
     def test_weaker_constraints_types_and_unexpected_schema_objects_fail_closed(self):
         cases = {
             "missing-unique": (self.SCHEMA.replace("NOT NULL UNIQUE", "NOT NULL"), None),
