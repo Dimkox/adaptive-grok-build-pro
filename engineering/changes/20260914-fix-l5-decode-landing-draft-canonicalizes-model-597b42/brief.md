@@ -1,3 +1,9 @@
-# L5 live-path fix: canonicalize model item order
+# L5 draft canonicalization: continued PR #82 review repair
 
-The installed v2.0.16 runner rejects every real model draft: `_sorted_unique` demands items already sorted+unique, which HTTP models never emit (observed needs_human/http_outcome_unusable on live submissions; the direct executor probe returns a valid 1.5KB draft). decode_landing_draft now sorts and deduplicates all-string item lists before strict validation; everything else keeps the previous fail-closed behavior.
+Model drafts can contain valid section text in an order that the strict static-spec contract rejects, or repeat a valid item. The draft decoder may canonicalize those bounded string lists while keeping the closed contract unchanged. The earlier observation of `needs_human/http_outcome_unusable` motivates this repair; it does not establish that every model response fails or that all failures share this cause.
+
+Independent review of head `18822bd08149f347c71cb9130c4e05b059ad289e` found three regressions in the initial repair: raw Unicode sorting disagreed with the contract's JSON sorting, malformed section containers were iterated before validation, and deduplication erased the original 12-item bound. Malformed null/integer/boolean sections escaped the normalizers as `TypeError`; the service still terminated the job, but with `internal_failure` and no provider evidence digest.
+
+Continue the existing route `597b421e450b` and PR branch `fix/l5-draft-item-canonicalization`; one implementation owner repairs the decoder and its tests. No new feature, contract version, dependency, transport behavior, or analysis wave is introduced. Full verification, fresh independent reviews, exact-head external Trust CI, merge authority, and operational activation remain separate delivery steps.
+
+Bounded verification recovery: the first full verifier exposed a pre-existing PDF test fixture error, reproduced in isolation with pinned pypdf 6.18.1 and unchanged PDF worker/media/test source relative to origin/main. The test altered serialized page-count bytes without updating xref offsets, so strict parsing correctly rejected corruption before the page-limit check; only the test fixture is corrected to produce real 100/101-page PDFs. This adds no PDF runtime behavior change.
