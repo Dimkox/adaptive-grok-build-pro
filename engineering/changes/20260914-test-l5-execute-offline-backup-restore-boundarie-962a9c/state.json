@@ -1,0 +1,53 @@
+{
+  "change_id": "20260914-test-l5-execute-offline-backup-restore-boundarie-962a9c",
+  "created_at": "2026-09-14T02:33:56+00:00",
+  "history": [
+    {
+      "at": "2026-09-14T02:33:56+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-14T05:11:41+00:00",
+      "from": "draft",
+      "reason": "scope, acceptance criteria AC-001..AC-005 and test plan written; measured red state recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-14T05:11:42+00:00",
+      "from": "scoped",
+      "reason": "route 962a9cd9fe34 declares no human gate; user standing delegation covers branch push and PR merge",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-14T05:31:17+00:00",
+      "from": "approved",
+      "reason": "offline support module extracted; host suite subclasses it; guard test added",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-14T05:31:17+00:00",
+      "from": "implementing",
+      "reason": "focused, adjacent, contract, fitness, root, discovery, ruff and bandit all green on this tree",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-14T05:31:17+00:00",
+      "from": "verifying",
+      "reason": "code_review rounds 1-5 and test_review rounds 1-2 recorded under evidence/",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-14T05:31:17+00:00",
+      "from": "reviewing",
+      "reason": "all eight review findings closed in code and pinned by reproduced mutations; verification receipt binds to the commit containing this state",
+      "to": "ready"
+    }
+  ],
+  "route_id": "962a9cd9fe34",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "test(l5): execute offline backup/restore boundaries without web-stack fixture coupling",
+  "updated_at": "2026-09-14T05:31:17+00:00"
+}

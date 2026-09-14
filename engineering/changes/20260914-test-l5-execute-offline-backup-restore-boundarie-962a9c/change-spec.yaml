@@ -1,0 +1,150 @@
+{
+  "schema_version": 2,
+  "change_id": "20260914-test-l5-execute-offline-backup-restore-boundarie-962a9c",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the L5 offline landing backup/restore boundary suite executable on a host without the web stack: extract the offline-only part of the shared host test fixture into a dependency-free test-support module, keep the real-FastAPI host suite intact, and prove the offline guarantee with a test that itself does not need fastapi.",
+    "success_metric": "python3 -m unittest factory.tests.test_landing_backup -v runs 16 tests with 0 loader errors on a python without fastapi/uvicorn/httpx/psycopg installed (today: ImportError, 1 loader error, 0 tests executed); factory/src/adaptive_factory/landing_backup.py measured coverage rises from 12% to its executed value; factory.tests.test_landing_host collection behavior is unchanged.",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "landing-runtime",
+      "test-execution"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "On an interpreter where fastapi, uvicorn, httpx and psycopg are not installed, `python3 -m unittest factory.tests.test_landing_backup -v` collects and executes the whole offline boundary suite with zero loader errors.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The offline test-support module imports no web-stack or database module at module level; a new subprocess-guard test in the offline suite asserts that importing it never reaches adaptive_factory.api/.server/.landing_host/.landing_server, fastapi, uvicorn, httpx or psycopg.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_backup.py::LandingBackupTests.test_offline_test_support_imports_no_web_stack"
+        },
+        {
+          "test": "factory/tests/landing_host_fixture.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The web-stack host suite keeps its exact scaffolding and real-FastAPI behavior: same fixture attributes and helper methods, build_app still available, and no test body weakened, skipped or deleted.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_host.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Executed evidence records the before/after per-module coverage of the L5 runtime modules reached by this suite, so a reviewer can see which destructive boundaries now really run.",
+      "evidence": [
+        {
+          "production_signal": "SIG-002"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Root verification stays green for the committed tree: `python3 scripts/grok_verify.py --mode pr` passes, and no architecture-fitness or inventory rule is newly violated by the added test-support file.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Offline test support depends only on the standard library plus offline-safe product modules (adaptive_factory.models, landing_sqlite_store, landing_renderer, settings); it never imports the HTTP host, API, server, or a third-party web/db package.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Fixture scaffolding semantics are byte-equivalent after the move: private 0700 roots, 0600 config, synthetic actors bound to TARGET_REPOSITORY_ID, live_enabled=false, no real credential or actor files read.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_host.py"
+        },
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No product behavior change: `factory/src/**` and `delivery/src/**` stay untouched; the fix is test-infrastructure only.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No test may be skipped, deleted, asserted-away or converted to an expected failure to make the offline suite appear green; no new third-party dependency or install step is introduced.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "No coverage floor or gate check is added in this change that would turn the verification matrix red for an environment reason rather than a product defect; measurement is reported, not enforced, here.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "offline_landing_backup_collected_test_count",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "landing_backup_measured_coverage_percent",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "git-push-branch",
+      "pull-request-merge"
+    ]
+  }
+}

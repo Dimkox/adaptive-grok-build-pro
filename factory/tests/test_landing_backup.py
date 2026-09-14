@@ -15,7 +15,35 @@ from unittest.mock import patch
 from adaptive_factory import landing_backup
 from adaptive_factory.landing_host_config import load_host_config
 from adaptive_factory.settings import SettingsError
-from factory.tests.test_landing_host import HostFixture
+from factory.tests.landing_host_fixture import HostFixture
+
+# Single auditable list for both offline guards in this suite. The web/database stack is
+# matched by every importable name it can arrive under, not just the one we happen to use.
+BLOCKED_IMPORTS = (
+    "adaptive_factory.api", "adaptive_factory.server", "adaptive_factory.landing_host",
+    "adaptive_factory.landing_server", "adaptive_factory.landing_live_executors",
+    "fastapi", "httpx", "psycopg", "psycopg2", "starlette", "uvicorn",
+)
+
+OFFLINE_GUARD = textwrap.dedent("""
+    import importlib.abc
+    import os
+    import sys
+    from pathlib import Path
+    BLOCKED = @BLOCKED@
+    class Guard(importlib.abc.MetaPathFinder):
+        def find_spec(self, fullname, path=None, target=None):
+            if any(fullname == name or fullname.startswith(name + ".") for name in BLOCKED):
+                raise AssertionError("offline import reached " + fullname)
+    sys.meta_path.insert(0, Guard())
+""").replace("@BLOCKED@", repr(BLOCKED_IMPORTS))
+
+# Boundary checks below are enforced with assert, which an inherited PYTHONOPTIMIZE
+# would strip while the test still reported ok.
+def child_env(pythonpath: str) -> dict[str, str]:
+    env = {key: value for key, value in os.environ.items() if key != "PYTHONOPTIMIZE"}
+    env["PYTHONPATH"] = pythonpath
+    return env
 
 
 class LandingBackupTests(HostFixture):
@@ -34,19 +62,7 @@ class LandingBackupTests(HostFixture):
         self.artifact.chmod(0o600)
 
     def test_offline_config_and_backup_import_without_host_or_live_composition(self):
-        code = textwrap.dedent("""
-            import importlib.abc
-            import sys
-            from pathlib import Path
-            class Guard(importlib.abc.MetaPathFinder):
-                def find_spec(self, fullname, path=None, target=None):
-                    blocked = ("adaptive_factory.api", "adaptive_factory.server",
-                               "adaptive_factory.landing_host", "adaptive_factory.landing_server",
-                               "adaptive_factory.landing_live_executors", "psycopg", "httpx",
-                               "uvicorn", "fastapi")
-                    if any(fullname == name or fullname.startswith(name + ".") for name in blocked):
-                        raise AssertionError("offline import reached " + fullname)
-            sys.meta_path.insert(0, Guard())
+        code = OFFLINE_GUARD + textwrap.dedent("""
             from adaptive_factory import settings
             private_read = settings.read_private_file
             def bounded_read(path, maximum):
@@ -60,9 +76,73 @@ class LandingBackupTests(HostFixture):
             assert landing_backup.load_host_config is load_host_config
         """)
         result = subprocess.run([sys.executable, "-c", code, str(self.config_path)],
-                                env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src")},
+                                env=child_env(str(Path(__file__).resolve().parents[1] / "src")),
                                 capture_output=True, text=True, timeout=20)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_offline_test_support_imports_no_web_stack(self):
+        code = OFFLINE_GUARD + textwrap.dedent("""
+            REPO = Path(sys.argv[1])
+            STDLIB = frozenset(sys.stdlib_module_names) | frozenset(sys.builtin_module_names)
+            def crossed():
+                return [name for name in BLOCKED
+                        if any(loaded == name or loaded.startswith(name + ".") for loaded in sys.modules)]
+            loaded = set(sys.modules)
+            from factory.tests import landing_host_fixture
+            REPO_REAL = os.path.realpath(str(REPO)) + os.sep
+            def foreign():
+                bad = []
+                for name in sorted(set(sys.modules) - loaded):
+                    if name.split(".")[0] in STDLIB:
+                        continue
+                    module = sys.modules[name]
+                    spec = getattr(module, "__spec__", None)
+                    # Only an absolute path can be a location. realpath() resolves whatever it is
+                    # given, so a sentinel ("built-in", "frozen", "unknown", "") or a relative
+                    # spelling would silently become a cwd-derived path and answer the containment
+                    # question from the directory the suite happens to run in.
+                    origin = getattr(spec, "origin", None)
+                    locations = [os.path.realpath(origin)] if origin and os.path.isabs(origin) else []
+                    locations += [os.path.realpath(str(entry))
+                                  for entry in (getattr(module, "__path__", None) or [])
+                                  if str(entry) and os.path.isabs(str(entry))]
+                    if not any(location.startswith(REPO_REAL) for location in locations):
+                        bad.append((name, locations))
+                return bad
+            assert crossed() == [], crossed()
+            assert foreign() == [], foreign()
+            # The whole offline scaffolding must work with no web/db package present:
+            # private roots, synthetic actors, 0600 config and a real SQLite store.
+            case = landing_host_fixture.HostFixture()
+            case.setUp()
+            try:
+                assert case.data["live_enabled"] is False
+                assert case.actors[case.token].repositories == {landing_host_fixture.TARGET_REPOSITORY_ID}
+                # Pinned literally: asserting against the fixture's own tuple would stay
+                # green if a root were dropped from it.
+                for root in ("state_path", "quarantine_path", "scratch_path", "output_path",
+                             "publication_state_path", "control_repository"):
+                    assert Path(case.data[root]).stat().st_mode & 0o077 == 0, root
+                config = case.write_config()
+                assert config == case.config_path
+                assert config.stat().st_mode & 0o777 == 0o600
+                store = case.reopen_store()
+                assert store.database_path.is_file()
+                assert crossed() == [], crossed()
+                assert foreign() == [], foreign()
+                print("offline_test_support_ok")
+            finally:
+                case.tearDown()
+                case.doCleanups()
+        """)
+        result = subprocess.run([sys.executable, "-c", code, str(Path(__file__).resolve().parents[2])],
+                                env=child_env(os.pathsep.join(
+                                    (str(Path(__file__).resolve().parents[2]),
+                                     str(Path(__file__).resolve().parents[1] / "src")))),
+                                capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("offline_test_support_ok", result.stdout)
+        self.assertNotIn("offline import reached", result.stderr)
 
     def save(self):
         return landing_backup.create_snapshot(self.config, self.snapshot)

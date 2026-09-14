@@ -8,11 +8,9 @@ import os
 from pathlib import Path
 import socket
 import stat
-import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
-from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -24,62 +22,22 @@ from adaptive_factory.landing_renderer import (
     TARGET_REPOSITORY_ID,
 )
 from adaptive_factory.landing_service import LandingServiceError
-from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
-from adaptive_factory.models import Actor
 from adaptive_factory.server import ServerError, prepare_unix_socket
 from adaptive_factory.settings import SettingsError
+from factory.tests.landing_host_fixture import HostFixture as LandingHostFixture
+from factory.tests.landing_host_fixture import PATH_FIELDS, ROOT_FIELDS
 
 
-ROOT_FIELDS = (
-    "state_path", "quarantine_path", "source_path", "scratch_path",
-    "output_path", "publication_state_path", "control_repository",
-)
-PATH_FIELDS = (*ROOT_FIELDS, "actors_file", "socket_path")
-
-
-class HostFixture(unittest.TestCase):
-    def setUp(self):
-        temporary = tempfile.TemporaryDirectory(prefix="landing-host-")
-        self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
-        self.config_path = self.root / "host.json"
-        self.data = {
-            "schema_version": 1,
-            "live_enabled": False,
-            "selected_profile": "qwen-omni",
-            **{name: str(self.root / name) for name in PATH_FIELDS},
-        }
-        # The offline profile needs no source checkout. No real actor/key files
-        # are used: the host's authentication boundary gets synthetic actors.
-        for name in ROOT_FIELDS:
-            if name != "source_path":
-                Path(self.data[name]).mkdir(mode=0o700)
-        self.token = uuid4().hex
-        self.actors = {
-            self.token: Actor("tenant-host", "client", frozenset({"landing:submit", "landing:read"}),
-                         frozenset({TARGET_REPOSITORY_ID})),
-        }
-        self.write_config()
-
-    def write_config(self, data=None, *, raw=None, path=None):
-        target = path or self.config_path
-        target.write_bytes(raw if raw is not None else json.dumps(self.data if data is None else data).encode())
-        target.chmod(0o600)
-        return target
-
+# The offline scaffolding (setUp/write_config/reopen_store and the root field
+# tuples) lives in factory/tests/landing_host_fixture.py so the dependency-free
+# boundary suites can reuse it. This module keeps only the web-stack half.
+class HostFixture(LandingHostFixture):
     def build_app(self):
         config = landing_host.load_host_config(self.config_path)
         with patch.object(landing_host, "load_actors", return_value=self.actors):
             app = landing_host.build_landing_app(config)
         self.addCleanup(app.state.owned_landing_runtime.close)
         return app
-
-    def reopen_store(self):
-        store = SQLiteLandingJobStore(
-            Path(self.data["state_path"]), repository_root=Path(self.data["control_repository"]),
-        )
-        self.addCleanup(store.close)
-        return store
 
 
 class LandingHostConfigTests(HostFixture):
