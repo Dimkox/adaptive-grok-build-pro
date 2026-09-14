@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "change_id": "20260914-fix-l5-decode-landing-draft-canonicalizes-model-597b42",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make live HTTP landing normalization usable without weakening the closed contract: decode_landing_draft canonicalizes model-produced string section items (sorted, deduplicated) before strict validation, fixing the needs_human/http_outcome_unusable wall observed on the installed v2.0.16 runner; non-string or malformed content still fails closed exactly as before.",
+    "success_metric": "DraftItemCanonicalizationTests green (TDD: red first with LandingContractError section_items) and all 26 normalizer/contracts/provider tests green",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "landing-runtime",
+      "contracts"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A model draft with items in natural order plus one duplicate decodes to canonically sorted unique items.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "All pre-existing fail-closed normalizer/contract/provider tests still pass unchanged (strict rejection of non-canonical or non-string input is untouched outside the all-strings guard).",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_contracts.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "_sorted_unique remains the sole enforcement point; canonicalization only reorders/dedupes lists whose elements are all strings.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Silently dropping non-string items or accepting unsorted-with-nonstrings lists.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_contracts.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Resubmitted landing job reaches normalized instead of needs_human on the installed runner after redeploy",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

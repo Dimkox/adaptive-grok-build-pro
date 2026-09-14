@@ -468,6 +468,16 @@ def decode_landing_draft(
     draft = strict_json_object(payload, maximum=maximum)
     if set(draft) != {"locale", "direction", "title", "description", "sections"}:
         raise LandingProviderError("draft_fields")
+    sections = []
+    for section in draft["sections"]:
+        if (
+            isinstance(section, dict)
+            and isinstance(section.get("items"), list)
+            and all(isinstance(item, str) for item in section["items"])
+        ):
+            section = {**section, "items": sorted(set(section["items"]))}
+        sections.append(section)
+    draft = {**draft, "sections": sections}
     return StaticLandingSpecV1.from_facts(
         {
             "schema_version": 1,
@@ -479,7 +489,7 @@ def decode_landing_draft(
             "title": draft["title"],
             "description": draft["description"],
             "robots_policy": "preserve_source",
-            "sections": draft["sections"],
+            "sections": sections,
             "assets": [],
             "source_claim_refs": [f"source:{input_digest}"],
         }

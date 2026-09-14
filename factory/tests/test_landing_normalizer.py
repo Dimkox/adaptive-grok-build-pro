@@ -19,6 +19,7 @@ from adaptive_factory.landing_normalizer import (
     CodexLandingProfile,
     unavailable_codex_landing_profile,
     normalize_landing_text,
+    decode_landing_draft,
 )
 from adaptive_factory.landing_provider import LandingNormalizationRequest
 
@@ -108,6 +109,46 @@ class RecordingExecutor:
             elapsed_ms=25,
             usage_input_units=12,
             usage_output_units=34,
+        )
+
+
+class DraftItemCanonicalizationTests(unittest.TestCase):
+    """Issue: live HTTP models never emit section items pre-sorted, and the
+    strict contract rejected every real draft (needs_human/http_outcome_unusable
+    on the installed v2.0.16 runner). decode must canonicalize order and
+    duplicates while the closed contract stays enforced downstream."""
+
+    def _payload(self, items):
+        return canonical_json(
+            {
+                "locale": "ru",
+                "direction": "ltr",
+                "title": "Услуги по уходу за садом",
+                "description": "Профессиональный уход за участком.",
+                "sections": [
+                    {
+                        "kind": "features",
+                        "heading": "Что мы делаем",
+                        "body": "Полный цикл работ на участке.",
+                        "items": items,
+                        "cta_label": "Оставить заявку",
+                        "cta_path": "/contact/",
+                    }
+                ],
+            }
+        )
+
+    def test_model_order_and_duplicates_are_canonicalized(self):
+        spec = decode_landing_draft(
+            "a" * 64,
+            self._payload(
+                ["Уборка листвы", "Стрижка газона", "Уборка листвы", "Аэрация почвы"]
+            ),
+            maximum=1_000_000,
+        )
+        self.assertEqual(
+            tuple(sorted({"Уборка листвы", "Стрижка газона", "Аэрация почвы"})),
+            spec.sections[0].items,
         )
 
 
