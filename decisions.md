@@ -588,3 +588,27 @@ For PR #82, checking section shape before iteration and leaving over-limit item 
 ## 2026-09-14 — Generate structurally valid fixtures for parser limits
 
 Using the pinned PdfWriter to serialize actual 100/101-page documents let the real bounded PDF child reach the intended count guard. This isolated a pre-existing test defect and restored meaningful limit coverage without changing runtime parsing or resource bounds.
+
+## 2026-09-13 — Absent Trust CI check run on a fresh head means queued, not lost
+
+The self-hosted runner processes policy-epoch verifications serially (~18–20 min per PR head); the stacked L5 heads A–G each verified only after the predecessor's job completed. A missing `adaptive-trust-ci/verified@…` run was confirmed queue state via the live `TRUST_CI_PR_NUMBER` job, so no head re-push or dispatch retry was attempted. Never churn a PR head to "wake" a check — a new commit invalidates the exact-SHA attestation chain.
+
+## 2026-09-13 — Land append-coupled stacked slices as one tree-identical union with a fresh gate
+
+Squash-merging the bottom slice of a stacked chain destroys the commit identities the upper PRs need (shared append files then guarantee three-way conflicts), so the remaining six L5 slices landed as a single commit whose tree equals the attested top head `e6a813e`: `merge-tree` proved conflict-freedom and final-tree identity before push, the union got its own exact-SHA Trust CI success, and post-merge `tree(main)==tree(top head)` was re-verified. Per-slice attestations stay recorded in the ledger as historical content evidence. Rule adopted: for stacks that append to shared documents, landing is all-or-nothing — a merge-commit chain (GitHub rejected `--merge` as disallowed even though the settings API reported it enabled, so a second read of live behavior, not just config, is required) or one union with a fresh gate; never a partial squash cascade.
+
+## 2026-09-13 — Real-delivery registry seeded as runtime data at the doctrine path
+
+No product-side registry exists on `main`, so operator-supplied factory-delivered project outcomes land in the canonical gitignored runtime file `.grok-stack/runtime/m8-real-delivery/real-delivery-registry.json` (first record: `aleksandr-alhoff/seo-landing`, ChatGPT/Codex ids + factory audit route `c9179d70b949`). Why this shape: decisions.md 2026-09-06 fixed the doctrine that the registry is runtime data and not a product contract; inventing an unreviewed schema in the product tree would create a governance surface the M8 branch line never merged.
+
+## 2026-09-14 — Check installed L5 state separately from shipped defaults
+
+Read-only host inspection found `adaptive-l5.service` active/running and ready on installed commit `969c4f65f54ef9230f3f94587e228098d1c2ecb9`, with `live_enabled=true` and `selected_profile=qwen-intl`; default-off source documentation does not establish the installed state or successful task delivery. PR #82 merged as `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` after App-owned check `103833535728` passed on `6bd86207ca9955a8ad91224224cf665e16a282da`, and both trees equal `f138beda12d1cf21f24cb26bb95166ffa9b120d7`. A clean upgrade source is staged at `/home/pall/grok-projects/adaptive-l5-pr82-stage-5f6f6ce`; runtime deployment and the synthetic provider probe still require exact operational delegation, with the prepared plan in the l5fix tree's `.grok-stack/runtime/pr82-runtime-upgrade/plan.md`.
+
+## 2026-09-14 — Put offline test scaffolding in a non-`test_*` module beside the tests
+
+`factory/tests/landing_host_fixture.py` now carries only the offline half (private roots, 0600 config, synthetic actors, `write_config`, `reopen_store`) while `test_landing_host.py` subclasses it and keeps the web-stack half (`build_app`, `TestClient`). Why this shape worked: the dependency-free backup/restore boundary suite became collectable on a host with no fastapi/uvicorn/psycopg (executed coverage of `landing_backup.py` 12%→84%), the host suite needed zero body edits, and a filename outside `test_*` keeps `unittest discover` away while `factory/tests/__init__.py` already bootstraps `sys.path`, so no packaging, coverage or fitness rule had to change. The narrowness is now asserted by a guard test that itself needs no heavy dependency, so the coupling cannot return silently.
+
+## 2026-09-14 — Borrow the installed release's venv as the deps-complete interpreter, framed as corroboration
+
+This host's system `python3` cannot collect the FastAPI-bound suites, so instead of installing packages globally I ran the tests with `/opt/adaptive-l5/releases/<sha>/venv/bin/python` plus `PYTHONPATH=.:factory/src:delivery/src` — read-only as an interpreter, nothing installed — which made the previously unexecutable half run and proved the fixture extraction neutral (36 host tests OK on base and on the change; whole factory suite 712→713, `OK`, identical skip set). Why it is stated as corroboration rather than as the record: the venv matches the `factory/uv.lock` pins for the five web/db names but not for all 21 entries (`anyio` differs), it is host state a clean checkout cannot reproduce, and it is deps-complete but not DB-complete. Reproducible percentages therefore stay in the dependency-incomplete environment, and `find <release> -newermt …` empty is the check that the borrowing left installed state untouched.

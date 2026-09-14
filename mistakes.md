@@ -853,3 +853,61 @@ The first review-repair test draft inspected assertRaises.exception after a subT
 ## 2026-09-14 — Serialized PDF mutation invalidated the page-limit fixture
 
 The existing page-limit test lengthened a serialized Count value while leaving xref offsets and the one-page tree unchanged, so strict parsing correctly failed before counting pages. Real PdfWriter fixtures with 100 and 101 pages exercise the intended boundary without weakening the worker or its independent corrupt-file rejection.
+
+## 2026-09-12 — Force-pushed an unrelated branch pointer from a compound command
+
+**Symptom:** A single compound `run_shell_command` began with `cd /home/pall/grok-projects/adaptive-grok-build-pro` and ended with `git push … refs/heads/perf/parallel-python-tests`. `HEAD` resolved to the session branch, so the push moved PR #33's head branch to `f5e6dcb` (an unrelated merge commit) with a forced update, briefly rewriting the PR head and its diff.
+**Root cause:** Two compounding errors. First, a destructive remote write was composed into the same command line as an unrelated `cd`, so the target ref name was reviewed but the ref *source* (`HEAD`) was not — the thing that actually changed. Second, `--force-with-lease` was treated as a safety net while the expected value came from the same mistaken push, so the lease matched and confirmed the damage instead of preventing it. A `||` fallback clause pushed a second path, widening the blast radius of a command that should have had exactly one effect.
+**Rule:** Never combine `cd` with a remote write in one command; pass the repository via `git -C <resolved path>` and an explicit `<commit>:<ref>` (never bare `HEAD`). A lease is only meaningful when its expected value is read from the remote first, in a separate prior step. Destructive pushes get no fallback branches in the same invocation, and before any force-push, verify ancestry (`merge-base --is-ancestor`) so that restoring the intended commit is provably lossless.
+
+## 2026-09-13 — A partial read before a follow-up edit silently clobbered a committed paragraph
+
+**Symptom:** The L5 delivery ledger `l5-split-delivery.md` lost its current-head live-probe paragraph (committed in `3eac0f8`) after a later single-row table edit; the regression reached the remote in `7966240` and was caught only by a `git show HEAD:<path>` audit of the committed blob.
+
+**Root cause:** Re-editing the same file after only an `offset/limit` partial read let the edit tool reconstruct the file from a stale pre-edit snapshot, overwriting intervening content; the tool's ambiguous "modified since last read"/empty results hid whether each attempt applied, so no full-content checkpoint existed between edits.
+
+**Rule:** Before editing a file again in a session, full-read it (no offset/limit) or reconstruct deterministically from a committed blob (`git show <commit>:<path>` plus asserted string replacements); after any edit with ambiguous tool status, verify the committed blob — not the working tree — before pushing; never trust a freshness error as proof that nothing was written (see tracker issues #74 and its inverse: both false-failure and silent-clobber directions exist).
+
+## 2026-09-13 — Broke my own verification windows twice while the verifier ran
+
+**Symptom:** `grok_verify --mode pr` reported `source-stability: repository changed during verification checks` on the hardening tree (reviewer reports landed as untracked files mid-run) and again on the release-sync tree, where the second culprit was my own `grok_change transition` editing the tracked `state.json` minutes into the run.
+
+**Root cause:** the running verifier was treated as background rather than as an exclusive read-lock over the tracked tree; package transitions and evidence commits are tracked writes and fall inside the window, and receipts-only runtime state made the distinction easy to forget.
+
+**Rule:** the moment any serial or parallel verification starts, the tracked tree is FROZEN until it ends — transitions, report copies into the package, and receipts that re-bind fingerprints all run strictly after completion; when in doubt, sequence verify last on a committed, quiescent tree.
+
+## 2026-09-13 — `pkill -f` matched my own command line and killed the edit script
+
+**Symptom:** a compound command began `pkill -f 'grok_verify.py --mode pr'`; the heredoc being executed contained that substring, so the wrapper `bash -c` received SIGTERM mid-script and seven asserted edits never ran.
+
+**Root cause:** pattern-based process matching includes the invoking shell's own command line; combining "stop other process" and "do work" in one compound command lets the stop phase destroy the work phase silently.
+
+**Rule:** kill by explicit PID from `pgrep` filtered against self, or use a pattern that cannot match the current command line; never place a process-termination step in the same compound command as the payload it could terminate.
+
+## 2026-09-14 — A local clone omitted the newly merged remote-only commit
+
+A deployment staging checkout failed because a clone of the local worktree repository copied its branch heads but did not include the new merge commit reachable only through the source repository's remote-tracking ref. Fetching the exact merged SHA from GitHub into the independent staging clone restored the missing object, after which checkout and checked-tree identity verification passed. Resolve and fetch the exact deployment commit explicitly instead of assuming a local clone contains recently fetched remote-only history.
+
+## 2026-09-14 — An offline-by-design suite inherited a web-stack test fixture
+
+**Symptom:** `factory/tests/test_landing_backup.py` — whose own subprocess guard asserts that offline backup import must never reach `fastapi`, `uvicorn`, `httpx`, `psycopg` or the HTTP host modules — could not be collected at all on a host without those packages (`ImportError: No module named 'fastapi'`, 0 of 15 destructive-boundary tests executed), and `landing_backup.py` reported 12% in the executed factory suite as if the boundaries were thin rather than absent.
+
+**Root cause:** fixture reuse by class inheritance across a boundary the fixture itself does not respect — one class carried both the offline scaffolding and the single web-stack member (`build_app`), and a loader error at import time is invisible to the merge gate because `factory-unit` runs only four hardcoded modules and never discovers `factory/tests`, so the coupling survived both review and a green exact-SHA check.
+
+**Rule:** share test scaffolding through a non-`test_*` support module whose imports are provably as narrow as the guarantee the suite asserts; prove that narrowness with a guard test that is itself collectable without the heavy dependencies; and treat a loader error as "zero executed", never as a benign skip — a coverage number for an uncollectable module measures nothing.
+
+## 2026-09-14 — Normalising a sentinel made a fail-closed check fail open by directory
+
+**Symptom:** hardening the offline guard's containment test with `os.path.realpath(getattr(spec, "origin", None) or "")` — intended to close a raw-string-prefix bypass — silently changed an unattributable module from always-flagged to flagged-only-sometimes: measured at `cwd=<repo>/factory` the injected spec-less, path-less module was **admitted**, while the same check flagged it at `<repo>` and at `/tmp`. Review round 3 caught it; the earlier rounds could not, because the bypass it reintroduced did not exist before this edit.
+
+**Root cause:** `""` was a sentinel standing for "no location", and wrapping it in a path resolver converted absence into a real, meaningful path — `os.path.realpath("")` *is* the current working directory. A test that then asks "does this location live inside the repository?" is answered by the operator's cwd, so a deterministic guarantee became environment-dependent and errs toward passing. The downstream `if location` filter also stopped discarding anything, since the sentinel had become non-empty.
+
+**Rule:** never pass a sentinel placeholder through a normalising function; keep "absent" as absence (`locations = [realpath(origin)] if origin else []`) and let a missing fact fail closed. After any hardening edit to a security- or environment-boundary check, re-run the *empty/unknown* case from at least two working directories, because a path-shaped false answer is invisible in a single-cwd test.
+
+## 2026-09-14 — A reviewer's appended report carried a blank line the gate rejects
+
+**Symptom:** after five review rounds and every functional check green, `GROK_VERIFY_CAPABILITY=repository-sandbox UV_LOCKED=1 python3 scripts/grok_verify.py --mode pr` returned `RESULT: FAIL` on a single check, `git-diff-check`, with `evidence/code-review.md:445: new blank line at EOF` (exit 2) — 23 files, 2080 added lines, and one whitespace nit stood in front of a fingerprint-bound `verification` receipt.
+
+**Root cause:** review report files were treated as commentary outside the product rather than as committed content of the repository. Each appended round wrote to the end of the same tracked Markdown file, and the final append left a trailing newline pair; nothing in the local pre-flight set (`ruff`, `bandit`, unittest discovery, coverage) examines Markdown whitespace, so the only thing that could surface it was the gate, at the very end of the cycle.
+
+**Rule:** before staging, run the gate's own hygiene check over the diff (`git diff --check <base>`) and lint every evidence file the same way as source — end with exactly one newline, no trailing whitespace — and instruct subagents that append into the tree to do the same. Cheap enough to cost nothing when done before commit; expensive when it costs a full verification window.
