@@ -64,11 +64,12 @@ def _single_page_pdf(text: str) -> bytes:
     return bytes(out)
 
 
-def _blank_pdf() -> bytes:
+def _blank_pdf(*, page_count: int = 1) -> bytes:
     from pypdf import PdfWriter
 
     writer = PdfWriter()
-    writer.add_blank_page(width=200, height=200)
+    for _ in range(page_count):
+        writer.add_blank_page(width=200, height=200)
     buffer = io.BytesIO()
     writer.write(buffer)
     return buffer.getvalue()
@@ -111,13 +112,14 @@ class PdfWorkerWithPinnedParser(unittest.TestCase):
         self.assertEqual(ctx.exception.code, "pdf_invalid")
 
     def test_oversized_page_count_reports_page_limit(self):
-        payload = _single_page_pdf("PDFWORKER OK")
-        marker = b"/Count 1>>"
-        replacement = b"/Count 101>>"
-        self.assertEqual(payload.count(marker), 1)
         with self.assertRaises(LandingMediaError) as ctx:
-            extract_pdf_text(payload.replace(marker, replacement, 1))
+            extract_pdf_text(_blank_pdf(page_count=101))
         self.assertEqual(ctx.exception.code, "pdf_page_limit")
+
+    def test_maximum_page_count_reaches_content_validation(self):
+        with self.assertRaises(LandingMediaError) as ctx:
+            extract_pdf_text(_blank_pdf(page_count=100))
+        self.assertEqual(ctx.exception.code, "pdf_empty_or_scanned")
 
 
 if __name__ == "__main__":

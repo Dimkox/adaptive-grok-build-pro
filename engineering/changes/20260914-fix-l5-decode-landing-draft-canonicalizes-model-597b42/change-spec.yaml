@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "change_id": "20260914-fix-l5-decode-landing-draft-canonicalizes-model-597b42",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Continue PR 82 review repair: canonicalize bounded model section-item permutations and duplicates using the strict contract JSON ordering, preserve original section/item bounds and strict content checks, and restore controlled HTTP/Codex failure outcomes with provider evidence for malformed sections.",
+    "success_metric": "All 18 decoder/HTTP/Codex/service regression tests pass; the locked focused run including PDF fixture recovery passes 74 tests with one expected unavailable-parser skip. The initial full verifier failed on the pre-existing PDF fixture; a fresh passing full result, independent reviews and exact-head external Trust CI remain required.",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "landing-runtime",
+      "contracts"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Multilingual and escaped string-item permutations and duplicates within 12 raw entries yield the same canonical tuple and spec digest.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Non-list, empty and oversized sections raise LandingContractError sections; 12 sections retain their order; 13 raw items are rejected whether repeated or distinct.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Strict item types, NFC, UTF-8 byte bounds, safe text, paths and closed fields remain enforced; direct static-spec construction still rejects noncanonical item lists.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        },
+        {
+          "test": "factory/tests/test_landing_contracts.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Valid mixed-language HTTP drafts normalize; malformed sections produce needs_human/http_outcome_unusable with evidence retained by the service, and Codex produces needs_human/invalid_model_output with evidence.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        },
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Bounded verification recovery fixes only the PDF test fixture: real 101-page PDFs exercise pdf_page_limit, the valid 100-page boundary reaches content validation, and corrupt PDFs remain independently rejected by the unchanged worker.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_pdf_worker.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Only the draft decoder reorders/deduplicates all-string item lists within the original 12-item bound; the unchanged strict static-spec contract remains the final validator.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        },
+        {
+          "test": "factory/tests/test_landing_contracts.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Production edits stay in landing_normalizer.py; no schema, transport, caller catch-all, dependency, persisted-data or live-service change is required.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Dropping invalid items or accepting over-limit raw item lists after deduplication.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Malformed section containers escaping as TypeError or degrading service outcomes to internal_failure without provider evidence.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_normalizer.py"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [
+      "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",
+      "factory/contracts/jsonschema/static-landing-spec.v1.schema.json"
+    ],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Offline HTTP normalization state/reason, canonical spec digest, and source/profile-bound provider evidence; service retains controlled failure reason and evidence digest.",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "After separate authorized deployment, verify exact merged runner identity/readiness and one bounded synthetic normalization outcome; live repair is currently unverified.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

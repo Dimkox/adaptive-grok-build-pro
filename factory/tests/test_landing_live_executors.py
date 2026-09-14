@@ -20,7 +20,7 @@ import httpx
 
 from adaptive_factory import landing_live_executors as live
 from adaptive_factory.contracts import canonical_json
-from adaptive_factory.landing_http import HTTP_NORMALIZER_PROMPT, HTTP_PROTOCOL_VERSION, HttpLandingProfile, HttpLandingExecutionRequest
+from adaptive_factory.landing_http import HTTP_NORMALIZER_PROMPT, HTTP_PROTOCOL_VERSION, HttpLandingProfile, HttpLandingExecutionRequest, HttpLandingNormalizer
 from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
 from adaptive_factory.settings import SettingsError
 from adaptive_factory.landing_artifact import DEPLOY_MEMBERS
@@ -42,11 +42,11 @@ from adaptive_factory.landing_live_executors import (
     grok_landing_executor,
     qwen_landing_executor,
 )
-from adaptive_factory.landing_provider import LandingProviderError
+from adaptive_factory.landing_provider import LandingProviderError, LandingNormalizationRequest
 from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
 from adaptive_factory.landing_runtime import implemented_live_binding
 from adaptive_factory.models import Actor
-from factory.tests.test_landing_normalizer import draft
+from factory.tests.test_landing_normalizer import draft, source
 from factory.tests.test_landing_renderer import sealed_target
 
 FIXED_TIME = datetime(2026, 9, 6, 19, 0, tzinfo=timezone.utc)
@@ -200,6 +200,60 @@ class LandingLiveExecutorTests(unittest.TestCase):
         self.assertEqual("executor_result", str(raised.exception))
 
 
+class HttpLandingDraftNormalizationTests(unittest.TestCase):
+    def normalize(self, document, provider="qwen"):
+        profile = HttpLandingProfile.for_provider(provider, available=True)
+        response = {
+            "object": "chat.completion", "model": profile.model_id,
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": json.dumps(document)}}],
+            "usage": {"prompt_tokens": 12, "completion_tokens": 34, "total_tokens": 46},
+        }
+        factory = qwen_landing_executor if provider == "qwen" else grok_landing_executor
+        executor = factory(
+            api_key=uuid4().hex, profile=profile,
+            transport=_transport(profile.model_id, payload=response),
+        )
+        payload = b"A synthetic garden club brief"
+        request = LandingNormalizationRequest(
+            source(payload, kind="text", media_type="text/plain", job_id="http-draft"),
+            profile.profile_digest,
+        )
+        outcome = HttpLandingNormalizer(profile, executor, clock=lambda: FIXED_TIME).normalize(
+            request, lambda: payload,
+        )
+        return outcome, request
+
+    def test_http_provider_normalizes_mixed_language_unsorted_duplicate_items(self):
+        document = json.loads(draft())
+        document["sections"][0]["items"] = ["a", "é", "a"]
+        for provider in ("grok", "qwen"):
+            with self.subTest(provider=provider):
+                outcome, request = self.normalize(document, provider)
+                self.assertEqual(("normalized", "normalized"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertEqual(("é", "a"), outcome.spec.sections[0].items)
+                self.assertEqual("normalized", outcome.evidence.disposition)
+                self.assertEqual(request.source.input_digest, outcome.evidence.input_digest)
+                self.assertEqual(request.profile_digest, outcome.evidence.profile_digest)
+                self.assertEqual((12, 34),
+                                 (outcome.evidence.usage_input_units, outcome.evidence.usage_output_units))
+                self.assertRegex(outcome.evidence.provider_evidence_digest, r"^[0-9a-f]{64}$")
+
+    def test_http_malformed_sections_return_controlled_outcome_with_evidence(self):
+        document = json.loads(draft())
+        for sections in (None, 3, True, {}, "invalid", [], document["sections"] * 13):
+            with self.subTest(sections=sections):
+                outcome, request = self.normalize({**document, "sections": sections})
+                self.assertEqual(("needs_human", "http_outcome_unusable"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertIsNone(outcome.spec)
+                self.assertEqual("provider_unavailable", outcome.evidence.disposition)
+                self.assertEqual(request.source.input_digest, outcome.evidence.input_digest)
+                self.assertEqual(request.profile_digest, outcome.evidence.profile_digest)
+                self.assertRegex(outcome.evidence.provider_evidence_digest, r"^[0-9a-f]{64}$")
+
+
 class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory(prefix="landing-live-llm-")
@@ -225,6 +279,42 @@ class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
 
     def _profile(self, provider="grok") -> HttpLandingProfile:
         return HttpLandingProfile.for_provider(provider, available=True)
+
+    def test_malformed_sections_persist_controlled_reason_and_evidence(self) -> None:
+        with sealed_target() as (target, base_sha, base_tree), patch.multiple(
+            "adaptive_factory.landing_renderer", TARGET_BASE_SHA=base_sha, TARGET_BASE_TREE=base_tree,
+        ), patch.multiple(
+            "adaptive_factory.landing_service", TARGET_BASE_SHA=base_sha, TARGET_BASE_TREE=base_tree,
+        ):
+            for index, sections in enumerate((None, 3, True)):
+                with self.subTest(sections=sections):
+                    document = {**json.loads(draft()), "sections": sections}
+                    response = {
+                        "object": "chat.completion", "model": "qwen-plus",
+                        "choices": [{"index": 0, "finish_reason": "stop",
+                                     "message": {"role": "assistant", "content": json.dumps(document)}}],
+                        "usage": {"prompt_tokens": 12, "completion_tokens": 34, "total_tokens": 46},
+                    }
+                    service = compose_landing_live_qwen(
+                        api_key=uuid4().hex, binding=implemented_live_binding(enabled=True),
+                        profile=self._profile("qwen"), source_repository=target,
+                        scratch_root=self.root / "scratch", output_directory=self.root / "artifacts",
+                        blobs=self.blobs, store=self.store, clock=lambda: FIXED_TIME,
+                        transport=_transport("qwen-plus", payload=response),
+                    )
+                    job_id = f"malformed-sections-{index}"
+                    created = service.submit(
+                        job_id=job_id, repository_id=TARGET_REPOSITORY_ID,
+                        exact_base_sha=base_sha, exact_base_tree=base_tree,
+                        media_type="text/plain", chunks=(b"A synthetic garden club brief",),
+                        actor=self.actor,
+                    )
+                    retained = self.store.get("tenant-1", TARGET_REPOSITORY_ID, job_id)
+                    self.assertEqual(created.job, retained)
+                    self.assertEqual(("needs_human", "http_outcome_unusable"),
+                                     (retained.state, retained.reason_code))
+                    self.assertRegex(retained.provider_evidence_digest, r"^[0-9a-f]{64}$")
+                    self.assertIsNone(retained.artifact)
 
     def test_grok_compose_seals_complete_artifact_with_mocked_http(self) -> None:
         payload = b"Build a bounded landing candidate"

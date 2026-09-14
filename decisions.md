@@ -580,3 +580,11 @@ Freezing each actual predecessor before verification lets independent reports an
 ## 2026-09-13 — Check known recovery cost before creating roots
 
 Restore knows the complete validated payload size, so preflight its second copy against remaining accounted I/O before creating destination roots. A reduced-cap fixture proves early refusal and the exact successful two-pass boundary without increasing limits or allocating large files.
+
+## 2026-09-14 — Canonicalize only within original validation bounds
+
+For PR #82, checking section shape before iteration and leaving over-limit item lists for strict rejection preserves controlled errors while using the exact contract JSON sort key handles multilingual and escaped strings. Red/green decoder, HTTP/Codex and SQLite service regressions demonstrated stable canonical output and retained failure evidence without changing contracts or caller catches.
+
+## 2026-09-14 — Generate structurally valid fixtures for parser limits
+
+Using the pinned PdfWriter to serialize actual 100/101-page documents let the real bounded PDF child reach the intended count guard. This isolated a pre-existing test defect and restored meaningful limit coverage without changing runtime parsing or resource bounds.

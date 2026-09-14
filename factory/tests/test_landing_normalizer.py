@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -10,7 +11,9 @@ import warnings
 import zipfile
 
 from adaptive_factory.contracts import canonical_json
-from adaptive_factory.landing_contracts import LandingInputV1, LandingContractError
+from adaptive_factory.landing_contracts import (
+    LandingInputV1, LandingContractError, StaticLandingSpecV1,
+)
 from adaptive_factory.landing_normalizer import (
     LANDING_NORMALIZATION_DRAFT_SCHEMA_SHA256,
     LANDING_NORMALIZER_PROMPT_SHA256,
@@ -19,6 +22,7 @@ from adaptive_factory.landing_normalizer import (
     CodexLandingProfile,
     unavailable_codex_landing_profile,
     normalize_landing_text,
+    decode_landing_draft,
 )
 from adaptive_factory.landing_provider import LandingNormalizationRequest
 
@@ -109,6 +113,130 @@ class RecordingExecutor:
             usage_input_units=12,
             usage_output_units=34,
         )
+
+
+class DraftItemCanonicalizationTests(unittest.TestCase):
+    """Canonicalize model item order without changing strict input validation."""
+
+    def _payload(self, items):
+        return canonical_json(
+            {
+                "locale": "ru",
+                "direction": "ltr",
+                "title": "Услуги по уходу за садом",
+                "description": "Профессиональный уход за участком.",
+                "sections": [
+                    {
+                        "kind": "features",
+                        "heading": "Что мы делаем",
+                        "body": "Полный цикл работ на участке.",
+                        "items": items,
+                        "cta_label": "Оставить заявку",
+                        "cta_path": "/contact/",
+                    }
+                ],
+            }
+        )
+
+    def test_model_order_and_duplicates_are_canonicalized(self):
+        spec = decode_landing_draft(
+            "a" * 64,
+            self._payload(
+                ["Уборка листвы", "Стрижка газона", "Уборка листвы", "Аэрация почвы"]
+            ),
+            maximum=1_000_000,
+        )
+        self.assertEqual(
+            ("Аэрация почвы", "Стрижка газона", "Уборка листвы"),
+            spec.sections[0].items,
+        )
+
+    def test_mixed_language_and_escaped_items_have_stable_canonical_digest(self):
+        cases = (
+            ("é", "a"),
+            ("A", '"quoted"', "\\path", "\nitem", "\titem", "é", "Ж", "中", "a"),
+        )
+        for expected in cases:
+            with self.subTest(expected=expected):
+                specs = []
+                for items in (list(expected), list(reversed(expected)), [*expected, expected[0]]):
+                    spec = decode_landing_draft(
+                        "a" * 64, self._payload(items), maximum=1_000_000,
+                    )
+                    self.assertEqual(expected, spec.sections[0].items)
+                    specs.append(spec)
+                self.assertEqual(1, len({spec.spec_digest for spec in specs}))
+
+    def test_malformed_outer_sections_raise_contract_error(self):
+        document = json.loads(self._payload([]))
+        for sections in (None, 3, 1.5, True, False, "", "section", {}, {"items": []}, [],
+                         document["sections"] * 13):
+            with self.subTest(sections=sections), self.assertRaisesRegex(LandingContractError, "^sections$"):
+                decode_landing_draft(
+                    "a" * 64, canonical_json({**document, "sections": sections}), maximum=1_000_000,
+                )
+
+    def test_twelve_sections_keep_their_original_order(self):
+        document = json.loads(self._payload(["z", "a", "z"]))
+        headings = [f"Section {index}" for index in range(12, 0, -1)]
+        document["sections"] = [
+            {**document["sections"][0], "heading": heading} for heading in headings
+        ]
+        spec = decode_landing_draft("a" * 64, canonical_json(document), maximum=1_000_000)
+        self.assertEqual(headings, [section.heading for section in spec.sections])
+        self.assertEqual([("a", "z")] * 12, [section.items for section in spec.sections])
+
+    def test_item_limit_applies_before_deduplication(self):
+        for items, expected in (([], ()), (["z", "a"] * 6, ("a", "z"))):
+            with self.subTest(items=items):
+                spec = decode_landing_draft("a" * 64, self._payload(items), maximum=1_000_000)
+                self.assertEqual(expected, spec.sections[0].items)
+        for items in (["a"] * 13, [f"item-{index}" for index in range(13)]):
+            with self.subTest(items=items), self.assertRaisesRegex(LandingContractError, "^section_items$"):
+                decode_landing_draft("a" * 64, self._payload(items), maximum=1_000_000)
+
+    def test_invalid_items_keep_their_strict_rejection(self):
+        cases = (
+            (None, "section_items"), ("a", "section_items"), ({}, "section_items"),
+            (["z", None], "invalid_text"), (["z", 3], "invalid_text"),
+            (["z", True], "invalid_text"), (["z", {}], "invalid_text"),
+            (["z", []], "invalid_text"), (["", ""], "invalid_text"),
+            (["e\u0301"], "invalid_text"), (["\0"], "invalid_text"),
+            (["a" * 513], "invalid_text"), (["é" * 257], "invalid_text"),
+            (["\ud800"], "invalid_text"), (["<script>"], "unsafe_content"),
+        )
+        document = json.loads(self._payload([]))
+        for items, code in cases:
+            document["sections"][0]["items"] = items
+            with self.subTest(items=items), self.assertRaisesRegex(LandingContractError, f"^{code}(?::|$)"):
+                decode_landing_draft(
+                    "a" * 64, json.dumps(document).encode(), maximum=1_000_000,
+                )
+
+    def test_section_fields_and_content_remain_closed(self):
+        document = json.loads(self._payload(["z", "a", "z"]))
+        section = document["sections"][0]
+        cases = (
+            (None, "invalid_object"),
+            ({**section, "unknown": True}, "unknown_fields"),
+            ({key: value for key, value in section.items() if key != "items"}, "missing_fields"),
+            ({**section, "heading": "<script>"}, "unsafe_content"),
+            ({**section, "cta_path": "https://example.invalid/"}, "cta_path"),
+        )
+        for malformed, code in cases:
+            with self.subTest(section=malformed), self.assertRaisesRegex(LandingContractError, f"^{code}(?::|$)"):
+                decode_landing_draft(
+                    "a" * 64, canonical_json({**document, "sections": [malformed]}), maximum=1_000_000,
+                )
+
+    def test_strict_spec_still_rejects_noncanonical_items_outside_decoder(self):
+        spec = decode_landing_draft("a" * 64, self._payload([]), maximum=1_000_000)
+        facts = spec.to_dict()
+        del facts["spec_digest"]
+        for items in (["z", "a"], ["a", "a"], ["a", "é"]):
+            facts["sections"][0]["items"] = items
+            with self.subTest(items=items), self.assertRaisesRegex(LandingContractError, "^section_items$"):
+                StaticLandingSpecV1.from_facts(facts)
 
 
 class CodexLandingNormalizerTests(unittest.TestCase):
@@ -291,6 +419,20 @@ class CodexLandingNormalizerTests(unittest.TestCase):
         self.assertEqual(("provider_unavailable", "profile_drift"), (outcome.state, outcome.reason_code))
         self.assertEqual([], reads)
         self.assertEqual([], runner.requests)
+
+    def test_malformed_sections_return_controlled_outcome_with_evidence(self):
+        document = json.loads(draft())
+        for sections in (None, 3, True):
+            with self.subTest(sections=sections):
+                outcome, _ = self.normalize(
+                    b"valid text", kind="text", media_type="text/plain", job_id="bad-sections",
+                    executor=RecordingExecutor(canonical_json({**document, "sections": sections})),
+                )
+                self.assertEqual(("needs_human", "invalid_model_output"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertIsNone(outcome.spec)
+                self.assertEqual("provider_unavailable", outcome.evidence.disposition)
+                self.assertRegex(outcome.evidence.provider_evidence_digest, r"^[0-9a-f]{64}$")
 
 
 if __name__ == "__main__":

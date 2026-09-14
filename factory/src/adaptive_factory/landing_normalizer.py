@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import re
@@ -468,6 +469,21 @@ def decode_landing_draft(
     draft = strict_json_object(payload, maximum=maximum)
     if set(draft) != {"locale", "direction", "title", "description", "sections"}:
         raise LandingProviderError("draft_fields")
+    if not isinstance(draft["sections"], list) or not 1 <= len(draft["sections"]) <= 12:
+        raise LandingContractError("sections")
+    sections = []
+    for section in draft["sections"]:
+        if (
+            isinstance(section, dict)
+            and isinstance(section.get("items"), list)
+            and len(section["items"]) <= 12
+            and all(isinstance(item, str) for item in section["items"])
+        ):
+            # Match the strict contract's JSON ordering, including ASCII escaping.
+            section = {**section, "items": sorted(
+                set(section["items"]), key=lambda item: json.dumps(item, sort_keys=True),
+            )}
+        sections.append(section)
     return StaticLandingSpecV1.from_facts(
         {
             "schema_version": 1,
@@ -479,7 +495,7 @@ def decode_landing_draft(
             "title": draft["title"],
             "description": draft["description"],
             "robots_policy": "preserve_source",
-            "sections": draft["sections"],
+            "sections": sections,
             "assets": [],
             "source_claim_refs": [f"source:{input_digest}"],
         }

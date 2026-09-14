@@ -841,3 +841,15 @@ The publication schema validator checked column/index structure but SQLite PRAGM
 ## 2026-09-13 — Finish operator-document checks before source freeze
 
 Starting the final verifier before the independent documentation audit completed preserved an overstated metrics claim and forced a restart when it was corrected. Bind operator-facing endpoint claims to actual route behavior and finish that audit before freezing source and launching long checks.
+
+## 2026-09-14 — Draft normalization changed validation semantics
+
+The initial PR #82 repair transformed unvalidated arrays and assumed Python string ordering matched the strict contract JSON ordering. That erased the raw item limit, turned malformed section containers into TypeError, and rejected valid mixed-language lists; the original Cyrillic-only positive test did not cover these boundary differences.
+
+## 2026-09-14 — Keep expected-error assertions inside subtests
+
+The first review-repair test draft inspected assertRaises.exception after a subTest had suppressed the intended failure, creating a secondary AttributeError that obscured the product regression. Matching the controlled error inside assertRaisesRegex removed that test-harness artifact before recapturing the red run against unchanged production source.
+
+## 2026-09-14 — Serialized PDF mutation invalidated the page-limit fixture
+
+The existing page-limit test lengthened a serialized Count value while leaving xref offsets and the one-page tree unchanged, so strict parsing correctly failed before counting pages. Real PdfWriter fixtures with 100 and 101 pages exercise the intended boundary without weakening the worker or its independent corrupt-file rejection.
