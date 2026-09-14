@@ -1,0 +1,35 @@
+{
+  "change_id": "20260913-v2-0-16-release-record-successor-published-ident-dcace1",
+  "created_at": "2026-09-13T23:04:08+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T23:04:08+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T23:14:49+00:00",
+      "from": "draft",
+      "reason": "release-record successor scope + ACs written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T23:14:49+00:00",
+      "from": "scoped",
+      "reason": "user standing delegation: full production",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T23:14:49+00:00",
+      "from": "approved",
+      "reason": "PROJECT_STATE+tests+docs+ledger mutated; trio and 130 coupling tests green",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "dcace10990c6",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "v2.0.16 release record successor: published identity in PROJECT_STATE/tests/ledger/docs, union-check time fix, tag 8486ddb target 969c4f6",
+  "updated_at": "2026-09-13T23:14:49+00:00"
+}

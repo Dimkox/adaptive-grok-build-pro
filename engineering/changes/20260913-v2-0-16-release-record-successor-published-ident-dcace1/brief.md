@@ -1,0 +1,3 @@
+# v2.0.16 release record successor
+
+Records the published reality from PR #79 + tag/GitHub Release: PROJECT_STATE published_release becomes the re-derived v2.0.16 record (tag object 8486ddb6…, target merge 969c4f65…, PR 79, head 2b151798…, run 103797448701, attestation 90cb34aa-6eb5-49ca-a0ec-104e11c5e722, signer 0519cf1d47436f2e, GitGuardian SUCCESS); v2.0.15 demotes to prior[0] (list length 3); local_candidate flips to published-as-repository-delivery with full artifact identities; README/START_HERE/CHANGELOG/ROADMAP and the l5 ledger align; the union gate completed_at is corrected to the API value 17:33:02Z (poll-tick artifact). operational_activation and external hosting claims remain false.

@@ -2,10 +2,10 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-13T21:17:21Z",
-  "observed_main_sha": "287b27ac507a1089726c7cb8ce461f1c550f0b07",
+  "observed_at": "2026-09-13T23:07:10Z",
+  "observed_main_sha": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
   "product_version": "2.0.16",
-  "latest_published_release": "v2.0.15",
+  "latest_published_release": "v2.0.16",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -34,37 +34,67 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.15",
-    "published_at": "2026-09-05T20:17:20Z",
-    "pull_request": 27,
-    "checked_head": "9fcc9d943c74260c02a920a59490143f91cb38b2",
-    "merge_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
-    "merged_at": "2026-09-05T20:14:37Z",
-    "tag_object": "ec4c399a858c6249252bf62313abf8df9d0b2298",
-    "tree": "f01e9b0d1f80fb6731c68079540fd98e5c1f64ac",
+    "tag": "v2.0.16",
+    "published_at": "2026-09-13T22:04:08Z",
+    "pull_request": 79,
+    "checked_head": "2b1517986b9b5b83a95b1286baac161074c58175",
+    "merge_commit": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
+    "merged_at": "2026-09-13T22:02:03Z",
+    "tag_object": "8486ddb648f97e79a5f3a81d9b539378d2d4b301",
+    "tree": "2c24c33873c972822354218addf983b8166fa40a",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.15.zip",
-      "sha256": "1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.15.zip.sha256",
-      "sidecar_sha256": "8f3ed4b8eb96f7984eb38b0c988bd8a8cee8cdc789bca52527084b78fd791c6d",
+      "path": "packages/adaptive-grok-build-pro-v2.0.16.zip",
+      "sha256": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256",
+      "sidecar_sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "conclusion": "SUCCESS",
-      "check_run_id": 101365945968,
-      "attestation_id": "4a13e71c-25e7-4272-80fa-8153590edc84",
+      "check_run_id": 103797448701,
+      "attestation_id": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
       "signer": "0519cf1d47436f2e",
       "github_app_id": 4694114
     },
     "gitguardian": {
-      "conclusion": "SKIPPED",
-      "check_run_id": 101365931711,
-      "caveat": "GitHub reported the run skipped after the operator dispositioned its finding on the public landing CSP digest as a false positive; it is not credential evidence and not merge authority. Branch protection binds only adaptive-trust-ci/verified@06ecf1c875bc."
+      "conclusion": "SUCCESS",
+      "note": "GitGuardian passed on the artifact-child head; the earlier generic-detector finding on archived grant digests (issue #73) is a different commit class and not a gate."
     },
-    "notes": "The artifact is bound to the immutable v2.0.15 tag target. Repository publication does not establish an operational landing provider or host, M8 cohort/activation, or real M9 deployment, and the design-partner pilot's first live model attempt remains blocked by landing target drift (6990103 -> observed 80d6215)."
+    "notes": "The artifact is bound to the immutable v2.0.16 tag target. The archive preserves the pre-publication release-sync snapshot, so candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.15",
+      "published_at": "2026-09-05T20:17:20Z",
+      "pull_request": 27,
+      "checked_head": "9fcc9d943c74260c02a920a59490143f91cb38b2",
+      "merge_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+      "merged_at": "2026-09-05T20:14:37Z",
+      "tag_object": "ec4c399a858c6249252bf62313abf8df9d0b2298",
+      "tree": "f01e9b0d1f80fb6731c68079540fd98e5c1f64ac",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.15.zip",
+        "sha256": "1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.15.zip.sha256",
+        "sidecar_sha256": "8f3ed4b8eb96f7984eb38b0c988bd8a8cee8cdc789bca52527084b78fd791c6d",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 101365945968,
+        "attestation_id": "4a13e71c-25e7-4272-80fa-8153590edc84",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": 4694114
+      },
+      "gitguardian": {
+        "conclusion": "SKIPPED",
+        "check_run_id": 101365931711,
+        "caveat": "GitHub reported the run skipped after the operator dispositioned its finding on the public landing CSP digest as a false positive; it is not credential evidence and not merge authority. Branch protection binds only adaptive-trust-ci/verified@06ecf1c875bc."
+      },
+      "notes": "Historical: superseded as the current published release by v2.0.16."
+    },
     {
       "tag": "v2.0.14",
       "published_at": "2026-09-04T16:58:48Z",
@@ -291,42 +321,42 @@
   },
   "local_candidate": {
     "version": "2.0.16",
-    "status": "artifact_bytes_delivered",
-    "route_id": null,
-    "branch": null,
-    "change_package": null,
-    "source_base": "287b27ac507a1089726c7cb8ce461f1c550f0b07",
+    "status": "published",
+    "route_id": "105344d0728b",
+    "branch": "feature/v2.0.16-release-sync",
+    "change_package": "engineering/changes/20260913-v2-0-16-release-sync-identity-bump-to-2-0-16-pub-105344",
+    "source_base": "1a8c89170349fcc2597be0a1665b0e0a31d124e0",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
-    "source_gate_status": "pending_route_dispatch",
-    "review_status": "pending",
-    "checked_head": null,
-    "merge_commit": null,
-    "tree": null,
-    "pull_request": null,
-    "artifact_status": "pending_tag_and_release",
+    "source_gate_status": "passed_for_artifact_head",
+    "review_status": "four_route_selected_reviews_passed",
+    "checked_head": "2b1517986b9b5b83a95b1286baac161074c58175",
+    "merge_commit": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
+    "tree": "2c24c33873c972822354218addf983b8166fa40a",
+    "pull_request": 79,
+    "artifact_status": "published_tag_bound",
     "artifact_child": {
       "identity": "A",
       "source_parent": "287b27ac507a1089726c7cb8ce461f1c550f0b07",
       "source_parent_tree": "5334c604bcdcec8fcf2c56be758c445d98a75f23",
-      "commit": null,
-      "tree": null,
+      "commit": "2b1517986b9b5b83a95b1286baac161074c58175",
+      "tree": "2c24c33873c972822354218addf983b8166fa40a",
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.16.zip",
         "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256"
       ],
       "zip_sha256": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
       "sidecar_sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
-      "status": "built_byte_reproducible_twice",
-      "requirement": "Tag v2.0.16 and the GitHub Release bind to the exact merged commit of this artifact-child pull request; published stays false and merge_commit/tree stay null until the post-merge documentation successor records the tag binding.",
-      "zip_source_note": "The archive was built from the merged release-sync tree 287b27ac507a1089726c7cb8ce461f1c550f0b07; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
+      "status": "published_as_v2.0.16",
+      "zip_source_note": "The archive was built from the merged release-sync tree 287b27ac507a1089726c7cb8ce461f1c550f0b07; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent).",
+      "requirement": "Released: tag 8486ddb648f97e79a5f3a81d9b539378d2d4b301 binds merge 969c4f65f54ef9230f3f94587e228098d1c2ecb9 and the GitHub Release shipped the tracked ZIP+sidecar bytes; operational activation remains outside this record."
     },
-    "published": false,
-    "published_at": null,
-    "external_effect": false,
-    "external_effect_scope": null,
+    "published": true,
+    "published_at": "2026-09-13T22:04:08Z",
+    "external_effect": true,
+    "external_effect_scope": "github_repository_delivery_and_release_only",
     "operational_activation": false,
-    "notes": "Artifact bytes (zip + sidecar, built twice byte-identically from the merged release-sync tree 287b27a) are delivered into the repository tree. This \"delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect, no operational activation yet; published/external_effect/operational_activation remain false and the tag/release bind to the merged commit under exact delegated grants."
+    "notes": "Artifact bytes published through tag v2.0.16 and the GitHub Release at 2026-09-13T22:04:08Z. 'Published' scopes to repository delivery only: external_effect is repository release, operational_activation remains false; no provider installation, host mutation, hosting or deployment occurred."
   },
   "delivered_non_milestone_work": [
     {
@@ -351,15 +381,15 @@
     }
   ],
   "active_delivery": {
-    "route_id": "9f67efd2575c",
-    "branch": "feature/l5-multimodal-landing-factory",
+    "route_id": "105344d0728b",
+    "branch": "feature/v2.0.16-release-sync",
     "pull_request": 24,
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
-    "status": "v2.0.15 published; L5 stack delivered to main at eb9df64; v2.0.16 release sync pending",
+    "status": "v2.0.16_published_repository_delivery_complete",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "v2.0.16 tag and GitHub Release are pending after the sync merges land: the L5 union (#75), the evidence ledger (#72) and post-landing hardening (#77) are on main, so the remaining work is the 2.0.16 identity commit with its ZIP+sidecar artifact child on its own exact-head App check. Any operational landing provider, target mutation, hosting/indexing/deployment, factual M8 cohort/activation, or real M9 qualification still requires a separate routed change, evidence, and explicit authority.",
+    "next_action": "v2.0.16 is published as repository source and the immutable ZIP+sidecar. Operational activation (provider credentialing on the dedicated host, installation, publication apply, M8 cohort, M9 production) remains outside this release and requires separate exact delegated authority and a fresh exact-head App check.",
     "local_source_gate": {
       "status": "passed_for_artifact_head",
       "product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
@@ -1112,7 +1142,7 @@
     "host-local deployment overlays and scratch"
   ],
   "l5_production_preparation": {
-    "status": "delivered_to_main_at_eb9df64_pending_v2_0_16_release",
+    "status": "released_v2_0_16_operational_activation_separate",
     "branch": "main",
     "route_id": "2a890b6485a5",
     "actual_main_observation": "eb9df64bca333f30ec58f8c725a021360e22ed92",
@@ -1120,7 +1150,7 @@
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
     "evidence_index": "engineering/reviews/l5-delivery-stack.json",
-    "next_action": "Post-landing hardening (#60 derived invariant, #61 production prohibited-member assertion, #63 real PDF worker execution test) in flight; then release sync (VERSION/CHANGELOG/README + tag) and operator activation on the dedicated host under separate exact delegations.",
+    "next_action": "Operational activation only: dedicated-host provisioning under exact delegated authority (installer, provider.conf, unit enable/start, publication target) remains operator-owned; repository release is complete.",
     "slice_branches": [
       "feat/l5-split-a-boundaries",
       "feat/l5-split-b-source-epoch",
