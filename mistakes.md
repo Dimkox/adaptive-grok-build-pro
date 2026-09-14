@@ -911,3 +911,12 @@ A deployment staging checkout failed because a clone of the local worktree repos
 **Root cause:** review report files were treated as commentary outside the product rather than as committed content of the repository. Each appended round wrote to the end of the same tracked Markdown file, and the final append left a trailing newline pair; nothing in the local pre-flight set (`ruff`, `bandit`, unittest discovery, coverage) examines Markdown whitespace, so the only thing that could surface it was the gate, at the very end of the cycle.
 
 **Rule:** before staging, run the gate's own hygiene check over the diff (`git diff --check <base>`) and lint every evidence file the same way as source — end with exactly one newline, no trailing whitespace — and instruct subagents that append into the tree to do the same. Cheap enough to cost nothing when done before commit; expensive when it costs a full verification window.
+
+## 2026-09-14 — Check the grant scope/action mapping before materializing consent
+
+The first runtime-upgrade grant command paired `production` scope with the `external-write` action and failed before creating a grant because the recovery prose did not distinguish the CLI's supported scope/action matrix. Reading `add_approval` established that host operations require `external-write` scope, after which the same explicitly delegated, resource-bound operation was materialized successfully. Validate the implementation's scope/action mapping rather than inferring it from an operation's production environment.
+
+
+## 2026-09-14 — Confused an operation not performed with a site not deployed
+
+The L5 rollout performed no site publication, but I phrased that as “the public site is not published” and treated “go ahead” as a new publication task before checking the existing host and the synthetic artifact's content. This conflated the scope of my own actions with external state; read-only HTTPS comparison showed the working site already matched a newer landing main, so no publication or overwrite was performed. Verify the current destination and requested artifact before proposing a deployment, and resolve an ambiguous source-of-truth reference before treating a website as that source.
