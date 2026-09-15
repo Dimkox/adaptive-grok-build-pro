@@ -16,11 +16,13 @@ from .architecture_fitness import diff_architecture, evaluate_fitness
 from .receipts import (
     active_architecture_binding,
     active_governance_binding,
+    validate_evidence,
     write_receipt,
 )
 from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
 from .util import changed_files, command_exists, now_utc, read_text_limited, run, tree_fingerprint
+from .workflow_artifacts import WorkflowArtifactError, validate_stored_workflow
 
 
 @dataclass
@@ -260,6 +262,90 @@ def _governance_check(
             CheckResult("governance", "fail", str(exc), details=details),
             {"configured": True, "error": str(exc), "status": "fail"},
         )
+
+
+def _workflow_artifacts_check(
+    root: Path,
+    route: dict[str, object] | None,
+    active_change: dict[str, object] | None,
+    current_fingerprint: str,
+) -> tuple[CheckResult, dict[str, object]]:
+    change = active_change or {}
+    change_id = change.get("change_id")
+    relative = change.get("path")
+    if not isinstance(change_id, str) or not isinstance(relative, str):
+        return CheckResult("workflow-artifacts", "skip", "no active change"), {
+            "configured": False,
+            "status": "not_configured",
+        }
+    expected = f"engineering/changes/{change_id}"
+    if relative != expected:
+        return CheckResult("workflow-artifacts", "fail", "active change path is not canonical"), {
+            "configured": True,
+            "status": "fail",
+            "error": "active change path is not canonical",
+        }
+    manifest = root / relative / "workflow/manifest.json"
+    try:
+        metadata = manifest.lstat()
+    except FileNotFoundError:
+        return CheckResult("workflow-artifacts", "skip", "workflow artifacts are not configured"), {
+            "configured": False,
+            "status": "not_configured",
+        }
+    except OSError as exc:
+        return CheckResult("workflow-artifacts", "fail", str(exc)), {
+            "configured": True,
+            "status": "fail",
+            "error": str(exc),
+        }
+    if not manifest.is_file() or manifest.is_symlink():
+        return CheckResult("workflow-artifacts", "fail", "workflow manifest is not a regular file"), {
+            "configured": True,
+            "status": "fail",
+            "error": "unsafe manifest",
+        }
+    del metadata
+    try:
+        canonical_route = dict(route or {})
+        receipt_errors = validate_evidence(
+            root,
+            canonical_route,
+            current_fingerprint=current_fingerprint,
+        )
+        validation, report = validate_stored_workflow(
+            root,
+            change_id,
+            canonical_route,
+            current_fingerprint=current_fingerprint,
+            receipt_errors=receipt_errors,
+        )
+        status = "pass" if validation["ok"] else "fail"
+        details = [
+            {"severity": "error", "code": "workflow-convergence", "path": f"{relative}/workflow", "message": message}
+            for message in validation["errors"]
+        ]
+        return CheckResult("workflow-artifacts", status, f"convergence={validation['status']}", details=details), {
+            "configured": True,
+            "status": status,
+            "graph_digest": report.get("graph_digest"),
+            "report_digest": report.get("report_digest"),
+            "findings": report.get("findings", []),
+        }
+    except (WorkflowArtifactError, OSError, TypeError, ValueError, MemoryError) as exc:
+        return CheckResult(
+            "workflow-artifacts",
+            "fail",
+            str(exc),
+            details=[
+                {
+                    "severity": "error",
+                    "code": getattr(exc, "code", "workflow-invalid"),
+                    "path": f"{relative}/workflow",
+                    "message": str(exc),
+                }
+            ],
+        ), {"configured": True, "status": "fail", "error": str(exc)}
 
 
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300) -> CheckResult:
@@ -977,12 +1063,19 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     governance_check, governance_metadata = _governance_check(
         root, route, architecture_metadata
     )
+    workflow_check, workflow_metadata = _workflow_artifacts_check(
+        root,
+        route,
+        get_active_change(root),
+        checked_fingerprint,
+    )
 
     results: list[CheckResult] = [
         _git_diff_check(root, mode, git_ranges),
         spec_check,
         architecture_check,
         governance_check,
+        workflow_check,
         _secret_scan(root, files),
         _contracts(root, files),
         _sql_safety(root, files),
@@ -1029,6 +1122,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'spec': spec_metadata,
         'architecture': architecture_metadata,
         'governance': governance_metadata,
+        'workflow_artifacts': workflow_metadata,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
     }

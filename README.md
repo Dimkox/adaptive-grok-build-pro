@@ -8,7 +8,7 @@ Identity: **2.0.16**. The latest published release is [`v2.0.16`](https://github
 
 | Layer | Observed state on 2026-09-15 |
 | --- | --- |
-| Repository source | `main` observed at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` (PR #88). M0-M9 source is delivered; the assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
+| Repository source | `main` observed at `b6fe34002fda08ddcb0976746f3a2c39543e781e` (PR #91). M0-M9 source is delivered; durable five-provider landing failover landed through PR #91; the workflow artifact adapters (Spec Kit/BMAD/Superpowers advisory compiler, ADR-0001 with the `workflow_sources` version contract pinning superpowers 6.3.0, BMAD 6.12.0 and spec-kit 1.0.7) are delivered by this pull request. The assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
 | Installed L5 | Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce`; Grok secondary `adaptive-l5-grok.service` at `61a05da`. Both were **active and enabled**. |
 | Proven runtime result | Authenticated artifact generation succeeded for both installed SHAs. Grok produced `artifact_ready` in **29.852 s**, with one provider request and `live_url=null`. [Dated evidence and limits](engineering/runbooks/l5-runtime-observation-2026-09-15.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
@@ -73,7 +73,11 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/grok_route.py`](scripts/grok_route.py)
 - [`scripts/grok_change.py`](scripts/grok_change.py)
 - [`scripts/grok_spec.py`](scripts/grok_spec.py)
+- [`scripts/grok_artifacts.py`](scripts/grok_artifacts.py)
 - [`schemas/change-spec.schema.json`](schemas/change-spec.schema.json)
+- [workflow source schema](schemas/workflow-source-v1.schema.json)
+- [workflow task graph schema](schemas/workflow-task-graph-v1.schema.json)
+- [workflow convergence report schema](schemas/workflow-convergence-report-v1.schema.json)
 - [architecture model](architecture/system.yaml)
 - [architecture rules](architecture/rules.yaml)
 - [architecture adoption marker](architecture/adoption.json)
@@ -119,6 +123,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
+- Advisory model-neutral Spec Kit, BMAD, and Superpowers artifact imports with stable task graphs and deterministic convergence (never route, governance, approval, receipt, or merge authority)
 - Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
 - Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the L5 landing runtime with bounded artifact generation
 - Separate operator-owned `pilot/` boundary with built-in default-off phased CLI, one exact repository/base, one Codex start, one test command, literal GitHub effect resources, deterministic restart recovery, and no automatic write retry
@@ -200,7 +205,17 @@ Pins are **minimum or newer**. `built` is the version this local stack was verif
 python3 scripts/grok_doctor.py --offer-install
 ```
 
-Machine-readable local pins: `.grok-stack/config/toolchain.json`. Trust CI uses separately built API, worker and runner images pinned by immutable SHA-256 digest in deployment and server policy.
+Machine-readable local pins: `.grok-stack/config/toolchain.json` (its `workflow_sources` block pins the advisory workflow-document parsers). Trust CI uses separately built API, worker and runner images pinned by immutable SHA-256 digest in deployment and server policy.
+
+### Workflow sources (advisory parsers — not installed by this stack)
+
+| Component | Pinned | Upstream | Observed latest | Observed |
+| --- | --- | --- | --- | --- |
+| Superpowers | 6.3.0 | obra/superpowers | 6.3.0 | 2026-09-15 |
+| BMAD Method | 6.12.0 | bmad-code-org/BMAD-METHOD | 6.12.0 | 2026-09-15 |
+| GitHub Spec Kit | 1.0.7 | github/spec-kit | 1.0.7 | 2026-09-15 |
+
+These rows are dated currency observations for the workflow artifact adapters, not install targets; `tests/test_workflow_sources.py` keeps them bound to `.grok-stack/config/toolchain.json` and to named parser tests. Accepted document shapes and the known-unparsed list are defined in the [upstream format amendment](docs/superpowers/specs/2026-09-15-workflow-artifact-adapters-upstream-amendment.md).
 
 ## Install into a project
 

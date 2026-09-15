@@ -45,6 +45,7 @@ MANAGED_FILES = (
     "scripts/grok_route.py",
     "scripts/grok_change.py",
     "scripts/grok_spec.py",
+    "scripts/grok_artifacts.py",
     "scripts/grok_verify.py",
     "scripts/grok_review.py",
     "scripts/grok_approve.py",
@@ -71,6 +72,9 @@ MANAGED_FILES = (
     "schemas/debt-entry.schema.json",
     "schemas/canonical-example.schema.json",
     "schemas/governance-handoff-v1.schema.json",
+    "schemas/workflow-source-v1.schema.json",
+    "schemas/workflow-task-graph-v1.schema.json",
+    "schemas/workflow-convergence-report-v1.schema.json",
 )
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(

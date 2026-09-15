@@ -85,6 +85,18 @@ python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-cha
    ```
    Then `/release-readiness` and `python3 scripts/grok_deploy.py` to prepare human-owned publish commands (`--record` only with production approval).
 
+### Optional workflow artifact convergence
+
+Create an explicit `engineering/changes/<active-id>/workflow/manifest.json` listing allowlisted GitHub Spec Kit, BMAD, or Superpowers files (accepted shapes and the known-unparsed list live in [docs/superpowers/specs/2026-09-15-workflow-artifact-adapters-upstream-amendment.md](docs/superpowers/specs/2026-09-15-workflow-artifact-adapters-upstream-amendment.md)). Inspect without writing first:
+
+```bash
+python3 scripts/grok_artifacts.py import --change-id <active-id>
+python3 scripts/grok_artifacts.py compile --change-id <active-id>
+python3 scripts/grok_artifacts.py converge --change-id <active-id>
+```
+
+Persist the exact derived `workflow/task-graph.json` / `workflow/convergence-report.json` files or marked framework projections/exports only with `--write --expected-digest <sha256>`; use 64 zeroes only to create a missing target. The graph stores source-status hints, while current canonical receipts derive ephemeral effective status without a tracked rewrite. Per-target runtime locks serialize cooperating writers. Missing targets use atomic no-clobber creation; existing targets require platform atomic exchange. Any post-exchange mismatch rolls back before displaced content is read, and a second racing entry is retained under a bounded recovery/temp name for manual forward recovery rather than deleted. Imported documents and their tightly allowlisted RED/GREEN argv are never executed and never become route, governance, approval, receipt, or merge authority. `grok_verify` checks stored graph/report read-only when the manifest exists and skips this check for historical packages. The `workflow_sources` currency observation is valid for 90 days after `observed_at`: before the freshness test fails, re-observe upstream latest releases, refresh `.grok-stack/config/toolchain.json` and the README table, and re-point any renamed shape test.
+
 7. Trust project hooks in the TUI: `/hooks-trust`
 
 ## Try the local browser demo

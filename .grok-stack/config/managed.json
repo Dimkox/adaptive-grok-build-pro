@@ -53,6 +53,7 @@
   ],
   "scripts": [
     "grok_approve.py",
+    "grok_artifacts.py",
     "grok_architecture.py",
     "grok_governance.py",
     "grok_history.py",
@@ -61,6 +62,7 @@
     "grok_doctor.py",
     "grok_review.py",
     "grok_route.py",
+    "grok_spec.py",
     "grok_status.py",
     "grok_verify.py"
   ]

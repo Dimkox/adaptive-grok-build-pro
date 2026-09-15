@@ -31,6 +31,7 @@ flowchart LR
     node_23bed8fcbfc79861["NODE-LOCAL-VERIFIER | local_component | repository engineering"]
     node_d4421144c1dd4abe["NODE-SEO-SHOWCASE-LAB | local_component | repository engineering"]
     node_e1da543fa66b0086["NODE-STAGED-DELIVERY-SOURCE | local_component | repository engineering"]
+    node_05e59b1e4a9cc0f9["NODE-WORKFLOW-ARTIFACT-COMPILER | local_component | repository engineering"]
   end
   subgraph domain_ecfc7e3b9c85919c["TD-PILOT-EXECUTION"]
     node_22df40caedcff532["NODE-PILOT-CODEX-SUPERVISOR | worker | single local pilot operator"]
@@ -47,6 +48,7 @@ flowchart LR
   subgraph domain_734c10023f9857a2["TD-REPOSITORY"]
     node_8938bd3db1932751["NODE-CHANGE-SPEC-EVIDENCE | repository | repository engineering"]
     node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
+    node_f52610429cb98f23["NODE-WORKFLOW-ARTIFACT-SOURCES | repository | repository contributors"]
   end
   subgraph domain_7f80d82d053144ab["TD-TRUST-CI-CONTROL"]
     node_d0e570b2fbe52f98["NODE-TRUST-CI-API | service | Trust CI operators"]
@@ -59,6 +61,7 @@ flowchart LR
     node_070dda93443dcc1f["NODE-TRUST-CI-WORKER | worker | Trust CI operators"]
   end
   node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql"| node_1a6c7efb2d08591b
+  node_8938bd3db1932751 -->|"EDGE-CHANGE-EVIDENCE-WORKFLOW-COMPILER | data_flow | filesystem"| node_05e59b1e4a9cc0f9
   node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_3703dbb382efdb0f -->|"EDGE-DEMO-TEST-CLIENT-LOOPBACK | dependency | https"| node_9f1df3a916fb955a
   node_9f1df3a916fb955a -->|"EDGE-DEMO-UI-READS-LOCAL-PREFLIGHT | dependency | python_import"| node_770cf3a1783e8525
@@ -93,6 +96,7 @@ flowchart LR
   node_fd325b0205e2e68b -->|"EDGE-PILOT-STATE | data_flow | filesystem"| node_814a7fe70af9f16d
   node_22df40caedcff532 -->|"EDGE-PILOT-SYNTHETIC-UNIX-PROBE | control | unix_http"| node_22df40caedcff532
   node_770cf3a1783e8525 -->|"EDGE-ROUTE-CHANGE-EVIDENCE | control | filesystem"| node_8938bd3db1932751
+  node_770cf3a1783e8525 -->|"EDGE-ROUTE-WORKFLOW-COMPILER | control | filesystem"| node_05e59b1e4a9cc0f9
   node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-EXTERNAL-HOLDOUT | data_flow | filesystem"| node_0a0fe2f046a648e9
   node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-WORKSPACE | data_flow | filesystem"| node_2e8a7072de3f3743
   node_e1da543fa66b0086 -->|"EDGE-STAGED-DELIVERY-EARNED-AUTONOMY | dependency | python_import"| node_379217d10ea012c3
@@ -101,3 +105,6 @@ flowchart LR
   node_070dda93443dcc1f -->|"EDGE-WORKER-GITHUB-PUBLICATION | publication | https"| node_8b8a8cd21b180532
   node_070dda93443dcc1f -->|"EDGE-WORKER-POSTGRES | data_flow | postgresql"| node_1a6c7efb2d08591b
   node_070dda93443dcc1f -->|"EDGE-WORKER-WORKSPACE | control | filesystem"| node_2e8a7072de3f3743
+  node_05e59b1e4a9cc0f9 -->|"EDGE-WORKFLOW-COMPILER-CHANGE-EVIDENCE | publication | filesystem"| node_8938bd3db1932751
+  node_05e59b1e4a9cc0f9 -->|"EDGE-WORKFLOW-COMPILER-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
+  node_f52610429cb98f23 -->|"EDGE-WORKFLOW-SOURCES-COMPILER | data_flow | filesystem"| node_05e59b1e4a9cc0f9

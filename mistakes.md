@@ -958,3 +958,86 @@ Lexical input exclusions allowed double-slash aliases because normalization was 
 ## 2026-09-15 — Establish committed state before testing lost-response recovery
 
 The recovery fixture shared a 0.3-second capability/POST budget and assumed the synthetic artifact had committed before cancellation, so scheduler delay could invalidate its prerequisite. Commit explicitly before dropping the response, block observation until the resume step, and test short deadlines separately from durable recovery.
+
+## 2026-08-30 — Treated imported verification metadata as executable-shaped authority
+
+**Symptom:** Review demonstrated that an imported task could persist `bash -c`, `python -c`, or network-tool argv in RED/GREEN fields while the graph presented them as runnable commands.
+
+**Root cause:** The first implementation validated only that command metadata was an argv-shaped string list; it did not define and enforce a closed read-only verification-command policy at the untrusted-input boundary.
+
+## 2026-08-30 — Reimplemented receipt freshness incompletely
+
+**Symptom:** A three-field forged receipt, or a receipt reached through a symlink, could satisfy workflow advanced-status logic without canonical spec, architecture, governance, kind, or route binding.
+
+**Root cause:** Workflow convergence used an ad-hoc `Path.read_bytes()` predicate instead of the canonical receipt validator and descriptor-bound bounded reads.
+
+## 2026-08-30 — Called check-then-replace an atomic CAS
+
+**Symptom:** Two writers or an interposed filesystem mutation could replace a value after the digest check and lose the competing update.
+
+**Root cause:** The original CAS had no per-target serialization or atomic exchange identity protocol, so its final check and rename were separate operations with a publication gap.
+
+## 2026-08-30 — Let schemas and runtime validation drift
+
+**Symptom:** Runtime accepted 501 tasks, 21 reviewers, 33 argv items, empty/oversized source versions, backslash paths, and ordinary Markdown status was invisible unless a hidden comment existed.
+
+**Root cause:** One generic 500-item string-list helper and annotation-first fixtures were used instead of shared field-specific model validation and native-format counterexamples.
+
+## 2026-08-30 — Validated a CAS competitor before restoring its name
+
+**Symptom:** A symlink, FIFO, oversized, unreadable, or second racing entry displaced by atomic exchange could be deleted by failure cleanup while the new payload remained published.
+
+**Root cause:** Post-exchange validation opened the displaced name before rollback, and cleanup tracked only name existence rather than proving the entry was the operation-owned inode.
+
+## 2026-08-30 — Persisted receipt authority in task source state
+
+**Symptom:** A tracked complete task required a current fingerprint inside the tracked graph, so creating receipts changed the very fingerprint the task required and made verification cyclic.
+
+**Root cause:** The first task contract conflated an imported/native source-status claim with ephemeral effective status instead of deriving verification solely from current canonical receipts at runtime.
+
+## 2026-08-30 — Kept parser scope across independent BMAD headings
+
+**Symptom:** Tasks in a second epic inherited the first epic's identity and dependency chain.
+
+**Root cause:** BMAD normalization selected one heading before scanning tasks rather than resetting section identity, ordinal, and predecessor at each story or epic heading.
+
+## 2026-08-30 — Left authority readers and parser failures outside the shared boundary
+
+**Symptom:** The artifact CLI followed symlinked route/change files and blocked on FIFOs, invalid cover IDs passed direct CAS validation, and recursive JSON parser failures escaped as raw exceptions.
+
+**Root cause:** CLI pointers, runtime task semantics, and JSON recursion were implemented beside—not through—the descriptor-bound loader and shared closed-model validation boundary.
+
+## 2026-08-30 — Dropped ctime and trusted a stat-before-unlink cleanup
+
+**Symptom:** A same-inode content mutation with restored size and mtime passed post-exchange identity checks, while replacement of the temporary pathname immediately before cleanup was deleted.
+
+**Root cause:** CAS identities discarded `st_ctime_ns` after the bounded read, and recovery still treated a prior stat as ownership proof for a later pathname unlink instead of preserving the current entry through a unique no-clobber rename.
+
+## 2026-08-30 — Treated a final pre-syscall identity check as linearization proof
+
+**Symptom:** Content could change after the final target identity check but before `renameat2`, allowing the exchange to displace bytes different from the expected digest.
+
+**Root cause:** CAS validated only metadata around the atomic exchange instead of securely hashing the bounded displaced regular entry after the exchange and before classifying publication as successful.
+
+## 2026-09-06 — Treated local extraction as GitHub delivery
+
+**Symptom:** The session started a side worktree and copied CLI source before answering whether GitHub PRs, checks, and `main` were aligned; the user had to ask twice.
+**Root cause:** “Continue to final stage” was read as local file work first. Merge authority is the App-owned check on an exact PR SHA, so GitHub open-PR/check/`main`/tag facts are the first coordination step, not a follow-up after a worktree.
+
+## 2026-09-10 — Do not infer absent real delivery from an empty factory cohort
+
+Root cause: the autonomy assessment treated the controller repository and its landing pilot as the complete evidence universe, overlooking the user-named consumer projects Puls Pump Selector, Google Ads Automation and ii-Tonya. Their GitHub histories and evidence contain real implementation, integration, stand acceptance and native deployment; an unpopulated M8 ledger means qualifying tasks have not been accounted for, not that no real tasks exist. Future assessments must inspect actual delivery branches (Ads uses main while its default branch is codex/bootstrap) and distinguish observed project outcomes from exact-profile autonomy qualification.
+
+## 2026-09-15 Grok merged-release preparation
+
+A no-local clone transferred local branch refs but omitted the merged commit reachable only through the source remote-tracking ref; explicitly fetch the exact merged SHA into the independent clone before checking it out. The coordinator also launched dependent calls without enforcing earlier exit codes, exposing two avoidable preparation errors: external-write belongs to the external-write grant scope, and the non-executable installer must be invoked through sh. No installer ran or release directory was created in those failed attempts; gate every dependent mutation on successful preparation and grant results.
+
+## 2026-09-15 Public current-state drift after live activation
+
+The Grok delivery appended a narrow source fact and recorded activation in PR/runtime evidence, but did not reconcile the existing current-state assertions in README, DARK_FACTORY_ROADMAP, START_HERE and PROJECT_STATE. Historical source-only and release-pending statements therefore remained presented as current facts even after publication and live activation; passing structural/test checks did not detect that semantic contradiction. Future state closure must reconcile the entire canonical current-state set against observed release and runtime evidence, while keeping L5 artifact success distinct from a validated issue-to-human-accepted-PR pilot.
+
+## 2026-09-15 — Accepted an upstream-format claim from placeholder-shaped fixtures
+
+**Symptom:** The port initially asserted "no drift" at BMAD v6.12.0 while genuine upstream story files (`## Epic N:` / `### Story N.M:`, bare `Status:` lines, front-matter `status: in-review`) parsed to nothing and spec-kit's own template emphasis was rejected as YAML authority.
+**Root cause:** `source_version` was accepted but never consumed, every fixture used invented H1/`## Status`/`"1"` shapes, and no test ever fed an unmodified upstream artifact body — CI was blind to format drift by construction.
+**Durable rule:** Format-currency claims require at least one verbatim-upstream-shape test per pinned release; document known-unparsed subsets explicitly instead of letting silent-empty parses pass as support.

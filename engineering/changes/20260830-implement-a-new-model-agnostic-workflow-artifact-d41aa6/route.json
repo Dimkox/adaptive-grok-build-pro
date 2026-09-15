@@ -1,0 +1,93 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "dccaeec2a6b79c73663765f5909243e468e4b070",
+  "base_fingerprint": "5cc5cd418ab5fbe40740f50999b2ef712b059a38c60c41a5c433a5ba7b16c897",
+  "complexity": "high-risk",
+  "created_at": "2026-08-30T15:38:20+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "integration",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=integration,security,api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "d41aa61075eb",
+  "schema_version": 1,
+  "session_id": "workflow-artifact-adapters",
+  "status": "routed",
+  "task": "Implement a new model-agnostic workflow artifact compiler with safe GitHub Spec Kit, BMAD Method, and Superpowers import/export adapters, machine-readable task graph, and convergence validation; canonical M1/M2/M3 artifacts and Trust CI remain authoritative",
+  "task_domains": [
+    "integration",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "enterprise-integration",
+    "security-sensitive-change"
+  ],
+  "write_agent": "integration_implementer"
+}

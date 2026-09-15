@@ -1,0 +1,99 @@
+{
+  "effective_tasks": [
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-681227cdb468"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-68c52ade2b9c"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-87770392ba6d"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-94ac0b0601ae"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-abdc2eaf8816"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-d0e95df7c187"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-d19dd2dbf384"
+    },
+    {
+      "effective_status": "pending",
+      "source_status": "pending",
+      "task_id": "TASK-faae6bab28eb"
+    }
+  ],
+  "errors": [],
+  "ok": true,
+  "report": {
+    "change_id": "20260830-implement-a-new-model-agnostic-workflow-artifact-d41aa6",
+    "coverage": {
+      "covered": [
+        "AC-001",
+        "AC-002",
+        "AC-003",
+        "AC-004",
+        "AC-005",
+        "AC-006",
+        "AC-007",
+        "AC-008",
+        "AC-009",
+        "AC-010",
+        "AC-011",
+        "AC-012",
+        "FORBID-001",
+        "FORBID-002",
+        "FORBID-003",
+        "INV-001",
+        "INV-002",
+        "INV-003"
+      ],
+      "missing": [],
+      "required": [
+        "AC-001",
+        "AC-002",
+        "AC-003",
+        "AC-004",
+        "AC-005",
+        "AC-006",
+        "AC-007",
+        "AC-008",
+        "AC-009",
+        "AC-010",
+        "AC-011",
+        "AC-012",
+        "FORBID-001",
+        "FORBID-002",
+        "FORBID-003",
+        "INV-001",
+        "INV-002",
+        "INV-003"
+      ]
+    },
+    "findings": [],
+    "graph_digest": "7cd70572e597b76ac2d2d4e10e7a9ac2cb6f8a03efd27913984d908eaf0065ca",
+    "report_digest": "1eeaf4ae37ec846c5d921666aebafc2a8a10f20c4110f74726f69602b3720081",
+    "schema_version": 1,
+    "source_manifest_digest": "aa5985f1b35783a73776cf81f2cf92815159988402be2fc59b81e19991c12b5b",
+    "status": "pass"
+  },
+  "status": "pass"
+}

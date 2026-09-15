@@ -1461,6 +1461,18 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(governance_handoff.version, "1")
         self.assertEqual(
+            {
+                record.id
+                for record in records
+                if record.id.startswith("CONTRACT-WORKFLOW-")
+            },
+            {
+                "CONTRACT-WORKFLOW-SOURCE-V1",
+                "CONTRACT-WORKFLOW-TASK-GRAPH-V1",
+                "CONTRACT-WORKFLOW-CONVERGENCE-REPORT-V1",
+            },
+        )
+        self.assertEqual(
             set(documents["CONTRACT-GOVERNANCE-HANDOFF-V1"]["required"]),
             {
                 "architecture_digest",

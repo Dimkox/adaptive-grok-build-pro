@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import stat
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -36,6 +37,20 @@ from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
 
 ADOPTION_PATH = Path("architecture/adoption.json")
 _GOVERNANCE_PATHS = (GOVERNANCE_RULES_PATH, DEBT_PATH, EXAMPLES_PATH)
+# Keep byte-identical to workflow_artifacts.RECEIPT_KINDS (parity-tested).
+# Domain reviewer kinds come from router.py review selection and grok_review CLI.
+RECEIPT_KINDS = frozenset(
+    {
+        "verification",
+        "code_review",
+        "test_review",
+        "bitrix_review",
+        "security_review",
+        "data_review",
+        "release_review",
+    }
+)
+MAX_RECEIPT_BYTES = 262_144
 
 
 def _exact_head(root: Path) -> str | None:
@@ -553,18 +568,133 @@ def write_receipt(
 
 
 def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
-    data = load_json(receipt_dir(root, route_id) / f'{kind}.json')
-    return data if isinstance(data, dict) else None
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", route_id) or kind not in RECEIPT_KINDS:
+        raise RuntimeError("receipt route or kind is outside the closed set")
+    required_flags = ("O_DIRECTORY", "O_NOFOLLOW", "O_CLOEXEC", "O_NONBLOCK")
+    if any(not hasattr(os, name) for name in required_flags) or os.open not in getattr(os, "supports_dir_fd", set()):
+        raise RuntimeError("descriptor-safe receipt reads are unavailable")
+    canonical = root.resolve(strict=True)
+    directory_fd: int | None = None
+    receipt_fd: int | None = None
+    flags_dir = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+    flags_file = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK
+    try:
+        directory_fd = os.open(canonical, flags_dir)
+        for component in (".grok-stack", "runtime", "receipts", route_id):
+            next_fd = os.open(component, flags_dir, dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = next_fd
+        receipt_fd = os.open(f"{kind}.json", flags_file, dir_fd=directory_fd)
+        before = os.fstat(receipt_fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_RECEIPT_BYTES:
+            raise RuntimeError("receipt is not a bounded regular file")
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(receipt_fd, min(65_536, MAX_RECEIPT_BYTES + 1 - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > MAX_RECEIPT_BYTES:
+                raise RuntimeError("receipt exceeds the byte limit")
+        after = os.fstat(receipt_fd)
+        def identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+            return (
+                value.st_dev,
+                value.st_ino,
+                value.st_mode,
+                value.st_size,
+                value.st_mtime_ns,
+                value.st_ctime_ns,
+            )
+        if identity(before) != identity(after):
+            raise RuntimeError("receipt changed while being read")
+
+        def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+            value: dict[str, Any] = {}
+            for key, item in items:
+                if key in value:
+                    raise RuntimeError("receipt contains a duplicate JSON key")
+                value[key] = item
+            return value
+
+        data = json.loads(
+            b"".join(chunks).decode("utf-8", "strict"),
+            object_pairs_hook=pairs,
+            parse_constant=lambda token: (_ for _ in ()).throw(RuntimeError(f"invalid receipt value: {token}")),
+        )
+        if not isinstance(data, dict):
+            raise RuntimeError("receipt must be a JSON object")
+        return data
+    except FileNotFoundError:
+        return None
+    except RuntimeError:
+        raise
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+        raise RuntimeError(f"receipt cannot be read safely: {exc}") from exc
+    finally:
+        if receipt_fd is not None:
+            os.close(receipt_fd)
+        if directory_fd is not None:
+            os.close(directory_fd)
 
 
-def validate_evidence(root: Path, route: dict[str, Any]) -> list[str]:
+def validate_evidence(
+    root: Path,
+    route: dict[str, Any],
+    *,
+    current_fingerprint: str | None = None,
+) -> list[str]:
     missing: list[str] = []
-    current = tree_fingerprint(root)
-    for kind in route.get('required_evidence', []):
-        receipt = get_receipt(root, route['route_id'], kind)
+    route_id = route.get('route_id')
+    required = route.get('required_evidence')
+    if (
+        not isinstance(route_id, str)
+        or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", route_id)
+        or not isinstance(required, list)
+        or not required
+        or len(required) > len(RECEIPT_KINDS)
+        or any(not isinstance(kind, str) or kind not in RECEIPT_KINDS for kind in required)
+        or len(set(required)) != len(required)
+    ):
+        return ["route: required_evidence is empty, duplicated, or outside the closed receipt set"]
+    if current_fingerprint is not None and not re.fullmatch(r"[0-9a-f]{64}", current_fingerprint):
+        return ["route: trusted current fingerprint is invalid"]
+    current = current_fingerprint or tree_fingerprint(root)
+    base_fields = {
+        'schema_version',
+        'route_id',
+        'kind',
+        'status',
+        'created_at',
+        'tree_fingerprint',
+        'report',
+        'details',
+        'criterion_ids',
+        'spec_digest',
+        'spec_fingerprint',
+    }
+    for kind in required:
+        try:
+            receipt = get_receipt(root, route_id, kind)
+        except RuntimeError as exc:
+            missing.append(f'{kind}: unsafe receipt: {exc}')
+            continue
         if not receipt:
             missing.append(f'{kind}: missing receipt')
             continue
+        if (
+            not base_fields.issubset(receipt)
+            or receipt.get('schema_version') != 1
+            or receipt.get('route_id') != route_id
+            or receipt.get('kind') != kind
+            or receipt.get('status') not in {'pass', 'fail'}
+            or not isinstance(receipt.get('created_at'), str)
+            or not isinstance(receipt.get('details'), dict)
+            or not isinstance(receipt.get('criterion_ids'), list)
+        ):
+            missing.append(f'{kind}: malformed receipt envelope')
         if receipt.get('status') != 'pass':
             missing.append(f'{kind}: status={receipt.get("status")}')
         if receipt.get('stale') is True:
