@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.0.17 — 2026-09-15 (candidate, unpublished)
+
+Twelve pull requests merged after `v2.0.16` was published. This section records **landed source on `main`** and nothing more: `v2.0.16` remains the only published artifact, and the source below reaches a release archive only once the `v2.0.17` artifact child is built from the merged release-sync tree.
+
+- Fixes the L5 draft decode path so model section-item order is canonicalized before validation, closing a live-path bug where an equivalent ordering failed repair (PR #82, checked head `6bd86207`, merged `2026-09-14T02:16:49Z` as `5f6f6ce`, App check `103833535728`)
+- Executes the offline backup/restore boundaries as real factory tests instead of relying on the web-stack fixture coupling (PR #83, checked head `77debe55`, merged `2026-09-14T06:13:25Z` as `31725f1`, App check `103872943772`)
+- Records the PR #82 runtime closure and the landing-preservation decision in project memory (PR #85, checked head `9c147455`, merged `2026-09-14T06:49:45Z` as `e7e8ad1`, App check `103880103525`)
+- Reconciles Grok reasoning-token usage so separately reported reasoning tokens are accounted instead of dropped (PR #88, checked head `4e94f7a9`, merged `2026-09-15T08:00:34Z` as `61a05da`, App check `104295309671`)
+- Reconciles the published release record with the observed live Qwen and Grok runtime state (PR #89, checked head `5b03c1f1`, merged `2026-09-15T10:30:55Z` as `02ac8c3`, App check `104339301084`)
+- Removes the decorative README graph and clarifies the package guidance (PR #90, checked head `af8419e6`, merged `2026-09-15T11:30:57Z` as `7b14736`, App check `104356296867`)
+- Adds the durable Qwen → Grok → OpenAI → Claude → OpenRouter landing failover with capability/attempt APIs and atomic SQLite observations (PR #91, checked head `55deafba`, merged `2026-09-15T16:00:39Z` as `b6fe340`, App check `104440253101`)
+- Lands the workflow artifact adapters that compile Spec Kit, BMAD and Superpowers artifacts into the advisory model, with ADR-0001 and the `workflow_sources` upstream version contract pinning superpowers 6.3.0, BMAD 6.12.0 and spec-kit 1.0.7 (PR #93, checked head `9086f2bc`, merged `2026-09-15T20:03:41Z` as `280cbff`, App check `104536573008`)
+- Adds repository-scoped immutable Trust CI profiles: commands and external holdouts are selected by exact repository, jobs, approvals, checks, replays and attestations bind to the selected policy digest, and catalog holdouts stay confined to paired server-owned trusted roots while legacy schema-v1 behavior is preserved (PR #13, checked head `6130fbb8`, merged `2026-09-15T21:03:37Z` as `4383115`, App check `104552079057`). The capability is source-only: the deployed policy, holdout bundle and branch protection are unchanged
+- Records the Caroline cross-project confirmation as dated, source-pinned observation material with an explicit zero M8 qualifying-task contribution and no activation (PR #64, checked head `45ccb04f2e524d27f97a1b49cb89db65294e891e`, App check `104567389767`, merged `2026-09-15T21:42:34Z` as `01d64e5`)
+- Makes the serialized-CAS adversarial preconditions independent of filesystem `ctime` granularity, removing an intermittent failure of the mandatory `root-unittest` gate command (PR #94, checked head `9437efed`, App check `104591923631`, merged `2026-09-15T22:58:12Z` as `7bbf425`)
+- No `v2.0.17` ZIP, sidecar, tag or GitHub Release exists yet. The artifact child, the tag and the publication record are separate steps, each requiring its own exact delegated action
+
 ## 2.0.16 — 2026-09-13
 
 Assembled L5 production runtime source landed on `main` as the attested tree-identical union of seven delivery slices.

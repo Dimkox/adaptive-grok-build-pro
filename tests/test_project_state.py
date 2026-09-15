@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "b6fe34002fda08ddcb0976746f3a2c39543e781e"  # 2026-09-15 observation, PR #91
+OBSERVED_MAIN_SHA = "7bbf42526f207db0007daafa4cc946cc2d81f465"  # 2026-09-15 observation, PR #94
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
 V2016_TREE = "2c24c33873c972822354218addf983b8166fa40a"
@@ -72,7 +72,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.16")
+        self.assertEqual(state["product_version"], "2.0.17")
         self.assertEqual(state["latest_published_release"], "v2.0.16")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-15T\d{2}:\d{2}:\d{2}Z$")
@@ -353,49 +353,64 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[2]["tree"], RELEASE_TREE)
         self.assertEqual(prior[2]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
-        self.assertEqual(local["version"], "2.0.16")
-        self.assertEqual(local["status"], "published")
-        self.assertEqual(local["route_id"], "105344d0728b")
-        self.assertEqual(local["branch"], "feature/v2.0.16-release-sync")
-        self.assertEqual(local["pull_request"], 79)
+        self.assertEqual(local["version"], "2.0.17")
+        self.assertEqual(local["status"], "pending_release")
+        self.assertEqual(local["route_id"], "f98796afe7de")
+        self.assertEqual(local["branch"], "feature/v2.0.17-release-sync")
+        self.assertIsNone(local["pull_request"])
         self.assertEqual(
             local["change_package"],
-            "engineering/changes/20260913-v2-0-16-release-sync-identity-bump-to-2-0-16-pub-105344",
+            "engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
         )
-        self.assertEqual(local["artifact_status"], "published_tag_bound")
-        self.assertTrue(local["published"])
-        self.assertEqual(local["published_at"], "2026-09-13T22:04:08Z")
-        self.assertTrue(local["external_effect"])
-        self.assertEqual(
-            local["external_effect_scope"],
-            "github_repository_delivery_and_release_only",
-        )
+        self.assertEqual(local["artifact_status"], "pending_unpublished_artifact_child")
+        self.assertFalse(local["published"])
+        self.assertIsNone(local["published_at"])
+        self.assertFalse(local["external_effect"])
+        self.assertIsNone(local["external_effect_scope"])
         self.assertFalse(local["operational_activation"])
-        self.assertEqual(
-            local["artifact_child"]["zip_sha256"],
-            "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
-        )
-        self.assertEqual(
-            local["artifact_child"]["sidecar_sha256"],
-            "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
-        )
-        self.assertEqual(local["checked_head"], V2016_CHECKED_HEAD)
-        self.assertEqual(local["merge_commit"], V2016_MERGE_COMMIT)
-        self.assertEqual(local["tree"], V2016_TREE)
-        # The release was reviewed as the artifact-child head itself; no separate
-        # pre-merge product identity exists, so these must stay null, not stamped.
-        self.assertIsNone(local["reviewed_product_head"])
-        self.assertIsNone(local["reviewed_product_tree"])
-        self.assertEqual(local["artifact_child"]["commit"], V2016_CHECKED_HEAD)
-        self.assertEqual(local["artifact_child"]["tree"], V2016_TREE)
-        self.assertEqual(local["artifact_child"]["status"], "published_as_v2.0.16")
-        self.assertEqual(local["source_base"], V2016_SOURCE_BASE)
+        self.assertIsNone(local["artifact_child"]["zip_sha256"])
+        self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
+        for key in ("reviewed_product_head", "reviewed_product_tree",
+                    "checked_head", "merge_commit", "tree"):
+            self.assertIsNone(local[key], f"pending candidate must not name {key}")
+        for key in ("source_parent", "source_parent_tree", "commit", "tree"):
+            self.assertIsNone(local["artifact_child"][key],
+                              f"pending artifact child must not name {key}")
+        self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
+        self.assertEqual(local["artifact_child"]["status"], "not_built")
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [
-                "packages/adaptive-grok-build-pro-v2.0.16.zip",
-                "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256",
+                "packages/adaptive-grok-build-pro-v2.0.17.zip",
+                "packages/adaptive-grok-build-pro-v2.0.17.zip.sha256",
             ],
+        )
+
+    def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
+        landing = self.state["delivered_change_history"]["post_v2_0_16_landing"]
+        self.assertEqual(landing["status"], "landed_in_2_0_17_candidate")
+        rows = landing["pull_requests"]
+        self.assertEqual(
+            {row["pull_request"] for row in rows},
+            {13, 64, 81, 82, 83, 85, 88, 89, 90, 91, 93, 94},
+        )
+        for row in rows:
+            self.assertRegex(row["head"], r"^(?:[0-9a-f]{8}|[0-9a-f]{40})$")
+            self.assertRegex(row["merge_commit"], r"^[0-9a-f]{40}$")
+            self.assertRegex(row["merged_at"], r"^2026-09-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+            self.assertGreater(row["check_run_id"], 103_800_000_000)
+            self.assertTrue(row["purpose"])
+        archived = self.state["delivered_change_history"][
+            "v2_0_16_release_preparation"
+        ]["published_local_candidate"]
+        self.assertEqual(archived["version"], "2.0.16")
+        self.assertEqual(archived["status"], "published")
+        self.assertTrue(archived["published"])
+        self.assertEqual(archived["merge_commit"], V2016_MERGE_COMMIT)
+        self.assertEqual(archived["checked_head"], V2016_CHECKED_HEAD)
+        self.assertEqual(archived["artifact_child"]["zip_sha256"], V2016_ZIP_SHA256)
+        self.assertEqual(
+            archived["artifact_child"]["sidecar_sha256"], V2016_SIDECAR_SHA256
         )
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
@@ -405,9 +420,13 @@ class ProjectStateTests(unittest.TestCase):
         for key in ("route_id", "branch", "change_package", "next_action"):
             self.assertEqual(delivery[key], current[key])
         self.assertEqual(current["source_base"], self.state["observed_main_sha"])
-        self.assertEqual(current["status"], "no_new_release_candidate")
-        self.assertIsNone(current["identity"])
-        self.assertIsNone(current["route_id"])
+        self.assertEqual(current["status"], "release_sync_authored")
+        self.assertEqual(
+            current["identity"],
+            "v2.0.17 release sync (identity bump + bootstrap-state refresh)",
+        )
+        self.assertEqual(current["route_id"], "f98796afe7de")
+        self.assertEqual(current["target_version"], "2.0.17")
         self.assertEqual(delivery["status"], "source_delivered_operational_qualification_incomplete")
         self.assertEqual(delivery["local_source_gate"]["artifact_head"], state_release := self.state["published_release"]["checked_head"])
         self.assertEqual(delivery["repository_delivery"]["checked_head"], state_release)
@@ -672,7 +691,12 @@ class ProjectStateTests(unittest.TestCase):
                     "m9_general_operational_qualification", "factory_site_publication",
                     "complete_pilot_cost_and_human_intervention_accounting"):
             self.assertFalse(state["operational_qualification"][key])
-        self.assertEqual(state["published_release"]["tag"], "v" + state["product_version"])
+        # A pending candidate must never be presented as the published release:
+        # the product identity leads, the published tag lags by exactly that bump.
+        self.assertEqual(state["latest_published_release"], state["published_release"]["tag"])
+        self.assertEqual(state["local_candidate"]["version"], state["product_version"])
+        self.assertFalse(state["local_candidate"]["published"])
+        self.assertNotEqual("v" + state["product_version"], state["published_release"]["tag"])
         self.assertNotEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
@@ -726,7 +750,7 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
-        self.assertEqual({item["pull_request"] for item in inventory["open_pull_requests"]}, {13, 15, 33, 64})
+        self.assertEqual({item["pull_request"] for item in inventory["open_pull_requests"]}, {15, 33})
         self.assertNotIn(12, {item["pull_request"] for item in inventory["open_pull_requests"]})
         self.assertEqual(inventory["delivered_since_historical_inventory"][0]["pull_request"], 12)
         self.assertEqual(inventory["delivered_since_historical_inventory"][0]["status"], "delivered")
@@ -768,7 +792,7 @@ class ProjectStateTests(unittest.TestCase):
             inventory["retained_unresolved"],
             [
                 {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
-                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync (change 20260915-update-third-party-workflow-components-superpowe-1b0c02); the M3-era branch and worktree are historical artifacts to delete after that PR merges."},
+                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree still hold the only untouched copy of the never-committed original epic, so they are retained until the v2.0.17 release record references the #93 lineage; only then may branch and worktree be removed as one cleanup step."},
                 {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."},
             ],
         )
