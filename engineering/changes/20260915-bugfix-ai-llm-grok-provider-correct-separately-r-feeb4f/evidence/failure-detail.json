@@ -1,0 +1,6 @@
+{
+  "job_id": "grok-connect-20260915-5f6f6ce1ecb0",
+  "state": "needs_human",
+  "reason_code": "http_outcome_unusable",
+  "provider_evidence_digest": "fda95d43323604eb207cdeb306ccdd203dbd54c38f8b56525221e2ac419c1db2"
+}

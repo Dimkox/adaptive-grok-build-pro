@@ -413,11 +413,27 @@ class OpenAICompatibleLandingExecutor:
             counts = tuple(usage[key] for key in (
                 "prompt_tokens", "completion_tokens", "total_tokens"
             ))
-            if (
-                any(type(value) is not int or not 0 <= value <= 10_000_000 for value in counts)
-                or counts[0] + counts[1] != counts[2]
-                or counts[1] > self._profile.max_output_tokens
-            ):
+            if any(type(value) is not int or not 0 <= value <= 10_000_000 for value in counts):
+                raise LandingProviderError("executor_usage")
+            usage_input, usage_output, total = counts
+            if self.provider_id == "grok":
+                details = usage.get("completion_tokens_details")
+                reasoning = 0
+                if details is not None:
+                    if not isinstance(details, dict):
+                        raise LandingProviderError("executor_usage")
+                    reasoning = details.get("reasoning_tokens", 0)
+                    if type(reasoning) is not int or not 0 <= reasoning <= 10_000_000:
+                        raise LandingProviderError("executor_usage")
+                if usage_input + usage_output + reasoning == total:
+                    usage_output += reasoning
+                elif usage_input + usage_output != total or reasoning > usage_output:
+                    raise LandingProviderError("executor_usage")
+            elif usage_input + usage_output != total:
+                raise LandingProviderError("executor_usage")
+            # This post-response acceptance limit includes Grok reasoning; it cannot
+            # prevent provider charges already incurred beyond the visible wire cap.
+            if usage_output > self._profile.max_output_tokens:
                 raise LandingProviderError("executor_usage")
         except (KeyError, TypeError, ValueError, LandingContractError):
             raise LandingProviderError("executor_result") from None
@@ -431,8 +447,8 @@ class OpenAICompatibleLandingExecutor:
             stdout=stdout,
             response_digest=hashlib.sha256(raw).hexdigest(),
             elapsed_ms=int((self._monotonic() - started) * 1_000),
-            usage_input_units=counts[0],
-            usage_output_units=counts[1],
+            usage_input_units=usage_input,
+            usage_output_units=usage_output,
         )
 
 

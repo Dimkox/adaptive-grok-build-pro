@@ -1,0 +1,15 @@
+{
+  "source_identity_verified": true,
+  "adapter_version": "1.1.1",
+  "model_id": "grok-4.6",
+  "executor_validation": "pass",
+  "reported_input_tokens": 1339,
+  "reported_visible_tokens": 117,
+  "reported_reasoning_tokens": 1453,
+  "reported_total_tokens": 2909,
+  "normalized_output_tokens": 1570,
+  "end_to_end_normalization": "not_established",
+  "harness_failure": "decode_landing_draft was called without required keyword-only maximum; installed application caller supplies it",
+  "extra_provider_retry": "none",
+  "production_service_started": false
+}

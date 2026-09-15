@@ -105,6 +105,19 @@ class QwenOmniStreamDecoderTests(unittest.TestCase):
         self.assertEqual(b"kept", bytes(decoder._content))
         self.assertEqual([], decoder._data)
 
+    def test_reasoning_metadata_does_not_change_omni_completion_accounting(self):
+        usage = {"prompt_tokens": 11, "completion_tokens": 7, "total_tokens": 18,
+                 "completion_tokens_details": {"reasoning_tokens": 5}}
+        decoder = QwenOmniStreamDecoder(profile())
+        feed_all(decoder, (frame(content="kept"), stop_event(),
+                           frame(choices=[], usage=usage), b"data: [DONE]"))
+        result = decoder.finish()
+        self.assertEqual((11, 7), (result.usage_input_units, result.usage_output_units))
+        decoder = QwenOmniStreamDecoder(profile())
+        feed_all(decoder, (frame(content="kept"), stop_event()))
+        with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+            decoder.feed(frame(choices=[], usage={**usage, "total_tokens": 23}) + b"\n\n")
+
     def test_comment_lines_are_ignored(self) -> None:
         decoder = QwenOmniStreamDecoder(profile())
         decoder.feed(b": keep-alive\n\n")

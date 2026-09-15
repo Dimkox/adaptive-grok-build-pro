@@ -1,0 +1,9 @@
+# Verification recovery before independent review
+
+The first full grok_verify --mode pr completed:654 root tests,725 factory tests with disposable PostgreSQL and actual restart,51 selected factory tests,44 pilot tests,79% coverage, Ruff, Bandit, architecture/governance/contracts and source-stability passed. Its sole failure was generic-secret on a new offline test credential.
+
+The write owner changed only that synthetic literal to the existing short test-grok convention. Focused74 tests then passed in2.581s; the exact secret scanner using the initial verifier changed-file set passed with0 findings, and git diff --check passed. The source defect is repaired and all identified checks are clear. Independent reviews now inspect the actual final code; after reports and final source commit, the mandatory full verifier reruns and all receipts bind that final repository fingerprint. No review receipt is recorded against the original failed report.
+
+A separately authorized live probe verified the exact imported candidate source and adapter1.1.1 before egress; Grok returned1339 prompt,117 visible,1453 reasoning,total2909 and the executor accepted it (normalized output1570). Subsequent draft normalization was not established: the diagnostic harness omitted the decoder's required keyword-only maximum. The application supplies that argument and automated normalizer tests passed. Preserve this as executor-level acceptance only; complete artifact creation remains a post-installation check.
+
+An earlier candidate attempt was invalid: the service user could not read the home worktree and the request timed out. It is excluded from candidate acceptance; explicit module-path/content/version assertions and a read-only staged source copy corrected that harness boundary before the later probe. No original job was replayed and no production Grok service was activated.
