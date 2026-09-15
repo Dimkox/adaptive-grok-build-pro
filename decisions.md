@@ -18,7 +18,6 @@ _No candidate governance rules._
 ## 2026-09-09 — Reproduce the runner capability instead of trusting a bare local gate
 
 Running `grok_verify --mode pr` without `GROK_VERIFY_CAPABILITY=repository-sandbox` fails `factory-postgres-exit` on any host that lacks `uv` or nested containers, which the runner skips by design. Setting the runner-equivalent capability makes the local result comparable to the exact-SHA check and keeps environment gaps from being read as product failures.
-
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
@@ -213,6 +212,10 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-14 — Bind receipts after the last change-package write
 
 `tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
+
+## 2026-08-29 — Bind repository profiles by effective digest
+
+Exact repository plus effective content digest works because the existing job, store, approval, and attestation fields already preserve immutable identity, avoiding a migration. Catalog mode therefore selects isolated commands and holdouts while legacy schema-v1 parsing remains unchanged.
 
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
@@ -696,3 +699,7 @@ The 2026-08-30 design/plan/tasks documents are SHA-256-addressed by the d41aa6 w
 ## 2026-09-15 — Derive receipt-kind sets from the router's emitted kinds
 
 Porting the epic's closed RECEIPT_KINDS byte-identically would have failed every bitrix/data route because router.py emits two domain review kinds the 2026-08-30 snapshot predated; the canonical set is now pinned to the router's seven emitted kinds and asserted by a parity test. Closed sets copied across the epic boundary must be re-diffed against the live emitter at port time, not trusted from the snapshot.
+
+## 2026-09-09 — Remove a misclassified import instead of declaring a false edge
+
+`FIT-DECLARED-NETWORK-ONLY` flagged `trust-ci/src/adaptive_trust_ci/settings.py` as an undeclared `tcp` client for the worker, because the fitness scanner treats any `socket` import as a network-client family. The module used `socket` for exactly one call, `socket.gethostname()`, to build a worker id. Replacing it with `platform.node()` removed a dependency the module never needed and kept the architecture model truthful; declaring a `tcp` edge would have recorded a connection that does not exist.
