@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-attempt-status:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "state",
+    "revision",
+    "reason_code",
+    "phase",
+    "terminal",
+    "artifact",
+    "provider_evidence_digest",
+    "observation",
+    "digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "source": {
+      "$ref": "landing-input.v1.schema.json"
+    },
+    "state": {
+      "enum": [
+        "accepted",
+        "normalizing",
+        "generating",
+        "evaluating",
+        "artifact_ready",
+        "provider_unavailable",
+        "rejected",
+        "needs_human",
+        "cancelled"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reason_code": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "phase": {
+      "enum": [
+        "provider",
+        "artifact",
+        "unknown"
+      ]
+    },
+    "terminal": {
+      "type": "boolean"
+    },
+    "artifact": {
+      "anyOf": [
+        {
+          "$ref": "landing-site-artifact.v1.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_evidence_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "observation": {
+      "anyOf": [
+        {
+          "$ref": "landing-provider-observation.v1.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

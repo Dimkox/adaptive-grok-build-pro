@@ -31,6 +31,7 @@ from .landing_provider import (
     LandingProviderError,
     MAX_PROVIDER_OUTPUT_BYTES,
 )
+from .landing_observation import LandingProviderObservation
 
 
 HTTP_ADAPTER_ID = "https-chat-completions"
@@ -48,6 +49,9 @@ HTTP_PROVIDER_ENDPOINTS = {
     "qwen": ("https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus"),
 }
 HTTP_PROFILES = {
+    "openai": ("openai", "https://api.openai.com/v1", "gpt-4.1-mini-2025-04-14", False, ("docx", "text")),
+    "anthropic": ("anthropic", "https://api.anthropic.com/v1", "claude-haiku-4-5-20251001", False, ("docx", "text")),
+    "openrouter": ("openrouter", "https://openrouter.ai/api/v1", "google/gemini-3.1-flash-lite", False, ("docx", "text")),
     "grok": ("grok", "https://api.x.ai/v1", "grok-4", False, ("docx", "text")),
     "qwen": ("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-plus", False, ("docx", "text")),
     "qwen-intl": ("qwen", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "qwen-plus", False, ("docx", "text")),
@@ -108,14 +112,28 @@ class HttpLandingProfile:
 
     @property
     def adapter_version(self) -> str:
+        if self.provider_id in {"openai", "anthropic", "openrouter"}:
+            return "1.0.0"
         return GROK_HTTP_ADAPTER_VERSION if self.provider_id == "grok" else HTTP_ADAPTER_VERSION
 
     @property
+    def adapter_id(self) -> str:
+        return "https-anthropic-messages" if self.provider_id == "anthropic" else HTTP_ADAPTER_ID
+
+    @property
     def decoder_digest(self) -> str:
+        if self.provider_id in {"openai", "anthropic", "openrouter"}:
+            return hashlib.sha256(
+                (self.provider_id + ":landing/v1:strict-schema;bounded-inclusive-usage;messages-cache-input;no-tools").encode()
+            ).hexdigest()
         return GROK_HTTP_DECODER_DIGEST if self.provider_id == "grok" else HTTP_DECODER_DIGEST
 
     def to_facts(self) -> dict[str, object]:
         return {
+            **({"api_family": "messages", "api_version": "2023-06-01"}
+               if self.provider_id == "anthropic" else {}),
+            **({"upstream_endpoint": "google-vertex/global", "allow_fallbacks": False,
+                "require_parameters": True} if self.provider_id == "openrouter" else {}),
             **({"enable_thinking": False, "response_format": "json_object"}
                if self.profile_id == "qwen-intl" else {}),
             "schema_version": 1,
@@ -123,7 +141,7 @@ class HttpLandingProfile:
             "provider_id": self.provider_id,
             "base_url": self.base_url,
             "model_id": self.model_id,
-            "adapter_id": HTTP_ADAPTER_ID,
+            "adapter_id": self.adapter_id,
             "adapter_version": self.adapter_version,
             "available": self.available,
             "timeout_seconds": self.timeout_seconds,
@@ -186,6 +204,10 @@ class HttpLandingNormalizer:
         self._executor = executor
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._source_preflight = source_preflight
+
+    @property
+    def profile(self):
+        return self._profile
 
     def normalize(
         self, request: LandingNormalizationRequest, read_blob: Callable[[], bytes]
@@ -251,23 +273,38 @@ class HttpLandingNormalizer:
             "profile_digest": self._profile.profile_digest,
             "payload_sha256": hashlib.sha256(payload).hexdigest(),
         })
+        result = None
         try:
             result = self._executor.run(HttpLandingExecutionRequest(
                 self._profile.profile_digest, request.source.input_digest, payload
             ))
             self._validate_result(result)
+        except (LandingProviderError, LandingContractError, OSError, ValueError) as exc:
+            category = getattr(exc, "category", {
+                "executor_deadline": "deadline", "executor_transport": "transport",
+                "executor_usage": "accounting", "http_usage": "accounting",
+            }.get(str(exc), "protocol"))
+            return self._terminal(
+                request, "needs_human", "http_outcome_unusable", started, request_digest,
+                category=category, dispatched=True, http_status=getattr(exc, "http_status", None),
+            )
+        try:
             spec = decode_landing_draft(
                 request.source.input_digest, result.stdout, maximum=MAX_PROVIDER_OUTPUT_BYTES
             )
         except (LandingProviderError, LandingContractError, OSError, ValueError):
             return self._terminal(
-                request, "needs_human", "http_outcome_unusable", started, request_digest
+                request, "needs_human", "http_outcome_unusable", started, request_digest,
+                category="draft", dispatched=True, result=result,
             )
         evidence = self._evidence(
             request, started, request_digest, result.response_digest,
             result.usage_input_units, result.usage_output_units, "normalized",
         )
-        return LandingNormalizationOutcome(spec, evidence, "normalized", "normalized")
+        observation = LandingProviderObservation(
+            evidence, "normalized", True, "reported", result.usage_input_units, result.usage_output_units,
+        )
+        return LandingNormalizationOutcome(spec, evidence, "normalized", "normalized", observation)
 
     def _validate_result(self, result: HttpLandingExecutionResult) -> None:
         if (
@@ -284,13 +321,21 @@ class HttpLandingNormalizer:
             if type(count) is not int or not 0 <= count <= 10_000_000:
                 raise LandingProviderError("http_usage")
 
-    def _terminal(self, request, state, reason, started, request_digest):
+    def _terminal(self, request, state, reason, started, request_digest, *,
+                  category="input", dispatched=False, http_status=None, result=None):
         evidence = self._evidence(
             request, started, request_digest,
             landing_digest("provider-response", {"state": state, "reason_code": reason}),
             0, 0, "rejected" if state == "rejected" else "provider_unavailable",
         )
-        return LandingNormalizationOutcome(None, evidence, state, reason)
+        observation = LandingProviderObservation(
+            evidence, category, dispatched,
+            "reported" if result is not None else "unavailable" if dispatched else "not_dispatched",
+            result.usage_input_units if result is not None else None if dispatched else 0,
+            result.usage_output_units if result is not None else None if dispatched else 0,
+            http_status,
+        )
+        return LandingNormalizationOutcome(None, evidence, state, reason, observation)
 
     def _evidence(self, request, started, request_digest, response_digest,
                   usage_input, usage_output, disposition):
@@ -299,7 +344,7 @@ class HttpLandingNormalizer:
             "input_digest": request.source.input_digest,
             "profile_digest": self._profile.profile_digest,
             "provider_id": self._profile.provider_id,
-            "adapter_id": HTTP_ADAPTER_ID,
+            "adapter_id": self._profile.adapter_id,
             "adapter_version": self._profile.adapter_version,
             "model_id": self._profile.model_id,
             "prompt_template_digest": HTTP_NORMALIZER_PROMPT_SHA256,

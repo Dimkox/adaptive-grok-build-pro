@@ -101,6 +101,13 @@ def coverage(subject_digest, **changes):
 
 class SemanticContractTests(unittest.TestCase):
     def test_public_schemas_are_closed_bounded_and_have_exact_versions(self):
+        failover_names = {
+            "landing-provider-observation.v1.schema.json",
+            "landing-backend-capability.v1.schema.json",
+            "landing-attempt-status.v1.schema.json",
+            "landing-failover-config.v1.schema.json",
+            "landing-failover-result.v1.schema.json",
+        }
         semantic_names = {
             "semantic-execution-binding.v1.schema.json",
             "semantic-subject.v1.schema.json",
@@ -110,7 +117,7 @@ class SemanticContractTests(unittest.TestCase):
             "semantic-validation-inputs.v1.schema.json",
             "repair-directive.v1.schema.json",
         }
-        names = semantic_names | {
+        names = semantic_names | failover_names | {
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",
@@ -128,7 +135,7 @@ class SemanticContractTests(unittest.TestCase):
             "static-landing-spec.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
-        versions = {name: 1 for name in semantic_names}
+        versions = {name: 1 for name in semantic_names | failover_names}
         versions["landing-provider-evidence.v2.schema.json"] = 2
         for name, version in versions.items():
             with self.subTest(name=name):

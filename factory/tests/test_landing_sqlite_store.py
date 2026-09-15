@@ -94,11 +94,11 @@ class SQLiteLandingJobStoreTests(unittest.TestCase):
         with sqlite3.connect(store.database_path) as connection:
             self.assertEqual("wal", connection.execute("PRAGMA journal_mode").fetchone()[0])
             self.assertEqual(2, connection.execute("PRAGMA synchronous").fetchone()[0])
-            self.assertEqual(1, connection.execute("PRAGMA user_version").fetchone()[0])
+            self.assertEqual(2, connection.execute("PRAGMA user_version").fetchone()[0])
         store.close()
 
         with sqlite3.connect(store.database_path) as connection:
-            connection.execute("PRAGMA user_version = 2")
+            connection.execute("PRAGMA user_version = 3")
         with self.assertRaisesRegex(LandingServiceError, "store_schema"):
             SQLiteLandingJobStore(
                 self.root,

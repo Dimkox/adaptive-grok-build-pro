@@ -26,6 +26,7 @@ from .landing_provider import (
 )
 from .landing_renderer import TARGET_BASE_SHA, TARGET_BASE_TREE, TARGET_REPOSITORY_ID
 from .models import Actor
+from .landing_observation import LandingProviderObservation
 
 
 LANDING_STATES = frozenset(
@@ -75,6 +76,7 @@ class LandingJobRecord:
     reason_code: str | None = None
     revision: int = 0
     sealed_artifact: RetainedLandingArtifact | None = None
+    observation: LandingProviderObservation | None = None
 
     def job_view(self) -> dict[str, object]:
         return {
@@ -340,6 +342,21 @@ class LandingApplicationService:
         self._authorize(actor, repository_id)
         return self._store.get(actor.actor_id, repository_id, job_id)
 
+    def backend_capability(self, *, repository_id: str, actor: Actor):
+        from .landing_http import HttpLandingProfile
+        from .landing_failover_contracts import backend_capability
+
+        self._authorize(actor, repository_id)
+        profile = getattr(self._provider, "profile", None)
+        if not isinstance(profile, HttpLandingProfile):
+            raise LandingServiceError("capability_unavailable", 409, "landing capability unavailable")
+        return backend_capability(profile, actor.actor_id, repository_id, TARGET_BASE_SHA, TARGET_BASE_TREE)
+
+    def attempt_status(self, job_id: str, *, repository_id: str, actor: Actor):
+        from .landing_failover_contracts import attempt_receipt
+
+        return attempt_receipt(self.get(job_id, repository_id=repository_id, actor=actor))
+
     def cancel(
         self,
         job_id: str,
@@ -402,6 +419,7 @@ class LandingApplicationService:
                     state=outcome.state,
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
                     reason_code=outcome.reason_code,
+                    observation=outcome.observation,
                 )
             if (
                 outcome.spec.input_digest != source.input_digest
@@ -412,12 +430,14 @@ class LandingApplicationService:
                     state="needs_human",
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
                     reason_code="artifact_builder_unavailable",
+                    observation=outcome.observation,
                 )
             processing = self._store.put(
                 replace(
                     processing,
                     state="generating",
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                    observation=outcome.observation,
                 )
             )
             built = self._artifact_builder.build(source, outcome.spec, outcome.evidence)

@@ -31,7 +31,7 @@ from .landing_http import (
 )
 from .landing_normalizer import MAX_NORMALIZED_TEXT_BYTES, decode_landing_draft
 from .landing_media import MAX_AUDIO_BASE64_BYTES, MAX_IMAGE_BYTES
-from .landing_provider import LandingProviderError, MAX_PROVIDER_OUTPUT_BYTES
+from .landing_provider import LandingProviderError, HttpProviderFailure, MAX_PROVIDER_OUTPUT_BYTES
 from .landing_runtime import (
     LandingApplicationService,
     LandingJobStore,
@@ -56,6 +56,31 @@ LANDING_PROVIDER_ENV = "FACTORY_LANDING_PROVIDER"
 LANDING_SOURCE_ENV = "FACTORY_LANDING_SOURCE_PATH"
 LANDING_SCRATCH_ENV = "FACTORY_LANDING_SCRATCH_PATH"
 LANDING_OUTPUT_ENV = "FACTORY_LANDING_OUTPUT_PATH"
+PROVIDER_KEY_NAMES = {
+    "qwen": QWEN_API_KEY_ENV, "grok": GROK_API_KEY_ENV,
+    "openai": "FACTORY_LANDING_OPENAI_API_KEY", "anthropic": "FACTORY_LANDING_ANTHROPIC_API_KEY",
+    "openrouter": "FACTORY_LANDING_OPENROUTER_API_KEY",
+}
+
+
+def _http_failure(status: int, body: bytes) -> HttpProviderFailure:
+    category = {401: "authentication", 403: "permission", 429: "rate_limit"}.get(
+        status, "unavailable" if 500 <= status <= 599 else "protocol",
+    )
+    try:
+        document = strict_json_object(body, maximum=16_384)
+        error = document.get("error", {})
+        markers = (error.get("code"), error.get("type")) if isinstance(error, dict) else ()
+        if any(isinstance(code, str) and code in {
+            "content_policy_violation", "content_filter", "data_inspection_failed",
+            "safety_violation", "moderation_blocked", "refusal",
+            "unsupported_country_region_territory",
+        } for code in markers):
+            category = "policy"
+    except (LandingContractError, ValueError, TypeError):
+        # An unreadable body cannot establish absence of a policy denial.
+        category = "protocol"
+    return HttpProviderFailure("executor_http", category, status)
 
 
 @dataclass(frozen=True)
@@ -104,13 +129,45 @@ CURRENT_LANDING_HOST_REQUIREMENTS = LandingHostRequirementsV1(
 
 
 def api_key_from_environ(name: str, environ: Mapping[str, str] | None = None) -> str:
-    if name not in {GROK_API_KEY_ENV, QWEN_API_KEY_ENV}:
+    if name not in PROVIDER_KEY_NAMES.values():
         raise LandingProviderError("credential_name")
     source = os.environ if environ is None else environ
     key = source.get(name, "").strip()
     if not key:
         raise LandingProviderError("credential_unavailable")
     return key
+
+
+def provider_api_key(provider_id: str, *, env_file: Path | None = None, environ=None) -> str:
+    """Select one named assignment as data; never source or print the file."""
+    if provider_id not in PROVIDER_KEY_NAMES:
+        raise LandingProviderError("credential_name")
+    name = PROVIDER_KEY_NAMES[provider_id]
+    if env_file is None:
+        return qwen_api_key(environ=environ) if provider_id == "qwen" else api_key_from_environ(name, environ)
+    if env_file.anchor == "//":
+        raise LandingProviderError("credential_file_invalid")
+    raw = read_private_file(env_file, 65_536)
+    try:
+        values = []
+        for line in raw.decode("utf-8").splitlines():
+            line = line.strip()
+            if not re.match(r"^(?:export\s+)?" + re.escape(name) + r"\b", line):
+                continue
+            match = re.fullmatch(r"(?:export[ \t]+)?" + re.escape(name) + r"[ \t]*=[ \t]*(.*)", line)
+            if match is None:
+                raise ValueError
+            value = match.group(1).strip()
+            if value[:1] in {"'", '"'} and value[-1:] == value[:1]:
+                value = value[1:-1]
+            if re.fullmatch(r"[A-Za-z0-9._-]{1,4096}", value) is None:
+                raise ValueError
+            values.append(value)
+        if len(values) != 1:
+            raise ValueError
+        return values[0]
+    except (UnicodeError, ValueError):
+        raise LandingProviderError("credential_file_invalid") from None
 
 
 def qwen_api_key(*, env_file: Path | None = None, environ: Mapping[str, str] | None = None) -> str:
@@ -148,6 +205,8 @@ def qwen_api_key(*, env_file: Path | None = None, environ: Mapping[str, str] | N
 
 class OpenAICompatibleLandingExecutor:
     """One bounded request to an explicitly pinned provider, with no retry."""
+
+    endpoint_path = "chat/completions"
 
     def __init__(
         self,
@@ -198,10 +257,7 @@ class OpenAICompatibleLandingExecutor:
     def model_id(self) -> str:
         return self._profile.model_id
 
-    def run(self, request: HttpLandingExecutionRequest) -> HttpLandingExecutionResult:
-        if not self._profile.available:
-            raise LandingProviderError("profile_unavailable")
-        instruction, payload = self._request_payload(request)
+    def _request_body(self, instruction, payload):
         body = {
             "model": self.model_id,
             "temperature": 0,
@@ -219,15 +275,24 @@ class OpenAICompatibleLandingExecutor:
             body["response_format"] = {"type": "json_object"}
         if self._profile.profile_id == "qwen-intl":
             body["enable_thinking"] = False
-        encoded = canonical_json(body)
-        if len(encoded) > MAX_HTTP_REQUEST_BYTES:
-            raise LandingProviderError("executor_request_size")
-        headers = {
+        return body
+
+    def _request_headers(self):
+        return {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
             "Accept": "text/event-stream" if self._profile.streaming else "application/json",
             "Accept-Encoding": "identity",
         }
+
+    def run(self, request: HttpLandingExecutionRequest) -> HttpLandingExecutionResult:
+        if not self._profile.available:
+            raise LandingProviderError("profile_unavailable")
+        instruction, payload = self._request_payload(request)
+        encoded = canonical_json(self._request_body(instruction, payload))
+        if len(encoded) > MAX_HTTP_REQUEST_BYTES:
+            raise LandingProviderError("executor_request_size")
+        headers = self._request_headers()
         started = self._monotonic()
         deadline = started + self._profile.timeout_seconds
         try:
@@ -249,6 +314,7 @@ class OpenAICompatibleLandingExecutor:
         from .landing_sse import QwenOmniStreamDecoder
 
         decoder = QwenOmniStreamDecoder(self._profile) if self._profile.streaming else None
+        response_status = None
         try:
             async with asyncio.timeout(self._remaining(deadline)), httpx.AsyncClient(
                 transport=self._transport,
@@ -258,13 +324,20 @@ class OpenAICompatibleLandingExecutor:
             ) as client:
                 self._remaining(deadline)
                 async with client.stream(
-                    "POST", f"{self.base_url}/chat/completions",
+                    "POST", f"{self.base_url}/{self.endpoint_path}",
                     content=encoded, headers=headers,
                     timeout=self._remaining(deadline),
                 ) as response:
+                    response_status = response.status_code
                     self._remaining(deadline)
                     if response.status_code != 200:
-                        raise LandingProviderError("executor_http")
+                        error_body = bytearray()
+                        async for chunk in response.aiter_raw():
+                            self._remaining(deadline)
+                            if len(error_body) + len(chunk) > 16_384:
+                                raise HttpProviderFailure("executor_http", "protocol", response.status_code)
+                            error_body.extend(chunk)
+                        raise _http_failure(response.status_code, bytes(error_body))
                     if (
                         response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
                         != ("text/event-stream" if self._profile.streaming else "application/json")
@@ -289,9 +362,17 @@ class OpenAICompatibleLandingExecutor:
                                 raise LandingProviderError("executor_response_size")
                             raw.extend(chunk)
         except TimeoutError:
+            if response_status is not None and response_status != 200:
+                raise HttpProviderFailure("executor_http", "protocol", response_status) from None
             raise LandingProviderError("executor_deadline") from None
         except (httpx.HTTPError, OSError):
+            if response_status is not None and response_status != 200:
+                raise HttpProviderFailure("executor_http", "protocol", response_status) from None
             raise LandingProviderError("executor_transport") from None
+        except LandingProviderError as exc:
+            if response_status is not None and response_status != 200 and not isinstance(exc, HttpProviderFailure):
+                raise HttpProviderFailure("executor_http", "protocol", response_status) from None
+            raise
         self._remaining(deadline)
         return decoder.finish() if decoder is not None else bytes(raw)
 
@@ -536,6 +617,14 @@ def compose_landing_live_qwen(
         store=store,
         clock=clock,
     )
+
+
+def compose_landing_live_provider(*, api_key, profile, transport=None, **kwargs):
+    from .landing_extra_providers import landing_provider_executor
+
+    return _compose_http_landing(profile=profile, executor=landing_provider_executor(
+        profile, api_key=api_key, transport=transport,
+    ), **kwargs)
 
 
 def _compose_http_landing(

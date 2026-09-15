@@ -1,0 +1,164 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Landing backend capability and attempt receipts",
+    "version": "1.0.0",
+    "description": "Dedicated Unix hosts only; legacy v1 responses stay unchanged. Automatic submission includes X-Expected-Actor-ID and X-Expected-Profile-Digest on POST /v1/landing-inputs; either header requires both and an exact match before input intake."
+  },
+  "paths": {
+    "/v2/landing-backend": {
+      "get": {
+        "operationId": "getLandingBackendCapability",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Repository-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "github.com/Dimkox/ai-dark-factory-landing"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated bounded receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../jsonschema/landing-backend-capability.v1.schema.json"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "403": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "404": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "409": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "422": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "500": {
+            "description": "Closed failure; no fallback authority"
+          }
+        }
+      }
+    },
+    "/v2/landing-jobs/{job_id}/attempt": {
+      "get": {
+        "operationId": "getLandingProviderAttempt",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "X-Repository-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "const": "github.com/Dimkox/ai-dark-factory-landing"
+            }
+          },
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authenticated bounded receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../jsonschema/landing-attempt-status.v1.schema.json"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "403": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "404": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "409": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "422": {
+            "description": "Closed failure; no fallback authority"
+          },
+          "500": {
+            "description": "Closed failure; no fallback authority"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

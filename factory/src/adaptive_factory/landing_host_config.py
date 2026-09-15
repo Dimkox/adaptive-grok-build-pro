@@ -29,7 +29,7 @@ def load_host_config(path: Path) -> LandingHostConfig:
                 "output_path", "publication_state_path", "live_enabled", "selected_profile"}
     if set(data) != expected or type(data["schema_version"]) is not int or data["schema_version"] != 1:
         raise SettingsError("closed landing host configuration required")
-    if type(data["live_enabled"]) is not bool or data["selected_profile"] not in ("qwen-omni", "grok-vision", "qwen-intl"):
+    if type(data["live_enabled"]) is not bool or data["selected_profile"] not in ("qwen-omni", "grok-vision", "qwen-intl", "openai", "anthropic", "openrouter"):
         raise SettingsError("explicit landing capability profile required")
     paths = {}
     for name in expected - {"schema_version", "live_enabled", "selected_profile"}:

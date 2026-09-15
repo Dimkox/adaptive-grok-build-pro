@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from .landing_observation import LandingProviderObservation
+
 import base64
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -40,6 +42,15 @@ _ARGUMENT = re.compile(r"^--[a-z][a-z0-9-]*(?:=[A-Za-z0-9._:/+-]{1,128})?$")
 
 class LandingProviderError(RuntimeError):
     pass
+
+
+class HttpProviderFailure(LandingProviderError):
+    """Allowlisted local classification; never carries an upstream error body."""
+
+    def __init__(self, code: str, category: str, http_status: int | None = None):
+        super().__init__(code)
+        self.category = category
+        self.http_status = http_status
 
 
 def _provider_error(error: LandingContractError) -> LandingProviderError:
@@ -228,6 +239,7 @@ class LandingNormalizationOutcome:
     evidence: LandingProviderEvidence
     state: str = "normalized"
     reason_code: str = "normalized"
+    observation: LandingProviderObservation | None = None
 
     def __post_init__(self) -> None:
         validate_landing_normalization_outcome(self)
@@ -260,6 +272,12 @@ def validate_landing_normalization_outcome(
     }[outcome.state]
     if outcome.evidence.disposition not in expected_disposition:
         raise LandingProviderError("normalization_evidence")
+    if outcome.observation is not None and (
+        not isinstance(outcome.observation, LandingProviderObservation)
+        or outcome.observation.evidence != outcome.evidence
+        or (outcome.observation.category == "normalized") != (outcome.state == "normalized")
+    ):
+        raise LandingProviderError("normalization_observation")
 
 
 class LandingProvider(Protocol):

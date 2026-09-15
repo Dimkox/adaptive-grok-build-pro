@@ -3451,14 +3451,20 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "severity": "error",
         }]
         repo, base = self._repo(system=system, rules=rules)
-        repo.write_text(
-            "src/client.py",
-            "import httpx\nsocket_path = '/run/factory.sock'\ntransport = httpx.HTTPTransport(uds=socket_path)\n"
-            "client = httpx.Client(transport=transport, base_url='http://factory.local')\n",
-        )
-        head = repo.commit("unix socket client")
-        result = self._results(self._evaluate(repo, base, head))["network_client"]
-        self.assertEqual(result.status, "pass")
+        for transport, client in (("HTTPTransport", "Client"), ("AsyncHTTPTransport", "AsyncClient")):
+            for has_uds in (True, False):
+                with self.subTest(transport=transport, has_uds=has_uds):
+                    arguments = "uds=socket_path" if has_uds else ""
+                    repo.write_text(
+                        "src/client.py",
+                        f"import httpx\nsocket_path = '/run/factory.sock'\ntransport = httpx.{transport}({arguments})\n"
+                        f"client = httpx.{client}(transport=transport, base_url='http://factory.local')\n",
+                    )
+                    head = repo.commit(f"{transport} uds={has_uds}")
+                    result = self._results(self._evaluate(repo, base, head))["network_client"]
+                    self.assertEqual(result.status, "pass" if has_uds else "fail", result.findings)
+                    if not has_uds:
+                        self.assertIn("undeclared network client https", " ".join(result.findings))
 
     def test_change_separation_rejects_product_and_trust_ci_mixing(self) -> None:
         rules = _rules()
@@ -4083,6 +4089,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "CONTRACT-FACTORY-LANDING-INPUT-V1", "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
             "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1", "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
             "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1", "CONTRACT-FACTORY-LANDING-SPEC-V1",
+            "CONTRACT-FACTORY-LANDING-PROVIDER-OBSERVATION-V1",
+            "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1",
+            "CONTRACT-FACTORY-LANDING-ATTEMPT-STATUS-V1",
+            "CONTRACT-FACTORY-LANDING-FAILOVER-CONFIG-V1",
+            "CONTRACT-FACTORY-LANDING-FAILOVER-RESULT-V1",
+            "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
         })
         system = _system()
         rules = _rules()

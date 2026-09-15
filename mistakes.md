@@ -942,3 +942,19 @@ The current bootstrap reused old release-preparation and default-off source snap
 ## 2026-09-15 — Do not preserve decorative inventory as an architecture requirement
 
 The README retained a complete graph because a local instruction and tests required every node pair, even though those edges described no real dependencies. The root cause was treating a presentation invariant as architectural evidence; retire that invariant with the requested graph and preserve the model-based checks.
+
+## 2026-09-15 — Apply provider steering to the active scope immediately
+
+The failover draft kept its original two-provider scope after the user added OpenAI, Claude and OpenRouter and instructed implementation. The root cause was treating that steering as optional future configuration; reread the explicitly authorized selected environment names, update every acceptance boundary to all five providers, and proceed on the already accepted design.
+
+## 2026-09-15 — Discover every closed contract inventory before handoff
+
+The failover implementation added six declared contracts but its focused checks missed four exact inventory assertions in architecture and semantic suites. The root cause was searching only landing-named tests; search existing contract IDs and schema-directory inventory checks across the whole repository, then run those tests and lint before source freeze.
+
+## 2026-09-15 — Test caller boundaries with real transport and CLI ingress
+
+Lexical input exclusions allowed double-slash aliases because normalization was applied only to stored configuration fields; validate every config/input ingress before reads and comparisons. Per-I/O HTTP timeouts were mistaken for complete-exchange deadlines, so trickled headers escaped the bound; use actual cancellation and real Unix-socket regressions. Journal tests stopped at constructor exceptions and missed the CLI contract, so test lock contention and invalid stores through every command and translate expected failures into fixed JSON.
+
+## 2026-09-15 — Establish committed state before testing lost-response recovery
+
+The recovery fixture shared a 0.3-second capability/POST budget and assumed the synthetic artifact had committed before cancellation, so scheduler delay could invalidate its prerequisite. Commit explicitly before dropping the response, block observation until the resume step, and test short deadlines separately from durable recovery.

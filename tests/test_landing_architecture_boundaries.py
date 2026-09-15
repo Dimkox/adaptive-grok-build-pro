@@ -17,24 +17,31 @@ OFFLINE = frozenset(PREFIX + name for name in (
     "landing_runtime.py", "landing_service.py", "landing_http.py", "landing_backup.py",
     "landing_media.py", "landing_sse.py", "landing_publication_cli.py",
     "landing_host_config.py", "resources/landing_pdf_worker.py",
+    "landing_observation.py", "landing_failover_contracts.py",
 ))
 GROUPS = {
     "offline": OFFLINE,
     "sqlite": frozenset({PREFIX + "landing_sqlite_store.py"}),
-    "host": frozenset({PREFIX + "landing_host.py", PREFIX + "landing_server.py"}),
-    "live": frozenset({PREFIX + "landing_live_executors.py"}),
+    "host": frozenset({PREFIX + "landing_host.py", PREFIX + "landing_server.py", PREFIX + "landing_backend_api.py"}),
+    "live": frozenset({PREFIX + "landing_live_executors.py", PREFIX + "landing_extra_providers.py"}),
+    "caller_core": frozenset(PREFIX + name for name in ("landing_failover.py", "landing_failover_config.py", "landing_failover_journal.py", "landing_failover_cli.py")),
+    "caller_transport": frozenset({PREFIX + "landing_failover_transport.py"}),
 }
 OWNERS = {
     "offline": "NODE-FACTORY-LANDING-DOGFOOD",
     "sqlite": "NODE-FACTORY-LANDING-SQLITE",
     "host": "NODE-FACTORY-LOCAL-API",
     "live": "NODE-FACTORY-LANDING-LIVE-EXECUTORS",
+    "caller_core": "NODE-FACTORY-LANDING-FAILOVER",
+    "caller_transport": "NODE-FACTORY-LANDING-FAILOVER",
 }
 RULES = {
     "offline": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
     "sqlite": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
     "host": "FIT-FACTORY-LANDING-HOST-BOUNDARY",
     "live": "FIT-FACTORY-LANDING-LIVE-BOUNDARY",
+    "caller_core": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
+    "caller_transport": "FIT-FACTORY-LANDING-CALLER-BOUNDARY",
 }
 
 
@@ -83,7 +90,7 @@ class LandingArchitectureBoundaryTests(unittest.TestCase):
         clients = ("httpx", "socket", "urllib.request", "psycopg", "adaptive_trust_ci")
         # Distinct AST nodes and findings prove every client is refused at every
         # source path, without making network requests or importing the clients.
-        for path in OFFLINE | GROUPS["sqlite"]:
+        for path in OFFLINE | GROUPS["sqlite"] | GROUPS["caller_core"]:
             repo.write_text(path, "".join(f"import {client}\n" for client in clients))
         head = repo.commit("inject direct clients")
         diff = fixture.FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
@@ -91,7 +98,7 @@ class LandingArchitectureBoundaryTests(unittest.TestCase):
                                               diff.changed_paths, pre_risk="green")
         result = next(item for item in report.results if item.category == "module_boundary")
         self.assertEqual(result.status, "fail")
-        for path in OFFLINE | GROUPS["sqlite"]:
+        for path in OFFLINE | GROUPS["sqlite"] | GROUPS["caller_core"]:
             for client in clients:
                 with self.subTest(path=path, client=client):
                     self.assertIn(f"{RULES['offline']}: {path} imports forbidden {client}", result.findings)

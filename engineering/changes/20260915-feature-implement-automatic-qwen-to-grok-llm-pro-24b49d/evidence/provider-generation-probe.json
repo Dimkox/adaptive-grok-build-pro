@@ -1,0 +1,34 @@
+{
+  "observed_at": "2026-09-15T13:54:46.992109+00:00",
+  "source_sha": "f079b925160a5d6c0ac66f9905f1cb83672f74d2",
+  "scope": "One direct candidate-adapter generation attempt per provider; synthetic input only; no service activation or publication. Response bodies and secrets excluded.",
+  "credential_staging": "Initial loader rejected group-writable workspace ancestry before network I/O. Only the two explicitly authorized key assignments were then staged in temporary private files and removed after use; production loader unchanged.",
+  "results": [
+    {
+      "provider": "anthropic",
+      "model_id": "claude-haiku-4-5-20251001",
+      "profile_digest": "d713ed74a7e0ae24b58c80b56cc525412f539502efdd1750722a196cd1d422d2",
+      "attempt_limit": 1,
+      "max_output_tokens": 4096,
+      "publication": false,
+      "generation_requests": 1,
+      "status": "http_rejected",
+      "http_status": 403,
+      "category": "permission",
+      "elapsed_seconds": 0.414
+    },
+    {
+      "provider": "openrouter",
+      "model_id": "google/gemini-3.1-flash-lite",
+      "profile_digest": "dad8b0aaf1e658d5b825b2988f250ab305fac90d3403069a2511eccb221dc421",
+      "attempt_limit": 1,
+      "max_output_tokens": 4096,
+      "publication": false,
+      "generation_requests": 1,
+      "status": "http_rejected",
+      "http_status": 403,
+      "category": "permission",
+      "elapsed_seconds": 0.249
+    }
+  ]
+}

@@ -25,9 +25,12 @@ class OwnedLandingRuntime:
 
 
 def compose_server_landing(
-    settings: FactorySettings, *, repository_root: Path, qwen_env_file: Path | None = None
+    settings: FactorySettings, *, repository_root: Path, qwen_env_file: Path | None = None,
+    provider_env_file: Path | None = None,
 ) -> OwnedLandingRuntime | None:
     settings.validate_landing()
+    if provider_env_file is not None and qwen_env_file is not None:
+        raise SettingsError("select one provider credential file")
     if settings.landing_quarantine_path is None:
         return None
     roots = tuple(path for path in (
@@ -42,6 +45,12 @@ def compose_server_landing(
         from .landing_renderer import ExactGitLandingWorkspace
 
         source = settings.landing_source_path
+        if provider_env_file is not None and (
+            not provider_env_file.is_absolute() or provider_env_file.anchor == "//" or ".." in provider_env_file.parts
+            or any(provider_env_file == root or root in provider_env_file.parents
+                   for root in (*roots, source, repository_root) if root is not None)
+        ):
+            raise SettingsError("provider credential file must be outside landing roots")
         if qwen_env_file is not None and settings.landing_provider.startswith("qwen"):
             if (not qwen_env_file.is_absolute() or qwen_env_file.anchor == "//" or ".." in qwen_env_file.parts
                     or any(qwen_env_file == root or root in qwen_env_file.parents
@@ -73,18 +82,23 @@ def compose_server_landing(
                 qwen_api_key,
                 compose_landing_live_grok,
                 compose_landing_live_qwen,
+                compose_landing_live_provider,
+                provider_api_key,
             )
 
             profile = HttpLandingProfile.for_provider(settings.landing_provider, available=True)
             compose = (
                 compose_landing_live_grok if settings.landing_provider in {"grok", "grok-vision"}
-                else compose_landing_live_qwen
+                else compose_landing_live_qwen if profile.provider_id == "qwen"
+                else compose_landing_live_provider
             )
             key_name = GROK_API_KEY_ENV if settings.landing_provider in {"grok", "grok-vision"} else QWEN_API_KEY_ENV
             # This is runtime-only opt-in acquisition, after all path/source
             # validation and ownership checks. Never persist or log the value.
             service = compose(
-                api_key=(api_key_from_environ(key_name) if profile.provider_id == "grok"
+                api_key=(provider_api_key(profile.provider_id, env_file=provider_env_file)
+                         if provider_env_file is not None or profile.provider_id not in {"qwen", "grok"}
+                         else api_key_from_environ(key_name) if profile.provider_id == "grok"
                          else qwen_api_key(env_file=qwen_env_file)),
                 binding=implemented_live_binding(enabled=True),
                 profile=profile,

@@ -1,0 +1,41 @@
+{
+  "change_id": "20260915-feature-implement-automatic-qwen-to-grok-llm-pro-24b49d",
+  "created_at": "2026-09-15T12:17:17+00:00",
+  "history": [
+    {
+      "at": "2026-09-15T12:17:17+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-15T12:25:55+00:00",
+      "from": "draft",
+      "reason": "Five selected analyses completed; concrete CLI/Unix-router alternatives and six typed criteria prepared. Named scope_and_design_approval is pending the user entrypoint choice. No product implementation or operational mutation.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-15T12:37:27+00:00",
+      "from": "scoped",
+      "reason": "User explicitly said Исправляй after the concrete design, then required rereading .env and including all API keys. Five key names confirmed without exposing values; common CLI and all five provider adapters accepted. Qwen remains primary and Grok first reserve.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-15T12:43:33+00:00",
+      "from": "approved",
+      "reason": "User approved full five-provider scope; selected sole writer started implementation",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-15T13:37:58+00:00",
+      "from": "implementing",
+      "reason": "Five-provider implementation and focused regression suite complete; source freeze for full verifier and independent review",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "24b49d0529c8",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Feature: implement automatic Qwen-to-Grok LLM provider failover for landing generation, with bounded per-provider attempts, durable accounting, distinct failure categories, idempotent recovery, process unavailability handling and secret isolation. Qwen stays primary; Grok is secondary when Qwen fails. Include regression tests and an operator guide.",
+  "updated_at": "2026-09-15T13:37:58+00:00"
+}

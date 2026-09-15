@@ -20,6 +20,7 @@ from .landing_contracts import (
 )
 from .landing_artifact import LandingArtifactError
 from .landing_artifact_retention import RetainedLandingArtifact
+from .landing_observation import LandingProviderObservation
 from .landing_service import (
     LANDING_STATES,
     LandingJobRecord,
@@ -28,7 +29,8 @@ from .landing_service import (
 )
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+MIGRATION_002_EXPAND = "ALTER TABLE landing_jobs ADD COLUMN observation_json BLOB"
 APPLICATION_ID = 0x4C354C35
 MAX_RECOVERY_BATCH = 100
 _SCHEMA = """
@@ -44,6 +46,7 @@ CREATE TABLE IF NOT EXISTS landing_jobs (
     reason_code TEXT,
     revision INTEGER NOT NULL,
     updated_at TEXT NOT NULL,
+    observation_json BLOB,
     PRIMARY KEY (tenant_id, repository_id, job_id)
 ) STRICT;
 CREATE TABLE IF NOT EXISTS landing_commands (
@@ -73,6 +76,7 @@ _EXPECTED_COLUMNS = {
         ("reason_code", "TEXT", 0, 0),
         ("revision", "INTEGER", 1, 0),
         ("updated_at", "TEXT", 1, 0),
+        ("observation_json", "BLOB", 0, 0),
     ),
     "landing_commands": (
         ("tenant_id", "TEXT", 1, 1),
@@ -245,7 +249,7 @@ class SQLiteLandingJobStore:
                 """UPDATE landing_jobs
                       SET state = ?, artifact_json = ?, sealed_artifact_json = ?,
                           provider_evidence_digest = ?, reason_code = ?,
-                          revision = ?, updated_at = ?
+                          revision = ?, updated_at = ?, observation_json = ?
                     WHERE tenant_id = ? AND repository_id = ? AND job_id = ?
                       AND revision = ?""",
                 (
@@ -256,6 +260,7 @@ class SQLiteLandingJobStore:
                     values[5],
                     values[6],
                     self._timestamp(),
+                    canonical_json(stored.observation.to_dict()) if stored.observation else None,
                     *identity,
                     record.revision,
                 ),
@@ -303,7 +308,7 @@ class SQLiteLandingJobStore:
                 """UPDATE landing_jobs
                       SET state = ?, artifact_json = ?, sealed_artifact_json = ?,
                           provider_evidence_digest = ?, reason_code = ?,
-                          revision = ?, updated_at = ?
+                          revision = ?, updated_at = ?, observation_json = ?
                     WHERE tenant_id = ? AND repository_id = ? AND job_id = ?""",
                 (
                     values[1],
@@ -313,6 +318,7 @@ class SQLiteLandingJobStore:
                     values[5],
                     values[6],
                     self._timestamp(),
+                    canonical_json(cancelled.observation.to_dict()) if cancelled.observation else None,
                     *identity,
                 ),
             )
@@ -358,6 +364,13 @@ class SQLiteLandingJobStore:
                         if statement.strip():
                             self._connection.execute(statement)
                     self._connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+                    self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif identity == (1, APPLICATION_ID):
+                # Validate the old schema before adding one nullable field. Historical
+                # rows retain NULL; they cannot authorize provider fallback.
+                _validate_schema(self._connection, version=1)
+                with self._transaction():
+                    self._connection.execute(MIGRATION_002_EXPAND)
                     self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif identity != (SCHEMA_VERSION, APPLICATION_ID):
                 raise _schema_error()
@@ -410,7 +423,7 @@ class SQLiteLandingJobStore:
         row = self._connection.execute(
             """SELECT tenant_id, repository_id, job_id, source_json, state,
                       artifact_json, sealed_artifact_json,
-                      provider_evidence_digest, reason_code, revision
+                      provider_evidence_digest, reason_code, revision, observation_json
                  FROM landing_jobs
                 WHERE tenant_id = ? AND repository_id = ? AND job_id = ?""",
             identity,
@@ -448,14 +461,15 @@ class SQLiteLandingJobStore:
             """INSERT INTO landing_jobs
                (tenant_id, repository_id, job_id, source_json, state,
                 artifact_json, sealed_artifact_json, provider_evidence_digest,
-                reason_code, revision, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                reason_code, revision, updated_at, observation_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 record.source.tenant_id,
                 record.source.repository_id,
                 record.source.job_id,
                 *values,
                 self._timestamp(),
+                canonical_json(record.observation.to_dict()) if record.observation else None,
             ),
         )
 
@@ -567,7 +581,7 @@ def _schema_inventory(connection: sqlite3.Connection) -> tuple[tuple[str, str], 
     )
 
 
-def _validate_schema(connection: sqlite3.Connection) -> None:
+def _validate_schema(connection: sqlite3.Connection, *, version: int = SCHEMA_VERSION) -> None:
     if _schema_inventory(connection) != (
         ("table", "landing_commands"),
         ("table", "landing_jobs"),
@@ -579,6 +593,8 @@ def _validate_schema(connection: sqlite3.Connection) -> None:
         if row[0] == "main" and row[1] in _EXPECTED_COLUMNS
     }
     for table, expected in _EXPECTED_COLUMNS.items():
+        if version == 1 and table == "landing_jobs":
+            expected = expected[:-1]
         columns = tuple(
             (row[1], row[2], row[3], row[5])
             for row in connection.execute(f"PRAGMA table_xinfo({table})").fetchall()
@@ -633,6 +649,7 @@ def _decode_record(row) -> LandingJobRecord:
         evidence_digest,
         reason_code,
         revision,
+        observation_json,
     ) = row
     try:
         source = LandingInputV1.from_dict(strict_json_object(source_json))
@@ -646,6 +663,8 @@ def _decode_record(row) -> LandingJobRecord:
             if sealed_json is not None
             else None
         )
+        observation = (LandingProviderObservation.from_dict(strict_json_object(observation_json))
+                       if observation_json is not None else None)
     except (LandingArtifactError, LandingContractError, ValueError, TypeError) as exc:
         raise LandingServiceError("store_record", 500, "landing store record invalid") from exc
     if (tenant_id, repository_id, job_id) != (
@@ -662,6 +681,7 @@ def _decode_record(row) -> LandingJobRecord:
         reason_code,
         revision,
         sealed_artifact,
+        observation,
     )
     return record
 
@@ -676,6 +696,12 @@ def _validate_record(record: LandingJobRecord, *, validate_files: bool = False) 
         raise LandingServiceError("provider_binding", 500, "landing evidence invalid")
     if type(record.revision) is not int or record.revision < 0:
         raise LandingServiceError("revision", 500, "landing revision invalid")
+    if record.observation is not None and (
+        not isinstance(record.observation, LandingProviderObservation)
+        or record.observation.evidence.input_digest != record.source.input_digest
+        or record.observation.evidence.provider_evidence_digest != record.provider_evidence_digest
+    ):
+        raise LandingServiceError("provider_binding", 500, "landing observation invalid")
     if record.state == "artifact_ready" and (
         record.artifact is None or record.sealed_artifact is None
     ):

@@ -156,6 +156,11 @@ class SemanticBridgeTests(unittest.TestCase):
             "landing-provider-evidence.v1.schema.json",
             "landing-provider-evidence.v2.schema.json",
             "landing-site-artifact.v1.schema.json",
+            "landing-provider-observation.v1.schema.json",
+            "landing-backend-capability.v1.schema.json",
+            "landing-attempt-status.v1.schema.json",
+            "landing-failover-config.v1.schema.json",
+            "landing-failover-result.v1.schema.json",
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
@@ -177,6 +182,11 @@ class SemanticBridgeTests(unittest.TestCase):
             "semantic-execution-binding.v1.schema.json": 1,
             "semantic-validation-inputs.v1.schema.json": 1,
             "landing-provider-evidence.v2.schema.json": 2,
+            "landing-provider-observation.v1.schema.json": 1,
+            "landing-backend-capability.v1.schema.json": 1,
+            "landing-attempt-status.v1.schema.json": 1,
+            "landing-failover-config.v1.schema.json": 1,
+            "landing-failover-result.v1.schema.json": 1,
         }
         for name, version in versions.items():
             schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))

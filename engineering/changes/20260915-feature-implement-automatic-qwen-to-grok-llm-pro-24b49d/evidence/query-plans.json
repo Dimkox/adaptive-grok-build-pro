@@ -1,0 +1,17 @@
+{
+  "scope": "Disposable in-memory schema/query-plan analysis only; no deployed state inspected or changed.",
+  "sqlite_version": "3.45.1",
+  "backend_lookup": [
+    "SEARCH landing_jobs USING INDEX sqlite_autoindex_landing_jobs_1 (tenant_id=? AND repository_id=? AND job_id=?)"
+  ],
+  "caller_lookup": [
+    "SEARCH requests USING INDEX sqlite_autoindex_requests_1 (job_id=?)"
+  ],
+  "caller_expiry": [
+    "SCAN requests"
+  ],
+  "caller_limits": {
+    "max_jobs": 10000,
+    "max_retained_input_bytes": 67108864
+  }
+}
