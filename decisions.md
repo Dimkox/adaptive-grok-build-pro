@@ -639,3 +639,8 @@ A dated state table bound to source SHAs, immutable release hashes and authentic
 ## 2026-09-15 — State the external CI choice as a trust-boundary decision
 
 The repository chooses policy and holdout validation outside the PR-controlled tree, exact-SHA execution and an App-owned required check. Documenting those architectural reasons keeps the no-Actions rule independent of repository licensing or CI pricing.
+
+
+## 2026-09-15 — Keep README architecture references tied to the reviewed model
+
+Removing the complete decorative graph and its duplicate tests leaves the real model, rules, generated views and adoption checks as the architecture references. Moving packaging internals into the existing package guide keeps the README concise while preserving operator details and immutable release evidence.

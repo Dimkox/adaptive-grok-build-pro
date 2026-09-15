@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "02ac8c390f49f8b524c23e93c9afd95f8fcc43b9",
+  "base_fingerprint": "8a06314f9b925d150c54e61a6d0b47743aaff25079d8403ff0d6990f5208b244",
+  "complexity": "standard",
+  "created_at": "2026-09-15T10:59:43+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=frontend,api",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "c949737cfbb5",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Documentation: simplify README after user feedback by removing its decorative K22 inventory graph, moving low-level packaging details to an operator guide, reconciling MIT wording, and explaining template defaults versus installed configuration; update the graph-specific documentation instruction and existing structural assertions accordingly.",
+  "task_domains": [
+    "frontend"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change",
+    "frontend-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

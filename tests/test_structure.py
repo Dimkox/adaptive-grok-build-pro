@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import itertools
 import json
 import re
 import subprocess
@@ -288,44 +287,6 @@ class StructureTests(unittest.TestCase):
             self.assertEqual(adaptive_grok.__version__, version)
         finally:
             sys.path.pop(0)
-
-    def test_readme_stack_graph_is_complete(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        nodes = [
-            "Route",
-            "Skills",
-            "Agents",
-            "Hooks",
-            "Policy",
-            "Verify",
-            "Packages",
-            "Contract",
-            "Decisions",
-            "Mistakes",
-            "TrustAPI",
-            "TrustWorker",
-            "Postgres",
-            "Runner",
-            "Holdout",
-            "GitHubApp",
-            "Factory",
-            "M5Execution",
-            "M6Semantic",
-            "M7Shadow",
-            "M8Autonomy",
-            "M9Delivery",
-        ]
-        missing = []
-        for left, right in itertools.combinations(nodes, 2):
-            forward = f"{left} --- {right}"
-            reverse = f"{right} --- {left}"
-            if forward not in readme and reverse not in readme:
-                missing.append(f"{left}<->{right}")
-        self.assertEqual(missing, [])
-        mermaid = re.search(r"```mermaid\n(.*?)```", readme, re.S)
-        self.assertIsNotNone(mermaid)
-        edge_lines = [line for line in mermaid.group(1).splitlines() if re.search(r"\S+ --- \S+", line)]
-        self.assertEqual(len(edge_lines), len(list(itertools.combinations(nodes, 2))))
 
     def test_m5_execution_openapi_v1_is_immutable_and_v2_is_closed_additive(self) -> None:
         control = json.loads(
@@ -774,7 +735,6 @@ class StructureTests(unittest.TestCase):
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
-        self.assertIn("decorative inventory", readme.lower())
         for relative in (
             "architecture/system.yaml",
             "architecture/rules.yaml",

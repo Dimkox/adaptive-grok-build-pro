@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import itertools
 import json
 import re
 import subprocess
@@ -56,12 +55,6 @@ M8_PROVISIONAL_SHA = "a937ac8d200a4e143c295fabd482b19bc8cc4286"
 M9_PROVISIONAL_SHA = "64b10689ce78a0464a494440f3fa981e18789687"
 MILESTONES = {f"M{number}" for number in range(10)}
 AXES = ("implementation", "review", "stack_integration", "main_delivery", "external_gate")
-CANONICAL_GRAPH_NODES = {
-    "Route", "Skills", "Agents", "Hooks", "Policy", "Verify", "Packages", "Contract",
-    "Decisions", "Mistakes", "TrustAPI", "TrustWorker", "Postgres", "Runner", "Holdout",
-    "GitHubApp", "Factory", "M5Execution", "M6Semantic", "M7Shadow", "M8Autonomy",
-    "M9Delivery",
-}
 
 
 def _section(text: str, heading: str) -> str:
@@ -69,25 +62,6 @@ def _section(text: str, heading: str) -> str:
     if match is None:
         raise AssertionError(f"missing section: {heading}")
     return match.group(1)
-
-
-def _assert_readme_graph(test: unittest.TestCase, readme: str) -> None:
-    block = re.search(r"## Stack graph\n.*?```mermaid\n(.*?)```", readme, re.S)
-    test.assertIsNotNone(block)
-    edges = [
-        tuple(sorted(edge))
-        for edge in re.findall(r"^\s*(\w+)\s*---\s*(\w+)\s*$", block.group(1), re.M)
-    ]
-    nodes = {node for edge in edges for node in edge}
-    role_table = re.search(r"\| Node \| Role \|\n\| --- \| --- \|\n(.*?)(?=\n\n)", readme, re.S)
-    test.assertIsNotNone(role_table)
-    role_nodes = set(re.findall(r"^\| (\w+) \|", role_table.group(1), re.M))
-    expected = {tuple(sorted(pair)) for pair in itertools.combinations(CANONICAL_GRAPH_NODES, 2)}
-    test.assertEqual(role_nodes, CANONICAL_GRAPH_NODES)
-    test.assertEqual(nodes, role_nodes)
-    test.assertEqual(len(edges), 231)
-    test.assertEqual(len(set(edges)), 231)
-    test.assertEqual(set(edges), expected)
 
 
 class ProjectStateTests(unittest.TestCase):
@@ -901,18 +875,6 @@ class ProjectStateTests(unittest.TestCase):
                 self.test_m2_m3_stack_merge_parent_proof_is_self_contained()
         finally:
             self.state = original
-
-    def test_readme_graph_is_exact_complete_k22(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        _assert_readme_graph(self, readme)
-
-    def test_adversarial_graph_node_identity_mutation_is_rejected(self) -> None:
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        graph = re.search(r"```mermaid\n(.*?)```", readme, re.S)
-        self.assertIsNotNone(graph)
-        mutant = readme[: graph.start(1)] + graph.group(1).replace("GitHubApp", "FakeApp") + readme[graph.end(1) :]
-        with self.assertRaises(AssertionError):
-            _assert_readme_graph(self, mutant)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+  "base_sha": "02ac8c390f49f8b524c23e93c9afd95f8fcc43b9",
+  "scope": "These source/default/architecture/release paths must remain byte-identical in this documentation-only correction.",
+  "sha256": {
+    "VERSION": "1bb1d330b5984ca97af2ad21f0c7511225831a0b90557a8e84a5c8b92d3f8390",
+    "LICENSE": "2110e13461826f679d7b74c5aa19959f97f41760756dccec81ec509246b38fc1",
+    "PROJECT_STATE.json": "df3d4dfd00491b482bedecd414c9fcee5aa4bf35effa5ce8051317a15add3c61",
+    "architecture/system.yaml": "7c14e36980642e4694d94d5ed4173960c94964f5457270ec6cbda7d0f09f00ef",
+    "architecture/rules.yaml": "28d1b6ac60ecfd22db094b800e5be02864e2fc37080edd9fc9c25c7ec76b6a10",
+    "architecture/adoption.json": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "factory/src/adaptive_factory/settings.py": "0241a3e27200444bc3114da6e9c2940c6551d6db9e2112e74d6ab4c056c6dd02",
+    "factory/runtime/landing-host.example.json": "5e7c334ba90c21a578cab19f292c6037d5709f0424554dca67f5bfe0360ea604",
+    "packages/adaptive-grok-build-pro-v2.0.16.zip": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
+    "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
+    "architecture/generated/deployment.mmd": "5d0391098401fa0a8c0fe0a9380c394486fd5d8eec1eb52d515498dcfa147c53",
+    "architecture/generated/container.mmd": "797023582e3e786ea104d25318a2d2bec06fa4f25c1bc732eaa609ea973fcdf8",
+    "architecture/generated/data-flow.mmd": "00ec505ee277056c8cb31c1575717df4e37ee29a40ccb51343ed89f4991586b7",
+    "architecture/generated/context.mmd": "5d7e865fe6abfbfcdc726936e927f0ddfb7b1a5c89e6a8a76e64503df1e6d551",
+    "architecture/generated/trust-boundary.mmd": "0aff206dc15e0ef14960bc50d049cbf06003f3602f35fd1588419d055709ea43"
+  }
+}

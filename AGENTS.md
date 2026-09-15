@@ -23,7 +23,7 @@
 ## README before push
 
 - Before proposing a release, update `README.md` so it matches this tree: current VERSION, what exists, where it lives, and how the pieces connect.
-- The README stack graph must stay complete: every listed core node is linked to every other with a `---` edge. A missing edge means the map is stale. Do not propose a release whose graph or current-state section is behind the tree.
+- Keep README links to the reviewed architecture model (`architecture/system.yaml`), rules (`architecture/rules.yaml`) and generated views (`architecture/generated/`) current. Do not propose a release whose architecture links or current-state section are behind the tree.
 
 ## Split large tasks
 

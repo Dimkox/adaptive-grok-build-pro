@@ -9,9 +9,11 @@ Identity: **2.0.16**. The latest published release is [`v2.0.16`](https://github
 | Layer | Observed state on 2026-09-15 |
 | --- | --- |
 | Repository source | `main` observed at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` (PR #88). M0-M9 source is delivered; the assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
-| Installed L5 | Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce`; Grok secondary `adaptive-l5-grok.service` at `61a05da`. Both were **active and enabled**. Source configuration still defaults to live execution off. |
+| Installed L5 | Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce`; Grok secondary `adaptive-l5-grok.service` at `61a05da`. Both were **active and enabled**. |
 | Proven runtime result | Authenticated artifact generation succeeded for both installed SHAs. Grok produced `artifact_ready` in **29.852 s**, with one provider request and `live_url=null`. [Dated evidence and limits](engineering/runbooks/l5-runtime-observation-2026-09-15.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
+
+Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 
 Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). Runtime operation is described in the [L5 runbook](engineering/runbooks/l5-production-runtime.md); milestone acceptance remains in the [roadmap](DARK_FACTORY_ROADMAP.md). Delivery is PR-only: the App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from GitHub App ID `4694114` must cover the exact PR head. Local receipts are preflight evidence. **No GitHub Actions:** this repository keeps deployed verification policy and holdout validation outside the PR-controlled tree, runs checks on the exact SHA, and binds the required result to its GitHub App identity.
 
@@ -44,7 +46,7 @@ Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE
 10. [`factory/README.md`](factory/README.md)
 11. [delivered design-partner pilot package](engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6/brief.md)
 12. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
-13. This README’s stack graph and map
+13. This README’s [map](#map) and [executable architecture](#executable-architecture)
 
 ## How work runs
 
@@ -116,7 +118,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
 - Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
-- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the offline L5 landing dogfood source candidate
+- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the L5 landing runtime with bounded artifact generation
 - Separate operator-owned `pilot/` boundary with built-in default-off phased CLI, one exact repository/base, one Codex start, one test command, literal GitHub effect resources, deterministic restart recovery, and no automatic write retry
 - Local verification / review receipts via `scripts/grok_*.py`
 - Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md) via `scripts/grok_history.py` separates observed PRs, source-identified work units, acceptance, intervention coverage and exact-profile metadata; imported history has no M8 qualification or authority effect.
@@ -125,292 +127,6 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 - Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
 - GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
-
-## Stack graph
-
-<details>
-<summary>Complete 22-node stack graph and roles (231 connections)</summary>
-
-Decorative inventory graph (K22): every listed core node is linked to every other with one of 231 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
-
-```mermaid
-graph TD
-  Contract["AGENTS.md"]
-  Decisions["decisions.md"]
-  Mistakes["mistakes.md"]
-  TrustAPI["trust-ci API"]
-  TrustWorker["trust-ci worker"]
-  Postgres["PostgreSQL 17"]
-  Runner["isolated runner"]
-  Holdout["external holdout"]
-  GitHubApp["GitHub App Checks"]
-  Factory["local factory + L5 landing"]
-  M5Execution["M5 isolated execution"]
-  M6Semantic["M6 semantic validation"]
-  M7Shadow["M7 shadow PR bundle"]
-  M8Autonomy["M8 trust profile"]
-  M9Delivery["M9 preview/canary/recovery"]
-  Route --- Skills
-  Route --- Agents
-  Route --- Hooks
-  Route --- Policy
-  Route --- Verify
-  Route --- Packages
-  Route --- Contract
-  Route --- Decisions
-  Route --- Mistakes
-  Route --- TrustAPI
-  Route --- TrustWorker
-  Route --- Postgres
-  Route --- Runner
-  Route --- Holdout
-  Route --- GitHubApp
-  Skills --- Agents
-  Skills --- Hooks
-  Skills --- Policy
-  Skills --- Verify
-  Skills --- Packages
-  Skills --- Contract
-  Skills --- Decisions
-  Skills --- Mistakes
-  Skills --- TrustAPI
-  Skills --- TrustWorker
-  Skills --- Postgres
-  Skills --- Runner
-  Skills --- Holdout
-  Skills --- GitHubApp
-  Agents --- Hooks
-  Agents --- Policy
-  Agents --- Verify
-  Agents --- Packages
-  Agents --- Contract
-  Agents --- Decisions
-  Agents --- Mistakes
-  Agents --- TrustAPI
-  Agents --- TrustWorker
-  Agents --- Postgres
-  Agents --- Runner
-  Agents --- Holdout
-  Agents --- GitHubApp
-  Hooks --- Policy
-  Hooks --- Verify
-  Hooks --- Packages
-  Hooks --- Contract
-  Hooks --- Decisions
-  Hooks --- Mistakes
-  Hooks --- TrustAPI
-  Hooks --- TrustWorker
-  Hooks --- Postgres
-  Hooks --- Runner
-  Hooks --- Holdout
-  Hooks --- GitHubApp
-  Policy --- Verify
-  Policy --- Packages
-  Policy --- Contract
-  Policy --- Decisions
-  Policy --- Mistakes
-  Policy --- TrustAPI
-  Policy --- TrustWorker
-  Policy --- Postgres
-  Policy --- Runner
-  Policy --- Holdout
-  Policy --- GitHubApp
-  Verify --- Packages
-  Verify --- Contract
-  Verify --- Decisions
-  Verify --- Mistakes
-  Verify --- TrustAPI
-  Verify --- TrustWorker
-  Verify --- Postgres
-  Verify --- Runner
-  Verify --- Holdout
-  Verify --- GitHubApp
-  Packages --- Contract
-  Packages --- Decisions
-  Packages --- Mistakes
-  Packages --- TrustAPI
-  Packages --- TrustWorker
-  Packages --- Postgres
-  Packages --- Runner
-  Packages --- Holdout
-  Packages --- GitHubApp
-  Contract --- Decisions
-  Contract --- Mistakes
-  Contract --- TrustAPI
-  Contract --- TrustWorker
-  Contract --- Postgres
-  Contract --- Runner
-  Contract --- Holdout
-  Contract --- GitHubApp
-  Decisions --- Mistakes
-  Decisions --- TrustAPI
-  Decisions --- TrustWorker
-  Decisions --- Postgres
-  Decisions --- Runner
-  Decisions --- Holdout
-  Decisions --- GitHubApp
-  Mistakes --- TrustAPI
-  Mistakes --- TrustWorker
-  Mistakes --- Postgres
-  Mistakes --- Runner
-  Mistakes --- Holdout
-  Mistakes --- GitHubApp
-  TrustAPI --- TrustWorker
-  TrustAPI --- Postgres
-  TrustAPI --- Runner
-  TrustAPI --- Holdout
-  TrustAPI --- GitHubApp
-  TrustWorker --- Postgres
-  TrustWorker --- Runner
-  TrustWorker --- Holdout
-  TrustWorker --- GitHubApp
-  Postgres --- Runner
-  Postgres --- Holdout
-  Postgres --- GitHubApp
-  Runner --- Holdout
-  Runner --- GitHubApp
-  Holdout --- GitHubApp
-  Route --- Factory
-  Skills --- Factory
-  Agents --- Factory
-  Hooks --- Factory
-  Policy --- Factory
-  Verify --- Factory
-  Packages --- Factory
-  Contract --- Factory
-  Decisions --- Factory
-  Mistakes --- Factory
-  TrustAPI --- Factory
-  TrustWorker --- Factory
-  Postgres --- Factory
-  Runner --- Factory
-  Holdout --- Factory
-  GitHubApp --- Factory
-  Route --- M5Execution
-  Route --- M6Semantic
-  Route --- M7Shadow
-  Route --- M8Autonomy
-  Route --- M9Delivery
-  Skills --- M5Execution
-  Skills --- M6Semantic
-  Skills --- M7Shadow
-  Skills --- M8Autonomy
-  Skills --- M9Delivery
-  Agents --- M5Execution
-  Agents --- M6Semantic
-  Agents --- M7Shadow
-  Agents --- M8Autonomy
-  Agents --- M9Delivery
-  Hooks --- M5Execution
-  Hooks --- M6Semantic
-  Hooks --- M7Shadow
-  Hooks --- M8Autonomy
-  Hooks --- M9Delivery
-  Policy --- M5Execution
-  Policy --- M6Semantic
-  Policy --- M7Shadow
-  Policy --- M8Autonomy
-  Policy --- M9Delivery
-  Verify --- M5Execution
-  Verify --- M6Semantic
-  Verify --- M7Shadow
-  Verify --- M8Autonomy
-  Verify --- M9Delivery
-  Packages --- M5Execution
-  Packages --- M6Semantic
-  Packages --- M7Shadow
-  Packages --- M8Autonomy
-  Packages --- M9Delivery
-  Contract --- M5Execution
-  Contract --- M6Semantic
-  Contract --- M7Shadow
-  Contract --- M8Autonomy
-  Contract --- M9Delivery
-  Decisions --- M5Execution
-  Decisions --- M6Semantic
-  Decisions --- M7Shadow
-  Decisions --- M8Autonomy
-  Decisions --- M9Delivery
-  Mistakes --- M5Execution
-  Mistakes --- M6Semantic
-  Mistakes --- M7Shadow
-  Mistakes --- M8Autonomy
-  Mistakes --- M9Delivery
-  TrustAPI --- M5Execution
-  TrustAPI --- M6Semantic
-  TrustAPI --- M7Shadow
-  TrustAPI --- M8Autonomy
-  TrustAPI --- M9Delivery
-  TrustWorker --- M5Execution
-  TrustWorker --- M6Semantic
-  TrustWorker --- M7Shadow
-  TrustWorker --- M8Autonomy
-  TrustWorker --- M9Delivery
-  Postgres --- M5Execution
-  Postgres --- M6Semantic
-  Postgres --- M7Shadow
-  Postgres --- M8Autonomy
-  Postgres --- M9Delivery
-  Runner --- M5Execution
-  Runner --- M6Semantic
-  Runner --- M7Shadow
-  Runner --- M8Autonomy
-  Runner --- M9Delivery
-  Holdout --- M5Execution
-  Holdout --- M6Semantic
-  Holdout --- M7Shadow
-  Holdout --- M8Autonomy
-  Holdout --- M9Delivery
-  GitHubApp --- M5Execution
-  GitHubApp --- M6Semantic
-  GitHubApp --- M7Shadow
-  GitHubApp --- M8Autonomy
-  GitHubApp --- M9Delivery
-  Factory --- M5Execution
-  Factory --- M6Semantic
-  Factory --- M7Shadow
-  Factory --- M8Autonomy
-  Factory --- M9Delivery
-  M5Execution --- M6Semantic
-  M5Execution --- M7Shadow
-  M5Execution --- M8Autonomy
-  M5Execution --- M9Delivery
-  M6Semantic --- M7Shadow
-  M6Semantic --- M8Autonomy
-  M6Semantic --- M9Delivery
-  M7Shadow --- M8Autonomy
-  M7Shadow --- M9Delivery
-  M8Autonomy --- M9Delivery
-```
-
-| Node | Role |
-| --- | --- |
-| Route | `scripts/grok_route.py` / active-route |
-| Skills | `.grok/skills/` and `.agents/skills/` |
-| Agents | `.grok/agents/` |
-| Hooks | `.grok/hooks/` |
-| Policy | `.grok-stack/adaptive_grok/policy.py` |
-| Verify | `scripts/grok_verify.py` + typed-spec validation + criterion-bound local receipts |
-| Packages | `packages/` + `scripts/package_stack.py` + durable `engineering/changes/**/change-spec.yaml` |
-| Contract | `AGENTS.md` first rule: log to `decisions.md` / `mistakes.md` |
-| Decisions | root `decisions.md` |
-| Mistakes | root `mistakes.md` |
-| TrustAPI | `trust-ci/` FastAPI image; HMAC webhook intake; no GitHub App key |
-| TrustWorker | `trust-ci/` worker; claims PostgreSQL leases; publishes the Check Run |
-| Postgres | Durable PostgreSQL 17 (`TRUST_CI_POSTGRES_IMAGE`); jobs, leases, approvals, attestations |
-| Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
-| Holdout | External digest-pinned bundle, outside the PR checkout |
-| GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
-| Factory | M4-M8 control/evaluation plus default-off L5 HTTP/media normalization, dedicated SQLite/Unix host, retained artifacts and offline backup/restore under `factory/`; live transfer is explicitly enabled |
-| M5Execution | Integrated bounded execution packet/result, offline adapter, broker and workspace boundary; disabled by default and no live provider capability |
-| M6Semantic | Integrated independent semantic verdict, artifact validation and bounded-repair boundary; cannot self-approve implementation |
-| M7Shadow | Integrated deterministic shadow bundle/outcome/cohort boundary; human merge remains mandatory |
-| M8Autonomy | Integrated earned-autonomy profile/recommendation boundary over actual M7 records; no factual cohort or activation and authority is capped at L2 |
-| M9Delivery | Immutable staged-delivery/recovery plus owner-controlled filesystem landing publication, strict SQLite intent and observation-only reconciliation; each publication effect needs exact authority |
-
-oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
-
-</details>
 
 ## Executable architecture
 
@@ -579,7 +295,7 @@ Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts
 python3 scripts/package_stack.py
 ```
 
-Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch). Tracked copies live in `packages/`; their presence alone does not claim a tag or GitHub Release, and `packages/README.md` records publication status. New production release packaging requires a clean repository root and derives its complete regular-file inventory, bytes and canonical `0644`/`0755` member modes from filtered exact Git `HEAD`; ignored and untracked filesystem files or ambient non-executable permission bits are not candidates. Published `2.0.13` is instead verified against the immutable tag-bound `published_release` record in `PROJECT_STATE.json`: exact ZIP and sidecar digest, sorted unique members, embedded per-member hashes, canonical modes, version identity and prohibited-path exclusions remain strict, while later documentation-only HEADs do not restack the artifact. Generic manifest generation and `write_archive` remain compatible with non-Git filesystem targets. Zip members use the prefix `adaptive-grok-build-pro/`; packaging excludes symlinks/non-regular sources, binds no-follow source and output-parent descriptors through verified publication, streams with bounded memory, preserves umask/existing output and sidecar permissions, atomically publishes the ZIP and checksum from separate exclusive held fds, and never mutates a source manifest. Missing output parents are no-follow-bound, set and verified at exact mode `0700` independently of ambient umask; existing parents must be effective-UID-owned and private, and every canonical ancestor must exclude untrusted ownership/rename authority, with normal root-owned sticky `/tmp` semantics supported. Secure packaging fails with a controlled error when that boundary or descriptor-relative POSIX capabilities are unavailable, while explicit manifest generation and verification remain importable and compatible without those flags.
+Creates `dist/adaptive-grok-build-pro-v<VERSION>.zip` and its checksum sidecar. See the [release package and operator guide](packages/README.md) for published artifacts and packaging requirements.
 
 ## Bitrix
 
@@ -587,4 +303,4 @@ See skills under `.grok/skills/bitrix-development/` and example module in `examp
 
 ## License
 
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify` / `make trust-ci-test`. Merge trust, when deployed, is the App-owned policy-epoch exact-SHA check described in [`trust-ci/README.md`](trust-ci/README.md).
+[MIT License](LICENSE).
