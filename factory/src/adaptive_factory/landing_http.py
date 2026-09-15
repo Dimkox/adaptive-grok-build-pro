@@ -35,6 +35,7 @@ from .landing_provider import (
 
 HTTP_ADAPTER_ID = "https-chat-completions"
 HTTP_ADAPTER_VERSION = "1.1.0"
+GROK_HTTP_ADAPTER_VERSION = "1.1.1"
 HTTP_NORMALIZER_PROMPT = (
     LANDING_NORMALIZER_PROMPT + "\nReturn one JSON object matching this schema; "
     "use only facts supported by the supplied media, without Markdown fences:\n"
@@ -61,6 +62,9 @@ HTTP_TOOL_POLICY_DIGEST = hashlib.sha256(
 ).hexdigest()
 HTTP_DECODER_DIGEST = hashlib.sha256(
     b"http-landing/v1.1:strict-json-or-omni-sse-single-stop-final-usage-draft"
+).hexdigest()
+GROK_HTTP_DECODER_DIGEST = hashlib.sha256(
+    b"http-landing/v1.1.1:grok-strict-json-single-stop-draft;additive-or-inclusive-reasoning-usage"
 ).hexdigest()
 
 
@@ -102,6 +106,14 @@ class HttpLandingProfile:
         return cls(provider, endpoint, model, available=available,
                    profile_id=provider_id, streaming=streaming, media_kinds=media)
 
+    @property
+    def adapter_version(self) -> str:
+        return GROK_HTTP_ADAPTER_VERSION if self.provider_id == "grok" else HTTP_ADAPTER_VERSION
+
+    @property
+    def decoder_digest(self) -> str:
+        return GROK_HTTP_DECODER_DIGEST if self.provider_id == "grok" else HTTP_DECODER_DIGEST
+
     def to_facts(self) -> dict[str, object]:
         return {
             **({"enable_thinking": False, "response_format": "json_object"}
@@ -112,7 +124,7 @@ class HttpLandingProfile:
             "base_url": self.base_url,
             "model_id": self.model_id,
             "adapter_id": HTTP_ADAPTER_ID,
-            "adapter_version": HTTP_ADAPTER_VERSION,
+            "adapter_version": self.adapter_version,
             "available": self.available,
             "timeout_seconds": self.timeout_seconds,
             "max_request_bytes": MAX_HTTP_REQUEST_BYTES,
@@ -126,7 +138,7 @@ class HttpLandingProfile:
             "prompt_template_digest": HTTP_NORMALIZER_PROMPT_SHA256,
             "output_schema_digest": LANDING_NORMALIZATION_DRAFT_SCHEMA_SHA256,
             "tool_policy_digest": HTTP_TOOL_POLICY_DIGEST,
-            "decoder_digest": HTTP_DECODER_DIGEST,
+            "decoder_digest": self.decoder_digest,
         }
 
     @property
@@ -288,12 +300,12 @@ class HttpLandingNormalizer:
             "profile_digest": self._profile.profile_digest,
             "provider_id": self._profile.provider_id,
             "adapter_id": HTTP_ADAPTER_ID,
-            "adapter_version": HTTP_ADAPTER_VERSION,
+            "adapter_version": self._profile.adapter_version,
             "model_id": self._profile.model_id,
             "prompt_template_digest": HTTP_NORMALIZER_PROMPT_SHA256,
             "tool_policy_digest": HTTP_TOOL_POLICY_DIGEST,
             "output_schema_digest": LANDING_NORMALIZATION_DRAFT_SCHEMA_SHA256,
-            "decoder_digest": HTTP_DECODER_DIGEST,
+            "decoder_digest": self._profile.decoder_digest,
             "request_digest": request_digest,
             "response_digest": response_digest,
             "usage_input_units": usage_input,

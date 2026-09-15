@@ -1,0 +1,53 @@
+{
+  "change_id": "20260915-bugfix-ai-llm-grok-provider-correct-separately-r-feeb4f",
+  "created_at": "2026-09-15T06:59:06+00:00",
+  "history": [
+    {
+      "at": "2026-09-15T06:59:06+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-15T07:04:39+00:00",
+      "from": "draft",
+      "reason": "Live root cause, typed criteria, bounded design and five selected analysis reports are recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-15T07:04:39+00:00",
+      "from": "scoped",
+      "reason": "User requested Grok connection; necessary bounded compatibility repair; no named route design gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-15T07:08:11+00:00",
+      "from": "approved",
+      "reason": "Five selected analyses accepted the bounded design; ai_implementer owns the regression and repair",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-15T07:29:49+00:00",
+      "from": "implementing",
+      "reason": "Full tests and source checks passed; synthetic fixture scanner failure corrected and targeted verification passed; final full run follows report freeze",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-15T07:29:49+00:00",
+      "from": "verifying",
+      "reason": "All identified verification failures resolved; independent reviews inspect final code before final fingerprint-bound full rerun",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-15T07:38:24+00:00",
+      "from": "reviewing",
+      "reason": "Selected full checks completed; sole synthetic scanner failure repaired and targeted verified; all independent reviews pass. Freeze reviewed package before final full verification and fingerprint receipts; no local completion or merge claim until zero evidence gaps.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "feeb4f381209",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Bugfix AI LLM Grok provider: correct separately reported reasoning token usage in chat completions; preserve bounded output accounting, exact model and Qwen compatibility; add regression from sanitized live response",
+  "updated_at": "2026-09-15T07:38:24+00:00"
+}

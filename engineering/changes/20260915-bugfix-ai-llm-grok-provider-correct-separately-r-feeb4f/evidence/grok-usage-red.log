@@ -1,0 +1,185 @@
+E.FF.FFFFFFFFFFFFFFFF....F
+======================================================================
+ERROR: test_aggregate_output_at_cap_passes_but_one_token_over_is_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_aggregate_output_at_cap_passes_but_one_token_over_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 269, in test_aggregate_output_at_cap_passes_but_one_token_over_is_rejected
+    self.assertEqual(1262, executor.run(_request(executor)).usage_output_units)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/src/adaptive_factory/landing_live_executors.py", line 243, in run
+    if isinstance(raw, HttpLandingExecutionResult) else self._decode_response(raw, started)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/src/adaptive_factory/landing_live_executors.py", line 421, in _decode_response
+    raise LandingProviderError("executor_usage")
+adaptive_factory.landing_provider.LandingProviderError: executor_usage
+
+======================================================================
+FAIL: test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence) (profile='grok')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 249, in test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence
+    self.assertEqual(("normalized", "normalized"),
+AssertionError: Tuples differ: ('normalized', 'normalized') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 0:
+'normalized'
+'needs_human'
+
+- ('normalized', 'normalized')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence) (profile='grok-vision')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 249, in test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence
+    self.assertEqual(("normalized", "normalized"),
+AssertionError: Tuples differ: ('normalized', 'normalized') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 0:
+'normalized'
+'needs_human'
+
+- ('normalized', 'normalized')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=1169)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details='1169')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_detail_containers_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_detail_containers_are_rejected) (details=[1169])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 331, in test_malformed_detail_containers_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=10000001)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning='1169')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=1169.0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive) (total=1429, reasoning={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 322, in test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+======================================================================
+FAIL: test_unexplained_totals_and_inclusive_reasoning_above_completion_are_rejected (factory.tests.test_landing_live_executors.GrokReasoningUsageTests.test_unexplained_totals_and_inclusive_reasoning_above_completion_are_rejected) (usage={'prompt_tokens': 1336, 'completion_tokens': 93, 'total_tokens': 1429, 'completion_tokens_details': {'reasoning_tokens': 1169}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-grok-usage/factory/tests/test_landing_live_executors.py", line 312, in test_unexplained_totals_and_inclusive_reasoning_above_completion_are_rejected
+    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+AssertionError: LandingProviderError not raised
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.103s
+
+FAILED (failures=19, errors=1)

@@ -1,0 +1,102 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The observed Grok response prompt=1336, completion=93, reasoning=1169, total=2598 normalizes successfully and records accurate usage without double counting.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Invalid counters, missing explanations for totals, and over-budget usage still fail closed.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Qwen nonstreaming/SSE and valid legacy usage retain their declared semantics.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Current adapter/decoder identity distinguishes changed Grok accounting, while retained provider evidence remains readable.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  },
+  "change_id": "20260915-bugfix-ai-llm-grok-provider-correct-separately-r-feeb4f",
+  "contracts": {
+    "openapi": [],
+    "events": [],
+    "json_schema": [
+      "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json"
+    ]
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Dropping reasoning cost, counting reasoning twice, or accepting arbitrary inconsistent usage totals.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Exact model/provider binding, no redirects/proxies/retries, time/byte limits, and strict draft validation stay enforced.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Accept valid Grok Chat Completions usage with separately reported reasoning tokens, preserve truthful bounded output accounting and Qwen compatibility.",
+    "success_metric": "Sanitized live usage regression and nearby invalid-usage cases pass with unchanged Qwen outcomes; source verification and independent reviews pass.",
+    "target": "main"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Normalization state, exact profile/decoder identity, usage_input_units, usage_output_units and provider evidence digest.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}

@@ -20,6 +20,7 @@ import httpx
 
 from adaptive_factory import landing_live_executors as live
 from adaptive_factory.contracts import canonical_json
+from adaptive_factory.landing_contracts import decode_provider_evidence
 from adaptive_factory.landing_http import HTTP_NORMALIZER_PROMPT, HTTP_PROTOCOL_VERSION, HttpLandingProfile, HttpLandingExecutionRequest, HttpLandingNormalizer
 from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
 from adaptive_factory.settings import SettingsError
@@ -47,6 +48,7 @@ from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
 from adaptive_factory.landing_runtime import implemented_live_binding
 from adaptive_factory.models import Actor
 from factory.tests.test_landing_normalizer import draft, source
+from factory.tests.test_landing_contracts import provider_facts
 from factory.tests.test_landing_renderer import sealed_target
 
 FIXED_TIME = datetime(2026, 9, 6, 19, 0, tzinfo=timezone.utc)
@@ -198,6 +200,202 @@ class LandingLiveExecutorTests(unittest.TestCase):
         with self.assertRaises(LandingProviderError) as raised:
             executor.run(_request(executor))
         self.assertEqual("executor_result", str(raised.exception))
+
+
+class GrokReasoningUsageTests(unittest.TestCase):
+    # Counts captured from the sanitized grok-4.6 response on 2026-09-15.
+    CAPTURED_USAGE = {
+        "prompt_tokens": 1336, "completion_tokens": 93, "total_tokens": 2598,
+        "completion_tokens_details": {"reasoning_tokens": 1169},
+    }
+    LEGACY_DECODER = "9513c336dc2e6cfecae92ebb743e10ea1bb37755e6a5a1da34393b6cd8512d43"
+    LEGACY_GROK_PROFILES = {
+        "grok": "5a38fabf2eb2cd2039129e7dcde570c771d885e26aaaf9fbcdfe5eec3ea0703c",
+        "grok-vision": "9d1d6e8ea8019ff1d371681cad01cfef5110a8bd997bcadedc401b810e239339",
+    }
+
+    def executor(self, usage, profile_id="grok-vision", *, limit=4096, response_model=None):
+        profile = replace(HttpLandingProfile.for_provider(profile_id, available=True),
+                          max_output_tokens=limit)
+        response = {
+            "object": "chat.completion", "model": response_model or profile.model_id,
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": draft().decode()}}],
+            "usage": usage,
+        }
+        executor = OpenAICompatibleLandingExecutor(
+            provider_id=profile.provider_id, base_url=profile.base_url,
+            model_id=profile.model_id, profile=profile, api_key="test-grok",
+            transport=_transport(profile.model_id, payload=response),
+        )
+        return executor, profile, response
+
+    def normalize(self, usage, profile_id="grok-vision", *, limit=4096):
+        executor, profile, response = self.executor(usage, profile_id, limit=limit)
+        payload = b"A synthetic garden club brief"
+        request = LandingNormalizationRequest(
+            source(payload, kind="text", media_type="text/plain", job_id="grok-usage"),
+            profile.profile_digest,
+        )
+        outcome = HttpLandingNormalizer(profile, executor, clock=lambda: FIXED_TIME).normalize(
+            request, lambda: payload,
+        )
+        return outcome, profile, response
+
+    def test_captured_reasoning_normalizes_into_aggregate_output_and_current_evidence(self):
+        for profile_id in ("grok", "grok-vision"):
+            with self.subTest(profile=profile_id):
+                outcome, profile, response = self.normalize(self.CAPTURED_USAGE, profile_id)
+                self.assertEqual(("normalized", "normalized"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertIsNotNone(outcome.spec)
+                evidence = outcome.evidence
+                self.assertEqual((1336, 1262),
+                                 (evidence.usage_input_units, evidence.usage_output_units))
+                self.assertEqual(hashlib.sha256(canonical_json(response)).hexdigest(),
+                                 evidence.response_digest)
+                self.assertEqual(profile.profile_digest, evidence.profile_digest)
+                self.assertEqual(profile.model_id, evidence.model_id)
+                self.assertEqual("normalized", evidence.disposition)
+                self.assertEqual("1.1.1", evidence.adapter_version)
+                self.assertEqual(profile.to_facts()["adapter_version"], evidence.adapter_version)
+                self.assertEqual(profile.to_facts()["decoder_digest"], evidence.decoder_digest)
+                self.assertNotEqual(self.LEGACY_DECODER, evidence.decoder_digest)
+                self.assertNotEqual(self.LEGACY_GROK_PROFILES[profile_id], profile.profile_digest)
+                self.assertEqual(evidence, decode_provider_evidence(evidence.to_dict()))
+
+    def test_aggregate_output_at_cap_passes_but_one_token_over_is_rejected(self):
+        executor, _, _ = self.executor(self.CAPTURED_USAGE, limit=1262)
+        self.assertEqual(1262, executor.run(_request(executor)).usage_output_units)
+        executor, _, _ = self.executor(self.CAPTURED_USAGE, limit=1261)
+        with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+            executor.run(_request(executor))
+        outcome, profile, _ = self.normalize(self.CAPTURED_USAGE, limit=1261)
+        self.assertEqual(("needs_human", "http_outcome_unusable"),
+                         (outcome.state, outcome.reason_code))
+        self.assertIsNone(outcome.spec)
+        self.assertEqual("1.1.1", outcome.evidence.adapter_version)
+        self.assertEqual(profile.to_facts()["decoder_digest"], outcome.evidence.decoder_digest)
+
+    def test_legacy_usage_absent_zero_or_inclusive_reasoning_is_not_double_counted(self):
+        base = {"prompt_tokens": 12, "completion_tokens": 34, "total_tokens": 46}
+        cases = [base, {**base, "completion_tokens_details": None},
+                 {**base, "completion_tokens_details": {}},
+                 {**base, "completion_tokens_details": {"audio_tokens": 0}}]
+        cases.extend({**base, "completion_tokens_details": {"reasoning_tokens": count}}
+                     for count in (0, 7, 34))
+        cases.append({"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0,
+                      "completion_tokens_details": {"reasoning_tokens": 0}})
+        for usage in cases:
+            with self.subTest(usage=usage):
+                executor, _, _ = self.executor(usage)
+                result = executor.run(_request(executor))
+                self.assertEqual((usage["prompt_tokens"], usage["completion_tokens"]),
+                                 (result.usage_input_units, result.usage_output_units))
+
+    def test_unexplained_totals_and_inclusive_reasoning_above_completion_are_rejected(self):
+        cases = [
+            {**self.CAPTURED_USAGE, "completion_tokens_details": details}
+            for details in (None, {}, {"reasoning_tokens": 0}, {"reasoning_tokens": 1168})
+        ]
+        cases.extend((
+            {key: value for key, value in self.CAPTURED_USAGE.items()
+             if key != "completion_tokens_details"},
+            {**self.CAPTURED_USAGE, "total_tokens": 2597},
+            {**self.CAPTURED_USAGE, "total_tokens": 2599},
+            {**self.CAPTURED_USAGE, "total_tokens": 1429},
+            {**self.CAPTURED_USAGE, "total_tokens": 1000},
+        ))
+        for usage in cases:
+            with self.subTest(usage=usage):
+                executor, _, _ = self.executor(usage)
+                with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+                    executor.run(_request(executor))
+
+    def test_malformed_reasoning_is_rejected_even_when_totals_are_inclusive(self):
+        for total in (1429, 2598):
+            for value in (None, True, False, -1, 10_000_001, "1169", 1169.0, [], {}):
+                with self.subTest(total=total, reasoning=value):
+                    usage = {**self.CAPTURED_USAGE, "total_tokens": total,
+                             "completion_tokens_details": {"reasoning_tokens": value}}
+                    executor, _, _ = self.executor(usage)
+                    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+                        executor.run(_request(executor))
+
+    def test_malformed_detail_containers_are_rejected(self):
+        for details in (True, False, 0, 1169, "1169", [], [1169]):
+            with self.subTest(details=details):
+                usage = {**self.CAPTURED_USAGE, "total_tokens": 1429,
+                         "completion_tokens_details": details}
+                executor, _, _ = self.executor(usage)
+                with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+                    executor.run(_request(executor))
+
+    def test_required_usage_counters_remain_bounded_integers(self):
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            for value in (None, True, False, -1, 10_000_001, "93", 93.0, [], {}):
+                with self.subTest(key=key, value=value):
+                    executor, _, _ = self.executor({**self.CAPTURED_USAGE, key: value})
+                    with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+                        executor.run(_request(executor))
+            with self.subTest(missing=key):
+                executor, _, _ = self.executor({name: value for name, value
+                                               in self.CAPTURED_USAGE.items() if name != key})
+                with self.assertRaises(LandingProviderError):
+                    executor.run(_request(executor))
+
+    def test_separate_reasoning_does_not_relax_exact_model_binding(self):
+        for profile_id, wrong_model in (("grok", "grok-4.6"), ("grok-vision", "grok-4")):
+            with self.subTest(profile=profile_id):
+                executor, _, _ = self.executor(self.CAPTURED_USAGE, profile_id,
+                                               response_model=wrong_model)
+                with self.assertRaisesRegex(LandingProviderError, "executor_result"):
+                    executor.run(_request(executor))
+
+    def test_qwen_nonstreaming_accounting_and_evidence_remain_unchanged(self):
+        for profile_id in ("qwen", "qwen-intl"):
+            with self.subTest(profile=profile_id):
+                inclusive = {**self.CAPTURED_USAGE, "total_tokens": 1429,
+                             "completion_tokens_details": {"reasoning_tokens": "ignored"}}
+                outcome, profile, _ = self.normalize(inclusive, profile_id)
+                self.assertEqual("normalized", outcome.state)
+                self.assertEqual((1336, 93), (outcome.evidence.usage_input_units,
+                                             outcome.evidence.usage_output_units))
+                self.assertEqual("1.1.0", outcome.evidence.adapter_version)
+                self.assertEqual(self.LEGACY_DECODER, outcome.evidence.decoder_digest)
+                self.assertEqual(profile.to_facts()["decoder_digest"], outcome.evidence.decoder_digest)
+                executor, _, _ = self.executor(self.CAPTURED_USAGE, profile_id)
+                with self.assertRaisesRegex(LandingProviderError, "executor_usage"):
+                    executor.run(_request(executor))
+
+    def test_all_enabled_qwen_profile_digests_retain_existing_bindings(self):
+        expected = {
+            "qwen": "63bee9e18255cbbbe940f94e96e130f6fffb103147d8cf1baf9cfa09595091be",
+            "qwen-intl": "2616a276a5a6257515dc30e40d27fe32a667aa7d75f8205990c567166116de08",
+            "qwen-omni": "d8738006a475fbbdb5700876cec4669256933ae8c928a250853bd1775225212b",
+        }
+        for profile_id, digest in expected.items():
+            with self.subTest(profile=profile_id):
+                profile = HttpLandingProfile.for_provider(profile_id, available=True)
+                self.assertEqual(digest, profile.profile_digest)
+
+    def test_retained_grok_v1_v2_evidence_preserves_old_identity_and_counts(self):
+        # Frozen synthetic envelopes created with the pre-repair adapter at e7e8ad1.
+        for version, digest in (
+            (1, "9b6b1e78de5de061d29ccb3f4e14d95eee199a3fe1b8aa55eddc23264868634b"),
+            (2, "a48a4e7e48f484ef61cfb51eba38cc1a37d3dd99c4251ef792cf3fdbead1919d"),
+        ):
+            with self.subTest(version=version):
+                document = provider_facts(
+                    schema_version=version, provider_id="grok", model_id="grok-4.6",
+                    profile_digest=self.LEGACY_GROK_PROFILES["grok-vision"],
+                    adapter_id="https-chat-completions", adapter_version="1.1.0",
+                    decoder_digest=self.LEGACY_DECODER, disposition="provider_unavailable",
+                    provider_evidence_digest=digest,
+                )
+                retained = decode_provider_evidence(document)
+                self.assertEqual(document, retained.to_dict())
+                self.assertEqual((12, 34), (retained.usage_input_units, retained.usage_output_units))
 
 
 class HttpLandingDraftNormalizationTests(unittest.TestCase):

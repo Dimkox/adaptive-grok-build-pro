@@ -621,3 +621,11 @@ Under the user's production-and-YOLO delegation, deployed merged commit `5f6f6ce
 ## 2026-09-14 — Preserve the current public landing instead of publishing a runtime smoke artifact
 
 The user selected the working The Real AI Dark Factory landing; read-only HTTPS checks of `/`, `/ru/`, `/roadmap.html`, `/robots.txt` and `/sitemap.xml` all returned 200 and matched landing main `6226aa0b86e1fe08c63724cc3761b3f788146b91` byte-for-byte. Preserve that deployment on the separate LiteSpeed host: L5's pinned `fde60e0` is an older deterministic source and its gardening-club artifact is synthetic acceptance evidence. The user identified conversation `01a06856-3aba-7e81-bdb5-311d58a4f491` as the source of truth, but it was not found in available local/imported history; current publication evidence is in the l5fix runtime's `pr82-runtime-upgrade/public-site-check.json`.
+
+## 2026-09-15 — Trace provider failures with sanitized response counters
+
+A separate synthetic diagnostic isolated the Grok connection failure to executor_usage: xAI reported reasoning tokens outside completion_tokens but inside total_tokens. Capturing only response structure and factual counters proved the API key/model worked without exposing credentials or preserving model reasoning, and lets the repair use a deterministic offline regression.
+
+## 2026-09-15 — Keep provider-specific usage identity local to Grok
+
+Select Grok adapter and decoder identity in both profile facts and emitted evidence so the isolated reasoning-accounting repair does not invalidate Qwen bindings. Reconcile separate reasoning from explicit counts, retain valid inclusive legacy accounting, and cap normalized generated output as post-consumption acceptance validation.

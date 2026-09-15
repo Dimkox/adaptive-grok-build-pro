@@ -920,3 +920,15 @@ The first runtime-upgrade grant command paired `production` scope with the `exte
 ## 2026-09-14 — Confused an operation not performed with a site not deployed
 
 The L5 rollout performed no site publication, but I phrased that as “the public site is not published” and treated “go ahead” as a new publication task before checking the existing host and the synthetic artifact's content. This conflated the scope of my own actions with external state; read-only HTTPS comparison showed the working site already matched a newer landing main, so no publication or overwrite was performed. Verify the current destination and requested artifact before proposing a deployment, and resolve an ambiguous source-of-truth reference before treating a website as that source.
+
+## 2026-09-15 — Use the credential contract supplied by systemd
+
+The first two local smoke-client preparations rejected the systemd credential before any provider request because they reused an owner-0600 file assumption and then guessed mode-0400. Metadata inspection showed a root-owned mode-0440 credential exposed inside the transient unit; the client now validates that systemd-specific read-only contract without changing the credential or printing its value.
+
+## 2026-09-15 — Assert imported candidate identity before a live probe
+
+A service-user probe could not traverse the developer home, so adding its source path to PYTHONPATH did not establish candidate execution and permitted installed-package fallback; that attempt also timed out. Stage a byte-verified readable copy and assert imported module paths, hashes and adapter version before provider egress; the subsequent probe reached the repaired executor. Its later diagnostic-only TypeError came from omitting the draft decoder maximum keyword, so inspect the callable signature and distinguish executor acceptance from full normalization.
+
+## 2026-09-15 — Match synthetic credentials to the existing scanner convention
+
+A long offline fixture string under api_key matched the repository generic-secret pattern, causing the full verifier to fail after all tests passed. The root cause was treating a descriptive dummy credential as scanner-neutral; replacing it with the existing short test-grok convention passed the exact secret scanner and all74 focused tests without weakening policy.
