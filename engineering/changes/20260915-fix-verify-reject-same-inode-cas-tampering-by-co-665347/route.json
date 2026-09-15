@@ -1,0 +1,74 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "43831155ce6e1600e15ef38f4ea109294f92dae1",
+  "base_fingerprint": "f81c7508be7541046ce4a61d6eeee2341fef2532cfb8849305c29207f50ba399",
+  "complexity": "standard",
+  "created_at": "2026-09-15T21:32:00+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "6653478d33e0",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "fix(verify): make the same-inode CAS adversarial precondition independent of filesystem ctime granularity",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

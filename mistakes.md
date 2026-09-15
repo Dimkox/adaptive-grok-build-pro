@@ -1041,6 +1041,18 @@ The Grok delivery appended a narrow source fact and recorded activation in PR/ru
 **Root cause:** `source_version` was accepted but never consumed, every fixture used invented H1/`## Status`/`"1"` shapes, and no test ever fed an unmodified upstream artifact body — CI was blind to format drift by construction.
 **Durable rule:** Format-currency claims require at least one verbatim-upstream-shape test per pinned release; document known-unparsed subsets explicitly instead of letting silent-empty parses pass as support.
 
+## 2026-09-15 — Asserted a filesystem capability as a security precondition
+
+**Symptom:** After PR #93 merged, the mandatory `root-unittest` command began failing on unrelated pull-request heads (PR #64 failed twice with `verification-failed`) while the identical command passed locally with `715 tests OK`; the single failing assertion was `assertNotEqual(target.stat().st_ctime_ns, original.st_ctime_ns)` inside the serialized-CAS tampering scenario.
+**Root cause:** The test proved its tamper was real by requiring `ctime` to advance between two sub-jiffie writes, a property of the local filesystem rather than of the CAS; on the runner's filesystem both reads are equal, so the precondition failed before any product behavior was exercised, and `ctime` had been added to the identity tuple without anyone noting that it is the one field a filesystem may not be able to observe.
+**Durable rule:** A test may not treat a timestamp advance as evidence of tampering — assert the fields the product actually restores (inode, size, mtime) plus the content difference, and pin the rejection to its failure code. The CAS guarantee is layered (pre-write expected digest, strict pre-exchange identity, post-exchange displaced digest) and every layer fails closed on its own, so a test that demands strict `ctime` drift is asserting one host's timestamp resolution rather than the product's property.
+
+## 2026-09-15 — Re-ran a full suite locally before reading the retained CI evidence
+
+**Symptom:** About an hour was spent reproducing an external `root-unittest` failure with a clean-worktree full discovery run and a container experiment, both of which passed, while the failure had already been recorded verbatim.
+**Root cause:** The Trust CI job stores `result->commands[]` with `stdout_tail`/`stderr_tail` per command, so the exact failing test name, file, line and assertion value were available in `trust_ci_jobs` from the first minute; the diagnosis started from the assumption that an unreproducible failure must be environmental.
+**Durable rule:** For any external check failure, query the retained per-command output tails first and reproduce only after the recorded assertion is understood; an assertion that cannot be reproduced locally is more often a precondition the host satisfies by accident than a broken runner.
+
 ## 2026-09-09 — Merged a moved config section and silently dropped two required commands
 
 **Symptom:** Merging current `main` into the repository-profile branch conflicted on `trust-ci/config/policy.example.json`, and taking the branch side alone would have shipped a catalog without the `compileall` and `repository-verification` commands that `main` had made required.

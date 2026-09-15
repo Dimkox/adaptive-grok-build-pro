@@ -695,10 +695,19 @@ class SerializedCasTests(unittest.TestCase):
                         handle.flush()
                         os.fsync(handle.fileno())
                     os.utime(target, ns=(original.st_atime_ns, original.st_mtime_ns))
-                    self.assertEqual(target.stat().st_ino, original.st_ino)
-                    self.assertEqual(target.stat().st_size, original.st_size)
-                    self.assertEqual(target.stat().st_mtime_ns, original.st_mtime_ns)
-                    self.assertNotEqual(target.stat().st_ctime_ns, original.st_ctime_ns)
+                    tampered = target.stat()
+                    self.assertEqual(tampered.st_ino, original.st_ino)
+                    self.assertEqual(tampered.st_size, original.st_size)
+                    self.assertEqual(tampered.st_mtime_ns, original.st_mtime_ns)
+                    # A filesystem whose ctime granularity cannot resolve two
+                    # sub-jiffie writes reports this tamper as identity-identical,
+                    # which is exactly the case the CAS must still fail closed on;
+                    # the premise is content drift, never a ctime advance.
+                    self.assertGreaterEqual(tampered.st_ctime_ns, original.st_ctime_ns)
+                    self.assertNotEqual(
+                        hashlib.sha256(target.read_bytes()).hexdigest(),
+                        hashlib.sha256(old).hexdigest(),
+                    )
                 real_exchange(parent_fd, temporary, target_name, *identities)
 
             with patch.object(ARTIFACTS, "_rename_exchange", side_effect=exchange):
@@ -710,6 +719,39 @@ class SerializedCasTests(unittest.TestCase):
                         self._graph("ours"),
                         hashlib.sha256(old).hexdigest(),
                     )
+            self.assertEqual(target.read_bytes(), bytes(competitor))
+
+    def test_same_inode_content_change_is_rejected_when_identity_cannot_resolve_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = self._workflow(root) / "task-graph.json"
+            old = self._graph("old")
+            target.write_bytes(old)
+            original = target.stat()
+            competitor = bytearray(old)
+            competitor[-2] = ord(" ") if competitor[-2] != ord(" ") else ord("x")
+            with target.open("r+b") as handle:
+                handle.write(competitor)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.utime(target, ns=(original.st_atime_ns, original.st_mtime_ns))
+            tampered = target.stat()
+            self.assertEqual(
+                (tampered.st_dev, tampered.st_ino, tampered.st_mode, tampered.st_size, tampered.st_mtime_ns),
+                (original.st_dev, original.st_ino, original.st_mode, original.st_size, original.st_mtime_ns),
+            )
+            # Every non-content identity field is equal, so on a filesystem whose
+            # ctime granularity reports no drift the rejection must come from the
+            # expected digest alone.
+            with self.assertRaises(ARTIFACTS.WorkflowArtifactError) as raised:
+                ARTIFACTS.cas_write(
+                    root,
+                    "change",
+                    "task-graph.json",
+                    self._graph("ours"),
+                    hashlib.sha256(old).hexdigest(),
+                )
+            self.assertEqual(raised.exception.code, "cas")
             self.assertEqual(target.read_bytes(), bytes(competitor))
 
     def test_syscall_gap_content_change_is_rejected_by_displaced_digest(self) -> None:
