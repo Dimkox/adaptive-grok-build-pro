@@ -1,0 +1,72 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "20e3a26edfc17eba294d9d5df33cbc3940529724e58171bdd906281618d9a818",
+  "complexity": "standard",
+  "created_at": "2026-08-29T09:12:47+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "test",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=test",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "f778c6ffc84c",
+  "schema_version": 1,
+  "session_id": "codex-trust-ci-repository-profiles",
+  "status": "routed",
+  "task": "Add repository-scoped immutable policy profiles to the Python trust-ci webhook API and worker, selecting commands and holdout by exact repository, binding jobs to the selected profile digest, rejecting unknown repositories, and preserving schema-version-1 behavior with automated tests",
+  "task_domains": [
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

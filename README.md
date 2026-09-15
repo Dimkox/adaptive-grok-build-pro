@@ -16,6 +16,7 @@ Identity: **2.0.16**. The latest published release is [`v2.0.16`](https://github
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 
 - Current source adds [`adaptive-landing-submit`](engineering/runbooks/l5-provider-failover.md): durable text/safe-DOCX submission through Qwen → Grok → OpenAI → Claude → OpenRouter, authenticated capability/attempt APIs, and atomic SQLite observations. Ambiguous submissions reconcile the same child; existing artifacts prevent further generation. Installed revisions still need this upgrade, and the three added providers/full chain remain unqualified for inference. Monetary cost remains unknown; publication stays separate.
+- Trust CI repository-scoped immutable profiles are implemented in code and documented by the example catalog; the worker uses `TRUST_CI_HOLDOUT_PATH` and `TRUST_CI_HOLDOUT_HOST_PATH` as independently configured trusted roots, validated binary-first before dependency construction. The capability is pending a separately reviewed and approved server-side policy/holdout installation; no deployed policy or branch protection is changed by it.
 
 Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). Runtime operation is described in the [L5 runbook](engineering/runbooks/l5-production-runtime.md); milestone acceptance remains in the [roadmap](DARK_FACTORY_ROADMAP.md). Delivery is PR-only: the App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from GitHub App ID `4694114` must cover the exact PR head. Local receipts are preflight evidence. **No GitHub Actions:** this repository keeps deployed verification policy and holdout validation outside the PR-controlled tree, runs checks on the exact SHA, and binds the required result to its GitHub App identity.
 
@@ -33,7 +34,6 @@ Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE
 - PR #12 delivered the approval CLI repair; PR #19 delivered the optional SEO side project. Open/unresolved work has a dated inventory in `PROJECT_STATE.json`; historical check success requires fresh base/head validation before merge.
 
 </details>
-
 ## Read first
 
 1. [START_HERE.md](START_HERE.md)
