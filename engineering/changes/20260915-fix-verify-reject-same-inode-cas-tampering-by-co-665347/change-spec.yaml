@@ -1,0 +1,100 @@
+{
+  "schema_version": 2,
+  "change_id": "20260915-fix-verify-reject-same-inode-cas-tampering-by-co-665347",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the serialized-CAS adversarial suite decide same-inode tampering from content instead of from a filesystem timestamp property that some supported filesystems cannot observe, so the mandatory root-unittest command stops failing closed on unrelated pull-request heads.",
+    "success_metric": "python3 -m unittest tests.test_workflow_artifacts_adversarial green, and the App-owned exact-head root-unittest command no longer reports SerializedCasTests.test_same_inode_content_change_with_restored_mtime_is_rejected",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "test-infra",
+      "verification"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The same-inode rejection scenario no longer requires st_ctime_ns to differ between two sub-jiffie writes: it asserts the restored identity fields (inode, size, mtime) and the changed content digest, and tolerates a filesystem that reports an equal ctime.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts_adversarial.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A committed test proves the rejection is carried by the expected content digest with every non-content identity field equal, and pins the failure code to cas rather than race or platform.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts_adversarial.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "CAS publication still fails closed on a same-inode content change: no scenario in this change turns a rejection into an acceptance, and the tampered bytes must remain on disk after the rejected write.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts_adversarial.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Product code under .grok-stack/adaptive_grok is untouched by this change; the tolerance is applied to the test premise, not to a verification check.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Weakening _post_exchange_identity_matches, the expected-digest comparison or any other product CAS check to accommodate the coarse-granularity filesystem.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts_adversarial.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Skipping or marking-expected-failure the adversarial scenario instead of removing the unsupported timestamp assumption.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "App-owned exact-head root-unittest command outcome plus the repository-verification command outcome for this head",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}
