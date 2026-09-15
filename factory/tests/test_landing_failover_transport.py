@@ -122,34 +122,46 @@ class UnixDeadlineTests(unittest.TestCase):
                     self.assertEqual(["grok-vision"], script.calls)
                     self.assertEqual(["GET"], [item[0] for item in server.requests])
 
-    def test_trickled_post_response_resumes_same_child_without_second_post(self):
+    def test_lost_post_response_resumes_committed_child_without_second_post(self):
         with tempfile.TemporaryDirectory() as temporary:
             config = self.fixture(Path(temporary))
             script = ScriptedBackends({"qwen-intl": "success"})
             primary = script.factory(config.backends[0], config=config)
+            committed = threading.Event()
+            allow_observation = threading.Event()
             def respond(handler, method, target, headers):
                 if target == "/v2/landing-backend":
                     json_reply(handler, primary.capability())
                 elif method == "POST":
                     payload = handler.rfile.read(int(headers["content-length"]))
                     primary.submit(headers["idempotency-key"], payload, headers["content-type"])
-                    trickle_headers(handler, 202)
+                    committed.set()
+                    # Returning closes the connection after commit without HTTP202.
+                elif not allow_observation.is_set():
+                    json_reply(handler, {}, 404)
                 else:
                     json_reply(handler, primary.observe(target.split("/")[3]))
             def factory(backend, **kwargs):
-                return UnixLandingBackend(backend, config=config, timeout_seconds=0.3)
+                return UnixLandingBackend(backend, config=config, timeout_seconds=5)
             with unix_responder(config.backends[0].socket_path, respond) as server:
                 with CallerJournal(config) as journal:
                     caller = FailoverCoordinator(config, journal, backend_factory=factory)
                     uncertain = caller.submit("slow-post", b"brief", "text/plain")
                     self.assertEqual("needs_human", uncertain["state"])
                     self.assertEqual("dispatching", uncertain["attempts"][0]["state"])
+                    child_id = uncertain["attempts"][0]["child_id"]
+                    self.assertTrue(committed.is_set(), "the fixture must commit before dropping the response")
+                    self.assertEqual("artifact_ready", script.records[child_id]["state"])
+                    observation_path = f"/v2/landing-jobs/{child_id}/attempt"
+                    self.assertEqual(1, sum(target == observation_path for _, target, _ in server.requests))
+                allow_observation.set()
                 with CallerJournal(config) as journal:
                     result = FailoverCoordinator(config, journal, backend_factory=factory).resume("slow-post")
                     self.assertEqual("artifact_ready", result["state"])
-                    self.assertEqual(uncertain["attempts"][0]["child_id"], result["winner"]["child_id"])
+                    self.assertEqual(child_id, result["winner"]["child_id"])
                     self.assertEqual(["qwen-intl"], script.calls)
                     self.assertEqual(1, sum(method == "POST" for method, *_ in server.requests))
+                    self.assertEqual(2, sum(target == observation_path for _, target, _ in server.requests))
 
 
 if __name__ == "__main__":
