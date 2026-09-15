@@ -9,16 +9,65 @@ import socketserver
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from adaptive_factory.contracts import canonical_json
 from adaptive_factory.landing_failover import FailoverCoordinator
 from adaptive_factory.landing_failover_cli import main
 from adaptive_factory.landing_failover_config import FailoverConfig
 from adaptive_factory.landing_failover_journal import CallerJournal
+from adaptive_factory import landing_failover_transport as transport_module
 from factory.tests.test_landing_failover import configuration, ScriptedBackends
 
 
 class UnixCallerTests(unittest.TestCase):
+    def test_capability_timeout_advances_without_post_but_auth_and_malformed_capabilities_stop(self):
+        for outcome in ("read_timeout", "connect_timeout", "slow_body", "auth", "malformed"):
+            with self.subTest(outcome=outcome), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                config = FailoverConfig.from_dict(configuration(root, count=2))
+                primary = config.backends[0]
+                primary.token_file.write_text("t" * 32)
+                primary.token_file.chmod(0o600)
+                script = ScriptedBackends({"grok-vision": "success"})
+                requests, deadlines = [], []
+                monotonic = [100.0]
+                def handler(request):
+                    requests.append((request.method, request.content, request.extensions["timeout"]["read"]))
+                    if outcome == "read_timeout":
+                        raise transport_module.httpx.ReadTimeout("synthetic read timeout")
+                    if outcome == "connect_timeout":
+                        raise transport_module.httpx.ConnectTimeout("synthetic connect timeout")
+                    if outcome == "slow_body":
+                        monotonic[0] += 3
+                    return transport_module.httpx.Response(401 if outcome == "auth" else 200,
+                        headers={"content-type": "application/json"},
+                        stream=transport_module.httpx.ByteStream(b"{}"))
+                def factory(backend, **kwargs):
+                    if backend.profile_id != "qwen-intl":
+                        return script.factory(backend, **kwargs)
+                    client = transport_module.UnixLandingBackend(backend, **kwargs)
+                    client.client.close()
+                    client.client = transport_module.httpx.Client(
+                        transport=transport_module.httpx.MockTransport(handler), base_url="http://landing")
+                    deadlines.append(client)
+                    return client
+                with socketserver.UnixStreamServer(str(primary.socket_path), BaseHTTPRequestHandler):
+                    with patch.object(transport_module.time, "monotonic", side_effect=lambda: monotonic[0]):
+                        with CallerJournal(config) as journal:
+                            result = FailoverCoordinator(config, journal, backend_factory=factory).submit(
+                                "capability", b"brief", "text/plain")
+                self.assertEqual([("GET", b"", 2.0)], requests)
+                self.assertEqual(430.0, deadlines[0].deadline, "capability must preserve the POST/observe deadline")
+                if outcome in {"read_timeout", "connect_timeout", "slow_body"}:
+                    self.assertEqual("artifact_ready", result["state"])
+                    self.assertEqual("not_submitted", result["attempts"][0]["state"])
+                    self.assertEqual("grok", result["winner"]["provider_id"])
+                    self.assertEqual(["grok-vision"], script.calls)
+                else:
+                    self.assertEqual("stopped", result["state"])
+                    self.assertEqual([], script.calls)
+
     def test_absent_primary_real_unix_secondary_lost_post_recovers_existing_winner(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

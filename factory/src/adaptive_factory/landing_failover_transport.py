@@ -9,7 +9,7 @@ import httpx
 
 from .landing_contracts import strict_json_object
 from .landing_failover_config import check_socket_ancestry
-from .settings import SettingsError, read_token_file
+from .settings import read_token_file
 
 
 class BackendUnavailable(RuntimeError):
@@ -17,6 +17,10 @@ class BackendUnavailable(RuntimeError):
 
 
 class BackendAmbiguous(RuntimeError):
+    pass
+
+
+class BackendTimeout(BackendAmbiguous):
     pass
 
 
@@ -50,7 +54,9 @@ class UnixLandingBackend:
         if not stat.S_ISSOCK(metadata.st_mode) or metadata.st_uid != os.geteuid():
             raise BackendRejected("socket_identity")
         try:
-            return self._exchange("GET", "/v2/landing-backend", expected=200)
+            return self._exchange("GET", "/v2/landing-backend", expected=200, timeout_seconds=2)
+        except BackendTimeout:
+            raise BackendUnavailable("capability_timeout") from None
         except BackendAmbiguous as exc:
             # A failed capability GET sends no input and has no provider effect.
             cause = exc.__cause__
@@ -71,10 +77,11 @@ class UnixLandingBackend:
     def observe(self, child_id):
         return self._exchange("GET", "/v2/landing-jobs/" + child_id + "/attempt", expected=200)
 
-    def _exchange(self, method, path, *, expected, payload=None, extra=None):
-        remaining = self.deadline - time.monotonic()
+    def _exchange(self, method, path, *, expected, payload=None, extra=None, timeout_seconds=None):
+        deadline = min(self.deadline, time.monotonic() + timeout_seconds) if timeout_seconds is not None else self.deadline
+        remaining = deadline - time.monotonic()
         if remaining <= 0:
-            raise BackendAmbiguous("deadline")
+            raise BackendTimeout("deadline")
         try:
             with self.client.stream(method, path, content=payload, headers={**self.headers, **(extra or {})},
                                     timeout=httpx.Timeout(remaining, connect=min(2, remaining))) as response:
@@ -86,9 +93,13 @@ class UnixLandingBackend:
                     raise BackendAmbiguous("backend_protocol")
                 raw = bytearray()
                 for chunk in response.iter_raw():
-                    if time.monotonic() >= self.deadline or len(raw) + len(chunk) > 65_536:
+                    if time.monotonic() >= deadline:
+                        raise BackendTimeout("deadline")
+                    if len(raw) + len(chunk) > 65_536:
                         raise BackendAmbiguous("backend_bound")
                     raw.extend(chunk)
                 return strict_json_object(bytes(raw), maximum=65_536)
+        except (httpx.ReadTimeout, httpx.ConnectTimeout) as exc:
+            raise BackendTimeout("deadline") from exc
         except (httpx.HTTPError, OSError, ValueError) as exc:
             raise BackendAmbiguous("backend_outcome_unknown") from exc

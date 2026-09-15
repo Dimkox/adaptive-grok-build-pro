@@ -1,6 +1,6 @@
 # L5 production runtime handoff
 
-The [ordered provider failover guide](l5-provider-failover.md) describes the new source caller, five independent hosts, private configuration and SQLite observation migration. It supplements this installation/backup procedure. Existing installed revisions do not expose the new capability API, and metadata-only 403 checks do not establish inference qualification for the three added providers.
+The [ordered provider failover guide](l5-provider-failover.md) describes the new source caller, five independent hosts, private configuration and SQLite observation migration. It supplements this installation/backup procedure. Existing installed revisions do not expose the new capability API. OpenAI metadata reported regional/403; one synthetic POST each through candidate `f079b92` Anthropic and OpenRouter adapters returned permission/403 with no artifact or service activation and an unestablished exact cause. The three added providers and full chain remain unqualified for inference.
 
 ## Current observation — 2026-09-15
 

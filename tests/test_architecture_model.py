@@ -1393,6 +1393,12 @@ class ArchitectureModelTests(unittest.TestCase):
                 "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
                 "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
                 "CONTRACT-FACTORY-LANDING-SPEC-V1",
+                "CONTRACT-FACTORY-LANDING-PROVIDER-OBSERVATION-V1",
+                "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1",
+                "CONTRACT-FACTORY-LANDING-ATTEMPT-STATUS-V1",
+                "CONTRACT-FACTORY-LANDING-FAILOVER-CONFIG-V1",
+                "CONTRACT-FACTORY-LANDING-FAILOVER-RESULT-V1",
+                "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
             },
         )
         landing_node = next(
@@ -1402,7 +1408,10 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(
             set(landing_node["public_contracts"]),
-            set(landing_records) - {"CONTRACT-FACTORY-LANDING-OPENAPI-V1"},
+            set(landing_records) - {
+                "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+                "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
+            },
         )
         self.assertTrue(
             {

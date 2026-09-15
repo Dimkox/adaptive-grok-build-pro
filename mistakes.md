@@ -946,3 +946,7 @@ The README retained a complete graph because a local instruction and tests requi
 ## 2026-09-15 — Apply provider steering to the active scope immediately
 
 The failover draft kept its original two-provider scope after the user added OpenAI, Claude and OpenRouter and instructed implementation. The root cause was treating that steering as optional future configuration; reread the explicitly authorized selected environment names, update every acceptance boundary to all five providers, and proceed on the already accepted design.
+
+## 2026-09-15 — Discover every closed contract inventory before handoff
+
+The failover implementation added six declared contracts but its focused checks missed four exact inventory assertions in architecture and semantic suites. The root cause was searching only landing-named tests; search existing contract IDs and schema-directory inventory checks across the whole repository, then run those tests and lint before source freeze.
