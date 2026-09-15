@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from .receipts import (
 )
 from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
+from .python_test_runner import RunnerError, run_core_tests, selected_workers
 from .util import changed_files, command_exists, now_utc, read_text_limited, run, tree_fingerprint
 
 
@@ -262,8 +264,8 @@ def _governance_check(
         )
 
 
-def _command_check(root: Path, name: str, command: list[str], timeout: int = 300) -> CheckResult:
-    proc = run(command, cwd=root, timeout=timeout)
+def _command_check(root: Path, name: str, command: list[str], timeout: int = 300, *, env: dict[str, str] | None = None) -> CheckResult:
+    proc = run(command, cwd=root, timeout=timeout, env=env)
     return CheckResult(
         name=name,
         status='pass' if proc.returncode == 0 else 'fail',
@@ -851,23 +853,40 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
                 results.append(CheckResult('coverage', 'skip', 'coverage not available'))
         return results
     if has_unittest_files:
-        if mode in {'pr', 'release'} and command_exists('coverage'):
-            results.append(
-                _command_check(
-                    root,
-                    'python-unittest',
+        try:
+            workers = selected_workers(root)
+            core = run_core_tests(root, mode, workers) if workers is not None else None
+        except RunnerError as exc:
+            results.append(CheckResult('python-unittest', 'fail', str(exc)))
+            if mode in {'pr', 'release'}:
+                results.append(CheckResult('coverage', 'fail', 'required Core run unavailable'))
+            core, workers = None, -1
+        if core is not None:
+            for name, process in [('python-unittest', core.tests), ('coverage', core.coverage)]:
+                if process is not None:
+                    results.append(CheckResult(
+                        name, 'pass' if process.returncode == 0 else 'fail',
+                        f'{"pytest-xdist" if workers else "unittest"} workers={workers} exit={process.returncode} seconds={process.seconds:.3f}',
+                        command=process.command, stdout=process.stdout[-12000:], stderr=process.stderr[-12000:],
+                        details=[{'severity': 'info', 'path': 'tests',
+                                  'message': f'backend={"pytest-xdist" if workers else "unittest"}; fresh invocation-owned coverage',
+                                  'versions': json.dumps(core.versions, sort_keys=True),
+                                  'coverage': json.dumps(core.coverage_metadata, sort_keys=True)}],
+                    ))
+        elif workers == -1:
+            pass
+        elif mode in {'pr', 'release'} and command_exists('coverage'):
+            with tempfile.TemporaryDirectory(prefix='grok-legacy-coverage-') as directory:
+                coverage_env = {'COVERAGE_FILE': str(Path(directory) / '.coverage')}
+                results.append(_command_check(
+                    root, 'python-unittest',
                     ['coverage', 'run', '--rcfile=.coveragerc', '-m', 'unittest', 'discover', '-s', 'tests'],
-                    900,
-                )
-            )
-            results.append(
-                _command_check(
-                    root,
-                    'coverage',
-                    ['coverage', 'report', '--rcfile=.coveragerc'],
-                    120,
-                )
-            )
+                    900, env=coverage_env,
+                ))
+                results.append(_command_check(
+                    root, 'coverage', ['coverage', 'report', '--rcfile=.coveragerc'],
+                    120, env=coverage_env,
+                ))
         else:
             results.append(
                 _command_check(

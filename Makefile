@@ -1,10 +1,22 @@
-.PHONY: doctor verify status package deploy trust-ci-test trust-ci-compile trust-ci-compose trust-ci-postgres-test trust-ci-holdout-digest
+.PHONY: doctor verify verify-serial test-python test-tools status package deploy trust-ci-test trust-ci-compile trust-ci-compose trust-ci-postgres-test trust-ci-holdout-digest
 
 doctor:
 	python3 scripts/grok_doctor.py
 
 verify:
 	python3 scripts/grok_verify.py --mode pr
+
+verify-serial:
+	GROK_TEST_WORKERS=0 python3 scripts/grok_verify.py --mode pr
+
+test-tools:
+	python3 -m pip install -r .grok-stack/config/python-test-requirements.txt
+
+test-python:
+	@failed=0; \
+	$(MAKE) verify || failed=1; \
+	$(MAKE) trust-ci-test || failed=1; \
+	exit "$$failed"
 
 status:
 	python3 scripts/grok_status.py
@@ -16,7 +28,7 @@ deploy:
 	python3 scripts/grok_deploy.py
 
 trust-ci-test:
-	PYTHONPATH=trust-ci/src python3 -m unittest discover -s trust-ci/tests
+	PYTHONPATH=.grok-stack python3 -m adaptive_grok.python_test_runner --suite trust-ci
 
 trust-ci-compile:
 	python3 -m compileall -q trust-ci/src trust-ci/tests

@@ -1,0 +1,10 @@
+{
+  ".grok-stack/adaptive_grok/python_test_runner.py": "d78974c736bb3374ee455bb45f1989125794679941e342aa93febb3cea5307cb",
+  ".grok-stack/adaptive_grok/verification.py": "2246929a2610121ae5fb53569bebd5d771de43c8cedf07225df1a3f92a79114b",
+  ".grok-stack/config/python-test-requirements.txt": "6a1c4e61e3209e4566eb7e8a13eb2698336ed3212c21c54a0fe7568f68c0f08b",
+  ".grok-test-runner.json": "3c92821042f3b1a1b0bc1ae7e5a744abb716c163384e9deac9794f90ffd1dee0",
+  "Makefile": "68b9e159661a38d81172cdc6ae1d8a6545ab94c73b3f8d176eb32d2a8a549bad",
+  "README.md": "0472035248c0bf2de19bb3a96d2a2b28511aa82aee5ea8090ee08e5fc6b427ad",
+  "tests/test_installer.py": "4bb72f959ba75693439758bb382a3ea39b92cad6bb20faeba5d1f530e5c81e26",
+  "tests/test_python_test_runner.py": "bd25914f40ae6da4e79c8774f0d03a2825d0a28f934ea530e82fec2dcd496f89"
+}
