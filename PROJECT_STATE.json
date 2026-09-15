@@ -379,7 +379,7 @@
         "external_effect": true,
         "external_effect_scope": "github_repository_delivery_and_release_only",
         "operational_activation": false,
-        "record_scope": "Archived verbatim from the local_candidate slot when the 2.0.17 candidate opened it; every value is unchanged, including the null reviewed_product identities.",
+        "record_scope": "Archived from the live local_candidate slot when the 2.0.17 candidate opened it. Every recorded value is byte-identical to that slot, including the null reviewed_product identities; only this annotation key was added at archive time.",
         "notes": "Artifact bytes published through tag v2.0.16 and the GitHub Release at 2026-09-13T22:04:08Z. 'Published' scopes to repository delivery only: external_effect is repository release, operational_activation remains false; no provider installation, host mutation, hosting or deployment occurred."
       }
     },
@@ -572,7 +572,7 @@
       "zip_sha256": null,
       "sidecar_sha256": null,
       "status": "not_built",
-      "requirement": "The separate artifact-child commit adds both delta_paths files built from the merged release-sync tree and flips published, artifact_status and the artifact identities; until that commit exists this record intentionally ships without those bytes and grants no publication authority."
+      "requirement": "The separate artifact-child commit adds both delta_paths files built from the merged release-sync tree, flips artifact_status and the artifact identities, and keeps published, published_at, external_effect and operational_activation false; merge_commit and tree stay null because the child cannot self-record them. Until that commit exists this record intentionally ships without those bytes and grants no publication authority."
     },
     "published": false,
     "published_at": null,
@@ -1169,18 +1169,6 @@
     "active": [],
     "open_pull_requests": [
       {
-        "pull_request": 15,
-        "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14",
-        "status": "open",
-        "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "observed_check_conclusion": "FAILURE",
-        "gitguardian_conclusion": "SUCCESS",
-        "unique_scope": "Unique investor demo and packaging hardening; obsolete aggregate needs scoped extraction",
-        "disposition": "Refresh base/head and external Trust CI before delivery; displayed historical check is not current merge eligibility.",
-        "branch": "mvp/investor-ready",
-        "failure_cause": "not inspected or inferred"
-      },
-      {
         "pull_request": 33,
         "head": "6d72d4c859dded241b55e90ae9514ad428a7eb1b",
         "status": "open",
@@ -1193,6 +1181,18 @@
       }
     ],
     "retained_unresolved": [
+      {
+        "pull_request": 15,
+        "branch": "mvp/investor-ready",
+        "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14",
+        "status": "closed_unmerged",
+        "closed_at": "2026-09-15T20:02:30Z",
+        "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "observed_check_conclusion": "FAILURE",
+        "unique_scope": "Unique investor demo and packaging hardening",
+        "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.",
+        "failure_cause": "not inspected or inferred"
+      },
       {
         "pull_request": 14,
         "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838",

@@ -6,10 +6,24 @@ Source of truth for this map: `git diff 287b27ac507a1089726c7cb8ce461f1c550f0b07
 
 ## Build (before any commit)
 
+Self-contained; no host scratch file is required. `<repo>` is any local clone of the repository whose
+`origin/main` contains `R`'s merge commit.
+
 ```bash
-bash /tmp/build_release_artifact.sh <repo> <R-MERGE-SHA> 2.0.17
-# two independent exact-SHA clones, umask 077, 0700 staging; prints ZIP_SHA256 / ZIP_BYTES
+set -euo pipefail
+R_SHA=<R-MERGE-SHA>; VER=2.0.17; NAME=adaptive-grok-build-pro-v${VER}.zip
+umask 077; STAGE=$(mktemp -d); chmod 700 "$STAGE"
+for n in 1 2; do
+  git clone --no-hardlinks --no-checkout -q <repo> "$STAGE/b$n"
+  git -C "$STAGE/b$n" checkout --quiet --detach "$R_SHA"
+  test -z "$(git -C "$STAGE/b$n" status --porcelain)"          # exact-SHA clean checkout
+  ( cd "$STAGE/b$n" && python3 scripts/package_stack.py --output "$STAGE/$n/$NAME" )
+done
+sha256sum "$STAGE/1/$NAME" "$STAGE/2/$NAME"                     # digests must be equal
 ```
+
+`package_stack.py` derives its whole inventory from its own git HEAD, so each build must run inside its
+own clone at `$R_SHA`. If the two digests differ, stop: nothing may be committed.
 
 Sidecar content is exactly `"<zip-sha>  adaptive-grok-build-pro-v2.0.17.zip\n"` (two spaces), as
 asserted by `tests/test_manifest_package.py`.

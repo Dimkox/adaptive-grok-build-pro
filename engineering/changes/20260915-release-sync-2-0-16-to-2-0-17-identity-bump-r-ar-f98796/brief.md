@@ -36,3 +36,4 @@ Twelve pull requests merged after the immutable `v2.0.16` publication (`2026-09-
 - Data/privacy: no credential, private key, host identity or machine-local runtime state may enter the diff.
 - Performance: not applicable (identity and documentation surface only).
 - Operational: the release sequence is `R -> merge -> A -> merge -> tag + GitHub Release -> SR`; each step needs its own exact delegated grant, and `A` cannot self-record its own merge identity.
+- Declared scope exception: this commit also repairs one character of a *cited SHA* inside the merged #94 review evidence (`.../20260915-fix-verify-.../evidence/review-code.md:9`, `ebd904a` → `ebd9a0a`, where `git cat-file -t` shows only the latter is a real object). It adds no claim; leaving a dangling citation in delivered evidence would be worse than the out-of-scope line.

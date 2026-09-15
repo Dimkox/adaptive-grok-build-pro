@@ -27,7 +27,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "The pull requests merged after the v2.0.16 publication (#82, #83, #85, #88, #89, #90, #91, #93, #13 and #64) are recorded with their exact merge commits, checked heads and App-owned check-run identifiers re-derived from Git and the Trust CI store; no pre-publication record is rewritten.",
+      "statement": "The twelve pull requests merged on main after the v2.0.16 publication (#81, #82, #83, #85, #88, #89, #90, #91, #93, #13, #64 and #94) are recorded with their exact merge commits, checked heads and App-owned check-run identifiers re-derived from Git and the Trust CI store; no pre-publication record is rewritten. Release-chain commits (R, A, SR) are recorded through local_candidate and current_unreleased_change rather than as additional rows here.",
       "evidence": [
         {
           "test": "tests/test_project_state.py"

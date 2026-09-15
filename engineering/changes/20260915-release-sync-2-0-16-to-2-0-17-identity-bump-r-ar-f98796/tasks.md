@@ -1,7 +1,7 @@
 # Tasks — Release sync 2.0.16 to 2.0.17: identity bump R, artifact child A, tag release and successor SR per pinned doctrine
 
-- [x] Route the release task and open this change package (route `f98796afe7de`, base `280cbff`).
-- [x] Freeze the content: `v2.0.16` publication is immutable; post-publication landing set is #82, #83, #85, #88, #89, #90, #91, #93, #13 and #64, each with its merge commit, checked head and App check run.
+- [x] Route the release task and open this change package (route `f98796afe7de`; routing-time base `280cbff`, delivered parent `7bbf425` after the rebase recorded below).
+- [x] Freeze the content: `v2.0.16` publication is immutable; the post-publication landing set is twelve merges — #81, #82, #83, #85, #88, #89, #90, #91, #93, #13, #64 and #94, re-derived from `git log --first-parent 969c4f65..7bbf425` — each with its merge commit, checked head and App check run.
 - [x] Write the typed spec, requirements, architecture, test plan, release and rollback plans.
 - [x] Re-derive `observed_main_sha` after #64 merges and rebase `feature/v2.0.17-release-sync` onto it.
 - [x] Identity bump: `VERSION`, `__version__`, README H1/identity line, CHANGELOG `2.0.17` section, ROADMAP identity lines, `START_HERE.md`, `GROK_BUILD_HANDOFF.md`.

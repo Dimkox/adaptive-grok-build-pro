@@ -750,7 +750,7 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
-        self.assertEqual({item["pull_request"] for item in inventory["open_pull_requests"]}, {15, 33})
+        self.assertEqual({item["pull_request"] for item in inventory["open_pull_requests"]}, {33})
         self.assertNotIn(12, {item["pull_request"] for item in inventory["open_pull_requests"]})
         self.assertEqual(inventory["delivered_since_historical_inventory"][0]["pull_request"], 12)
         self.assertEqual(inventory["delivered_since_historical_inventory"][0]["status"], "delivered")
@@ -791,6 +791,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(
             inventory["retained_unresolved"],
             [
+                {"pull_request": 15, "branch": "mvp/investor-ready", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "closed_unmerged", "closed_at": "2026-09-15T20:02:30Z", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "unique_scope": "Unique investor demo and packaging hardening", "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.", "failure_cause": "not inspected or inferred"},
                 {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
                 {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree still hold the only untouched copy of the never-committed original epic, so they are retained until the v2.0.17 release record references the #93 lineage; only then may branch and worktree be removed as one cleanup step."},
                 {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."},

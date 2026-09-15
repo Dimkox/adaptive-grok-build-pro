@@ -4,10 +4,10 @@
 
 ## Acceptance criteria
 
-- [ ] AC-001: Given a frozen tree after this commit, when `tests/test_structure.py::test_version_identity_matches_readme` runs, then `VERSION`, the README `# Adaptive Grok Build Pro v2.0.17` H1, `Identity: **2.0.17**`, the CHANGELOG top section `## 2.0.17 — <date>`, the ROADMAP `product version: 2.0.17 (latest published release: v2.0.16; ...)` line and `adaptive_grok.__version__` all agree.
-- [ ] AC-002: Given `PROJECT_STATE.json`, when `tests/test_project_state.py` asserts the release facts, then `product_version` is `2.0.17`, `latest_published_release` and `published_release.tag` remain `v2.0.16`, and the post-publication landing record names each merged pull request with its merge commit, checked head and App-owned check-run identifier.
-- [ ] AC-003: Given `local_candidate` as a pending 2.0.17 slot, when `tests/test_manifest_package.py` runs, then `published` is false, the identity fields are null, and `packages/adaptive-grok-build-pro-v2.0.17.zip` and its sidecar are asserted **absent** from the tree.
-- [ ] AC-004: Given a clean clone of this commit, when a reader opens `START_HERE.md` or the README current-state section, then the text states that `v2.0.16` is the only published release, that a `2.0.17` candidate is in preparation, and that no `v2.0.17` artifact or tag exists.
+- [x] AC-001: Given a frozen tree after this commit, when `tests/test_structure.py::test_version_identity_matches_readme` runs, then `VERSION`, the README `# Adaptive Grok Build Pro v2.0.17` H1, `Identity: **2.0.17**`, the CHANGELOG top section `## 2.0.17 — 2026-09-15 (candidate, unpublished)`, the ROADMAP `product version: 2.0.17 candidate (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)` line and `adaptive_grok.__version__` all agree.
+- [x] AC-002: Given `PROJECT_STATE.json`, when `tests/test_project_state.py` asserts the release facts, then `product_version` is `2.0.17`, `latest_published_release` and `published_release.tag` remain `v2.0.16`, and the post-publication landing record names each of the twelve merged pull requests with its merge commit, checked head and App-owned check-run identifier.
+- [x] AC-003: Given `local_candidate` as a pending 2.0.17 slot, when `tests/test_manifest_package.py` runs, then `published` is false, the identity fields are null, and `packages/adaptive-grok-build-pro-v2.0.17.zip` and its sidecar are asserted **absent** from `packages/`.
+- [x] AC-004: Given a clean clone of this commit, when a reader opens `START_HERE.md` or the README current-state section, then the text states that `v2.0.16` is the only published release, that a `2.0.17` candidate is in preparation, and that no `v2.0.17` artifact or tag exists.
 
 ## Failure and edge cases
 

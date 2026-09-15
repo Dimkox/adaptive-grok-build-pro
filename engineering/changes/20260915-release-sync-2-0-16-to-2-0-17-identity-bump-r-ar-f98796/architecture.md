@@ -15,7 +15,8 @@
 - Identity surface: `VERSION`, `.grok-stack/adaptive_grok/__init__.py`, `README.md`, `CHANGELOG.md`, `DARK_FACTORY_ROADMAP.md`, `START_HERE.md`, `GROK_BUILD_HANDOFF.md`.
 - Machine-readable state: `PROJECT_STATE.json` (`product_version`, `observed_at`, `observed_main_sha`, `current_unreleased_change`, `local_candidate`, `delivered_change_history`).
 - Lockstep consumers: `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`.
-- Unchanged: `published_release`, `prior_published_releases`, `milestones`, `work_inventory`, `trust_ci`, packaging scripts, `packages/` bytes, PostgreSQL migrations 001-018.
+- Unchanged: `published_release`, `prior_published_releases`, `milestones`, `operational_qualification`, packaging scripts, `packages/` bytes, PostgreSQL migrations 001-018.
+- Re-pointed currency pointers (not historical assertions): `work_inventory.open_pull_requests` (closed PRs removed, their records preserved byte-identical for the two that stay open), `trust_ci.last_success` (the "latest observed success" pointer moves to PR #94), `runtime_observations.evidence`/`observed_at`, and `active_delivery`'s route/branch/change_package/next_action mirror.
 
 ## Data flow
 

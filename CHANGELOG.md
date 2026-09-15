@@ -4,6 +4,7 @@
 
 Twelve pull requests merged after `v2.0.16` was published. This section records **landed source on `main`** and nothing more: `v2.0.16` remains the only published artifact, and the source below reaches a release archive only once the `v2.0.17` artifact child is built from the merged release-sync tree.
 
+- Records the published v2.0.16 release identity in the documentation successor, so the release record and the tag agree (PR #81, checked head `26e08254`, merged `2026-09-14T00:11:30Z` as `6d8f6ab`, App check `103814853460`)
 - Fixes the L5 draft decode path so model section-item order is canonicalized before validation, closing a live-path bug where an equivalent ordering failed repair (PR #82, checked head `6bd86207`, merged `2026-09-14T02:16:49Z` as `5f6f6ce`, App check `103833535728`)
 - Executes the offline backup/restore boundaries as real factory tests instead of relying on the web-stack fixture coupling (PR #83, checked head `77debe55`, merged `2026-09-14T06:13:25Z` as `31725f1`, App check `103872943772`)
 - Records the PR #82 runtime closure and the landing-preservation decision in project memory (PR #85, checked head `9c147455`, merged `2026-09-14T06:49:45Z` as `e7e8ad1`, App check `103880103525`)
