@@ -937,3 +937,8 @@ A long offline fixture string under api_key matched the repository generic-secre
 ## 2026-09-15 — Stop carrying completed preparation into current state
 
 The current bootstrap reused old release-preparation and default-off source snapshots as installed-state claims, while tests pinned those obsolete statements. The root cause was treating historical workflow slots as a current product model; archive unique history, refresh dated observations, and test source/release/runtime consistency instead of stale prose.
+
+
+## 2026-09-15 — Do not preserve decorative inventory as an architecture requirement
+
+The README retained a complete graph because a local instruction and tests required every node pair, even though those edges described no real dependencies. The root cause was treating a presentation invariant as architectural evidence; retire that invariant with the requested graph and preserve the model-based checks.

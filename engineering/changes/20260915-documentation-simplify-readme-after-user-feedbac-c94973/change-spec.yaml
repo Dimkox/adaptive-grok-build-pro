@@ -1,0 +1,103 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Remove decorative README graph and its live instruction/assertion coupling while retaining real architecture links and validation.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Package details are in the linked package guide and its publication status agrees with immutable current and historical release records.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "MIT language is consistent and default-off templates are explicitly distinct from enabled installed instances without expanding acceptance claims.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  },
+  "change_id": "20260915-documentation-simplify-readme-after-user-feedbac-c94973",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Promoting operator-observed L5 artifact success to independent external pilot acceptance or enabling live execution by default.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Published artifact bytes, application behavior, source configuration, actual architecture model/rules and external trust authority are unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Documentation: simplify README after user feedback by removing its decorative K22 inventory graph, moving low-level packaging details to an operator guide, reconciling MIT wording, and explaining template defaults versus installed configuration; update the graph-specific documentation instruction and existing structural assertions accordingly.",
+    "success_metric": "Concise README with real architecture navigation, consistent licensing and source/runtime semantics; package guide matches the published record.",
+    "target": "main"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Reviewed README navigation, package publication record and unchanged runtime observation references.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "frontend"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

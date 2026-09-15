@@ -32,7 +32,7 @@
 
 ### Optional manual executable-architecture adoption
 
-An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, render/review the projections, and create the marker last. Do not use the README K16 graph or generated diagrams as model input.
+An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, render/review the projections, and create the marker last. Use the reviewed model and rules as architecture input; generated diagrams are projections only.
 
 ```bash
 cd /path/to/repo

@@ -1,0 +1,41 @@
+{
+  "change_id": "20260915-documentation-simplify-readme-after-user-feedbac-c94973",
+  "created_at": "2026-09-15T11:00:02+00:00",
+  "history": [
+    {
+      "at": "2026-09-15T11:00:02+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-15T11:03:25+00:00",
+      "from": "draft",
+      "reason": "Three bounded documentation criteria and four selected analysis findings recorded; existing graph instruction is superseded only by latest requested graph removal.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-15T11:03:26+00:00",
+      "from": "scoped",
+      "reason": "User requested repository corrections and supplied follow-up removal feedback; no named scope/design human gate; runtime defaults and all trust boundaries stay unchanged.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-15T11:03:26+00:00",
+      "from": "approved",
+      "reason": "Selected frontend_implementer owns all canonical documentation and related test edits; parent owns the change package and delivery evidence.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-15T11:07:27+00:00",
+      "from": "implementing",
+      "reason": "Implementation and focused checks passed; freeze the source checkpoint before mandatory full verifier and independent review.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "c949737cfbb5",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Documentation: simplify README after user feedback by removing its decorative K22 inventory graph, moving low-level packaging details to an operator guide, reconciling MIT wording, and explaining template defaults versus installed configuration; update the graph-specific documentation instruction and existing structural assertions accordingly.",
+  "updated_at": "2026-09-15T11:07:27+00:00"
+}
