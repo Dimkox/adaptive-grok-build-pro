@@ -1,0 +1,137 @@
+{
+  "schema_version": 2,
+  "change_id": "20260915-update-third-party-workflow-components-superpowe-1b0c02",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Land the workflow artifact adapters (Spec Kit / BMAD / Superpowers advisory-document compiler, CLI, schemas, tests) on current main, verified and re-pinned against upstream superpowers v6.3.0, BMAD-METHOD v6.12.0 and spec-kit v1.0.7, deliver the undelivered 2026-09-14/15 decisions and mistakes entries, and reconcile the canonical current-state documents.",
+    "success_metric": "exact-head App-owned Trust CI check SUCCESS on the delivered pull request whose tree carries the adapter surface with pinned-version tests green",
+    "target": "main @ merge commit succeeding 7b147366a1f9b7e4b59f17e10283cc8ad67ba0c8"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": ["integration", "api"]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The adapter surface is present on the delivered head and registered: .grok-stack/adaptive_grok/workflow_artifacts.py, scripts/grok_artifacts.py, schemas/workflow-source-v1.schema.json, schemas/workflow-task-graph-v1.schema.json, schemas/workflow-convergence-report-v1.schema.json, tests/test_workflow_artifacts.py, tests/test_workflow_artifacts_adversarial.py, tests/test_workflow_artifacts_cli.py, plan and design documents; installer, manifest and packaging inventories include every shipped path.",
+      "evidence": [
+        {"test": "tests/test_workflow_artifacts.py"},
+        {"test": "tests/test_workflow_artifacts_cli.py"},
+        {"test": "tests/test_installer.py"},
+        {"test": "tests/test_manifest_package.py"}
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Accepted native format subsets and source_version fixtures are verified against the latest upstream releases (obra/superpowers v6.3.0, bmad-code-org/BMAD-METHOD v6.12.0, github/spec-kit v1.0.7): drifted literals or role sets are corrected, latest-version fixtures exist and pass, and the three component versions are pinned in one machine-readable product contract that a test enforces.",
+      "evidence": [
+        {"test": "tests/test_workflow_artifacts.py"},
+        {"test": "tests/test_workflow_artifacts_adversarial.py"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The undelivered 2026-09-14/15 decisions.md and mistakes.md entries land on main as a union: no pre-existing entry (including governance projection blocks) is removed or altered.",
+      "evidence": [
+        {"test": "tests/test_governance.py"},
+        {"receipt": "code_review"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "PROJECT_STATE.json, START_HERE.md and README.md remain internally consistent with the delivered tree (adapter registration visible, open-work inventory truthful, dated observation fields coherent) and the state-contract tests pass without weakening any authority pin.",
+      "evidence": [
+        {"test": "tests/test_project_state.py"},
+        {"test": "tests/test_structure.py"}
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Local preflight passes on the final clean tree: python3 scripts/grok_verify.py --mode pr with GROK_VERIFY_CAPABILITY=repository-sandbox, followed by recorded code_review, test_review and security_review receipts bound to the same fingerprint.",
+      "evidence": [
+        {"receipt": "verification"},
+        {"receipt": "code_review"},
+        {"receipt": "test_review"},
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Delivery is PR-only; the merge happens only after the App-owned policy-epoch check succeeds on the exact final head SHA.",
+      "evidence": [
+        {"attestation": "adaptive-trust-ci/verified@06ecf1c875bc"}
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Adapters, graphs, reports, projections and exports stay advisory data: they cannot create or modify routes, select agents, mint or elevate receipts or approvals, alter governance registries, or claim merge eligibility.",
+      "evidence": [
+        {"test": "tests/test_workflow_artifacts_adversarial.py"}
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Native M1-M9 artifacts and all previously released records are unchanged; historical change packages without workflow/manifest.json keep skipping the workflow verification check.",
+      "evidence": [
+        {"test": "tests/test_verification_doctor.py"},
+        {"test": "tests/test_workflow_artifacts_cli.py"}
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "No GitHub Actions and no new root packaging files that flip repository detection are introduced.",
+      "evidence": [
+        {"test": "tests/test_structure.py"}
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No new tag, GitHub Release, deployment, Trust CI policy/holdout/store change, or any external write beyond the authorized branch push and pull-request lifecycle for this change.",
+      "evidence": [
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No clobbering of existing decisions.md/mistakes.md/PROJECT_STATE.json content: shared-memory documents are extended by union only; wholesale re-serialization of architecture/system.yaml is prohibited.",
+      "evidence": [
+        {"receipt": "code_review"}
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "No secrets, credentials, .env contents or machine-local runtime state enter the repository.",
+      "evidence": [
+        {"receipt": "security_review"}
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [
+      "schemas/workflow-source-v1.schema.json",
+      "schemas/workflow-task-graph-v1.schema.json",
+      "schemas/workflow-convergence-report-v1.schema.json"
+    ],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "grok_artifacts validate/converge exit status and blocking-finding count on the dogfooded workflow-artifact-adapters manifest",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

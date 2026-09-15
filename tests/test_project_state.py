@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "61a05da2bd0c9fb09db5307f53ebc99e4e94040d"  # 2026-09-15 observation, PR #88
+OBSERVED_MAIN_SHA = "b6fe34002fda08ddcb0976746f3a2c39543e781e"  # 2026-09-15 observation, PR #91
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
 V2016_TREE = "2c24c33873c972822354218addf983b8166fa40a"
@@ -768,7 +768,7 @@ class ProjectStateTests(unittest.TestCase):
             inventory["retained_unresolved"],
             [
                 {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
-                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Local-only work requiring comparison before cleanup."},
+                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync (change 20260915-update-third-party-workflow-components-superpowe-1b0c02); the M3-era branch and worktree are historical artifacts to delete after that PR merges."},
                 {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."},
             ],
         )

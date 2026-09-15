@@ -656,3 +656,43 @@ Both installed landing units use `RuntimeDirectoryPreserve=no`, so stopping a pr
 ## 2026-09-15 — Classify complete provider error outcomes
 
 A received HTTP error status is insufficient when its body is truncated or times out before classification. Preserving that uncertainty prevents fallback from treating an incomplete policy/error response as a confirmed availability failure; dedicated red-to-green coverage exercises this boundary.
+
+## 2026-08-30 — Compile framework artifacts through one advisory boundary
+
+Normalize explicitly manifested Spec Kit, BMAD, and Superpowers files through a descriptor-bound anti-corruption layer into stable source, task-graph, and convergence contracts. Keeping imported documents candidate-only and requiring native route/receipt/fingerprint checks prevents a second planning framework from becoming a second authority system.
+
+## 2026-08-30 — Serialize workflow artifact publication around atomic exchange
+
+Use a persistent descriptor-safe runtime lock per target so cooperating writers serialize, then publish missing targets with no-clobber link or existing targets with atomic exchange after pre-validating digest and identity. A post-exchange identity mismatch rolls back before reading displaced content and preserves any second competitor under a bounded recovery name; unsupported platforms fail closed instead of claiming universal filesystem CAS.
+
+## 2026-08-30 — Separate tracked source claims from effective receipt state
+
+Persist only bounded source-status hints in the task graph and derive effective pending/verified state from current canonical receipts during runtime validation. This removes the fingerprint/receipt rewrite cycle while keeping disagreement between tracked source claims blocking and auditable.
+
+## 2026-08-31 — Bind the M0–M9 program to 2026-09-15 00:00 UTC+3
+
+Compress the critical path through continuous execution, minimum exit-criterion scope, and read-only preparation of successor milestones, with feature freeze at 2026-09-14 20:00. The deadline never overrides exact-SHA Trust CI, signed approvals, security, migration, evidence-cohort, or recovery gates; threatened delivery is reported immediately instead of fabricating completion.
+
+## 2026-08-31 — Supersede the M0–M9 deadline with 2026-09-08 00:00 UTC+3
+
+The 2026-09-15 decision remains historical but is superseded by the management deadline of 2026-09-08 00:00 UTC+3; compress through continuous handoffs, read-only successor preparation, one frozen documentation-only M8 candidate class with at least 30 human-accepted tasks, and non-production M9 validation. The deadline does not waive exact-SHA Trust CI, signed approvals, sequential integration, PostgreSQL/security/review, evidence-cohort, or recovery gates; promote M8 or claim M9 only when evidence passes, otherwise report the exact blocker.
+
+## 2026-09-10 — Include three consumer cases in autonomy assessment
+
+Use Puls Pump Selector (stand acceptance), Google Ads Automation main (Ads/Postgres/n8n integration) and ii-Tonya (native deployment and Claw verification) as existing real project evidence alongside the factory controller. This worked because cross-repository inspection corrected the false first-real-case gap and exposed evidence that controller handoff files do not aggregate. Reconstruct qualifying accepted tasks and operator-intervention metrics from existing history before proposing new cohort work; do not infer an M8 count or activation from project count, PR count, or product runtime automation alone.
+
+## 2026-09-15 Grok alongside primary Qwen
+
+A separate adaptive-l5-grok.service with its own socket and durable roots allowed Grok 4.6 to be added without restarting or reconfiguring primary Qwen. Binding installation to merged PR88 commit61a05da, verifying its tree and installed module hashes against tested4e94f7a, then requiring an authenticated artifact_ready result before enabling startup established the whole live path. Both services are active/enabled and Qwen retains PID698333 and its original configuration hash.
+
+## 2026-09-15 — Pin third-party workflow formats as config, named tests, and a dated observation
+
+`source_version` in the workflow adapters stays free-form because a version gate would turn the advisory anti-corruption layer into an authority and break historical fixtures; currency is instead the `workflow_sources` block in `.grok-stack/config/toolchain.json` plus `tests/test_workflow_sources.py`, which proves each pinned release (superpowers 6.3.0, BMAD 6.12.0, spec-kit 1.0.7) has a committed unmodified-shape parser test and a fresh dated observation. ADR-0001 records the full contract, including the rule that no upstream tree is ever vendored into the product.
+
+## 2026-09-15 — Amend content-addressed specs instead of rewriting them
+
+The 2026-08-30 design/plan/tasks documents are SHA-256-addressed by the d41aa6 workflow manifest, so upstream-format corrections ship as a linked amendment under `docs/superpowers/specs/` rather than edits to frozen sources. Same rule covers the version claim: real-version fixtures and named unmodified-shape tests prove currency; parser version gates stay rejected (ADR-0001).
+
+## 2026-09-15 — Derive receipt-kind sets from the router's emitted kinds
+
+Porting the epic's closed RECEIPT_KINDS byte-identically would have failed every bitrix/data route because router.py emits two domain review kinds the 2026-08-30 snapshot predated; the canonical set is now pinned to the router's seven emitted kinds and asserted by a parity test. Closed sets copied across the epic boundary must be re-diffed against the live emitter at port time, not trusted from the snapshot.

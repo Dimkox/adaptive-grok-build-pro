@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:adaptive-grok:workflow-source:v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","source_type","source_version","role","path","size","sha256"],
+  "properties":{
+    "schema_version":{"type":"integer","enum":[1]},
+    "source_type":{"enum":["spec-kit","bmad","superpowers"]},
+    "source_version":{"type":"string","minLength":1,"maxLength":32},
+    "role":{"type":"string","minLength":1,"maxLength":32},
+    "path":{"type":"string","minLength":1,"maxLength":512,"pattern":"^[^/\\\\\\u0000-\\u001f\\u007f]+$"},
+    "size":{"type":"integer","minimum":0,"maximum":1000000},
+    "sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}

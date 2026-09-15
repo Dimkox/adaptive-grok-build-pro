@@ -376,6 +376,30 @@
       "path": "factory/contracts/openapi/landing-failover.v1.json",
       "role": "bidirectional",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-WORKFLOW-SOURCE-V1",
+      "kind": "json_schema",
+      "path": "schemas/workflow-source-v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-WORKFLOW-TASK-GRAPH-V1",
+      "kind": "json_schema",
+      "path": "schemas/workflow-task-graph-v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-WORKFLOW-CONVERGENCE-REPORT-V1",
+      "kind": "json_schema",
+      "path": "schemas/workflow-convergence-report-v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -1472,6 +1496,121 @@
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-LANDING-SQLITE",
       "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-LOCAL-ROUTE-POLICY",
+      "id": "EDGE-ROUTE-WORKFLOW-COMPILER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-WORKFLOW-ARTIFACT-SOURCES",
+      "id": "EDGE-WORKFLOW-SOURCES-COMPILER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHANGE-EVIDENCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "id": "EDGE-WORKFLOW-COMPILER-CHANGE-EVIDENCE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-CHANGE-SPEC-EVIDENCE",
+      "type": "publication"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHANGE-EVIDENCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "id": "EDGE-WORKFLOW-COMPILER-LOCAL-VERIFIER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-VERIFIER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHANGE-EVIDENCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-CHANGE-SPEC-EVIDENCE",
+      "id": "EDGE-CHANGE-EVIDENCE-WORKFLOW-COMPILER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "type": "data_flow"
     }
   ],
   "nodes": [
@@ -2387,6 +2526,52 @@
         "SECRET-FACTORY-TOKEN"
       ],
       "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-WORKFLOW-ARTIFACT-SOURCES",
+      "owner": "repository contributors",
+      "public_contracts": [
+        "CONTRACT-WORKFLOW-SOURCE-V1"
+      ],
+      "repository_paths": [
+        ".specify"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-REPOSITORY",
+      "type": "repository"
+    },
+    {
+      "data_classification": "DATA-CHANGE-EVIDENCE",
+      "id": "NODE-WORKFLOW-ARTIFACT-COMPILER",
+      "owner": "repository engineering",
+      "public_contracts": [
+        "CONTRACT-WORKFLOW-CONVERGENCE-REPORT-V1",
+        "CONTRACT-WORKFLOW-SOURCE-V1",
+        "CONTRACT-WORKFLOW-TASK-GRAPH-V1"
+      ],
+      "repository_paths": [
+        ".grok-stack/adaptive_grok/workflow_artifacts.py",
+        "schemas/workflow-convergence-report-v1.schema.json",
+        "schemas/workflow-source-v1.schema.json",
+        "schemas/workflow-task-graph-v1.schema.json",
+        "scripts/grok_artifacts.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
       "type": "local_component"
     }
   ],

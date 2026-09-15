@@ -27,6 +27,7 @@ from adaptive_grok.verification import (
     _change_specs,
     _contracts,
     _governance_check,
+    _workflow_artifacts_check,
     _node,
     _python,
     _secret_scan,
@@ -1527,6 +1528,33 @@ class DoctorTests(unittest.TestCase):
             self.assertEqual(failures, [], [(item.name, item.message) for item in failures])
             self.assertTrue(any(item.name == 'unmanaged-agents' for item in items))
 
+
+class WorkflowArtifactsVerificationTests(unittest.TestCase):
+    def test_historical_change_without_manifest_skips(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            change = root / "engineering/changes/change"
+            change.mkdir(parents=True)
+            result, metadata = _workflow_artifacts_check(
+                root, {"route_id": "r"}, {"change_id": "change", "path": "engineering/changes/change"}, "a" * 64
+            )
+            self.assertEqual(result.status, "skip")
+            self.assertFalse(metadata["configured"])
+
+    def test_opted_in_missing_graph_fails_without_writing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            workflow = root / "engineering/changes/change/workflow"
+            workflow.mkdir(parents=True)
+            (workflow / "manifest.json").write_text('{"schema_version":1,"sources":[]}', encoding="utf-8")
+            before = sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
+            result, metadata = _workflow_artifacts_check(
+                root, {"route_id": "r"}, {"change_id": "change", "path": "engineering/changes/change"}, "a" * 64
+            )
+            after = sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
+            self.assertEqual(result.status, "fail")
+            self.assertEqual(metadata["status"], "fail")
+            self.assertEqual(before, after)
 
 if __name__ == '__main__':
     unittest.main()

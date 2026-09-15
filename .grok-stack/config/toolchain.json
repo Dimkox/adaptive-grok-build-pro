@@ -203,5 +203,50 @@
         "generic": "https://github.com/sigstore/cosign/releases"
       }
     }
-  ]
+  ],
+  "workflow_sources": {
+    "policy": "verified_against; advisory parser, never an install target",
+    "components": [
+      {
+        "id": "superpowers",
+        "name": "Superpowers",
+        "repository": "obra/superpowers",
+        "pinned": "6.3.0",
+        "upstream_tag": "v6.3.0",
+        "release_published_at": "2026-08-12",
+        "observed_latest": "6.3.0",
+        "observed_at": "2026-09-15",
+        "roles": ["spec", "plan", "sdd-evidence"],
+        "tracked_prefixes": ["docs/superpowers/", ".superpowers/sdd/"],
+        "verification_tests": ["tests.test_workflow_artifacts_adversarial.NativeStatusTests.test_unmodified_superpowers_and_richer_framework_documents_remain_advisory"]
+      },
+      {
+        "id": "bmad",
+        "name": "BMAD Method",
+        "repository": "bmad-code-org/BMAD-METHOD",
+        "pinned": "6.12.0",
+        "upstream_tag": "v6.12.0",
+        "release_published_at": "2026-09-04",
+        "observed_latest": "6.12.0",
+        "observed_at": "2026-09-15",
+        "roles": ["prd", "spec", "architecture", "project-context", "epics", "stories", "sprint-status", "readiness"],
+        "tracked_prefixes": ["_bmad/", "_bmad-output/"],
+        "verification_tests": ["tests.test_workflow_artifacts.WorkflowCompileTests.test_unmodified_bmad_story_subset_compiles_without_trusting_done_status"],
+        "breaking_notes": ["persistent_facts ships empty (project-context.md is no longer auto-loaded)", "{diff_output} is now {diff_file}", "bmad-checkpoint-preview renamed bmad-walkthrough (CK to WT; old ID still forwards)"]
+      },
+      {
+        "id": "spec-kit",
+        "name": "GitHub Spec Kit",
+        "repository": "github/spec-kit",
+        "pinned": "1.0.7",
+        "upstream_tag": "v1.0.7",
+        "release_published_at": "2026-09-15",
+        "observed_latest": "1.0.7",
+        "observed_at": "2026-09-15",
+        "roles": ["constitution", "spec", "plan", "tasks", "checklist"],
+        "tracked_prefixes": [".specify/", "specs/"],
+        "verification_tests": ["tests.test_workflow_artifacts.WorkflowCompileTests.test_unmodified_spec_kit_tasks_subset_compiles_phases_and_parallel_markers"]
+      }
+    ]
+  }
 }

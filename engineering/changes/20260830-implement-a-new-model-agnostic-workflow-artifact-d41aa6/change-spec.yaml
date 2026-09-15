@@ -1,0 +1,34 @@
+{
+  "acceptance_criteria": [
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-001","statement":"Native change-spec, executable architecture, governance, and active route remain canonical; imports cannot alter agents, approvals, policy, or Trust CI."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-002","statement":"Only allowlisted bounded repository files are read and path escape, symlink, special file, non-NFC, duplicate keys, YAML authority syntax, and structural limits fail closed."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-003","statement":"Every accepted input produces a deterministic WorkflowSourceV1 identity containing source type, version, repository-relative path, size, role, and SHA-256."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-004","statement":"GitHub Spec Kit constitution, spec, plan, tasks, and checklists map to advisory governance, requirements, architecture, task, and convergence candidates without activating a constitution."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-005","statement":"BMAD PRD or SPEC, architecture or project context, epics, stories, sprint status, and readiness map to advisory candidates while personas and orchestration remain excluded."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-006","statement":"Superpowers specs and plans are advisory and .superpowers/sdd content remains untrusted runtime evidence that cannot satisfy verification or review receipts."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"},{"test":"tests/test_workflow_artifacts_adversarial.py"}],"id":"AC-007","statement":"WorkflowTaskGraphV1 has bounded stable task IDs, dependency DAG, exact AC/INV/FORBID coverage, files, interfaces, route writer and at most twenty reviewers, tightly allowlisted non-executed RED/GREEN verification argv, and source-status hints without persisted tree fingerprints."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"},{"test":"tests/test_workflow_artifacts_adversarial.py"}],"id":"AC-008","statement":"Imported and ordinary Markdown completion remains a source-status hint; effective status is pending before current canonical receipts and verified afterward without editing the tracked graph/report, while disagreement between native and graph source claims is blocking."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"AC-009","statement":"WorkflowConvergenceReportV1 deterministically reports goal or criterion conflicts, placeholders, stale digests, architecture contradictions, incomplete coverage, and source-status drift without turning receipt absence into an impossible tracked-state gate."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts_cli.py"},{"test":"tests/test_workflow_artifacts_adversarial.py"}],"id":"AC-010","statement":"Exact derived task-graph/report files and marked advisory exports/projections publish only through descriptor-safe per-target serialized CAS; every post-exchange validation failure rolls back first and preserves special, oversized, unreadable, or multiply racing competitors for bounded forward recovery."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"},{"test":"tests/test_workflow_artifacts_adversarial.py"}],"id":"AC-011","statement":"Compiler and adapters perform no network, subprocess, shell, or LLM calls, never execute imported instructions, and reject imported shell/interpreter/network command argv."},
+    {"evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"tests/test_manifest_package.py"},{"test":"tests/test_installer.py"}],"id":"AC-012","statement":"The verifier checks opted-in stored graphs and reports read-only; packaging and installer ship the CLI, schemas, and implementation while historical packages remain compatible."}
+  ],
+  "approvals":{"required_scopes":["architecture","contract","security"]},
+  "change_id":"20260830-implement-a-new-model-agnostic-workflow-artifact-d41aa6",
+  "contracts":{"events":[],"json_schema":["schemas/workflow-source-v1.schema.json","schemas/workflow-task-graph-v1.schema.json","schemas/workflow-convergence-report-v1.schema.json"],"openapi":[]},
+  "forbidden_outcomes":[
+    {"evidence":[{"receipt":"security_review"}],"id":"FORBID-001","statement":"Imported artifacts create or modify authority, routes, agents, approvals, receipts, governance activation, policy, Trust CI, or merge state."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"FORBID-002","statement":"The artifact compiler uses network, subprocess, shell, LLM, fuzzy semantic inference, or external dependencies."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts_cli.py"},{"test":"tests/test_workflow_artifacts_adversarial.py"}],"id":"FORBID-003","statement":"A CLI operation mutates a source framework tree or publishes content outside exact active-change task-graph/report files and marked projection/export directories."}
+  ],
+  "invariants":[
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"INV-001","statement":"Canonical JSON, source identities, task IDs, graph digests, and report findings are deterministic for identical bytes and route inputs."},
+    {"evidence":[{"receipt":"verification"}],"id":"INV-002","statement":"M1 then M2 then M3 validation precedes the opt-in workflow check and Trust CI remains sole merge authority."},
+    {"evidence":[{"test":"tests/test_workflow_artifacts.py"}],"id":"INV-003","statement":"Task graphs never persist a self-referential full-tree fingerprint; evidence fingerprints are optional observations only."}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Safely converge explicit GitHub Spec Kit, BMAD, and Superpowers artifacts into the native model-agnostic workflow without creating a parallel authority system.","success_metric":"workflow_artifact_contract_and_verifier_pass","target":"all_12_acceptance_criteria_evidenced"},
+  "observability":[{"id":"SIG-001","metric":"workflow_artifacts_verifier_status","proves":["OBJ-001"]}],
+  "risk":{"domains":["api","integration","security"],"tier":"red"},
+  "rollback":{"maximum_steps":2,"strategy":"restore"},
+  "schema_version":2
+}

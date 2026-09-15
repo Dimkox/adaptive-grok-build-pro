@@ -2,8 +2,8 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-15T09:54:21Z",
-  "observed_main_sha": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+  "observed_at": "2026-09-15T16:59:45Z",
+  "observed_main_sha": "b6fe34002fda08ddcb0976746f3a2c39543e781e",
   "product_version": "2.0.16",
   "latest_published_release": "v2.0.16",
   "bootstrap_entrypoint": "START_HERE.md",
@@ -150,7 +150,7 @@
     "identity": null,
     "status": "no_new_release_candidate",
     "stage": "published_release_plus_post_release_source",
-    "source_base": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+    "source_base": "b6fe34002fda08ddcb0976746f3a2c39543e781e",
     "target_version": null,
     "scope": [],
     "predecessors": [],
@@ -164,7 +164,8 @@
     "external_effect": false,
     "operational_activation": false,
     "next_action": "Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 environment/recovery qualification. Preserve the published release; refresh target policy and exact operational authority before further external effects.",
-    "record_scope": "No current release preparation. Documentation workflow belongs to its change package; runtime state is in runtime_observations."
+    "record_scope": "No current release preparation. Documentation workflow belongs to its change package; runtime state is in runtime_observations.",
+    "explanation": null
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -1058,7 +1059,7 @@
       {
         "branch": "feature/workflow-artifact-adapters",
         "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070",
-        "purpose": "Local-only work requiring comparison before cleanup."
+        "purpose": "Superseded by the port on feature/third-party-components-sync (change 20260915-update-third-party-workflow-components-superpowe-1b0c02); the M3-era branch and worktree are historical artifacts to delete after that PR merges."
       },
       {
         "branch": "origin/milestone/a-plus-autopilot",
@@ -1189,14 +1190,14 @@
     "source_directory": "trust-ci",
     "operator_runbooks": "engineering/runbooks",
     "last_success": {
-      "pull_request": 88,
-      "head_sha": "4e94f7a9e0b6a54adac5e09700ba3137a1c2e6b0",
-      "merge_commit": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
-      "check_run_id": 104295309671,
-      "attestation_id": "8a7eb170-fd21-481e-a756-9e0a878b14c0",
+      "pull_request": 91,
+      "head_sha": "55deafbabf99f4a36757d871a0ae686a6e4abef5",
+      "merge_commit": "b6fe34002fda08ddcb0976746f3a2c39543e781e",
+      "check_run_id": 104440253101,
+      "attestation_id": "2b8448b6-0447-4563-acb4-7cab5cb9da3a",
       "conclusion": "SUCCESS",
-      "record_scope": "Observed exact PR #88 checked head and subsequent merge SHA; retained operational evidence confirms their trees match.",
-      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104295309671"
+      "record_scope": "Observed on 2026-09-15 via GitHub Checks API for the exact PR head; merge authority for PR #91 only.",
+      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104440253101"
     },
     "historical_last_success": {
       "pull_request": 24,
@@ -1226,7 +1227,7 @@
     "status": "released_and_runtime_observed_active",
     "branch": "main",
     "route_id": "2a890b6485a5",
-    "actual_main_observation": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+    "actual_main_observation": "b6fe34002fda08ddcb0976746f3a2c39543e781e",
     "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
@@ -1284,9 +1285,9 @@
     "selected_profile_note": "Observed primary installed profile/model; the default-off source template independently selects Qwen Omni."
   },
   "runtime_observations": {
-    "observed_at": "2026-09-15T09:54:21Z",
+    "observed_at": "2026-09-15T16:59:45Z",
     "host": "claw",
-    "evidence": "engineering/changes/20260915-documentation-align-readme-roadmap-and-bootstrap-d7264b/evidence/observed-state.json",
+    "evidence": "engineering/changes/20260915-update-third-party-workflow-components-superpowe-1b0c02/evidence/runtime-observation-post-91.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
       "live_enabled": false,

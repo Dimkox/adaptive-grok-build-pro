@@ -293,6 +293,9 @@ def _materialize_architecture(root: Path) -> None:
     for schema_name in (
         "architecture-system.schema.json",
         "architecture-rules.schema.json",
+        "workflow-source-v1.schema.json",
+        "workflow-task-graph-v1.schema.json",
+        "workflow-convergence-report-v1.schema.json",
     ):
         shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
 

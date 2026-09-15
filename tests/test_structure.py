@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 ROOT_ENTRIES = frozenset(
     {
-        ".agents", ".coveragerc", ".gitignore", ".grok-stack", ".grok", ".superpowers",
+        ".agents", ".coveragerc", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
         "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
@@ -189,6 +189,7 @@ class StructureTests(unittest.TestCase):
             "scripts/grok_route.py",
             "scripts/grok_change.py",
             "scripts/grok_spec.py",
+            "scripts/grok_artifacts.py",
             "scripts/grok_verify.py",
             "scripts/grok_review.py",
             "scripts/grok_approve.py",
@@ -215,6 +216,10 @@ class StructureTests(unittest.TestCase):
             "schemas/canonical-example.schema.json",
             "schemas/governance-handoff-v1.schema.json",
             "scripts/grok_governance.py",
+            ".grok-stack/adaptive_grok/workflow_artifacts.py",
+            "schemas/workflow-source-v1.schema.json",
+            "schemas/workflow-task-graph-v1.schema.json",
+            "schemas/workflow-convergence-report-v1.schema.json",
             "factory/src/adaptive_factory/semantic_contracts.py",
             "factory/src/adaptive_factory/semantic_adjudication.py",
             "factory/src/adaptive_factory/semantic_bridge.py",

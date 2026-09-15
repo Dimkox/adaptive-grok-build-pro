@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:adaptive-grok:workflow-convergence-report:v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema_version","change_id","graph_digest","source_manifest_digest","status","coverage","findings","report_digest"],
+  "properties":{
+    "schema_version":{"type":"integer","enum":[1]},
+    "change_id":{"type":"string","minLength":3,"maxLength":128},
+    "graph_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "source_manifest_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "status":{"enum":["pass","block"]},
+    "coverage":{"type":"object","additionalProperties":false,"required":["required","covered","missing"],"properties":{"required":{"type":"array","maxItems":2000,"items":{"type":"string","minLength":1,"maxLength":32}},"covered":{"type":"array","maxItems":2000,"items":{"type":"string","minLength":1,"maxLength":32}},"missing":{"type":"array","maxItems":2000,"items":{"type":"string","minLength":1,"maxLength":32}}}},
+    "findings":{"type":"array","maxItems":2000,"items":{"type":"object","additionalProperties":false,"required":["finding_id","code","path","message","disposition","blocking"],"properties":{"finding_id":{"type":"string","pattern":"^FIND-[0-9a-f]{12}$"},"code":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[a-z0-9-]+$"},"path":{"type":"string","minLength":1,"maxLength":512},"message":{"type":"string","minLength":1,"maxLength":2048},"disposition":{"enum":["accept-native","revise-import","refresh-evidence","resolve-conflict"]},"blocking":{"type":"boolean"}}}},
+    "report_digest":{"type":"string","pattern":"^[0-9a-f]{64}$"}
+  }
+}
