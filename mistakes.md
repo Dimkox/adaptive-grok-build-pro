@@ -950,3 +950,7 @@ The failover draft kept its original two-provider scope after the user added Ope
 ## 2026-09-15 — Discover every closed contract inventory before handoff
 
 The failover implementation added six declared contracts but its focused checks missed four exact inventory assertions in architecture and semantic suites. The root cause was searching only landing-named tests; search existing contract IDs and schema-directory inventory checks across the whole repository, then run those tests and lint before source freeze.
+
+## 2026-09-15 — Test caller boundaries with real transport and CLI ingress
+
+Lexical input exclusions allowed double-slash aliases because normalization was applied only to stored configuration fields; validate every config/input ingress before reads and comparisons. Per-I/O HTTP timeouts were mistaken for complete-exchange deadlines, so trickled headers escaped the bound; use actual cancellation and real Unix-socket regressions. Journal tests stopped at constructor exceptions and missed the CLI contract, so test lock contention and invalid stores through every command and translate expected failures into fixed JSON.

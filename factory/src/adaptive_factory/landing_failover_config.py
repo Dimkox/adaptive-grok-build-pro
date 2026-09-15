@@ -102,6 +102,7 @@ class FailoverConfig:
 
 
 def load_failover_config(path):
+    path = absolute_path(str(path))
     value = FailoverConfig.from_dict(strict_json_object(read_private_file(path, 32_768), maximum=32_768))
     if any(path == root or root in path.parents for root in (value.control_repository, value.source_path, value.journal_path)):
         raise SettingsError("caller configuration must be outside data roots")

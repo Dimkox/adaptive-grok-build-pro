@@ -17,6 +17,9 @@ from adaptive_factory.landing_failover_cli import main
 from adaptive_factory.landing_failover_config import FailoverConfig
 from adaptive_factory.landing_failover_journal import CallerJournal
 from adaptive_factory import landing_failover_transport as transport_module
+from adaptive_factory import landing_failover_cli as cli_module
+from adaptive_factory import landing_failover_config as config_module
+from adaptive_factory.settings import SettingsError
 from factory.tests.test_landing_failover import configuration, ScriptedBackends
 
 
@@ -47,16 +50,15 @@ class UnixCallerTests(unittest.TestCase):
                     if backend.profile_id != "qwen-intl":
                         return script.factory(backend, **kwargs)
                     client = transport_module.UnixLandingBackend(backend, **kwargs)
-                    client.client.close()
-                    client.client = transport_module.httpx.Client(
-                        transport=transport_module.httpx.MockTransport(handler), base_url="http://landing")
                     deadlines.append(client)
                     return client
                 with socketserver.UnixStreamServer(str(primary.socket_path), BaseHTTPRequestHandler):
                     with patch.object(transport_module.time, "monotonic", side_effect=lambda: monotonic[0]):
-                        with CallerJournal(config) as journal:
-                            result = FailoverCoordinator(config, journal, backend_factory=factory).submit(
-                                "capability", b"brief", "text/plain")
+                        with patch.object(transport_module.httpx, "AsyncHTTPTransport",
+                                          return_value=transport_module.httpx.MockTransport(handler)):
+                            with CallerJournal(config) as journal:
+                                result = FailoverCoordinator(config, journal, backend_factory=factory).submit(
+                                    "capability", b"brief", "text/plain")
                 self.assertEqual([("GET", b"", 2.0)], requests)
                 self.assertEqual(430.0, deadlines[0].deadline, "capability must preserve the POST/observe deadline")
                 if outcome in {"read_timeout", "connect_timeout", "slow_body"}:
@@ -141,6 +143,95 @@ class UnixCallerTests(unittest.TestCase):
             self.assertEqual(5, len(result["attempts"]))
             self.assertNotIn(payload.read_text(), output.getvalue())
             self.assertNotIn("secret" * 8, output.getvalue())
+
+
+class CallerBoundaryTests(unittest.TestCase):
+    def fixture(self, root):
+        document = configuration(root)
+        for item in document["backends"]:
+            token = Path(item["token_file"])
+            token.write_text("t" * 32)
+            token.chmod(0o600)
+        config_path = root / "config.json"
+        config_path.write_text(json.dumps(document))
+        config_path.chmod(0o600)
+        return document, config_path
+
+    def assert_rejected(self, arguments):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            code = main(arguments)
+        self.assertEqual(2, code)
+        self.assertEqual({"schema_version": 1, "state": "stopped", "reason": "caller_request_rejected"},
+                         json.loads(output.getvalue()))
+
+    def test_double_slash_inputs_cannot_alias_tokens_config_or_protected_roots(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            document, config_path = self.fixture(root)
+            protected = [config_path, *(Path(item["token_file"]) for item in document["backends"])]
+            for name in ("control_repository", "source_path", "journal_path"):
+                path = Path(document[name]) / "private.txt"
+                path.write_text("protected synthetic content")
+                path.chmod(0o600)
+                protected.append(path)
+            for path in protected:
+                for spelling in (str(path), "/" + str(path)):
+                    with self.subTest(path=path, alias=spelling.startswith("//")):
+                        with patch.object(cli_module, "read_private_file", wraps=cli_module.read_private_file) as reader:
+                            with patch.object(FailoverCoordinator, "submit", return_value={"state": "artifact_ready"}) as submit:
+                                self.assert_rejected(["--config", str(config_path), "submit", "--job-id", "alias",
+                                                      "--input", spelling])
+                            reader.assert_not_called()
+                            submit.assert_not_called()
+
+    def test_config_alias_is_rejected_before_read_and_cannot_escape_forbidden_roots(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            document, config_path = self.fixture(root)
+            paths = [config_path]
+            for name in ("control_repository", "source_path", "journal_path"):
+                path = Path(document[name]) / "config.json"
+                path.write_text(json.dumps(document))
+                path.chmod(0o600)
+                paths.append(path)
+                with self.assertRaises(SettingsError):
+                    config_module.load_failover_config(path)
+            for path in paths:
+                alias = "/" + str(path)
+                with self.subTest(path=path), patch.object(config_module, "read_private_file",
+                                                         wraps=config_module.read_private_file) as reader:
+                    with self.assertRaises(SettingsError):
+                        config_module.load_failover_config(Path(alias))
+                    self.assert_rejected(["--config", alias, "status", "--job-id", "alias"])
+                    reader.assert_not_called()
+
+    def test_busy_journal_returns_fixed_json_for_every_cli_command(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            document, config_path = self.fixture(root)
+            brief = root / "brief.txt"
+            brief.write_text("brief")
+            brief.chmod(0o600)
+            with CallerJournal(FailoverConfig.from_dict(document)):
+                for command in ("submit", "status", "resume"):
+                    arguments = ["--config", str(config_path), command, "--job-id", "busy"]
+                    if command == "submit":
+                        arguments += ["--input", str(brief)]
+                    with self.subTest(command=command), patch.object(cli_module, "FailoverCoordinator") as coordinator:
+                        self.assert_rejected(arguments)
+                        coordinator.assert_not_called()
+
+    def test_invalid_sqlite_file_returns_fixed_json_without_dispatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            document, config_path = self.fixture(root)
+            database = Path(document["journal_path"]) / "failover.sqlite3"
+            database.write_bytes(b"invalid synthetic SQLite file")
+            database.chmod(0o600)
+            with patch.object(cli_module, "FailoverCoordinator") as coordinator:
+                self.assert_rejected(["--config", str(config_path), "status", "--job-id", "invalid"])
+                coordinator.assert_not_called()
 
 
 if __name__ == "__main__":

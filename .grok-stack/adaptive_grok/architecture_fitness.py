@@ -726,7 +726,7 @@ def _httpx_uses_bounded_uds(tree: ast.AST) -> bool:
         if not isinstance(node, ast.Call):
             continue
         name = node.func.attr if isinstance(node.func, ast.Attribute) else node.func.id if isinstance(node.func, ast.Name) else ""
-        if name != "HTTPTransport":
+        if name not in {"HTTPTransport", "AsyncHTTPTransport"}:
             continue
         for keyword in node.keywords:
             if keyword.arg == "uds":

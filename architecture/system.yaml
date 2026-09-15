@@ -2374,7 +2374,8 @@
         "factory/src/adaptive_factory/landing_failover_transport.py",
         "factory/tests/test_landing_failover.py",
         "factory/tests/test_landing_failover_cli.py",
-        "factory/tests/test_landing_failover_recovery.py"
+        "factory/tests/test_landing_failover_recovery.py",
+        "factory/tests/test_landing_failover_transport.py"
       ],
       "runtime": {
         "evidence": "source_described",
