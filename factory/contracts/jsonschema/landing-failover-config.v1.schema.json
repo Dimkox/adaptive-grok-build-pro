@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-failover-config:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "control_repository",
+    "source_path",
+    "journal_path",
+    "actor_id",
+    "repository_id",
+    "exact_base_sha",
+    "exact_base_tree",
+    "deadline_seconds",
+    "retention_seconds",
+    "backends"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "control_repository": {
+      "type": "string",
+      "pattern": "^/[^/]",
+      "maxLength": 4096
+    },
+    "source_path": {
+      "type": "string",
+      "pattern": "^/[^/]",
+      "maxLength": 4096
+    },
+    "journal_path": {
+      "type": "string",
+      "pattern": "^/[^/]",
+      "maxLength": 4096
+    },
+    "actor_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "repository_id": {
+      "const": "github.com/Dimkox/ai-dark-factory-landing"
+    },
+    "exact_base_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "exact_base_tree": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "deadline_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 1800
+    },
+    "retention_seconds": {
+      "type": "integer",
+      "minimum": 30,
+      "maximum": 86400
+    },
+    "backends": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "profile_id",
+          "socket_path",
+          "token_file",
+          "profile_digest"
+        ],
+        "properties": {
+          "profile_id": {
+            "enum": [
+              "qwen-intl",
+              "grok-vision",
+              "openai",
+              "anthropic",
+              "openrouter"
+            ]
+          },
+          "socket_path": {
+            "type": "string",
+            "pattern": "^/[^/]",
+            "maxLength": 4096
+          },
+          "token_file": {
+            "type": "string",
+            "pattern": "^/[^/]",
+            "maxLength": 4096
+          },
+          "profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

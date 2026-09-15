@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "control_repository": "/opt/adaptive-l5/releases/REPLACE_EXACT_CONTROL_SHA/repository",
+  "source_path": "/opt/adaptive-l5/sources/fde60e040167c10975b00d11f578c4da6763069a",
+  "journal_path": "/var/lib/adaptive-l5-failover",
+  "actor_id": "landing-failover-operator",
+  "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
+  "exact_base_sha": "fde60e040167c10975b00d11f578c4da6763069a",
+  "exact_base_tree": "21817e70e079b772e1f3114a80dfc0320d1ada91",
+  "deadline_seconds": 900,
+  "retention_seconds": 86400,
+  "backends": [
+    {
+      "profile_id": "qwen-intl",
+      "socket_path": "/run/adaptive-l5/control.sock",
+      "token_file": "/etc/adaptive-l5/failover-qwen-intl.token",
+      "profile_digest": "2616a276a5a6257515dc30e40d27fe32a667aa7d75f8205990c567166116de08"
+    },
+    {
+      "profile_id": "grok-vision",
+      "socket_path": "/run/adaptive-l5-grok/control.sock",
+      "token_file": "/etc/adaptive-l5/failover-grok-vision.token",
+      "profile_digest": "53ac56c1115d8913e21c0feb3e56dbe3f360df46d222885b0d7c293231aa11cf"
+    },
+    {
+      "profile_id": "openai",
+      "socket_path": "/run/adaptive-l5-openai/control.sock",
+      "token_file": "/etc/adaptive-l5/failover-openai.token",
+      "profile_digest": "225ed222336477183acdf0b7f6c46f52f5453807ebb7ab441424fc306b31257c"
+    },
+    {
+      "profile_id": "anthropic",
+      "socket_path": "/run/adaptive-l5-anthropic/control.sock",
+      "token_file": "/etc/adaptive-l5/failover-anthropic.token",
+      "profile_digest": "d713ed74a7e0ae24b58c80b56cc525412f539502efdd1750722a196cd1d422d2"
+    },
+    {
+      "profile_id": "openrouter",
+      "socket_path": "/run/adaptive-l5-openrouter/control.sock",
+      "token_file": "/etc/adaptive-l5/failover-openrouter.token",
+      "profile_digest": "dad8b0aaf1e658d5b825b2988f250ab305fac90d3403069a2511eccb221dc421"
+    }
+  ]
+}

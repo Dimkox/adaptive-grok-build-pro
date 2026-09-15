@@ -1,5 +1,7 @@
 # L5 production runtime handoff
 
+The [ordered provider failover guide](l5-provider-failover.md) describes the new source caller, five independent hosts, private configuration and SQLite observation migration. It supplements this installation/backup procedure. Existing installed revisions do not expose the new capability API, and metadata-only 403 checks do not establish inference qualification for the three added providers.
+
 ## Current observation — 2026-09-15
 
 Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` and Grok secondary `adaptive-l5-grok.service` at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` are installed and were active/enabled. Both have authenticated `artifact_ready` evidence; Grok completed in 29.852 s with one provider request and `live_url=null`. See [exact dated evidence and limits](l5-runtime-observation-2026-09-15.md). Source defaults remain off; runtime observations do not establish external maintainer acceptance, an M8 qualifying cohort or general M9 operational qualification.

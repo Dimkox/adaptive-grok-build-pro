@@ -644,3 +644,15 @@ The repository chooses policy and holdout validation outside the PR-controlled t
 ## 2026-09-15 — Keep README architecture references tied to the reviewed model
 
 Removing the complete decorative graph and its duplicate tests leaves the real model, rules, generated views and adoption checks as the architecture references. Moving packaging internals into the existing package guide keeps the README concise while preserving operator details and immutable release evidence.
+
+## 2026-09-15 — Separate credential presence from provider access
+
+A bounded selected-key parser confirmed all five requested API variables without printing their values, then read-only metadata probes exposed HTTP403 on all three new providers before paid inference. OpenAI explicitly reported a regional restriction; keeping that fact separate from adapter implementation prevents claiming a configured key is a working integration.
+
+## 2026-09-15 — Test the installed supervisor's failure behavior
+
+Both installed landing units use `RuntimeDirectoryPreserve=no`, so stopping a provider can remove its socket parent directory as well as the socket. Comparing the caller's path checks with real unit metadata exposed a configuration rejection that ordinary missing-socket fixtures would miss; stopped-provider coverage must include the missing runtime directory while retaining ancestor safety checks.
+
+## 2026-09-15 — Classify complete provider error outcomes
+
+A received HTTP error status is insufficient when its body is truncated or times out before classification. Preserving that uncertainty prevents fallback from treating an incomplete policy/error response as a confirmed availability failure; dedicated red-to-green coverage exercises this boundary.

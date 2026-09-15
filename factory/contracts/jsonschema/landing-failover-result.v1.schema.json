@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-failover-result:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request",
+    "parent_digest",
+    "created_at",
+    "deadline_at",
+    "expires_at",
+    "attempts",
+    "winner",
+    "state",
+    "reason",
+    "record_digest",
+    "usage",
+    "live_url"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "job_id",
+        "actor_id",
+        "repository_id",
+        "exact_base_sha",
+        "exact_base_tree",
+        "media_type",
+        "byte_length",
+        "content_sha256",
+        "config_digest"
+      ],
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "repository_id": {
+          "const": "github.com/Dimkox/ai-dark-factory-landing"
+        },
+        "exact_base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "exact_base_tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "media_type": {
+          "enum": [
+            "text/plain",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ]
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "config_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "parent_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "created_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deadline_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expires_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ordinal",
+          "profile_id",
+          "profile_digest",
+          "child_id",
+          "state",
+          "receipt"
+        ],
+        "properties": {
+          "ordinal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "profile_id": {
+            "enum": [
+              "qwen-intl",
+              "grok-vision",
+              "openai",
+              "anthropic",
+              "openrouter"
+            ]
+          },
+          "profile_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "child_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "state": {
+            "enum": [
+              "planned",
+              "dispatching",
+              "not_submitted",
+              "eligible_failure"
+            ]
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "landing-attempt-status.v1.schema.json"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "winner": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile_id",
+            "child_id",
+            "provider_id",
+            "model_id",
+            "profile_digest",
+            "input_digest",
+            "socket_path",
+            "artifact_digest",
+            "provider_evidence_digest"
+          ],
+          "properties": {
+            "profile_id": {
+              "enum": [
+                "qwen-intl",
+                "grok-vision",
+                "openai",
+                "anthropic",
+                "openrouter"
+              ]
+            },
+            "child_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "provider_id": {
+              "enum": [
+                "qwen",
+                "grok",
+                "openai",
+                "anthropic",
+                "openrouter"
+              ]
+            },
+            "model_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "profile_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "input_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "socket_path": {
+              "type": "string",
+              "pattern": "^/[^/]",
+              "maxLength": 4096
+            },
+            "artifact_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "provider_evidence_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "enum": [
+        "running",
+        "artifact_ready",
+        "needs_human",
+        "stopped",
+        "expired",
+        "exhausted"
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "record_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_input_units",
+        "known_output_units",
+        "unknown_attempts",
+        "complete",
+        "cost_usd",
+        "cache_breakdown"
+      ],
+      "properties": {
+        "known_input_units": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50000000
+        },
+        "known_output_units": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50000000
+        },
+        "unknown_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "cost_usd": {
+          "type": "null"
+        },
+        "cache_breakdown": {
+          "type": "null"
+        }
+      }
+    },
+    "live_url": {
+      "type": "null"
+    }
+  }
+}

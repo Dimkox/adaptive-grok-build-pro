@@ -942,3 +942,7 @@ The current bootstrap reused old release-preparation and default-off source snap
 ## 2026-09-15 — Do not preserve decorative inventory as an architecture requirement
 
 The README retained a complete graph because a local instruction and tests required every node pair, even though those edges described no real dependencies. The root cause was treating a presentation invariant as architectural evidence; retire that invariant with the requested graph and preserve the model-based checks.
+
+## 2026-09-15 — Apply provider steering to the active scope immediately
+
+The failover draft kept its original two-provider scope after the user added OpenAI, Claude and OpenRouter and instructed implementation. The root cause was treating that steering as optional future configuration; reread the explicitly authorized selected environment names, update every acceptance boundary to all five providers, and proceed on the already accepted design.

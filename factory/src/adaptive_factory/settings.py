@@ -13,7 +13,7 @@ class SettingsError(RuntimeError):
 # Closed operator set for FACTORY_LANDING_PROVIDER. "unavailable" is the default and keeps the
 # landing path dark unless an explicit provider is named.
 LANDING_PROVIDERS = frozenset(
-    {"unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-intl"}
+    {"unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-intl", "openai", "anthropic", "openrouter"}
 )
 
 

@@ -126,7 +126,7 @@ def _snapshot(database, destination, identity, budget):
         source.execute("PRAGMA trusted_schema=OFF")
         actual = (source.execute("PRAGMA application_id").fetchone()[0],
                   source.execute("PRAGMA user_version").fetchone()[0])
-        if actual != identity:
+        if actual != identity and not (identity == (APPLICATION_ID, SCHEMA_VERSION) and actual == (APPLICATION_ID, 1)):
             raise BackupError("snapshot_schema")
         target = sqlite3.connect(destination, timeout=5)
         page_size = source.execute("PRAGMA page_size").fetchone()[0]

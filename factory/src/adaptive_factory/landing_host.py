@@ -17,17 +17,19 @@ from .server import load_actors, prepare_unix_socket
 from .settings import SettingsError
 
 
-def build_landing_app(config: LandingHostConfig, *, qwen_env_file: Path | None = None):
-    if qwen_env_file is not None:
+def build_landing_app(config: LandingHostConfig, *, qwen_env_file: Path | None = None,
+                      provider_env_file: Path | None = None):
+    credential_file = provider_env_file or qwen_env_file
+    if credential_file is not None:
         roots = (config.control_repository, config.publication_state,
                  config.settings.landing_source_path, config.settings.landing_state_path,
                  config.settings.landing_quarantine_path, config.settings.landing_scratch_path,
                  config.settings.landing_output_path)
-        if any(qwen_env_file == root or root in qwen_env_file.parents for root in roots if root is not None):
+        if any(credential_file == root or root in credential_file.parents for root in roots if root is not None):
             raise SettingsError("Qwen credential file must be outside landing roots")
     _private_directory(config.publication_state, repository_root=config.control_repository)
     owned = compose_server_landing(config.settings, repository_root=config.control_repository,
-                                   qwen_env_file=qwen_env_file)
+                                   qwen_env_file=qwen_env_file, provider_env_file=provider_env_file)
     if owned is None or owned.store is None:
         raise SettingsError("dedicated landing host requires durable composition")
     try:
@@ -52,10 +54,12 @@ def build_landing_app(config: LandingHostConfig, *, qwen_env_file: Path | None =
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dedicated default-off landing Unix-socket host")
     parser.add_argument("--config", required=True, type=Path)
-    parser.add_argument("--qwen-env-file", type=Path)
+    credential = parser.add_mutually_exclusive_group()
+    credential.add_argument("--qwen-env-file", type=Path)
+    credential.add_argument("--provider-env-file", type=Path)
     args = parser.parse_args()
     config = load_host_config(args.config)
-    app = build_landing_app(config, qwen_env_file=args.qwen_env_file)
+    app = build_landing_app(config, qwen_env_file=args.qwen_env_file, provider_env_file=args.provider_env_file)
     listener = None
     socket_identity = None
     try:

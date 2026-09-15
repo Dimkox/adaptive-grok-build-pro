@@ -625,6 +625,9 @@ def create_app(
         )
 
     if landing_only:
+        from .landing_backend_api import install_backend_api
+
+        install_backend_api(app, landing_service, authenticator)
         return app
 
     @app.post("/v1/tasks", tags=["tasks"])

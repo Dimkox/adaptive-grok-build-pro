@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-provider-observation:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence",
+    "category",
+    "dispatched",
+    "usage_status",
+    "usage_input_units",
+    "usage_output_units",
+    "http_status",
+    "observation_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "evidence": {
+      "oneOf": [
+        {
+          "$ref": "landing-provider-evidence.v1.schema.json"
+        },
+        {
+          "$ref": "landing-provider-evidence.v2.schema.json"
+        }
+      ]
+    },
+    "category": {
+      "enum": [
+        "accounting",
+        "authentication",
+        "configuration",
+        "deadline",
+        "draft",
+        "input",
+        "normalized",
+        "permission",
+        "policy",
+        "protocol",
+        "rate_limit",
+        "transport",
+        "unavailable",
+        "unknown"
+      ]
+    },
+    "dispatched": {
+      "type": "boolean"
+    },
+    "usage_status": {
+      "enum": [
+        "reported",
+        "unavailable",
+        "not_dispatched"
+      ]
+    },
+    "usage_input_units": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "usage_output_units": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "http_status": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "observation_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "usage_status": {
+            "const": "unavailable"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "dispatched": {
+            "const": true
+          },
+          "usage_input_units": {
+            "type": "null"
+          },
+          "usage_output_units": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "usage_status": {
+            "const": "not_dispatched"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "dispatched": {
+            "const": false
+          },
+          "usage_input_units": {
+            "const": 0
+          },
+          "usage_output_units": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "usage_status": {
+            "const": "reported"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "dispatched": {
+            "const": true
+          },
+          "usage_input_units": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "usage_output_units": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        }
+      }
+    }
+  ]
+}

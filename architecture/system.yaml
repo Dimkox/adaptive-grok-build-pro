@@ -328,6 +328,54 @@
       "path": "engineering/contracts/openapi/adaptive-demo.v1.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-PROVIDER-OBSERVATION-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-provider-observation.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-backend-capability.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-ATTEMPT-STATUS-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-attempt-status.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-FAILOVER-CONFIG-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-failover-config.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-FAILOVER-RESULT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-failover-result.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/landing-failover.v1.json",
+      "role": "bidirectional",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -1355,6 +1403,75 @@
       "sync_or_async": "synchronous",
       "to": "NODE-LOCAL-DEMO-UI",
       "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 330000
+      },
+      "from": "NODE-FACTORY-LANDING-FAILOVER",
+      "id": "EDGE-FACTORY-FAILOVER-API",
+      "network_policy": "local_only",
+      "protocol": "unix_http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LOCAL-API",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-LANDING-FAILOVER",
+      "id": "EDGE-FACTORY-FAILOVER-CONTRACTS",
+      "network_policy": "no_network",
+      "protocol": "in_process",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-DOGFOOD",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-LANDING-FAILOVER",
+      "id": "EDGE-FACTORY-FAILOVER-SQLITE",
+      "network_policy": "no_network",
+      "protocol": "in_process",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-SQLITE",
+      "type": "control"
     }
   ],
   "nodes": [
@@ -1368,7 +1485,8 @@
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
         "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
-        "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
+        "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
+        "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -1376,13 +1494,15 @@
         "factory/runtime",
         "factory/src/adaptive_factory/api.py",
         "factory/src/adaptive_factory/cli.py",
+        "factory/src/adaptive_factory/landing_backend_api.py",
         "factory/src/adaptive_factory/landing_host.py",
         "factory/src/adaptive_factory/landing_server.py",
         "factory/src/adaptive_factory/server.py",
         "factory/src/adaptive_factory/settings.py",
         "factory/tests/test_landing_host.py",
         "factory/tests/test_landing_server.py",
-        "factory/tests/test_server.py"
+        "factory/tests/test_server.py",
+        "factory/tests/test_landing_failover_backend.py"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -1941,7 +2061,12 @@
         "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
         "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
         "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
-        "CONTRACT-FACTORY-LANDING-SPEC-V1"
+        "CONTRACT-FACTORY-LANDING-SPEC-V1",
+        "CONTRACT-FACTORY-LANDING-PROVIDER-OBSERVATION-V1",
+        "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1",
+        "CONTRACT-FACTORY-LANDING-ATTEMPT-STATUS-V1",
+        "CONTRACT-FACTORY-LANDING-FAILOVER-CONFIG-V1",
+        "CONTRACT-FACTORY-LANDING-FAILOVER-RESULT-V1"
       ],
       "repository_paths": [
         "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
@@ -1957,11 +2082,13 @@
         "factory/src/adaptive_factory/landing_contracts.py",
         "factory/src/adaptive_factory/landing_coordinator.py",
         "factory/src/adaptive_factory/landing_evaluation.py",
+        "factory/src/adaptive_factory/landing_failover_contracts.py",
         "factory/src/adaptive_factory/landing_host_config.py",
         "factory/src/adaptive_factory/landing_http.py",
         "factory/src/adaptive_factory/landing_intake.py",
         "factory/src/adaptive_factory/landing_media.py",
         "factory/src/adaptive_factory/landing_normalizer.py",
+        "factory/src/adaptive_factory/landing_observation.py",
         "factory/src/adaptive_factory/landing_provider.py",
         "factory/src/adaptive_factory/landing_publication_cli.py",
         "factory/src/adaptive_factory/landing_renderer.py",
@@ -1969,7 +2096,12 @@
         "factory/src/adaptive_factory/landing_service.py",
         "factory/src/adaptive_factory/landing_sse.py",
         "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",
-        "factory/src/adaptive_factory/resources/landing_pdf_worker.py"
+        "factory/src/adaptive_factory/resources/landing_pdf_worker.py",
+        "factory/contracts/jsonschema/landing-provider-observation.v1.schema.json",
+        "factory/contracts/jsonschema/landing-backend-capability.v1.schema.json",
+        "factory/contracts/jsonschema/landing-attempt-status.v1.schema.json",
+        "factory/contracts/jsonschema/landing-failover-config.v1.schema.json",
+        "factory/contracts/jsonschema/landing-failover-result.v1.schema.json"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -1987,8 +2119,10 @@
       "owner": "local factory operators",
       "public_contracts": [],
       "repository_paths": [
+        "factory/src/adaptive_factory/landing_extra_providers.py",
         "factory/src/adaptive_factory/landing_live_executors.py",
-        "factory/tests/test_landing_live_executors.py"
+        "factory/tests/test_landing_live_executors.py",
+        "factory/tests/test_landing_failover_providers.py"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -2225,6 +2359,33 @@
       },
       "secrets": [],
       "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-LANDING-INPUT",
+      "id": "NODE-FACTORY-LANDING-FAILOVER",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/landing_failover.py",
+        "factory/src/adaptive_factory/landing_failover_config.py",
+        "factory/src/adaptive_factory/landing_failover_journal.py",
+        "factory/src/adaptive_factory/landing_failover_cli.py",
+        "factory/src/adaptive_factory/landing_failover_transport.py",
+        "factory/tests/test_landing_failover.py",
+        "factory/tests/test_landing_failover_cli.py",
+        "factory/tests/test_landing_failover_recovery.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
       "type": "local_component"
     }
   ],

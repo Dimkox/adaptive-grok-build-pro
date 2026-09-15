@@ -1,0 +1,230 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Qwen success selects the primary artifact and never dispatches any reserve provider.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A confirmed eligible failure or pre-dispatch unavailability advances to the next configured provider in the approved order, at most once per backend and five attempts total; success stops the chain and all failures terminate.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Replay and restart preserve the same logical request, exact child identities and recorded intents; ambiguous post-dispatch outcomes are observed without blindly repeating or switching.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover_recovery.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_cli.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Closed provider failure categories distinguish provider authentication, availability, timeout and unusable response from caller authorization, policy refusal and integrity failures.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover_providers.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_backend.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Attempt observations preserve each exact provider/profile, dispatch certainty, elapsed time, factual usage when present and explicit unknown usage otherwise; legacy records retain their original meaning.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover_providers.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_backend.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "The shared CLI and all five backend adapters use explicit validated private configuration, current source/model identity and existing Unix-host composition; unsafe input or policy/authorization/integrity failure never triggers another provider.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover_recovery.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_cli.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_backend.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "OpenAI, Anthropic and OpenRouter keys have supported source loaders and usable named model profiles; OpenRouter nested provider/model fallback is disabled and all provider-specific request/usage decoders have regression evidence.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_failover_providers.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "scope_and_design_approval"
+    ]
+  },
+  "change_id": "20260915-feature-implement-automatic-qwen-to-grok-llm-pro-24b49d",
+  "contracts": {
+    "openapi": [
+      "factory/contracts/openapi/landing-failover.v1.json"
+    ],
+    "json_schema": [
+      "factory/contracts/jsonschema/landing-attempt-status.v1.schema.json",
+      "factory/contracts/jsonschema/landing-backend-capability.v1.schema.json",
+      "factory/contracts/jsonschema/landing-failover-config.v1.schema.json",
+      "factory/contracts/jsonschema/landing-failover-result.v1.schema.json",
+      "factory/contracts/jsonschema/landing-provider-observation.v1.schema.json"
+    ],
+    "events": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Retrying an ambiguous provider attempt, bypassing caller authorization or policy refusal through fallback, or claiming missing usage is measured zero.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Provider credentials, raw dependency errors or raw input content appear in public result records or logs.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Configured provider order is Qwen, Grok, OpenAI, Anthropic Claude and OpenRouter; Qwen stays primary and each actual artifact/evidence identity retains its selected provider and model.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "External Trust CI, human approval boundaries, exact source identity and publication authority remain separate; routing does not publish a live site.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Provide an operationally usable common L5 submission CLI with ordered Qwen, Grok, OpenAI, Anthropic Claude and OpenRouter backends, falling through only on confirmed eligible provider failure or pre-dispatch unavailability.",
+    "success_metric": "One selected terminal result per logical request; primary success makes no later provider calls; at most one dispatch per configured backend and five total; all outcomes preserve identity and usage availability.",
+    "target": "Reviewed five-provider source adapters, common CLI and operator configuration, with exact-source operational qualification separately recorded."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Logical request state, selected backend, fallback reason, child attempt identity, elapsed time and usage completeness.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api",
+      "frontend",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "strategy": "feature_flag",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}

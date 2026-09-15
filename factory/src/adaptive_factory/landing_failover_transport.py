@@ -1,0 +1,94 @@
+"""Bounded authenticated Unix HTTP; ambiguity never becomes a new submission."""
+
+import errno
+import os
+import stat
+import time
+
+import httpx
+
+from .landing_contracts import strict_json_object
+from .landing_failover_config import check_socket_ancestry
+from .settings import SettingsError, read_token_file
+
+
+class BackendUnavailable(RuntimeError):
+    pass
+
+
+class BackendAmbiguous(RuntimeError):
+    pass
+
+
+class BackendRejected(RuntimeError):
+    pass
+
+
+class UnixLandingBackend:
+    def __init__(self, backend, *, config, timeout_seconds):
+        self.backend, self.config = backend, config
+        self.deadline = time.monotonic() + timeout_seconds
+        token = read_token_file(backend.token_file)
+        self.client = httpx.Client(
+            transport=httpx.HTTPTransport(uds=str(backend.socket_path), retries=0),
+            base_url="http://landing", trust_env=False, follow_redirects=False,
+            timeout=httpx.Timeout(timeout_seconds, connect=min(2, timeout_seconds)),
+        )
+        self.headers = {"Authorization": "Bearer " + token,
+                        "X-Repository-ID": config.repository_id, "X-Correlation-ID": "failover-client",
+                        "Accept": "application/json", "Accept-Encoding": "identity"}
+
+    def close(self):
+        self.client.close()
+
+    def capability(self):
+        check_socket_ancestry(self.backend.socket_path)
+        try:
+            metadata = self.backend.socket_path.lstat()
+        except FileNotFoundError:
+            raise BackendUnavailable("not_connected") from None
+        if not stat.S_ISSOCK(metadata.st_mode) or metadata.st_uid != os.geteuid():
+            raise BackendRejected("socket_identity")
+        try:
+            return self._exchange("GET", "/v2/landing-backend", expected=200)
+        except BackendAmbiguous as exc:
+            # A failed capability GET sends no input and has no provider effect.
+            cause = exc.__cause__
+            while cause is not None:
+                if isinstance(cause, OSError) and cause.errno in {errno.ENOENT, errno.ECONNREFUSED}:
+                    raise BackendUnavailable("not_connected") from None
+                cause = cause.__cause__
+            raise
+
+    def submit(self, child_id, payload, media_type):
+        check_socket_ancestry(self.backend.socket_path)
+        return self._exchange("POST", "/v1/landing-inputs", expected=202, payload=payload, extra={
+            "Idempotency-Key": child_id, "Content-Type": media_type,
+            "X-Exact-Base-SHA": self.config.exact_base_sha, "X-Exact-Base-Tree": self.config.exact_base_tree,
+            "X-Expected-Actor-ID": self.config.actor_id, "X-Expected-Profile-Digest": self.backend.profile_digest,
+        })
+
+    def observe(self, child_id):
+        return self._exchange("GET", "/v2/landing-jobs/" + child_id + "/attempt", expected=200)
+
+    def _exchange(self, method, path, *, expected, payload=None, extra=None):
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0:
+            raise BackendAmbiguous("deadline")
+        try:
+            with self.client.stream(method, path, content=payload, headers={**self.headers, **(extra or {})},
+                                    timeout=httpx.Timeout(remaining, connect=min(2, remaining))) as response:
+                if response.status_code != expected:
+                    if response.status_code in {401, 403, 409, 413, 415, 422}:
+                        raise BackendRejected("backend_rejected")
+                    raise BackendAmbiguous("backend_outcome_unknown")
+                if response.headers.get("content-type", "").split(";", 1)[0] != "application/json" or response.headers.get("content-encoding", "identity") != "identity":
+                    raise BackendAmbiguous("backend_protocol")
+                raw = bytearray()
+                for chunk in response.iter_raw():
+                    if time.monotonic() >= self.deadline or len(raw) + len(chunk) > 65_536:
+                        raise BackendAmbiguous("backend_bound")
+                    raw.extend(chunk)
+                return strict_json_object(bytes(raw), maximum=65_536)
+        except (httpx.HTTPError, OSError, ValueError) as exc:
+            raise BackendAmbiguous("backend_outcome_unknown") from exc

@@ -1,0 +1,96 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "7b147366a1f9b7e4b59f17e10283cc8ad67ba0c8",
+  "base_fingerprint": "4e70e1558ae0d44ba55679366c4f93ab92a8243e389822abd7bf8df6d3630b17",
+  "complexity": "high-risk",
+  "created_at": "2026-09-15T12:16:52+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "frontend",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=bugfix",
+    "domains=ai,frontend,security,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "24b49d0529c8",
+  "schema_version": 1,
+  "session_id": "qwen-grok-failover",
+  "status": "routed",
+  "task": "Feature: implement automatic Qwen-to-Grok LLM provider failover for landing generation, with bounded per-provider attempts, durable accounting, distinct failure categories, idempotent recovery, process unavailability handling and secret isolation. Qwen stays primary; Grok is secondary when Qwen fails. Include regression tests and an operator guide.",
+  "task_domains": [
+    "ai",
+    "frontend",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "frontend-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}
