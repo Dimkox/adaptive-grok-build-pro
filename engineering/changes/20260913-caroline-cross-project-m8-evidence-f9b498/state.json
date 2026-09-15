@@ -1,0 +1,53 @@
+{
+  "change_id": "20260913-caroline-cross-project-m8-evidence-f9b498",
+  "created_at": "2026-09-13T11:58:14+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T11:58:14+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T12:03:42+00:00",
+      "from": "draft",
+      "reason": "bounded documentation scope and acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T12:03:42+00:00",
+      "from": "scoped",
+      "reason": "no named human gate in route",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T12:03:55+00:00",
+      "from": "approved",
+      "reason": "sole selected writer dispatched for documentation case",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T12:08:15+00:00",
+      "from": "implementing",
+      "reason": "documentation implemented and focused checks passed",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-13T12:29:23+00:00",
+      "from": "verifying",
+      "reason": "route verifier passed with disposable PostgreSQL integration",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-13T12:34:20+00:00",
+      "from": "reviewing",
+      "reason": "full local verifier and independent review passed; final exact-commit verification pending",
+      "to": "ready"
+    }
+  ],
+  "route_id": "f9b49845f0f6",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Caroline cross-project M8 evidence",
+  "updated_at": "2026-09-13T12:34:20+00:00"
+}
