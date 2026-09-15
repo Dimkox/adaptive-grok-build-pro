@@ -28,16 +28,18 @@ reviewed intent
 
 ## 2. Canonical baseline
 
-Original planning baseline and dated integration observations. Each record below is time-bound:
+Current source and release observations, followed by historical integration anchors. Each record below is time-bound:
 
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
+observed source SHA: 61a05da2bd0c9fb09db5307f53ebc99e4e94040d (2026-09-15; PR #88)
+latest published release: v2.0.16, tag target 969c4f65f54ef9230f3f94587e228098d1c2ecb9 (2026-09-13T22:04:08Z)
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89 (PR #2 merge, 2026-08-23T22:05:31Z)
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
 v2.0.15 publication snapshot tag target: fd51dcfed6b33f4a8707c0db602328146df17cc9 (GitHub Release published 2026-09-05T20:17:20Z; not a perpetual current-ref assertion)
 L5 landing main SHA: eb9df64bca333f30ec58f8c725a021360e22ed92 (PR #75 union of slices #65-#71, merged 2026-09-13T17:35:51Z; its landed evidence follow-up merged as e737dd5c338793e274285d657354e74ecc812f89 at 2026-09-13T18:26:32Z)
-product version: 2.0.16 (assembled-L5 release candidate published as repository source; published release v2.0.16/v2.0.15/v2.0.14 retained as immutable history)
+product version: 2.0.16 (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
@@ -85,26 +87,28 @@ Implemented in-tree:
 
 ### 3.3 Current operational qualification
 
+As observed on **2026-09-15**, the L5 Qwen primary `adaptive-l5.service` at `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` and Grok secondary `adaptive-l5-grok.service` at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` are installed, active and enabled. Authenticated requests reached `artifact_ready`; Grok took **29.852 s** with one provider request and `live_url=null`. [Dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md) separates those installed SHAs from source defaults, which remain off. These results establish bounded L5 artifact generation; full external pilot acceptance by a maintainer, an M8 qualifying cohort/activation, and general M9 operational qualification remain unproven. No new `v2.0.16` release preparation remains.
+
 M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
 M1-M9 are delivered to `main` as repository product source through PR #22. Checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` and merged as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`; release `v2.0.13` publishes ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Factual M8 cohort/activation, signed M9 input, operational environment/provider deployment, recovery proof, and human production authority remain separate operational gates.
 
 Published `v2.0.14` adds the offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its API/provider/render/evaluate/package path is bounded; provider and publisher defaults remain unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and repository publication supplied no operational provider, network, hosting, indexing, deployment, M8 activation, or production authority.
 
-PR #12 was delivered to `main` as `4eb16d2ca20091dd017a82f58906671510497bc5` on 2026-09-12, so its unique lazy CLI imports/tests are no longer outstanding. PR #13 (repository-scoped Trust CI profiles, head `9bdffde938b35fefe18b12f77a369b69af80e726`) remains open with a current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion of `SUCCESS`; its profiles stay absent from `main` until it merges. PR #15 (head `165d5dd90a2fc2831a3b85be2562a2bb241c8b14`) and PR #33 (head `6d72d4c859dded241b55e90ae9514ad428a7eb1b`) carry a current-epoch App conclusion of `FAILURE` while GitGuardian is `SUCCESS`; their failure cause was not inspected or inferred. Wholesale merge of PR #15's obsolete M1-M3 aggregate remains superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique to it. PR #64 (M8 cross-project confirmation, head `33c5f2af78cb3e8457941ec44777be3d6c7a67aa`) is open with `SUCCESS`.
+Dated PR inventory (observed 2026-09-15; displayed checks are historical and require fresh base/head validation): PR #12 was delivered to `main` as `4eb16d2ca20091dd017a82f58906671510497bc5` on 2026-09-12, so its unique lazy CLI imports/tests are no longer outstanding. PR #13 (repository-scoped Trust CI profiles, head `9bdffde938b35fefe18b12f77a369b69af80e726`) remains open with a current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion of `SUCCESS`; its profiles stay absent from `main` until it merges. PR #15 (head `165d5dd90a2fc2831a3b85be2562a2bb241c8b14`) and PR #33 (head `6d72d4c859dded241b55e90ae9514ad428a7eb1b`) carry a current-epoch App conclusion of `FAILURE` while GitGuardian is `SUCCESS`; their failure cause was not inspected or inferred. Wholesale merge of PR #15's obsolete M1-M3 aggregate remains superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique to it. PR #64 (M8 cross-project confirmation, head `33c5f2af78cb3e8457941ec44777be3d6c7a67aa`) is open with `SUCCESS`.
 
-### 3.4 Dated delivery progress — 2026-09-13
+### 3.4 Dated delivery history — through 2026-09-15
 
-This is a dated progress record, refreshed only through a pull request (section 13). It does not weaken any gate below and does not claim an operational activation.
+These source/release records are historical. Later installation and artifact acceptance are recorded separately; none weakens the milestone gates below.
 
 - `2026-08-23T22:05:31Z` — PR #2 merged the self-hosted Trust CI control plane as `73e4ae7c68a95d3a7440378964b8cc1879df9b89`, the original planning baseline above. That service is deployed and serving on this host (see `trust-ci/`): API, worker, isolated runner and PostgreSQL, publishing the App-owned policy-epoch check that protected `main` requires. `GROK_BUILD_HANDOFF.md` is the historical P0 trail for it, not an open plan.
 - `2026-09-04T08:31:49Z` and `2026-09-04T16:58:48Z` — `v2.0.13` (M1-M9 repository product through PR #22) and `v2.0.14` (offline L5 landing dogfood vertical through PR #24) published; both artifacts remain immutable history.
 - `2026-09-05T20:17:20Z` — **`v2.0.15` is published** as a GitHub Release: tag target `fd51dcfed6b33f4a8707c0db602328146df17cc9` from PR #27 (checked head `9fcc9d943c74260c02a920a59490143f91cb38b2`, check run `101365945968`), carrying the default-off single-operator design-partner pilot under `pilot/` bound to exactly `Dimkox/ai-dark-factory-landing@699010380f4f90a0193a9c22090c35e6aded7d2c`, with `packages/adaptive-grok-build-pro-v2.0.15.zip` SHA-256 `1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7` plus sidecar. Publication is repository release only: no real model turn, target mutation, push-proposal, hosting or deployment occurred, and the live landing target has since advanced to `80d6215`, which needs a trusted policy refresh before any first attempt.
 - `2026-09-13T17:35:51Z` — **the assembled L5 production runtime landed on `main` at `eb9df64bca333f30ec58f8c725a021360e22ed92` as the attested union of seven delivery slices (PR #75)**. The union tree `1c8d72a50c0631c0222d111de1403ace4347aab2` is identical to the attested final-slice head `e6a813e4c16543f262ced2d9ea353caaad9452d1`; the union head `ac7ae2def67a267c227ab5703843337d4bb6f4be` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `103760385178`, attestation `e859743f-d0ed-48f0-a389-f5637e645c30`) and GitGuardian (`SUCCESS`). **Per-slice attestations exist on each exact slice head for #65-#71** (#65 `103739437925`, #66 `103741784270`, #67 `103744221871`, #68 `103746737270`, #69 `103749191245`, #70 `103751615594`, #71 `103754091998`); #65 landed separately as `ede668603156b48432c2209e0242b85e17837d0e` and #66-#71 were closed as landed-by-content instead of rebasing six slices through six fresh serial verifications.
 - `2026-09-13T18:26:32Z` — **the L5 evidence arrived on `main` as `e737dd5c338793e274285d657354e74ecc812f89` (PR #72)**: the source-bound delivery ledger `engineering/reviews/l5-delivery-stack.json`, `l5-split-delivery.md`, `l5-split-evidence.md`, the security case map and the two current-head delegated local run records. Those local runs are preflight evidence only; neither the synthetic provider probe nor the disposable private-clone Unix-socket host run is hosting, multimodal or production acceptance.
-- Open post-landing hardening: PR #77 (head `e46b642a2e41cde5f6f8b77308b2dfc821584721`) adds the derived contract inventory, the production prohibited-member guard and real PDF worker execution tests; its App-owned check was still in progress when this record was written, so it is neither accepted nor merged.
-- **Milestone program status is unchanged where it was already true**: M0 remains delivered and live; M1-M9 remain delivered to `main` as repository product source through PR #22 (section 7 and the M0-M9 contracts below stay authoritative). The L5 landing created no factual M8 exact-profile cohort and no activation, produced no signed M9 input, and granted no production authority. Activation remains a separate gated step: `install-claw.sh` was never executed, no systemd unit is installed, enabled or started, provider egress stays default-off, and no landing publication, hosting or deployment action has occurred.
-- **`v2.0.16` release sync is pending**: `v2.0.16` is the identity that must carry the landed L5 stack. `VERSION` on `main` is still `2.0.15`, and the identity bump across `VERSION`, `README.md`, `CHANGELOG.md`, `START_HERE.md`, `PROJECT_STATE.json`, this roadmap and the `tests/test_structure.py` identity assertions — plus the `v2.0.16` tag and GitHub Release — must still arrive through its own PR with a fresh exact-head App-owned check and a human merge.
+- `2026-09-13T19:11:28Z` — PR #77 delivered post-landing hardening as `1a8c89170349fcc2597be0a1665b0e0a31d124e0`: derived contract inventory, the production prohibited-member guard and real PDF-worker execution tests.
+- `2026-09-13T22:04:08Z` — **`v2.0.16` published**, following identity PR #78 and artifact PR #79, targeting `969c4f65f54ef9230f3f94587e228098d1c2ecb9`. ZIP and sidecar hashes are in `PROJECT_STATE.json`; those bytes and the tag remain immutable. The earlier pending release-sync plan is completed history.
+- `2026-09-14` and `2026-09-15` — separately authorized Qwen and Grok installation/connection produced authenticated L5 `artifact_ready` evidence on their respective installed SHAs (section 3.3). Source defaults stay off. No qualifying M8 cohort, activation or general M9 production/recovery acceptance is inferred.
 - Schedule posture is unchanged from the previous record: the expired `2026-09-08` and `2026-09-15` targets stay recorded in `PROJECT_STATE.json`, `decisions.md` and the M4 package as superseded and unachievable historical targets with no gate waiver. This progress record opens no new calendar commitment.
 
 ## 4. Consolidated gap analysis
@@ -125,21 +129,21 @@ This is a dated progress record, refreshed only through a pull request (section 
 | Controlled learning | M3 delivered to main in v2.0.13; registries intentionally empty | Activation still requires independent evidence and human governance |
 | Debt/slop ledger | M3 delivered to main in v2.0.13 | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
 | Durable factory task queue | M4 repository source delivered in `v2.0.13` | Require separate rollout authority before persistent operation |
-| Background implementation environment | M5 repository source delivered; live adapters disabled | Require separate rootless live-host evidence before operational acceptance |
+| Background implementation environment | M5 repository source delivered; source execution defaults disabled | Require separate rootless live-host evidence before operational acceptance |
 | Immutable implementation run manifest | M5 repository source delivered | Accept operational use only after isolation/capability/orphan and live-host evidence |
 | WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
 | Automated PR lifecycle | M7 shadow source delivered; no external PR capability | Add runtime and real outcomes before activation; human merge remains mandatory |
 | Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
 | Earned auto-merge | Corrected M8 evaluation delivered; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
-| Preview/staging/canary delivery | M9 sealed source delivered; no operational adapter | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
-| L5 multimodal landing dogfood | Assembled seven-slice L5 production runtime source delivered on `main` at `eb9df64bca333f30ec58f8c725a021360e22ed92` (PR #75 union of #65-#71, each slice attested on its exact head); 22-member deterministic deploy inventory; provider egress default-off and installation templates inert | Keep publication and activation separate: installation, service creation, provider credential, real data transfer, target write, signing, hosting and production each require exact delegated authority plus a fresh exact-head App check; post-landing hardening landed as PR #77 (`1a8c891`) |
-| Design-partner pilot (`pilot/`) | Published in `v2.0.15` (tag target `fd51dcfed6b33f4a8707c0db602328146df17cc9`, PR #27): default-off, single-operator, bound to one exact landing target | First real issue-to-PR attempt needs a trusted policy refresh for the advanced target `80d6215` plus an exact delegated grant; no live model turn, target mutation or proposal has occurred |
+| Preview/staging/canary delivery | M9 sealed source delivered; general operational qualification unproven | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
+| L5 multimodal landing dogfood | Source delivered; Qwen primary and Grok secondary observed active/enabled on their distinct installed SHAs; authenticated artifact generation passed; 22-member deploy inventory; source defaults off | Preserve [dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md). Further publication/hosting requires target evidence and exact authority; existing L5 acceptance does not qualify M8 or general M9 |
+| Design-partner pilot (`pilot/`) | Default-off single-operator source published in `v2.0.15`; full external outcome with maintainer acceptance is unproven | Refresh the target baseline/policy from the historical blocked attempt, obtain exact authority for external effects, and record the complete issue-to-proposal result plus maintainer acceptance |
 
 ## 5. Non-negotiable constraints
 
 Every milestone inherits these constraints.
 
-1. **No GitHub Actions.** Do not add `.github/workflows/**`, Dependabot workflows, or another CI SaaS as a substitute.
+1. **No GitHub Actions.** This repository chooses external deployed policy and holdout validation outside the PR-controlled tree, exact-SHA execution, and an App-owned required result as its trust boundary. Do not add `.github/workflows/**`, Dependabot workflows, or another CI SaaS as a substitute.
 2. **PR-only product delivery.** Direct push to `main` or another protected/shared branch is prohibited.
 3. **Trust domains remain separate.** Factory execution cannot publish the authoritative Trust CI verdict.
 4. **Exact-SHA evidence.** Approvals, verification, attestations, architecture checks, and semantic verdicts bind to exact base/head SHAs and policy digests.
@@ -1023,7 +1027,7 @@ Never initially eligible:
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
 
-Current status: M9 repository source is delivered in `v2.0.13` from code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. Real signed input, an operational environment/provider deployment, exercised recovery and production authority remain absent; production promotion remains human-owned.
+Current status: M9 repository source is delivered in `v2.0.13` from code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. General M9 qualification still needs real signed input, its applicable environment/provider deployment, exercised recovery and production authority; production promotion remains human-owned. The separate bounded L5 installation and artifact result do not satisfy these gates.
 
 ## Objective
 

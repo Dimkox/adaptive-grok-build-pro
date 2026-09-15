@@ -629,3 +629,13 @@ A separate synthetic diagnostic isolated the Grok connection failure to executor
 ## 2026-09-15 — Keep provider-specific usage identity local to Grok
 
 Select Grok adapter and decoder identity in both profile facts and emitted evidence so the isolated reasoning-accounting repair does not invalidate Qwen bindings. Reconcile separate reasoning from explicit counts, retain valid inclusive legacy accounting, and cap normalized generated output as post-consumption acceptance validation.
+
+
+## 2026-09-15 — Separate source, release, installed runtime and accepted outcomes
+
+A dated state table bound to source SHAs, immutable release hashes and authenticated service results removes contradictory bootstrap instructions without rewriting artifacts. Keeping live-enabled instances separate from default-off source preserves the real deployment evidence while leaving external pilot, M8/M9 and cost/intervention acceptance unproven.
+
+
+## 2026-09-15 — State the external CI choice as a trust-boundary decision
+
+The repository chooses policy and holdout validation outside the PR-controlled tree, exact-SHA execution and an App-owned required check. Documenting those architectural reasons keeps the no-Actions rule independent of repository licensing or CI pricing.

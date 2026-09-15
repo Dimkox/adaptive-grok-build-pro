@@ -932,3 +932,8 @@ A service-user probe could not traverse the developer home, so adding its source
 ## 2026-09-15 — Match synthetic credentials to the existing scanner convention
 
 A long offline fixture string under api_key matched the repository generic-secret pattern, causing the full verifier to fail after all tests passed. The root cause was treating a descriptive dummy credential as scanner-neutral; replacing it with the existing short test-grok convention passed the exact secret scanner and all74 focused tests without weakening policy.
+
+
+## 2026-09-15 — Stop carrying completed preparation into current state
+
+The current bootstrap reused old release-preparation and default-off source snapshots as installed-state claims, while tests pinned those obsolete statements. The root cause was treating historical workflow slots as a current product model; archive unique history, refresh dated observations, and test source/release/runtime consistency instead of stale prose.

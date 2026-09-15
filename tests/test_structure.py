@@ -278,7 +278,7 @@ class StructureTests(unittest.TestCase):
         self.assertIn("Identity: **2.0.16**", readme)
         self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.16 — 2026-09-13\n"))
         self.assertIn(
-            "product version: 2.0.16 (assembled-L5 release candidate published as repository source; published release v2.0.16/v2.0.15/v2.0.14 retained as immutable history)",
+            "product version: 2.0.16 (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))
