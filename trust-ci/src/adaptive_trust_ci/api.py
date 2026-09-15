@@ -8,7 +8,7 @@ from fastapi.responses import PlainTextResponse
 
 from .metrics import collect_metrics, render_prometheus
 from .models import ApprovalEnvelope, utc_now
-from .policy import Policy
+from .policy import Policy, PolicyCatalog, PolicyError
 from .settings import ApiSettings
 from .signing import ApprovalError, TrustStore, verify_approval
 from .store import PostgresStore, ReplayError, Store
@@ -19,10 +19,15 @@ def create_app(
     settings: ApiSettings,
     *,
     store: Store | None = None,
-    policy: Policy | None = None,
+    policy: Policy | PolicyCatalog | None = None,
     trust_store: TrustStore | None = None,
 ) -> FastAPI:
-    active_policy = policy or Policy.load(settings.common.policy_path)
+    if policy is None:
+        active_catalog = PolicyCatalog.load(settings.common.policy_path)
+    elif isinstance(policy, Policy):
+        active_catalog = PolicyCatalog.from_policy(policy)
+    else:
+        active_catalog = policy
     active_store = store or PostgresStore(settings.common.database_url)
     if trust_store is None:
         TrustStore.load(settings.trust_store_path)
@@ -45,7 +50,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.settings = settings
-    app.state.policy = active_policy
+    app.state.policy = active_catalog
     app.state.store = active_store
 
     @app.get('/health/live')
@@ -64,13 +69,21 @@ def create_app(
                 raise RuntimeError('trust store has no active approval keys')
         except Exception as exc:
             raise HTTPException(status_code=503, detail='durable state or trust store is unavailable') from exc
-        return {
+        health = {
             'status': 'ready',
-            'policy_digest': active_policy.digest,
-            'status_context': active_policy.status_context,
+            'status_context': active_catalog.status_context,
             'active_approval_keys': active_keys,
             'status_publisher': 'worker-github-app',
         }
+        if active_catalog.mode == 'legacy':
+            health['policy_digest'] = active_catalog.digest
+        else:
+            health.update({
+                'catalog_digest': active_catalog.digest,
+                'policy_mode': active_catalog.mode,
+                'profile_count': active_catalog.profile_count,
+            })
+        return health
 
     @app.post('/webhooks/github')
     async def github_webhook(
@@ -87,7 +100,9 @@ def create_app(
         if event is None:
             return {'accepted': False, 'reason': 'ignored-event'}
         job_request = event.request
-        if not active_policy.allows_repository(job_request.repository):
+        try:
+            selected = active_catalog.resolve_repository(job_request.repository)
+        except PolicyError:
             raise HTTPException(status_code=403, detail='repository is not allowed by server policy')
         if event.closed:
             count = active_store.cancel_pr(job_request.repository, job_request.pr_number, now=utc_now())
@@ -96,8 +111,8 @@ def create_app(
             raise HTTPException(status_code=503, detail='global kill switch is active')
         job, created = active_store.enqueue(
             job_request,
-            active_policy.digest,
-            active_policy.max_attempts,
+            selected.digest,
+            selected.max_attempts,
             now=utc_now(),
         )
         return {
@@ -118,12 +133,13 @@ def create_app(
         except (ValueError, TypeError) as exc:
             raise HTTPException(status_code=400, detail='malformed approval envelope') from exc
         payload = envelope.payload
-        if payload.scope not in active_policy.approval_scopes:
-            raise HTTPException(status_code=400, detail='approval scope is not configured by server policy')
         job = active_store.get_job_for_sha(payload.repository, payload.head_sha)
         if job is None:
             raise HTTPException(status_code=404, detail='no Trust CI job exists for this exact SHA')
         try:
+            bound_policy = active_catalog.resolve_bound(job.repository, job.policy_digest)
+            if payload.scope not in bound_policy.approval_scopes:
+                raise HTTPException(status_code=400, detail='approval scope is not configured by server policy')
             verified = verify_approval(
                 envelope,
                 current_trust_store(),
@@ -133,13 +149,15 @@ def create_app(
                 expected_head_sha=job.head_sha,
                 expected_policy_digest=job.policy_digest,
                 now=utc_now(),
-                max_ttl_seconds=active_policy.max_approval_ttl_seconds,
+                max_ttl_seconds=bound_policy.max_approval_ttl_seconds,
             )
             active_store.record_approval(verified, envelope, now=utc_now())
         except ApprovalError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except ReplayError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except PolicyError as exc:
+            raise HTTPException(status_code=409, detail='job policy binding is not active') from exc
         requeued = active_store.requeue_for_approval(job.repository, job.head_sha, now=utc_now())
         return {
             'accepted': True,
@@ -172,8 +190,8 @@ def create_app(
             active_store,
             now=utc_now(),
             stopped=settings.common.stopped,
-            policy_digest=active_policy.digest,
-            check_name=active_policy.check_name,
+            policy_digest=active_catalog.digest,
+            check_name=f'{active_catalog.status_context}@{active_catalog.digest[:12]}',
         )
         return PlainTextResponse(
             render_prometheus(snapshot),
