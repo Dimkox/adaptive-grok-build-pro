@@ -1,0 +1,112 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Latest published2.0.16 and immutable release evidence are consistent.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Qwen-primary/Grok-secondary dated runtime observations match retained evidence.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Current continuation and current summaries do not contradict observed publication or activation.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "K22 graph, historical proofs and unproven pilot/M8/M9 qualification boundaries remain intact.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  },
+  "change_id": "20260915-documentation-align-readme-roadmap-and-bootstrap-d7264b",
+  "contracts": {
+    "openapi": [],
+    "events": [],
+    "json_schema": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Describing synthetic L5 artifact success as external pilot acceptance, M8 qualification or general M9 production acceptance.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Immutable release artifacts, source defaults, runtime services and trust policy are unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make canonical repository current state agree with observed version, active L5 services and bounded acceptance evidence.",
+    "success_metric": "Canonical records and existing state/structure checks agree; no obsolete current release/activation instructions remain.",
+    "target": "main"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Dated release and per-service observations with exact source and artifact references.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "frontend",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}

@@ -1,0 +1,35 @@
+{
+  "change_id": "20260915-documentation-align-readme-roadmap-and-bootstrap-d7264b",
+  "created_at": "2026-09-15T09:48:59+00:00",
+  "history": [
+    {
+      "at": "2026-09-15T09:48:59+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-15T09:54:37+00:00",
+      "from": "draft",
+      "reason": "Canonical file inventory, four selected analyses, factual observations and bounded acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-15T09:54:37+00:00",
+      "from": "scoped",
+      "reason": "User urgently requested this documentation correction in repository; no named route human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-15T09:54:38+00:00",
+      "from": "approved",
+      "reason": "Selected frontend_implementer is sole owner of canonical document and related test edits",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "d7264b3e1ae8",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Documentation: align README, roadmap and bootstrap records with the observed version and running Qwen/Grok services; reconcile contradictory status statements and distinguish implemented code from observed task acceptance.",
+  "updated_at": "2026-09-15T09:54:38+00:00"
+}

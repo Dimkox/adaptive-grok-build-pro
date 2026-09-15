@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+  "base_fingerprint": "cdb065ff30880b2c916d659be915d762b6c31badc9e5f5c32808f9c81d778b30",
+  "complexity": "standard",
+  "created_at": "2026-09-15T09:48:42+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=frontend,api",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "d7264b3e1ae8",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Documentation: align README, roadmap and bootstrap records with the observed version and running Qwen/Grok services; reconcile contradictory status statements and distinguish implemented code from observed task acceptance.",
+  "task_domains": [
+    "frontend"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change",
+    "frontend-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

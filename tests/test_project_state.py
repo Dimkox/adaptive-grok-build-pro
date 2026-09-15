@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"  # current main tip (PR #79 artifact-child merge)
+OBSERVED_MAIN_SHA = "61a05da2bd0c9fb09db5307f53ebc99e4e94040d"  # 2026-09-15 observation, PR #88
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
 V2016_TREE = "2c24c33873c972822354218addf983b8166fa40a"
@@ -101,7 +101,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["product_version"], "2.0.16")
         self.assertEqual(state["latest_published_release"], "v2.0.16")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-13T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-15T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -426,16 +426,21 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
-        self.assertEqual(
-            self.state["active_delivery"]["status"],
-            "v2.0.16_published_repository_delivery_complete",
-        )
-        self.assertTrue(
-            self.state["active_delivery"]["next_action"].startswith(
-                "v2.0.16 is published as repository source and the immutable ZIP+sidecar"
-            )
-        )
-        source_gate = self.state["active_delivery"]["local_source_gate"]
+        current = self.state["current_unreleased_change"]
+        delivery = self.state["active_delivery"]
+        for key in ("route_id", "branch", "change_package", "next_action"):
+            self.assertEqual(delivery[key], current[key])
+        self.assertEqual(current["source_base"], self.state["observed_main_sha"])
+        self.assertEqual(current["status"], "no_new_release_candidate")
+        self.assertIsNone(current["identity"])
+        self.assertIsNone(current["route_id"])
+        self.assertEqual(delivery["status"], "source_delivered_operational_qualification_incomplete")
+        self.assertEqual(delivery["local_source_gate"]["artifact_head"], state_release := self.state["published_release"]["checked_head"])
+        self.assertEqual(delivery["repository_delivery"]["checked_head"], state_release)
+        self.assertEqual(delivery["repository_delivery"]["pull_request"], self.state["published_release"]["pull_request"])
+        self.assertEqual(delivery["package_handoff"]["tag_target"], self.state["published_release"]["merge_commit"])
+        historical = self.state["delivered_change_history"]["l5_offline_v2_0_14"]
+        source_gate = historical["local_source_gate"]
         self.assertEqual(source_gate["status"], "passed_for_artifact_head")
         self.assertEqual(source_gate["product_head"], "5f47508f3c0d52b71a3c866969cc28b6476a9d99")
         self.assertEqual(source_gate["policy_head"], "58c9caed5d2c8f9febba297430a0782438505d82")
@@ -443,11 +448,6 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(source_gate["artifact_head"], CURRENT_RELEASE_HEAD_SHA)
         self.assertEqual(source_gate["artifact_tree"], CURRENT_RELEASE_TREE)
         self.assertEqual(source_gate["artifact_verification"], "passed")
-        self.assertEqual(self.state["active_delivery"]["route_id"], "105344d0728b")
-        self.assertEqual(
-            self.state["active_delivery"]["branch"],
-            "feature/v2.0.16-release-sync",
-        )
         self.assertEqual(
             dimensions["implementation_source"],
             {
@@ -656,13 +656,50 @@ class ProjectStateTests(unittest.TestCase):
         for section in current_sections:
             self.assertIn(CURRENT_CHECK, section)
             self.assertIn(str(CURRENT_APP_ID), section)
-            self.assertIn(CURRENT_MAIN_SHA, section)
+            self.assertIn(self.state["observed_main_sha"], section)
             self.assertNotIn("adaptive-trust-ci/verified@6737355947c2", section)
 
         start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
         self.assertIn("PR #19", start_here)
         self.assertIn("delivered", start_here)
         self.assertNotRegex(start_here, r"open PRs[^.;\n]*#19")
+
+    def test_runtime_observations_are_source_bound_without_promoting_qualification(self) -> None:
+        state = self.state
+        evidence = json.loads((ROOT / state["runtime_observations"]["evidence"]).read_text())
+        runtime = state["runtime_observations"]
+        self.assertEqual(state["observed_main_sha"], evidence["source_base"])
+        for role, source in (("primary", evidence["qwen_historical_acceptance"]),
+                             ("secondary", evidence["grok"])):
+            service = runtime["services"][role]
+            with self.subTest(role=role):
+                expected_sha = source.get("merged_and_installed_sha", source.get("merged_commit"))
+                expected_result = source.get("socket_acceptance", source.get("smoke"))
+                self.assertEqual(service["installed_sha"], expected_sha)
+                self.assertEqual(service["acceptance"]["artifact_digest"], expected_result["artifact_digest"])
+                self.assertEqual(service["acceptance"]["state"], "artifact_ready")
+                self.assertIsNone(service["acceptance"]["live_url"])
+                self.assertIn("Id=" + service["unit"] + "\nActiveState=active\nUnitFileState=enabled",
+                              evidence["service_observation"])
+                self.assertTrue(service["live_enabled"])
+        from adaptive_factory.landing_http import HttpLandingProfile
+        for service in runtime["services"].values():
+            profile = HttpLandingProfile.for_provider(service["selected_profile"])
+            self.assertEqual(service["model"], profile.model_id)
+        primary = runtime["services"]["primary"]
+        self.assertEqual(Path(primary["control_repository"]).parent.name, primary["installed_sha"])
+        self.assertEqual(state["l5_production_preparation"]["selected_profile"], primary["selected_profile"])
+        from adaptive_factory.settings import FactorySettings
+        self.assertFalse(FactorySettings.landing_live_enabled)
+        template = json.loads((ROOT / runtime["source_defaults"]["template"]).read_text())
+        self.assertFalse(template["live_enabled"])
+        self.assertFalse(runtime["source_defaults"]["live_enabled"])
+        for key in ("external_maintainer_accepted_pilot", "m8_qualifying_cohort", "m8_activation",
+                    "m9_general_operational_qualification", "factory_site_publication",
+                    "complete_pilot_cost_and_human_intervention_accounting"):
+            self.assertFalse(state["operational_qualification"][key])
+        self.assertEqual(state["published_release"]["tag"], "v" + state["product_version"])
+        self.assertNotEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
         factory_src = str(ROOT / "factory" / "src")
@@ -715,12 +752,11 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
-        expected_open = [
-            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-        ]
-        self.assertEqual(inventory["open_pull_requests"], expected_open)
+        self.assertEqual({item["pull_request"] for item in inventory["open_pull_requests"]}, {13, 15, 33, 64})
+        self.assertNotIn(12, {item["pull_request"] for item in inventory["open_pull_requests"]})
+        self.assertEqual(inventory["delivered_since_historical_inventory"][0]["pull_request"], 12)
+        self.assertEqual(inventory["delivered_since_historical_inventory"][0]["status"], "delivered")
+        self.assertEqual(inventory["active"], [])
         delivered = self.state["delivered_non_milestone_work"]
         self.assertEqual(len(delivered), 2)
         seo = delivered[0]
@@ -763,7 +799,7 @@ class ProjectStateTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            [(item["route_id"], item["branch"]) for item in inventory["active"]],
+            [(item["route_id"], item["branch"]) for item in inventory["historical_integrations"]],
             [
                 ("b7f288f1e81e", "integration/m4-main-20260902"),
                 ("6c578a9933b3", "integration/m5-m4-final-20260904"),
@@ -774,25 +810,25 @@ class ProjectStateTests(unittest.TestCase):
                 ("9f67efd2575c", "feature/l5-multimodal-landing-factory"),
             ],
         )
-        self.assertEqual(inventory["active"][0]["source_head"], M4_PRODUCT_SHA)
-        self.assertEqual(inventory["active"][0]["base_head"], HISTORICAL_M4_BASE_SHA)
-        self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(inventory["historical_integrations"][0]["source_head"], M4_PRODUCT_SHA)
+        self.assertEqual(inventory["historical_integrations"][0]["base_head"], HISTORICAL_M4_BASE_SHA)
+        self.assertEqual(inventory["historical_integrations"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
-            inventory["active"][0]["latest_committed_repair_checkpoint"],
+            inventory["historical_integrations"][0]["latest_committed_repair_checkpoint"],
             M4_REPAIR_CHECKPOINT_SHA,
         )
-        self.assertEqual(inventory["active"][1]["head"], M5_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][4]["head"], M8_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][5]["head"], RELEASE_HEAD_SHA)
-        self.assertEqual(inventory["active"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][5]["pull_request"], 22)
-        self.assertEqual(inventory["active"][6]["status"], "published")
-        self.assertEqual(inventory["active"][6]["head"], CURRENT_RELEASE_HEAD_SHA)
-        self.assertEqual(inventory["active"][6]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(inventory["historical_integrations"][1]["head"], M5_PROVISIONAL_SHA)
+        self.assertEqual(inventory["historical_integrations"][2]["head"], M6_PROVISIONAL_SHA)
+        self.assertEqual(inventory["historical_integrations"][3]["head"], M7_PROVISIONAL_SHA)
+        self.assertEqual(inventory["historical_integrations"][4]["head"], M8_PROVISIONAL_SHA)
+        self.assertEqual(inventory["historical_integrations"][5]["head"], RELEASE_HEAD_SHA)
+        self.assertEqual(inventory["historical_integrations"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
+        self.assertEqual(inventory["historical_integrations"][5]["pull_request"], 22)
+        self.assertEqual(inventory["historical_integrations"][6]["status"], "published")
+        self.assertEqual(inventory["historical_integrations"][6]["head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(inventory["historical_integrations"][6]["merge_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(
-            inventory["active"][6]["current_candidate_identity"],
+            inventory["historical_integrations"][6]["current_candidate_identity"],
             "v2.0.14",
         )
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})

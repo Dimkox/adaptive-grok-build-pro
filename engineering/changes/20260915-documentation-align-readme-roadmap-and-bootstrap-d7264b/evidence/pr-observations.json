@@ -1,0 +1,146 @@
+{
+  "observed_date": "2026-09-15",
+  "records": [
+    {
+      "baseRefName": "main",
+      "baseRefOid": "be752872f3e5a9d6fe179872d9c8bdaec4338238",
+      "headRefName": "feat/trust-ci-repository-profiles",
+      "headRefOid": "9bdffde938b35fefe18b12f77a369b69af80e726",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 13,
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-09T17:17:44Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://dashboard.gitguardian.com",
+          "name": "GitGuardian Security Checks",
+          "startedAt": "2026-09-09T17:17:31Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-09T17:53:39Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "http://127.0.0.1:18080/jobs/38e838b9-93e8-4a4a-ab08-c68be866d8b8",
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "startedAt": "2026-09-09T17:35:52Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        }
+      ],
+      "title": "feat: add repository-scoped immutable Trust CI profiles",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/13"
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "1c06299894279a88b881defa3f19b004fa742223",
+      "headRefName": "mvp/investor-ready",
+      "headRefOid": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 15,
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-08-31T11:42:53Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "http://127.0.0.1:18080/jobs/58eb1447-6cde-47fb-b972-8040b3fb1fb5",
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "startedAt": "2026-08-31T11:38:40Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-08-31T11:38:42Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://dashboard.gitguardian.com",
+          "name": "GitGuardian Security Checks",
+          "startedAt": "2026-08-31T11:38:41Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        }
+      ],
+      "title": "feat: ship investor-ready Adaptive Grok Build Pro MVP",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/15"
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "4eb16d2ca20091dd017a82f58906671510497bc5",
+      "headRefName": "perf/parallel-python-tests",
+      "headRefOid": "6d72d4c859dded241b55e90ae9514ad428a7eb1b",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 33,
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-12T04:58:02Z",
+          "conclusion": "FAILURE",
+          "detailsUrl": "http://127.0.0.1:18080/jobs/9d848224-b103-44da-b5c5-6a6bad4c342b",
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "startedAt": "2026-09-12T04:50:22Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-12T04:43:04Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://dashboard.gitguardian.com",
+          "name": "GitGuardian Security Checks",
+          "startedAt": "2026-09-12T04:43:01Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        }
+      ],
+      "title": "perf: parallelize local Python verification",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/33"
+    },
+    {
+      "baseRefName": "main",
+      "baseRefOid": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+      "headRefName": "codex/m8-caroline-confirmation",
+      "headRefOid": "33c5f2af78cb3e8457941ec44777be3d6c7a67aa",
+      "isDraft": false,
+      "mergeCommit": null,
+      "mergedAt": null,
+      "number": 64,
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-13T12:45:21Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://dashboard.gitguardian.com",
+          "name": "GitGuardian Security Checks",
+          "startedAt": "2026-09-13T12:45:21Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-09-13T13:03:33Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "http://127.0.0.1:18080/jobs/6caf8678-82d5-4809-98d1-4f373cbd12d8",
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "startedAt": "2026-09-13T12:45:17Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        }
+      ],
+      "title": "docs(m8): record Caroline cross-project confirmation",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/64"
+    }
+  ],
+  "limit": "Observed check conclusions do not establish fresh merge eligibility after base or policy changes."
+}
