@@ -1158,3 +1158,8 @@ from `git show --name-only` on the precedent commit.
 **Durable rule:** when mirroring a precedent wave, derive the touched-file list from the precedent commit itself
 and hand-verify every current-state surface that no test covers; untested prose contradicting the record is a real
 defect even through a green gate.
+## 2026-09-16 — Overrode a reviewer's clean-checkout count with my dirty-worktree measurement, and the runner proved them right
+
+**Symptom:** PR #115's exact-head App check failed `root-unittest` (346 != 352) although the full local gate had passed on the same commit; the frozen parity digest I had added to silence a review finding was the only failing test.
+**Root cause:** when my measurement (worktree, 352 payload entries) contradicted the reviewer's (clean clone, 346), I trusted mine and called theirs a counting slip - but a test that pins numbers derived from the checked-out tree is environment-dependent by construction, and the runner checkout, not my scratch worktree, is the authoritative execution site.
+**Durable rule:** when a reviewer's and my measurement disagree about a clean-room quantity, re-measure in a fresh clone before overriding them; better, never freeze checkout-derived constants into tests - assert the property against an in-tree recomputation instead.
