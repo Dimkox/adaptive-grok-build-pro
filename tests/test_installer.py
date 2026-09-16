@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import json
 import importlib.util
 import io
 import os
@@ -63,6 +64,92 @@ def _stage_names(parent: Path) -> list[str]:
 
 
 class InstallerTests(unittest.TestCase):
+    def _consumer_with_record(self, root: Path, kept: list[str] | object) -> Path:
+        record = root / ".grok-stack"
+        record.mkdir(parents=True)
+        payload = {"schema_version": 1, "kept_local": kept} if isinstance(kept, list) else kept
+        (record / "AGBP_SYNC.json").write_text(json.dumps(payload), encoding="utf-8")
+        return root
+
+    def test_keep_list_absent_file_is_reported_and_never_created(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = self._consumer_with_record(Path(tmp) / "t", [".coveragerc"])
+            plan = MODULE.plan_install(ROOT, target)
+            self.assertEqual(
+                plan["kept"],
+                [{"action": "KEEP", "path": ".coveragerc", "reason": "declared by target",
+                  "state": "absent"}],
+            )
+            self.assertNotIn(".coveragerc", {entry["path"] for entry in plan["entries"]})
+
+    def test_keep_list_identical_file_is_kept_not_rewritten(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            self._consumer_with_record(root, [".coveragerc"])
+            (root / ".coveragerc").write_bytes((ROOT / ".coveragerc").read_bytes())
+            plan = MODULE.plan_install(ROOT, root)
+            self.assertEqual(plan["kept"][0]["state"], "identical")
+            self.assertNotIn(".coveragerc", {entry["path"] for entry in plan["entries"]})
+
+    def test_keep_list_drift_fails_the_plan_naming_the_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            self._consumer_with_record(root, ["bandit.yaml"])
+            (root / "bandit.yaml").write_text("# consumer-specific skips\n", encoding="utf-8")
+            before = _snapshot(root)
+            with self.assertRaises(MODULE.UnsafeInstallTarget) as raised:
+                MODULE.plan_install(ROOT, root)
+            self.assertIn("bandit.yaml", str(raised.exception))
+            self.assertEqual(_snapshot(root), before)
+
+    def test_keep_list_covers_a_managed_dir_file_and_multiple_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            self._consumer_with_record(root, [".coveragerc", "bandit.yaml",
+                                              ".grok-stack/config/routing.json"])
+            for path in (".coveragerc", "bandit.yaml"):
+                (root / path).write_bytes((ROOT / path).read_bytes())
+            actions = {item["path"]: item["state"] for item in MODULE.plan_install(ROOT, root)["kept"]}
+            self.assertEqual(actions[".coveragerc"], "identical")
+            self.assertEqual(actions["bandit.yaml"], "identical")
+            self.assertEqual(actions[".grok-stack/config/routing.json"], "absent")
+
+    def test_keep_record_validation_fails_closed(self) -> None:
+        cases = (
+            ("unknown key", {"schema_version": 1, "kept_local": [], "extra": 1}),
+            ("bad schema", {"schema_version": 2, "kept_local": []}),
+            ("kept_local not list", {"kept_local": ".coveragerc"}),
+            ("non-string entry", {"kept_local": [1]}),
+            ("absolute path", {"kept_local": ["/etc/passwd"]}),
+            ("traversal", {"kept_local": ["../x"]}),
+            ("non-canonical", {"kept_local": ["./.coveragerc"]}),
+            ("duplicates", {"kept_local": ["bandit.yaml", "bandit.yaml"]}),
+        )
+        for label, payload in cases:
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as tmp:
+                root = self._consumer_with_record(Path(tmp) / "t", payload)
+                with self.assertRaises(MODULE.UnsafeInstallTarget):
+                    MODULE.plan_install(ROOT, root)
+
+    def test_symlinked_keep_record_or_path_is_not_silently_ignored(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            stack_dir = root / ".grok-stack"
+            stack_dir.mkdir(parents=True)
+            outside = Path(tmp) / "outside.json"
+            outside.write_text('{"schema_version": 1, "kept_local": [".coveragerc"]}', encoding="utf-8")
+            (stack_dir / "AGBP_SYNC.json").symlink_to(outside)
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.plan_install(ROOT, root)
+
+    def test_target_without_record_behaves_exactly_as_before(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = MODULE.plan_install(ROOT, Path(tmp) / "t")
+            self.assertEqual(plan["kept"], [])
+            names = {entry["path"] for entry in plan["entries"]}
+            self.assertIn(".coveragerc", names)
+            self.assertIn("bandit.yaml", names)
+
     def test_existing_target_modes_are_read_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "target"

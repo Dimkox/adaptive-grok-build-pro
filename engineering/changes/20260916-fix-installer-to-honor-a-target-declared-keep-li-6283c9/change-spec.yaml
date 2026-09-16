@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-fix-installer-to-honor-a-target-declared-keep-li-6283c9",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Close issue #110: the installer cannot express consumer-kept files, so refreshing the stack silently overwrites target policy (.coveragerc, bandit.yaml, .grok-stack/config/routing.json). Add a target-declared keep list: read optional .grok-stack/AGBP_SYNC.json ({schema_version:1, kept_local:[paths]}), report each declared managed path in the plan as KEEP <path> (declared by target) with state absent|identical|target-owned|unmanaged, exclude kept paths from the delivered payload, and fail the plan naming any kept path whose target bytes differ from the stack content. Validate the record closed (unknown keys/versions, non-string, absolute, traversal, non-canonical, duplicate entries fail), read it and every kept path no-follow with size caps, absent directories mean absent files. Targets without a record plan exactly as before.",
+    "success_metric": "tests.test_installer 24 OK (17 pre-existing + 7 keep arms incl. conflict, drift immutability, symlinked record, no-record regression); existing installer suite passes unchanged",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "verification",
+      "documentation"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A declared kept path is reported as KEEP (declared by target) and never delivered: absent target files stay absent, identical files are not rewritten, plan entries omit the path.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Drift between a kept file and the stack content fails the plan, naming the path, with no mutation of the target.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Record and kept-file reads fail closed: closed schema, canonical safe relative strings, no duplicates, no-follow traversal, bounded size; symlinked record or kept path raises instead of being ignored.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Without a record the plan is equivalent to previous behavior (kept empty, all managed paths delivered), and the README states the two-questions rule (stack ownership vs target overrides).",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "materialize-new semantics unchanged (absent target required); TARGET_OWNED sets and source guards unchanged; no dependency, service or installed-state mutation.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Silently resolving a kept-path conflict either way, or treating an unreadable/symlinked record of a present target as nothing declared.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "plan kept array (action/path/state/reason per declared path); conflict messages name the path",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

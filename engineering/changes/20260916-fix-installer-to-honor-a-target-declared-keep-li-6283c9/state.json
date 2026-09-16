@@ -1,0 +1,35 @@
+{
+  "change_id": "20260916-fix-installer-to-honor-a-target-declared-keep-li-6283c9",
+  "created_at": "2026-09-16T20:17:09+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T20:17:09+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T20:24:51+00:00",
+      "from": "draft",
+      "reason": "typed spec AC/INV/FORBID bound to installer keep-list contract; yellow per bugfix standard profile",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T20:24:51+00:00",
+      "from": "scoped",
+      "reason": "design fixed from the issue plus gist record (closed schema, KEEP states, conflict-by-name, no-record parity); reader fails closed on every unverifiable shape",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T20:24:51+00:00",
+      "from": "approved",
+      "reason": "reader/parser/plan implemented in scripts/install_into.py, 7 keep arms green with the 17 inherited ones, README-adjacent QUICKSTART rule recorded",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "6283c93ff5ba",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix installer to honor a target-declared keep list so refresh cannot silently overwrite consumer-owned files closes issue 110",
+  "updated_at": "2026-09-16T20:24:51+00:00"
+}
