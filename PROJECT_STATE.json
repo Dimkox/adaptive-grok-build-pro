@@ -174,20 +174,20 @@
     }
   ],
   "current_unreleased_change": {
-    "artifact_child": "Not built. The v2.0.18 ZIP+sidecar pair arrives only with the separate artifact-child commit; this record asserts their absence.",
-    "branch": "feature/v2.0.18-release-sync",
     "change_id": "20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
+    "route_id": "968b3ce9e148",
+    "branch": "feature/v2.0.18-release-sync",
     "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
-    "explanation": "Four pull requests merged after the v2.0.17 publication, so the tree can no longer claim that no release preparation remains. The candidate identity is separated from the published identity by tests, not by prose.",
-    "external_effect": false,
-    "frozen": {
-      "published_release": "v2.0.17",
-      "package_bytes": true,
-      "postgresql_migrations": "001-018"
-    },
     "identity": "v2.0.18 release sync (identity bump + landing rows for the four pull requests merged after the v2.0.17 publication)",
-    "next_action": "Merge the release-sync pull request on its exact-head App check, then build the v2.0.18 ZIP+sidecar from the merged tree as the artifact-child pull request. Tag push and GitHub Release publication each need an explicit delegated grant that no local record can substitute. After publication, establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification.",
-    "operational_activation": false,
+    "status": "release_sync_authored",
+    "stage": "identity_bump_in_pull_request",
+    "source_base": "d146ca455d615683765b443b747f55aa4dbad436",
+    "target_version": "2.0.18",
+    "scope": [
+      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md H1/Identity, CHANGELOG.md top entry, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.18 candidate",
+      "this record: product identity, opened local_candidate slot with the artifact pair asserted absent, observed main SHA, post-publication landing archive",
+      "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
+    ],
     "predecessors": [
       {
         "kind": "oversized_binary_streaming",
@@ -222,18 +222,18 @@
         "check_run_id": 104754117579
       }
     ],
+    "explanation": "Four pull requests merged after the v2.0.17 publication, so the tree can no longer claim that no release preparation remains. The candidate identity is separated from the published identity by tests, not by prose.",
+    "external_effect": false,
+    "frozen": {
+      "published_release": "v2.0.17",
+      "package_bytes": true,
+      "postgresql_migrations": "001-018"
+    },
+    "operational_activation": false,
     "record_scope": "Release preparation for 2.0.18 only. Documentation workflow belongs to its change package; runtime state is in runtime_observations.",
-    "route_id": "968b3ce9e148",
-    "scope": [
-      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md H1/Identity, CHANGELOG.md top entry, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.18 candidate",
-      "this record: product identity, opened local_candidate slot with the artifact pair asserted absent, observed main SHA, post-publication landing archive",
-      "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
-    ],
-    "source_base": "d146ca455d615683765b443b747f55aa4dbad436",
-    "stage": "identity_bump_in_pull_request",
-    "status": "release_sync_authored",
+    "next_action": "Merge the release-sync pull request on its exact-head App check, then build the v2.0.18 ZIP+sidecar from the merged tree as the artifact-child pull request. Tag push and GitHub Release publication each need an explicit delegated grant that no local record can substitute. After publication, establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification.",
     "tag_and_release": "Not created. v2.0.17 remains the newest tag and GitHub Release; v2.0.18 publication requires its own exact delegated actions after the artifact child merges.",
-    "target_version": "2.0.18"
+    "artifact_child": "Not built. The v2.0.18 ZIP+sidecar pair arrives only with the separate artifact-child commit; this record asserts their absence."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -534,7 +534,7 @@
     },
     "v2_0_17_release_preparation": {
       "status": "completed_by_pr98_pr99_and_publication",
-      "historical_snapshot": "The v2.0.17 chain ran PR #98 (release sync, merge 78082a290f8b90cade88685351fbb2ba263689b9) to PR #99 (artifact child, merge c86b1a1989ace899a4450bde558fcd8adc00e4e2, checked head bbc5cdd9b8ee4dbc6927bf24244a5434f490576d) with the publication successor PR #100 (cfc4a576c3a31015fa79176427f5e73819ea2fbc); tag v2.0.17 (object 5c6687ed97e1c365597bf27047016eb07411f28b) was published 2026-09-16T01:17:14Z.",
+      "historical_snapshot": "The v2.0.17 chain ran PR #98 (release sync, merge 78082a290f8b90cade88685351fbb2ba263689b9) to PR #99 (artifact child, merge c86b1a1989ace899a4450bde558fcd8adc00e4e2, checked head bbc5cdd9b8ee4dbc6927bf24244a5434f490576d) with the publication successor PR #100 (cfc4a5741210cc7b28431c56c92b9d549540c65d); tag v2.0.17 (object 5c6687ed97e1c365597bf27047016eb07411f28b) was published 2026-09-16T01:17:14Z.",
       "predecessors": [
         {
           "kind": "workflow_artifact_adapters",
@@ -799,7 +799,7 @@
   "active_delivery": {
     "route_id": "968b3ce9e148",
     "branch": "feature/v2.0.18-release-sync",
-    "pull_request": 106,
+    "pull_request": 99,
     "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
     "status": "source_delivered_operational_qualification_incomplete",
     "highest_implemented_milestone": "M9",

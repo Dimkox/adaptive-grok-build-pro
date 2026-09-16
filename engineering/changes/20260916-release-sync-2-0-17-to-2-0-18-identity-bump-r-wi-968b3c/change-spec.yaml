@@ -88,7 +88,7 @@
     },
     {
       "id": "FORBID-002",
-      "statement": "Any credential value, private key, host identity or machine-local runtime state entering the diff; the runtime dossier carries only allowlisted observation fields.",
+      "statement": "Any credential value, private key or environment content entering the diff. The runtime dossier is limited to an explicit allowlist carried from the post-91..post-99 convention: unit names, MainPID, ActiveState/UnitFileState, the ExecStart release path, installed release SHAs, acceptance job ids and digests, elapsed timings, PR numbers and App check-run identifiers, and observation timestamps. Nothing else about the host may appear.",
       "evidence": [
         {
           "receipt": "security_review"
