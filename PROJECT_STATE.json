@@ -1655,7 +1655,7 @@
   "runtime_observations": {
     "observed_at": "2026-09-16T23:39:18Z",
     "host": "claw",
-    "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-omni-activation.json",
+    "evidence": "engineering/changes/20260916-record-the-qwen-omni-intl-executor-activation-as-9d1695/evidence/runtime-observation-omni-activation.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
       "live_enabled": false,

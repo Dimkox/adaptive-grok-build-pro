@@ -1,0 +1,112 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-record-the-qwen-omni-intl-executor-activation-as-9d1695",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Record the live qwen-omni-intl executor activation on claw without promoting any qualification: a third runtime_observations service (adaptive-l5-omni.service) backed by a new observation dossier proves the unit is active/enabled on the tagged v2.0.18 release e7d0f72b with host-level live_enabled=true and one real DashScope-intl HTTP 200 (state=normalized, usage 769/191, profile_digest 4cc85b8a...), while all six operational_qualification flags, local_candidate.operational_activation, observed_main_sha and published_release stay deliberately unchanged. The record also discloses the root-owned .git/index incident and its repair: chown -R on the SHARED landing source, which closes the hazard for all three current units.",
+    "success_metric": "tests.test_project_state green with three services; evidence source_base still equals observed_main_sha; no credential value in the diff; full grok_verify --mode pr PASS",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "documentation",
+      "verification"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "runtime_observations gains services.omni (unit, installed_sha=e7d0f72b..., active/enabled, selected_profile=qwen-omni-intl with model matching HTTP_PROFILES, live_enabled=true, activation facts with http 200 and token usage and live_url null), and the evidence pointer moves to the new dossier whose source_base equals observed_main_sha; test_runtime_observations stays green.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Nothing is promoted by this record: the six operational_qualification flags and local_candidate.operational_activation remain false, published_release and prior lists byte-unchanged, source_defaults/template/FactorySettings live-disabled untouched.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The dossier is honest about the activation path, including the failed first start (root-owned .git/index exposed by validate_source) and the restoration of the documented service-user-owns-source invariant, and it notes that the shared-source chown leaves no residue for the older units, while any future root git touch on the source could recreate it; it carries only allowlisted observation fields (unit names, PIDs, states, digests, public endpoint, usage counters).",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Only PROJECT_STATE.runtime_observations (services.observed_at.evidence) and the new dossier change; no product code, contract, rules, release identity or qualification flag is touched.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "The two pre-existing executor units on claw were not restarted, re-pointed or modified by the activation being recorded; their observation entries stay byte-identical except what a re-observation proves equal.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Reading any credential value into the repo: the record carries digests, counters and public endpoints only.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Presenting the activation as pilot acceptance, M8 cohort/activation, M9 qualification or release operational_activation.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "adaptive-l5-omni.service active/enabled with NRestarts 0; socket /health/live 200; one normalized intl request with token usage",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

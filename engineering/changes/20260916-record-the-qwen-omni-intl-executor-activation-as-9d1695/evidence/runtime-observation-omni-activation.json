@@ -29,7 +29,7 @@
     "Grok secondary installed release and artifact digests are historical acceptance facts re-confirmed live; no new provider call was made.",
     "The qwen-omni-intl profile added by PR #105 is source-only in this observation; no installed unit loads it and no new provider call was made.",
     "The omni activation is observed through its health endpoints and one real provider request; it is not a maintainer-accepted pilot, M8 cohort, or M9 qualification, so operational_activation and the operational_qualification flags are unchanged.",
-    "The first omni start failed on a root-owned .git/index in the retained landing source (a pre-#93 latent ownership drift the freshly-restarted validate_source exposed); it was corrected by restoring the documented 'service user owns its real source .git' invariant with chown -R adaptive-l5:adaptive-l5, after which the unit started clean (NRestarts 0). The two older units would hit the same on their next restart and are flagged for the same one-time correction."
+    "The chown repaired the SHARED landing source (all three units point at the same fde60e04... repository), so the stale-root-index hazard is closed for every current unit; it can only return if a root git operation touches the source again - which is how it appeared in this session's precheck."
   ],
   "observation_provenance": {
     "carried_forward": [
