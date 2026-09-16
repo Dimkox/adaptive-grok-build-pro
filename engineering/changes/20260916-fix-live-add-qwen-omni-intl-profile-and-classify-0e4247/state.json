@@ -7,11 +7,47 @@
       "from": null,
       "reason": "created",
       "to": "draft"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "draft",
+      "reason": "plan, bounded design and acceptance criteria authored in package",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "scoped",
+      "reason": "independent code/test review PASS with dispositions applied; full local gate PASS on 30fea4e",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "approved",
+      "reason": "two commits landed on fix/qwen-omni-intl-and-probe-class (f0ef968, dc6e9b9) plus lessons commit 30fea4e",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "implementing",
+      "reason": "grok_verify --mode pr RESULT PASS 16/16 on 30fea4e; receipts recorded",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "verifying",
+      "reason": "reviews were on f0ef968 and the corrected head carries their dispositions in evidence/review-response.md",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-16T09:54:17+00:00",
+      "from": "reviewing",
+      "reason": "PR 105 merged as ad4d636 after adaptive-trust-ci/verified@06ecf1c875bc SUCCESS on the exact head",
+      "to": "ready"
     }
   ],
   "route_id": "0e42477308c4",
   "schema_version": 1,
-  "status": "draft",
+  "status": "ready",
   "title": "fix(live): add qwen-omni-intl profile and classify operator probe failures",
-  "updated_at": "2026-09-16T08:02:03+00:00"
+  "updated_at": "2026-09-16T09:54:17+00:00"
 }
