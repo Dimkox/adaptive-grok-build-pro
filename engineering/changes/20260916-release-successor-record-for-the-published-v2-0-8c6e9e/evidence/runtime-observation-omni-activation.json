@@ -1,0 +1,123 @@
+{
+  "grok": {
+    "attestation_id": "8a7eb170-fd21-481e-a756-9e0a878b14c0",
+    "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "check_run_id": 104295309671,
+    "checked_pr_head_sha": "4e94f7a9e0b6a54adac5e09700ba3137a1c2e6b0",
+    "grok_config_sha256": "450657a9f7598af81093da38201c4b27117633cbd2c2359836ff58e4b632a5ad",
+    "grok_service": "adaptive-l5-grok.service",
+    "grok_socket": "/run/adaptive-l5-grok/control.sock",
+    "merged_commit": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+    "model": "grok-4.6",
+    "pr": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/88",
+    "selected_profile": "grok-vision",
+    "smoke": {
+      "artifact_digest": "90865bde1fa3171c2a5f84bb92a18fdfde514451c659ddf26282ed8e1fed66b2",
+      "elapsed_ms": 29852,
+      "http_status": 202,
+      "job_id": "grok-connect-20260915-61a05da2bd0c",
+      "live_url": null,
+      "provider_requests": 1,
+      "state": "artifact_ready"
+    }
+  },
+  "limits": [
+    "No additional live provider calls during documentation repair.",
+    "No external maintainer-accepted pilot established.",
+    "No M8 qualifying cohort or general M9 operational qualification established.",
+    "Artifact live_url is null; no factory publication inferred.",
+    "Grok secondary installed release and artifact digests are historical acceptance facts re-confirmed live; no new provider call was made.",
+    "The qwen-omni-intl profile added by PR #105 is source-only in this observation; no installed unit loads it and no new provider call was made.",
+    "The omni activation is observed through its health endpoints and one real provider request; it is not a maintainer-accepted pilot, M8 cohort, or M9 qualification, so operational_activation and the operational_qualification flags are unchanged.",
+    "The first omni start failed on a root-owned .git/index in the retained landing source (a pre-#93 latent ownership drift the freshly-restarted validate_source exposed); it was corrected by restoring the documented 'service user owns its real source .git' invariant with chown -R adaptive-l5:adaptive-l5, after which the unit started clean (NRestarts 0). The two older units would hit the same on their next restart and are flagged for the same one-time correction."
+  ],
+  "observation_provenance": {
+    "carried_forward": [
+      "published_release",
+      "qwen_historical_acceptance",
+      "grok"
+    ],
+    "carried_reason": "Those records are dated historical acceptance facts about installed artifacts; no reinstall, restart or provider activation happened between the previous dossier and this observation, so their digests must not be restated as new evidence. The published_release block advances because v2.0.17 was published before this observation.",
+    "method": "systemctl show for all three executor units plus a read-only /health probe of the omni socket; provider activation proven by one real qwen-omni-intl request returning state=normalized with token usage; no credential or configuration value read into this record.",
+    "previous_dossier": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
+    "unchanged_since_previous": {
+      "note": "Primary and grok units are unchanged (identical MainPIDs 698333/3597736, active/enabled). This observation adds a THIRD executor, adaptive-l5-omni.service, activated for the first time on the tagged v2.0.18 release; adding it is not a qualification promotion and operational_activation of the release record stays false.",
+      "primary_main_pid": 698333,
+      "secondary_main_pid": 3597736
+    }
+  },
+  "observed_at": "2026-09-16T23:39:18Z",
+  "omni": {
+    "activation": {
+      "endpoint_health": {
+        "live": "200 {\"status\":\"live\"}",
+        "ready": "200 {\"status\":\"ready\"}"
+      },
+      "http_status": 200,
+      "job_id": "omni-activate-20260916-e7d0f72b",
+      "live_url": null,
+      "profile_digest": "4cc85b8a61d1a0b51e69b9a28d8766bbdf6158db4e145d8a8ab81992a9157f67",
+      "provider_requests": 1,
+      "state": "normalized",
+      "usage_input_units": 769,
+      "usage_output_units": 191
+    },
+    "activation_note": "Live 200 with real token accounting on the international endpoint proves the five-media capability the mainland-pinned profile could not satisfy (issue #86). A shadow executor on its own socket; the primary and grok units were not touched, restarted, or re-pointed by this activation.",
+    "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    "control_repository": "/opt/adaptive-l5/releases/e7d0f72bf834b75eb543d9424ee47c7829cc65c0/repository",
+    "host_config": "/etc/adaptive-l5/omni-host.json",
+    "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+    "live_enabled": true,
+    "model": "qwen3.5-omni-plus-2026-03-15",
+    "selected_profile": "qwen-omni-intl",
+    "socket_path": "/run/adaptive-l5-omni/control.sock",
+    "unit": "adaptive-l5-omni.service"
+  },
+  "published_release": {
+    "commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+    "published_at": "2026-09-16T13:52:24Z",
+    "tag": "v2.0.18",
+    "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18"
+  },
+  "qwen_current_configuration": {
+    "control_repository": "/opt/adaptive-l5/releases/5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a/repository",
+    "evidence": "ExecStart re-observed live at this observation from the release path of adaptive-l5.service (5f6f6ce1...), still the installed unit; selected_profile/model/control_repository carried from the previous dossier; no secrets read; no provider request issued.",
+    "live_enabled": true,
+    "model": "qwen-plus",
+    "selected_profile": "qwen-intl"
+  },
+  "qwen_historical_acceptance": {
+    "merged_and_installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+    "observed_at": "2026-09-14T03:31:08+00:00",
+    "socket_acceptance": {
+      "artifact_digest": "85b3360aaa28c38448c8d31770a5307df809aa7ce4829e81f1ac7b4ddddc76ed",
+      "elapsed_service_seconds": 10.314,
+      "exit_code": 0,
+      "input_digest": "6c9fb5415257b60c91e03858ef6146a6732a564fddafd50729844974a9ae668d",
+      "job_id": "pr82-smoke-5f6f6ce1ecb0",
+      "live_url": null,
+      "state": "artifact_ready",
+      "unit": "adaptive-l5-pr82-e2e-5f6f6ce1ecb0.service"
+    },
+    "status": "runtime_deployed_and_live_artifact_acceptance_passed"
+  },
+  "service_observation": "MainPID=698333\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=3597736\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled\n",
+  "source_base": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+  "source_trail": {
+    "merged_source_not_installed": [
+      101,
+      102,
+      105,
+      106,
+      107,
+      108
+    ],
+    "note": "PR #108 is the artifact-child merge tagged v2.0.18; #101/#102/#105/#106/#107 carry the same source-only status. None of it was installed into either running unit: the installed SHAs remain the recorded 5f6f6ce1... (primary) and 61a05da2... (secondary). Installing or restarting either service is a separate operational action requiring its own exact authority.",
+    "omni_executor_activated": {
+      "control_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+      "note": "Immutable release e7d0f72b (the v2.0.18 tag target) provisioned via factory/runtime/install-claw.sh, then unit installed/daemon-reload/enable --now under separate operator action. Source defaults (template and FactorySettings) remain live_enabled=false; only this host config opted in.",
+      "release_tag": "v2.0.18",
+      "state": "active+enabled"
+    }
+  }
+}

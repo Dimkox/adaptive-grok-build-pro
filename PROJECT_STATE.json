@@ -1653,9 +1653,9 @@
     "selected_profile_note": "Observed primary installed profile/model; the default-off source template independently selects Qwen Omni."
   },
   "runtime_observations": {
-    "observed_at": "2026-09-16T13:56:33Z",
+    "observed_at": "2026-09-16T23:39:18Z",
     "host": "claw",
-    "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
+    "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-omni-activation.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
       "live_enabled": false,
@@ -1699,6 +1699,26 @@
           "elapsed_ms": 29852,
           "provider_requests": 1,
           "artifact_digest": "90865bde1fa3171c2a5f84bb92a18fdfde514451c659ddf26282ed8e1fed66b2",
+          "live_url": null
+        }
+      },
+      "omni": {
+        "unit": "adaptive-l5-omni.service",
+        "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "selected_profile": "qwen-omni-intl",
+        "model": "qwen3.5-omni-plus-2026-03-15",
+        "activated_at": "2026-09-16T23:39:18Z",
+        "acceptance": {
+          "job_id": "omni-activate-20260916-e7d0f72b",
+          "http_status": 200,
+          "state": "normalized",
+          "usage_input_units": 769,
+          "usage_output_units": 191,
+          "provider_requests": 1,
+          "profile_digest": "4cc85b8a61d1a0b51e69b9a28d8766bbdf6158db4e145d8a8ab81992a9157f67",
           "live_url": null
         }
       }
