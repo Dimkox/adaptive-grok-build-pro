@@ -1,6 +1,6 @@
 # Release packages
 
-The latest published release is [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17), published `2026-09-16T01:17:14Z`, targeting `c86b1a1989ace899a4450bde558fcd8adc00e4e2`. Its ZIP SHA-256 is `770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616`; the sidecar file SHA-256 is `54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0`. (This row previously named the v2.0.16 digests by mistake; corrected against `published_release` and the live release assets.) These immutable bytes are recorded in [`PROJECT_STATE.json`](../PROJECT_STATE.json) under `published_release`; earlier releases remain in `prior_published_releases`.
+The latest published release is [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published `2026-09-16T13:52:24Z`, targeting `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its ZIP SHA-256 is `0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a`; the sidecar file SHA-256 is `dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216`. The superseded [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17) (ZIP `770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616`, sidecar `54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0`) stays immutable. These immutable bytes are recorded in [`PROJECT_STATE.json`](../PROJECT_STATE.json) under `published_release`; earlier releases remain in `prior_published_releases`.
 
 Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptive-grok-build-pro-v2.0.14.zip` is published with tag `v2.0.14` at `2026-09-04T16:58:48Z`; its SHA-256 is `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and its sidecar file SHA-256 is `1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c`. The release is bound to checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` and immutable tag/merge target `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`, rather than later documentation-only HEADs. PR #24’s squash merge changed commit identity while preserving the reviewed tree; the tagged artifact was rebuilt from the exact merge before publication.
 
@@ -28,7 +28,7 @@ Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `859
 | `adaptive-grok-build-pro-v2.0.15.zip` | 2.0.15 (published 2026-09-05T20:17:20Z) |
 | `adaptive-grok-build-pro-v2.0.16.zip` | 2.0.16 (published 2026-09-13T22:04:08Z) |
 | `adaptive-grok-build-pro-v2.0.17.zip` | 2.0.17 (published 2026-09-16T01:17:14Z) |
-| `adaptive-grok-build-pro-v2.0.18.zip` | 2.0.18 (artifact delivered, tag and GitHub Release pending) |
+| `adaptive-grok-build-pro-v2.0.18.zip` | 2.0.18 (published 2026-09-16T13:52:24Z) |
 
 ## Build a future candidate
 

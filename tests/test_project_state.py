@@ -364,6 +364,12 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[0]["merge_commit"], V2017_MERGE_COMMIT)
         self.assertEqual(prior[0]["tree"], V2017_TREE)
         self.assertEqual(prior[0]["artifact"]["sha256"], V2017_ZIP_SHA256)
+        self.assertEqual(prior[0]["artifact"]["sidecar_sha256"], V2017_SIDECAR_SHA256)
+        self.assertEqual(prior[0]["tag_object"], V2017_TAG_OBJECT)
+        self.assertEqual(prior[0]["trust_ci"]["attestation_id"], V2017_ATTESTATION_ID)
+        self.assertEqual(prior[0]["published_at"], V2017_PUBLISHED_AT)
+        self.assertEqual(prior[0]["merged_at"], V2017_MERGED_AT)
+        self.assertEqual(prior[0]["pull_request"], 99)
         self.assertEqual(prior[1]["tag"], "v2.0.16")
         self.assertEqual(prior[1]["checked_head"], V2016_CHECKED_HEAD)
         self.assertEqual(prior[1]["merge_commit"], V2016_MERGE_COMMIT)
@@ -432,7 +438,7 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(local["artifact_child"]["identity"], "A")
         self.assertTrue(local["artifact_child"]["requirement"])
-        self.assertTrue(local["artifact_child"]["requirement"])
+        self.assertTrue(local["artifact_child"]["zip_source_note"])
 
     def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
         landing = self.state["delivered_change_history"]["post_v2_0_17_landing"]

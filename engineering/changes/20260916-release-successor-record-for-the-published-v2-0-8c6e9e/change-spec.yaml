@@ -30,7 +30,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "The superseded v2.0.17 record is prepended to prior_published_releases unchanged in every identity value (tag, PR 99, checked_head, merge_commit, tree, digests, check run, attestation, tag object), so the published history stays complete and nothing is rewritten in place.",
+      "statement": "The superseded v2.0.17 record is prepended to prior_published_releases unchanged in every identity value; test_project_state now pins its tag, pull_request 99, checked_head, merge_commit, tree, both artifact digests, tag_object, attestation, published_at and merged_at against the V2017_* constants, so re-stamping any archived identity fails the suite. Nothing is rewritten in place.",
       "evidence": [
         {
           "test": "tests/test_project_state.py"

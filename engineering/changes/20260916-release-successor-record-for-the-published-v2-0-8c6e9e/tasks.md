@@ -5,4 +5,4 @@
 - [x] Flip local_candidate/current_unreleased_change/active_delivery/trust_ci.last_success and the post-v2.0.17 landing status.
 - [x] Bind a fresh runtime observation (`post-108`, live systemctl re-confirmed: MainPIDs 698333/3597736 unchanged, active/enabled) to the new base.
 - [x] Move every coupled test literal in lockstep; 119 tests OK.
-- [ ] `grok_verify --mode pr`, security/release reviews, receipts, PR, exact-head App check.
+- [ ] Final `grok_verify --mode pr` PASS and receipts on the review-round head, then PR and exact-head App check. (First gate PASSed on `28de12c`; security PASS + release FAIL findings are all closed in the review-round commit with both reports and dispositions in `evidence/`.)

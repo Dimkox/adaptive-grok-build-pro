@@ -73,7 +73,7 @@
     },
     "status": "runtime_deployed_and_live_artifact_acceptance_passed"
   },
-  "service_observation": "MainPID=698333\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\nMainPID=3597736\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled",
+  "service_observation": "MainPID=698333\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=3597736\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled\n",
   "source_base": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
   "source_trail": {
     "merged_source_not_installed": [
