@@ -1,0 +1,35 @@
+{
+  "change_id": "20260916-build-and-deliver-the-deterministic-v2-0-18-zip-f03c54",
+  "created_at": "2026-09-16T12:15:54+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T12:15:54+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T12:20:57+00:00",
+      "from": "draft",
+      "reason": "Typed spec mirrored from the v2.0.17 artifact child; red tier, pull-request-merge scope",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T12:20:57+00:00",
+      "from": "scoped",
+      "reason": "Doctrine fixed: two independent exact-SHA clone builds, private 0700 staging, byte identity as gate, publication unclaimed",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T12:20:57+00:00",
+      "from": "approved",
+      "reason": "Pair built and placed (0bc6adc9…, 11160330 B), records flipped, dossier post-107 bound, lockstep tests green",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "f03c541d184f",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Build and deliver the deterministic v2.0.18 ZIP plus sidecar as the artifact child of release sync",
+  "updated_at": "2026-09-16T12:20:57+00:00"
+}
