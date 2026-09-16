@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "280cbff12df2578da3c671d4daa8b5492f26a7fc",
+  "base_fingerprint": "65d85503cc500134b4c52f95e6de02da8d38b93934f8fe2cb7ee85384792641b",
+  "complexity": "high-risk",
+  "created_at": "2026-09-15T20:24:33+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk intent/domain: release",
+    "intent=release",
+    "domains=api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "f98796afe7de",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Release sync 2.0.16 to 2.0.17: identity bump R, artifact child A, tag release and successor SR per pinned doctrine",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness",
+    "api-event-change"
+  ],
+  "write_agent": null
+}

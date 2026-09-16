@@ -1,0 +1,29 @@
+{
+  "change_id": "20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
+  "created_at": "2026-09-15T20:24:34+00:00",
+  "history": [
+    {
+      "at": "2026-09-15T20:24:34+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-15T21:18:00+00:00",
+      "from": "draft",
+      "reason": "scope, ACs, invariants, lockstep test plan and the R->A->tag->SR sequence written against the v2.0.16 precedent",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-15T21:18:00+00:00",
+      "from": "scoped",
+      "reason": "user asked for this release sync and directed continuing it; the production_action_approval gate for tag push and GitHub Release publication remains open and unapproved",
+      "to": "approved"
+    }
+  ],
+  "route_id": "f98796afe7de",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Release sync 2.0.16 to 2.0.17: identity bump R, artifact child A, tag release and successor SR per pinned doctrine",
+  "updated_at": "2026-09-15T21:18:00+00:00"
+}

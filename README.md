@@ -1,14 +1,14 @@
-# Adaptive Grok Build Pro v2.0.16
+# Adaptive Grok Build Pro v2.0.17
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
 ## Current state
 
-Identity: **2.0.16**. The latest published release is [`v2.0.16`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.16), published **2026-09-13T22:04:08Z**. Its tag, ZIP and sidecar are immutable; no release preparation remains.
+Identity: **2.0.17** (candidate, unpublished). The latest published release is [`v2.0.16`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.16), published **2026-09-13T22:04:08Z**. Its tag, ZIP and sidecar are immutable and are not rebuilt by the candidate. The `2.0.17` identity bump is in preparation: no `v2.0.17` ZIP, sidecar, tag or GitHub Release exists in this tree.
 
 | Layer | Observed state on 2026-09-15 |
 | --- | --- |
-| Repository source | `main` observed at `b6fe34002fda08ddcb0976746f3a2c39543e781e` (PR #91). M0-M9 source is delivered; durable five-provider landing failover landed through PR #91; the workflow artifact adapters (Spec Kit/BMAD/Superpowers advisory compiler, ADR-0001 with the `workflow_sources` version contract pinning superpowers 6.3.0, BMAD 6.12.0 and spec-kit 1.0.7) are delivered by this pull request. The assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
+| Repository source | `main` observed at `7bbf42526f207db0007daafa4cc946cc2d81f465` (PR #94). M0-M9 source is delivered; durable five-provider landing failover landed through PR #91; the workflow artifact adapters (Spec Kit/BMAD/Superpowers advisory compiler, ADR-0001 with the `workflow_sources` version contract pinning superpowers 6.3.0, BMAD 6.12.0 and spec-kit 1.0.7) landed through PR #93 and are part of this candidate's source. The assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
 | Installed L5 | Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce`; Grok secondary `adaptive-l5-grok.service` at `61a05da`. Both were **active and enabled**. |
 | Proven runtime result | Authenticated artifact generation succeeded for both installed SHAs. Grok produced `artifact_ready` in **29.852 s**, with one provider request and `live_url=null`. [Dated evidence and limits](engineering/runbooks/l5-runtime-observation-2026-09-15.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |

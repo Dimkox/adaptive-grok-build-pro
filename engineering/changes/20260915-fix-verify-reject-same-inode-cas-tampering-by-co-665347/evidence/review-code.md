@@ -6,7 +6,7 @@ change package prose*, not the code: the prose attributed the rejection of the o
 the wrong CAS layer. All findings are addressed in this package before delivery.
 
 Scope of what was reviewed: commit `f10741b` (amended to `ebd9a0a` at 21:48:42 during the review,
-adding only `evidence/review-test.md`; `git diff --stat f10741b ebd904a` shows that single file, so
+adding only `evidence/review-test.md`; `git diff --stat f10741b ebd9a0a` shows that single file, so
 the conclusions apply to both identities).
 
 ## 1. Does the change weaken a fail-closed CAS property? — No

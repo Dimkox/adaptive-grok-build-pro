@@ -1,0 +1,85 @@
+{
+  "grok": {
+    "attestation_id": "8a7eb170-fd21-481e-a756-9e0a878b14c0",
+    "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "check_run_id": 104295309671,
+    "checked_pr_head_sha": "4e94f7a9e0b6a54adac5e09700ba3137a1c2e6b0",
+    "grok_config_sha256": "450657a9f7598af81093da38201c4b27117633cbd2c2359836ff58e4b632a5ad",
+    "grok_service": "adaptive-l5-grok.service",
+    "grok_socket": "/run/adaptive-l5-grok/control.sock",
+    "merged_commit": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+    "model": "grok-4.6",
+    "pr": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/88",
+    "selected_profile": "grok-vision",
+    "smoke": {
+      "artifact_digest": "90865bde1fa3171c2a5f84bb92a18fdfde514451c659ddf26282ed8e1fed66b2",
+      "elapsed_ms": 29852,
+      "http_status": 202,
+      "job_id": "grok-connect-20260915-61a05da2bd0c",
+      "live_url": null,
+      "provider_requests": 1,
+      "state": "artifact_ready"
+    }
+  },
+  "limits": [
+    "No additional live provider calls during documentation repair.",
+    "No external maintainer-accepted pilot established.",
+    "No M8 qualifying cohort or general M9 operational qualification established.",
+    "Artifact live_url is null; no factory publication inferred.",
+    "Grok secondary installed release and artifact digests are historical acceptance facts re-confirmed live; no new provider call was made."
+  ],
+  "observation_provenance": {
+    "carried_forward": [
+      "published_release",
+      "qwen_historical_acceptance",
+      "grok"
+    ],
+    "carried_reason": "Those records are dated historical acceptance facts about installed artifacts; no reinstall, restart or provider activation happened between the previous dossier and this observation, so their digests must not be restated as new evidence.",
+    "method": "systemctl show -p MainPID -p Id -p ActiveState -p UnitFileState for both units, read-only, unprivileged",
+    "previous_dossier": "engineering/changes/20260915-update-third-party-workflow-components-superpowe-1b0c02/evidence/runtime-observation-post-91.json",
+    "unchanged_since_previous": {
+      "note": "Identical MainPID and enabled state in both dossiers; neither unit was restarted while PRs #93, #13 and #94 merged.",
+      "primary_main_pid": 698333,
+      "secondary_main_pid": 3597736
+    }
+  },
+  "observed_at": "2026-09-15T23:02:27Z",
+  "published_release": {
+    "commit": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
+    "published_at": "2026-09-13T22:04:08Z",
+    "tag": "v2.0.16",
+    "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.16"
+  },
+  "qwen_current_configuration": {
+    "control_repository": "/opt/adaptive-l5/releases/5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a/repository",
+    "evidence": "Allowlisted fields re-observed 2026-09-15 from the live ExecStart release path of adaptive-l5.service and the installed HttpLandingProfile.for_provider mapping; no secrets read; no provider request issued.",
+    "live_enabled": true,
+    "model": "qwen-plus",
+    "selected_profile": "qwen-intl"
+  },
+  "qwen_historical_acceptance": {
+    "merged_and_installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+    "observed_at": "2026-09-14T03:31:08+00:00",
+    "socket_acceptance": {
+      "artifact_digest": "85b3360aaa28c38448c8d31770a5307df809aa7ce4829e81f1ac7b4ddddc76ed",
+      "elapsed_service_seconds": 10.314,
+      "exit_code": 0,
+      "input_digest": "6c9fb5415257b60c91e03858ef6146a6732a564fddafd50729844974a9ae668d",
+      "job_id": "pr82-smoke-5f6f6ce1ecb0",
+      "live_url": null,
+      "state": "artifact_ready",
+      "unit": "adaptive-l5-pr82-e2e-5f6f6ce1ecb0.service"
+    },
+    "status": "runtime_deployed_and_live_artifact_acceptance_passed"
+  },
+  "service_observation": "MainPID=698333\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=3597736\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled",
+  "source_base": "7bbf42526f207db0007daafa4cc946cc2d81f465",
+  "source_trail": {
+    "merged_source_not_installed": [
+      93,
+      13,
+      94
+    ],
+    "note": "PR #93 (workflow artifact adapters), PR #13 (repository-scoped Trust CI profiles) and PR #94 (adversarial-test ctime repair) are merged source on main at this base. None of them was installed into either running unit by this change: the installed SHAs remain the recorded 5f6f6ce1... (primary) and 61a05da2... (secondary). Installing or restarting either service is a separate operational action requiring its own exact authority."
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "change_id": "20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Establish honest v2.0.17 candidate identity on main: VERSION/README/CHANGELOG/START_HERE/ROADMAP/HANDOFF/__version__ bumped to the 2.0.17 candidate, published_release kept as the actually-published v2.0.16 with unchanged immutable facts, the pull requests merged after the v2.0.16 publication recorded in delivered_change_history with re-derived App-check identifiers, local_candidate opened as a pending 2.0.17 slot whose ZIP+sidecar pair is asserted ABSENT until the separate artifact-child commit, and every coupled test literal moved in the same commit (lockstep-proven).",
+    "success_metric": "tests.test_project_state + tests.test_structure + tests.test_manifest_package green in a frozen tree; grok_verify --mode pr PASS; tag v2.0.17 later targets the exact merged artifact-child commit only",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Version identity is coherent everywhere: VERSION=2.0.17 equals the README H1, adaptive_grok.__version__, the CHANGELOG top section heading, the ROADMAP product line and PROJECT_STATE.product_version, while latest_published_release and published_release keep naming v2.0.16.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The twelve pull requests merged on main after the v2.0.16 publication (#81, #82, #83, #85, #88, #89, #90, #91, #93, #13, #64 and #94) are recorded with their exact merge commits, checked heads and App-owned check-run identifiers re-derived from Git and the Trust CI store; no pre-publication record is rewritten. Release-chain commits (R, A, SR) are recorded through local_candidate and current_unreleased_change rather than as additional rows here.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "local_candidate is a pending 2.0.17 artifact slot: null identities, published false, delta pair naming packages/adaptive-grok-build-pro-v2.0.17.zip plus its sidecar asserted ABSENT until the separate artifact-child commit supplies them.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Bootstrap docs (START_HERE/README/ROADMAP/HANDOFF current-state) tell the post-#93/#13 truth: v2.0.16 remains the only published release, a 2.0.17 candidate is in preparation, and the observed installed L5 services still run pre-#93 SHAs.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No historical assertion value (M0-M9 commits, published_release and prior_published_releases identifiers, schedule dates, frozen migration range, released artifact digests) changes in this commit.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Nothing is published by this commit: no tag, no GitHub Release, no artifact bytes, no installation and no provider activation. Those remain later separately delegated steps.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Claiming a v2.0.17 release, artifact or operational activation anywhere in the tree while none exists.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Any credential value, private key, host identity or machine-local runtime state entering the diff.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this pull request plus the three coupled unittest modules green in the frozen tree",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

@@ -33,13 +33,13 @@ Current source and release observations, followed by historical integration anch
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-observed source SHA: 61a05da2bd0c9fb09db5307f53ebc99e4e94040d (2026-09-15; PR #88)
+observed source SHA: 7bbf42526f207db0007daafa4cc946cc2d81f465 (2026-09-15; PR #94)
 latest published release: v2.0.16, tag target 969c4f65f54ef9230f3f94587e228098d1c2ecb9 (2026-09-13T22:04:08Z)
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89 (PR #2 merge, 2026-08-23T22:05:31Z)
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
 v2.0.15 publication snapshot tag target: fd51dcfed6b33f4a8707c0db602328146df17cc9 (GitHub Release published 2026-09-05T20:17:20Z; not a perpetual current-ref assertion)
 L5 landing main SHA: eb9df64bca333f30ec58f8c725a021360e22ed92 (PR #75 union of slices #65-#71, merged 2026-09-13T17:35:51Z; its landed evidence follow-up merged as e737dd5c338793e274285d657354e74ecc812f89 at 2026-09-13T18:26:32Z)
-product version: 2.0.16 (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)
+product version: 2.0.17 candidate (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
@@ -87,7 +87,7 @@ Implemented in-tree:
 
 ### 3.3 Current operational qualification
 
-As observed on **2026-09-15**, the L5 Qwen primary `adaptive-l5.service` at `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` and Grok secondary `adaptive-l5-grok.service` at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` are installed, active and enabled. Authenticated requests reached `artifact_ready`; Grok took **29.852 s** with one provider request and `live_url=null`. [Dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md) separates those installed SHAs from source defaults, which remain off. These results establish bounded L5 artifact generation; full external pilot acceptance by a maintainer, an M8 qualifying cohort/activation, and general M9 operational qualification remain unproven. No new `v2.0.16` release preparation remains.
+As observed on **2026-09-15**, the L5 Qwen primary `adaptive-l5.service` at `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` and Grok secondary `adaptive-l5-grok.service` at `61a05da2bd0c9fb09db5307f53ebc99e4e94040d` are installed, active and enabled. Authenticated requests reached `artifact_ready`; Grok took **29.852 s** with one provider request and `live_url=null`. [Dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md) separates those installed SHAs from source defaults, which remain off. These results establish bounded L5 artifact generation; full external pilot acceptance by a maintainer, an M8 qualifying cohort/activation, and general M9 operational qualification remain unproven. The `2.0.17` candidate identity bump is in preparation; the installed services keep running their own pre-#93 SHAs until a separately authorized operational step.
 
 M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
