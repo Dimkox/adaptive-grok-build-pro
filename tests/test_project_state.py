@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "fc8d9e6f11bb188ee514784d3b6f614a6da72803"  # 2026-09-16 observation, PR #107 release-sync merge (source parent of the artifact child)
+OBSERVED_MAIN_SHA = "e7d0f72bf834b75eb543d9424ee47c7829cc65c0"  # 2026-09-16 observation, PR #108 artifact-child merge (published v2.0.18)
 V2017_SOURCE_BASE = "78082a290f8b90cade88685351fbb2ba263689b9"  # PR #98 release-sync merge: the base the candidate was authored on
 V2017_CHECKED_HEAD = "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d"
 V2017_MERGE_COMMIT = "c86b1a1989ace899a4450bde558fcd8adc00e4e2"
@@ -24,6 +24,12 @@ V2017_SIDECAR_SHA256 = "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300a
 V2017_PUBLISHED_AT = "2026-09-16T01:17:14Z"
 V2017_MERGED_AT = "2026-09-16T01:14:19Z"
 V2017_ATTESTATION_ID = "b9510589-d40c-4976-aafd-cad6fc141972"
+V2018_CHECKED_HEAD = "07d1141e70884397a61eb93fd76525baf2444a0e"
+V2018_MERGE_COMMIT = "e7d0f72bf834b75eb543d9424ee47c7829cc65c0"
+V2018_TREE = "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3"
+V2018_ZIP_SHA256 = "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a"
+V2018_SIDECAR_SHA256 = "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216"
+V2018_ATTESTATION_ID = "8172a5bc-1377-428a-aaa9-b8da462f9952"
 
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
@@ -84,7 +90,7 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["product_version"], "2.0.18")
-        self.assertEqual(state["latest_published_release"], "v2.0.17")
+        self.assertEqual(state["latest_published_release"], "v2.0.18")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-16T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
@@ -330,82 +336,93 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
-        self.assertEqual(published["tag"], "v2.0.17")
-        self.assertEqual(published["pull_request"], 99)
-        self.assertEqual(published["checked_head"], V2017_CHECKED_HEAD)
-        self.assertEqual(published["merge_commit"], V2017_MERGE_COMMIT)
-        self.assertEqual(published["tree"], V2017_TREE)
-        self.assertEqual(published["artifact"]["sha256"], V2017_ZIP_SHA256)
+        self.assertEqual(published["tag"], "v2.0.18")
+        self.assertEqual(published["pull_request"], 108)
+        self.assertEqual(published["checked_head"], V2018_CHECKED_HEAD)
+        self.assertEqual(published["merge_commit"], V2018_MERGE_COMMIT)
+        self.assertEqual(published["tree"], V2018_TREE)
+        self.assertEqual(published["artifact"]["sha256"], V2018_ZIP_SHA256)
         self.assertEqual(
             published["artifact"]["sidecar_sha256"],
-            V2017_SIDECAR_SHA256,
+            V2018_SIDECAR_SHA256,
         )
-        self.assertEqual(published["trust_ci"]["check_run_id"], 104621989321)
-        self.assertEqual(published["tag_object"], "5c6687ed97e1c365597bf27047016eb07411f28b")
-        self.assertEqual(published["published_at"], "2026-09-16T01:17:14Z")
-        self.assertEqual(published["merged_at"], "2026-09-16T01:14:19Z")
+        self.assertEqual(published["trust_ci"]["check_run_id"], 104809218211)
+        self.assertEqual(published["tag_object"], "31d3171f651ea77e29de58d4affc58d008f1c7a5")
+        self.assertEqual(published["published_at"], "2026-09-16T13:52:24Z")
+        self.assertEqual(published["merged_at"], "2026-09-16T13:51:26Z")
         self.assertEqual(published["gitguardian"]["conclusion"], "SUCCESS")
-        self.assertEqual(published["gitguardian"]["check_run_id"], 104621982710)
+        self.assertEqual(published["gitguardian"]["check_run_id"], 104809206290)
         self.assertEqual(
             published["trust_ci"]["attestation_id"],
-            V2017_ATTESTATION_ID,
+            V2018_ATTESTATION_ID,
         )
         self.assertEqual(published["gitguardian"]["conclusion"], "SUCCESS")
         prior = state["prior_published_releases"]
-        self.assertEqual(len(prior), 4)
-        self.assertEqual(prior[0]["tag"], "v2.0.16")
-        self.assertEqual(prior[0]["checked_head"], V2016_CHECKED_HEAD)
-        self.assertEqual(prior[0]["merge_commit"], V2016_MERGE_COMMIT)
-        self.assertEqual(prior[0]["tree"], V2016_TREE)
-        self.assertEqual(prior[0]["artifact"]["sha256"], V2016_ZIP_SHA256)
-        self.assertEqual(prior[1]["tag"], "v2.0.15")
-        self.assertEqual(prior[1]["checked_head"], V2015_CHECKED_HEAD)
-        self.assertEqual(prior[1]["merge_commit"], V2015_MERGE_COMMIT)
-        self.assertEqual(prior[1]["tree"], V2015_TREE)
-        self.assertEqual(prior[1]["artifact"]["sha256"], V2015_ZIP_SHA256)
-        self.assertEqual(prior[2]["tag"], "v2.0.14")
-        self.assertEqual(prior[2]["checked_head"], CURRENT_RELEASE_HEAD_SHA)
-        self.assertEqual(prior[2]["merge_commit"], CURRENT_MAIN_SHA)
-        self.assertEqual(prior[2]["tree"], CURRENT_RELEASE_TREE)
-        self.assertEqual(prior[2]["artifact"]["sha256"], CURRENT_RELEASE_ZIP_SHA256)
-        self.assertEqual(prior[3]["tag"], "v2.0.13")
-        self.assertEqual(prior[3]["checked_head"], RELEASE_HEAD_SHA)
-        self.assertEqual(prior[3]["merge_commit"], RELEASE_MERGE_SHA)
-        self.assertEqual(prior[3]["tree"], RELEASE_TREE)
-        self.assertEqual(prior[3]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
+        self.assertEqual(len(prior), 5)
+        self.assertEqual(prior[0]["tag"], "v2.0.17")
+        self.assertEqual(prior[0]["checked_head"], V2017_CHECKED_HEAD)
+        self.assertEqual(prior[0]["merge_commit"], V2017_MERGE_COMMIT)
+        self.assertEqual(prior[0]["tree"], V2017_TREE)
+        self.assertEqual(prior[0]["artifact"]["sha256"], V2017_ZIP_SHA256)
+        self.assertEqual(prior[1]["tag"], "v2.0.16")
+        self.assertEqual(prior[1]["checked_head"], V2016_CHECKED_HEAD)
+        self.assertEqual(prior[1]["merge_commit"], V2016_MERGE_COMMIT)
+        self.assertEqual(prior[1]["tree"], V2016_TREE)
+        self.assertEqual(prior[1]["artifact"]["sha256"], V2016_ZIP_SHA256)
+        self.assertEqual(prior[2]["tag"], "v2.0.15")
+        self.assertEqual(prior[2]["checked_head"], V2015_CHECKED_HEAD)
+        self.assertEqual(prior[2]["merge_commit"], V2015_MERGE_COMMIT)
+        self.assertEqual(prior[2]["tree"], V2015_TREE)
+        self.assertEqual(prior[2]["artifact"]["sha256"], V2015_ZIP_SHA256)
+        self.assertEqual(prior[3]["tag"], "v2.0.14")
+        self.assertEqual(prior[3]["checked_head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(prior[3]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(prior[3]["tree"], CURRENT_RELEASE_TREE)
+        self.assertEqual(prior[3]["artifact"]["sha256"], CURRENT_RELEASE_ZIP_SHA256)
+        self.assertEqual(prior[4]["tag"], "v2.0.13")
+        self.assertEqual(prior[4]["checked_head"], RELEASE_HEAD_SHA)
+        self.assertEqual(prior[4]["merge_commit"], RELEASE_MERGE_SHA)
+        self.assertEqual(prior[4]["tree"], RELEASE_TREE)
+        self.assertEqual(prior[4]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.0.18")
-        self.assertEqual(local["status"], "artifact_bytes_delivered")
+        self.assertEqual(local["status"], "published")
         self.assertEqual(local["route_id"], "968b3ce9e148")
         self.assertEqual(local["branch"], "feature/v2.0.18-release-sync")
-        self.assertIsNone(local["pull_request"])
+        self.assertEqual(local["pull_request"], 108)
         self.assertEqual(
             local["change_package"],
             "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
         )
-        self.assertEqual(local["artifact_status"], "pending_tag_and_release")
-        self.assertFalse(local["published"])
-        self.assertIsNone(local["published_at"])
-        self.assertFalse(local["external_effect"])
-        self.assertIsNone(local["external_effect_scope"])
-        # Publication is repository delivery only when it happens; until then every
-        # external and operational flag stays false, and no identity is stamped.
+        self.assertEqual(local["artifact_status"], "published_tag_bound")
+        self.assertTrue(local["published"])
+        self.assertEqual(local["published_at"], "2026-09-16T13:52:24Z")
+        self.assertTrue(local["external_effect"])
+        self.assertEqual(
+            local["external_effect_scope"],
+            "github_repository_delivery_and_release_only",
+        )
+        # Publication is repository delivery only: no provider install, host
+        # mutation, hosting or deployment is claimed by this record.
         self.assertFalse(local["operational_activation"])
-        self.assertEqual(local["artifact_child"]["zip_sha256"], "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a")
-        self.assertEqual(local["artifact_child"]["sidecar_sha256"], "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216")
-        for key in ("reviewed_product_head", "reviewed_product_tree",
-                    "checked_head", "merge_commit", "tree"):
-            self.assertIsNone(local[key], f"pending candidate must not name {key}")
-        # The child can name the release-sync parent (it is known before the child merges)
-        # but never its own identities: those belong to the post-merge successor.
-        for key in ("commit", "tree"):
-            self.assertIsNone(local["artifact_child"][key],
-                              f"artifact child must not self-record {key}")
-        self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(local["artifact_child"]["source_parent"], OBSERVED_MAIN_SHA)
+        self.assertEqual(local["artifact_child"]["zip_sha256"], V2018_ZIP_SHA256)
+        self.assertEqual(local["artifact_child"]["sidecar_sha256"], V2018_SIDECAR_SHA256)
+        self.assertEqual(local["checked_head"], V2018_CHECKED_HEAD)
+        self.assertEqual(local["merge_commit"], V2018_MERGE_COMMIT)
+        self.assertEqual(local["tree"], V2018_TREE)
+        # The release was reviewed as the artifact-child head itself, so no separate
+        # pre-merge product identity exists and these must stay null, not stamped.
+        for key in ("reviewed_product_head", "reviewed_product_tree"):
+            self.assertIsNone(local[key], f"release record must not name {key}")
+        self.assertEqual(local["artifact_child"]["commit"], V2018_CHECKED_HEAD)
+        self.assertEqual(local["artifact_child"]["tree"], V2018_TREE)
+        # The release-sync parent was knowable before the child merged, so the
+        # published record names it while the child's own merge identities belong
+        # to this successor.
+        self.assertEqual(local["artifact_child"]["source_parent"], "fc8d9e6f11bb188ee514784d3b6f614a6da72803")
         self.assertEqual(local["artifact_child"]["source_parent_tree"], "65d3a996018bf7564866c25b6b869c2493c9e15e")
-        self.assertEqual(local["artifact_child"]["status"], "built_byte_reproducible_twice")
-        self.assertTrue(local["artifact_child"]["zip_source_note"])
+        self.assertEqual(local["source_base"], "fc8d9e6f11bb188ee514784d3b6f614a6da72803")
+        self.assertEqual(local["artifact_child"]["status"], "published_as_v2.0.18")
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [
@@ -415,10 +432,11 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(local["artifact_child"]["identity"], "A")
         self.assertTrue(local["artifact_child"]["requirement"])
+        self.assertTrue(local["artifact_child"]["requirement"])
 
     def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
         landing = self.state["delivered_change_history"]["post_v2_0_17_landing"]
-        self.assertEqual(landing["status"], "landed_in_2_0_18_candidate")
+        self.assertEqual(landing["status"], "landed_in_v2_0_18_release")
         rows = landing["pull_requests"]
         self.assertEqual(
             {row["pull_request"] for row in rows},
@@ -449,8 +467,8 @@ class ProjectStateTests(unittest.TestCase):
         delivery = self.state["active_delivery"]
         for key in ("route_id", "branch", "change_package", "next_action"):
             self.assertEqual(delivery[key], current[key])
-        self.assertEqual(current["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(current["status"], "release_sync_authored")
+        self.assertEqual(current["source_base"], "fc8d9e6f11bb188ee514784d3b6f614a6da72803")
+        self.assertEqual(current["status"], "published")
         self.assertEqual(
             current["identity"],
             "v2.0.18 release sync (identity bump + landing rows for the four pull requests merged after the v2.0.17 publication)",
@@ -725,10 +743,10 @@ class ProjectStateTests(unittest.TestCase):
         # the product identity leads, the published tag lags by exactly that bump.
         self.assertEqual(state["latest_published_release"], state["published_release"]["tag"])
         self.assertEqual(state["local_candidate"]["version"], state["product_version"])
-        self.assertFalse(state["local_candidate"]["published"])
+        self.assertTrue(state["local_candidate"]["published"])
         self.assertFalse(state["local_candidate"]["operational_activation"])
-        self.assertNotEqual("v" + state["product_version"], state["published_release"]["tag"])
-        self.assertNotEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
+        self.assertEqual("v" + state["product_version"], state["published_release"]["tag"])
+        self.assertEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
         factory_src = str(ROOT / "factory" / "src")

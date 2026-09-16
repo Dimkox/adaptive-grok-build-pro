@@ -2,10 +2,10 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-16T12:17:52Z",
-  "observed_main_sha": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
+  "observed_at": "2026-09-16T13:56:33Z",
+  "observed_main_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
   "product_version": "2.0.18",
-  "latest_published_release": "v2.0.17",
+  "latest_published_release": "v2.0.18",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -34,37 +34,68 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.17",
-    "published_at": "2026-09-16T01:17:14Z",
-    "pull_request": 99,
-    "checked_head": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
-    "merge_commit": "c86b1a1989ace899a4450bde558fcd8adc00e4e2",
-    "merged_at": "2026-09-16T01:14:19Z",
-    "tag_object": "5c6687ed97e1c365597bf27047016eb07411f28b",
-    "tree": "5826924586f9d42b02bf9fd5d51985bd323da31e",
+    "tag": "v2.0.18",
+    "published_at": "2026-09-16T13:52:24Z",
+    "pull_request": 108,
+    "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
+    "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+    "merged_at": "2026-09-16T13:51:26Z",
+    "tag_object": "31d3171f651ea77e29de58d4affc58d008f1c7a5",
+    "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.17.zip",
-      "sha256": "770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.17.zip.sha256",
-      "sidecar_sha256": "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0",
+      "path": "packages/adaptive-grok-build-pro-v2.0.18.zip",
+      "sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256",
+      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "conclusion": "SUCCESS",
-      "check_run_id": 104621989321,
-      "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
+      "check_run_id": 104809218211,
+      "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
       "signer": "0519cf1d47436f2e",
       "github_app_id": 4694114
     },
     "gitguardian": {
       "conclusion": "SUCCESS",
-      "check_run_id": 104621982710,
+      "check_run_id": 104809206290,
       "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
     },
-    "notes": "The artifact is bound to the immutable v2.0.17 tag target. The archive preserves the pre-publication release-sync snapshot, so candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "notes": "The artifact is bound to the immutable v2.0.18 tag target. The archive preserves the pre-publication release-sync snapshot, so candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.17",
+      "published_at": "2026-09-16T01:17:14Z",
+      "pull_request": 99,
+      "checked_head": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
+      "merge_commit": "c86b1a1989ace899a4450bde558fcd8adc00e4e2",
+      "merged_at": "2026-09-16T01:14:19Z",
+      "tag_object": "5c6687ed97e1c365597bf27047016eb07411f28b",
+      "tree": "5826924586f9d42b02bf9fd5d51985bd323da31e",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.17.zip",
+        "sha256": "770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.17.zip.sha256",
+        "sidecar_sha256": "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 104621989321,
+        "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": 4694114
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS",
+        "check_run_id": 104621982710,
+        "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      },
+      "notes": "Historical: superseded as the current published release by v2.0.18."
+    },
     {
       "tag": "v2.0.16",
       "published_at": "2026-09-13T22:04:08Z",
@@ -179,8 +210,8 @@
     "branch": "feature/v2.0.18-release-sync",
     "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
     "identity": "v2.0.18 release sync (identity bump + landing rows for the four pull requests merged after the v2.0.17 publication)",
-    "status": "release_sync_authored",
-    "stage": "artifact_child_delivered_pending_tag",
+    "status": "published",
+    "stage": "released_and_published",
     "source_base": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
     "target_version": "2.0.18",
     "scope": [
@@ -223,17 +254,17 @@
       }
     ],
     "explanation": "Four pull requests merged after the v2.0.17 publication, so the tree can no longer claim that no release preparation remains. The candidate identity is separated from the published identity by tests, not by prose.",
-    "external_effect": false,
+    "external_effect": true,
     "frozen": {
-      "published_release": "v2.0.17",
+      "published_release": "v2.0.18",
       "package_bytes": true,
       "postgresql_migrations": "001-018"
     },
     "operational_activation": false,
     "record_scope": "Release preparation for 2.0.18 only. Documentation workflow belongs to its change package; runtime state is in runtime_observations.",
-    "next_action": "Merge the artifact-child pull request on its exact-head App check, then tag v2.0.18 against that merged commit and publish the GitHub Release with the ZIP and sidecar assets; each of those is a separate exact delegated action. After publication the successor records the identities and flips the publication flags.",
-    "tag_and_release": "Not created. v2.0.17 remains the newest tag and GitHub Release; v2.0.18 publication requires its own exact delegated actions after the artifact child merges.",
-    "artifact_child": "Delivered: packages/adaptive-grok-build-pro-v2.0.18.zip and its sidecar exist in the tree, built twice byte-identically from fc8d9e6f11bb188ee514784d3b6f614a6da72803; the tag and GitHub Release remain pending separate delegated actions."
+    "next_action": "Publishing is complete: v2.0.18 is tagged and released. Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification. Any new product change opens its own route and change package.",
+    "tag_and_release": "Published: tag v2.0.18 object 31d3171f651ea77e29de58d4affc58d008f1c7a5 binds merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0; the GitHub Release is live with the ZIP and sidecar assets, published 2026-09-16T13:52:24Z.",
+    "artifact_child": "Published: delivered by PR #108 (merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0) and shipped through tag v2.0.18 (object 31d3171f651ea77e29de58d4affc58d008f1c7a5) with the ZIP and sidecar as GitHub Release assets at 2026-09-16T13:52:24Z."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -641,8 +672,8 @@
       }
     },
     "post_v2_0_17_landing": {
-      "status": "landed_in_2_0_18_candidate",
-      "record_scope": "Pull requests merged on main after the v2.0.17 publication at 2026-09-16T01:17:14Z. Each row is re-derived from Git, the GitHub API and the Trust CI job store; no pre-publication record is restated. This chain's own release commits (R, A and the successor) are recorded through current_unreleased_change and local_candidate rather than as rows here.",
+      "status": "landed_in_v2_0_18_release",
+      "record_scope": "Pull requests merged on main after the v2.0.17 publication at 2026-09-16T01:17:14Z and before the v2.0.18 release sync. Each row is re-derived from Git, the GitHub API and the Trust CI job store; no pre-publication record is restated. This chain's own release commits (#107 R, #108 A and this successor) are recorded through current_unreleased_change and local_candidate rather than as rows here.",
       "pull_requests": [
         {
           "pull_request": 101,
@@ -737,43 +768,43 @@
   },
   "local_candidate": {
     "version": "2.0.18",
-    "status": "artifact_bytes_delivered",
+    "status": "published",
     "route_id": "968b3ce9e148",
     "branch": "feature/v2.0.18-release-sync",
     "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
     "source_base": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
-    "source_gate_status": "pending_final_tree",
-    "review_status": "pending",
-    "checked_head": null,
-    "merge_commit": null,
-    "tree": null,
-    "pull_request": null,
-    "artifact_status": "pending_tag_and_release",
+    "source_gate_status": "passed_for_artifact_head",
+    "review_status": "security_and_release_reviews_passed",
+    "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
+    "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+    "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+    "pull_request": 108,
+    "artifact_status": "published_tag_bound",
     "predecessor_record": "The published v2.0.17 candidate record is archived verbatim as delivered_change_history.v2_0_17_release_preparation.published_local_candidate.",
     "artifact_child": {
       "identity": "A",
       "source_parent": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
       "source_parent_tree": "65d3a996018bf7564866c25b6b869c2493c9e15e",
-      "commit": null,
-      "tree": null,
+      "commit": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.18.zip",
         "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256"
       ],
       "zip_sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
       "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
-      "status": "built_byte_reproducible_twice",
-      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; the child's own identities — merge_commit, tree, checked_head and pull_request — stay null because the child cannot self-record them.",
+      "status": "published_as_v2.0.18",
+      "requirement": "Released: tag 31d3171f651ea77e29de58d4affc58d008f1c7a5 binds merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0; the GitHub Release carries both delta_paths; publication flags are set only by this successor record.",
       "zip_source_note": "The archive was built from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
     },
-    "published": false,
-    "published_at": null,
-    "external_effect": false,
-    "external_effect_scope": null,
+    "published": true,
+    "published_at": "2026-09-16T13:52:24Z",
+    "external_effect": true,
+    "external_effect_scope": "github_repository_delivery_and_release_only",
     "operational_activation": false,
-    "notes": "Artifact bytes (ZIP + sidecar, 11160330 bytes, built twice byte-identically in private 0700 staging from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803) are delivered into the repository tree. \"Delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect and no operational activation. published, external_effect and operational_activation remain false, and merge_commit/tree stay null because the child cannot self-record them; the tag and the Release bind to this pull request's merged commit under their own exact delegated grants."
+    "notes": "Artifact bytes published through tag v2.0.18 and the GitHub Release at 2026-09-16T13:52:24Z, built twice byte-identically from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803; the archive preserves that pre-publication snapshot, so candidate wording inside the ZIP is historical. operational_activation remains false: no provider install, host mutation, hosting or deployment is claimed by this record."
   },
   "delivered_non_milestone_work": [
     {
@@ -800,48 +831,48 @@
   "active_delivery": {
     "route_id": "968b3ce9e148",
     "branch": "feature/v2.0.18-release-sync",
-    "pull_request": 99,
+    "pull_request": 108,
     "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
     "status": "source_delivered_operational_qualification_incomplete",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Merge the artifact-child pull request on its exact-head App check, then tag v2.0.18 against that merged commit and publish the GitHub Release with the ZIP and sidecar assets; each of those is a separate exact delegated action. After publication the successor records the identities and flips the publication flags.",
+    "next_action": "Publishing is complete: v2.0.18 is tagged and released. Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification. Any new product change opens its own route and change package.",
     "local_source_gate": {
       "status": "passed_for_published_artifact_head",
-      "artifact_head": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
-      "artifact_tree": "5826924586f9d42b02bf9fd5d51985bd323da31e",
-      "record_scope": "Current v2.0.17 release preflight: the release-sync and artifact-child heads passed the repository verifier before the exact-head App gate."
+      "artifact_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "artifact_tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+      "record_scope": "Current v2.0.18 release preflight: the release-sync and artifact-child heads passed the repository verifier fully locally; the App-owned exact-head check on PR #108 (run 104809218211) is the merge authority recorded by this successor."
     },
     "package_handoff": {
       "status": "published",
-      "artifact_child": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
-      "artifact_tree": "5826924586f9d42b02bf9fd5d51985bd323da31e",
+      "artifact_child": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "artifact_tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.17.zip",
-        "packages/adaptive-grok-build-pro-v2.0.17.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.0.18.zip",
+        "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256"
       ],
-      "zip_sha256": "770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616",
-      "sidecar_sha256": "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0",
-      "release": "v2.0.17",
-      "tag_target": "c86b1a1989ace899a4450bde558fcd8adc00e4e2"
+      "zip_sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
+      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
+      "release": "v2.0.18",
+      "tag_target": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0"
     },
     "repository_delivery": {
       "status": "published",
-      "pull_request": 99,
-      "checked_head": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
-      "merge_commit": "c86b1a1989ace899a4450bde558fcd8adc00e4e2",
-      "tree": "5826924586f9d42b02bf9fd5d51985bd323da31e",
-      "merged_at": "2026-09-16T01:14:19Z",
-      "published_at": "2026-09-16T01:17:14Z",
-      "release": "v2.0.17",
+      "pull_request": 108,
+      "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+      "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+      "merged_at": "2026-09-16T13:51:26Z",
+      "published_at": "2026-09-16T13:52:24Z",
+      "release": "v2.0.18",
       "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
-      "check_run_id": 104621989321,
-      "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
+      "check_run_id": 104809218211,
+      "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
       "signer": "0519cf1d47436f2e",
       "gitguardian": "SUCCESS",
       "operational_activation": false,
-      "record_scope": "Release publication only; the installed L5 services are recorded separately in runtime_observations and no installation, restart or activation happened for this release."
+      "record_scope": "Release publication only; the installed L5 services are recorded separately in runtime_observations and remain un-activated by this successor."
     },
     "integrated_stack": {
       "status": "delivered_to_main",
@@ -1526,14 +1557,14 @@
     "source_directory": "trust-ci",
     "operator_runbooks": "engineering/runbooks",
     "last_success": {
-      "pull_request": 107,
-      "head_sha": "f8c5021c5dabea201cfd273efd55abe3b5893639",
-      "merge_commit": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
-      "check_run_id": 104782126773,
-      "attestation_id": "46e81300-c8a9-42b2-b899-74dafe1d4e73",
+      "pull_request": 108,
+      "head_sha": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+      "check_run_id": 104809218211,
+      "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
       "conclusion": "SUCCESS",
-      "record_scope": "Observed on 2026-09-16 via the GitHub Checks API for the exact PR head; merge authority for PR #107 only. All six mandatory commands passed: holdout-bundle-integrity, external-holdout, root-unittest, trust-ci-unittest, compileall, repository-verification.",
-      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104782126773"
+      "record_scope": "Observed on 2026-09-16 via the GitHub Checks API for the exact PR head; merge authority for PR #108 only. What landed on main before the release sync is listed in delivered_change_history.post_v2_0_17_landing; the release-chain commits themselves (#107 R, #108 A, this SR) are recorded through current_unreleased_change and local_candidate rather than as landing rows.",
+      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104809218211"
     },
     "historical_last_success": {
       "pull_request": 24,
@@ -1621,9 +1652,9 @@
     "selected_profile_note": "Observed primary installed profile/model; the default-off source template independently selects Qwen Omni."
   },
   "runtime_observations": {
-    "observed_at": "2026-09-16T12:17:52Z",
+    "observed_at": "2026-09-16T13:56:33Z",
     "host": "claw",
-    "evidence": "engineering/changes/20260916-build-and-deliver-the-deterministic-v2-0-18-zip-f03c54/evidence/runtime-observation-post-107.json",
+    "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
       "live_enabled": false,

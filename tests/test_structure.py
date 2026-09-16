@@ -281,10 +281,10 @@ class StructureTests(unittest.TestCase):
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
         self.assertIn("Identity: **2.0.18**", readme)
         self.assertTrue(
-            changelog.startswith("# Changelog\n\n## 2.0.18 — 2026-09-16 (candidate, unpublished)\n")
+            changelog.startswith("# Changelog\n\n## 2.0.18 — 2026-09-16\n")
         )
         self.assertIn(
-            "product version: 2.0.18 candidate (latest published release: v2.0.17; published 2026-09-16T01:17:14Z)",
+            "product version: 2.0.18 (latest published release: v2.0.18; published 2026-09-16T13:52:24Z)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))

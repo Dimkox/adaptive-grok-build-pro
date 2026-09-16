@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-release-successor-record-for-the-published-v2-0-8c6e9e",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Record the published v2.0.18 release in the tree: move published_release to the tag/artifact/check binding, archive v2.0.17 into prior_published_releases, flip local_candidate to published with the artifact child's own merge identities that only the successor may write, advance the active_delivery pointers and trust_ci.last_success, flip the post-v2.0.17 landing status to landed_in_v2_0_18_release, and move every coupled test literal in the same commit while operational_activation stays false.",
+    "success_metric": "tests.test_structure/test_project_state/test_manifest_package/test_change_spec green (119 tests) on the frozen tree; published_release.tag == v2.0.18 with the recomputable ZIP and sidecar digests; no installed service changed",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "published_release names v2.0.18: pull_request 108, checked_head 07d1141e70884397a61eb93fd76525baf2444a0e, merge_commit e7d0f72bf834b75eb543d9424ee47c7829cc65c0, tree c78d200ee6a6a7ab1e32f2194691a8e639b9dab3, tag_object 31d3171f651ea77e29de58d4affc58d008f1c7a5, published_at 2026-09-16T13:52:24Z, merged_at 2026-09-16T13:51:26Z, artifact path/sha256 0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a with sidecar dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216, App check run 104809218211 and attestation 8172a5bc-1377-428a-aaa9-b8da462f9952. The tag object, published_at, merged_at and the GitGuardian run 104809206290 are asserted by test_project_state, and both artifact digests are recomputed from the tracked blobs by test_manifest_package.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The superseded v2.0.17 record is prepended to prior_published_releases unchanged in every identity value (tag, PR 99, checked_head, merge_commit, tree, digests, check run, attestation, tag object), so the published history stays complete and nothing is rewritten in place.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "local_candidate becomes the published record (status published, artifact_status published_tag_bound, artifact_child.status published_as_v2.0.18) with checked_head/merge_commit/tree/pull_request/published_at/external_effect_scope filled by this successor, while reviewed_product_head/tree stay null and operational_activation stays false.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Every human-readable current-state surface says v2.0.18 is the published release (README Identity line, START_HERE Released bullet and handoff paragraph, ROADMAP product line and observed SHA, CHANGELOG 2.0.18 heading, GROK_BUILD_HANDOFF next actions, packages/README row), and no sentence claims an installation, restart, cohort activation or deployment.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No already-published release record, milestone assertion, schedule date, frozen PostgreSQL migration range or earlier packages/ row is modified; integrated_stack stays the historical v2.0.13 M-stack root.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "This commit changes no product code, no packaging script and no artifact byte: it is the documentation successor only, and it does not touch the comparator, contracts or rules.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Claiming operational activation, provider installation, host mutation, M8 cohort/activation or M9 qualification as a consequence of this release.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Re-stamping a published release's identity (tag target, tag object, artifact digests, App check run) or deleting a superseded release instead of archiving it.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this successor pull request, plus recomputation of the published ZIP and sidecar digests from the tracked files",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}
