@@ -765,7 +765,7 @@
       "zip_sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
       "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
       "status": "built_byte_reproducible_twice",
-      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; commit and tree stay null because the child cannot self-record them.",
+      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; the child's own identities — merge_commit, tree, checked_head and pull_request — stay null because the child cannot self-record them.",
       "zip_source_note": "The archive was built from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
     },
     "published": false,

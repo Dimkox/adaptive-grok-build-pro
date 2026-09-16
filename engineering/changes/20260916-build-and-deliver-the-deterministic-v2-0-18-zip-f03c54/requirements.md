@@ -13,7 +13,7 @@
 
 - A build taken from a dirty tree or a later tip would silently ship bytes no commit can reproduce; the two-clone digest check and the recorded `source_parent` are the guard.
 - Claiming `published: true` here would predate the tag and is a forbidden outcome, not a bookkeeping preference.
-- The local verifier flags the >10 MB tracked binary it never reads (issues #80/#101 (streaming analysis; the tracked pair now passes the local verifier)); that is a known local-only red and is disclosed rather than suppressed, with the App-owned exact-head check as merge authority.
+- The >10 MB tracked binary no longer reddens the local verifier: issue #80 was closed by the #101 streaming blob analysis, so `grok_verify --mode pr` is expected fully green on this head (it did pass before the review reports landed), with the App-owned exact-head check as merge authority.
 
 ## Governance context
 

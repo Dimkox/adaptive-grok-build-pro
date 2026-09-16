@@ -12,7 +12,7 @@
 ## Automated checks
 
 - Unit: the three coupled modules (89 tests OK on the frozen tree).
-- Integration: `grok_verify --mode pr`; expect the documented issues #80/#101 (streaming analysis; the tracked pair now passes the local verifier) local-only red on the >10 MB tracked binary and disclose it.
+- Integration: `grok_verify --mode pr` expected fully green on the tracked pair (#80 closed via #101 streaming analysis); re-run on the review-round head with receipts recorded there.
 - Contract: `tests/test_change_spec.py` for this package.
 - Static: `ruff`, `bandit` as invoked by the verifier.
 

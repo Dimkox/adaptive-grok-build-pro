@@ -1,6 +1,6 @@
 # Tasks — 20260916-build-and-deliver-the-deterministic-v2-0-18-zip-f03c54
 
-- [x] Route `A` inside its own worktree (`f03c541d1848`, base `fc8d9e6`).
+- [x] Route `A` inside its own worktree (`f03c541d184f`, base `fc8d9e6`).
 - [x] Confirm nothing landed between `R` and `A` (open pull requests: none), so the tagged tree will be exactly `R` plus these bytes.
 - [x] Build the ZIP twice in private `0700` staging from two independent clones at `fc8d9e6`; require byte identity (`0bc6adc9…`, 11 160 330 B).
 - [x] Commit `packages/adaptive-grok-build-pro-v2.0.18.zip` and its sidecar; add the `packages/README.md` row.

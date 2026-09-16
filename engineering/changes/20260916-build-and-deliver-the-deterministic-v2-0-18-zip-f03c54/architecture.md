@@ -41,4 +41,4 @@ Build from clones rather than the live worktree so the archive is reproducible b
 
 - Non-reproducible bytes → dual-build digest equality gate.
 - Early publication claim → `AC-003` and `FORBID-001` are test-pinned, and `SR` is the only commit allowed to set them.
-- Local verifier red on the large binary → disclosed (issues #80/#101 (streaming analysis; the tracked pair now passes the local verifier)), with the external check as authority.
+- Large tracked binary → no longer a local-verifier risk: #80 was closed by the #101 streaming analysis, and the full local gate passed on this wave before the review round.

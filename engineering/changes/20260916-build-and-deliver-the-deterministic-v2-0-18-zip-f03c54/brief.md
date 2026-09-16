@@ -3,7 +3,7 @@
 > Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown explains context and cannot override typed IDs, risk, acceptance criteria, forbidden outcomes, or approval scopes.
 
 Change ID: `20260916-build-and-deliver-the-deterministic-v2-0-18-zip-f03c54`
-Route: `f03c541d1848` (base `fc8d9e6` = the release-sync merge)
+Route: `f03c541d184f` (base `fc8d9e6` = the release-sync merge)
 Risk: high
 
 ## Problem

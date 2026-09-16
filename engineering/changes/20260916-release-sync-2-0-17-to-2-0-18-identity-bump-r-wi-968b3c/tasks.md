@@ -6,5 +6,5 @@
 - [x] Runtime dossier post-106 from post-99 with fresh read-only systemctl verification; evidence pointer swapped.
 - [x] Lockstep test literals moved in the same commit; three coupled modules green.
 - [x] mistakes.md recurrence entry for the twice-repeated kill-by-pattern gate destruction.
-- [ ] `grok_verify --mode pr` on the frozen tree, then delivery through a pull request gated on the exact-head App check.
-- [ ] After merge: stage A (artifact child) in a separate wave with its own delegated grants.
+- [x] `grok_verify --mode pr` PASS 16/16 on `f8c5021` (changed=27); PR #107 merged as `fc8d9e6f11bb188ee514784d3b6f614a6da72803` on App check `104782126773` SUCCESS.
+- [x] Stage A opened as its own wave (route `f03c541d184f`, package `20260916-build-and-deliver-the-deterministic-v2-0-18-zip-f03c54`); the remaining R lifecycle rows move to the SR paperwork wave like the v2.0.17 chain's.
