@@ -1,0 +1,121 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-implement-capability-selected-engine-sharding-fo-8ed0fb",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Retake closed defect 33 (parallel local verification) on the recorded condition: the runner selects its engine from what the interpreter actually provides. The preserved head 6d72d4c is ported (runner module, its test suite, the requirements pin file, and the _python/_command_check wiring) and then pivoted: select_engine/parallel_engine_ready decide BEFORE execution, an unimportable xdist engine degrades to exactly one disclosed sequential unittest pass (versions carry engine=unittest-degraded and the check's backend label follows the engine actually used), while an importable-but-unpinned engine keeps the old strict contract (fail, no silent serial retry). The ported suite is proven satisfiable on THIS pytest-free host, which is exactly the Trust CI image condition that killed the original PR.",
+    "success_metric": "tests.test_python_test_runner 19 OK with no pytest importable; mandatory root-unittest path in grok_verify --mode pr PASS on this head; the external exact-head check on this pull request is itself the proof under no-pytest conditions",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "verification",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Engine choice is capability-based and pre-execution: workers>0 with importable pytest+xdist (+pytest_cov when measured) uses xdist; otherwise exactly one sequential unittest/coverage pass runs, disclosed via versions.engine=unittest-degraded and the matching backend label; a degraded run never reports the pytest-xdist backend.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The declared pin contract stays strict whenever the engine is importable: missing or mismatched pytest/pytest-xdist/pytest-cov/coverage versions fail with the python-test-requirements.txt message and perform no silent serial retry.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Default behavior without opt-in stays equivalent to the main verifier except one disclosed improvement: the legacy coverage run executes under a private temporary COVERAGE_FILE, so a parent-supplied COVERAGE_FILE is preserved untouched; opt-in via .grok-test-runner.json (schema_version+workers, validated, 0..64/auto), GROK_TEST_WORKERS override, and the _GROK_TEST_CHILD single-worker guard are ported unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The recorded re-take condition is met verifiably: the mandatory no-pytest root-unittest environment runs this suite green (measured on this host and enforced again by the App-owned exact-head check on this pull request), and work_inventory.retained_unresolved still describes the original head, not this one.",
+      "evidence": [
+        {
+          "test": "tests.test_python_test_runner"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No deployed Trust CI policy, GitHub App configuration or branch protection is touched; the runner is local verification evidence only, and no production or external system is invoked.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Boundaries ported intact: output cap 2 MiB, 900s timeout with process-group cleanup, workers capped at 64, POSIX-only parallel (otherwise serial), closed config shape.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Auto-installing anything or consulting the network: python-test-requirements.txt is a declarative pin list; absence of a package selects the serial engine, it never triggers installation.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Claiming a backend that did not run (xdist labels on a degraded pass) or letting a degraded pass mask the request: the requested workers and the used engine are both recorded in the check details.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "python-unittest check details: backend label, workers, versions JSON incl. engine; per-run durations line",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

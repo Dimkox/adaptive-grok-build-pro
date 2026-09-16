@@ -1,0 +1,35 @@
+{
+  "change_id": "20260916-implement-capability-selected-engine-sharding-fo-8ed0fb",
+  "created_at": "2026-09-16T15:05:31+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T15:05:31+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T15:06:51+00:00",
+      "from": "draft",
+      "reason": "typed spec AC/INV/FORBID with engine-selection contract; yellow tier per verification tooling",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T15:06:51+00:00",
+      "from": "scoped",
+      "reason": "port preserved head 6d72d4c unchanged, pivot only the fail-on-missing-pytest contract into pre-execution capability selection",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T15:06:51+00:00",
+      "from": "approved",
+      "reason": "runner+suite+pin file+wiring ported, select_engine added, contract tests reworked, 19 OK on this pytest-free host",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "8ed0fb672c38",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Implement capability-selected engine sharding for local verification unittest and pytest lanes with closed defect 33 retake",
+  "updated_at": "2026-09-16T15:06:51+00:00"
+}

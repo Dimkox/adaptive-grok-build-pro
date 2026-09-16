@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+  "base_fingerprint": "aa1df1d6a7a0fd886fe9c8f3acd94f4a46e4b757e9f0ec7ae665837a3165eb36",
+  "complexity": "standard",
+  "created_at": "2026-09-16T14:53:56+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "8ed0fb672c38",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Implement capability-selected engine sharding for local verification unittest and pytest lanes with closed defect 33 retake",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}
