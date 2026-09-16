@@ -59,4 +59,3 @@ field-by-field equality of the archived v2.0.16 record against the base `publish
 tests.test_change_spec` → **Ran 119 tests, OK**. `PROJECT_STATE.json` now satisfies the canonical dump
 check. The remaining unfixed items are none; both reviews are PASS and this file records every
 disposition.
-

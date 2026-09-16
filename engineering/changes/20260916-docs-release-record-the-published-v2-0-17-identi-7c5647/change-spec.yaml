@@ -44,7 +44,9 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": [
+      "pull-request-merge"
+    ]
   },
   "change_id": "20260916-docs-release-record-the-published-v2-0-17-identi-7c5647",
   "contracts": {
@@ -96,7 +98,7 @@
     "id": "OBJ-001",
     "statement": "Record the published v2.0.17 release in the tree: move published_release to the tag/artifact/check binding, archive v2.0.16 into prior_published_releases, flip local_candidate to published with the child's own merge identities that only the successor may write, advance the active_delivery pointers, and move every coupled test literal in the same commit while operational_activation stays false.",
     "success_metric": "tests.test_structure/test_project_state/test_manifest_package/test_change_spec green (119 tests) on the frozen tree; published_release.tag == v2.0.17 with the recomputable ZIP and sidecar digests; no installed service changed",
-    "target": "UNKNOWN"
+    "target": "main"
   },
   "observability": [
     {
@@ -108,10 +110,12 @@
     }
   ],
   "risk": {
+    "tier": "yellow",
     "domains": [
-      "api"
-    ],
-    "tier": "red"
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
   },
   "rollback": {
     "maximum_steps": 1,
