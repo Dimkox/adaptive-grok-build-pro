@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-fix-architecture-stream-oversized-tracked-binari-1895e1",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Analyse a tracked object larger than MAX_ANALYZED_FILE_BYTES without buffering it: the changed-artifact loop needs only size, SHA-256 and a binary marker, so those are computed from a bounded stream while an oversized *text* object still refuses analysis and an explicit content request still raises the existing limit. This removes the false local red that issue #80 records on every release artifact-child pull request.",
+    "success_metric": "diff_architecture(base_sha=release-sync merge, worktree=True) over a tree containing the 10,940,676-byte tracked v2.0.17 ZIP returns an added artifact whose head_size and head_digest equal the buffered sha256, instead of raising 'worktree file exceeds analysis limit'",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "verification",
+      "test-infra",
+      "architecture"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "An oversized tracked binary no longer aborts architecture analysis: both the commit-mode and worktree-mode diff produce an added artifact carrying the real size, the streaming SHA-256 equal to the buffered digest, and None line counts, matching how _line_stats already treats binary content.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "No memory bound is widened: MAX_ANALYZED_FILE_BYTES, MAX_GIT_OUTPUT_BYTES, MAX_DIFF_ARTIFACT_BYTES and the aggregate byte accounting keep their values, and oversized text still raises an 'exceeds analysis limit' error in both diff modes.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Explicit content reads are unchanged: read_diff_file/read_diff_files still refuse an oversized path, so a caller that needs bytes cannot receive a silently truncated or streamed substitute.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Identity and no-follow discipline survive the refactor: the worktree walk stays O_NOFOLLOW per component, non-regular files and symlinks still raise, a vanished file still yields None, and a file whose dev/ino/size/mtime change during streaming still raises.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The public ChangedArtifact contract is unchanged in type and meaning; every path at or below the analysis limit produces byte-identical size, digest and line counts to the pre-fix implementation.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "No new subprocess surface: git is still invoked with an argument vector and shell=False, with the same restricted environment as every other call in the module.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Raising or removing MAX_ANALYZED_FILE_BYTES, or skipping the digest of an oversized file, to make a check pass; silence must never be bought with a wider limit.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Reporting a streamed binary artifact as verified content when only its digest was computed, or letting a tampered oversized file hash to a value that cannot be distinguished from the committed one.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "grok_verify --mode pr architecture stage over a tree with a tracked >10MB ZIP reports fitness/drift/diagrams without a limit error, and the external exact-head App check stays green",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

@@ -32,6 +32,7 @@ MAX_GIT_OUTPUT_BYTES = 20_000_000
 MAX_CHANGED_PATHS = 20_000
 MAX_BATCH_INPUT_BYTES = 65_536
 MAX_ANALYZED_FILE_BYTES = 10_000_000
+BLOB_STREAM_CHUNK_BYTES = 64 * 1024
 MAX_DIFF_ARTIFACT_BYTES = 50_000_000
 MAX_LINE_STAT_LINES = 100_000
 _EXACT_SHA = re.compile(r"[0-9a-f]{40}")
@@ -349,19 +350,8 @@ def _worktree_blob(root: Path, path: str) -> bytes | None:
     directory = -1
     descriptor = -1
     try:
-        directory = os.open(root, os.O_RDONLY | directory_flag | no_follow)
-        for component in parts[:-1]:
-            child = os.open(
-                component,
-                os.O_RDONLY | directory_flag | no_follow,
-                dir_fd=directory,
-            )
-            os.close(directory)
-            directory = child
-        descriptor = os.open(
-            parts[-1],
-            os.O_RDONLY | nonblock | no_follow,
-            dir_fd=directory,
+        directory, descriptor = _open_worktree_file(
+            root, parts, directory_flag=directory_flag, no_follow=no_follow, nonblock=nonblock
         )
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
@@ -397,6 +387,213 @@ def _worktree_blob(root: Path, path: str) -> bytes | None:
     if len(value) != before.st_size:
         raise ArchitectureError(f"worktree file was truncated during analysis: {path}", code="io")
     return value
+
+
+def _open_worktree_file(
+    root: Path,
+    parts: list[str],
+    *,
+    directory_flag: int,
+    no_follow: int,
+    nonblock: int,
+) -> tuple[int, int]:
+    """Walk `parts` from `root` with O_NOFOLLOW on every step; return open (dir, file) fds."""
+
+    directory = -1
+    try:
+        directory = os.open(root, os.O_RDONLY | directory_flag | no_follow)
+        for component in parts[:-1]:
+            child = os.open(
+                component,
+                os.O_RDONLY | directory_flag | no_follow,
+                dir_fd=directory,
+            )
+            os.close(directory)
+            directory = child
+        descriptor = os.open(
+            parts[-1],
+            os.O_RDONLY | nonblock | no_follow,
+            dir_fd=directory,
+        )
+    except OSError:
+        if directory >= 0:
+            os.close(directory)
+        raise
+    return directory, descriptor
+
+
+@dataclass(frozen=True)
+class _BlobProfile:
+    """Size, SHA-256 and binary marker for one side of a diff; `content` is None when the
+    object was too large to buffer and was hashed from a stream instead."""
+
+    size: int
+    digest: str
+    binary: bool
+    content: bytes | None
+
+
+def _profile_worktree_blob(root: Path, path: str) -> _BlobProfile | None:
+    parts = path.split("/")
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise ArchitectureError(f"invalid worktree path: {path}", code="path")
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    nonblock = getattr(os, "O_NONBLOCK", None)
+    if (
+        not isinstance(no_follow, int)
+        or no_follow == 0
+        or not isinstance(directory_flag, int)
+        or directory_flag == 0
+        or not isinstance(nonblock, int)
+        or os.open not in getattr(os, "supports_dir_fd", set())
+    ):
+        raise ArchitectureError("worktree analysis requires O_NOFOLLOW", code="io")
+    try:
+        directory, descriptor = _open_worktree_file(
+            root, parts, directory_flag=directory_flag, no_follow=no_follow, nonblock=nonblock
+        )
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise ArchitectureError(f"worktree file read failed: {path}: {exc}", code="io") from exc
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            raise ArchitectureError(f"worktree path is not a regular file: {path}", code="io")
+        if before.st_size <= MAX_ANALYZED_FILE_BYTES:
+            value = _worktree_blob(root, path)
+            if value is None:
+                raise ArchitectureError(f"worktree file vanished during analysis: {path}", code="io")
+            return _BlobProfile(
+                size=len(value),
+                digest=hashlib.sha256(value).hexdigest(),
+                binary=b"\0" in value,
+                content=value,
+            )
+        digest = hashlib.sha256()
+        total = 0
+        binary = False
+        while True:
+            chunk = os.read(descriptor, BLOB_STREAM_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            digest.update(chunk)
+            if not binary and b"\0" in chunk:
+                binary = True
+        after = os.fstat(descriptor)
+    except OSError as exc:
+        raise ArchitectureError(f"worktree file read failed: {path}: {exc}", code="io") from exc
+    finally:
+        os.close(descriptor)
+        os.close(directory)
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_size,
+        after.st_mtime_ns,
+    ):
+        raise ArchitectureError(f"worktree file changed during analysis: {path}", code="io")
+    if total != before.st_size:
+        raise ArchitectureError(f"worktree file was truncated during analysis: {path}", code="io")
+    return _BlobProfile(size=total, digest=digest.hexdigest(), binary=binary, content=None)
+
+
+def _git_blob_entry(root: Path, sha: str, path: str) -> tuple[str, int] | None:
+    encoded = os.fsencode(path)
+    if b"\0" in encoded:
+        raise ArchitectureError("invalid Git blob path", code="path")
+    raw = _required_output(
+        _git(
+            root,
+            [
+                "--literal-pathspecs",
+                "ls-tree",
+                "-l",
+                "-z",
+                "--full-tree",
+                sha,
+                "--",
+                path,
+            ],
+            allow_failure=True,
+            limit=min(MAX_GIT_OUTPUT_BYTES, 4_096 + len(encoded)),
+        ),
+        operation="read Git blob metadata",
+    )
+    if not raw:
+        return None
+    record = raw.split(b"\0", 1)[0]
+    if b"\t" not in record:
+        raise ArchitectureError("invalid Git blob metadata", code="git")
+    metadata, returned_path = record.split(b"\t", 1)
+    fields = metadata.split()
+    if _path_text(returned_path) != path or len(fields) != 4:
+        raise ArchitectureError(f"unexpected Git tree entry for {path}", code="git")
+    mode, kind, object_id, size_raw = fields
+    if kind != b"blob" or mode not in {b"100644", b"100755"}:
+        raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
+    if _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
+        raise ArchitectureError(f"invalid Git blob identity for {path}", code="git")
+    if not size_raw.isdigit():
+        raise ArchitectureError(f"invalid Git blob size for {path}", code="git")
+    return object_id.decode("ascii"), int(size_raw)
+
+
+def _profile_git_blob(root: Path, sha: str, path: str) -> _BlobProfile | None:
+    entry = _git_blob_entry(root, sha, path)
+    if entry is None:
+        return None
+    object_id, size = entry
+    if size <= MAX_ANALYZED_FILE_BYTES:
+        value = _git_blob(root, sha, path)
+        if value is None:
+            raise ArchitectureError(f"Git blob vanished during analysis: {path}", code="io")
+        return _BlobProfile(
+            size=len(value),
+            digest=hashlib.sha256(value).hexdigest(),
+            binary=b"\0" in value,
+            content=value,
+        )
+    digest = hashlib.sha256()
+    total = 0
+    binary = False
+    # A tracked release ZIP only ever needs a digest and a size here, so it is hashed
+    # from a bounded pipe instead of being buffered whole and tripping the analysis limit.
+    process = subprocess.Popen(  # nosec B603
+        _git_command(["cat-file", "blob", object_id], safe_directory=root),
+        cwd=root,
+        env=_git_environment(),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        assert process.stdout is not None
+        while True:
+            chunk = process.stdout.read(BLOB_STREAM_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            digest.update(chunk)
+            if not binary and b"\0" in chunk:
+                binary = True
+        error = process.stderr.read() if process.stderr is not None else b""
+        returncode = process.wait(timeout=_GIT_TIMEOUT_SECONDS)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        process.kill()
+        raise ArchitectureError(f"Git blob stream failed: {path}: {exc}", code="io") from exc
+    finally:
+        for stream in (process.stdout, process.stderr):
+            if stream is not None:
+                stream.close()
+    if returncode or total != size:
+        message = (error or b"").decode("utf-8", "replace").strip()
+        raise ArchitectureError(
+            f"Git blob stream incomplete for {path}: {message or total != size}", code="io"
+        )
+    return _BlobProfile(size=total, digest=digest.hexdigest(), binary=binary, content=None)
 
 
 @dataclass(frozen=True)
@@ -878,30 +1075,45 @@ def diff_architecture(
     paths = _changed_paths(repository, base, head, worktree=worktree)
     artifacts: list[ChangedArtifact] = []
     artifact_bytes = 0
+    head_side = None if worktree else _required_head(head)
     for path in paths:
-        old = _git_blob(repository, base, path)
-        new = (
-            _worktree_blob(repository, path)
+        base_profile = _profile_git_blob(repository, base, path)
+        head_profile = (
+            _profile_worktree_blob(repository, path)
             if worktree
-            else _git_blob(repository, _required_head(head), path)
+            else _profile_git_blob(repository, head_side, path)
         )
-        artifact_bytes += len(old or b"") + len(new or b"")
+        artifact_bytes += (base_profile.size if base_profile else 0) + (
+            head_profile.size if head_profile else 0
+        )
         if artifact_bytes > MAX_DIFF_ARTIFACT_BYTES:
             raise ArchitectureError("aggregate changed artifact byte limit exceeded", code="limit")
-        status = "added" if old is None and new is not None else (
-            "deleted" if old is not None and new is None else "modified"
+        status = "added" if base_profile is None and head_profile is not None else (
+            "deleted" if base_profile is not None and head_profile is None else "modified"
         )
-        added, deleted = _line_stats(old, new)
+        oversized_text = any(
+            profile is not None and profile.content is None and not profile.binary
+            for profile in (base_profile, head_profile)
+        )
+        if oversized_text:
+            raise ArchitectureError(f"text file exceeds analysis limit: {path}", code="limit")
+        if any(profile.binary for profile in (base_profile, head_profile) if profile is not None):
+            added, deleted = None, None
+        else:
+            added, deleted = _line_stats(
+                base_profile.content if base_profile else None,
+                head_profile.content if head_profile else None,
+            )
         artifacts.append(
             ChangedArtifact(
                 path=path,
                 status=status,
                 added_lines=added,
                 deleted_lines=deleted,
-                base_size=len(old or b""),
-                head_size=len(new or b""),
-                base_digest=None if old is None else hashlib.sha256(old).hexdigest(),
-                head_digest=None if new is None else hashlib.sha256(new).hexdigest(),
+                base_size=base_profile.size if base_profile else 0,
+                head_size=head_profile.size if head_profile else 0,
+                base_digest=base_profile.digest if base_profile else None,
+                head_digest=head_profile.digest if head_profile else None,
             )
         )
     changes = _change_records(base_state, head_state)

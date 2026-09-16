@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import hashlib
 import importlib
 import json
 import os
@@ -2621,6 +2622,49 @@ class ArchitectureFitnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch exceeds analysis limit"):
                 DIFF.read_diff_files(repo.root, worktree, (paths[0], paths[1]))
             self.assertEqual(worktree_blob.call_count, 2)
+
+    def test_oversized_tracked_binary_is_streamed_and_still_verified(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        blob = b"\0" + b"z" * (DIFF.MAX_ANALYZED_FILE_BYTES + 8)
+        expected = hashlib.sha256(blob).hexdigest()
+        base = repo.commit("base")
+        repo.write_bytes("packages/huge.bin", blob)
+        head = repo.commit("huge tracked binary")
+
+        commit_diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        artifact = next(item for item in commit_diff.artifacts if item.path == "packages/huge.bin")
+        self.assertEqual(artifact.status, "added")
+        self.assertEqual(artifact.base_size, 0)
+        self.assertEqual(artifact.head_size, len(blob))
+        self.assertEqual(artifact.head_digest, expected)
+        self.assertIsNone(artifact.added_lines)
+        self.assertIsNone(artifact.deleted_lines)
+
+        worktree_diff = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        worktree_artifact = next(
+            item for item in worktree_diff.artifacts if item.path == "packages/huge.bin"
+        )
+        self.assertEqual(worktree_artifact.head_size, len(blob))
+        self.assertEqual(worktree_artifact.head_digest, expected)
+
+        repo.write_bytes("packages/huge.bin", b"\0" + b"y" * (DIFF.MAX_ANALYZED_FILE_BYTES + 8))
+        tampered = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        tampered_artifact = next(
+            item for item in tampered.artifacts if item.path == "packages/huge.bin"
+        )
+        self.assertNotEqual(tampered_artifact.head_digest, expected)
+
+    def test_oversized_text_file_still_refuses_analysis(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        base = repo.commit("base")
+        repo.write_bytes("src/oversized_text.py", b"x" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1))
+        head = repo.commit("oversized text")
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "exceeds analysis limit"):
+            FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "exceeds analysis limit"):
+            FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
 
     def test_package_child_import_uses_exact_local_module_provenance(self) -> None:
         system = _system()
