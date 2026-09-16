@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-docs-state-the-release-chain-landing-convention-627a16",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make two facts discoverable where a routed agent actually looks: state in START_HERE.md that the commits of a release chain (R, A, SR) are recorded through current_unreleased_change and local_candidate rather than as delivered_change_history landing rows, and replace the three 'not inspected or inferred' gate-failure placeholders in work_inventory with the causes read from the retained Trust CI job records for PRs #33, #15 and #21.",
+    "success_metric": "START_HERE states the convention; no work_inventory entry claims an uninspected cause that is in fact inspected; every moved value is asserted by the coupled test",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "START_HERE.md's handoff paragraph tells a fresh agent where release-chain commits are recorded, so the convention is not discoverable only inside a PROJECT_STATE prose field.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Each of the three work_inventory entries names its cause as observed from the retained job record, with the failing command and the assertion or error text, and keeps stating that the observation is historical and that the check displayed on the pull request is not merge eligibility.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "No release, tag, artifact, installation or activation is claimed or performed by this commit; operational_activation stays false and every published release record is byte-unchanged.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The inventory reflects PR #33 being closed without merging during review: open_pull_requests is empty, #33 appears in retained_unresolved as closed_unmerged with its inspected cause and the condition for re-taking the work, and every bootstrap document that named it as open says so too.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "published_release, prior_published_releases, local_candidate, milestones and the frozen migration range are not modified by this commit.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "The wording of an uninspected cause is never replaced by a guess: only causes reproduced from the retained command output are recorded.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Asserting a failure cause that was not observed in a retained job record, or implying that a historical FAILURE conclusion still applies to a current head.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Performing or claiming any production action from this documentation change.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this pull request",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

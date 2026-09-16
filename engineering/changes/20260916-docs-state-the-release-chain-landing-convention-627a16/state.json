@@ -1,0 +1,29 @@
+{
+  "change_id": "20260916-docs-state-the-release-chain-landing-convention-627a16",
+  "created_at": "2026-09-16T06:19:02+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T06:19:02+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T06:21:03+00:00",
+      "from": "draft",
+      "reason": "scoped: prose-only change; causes quoted from retained Trust CI job records, pins moved in the same commit",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T06:21:04+00:00",
+      "from": "scoped",
+      "reason": "approved: prose-only change; causes quoted from retained Trust CI job records, pins moved in the same commit",
+      "to": "approved"
+    }
+  ],
+  "route_id": "627a16845fc4",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "docs: state the release-chain landing convention where routed agents read it and record inspected gate failure causes",
+  "updated_at": "2026-09-16T06:21:04+00:00"
+}
