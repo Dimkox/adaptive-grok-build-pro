@@ -461,16 +461,8 @@ def _profile_worktree_blob(root: Path, path: str) -> _BlobProfile | None:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             raise ArchitectureError(f"worktree path is not a regular file: {path}", code="io")
-        if before.st_size <= MAX_ANALYZED_FILE_BYTES:
-            value = _worktree_blob(root, path)
-            if value is None:
-                raise ArchitectureError(f"worktree file vanished during analysis: {path}", code="io")
-            return _BlobProfile(
-                size=len(value),
-                digest=hashlib.sha256(value).hexdigest(),
-                binary=b"\0" in value,
-                content=value,
-            )
+        keep = before.st_size <= MAX_ANALYZED_FILE_BYTES
+        chunks: list[bytes] = [] if keep else []
         digest = hashlib.sha256()
         total = 0
         binary = False
@@ -480,6 +472,8 @@ def _profile_worktree_blob(root: Path, path: str) -> _BlobProfile | None:
                 break
             total += len(chunk)
             digest.update(chunk)
+            if keep:
+                chunks.append(chunk)
             if not binary and b"\0" in chunk:
                 binary = True
         after = os.fstat(descriptor)
@@ -497,7 +491,87 @@ def _profile_worktree_blob(root: Path, path: str) -> _BlobProfile | None:
         raise ArchitectureError(f"worktree file changed during analysis: {path}", code="io")
     if total != before.st_size:
         raise ArchitectureError(f"worktree file was truncated during analysis: {path}", code="io")
-    return _BlobProfile(size=total, digest=digest.hexdigest(), binary=binary, content=None)
+    return _BlobProfile(
+        size=total,
+        digest=digest.hexdigest(),
+        binary=binary,
+        content=b"".join(chunks) if keep else None,
+    )
+
+
+def _stream_git_blob(root: Path, object_id: str, expected_size: int, path: str) -> tuple[str, bool]:
+    """Hash one Git blob without buffering it, enforcing the same deadline and output caps as
+    `_run_capped`; returns the SHA-256 and whether a NUL byte appeared anywhere in the object."""
+
+    process = subprocess.Popen(  # nosec B603
+        _git_command(["cat-file", "blob", object_id], safe_directory=root),
+        cwd=root,
+        env=_git_environment(),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        start_new_session=True,
+    )
+    selector: selectors.BaseSelector | None = None
+    digest = hashlib.sha256()
+    total = 0
+    binary = False
+    stderr = bytearray()
+    try:
+        if process.stdout is None or process.stderr is None:
+            raise ArchitectureError("streamed blob pipes are unavailable", code="io")
+        selector = selectors.DefaultSelector()
+        for stream in (process.stdout, process.stderr):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ)
+        deadline = time.monotonic() + _GIT_TIMEOUT_SECONDS
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ArchitectureError(f"Git blob stream timed out: {path}", code="timeout")
+            for key, _mask in selector.select(remaining):
+                chunk = os.read(key.fileobj.fileno(), BLOB_STREAM_CHUNK_BYTES)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    key.fileobj.close()
+                    continue
+                if key.fileobj is process.stderr:
+                    stderr.extend(chunk[: max(0, 65_536 - len(stderr))])
+                    continue
+                total += len(chunk)
+                if total > expected_size:
+                    raise ArchitectureError(f"Git blob stream exceeded its size: {path}", code="limit")
+                digest.update(chunk)
+                if not binary and b"\0" in chunk:
+                    binary = True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise ArchitectureError(f"Git blob stream timed out: {path}", code="timeout")
+        returncode = process.wait(timeout=remaining)
+    except ArchitectureError:
+        _stop_process(process)
+        raise
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        _stop_process(process)
+        raise ArchitectureError(f"Git blob stream failed: {path}: {exc}", code="io") from exc
+    finally:
+        if selector is not None:
+            selector.close()
+        for stream in (process.stdout, process.stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
+    if returncode:
+        detail = bytes(stderr).decode("utf-8", "replace").strip()
+        raise ArchitectureError(
+            f"Git blob stream failed for {path}: {detail or f'exit {returncode}'}", code="git"
+        )
+    if total != expected_size:
+        raise ArchitectureError(
+            f"Git blob stream was truncated for {path}: {total} of {expected_size} bytes",
+            code="io",
+        )
+    return digest.hexdigest(), binary
 
 
 def _git_blob_entry(root: Path, sha: str, path: str) -> tuple[str, int] | None:
@@ -556,44 +630,10 @@ def _profile_git_blob(root: Path, sha: str, path: str) -> _BlobProfile | None:
             binary=b"\0" in value,
             content=value,
         )
-    digest = hashlib.sha256()
-    total = 0
-    binary = False
-    # A tracked release ZIP only ever needs a digest and a size here, so it is hashed
-    # from a bounded pipe instead of being buffered whole and tripping the analysis limit.
-    process = subprocess.Popen(  # nosec B603
-        _git_command(["cat-file", "blob", object_id], safe_directory=root),
-        cwd=root,
-        env=_git_environment(),
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    try:
-        assert process.stdout is not None
-        while True:
-            chunk = process.stdout.read(BLOB_STREAM_CHUNK_BYTES)
-            if not chunk:
-                break
-            total += len(chunk)
-            digest.update(chunk)
-            if not binary and b"\0" in chunk:
-                binary = True
-        error = process.stderr.read() if process.stderr is not None else b""
-        returncode = process.wait(timeout=_GIT_TIMEOUT_SECONDS)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        process.kill()
-        raise ArchitectureError(f"Git blob stream failed: {path}: {exc}", code="io") from exc
-    finally:
-        for stream in (process.stdout, process.stderr):
-            if stream is not None:
-                stream.close()
-    if returncode or total != size:
-        message = (error or b"").decode("utf-8", "replace").strip()
-        raise ArchitectureError(
-            f"Git blob stream incomplete for {path}: {message or total != size}", code="io"
-        )
-    return _BlobProfile(size=total, digest=digest.hexdigest(), binary=binary, content=None)
+    # A tracked release ZIP only ever needs a digest and a size here, so it is hashed from a
+    # bounded pipe instead of being buffered whole and tripping the analysis limit.
+    digest, binary = _stream_git_blob(root, object_id, size, path)
+    return _BlobProfile(size=size, digest=digest, binary=binary, content=None)
 
 
 @dataclass(frozen=True)

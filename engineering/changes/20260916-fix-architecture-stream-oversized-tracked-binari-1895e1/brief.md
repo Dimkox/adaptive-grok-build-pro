@@ -40,5 +40,5 @@ Oversized tracked binaries are profiled from a bounded stream (64 KiB chunks): t
 ## Constraints
 
 - Backward compatibility: same public types and same results for every path at or below the limit.
-- Security: no new subprocess surface — argument vector, `shell=False`, the module's restricted git environment; the streamed case still verifies regularity, no-follow traversal and dev/ino/size/mtime stability.
+- Security: the change adds a second bounded process site (`_stream_git_blob`), built to the same discipline as `_run_capped` — argument vector with `shell=False`, the module's restricted git environment, non-blocking pipes under a `selectors` deadline, a capped stderr, a size ceiling that fails the moment more bytes arrive than `git ls-tree` promised, and `_stop_process` (group kill plus reap) on every error path. The object id reaching the argv is `_EXACT_SHA`-validated first, and the streamed case still verifies regularity, no-follow traversal and dev/ino/size/mtime stability.
 - Operational: rollback is a single revert; nothing external is touched.

@@ -8,7 +8,7 @@
 | P1 | Whole repository verifies | `python3 scripts/grok_verify.py --mode pr` |
 
 ## Automated checks
-- `python3 -m unittest tests.test_architecture_fitness` → 103 tests OK.
+- `python3 -m unittest tests.test_architecture_fitness` → 106 tests OK (5 oversized-object cases: streamed binary in both modes, tampered digest, late NUL, `modified`, forced-short-read truncation; plus the constant pin).
 - `python3 -m unittest tests.test_architecture_model tests.test_landing_architecture_boundaries` OK.
 - `ruff` clean on both changed files; `bandit` as invoked by the verifier.
 

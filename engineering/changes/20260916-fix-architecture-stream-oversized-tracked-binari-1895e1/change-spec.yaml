@@ -27,8 +27,11 @@
     },
     {
       "id": "AC-002",
-      "statement": "No memory bound is widened: MAX_ANALYZED_FILE_BYTES, MAX_GIT_OUTPUT_BYTES, MAX_DIFF_ARTIFACT_BYTES and the aggregate byte accounting keep their values, and oversized text still raises an 'exceeds analysis limit' error in both diff modes.",
+      "statement": "No memory bound is widened: MAX_ANALYZED_FILE_BYTES (10,000,000), MAX_GIT_OUTPUT_BYTES (20,000,000) and MAX_DIFF_ARTIFACT_BYTES (50,000,000) are asserted by value, oversized text still raises 'exceeds analysis limit' in both diff modes, and an oversized object still appears in artifacts and in the aggregate byte accounting, so size cannot buy either silence or an uncounted entry.",
       "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
         {
           "test": "tests/test_architecture_fitness.py"
         }
@@ -68,7 +71,7 @@
     },
     {
       "id": "INV-002",
-      "statement": "No new subprocess surface: git is still invoked with an argument vector and shell=False, with the same restricted environment as every other call in the module.",
+      "statement": "The second process site obeys the module's existing bounded-execution discipline: argument vector with shell=False, restricted environment, selectors deadline, capped stderr, a size ceiling, and _stop_process (group kill and reap) on every failure path; the object id is _EXACT_SHA-validated before it reaches argv.",
       "evidence": [
         {
           "receipt": "security_review"

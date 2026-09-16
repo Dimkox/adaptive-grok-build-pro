@@ -2623,6 +2623,58 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 DIFF.read_diff_files(repo.root, worktree, (paths[0], paths[1]))
             self.assertEqual(worktree_blob.call_count, 2)
 
+    def test_analysis_memory_constants_are_pinned(self) -> None:
+        # FORBID-001: widening a memory limit would silence the false red by moving the cliff,
+        # and every oversized fixture scales off these constants, so the values are the contract.
+        self.assertEqual(DIFF.MAX_ANALYZED_FILE_BYTES, 10_000_000)
+        self.assertEqual(DIFF.MAX_GIT_OUTPUT_BYTES, 20_000_000)
+        self.assertEqual(DIFF.MAX_DIFF_ARTIFACT_BYTES, 50_000_000)
+        self.assertLess(DIFF.BLOB_STREAM_CHUNK_BYTES, DIFF.MAX_ANALYZED_FILE_BYTES)
+
+    def test_oversized_binary_marker_is_found_anywhere_in_the_stream(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        blob = b"t" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1) + b"\0"
+        base = repo.commit("base")
+        repo.write_bytes("packages/late_nul.bin", blob)
+        head = repo.commit("large object whose NUL is in the last chunk")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        artifact = next(item for item in diff.artifacts if item.path == "packages/late_nul.bin")
+        self.assertIsNone(artifact.added_lines)
+        self.assertEqual(artifact.head_digest, hashlib.sha256(blob).hexdigest())
+
+    def test_oversized_binary_reports_modified_and_refuses_truncated_stream(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        original = b"\0" + b"a" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1)
+        repo.write_bytes("packages/mutable.bin", original)
+        base = repo.commit("first oversized binary")
+        replacement = b"\0" + b"b" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1)
+        repo.write_bytes("packages/mutable.bin", replacement)
+        head = repo.commit("second oversized binary")
+
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        artifact = next(item for item in diff.artifacts if item.path == "packages/mutable.bin")
+        self.assertEqual(artifact.status, "modified")
+        self.assertEqual(artifact.base_size, len(original))
+        self.assertEqual(artifact.head_size, len(replacement))
+        self.assertEqual(artifact.base_digest, hashlib.sha256(original).hexdigest())
+        self.assertEqual(artifact.head_digest, hashlib.sha256(replacement).hexdigest())
+        self.assertIsNone(artifact.added_lines)
+        self.assertIsNone(artifact.deleted_lines)
+
+        real_read = DIFF.os.read
+
+        def short_read(fd: int, size: int) -> bytes:
+            chunk = real_read(fd, size)
+            return chunk[:-1] if len(chunk) > 1 else chunk
+
+        with patch.object(DIFF.os, "read", side_effect=short_read):
+            with self.assertRaisesRegex(
+                ARCHITECTURE.ArchitectureError, "was truncated during analysis"
+            ):
+                DIFF._profile_worktree_blob(repo.root, "packages/mutable.bin")
+
     def test_oversized_tracked_binary_is_streamed_and_still_verified(self) -> None:
         repo = GitArchitectureRepo(self)
         repo.model(_system(), _rules())

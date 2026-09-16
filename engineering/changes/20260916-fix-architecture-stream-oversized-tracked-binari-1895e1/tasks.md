@@ -7,6 +7,7 @@
 - [x] Prove the streamed digest equals the buffered `sha256` for the real tracked ZIP, in commit and worktree modes.
 - [x] Add fitness tests: oversized binary streamed+verified (incl. a tampered digest), oversized text still refused.
 - [x] `tests.test_architecture_fitness` 103 tests OK; `tests.test_architecture_model` OK; `ruff` clean.
-- [ ] Independent code review and test review, then `grok_verify --mode pr` on the frozen tree.
+- [x] Independent code review (PASS, 1 Important: the first `Popen` bypassed `_run_capped`'s deadline/caps/reaping; rewritten as `_stream_git_blob`) and test review (PASS, 2 Important: the widened-constant mutation stayed green, and late-NUL plus the truncation guard were untested) — dispositions in `evidence/review-response.md`.
+- [x] Follow-up commit adds the constant pin, the late-NUL case, the oversized `modified` case and a forced-short-read truncation test: `tests.test_architecture_fitness` 106 tests OK, 166 adjacent tests OK.
 - [ ] Deliver as a pull request and merge only on the exact-head App check.
 - [ ] Comment the outcome on issue #80 and close it after the merge.
