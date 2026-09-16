@@ -1288,8 +1288,6 @@ def _bounded_json_document(value: Any, resolver: _SchemaResolver) -> bool:
 def _valid_schema_scalar(value: Any) -> bool:
     if value is None or isinstance(value, (str, bool)):
         return True
-    if isinstance(value, bool):
-        return False
     if isinstance(value, int):
         return True
     return isinstance(value, float) and math.isfinite(value)

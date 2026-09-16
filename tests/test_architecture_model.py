@@ -2022,7 +2022,7 @@ class ArchitectureModelTests(unittest.TestCase):
             deep_member = {"nested": deep_member}
         # A member is opaque data: schema-looking keys inside it are values and
         # must not be resolved or evaluated as subschemas (FORBID-001).
-        inert = _json_schema({"profile": {"enum": [dict(fact_a), {"$ref": "file:///etc/passwd", "x": [{"const": {"type": "string"}}]}]}})
+        inert = _json_schema({"profile": {"enum": [dict(fact_a), {"$ref": "file:///etc/passwd", "x": [{"const": {"type": "string"}}]}, {"$ref": "#/definitions/unused"}]}})
         inert_result = ARCH.compare_contracts(self._record(base), self._record(inert), "consumer_accepts_old")
         self.assertEqual(inert_result.status, "compatible")
         adversarial = (
@@ -2048,6 +2048,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "consumer_accepts_old",
             )
         self.assertEqual(result.status, "unsupported")
+        self.assertEqual(result.reasons, ("malformed_contract_document",))
 
     def test_valid_enum_member_bounds_hold_under_direct_programmatic_documents(self) -> None:
         # The compare-path arms above mostly die in canonical-JSON preflight before
@@ -2068,6 +2069,15 @@ class ArchitectureModelTests(unittest.TestCase):
             self.assertFalse(ARCH._valid_enum_member({"a": {"b": 1}}, None, counter))
         self.assertGreater(counter[0], 1)
         self.assertTrue(ARCH._valid_enum_member("scalar-still-fine", None, [0]))
+        class _DenyResolver:
+            def __init__(self) -> None:
+                self.calls = 0
+            def consume(self) -> bool:
+                self.calls += 1
+                return False
+        deny = _DenyResolver()
+        self.assertFalse(ARCH._valid_enum_member({"a": 1}, deny, None))
+        self.assertEqual(deny.calls, 1)
 
     def test_openapi_comparison_rejects_removed_operation_and_weakened_authentication(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")

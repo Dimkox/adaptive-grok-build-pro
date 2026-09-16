@@ -1,156 +1,200 @@
-FAIL
-PASS-with-fixes is not an allowed verdict; the blocking defects are listed under Required remediation. Core-fix behavior IS guarded; the new guard's own boundary logic is not.
+PASS
+Re-review of the remediated head. All four previously-surviving mutation arms (a)–(d) are now killed; the
+remaining items are two narrow sub-branch gaps and documentation staleness, none blocking.
 
-# Test review — comparator opaque enum members (issue #104 wave)
+# Test re-review — comparator opaque enum members (#104 wave, head 7aa4c30)
 
-Scope: `git diff fc8d9e6f11bb188ee514784d3b6f614a6da72803..3831e2e9ff269fd70a18676b6832576a28cb2689` in
-`/home/pall/grok-projects/adaptive-grok-build-c104` (branch `feature/comparator-opaque-enum-members`):
-new test `test_object_valued_enum_members_are_bounded_opaque_values_not_schemas` in
-`tests/test_architecture_model.py`, `_valid_enum_member` + enum-loop change in
-`.grok-stack/adaptive_grok/architecture.py`, and the package `test-plan.md`.
-Method: read-only in the real repo; all mutations in a scratch clone
-`/tmp/c104-testreview.BjF7xs/repo` (mode 0700, detached at 3831e2e, byte-identical tree).
-The real repo was never mutated; every mutant file was reverted by full-file rewrite from `ORIG`.
+Baseline under review: `feature/comparator-opaque-enum-members` @ `7aa4c301193ef870ffbe255547042867ef2d20a7`,
+worktree clean (`git status --porcelain` → 0 lines). Prior FAIL was recorded against `3831e2e`
+("4 of 5 requested mutants survive"); this pass verifies closure of that exact list and hunts regressions.
+Method: read-only in the real repo; every mutation in a fresh private clone
+`/tmp/c104-rereview.R9KSOb/repo` (parent dir mode **0700**, detached at the reviewed SHA, tracked tree
+byte-identical to the source repo per `diff -r`). The real repo was never mutated; each mutant was restored
+by full-file rewrite and re-asserted (`RESTORED_OK`, `git status` 0 dirty at every checkpoint). The clone was
+deleted after the run.
 
-## 1. Mutation battery — matrix
+## 1. Mutation battery, re-run against the CURRENT tests
 
-| # | Mutant (in scratch clone) | Test outcome | Killed? |
+Baseline in the clone: `Ran 179 tests ... OK` (model 69 / fitness 106 / subset 4).
+
+| Arm | Mutant | Result | Killed by |
 | --- | --- | --- | --- |
-| a | `_valid_enum_member` body → unconditional `return True` | **OK — all arms still pass** | SURVIVED |
-| b | drop `isinstance(key, str)` in the dict branch | OK | SURVIVED |
-| c | drop `if depth > MAX_DEPTH: return False` (helper only) | OK | SURVIVED |
-| d | drop resolver `consume()` + counter increment/budget check (keep `None` guards) | OK | SURVIVED |
-| e | revert enum-loop branch to scalar-only (original bug) | FAIL `'unsupported' != 'compatible'` at the first compatible assert | **KILLED** |
-| f | make duplicate legal in the enum loop (`if encoded is None:`) | FAIL `(member='duplicate member') 'compatible' != 'unsupported'` | **KILLED** |
-| g | `_valid_enum_member` body → unconditional `return False` (control for accept side) | FAIL at first compatible assert | **KILLED** |
-| h | no-op replace (harness sanity control) | OK | survived, as required |
+| **a** | `_valid_enum_member` body → unconditional `return True` | **KILLED** (was SURVIVED) | `test_valid_enum_member_bounds_hold_under_direct_programmatic_documents` |
+| **b** | drop `isinstance(key, str)` in the dict branch | **KILLED** (was SURVIVED) | same direct test |
+| **c** | drop the helper depth check (`if depth > MAX_DEPTH: return False`) | **KILLED** (was SURVIVED) | same direct test |
+| **d** | drop budget consumption (resolver `consume()` **and** counter increment/check, None guards kept) | **KILLED** (was SURVIVED) | same direct test |
+| **e** | revert the enum loop to scalar-only (the original bug) | **KILLED** (was killed before too) | `test_object_valued_enum_members_are_bounded_opaque_values_not_schemas` |
 
-4 of 5 requested mutants survive. Root cause, established empirically, not inferred:
+So the FAIL condition is met: **5/5 of the requested arms now kill the suite**, and the killer for (a)–(d) is
+the newly added direct test, not the compare-path arms — exactly the mechanism remediation item #2 asked for.
+The prior diagnosis still holds structurally (the compare-path adversarial arms other than `duplicate` are
+resolved by `_bounded_json_document` preflight, which is strictly stronger than the helper), but the helper's
+own return paths are no longer untested.
 
-Adversarial-arm reason probe (unmutated HEAD):
+Extra arms run for confidence (all inside the clone, all restored):
 
-```
-duplicate       status=unsupported  reasons=('unsupported_schema_keyword',)
-non-finite      status=unsupported  reasons=('malformed_contract_document',)
-non-string-key  status=unsupported  reasons=('malformed_contract_document',)
-over-deep       status=unsupported  reasons=('malformed_contract_document',)
-budget (MAX_PARSED_NODES=8) status=unsupported reasons=('malformed_contract_document',)
-```
+| Extra arm | Mutant | Result |
+| --- | --- | --- |
+| d3 | drop **only** the counter increment + `> MAX_PARSED_NODES` check | **KILLED** — direct test (budget assert) |
+| d4 | drop only the `counter is None → return False` guard | **KILLED** (as `ERROR:` TypeError) — direct test |
+| a′ | helper → unconditional `return False` (accept-side control) | **KILLED** — both tests |
+| j | duplicate-member check removed (`if encoded is None:`) | **KILLED** — `(member='duplicate member') 'compatible' != 'unsupported'` |
+| h | enum members interpreted as subschemas (`elif not _unsupported_schema(item, resolver, current)`) | **KILLED** — enum test |
+| k | **narrowest FORBID-001 hazard**: helper rejects any member dict containing a `$ref`/`const` key | **KILLED** — and only at the new inert assertion (see §3) |
+| z | no-op replacement (harness sanity control) | survived (suite `OK`), as required |
+| d2 | drop **only** the resolver-branch `consume()` (counter branch intact) | **SURVIVED the full trio** — see §7 Minor-1 |
+| m | reject single-key `{"$ref": ...}` members only (public verdict flips `compatible`→`unsupported`) | **SURVIVED the full trio** — see §7 Minor-2 |
 
-Only the duplicate arm ever reaches the enum loop; the other four arms are rejected by
-`_bounded_json_document` preflight inside `compare_contracts` (`malformed_contract_document`,
-architecture.py ~2561) before `_unsupported_schema`/`_valid_enum_member` run. Preflight checks the
-same boundaries over the whole document (depth from doc root — strictly stronger than the helper's
-member-relative depth — string keys, finite scalars, ≥ the same per-node budget charge), so no input
-reachable through the public API can distinguish the helper's reject logic. The arms assert only
-`status == "unsupported"`, never the reason tuple, so preflight-vs-helper is invisible to them.
+Coverage of the requested remediation list from `evidence/review-response.md`: item #1 (reason tuples) partial
+— see §2; item #2 (discriminating helper test) **done and measured**; item #3 (`$ref`-in-member pin) **done**;
+item #4 (counts, no fitness-as-AC-001 citation, in-method import) — import **done**, counts **re-staled**, see §5/§6.
 
-Coverage confirms (full `tests.test_architecture_model` under `coverage`, `adaptive_grok/architecture.py`):
-lines 1307/1309/1310/1318/1319/1324/1325/1329 HIT; every reject return MISS —
-1308 (depth), 1311 (resolver budget), 1313–1317 (entire counter branch). No test anywhere causes
-`_valid_enum_member` to return False.
+## 2. Reason-tuple verification (asserted vs actually emitted)
 
-## 2. Coverage gaps against the typed spec
+Measured on the **unmutated** head by re-running the test's own document builders and `compare_contracts`
+(`result.reasons` is a `tuple`, so `assertEqual(result.reasons, gate)` is type-correct, not list-vs-tuple luck):
 
-- AC-001 "each node charged to the resolver/counter work budget": the **resolver branch** of
-  `_valid_enum_member` executes only in its consume-success form (via the compatible and duplicate
-  arms); its budget-exhausted `return False` (line 1311) is never exercised. It is reachable in
-  principle (shared `work_budget` is charged again during traversal after preflight), but the only
-  budget arm (patched `MAX_PARSED_NODES=8`) dies in preflight first — mutant d proves this. The
-  **counter branch** (1313–1317) is exercised by nothing: every in-module call site propagates a
-  non-None resolver, `compare_contracts` always supplies one, and the two direct
-  `ARCH._unsupported_schema` test calls (model tests ~3232/3245) also pass a resolver. Counter-mode
-  is dead for structural members in production and tests alike.
-- The plan/AC-001 cites `tests/test_architecture_fitness.py` as evidence for the object-enum AC, but
-  that file contains zero occurrences of `enum` — it evidences only INV-002 no-regression, never
-  AC-001. `tests.test_architecture_model` is the sole enum-object evidence.
-- No existing test passes a structural enum through the resolver path indirectly: the only
-  object-enum documents in the whole suite are inside the new test (`"enum": [{...}]` occurs solely
-  at test_architecture_model.py:2025–2026 plus the `dict(fact_*)` fixtures).
-  `test_added_landing_contracts_have_supported_closed_semantics` loads the real
-  `landing-backend-capability.v1` (object-enum document) but compares it as an **added** contract
-  (`old is None → continue` in architecture_fitness.py ~872), so `compare_contracts` never runs on
-  it — it passes identically at base fc8d9e6 (verified: base run 177 OK).
-- FORBID-001 ("never resolve $ref inside a member / validate keywords"): guarded only indirectly —
-  a subschema-interpretation mutant is killed because `profile_id`/`media_kinds` are not supported
-  schema keywords (`_has_only_keys` would reject the fact dicts). No arm contains a `$ref`-shaped
-  member (e.g. `{"$ref": "#/nope"}`, which as opaque data must stay accepted byte-exactly), so the
-  $ref-inert half of FORBID-001 is unpinned.
-- `counter is None → return False` (1314) and non-JSON Python values on the counter path (e.g. NaN
-  member reaching `_canonical_bytes(allow_nan=False)` would raise `ValueError` instead of returning
-  unsupported) have no test.
+| Arm | Asserted in test | Actually emitted by the code | Verdict |
+| --- | --- | --- | --- |
+| duplicate member | `('unsupported_schema_keyword',)` | `('unsupported_schema_keyword',)` | matches |
+| non-finite member (NaN inside a member) | `('malformed_contract_document',)` | `('malformed_contract_document',)` | matches |
+| non-string key member `{1: "x"}` | `('malformed_contract_document',)` | `('malformed_contract_document',)` | matches |
+| over-deep member (`MAX_DEPTH+5` wrapping) | `('malformed_contract_document',)` | `('malformed_contract_document',)` | matches |
+| budget arm (`MAX_PARSED_NODES=8`) | *no reason assertion* | `('malformed_contract_document',)` | unasserted — Minor-3 |
+| added `$ref`/`const` member | `status == "compatible"`, unasserted reasons | `compatible`, `()` | matches |
+| widened enum (`fact_a`→`fact_a`,`fact_b`) | `compatible` | `compatible`, `()` | matches |
 
-## 3. Duplicate-member arm
+No assertion names a reason the code does not emit. The three arms the prior review suspected of hiding behind
+preflight are now pinned as `malformed_contract_document`, which is the honest gate — the helper is *not* what
+rejects them, and the assertion documents that instead of obscuring it.
 
-It genuinely reaches the dup check, not an earlier rejection: unmutated reason is
-`unsupported_schema_keyword` (helper accepted both members, then `encoded in enum_values` fired),
-and mutant f (dup check removed) flips that exact arm to `compatible` → killed with
-`(member='duplicate member')` in the failure label. Both copies being canonical-equal is precisely
-why it survives preflight and the per-item budget: this is the only adversarial arm that executes
-`_valid_enum_member`'s accept path on structural members.
+## 3. FORBID-001 `$ref`-in-member inertness arm
 
-## 4. Hermeticity and style
+The added member is `{"$ref": "file:///etc/passwd", "x": [{"const": {"type": "string"}}]}` inside
+`"profile": {"enum": [...]}`, compared `consumer_accepts_old`.
 
-- New test: pure in-memory data, `self.subTest`, no `os.environ`, no network, no filesystem, no
-  subprocess; `mock.patch.object(ARCH, "MAX_PARSED_NODES", 8)` is a context manager, restored, and
-  the module reads the global at call time so the patch is effective. Deterministic; passes in
-  0.003s standalone; full model module green with it (68/68).
-- Style deviation: `from unittest import mock` inside the method (line 2034) duplicates the
-  file-level `from unittest import mock` (line 15) used bare by all ~14 other `mock.patch` sites in
-  the file. Redundant, inconsistent — cosmetic, not correctness.
-- Runs (scratch clone at 3831e2e; identical tree content, so identical to the repo):
-  all modules OK, no failures anywhere.
+* Behaviour at head: `status=compatible`, `reasons=()` — no resolution attempt, no keyword validation, member
+  accepted as opaque data and compared byte-exactly. Confirmed independently of the test.
+* **The assertion is load-bearing, proven narrowly**: mutant **k** (helper rejects a member dict merely
+  *containing* a `$ref`/`const` key, everything else intact) fails the suite at exactly one place —
+  `tests/test_architecture_model.py:2027  self.assertEqual(inert_result.status, "compatible")` →
+  `AssertionError: 'unsupported' != 'compatible'`. Nothing else in the module catches it, so this arm — not the
+  pre-existing `compatible` arms — is what pins "a schema-looking key inside a member is data".
+* Stronger `$ref` shapes verified behaviorally correct but **unpinned** (Minor-2): at head, a member that is
+  the exact resolver-triggering single-key form also stays inert —
+  `{"$ref": "#/properties/profile"}` → `compatible`; `{"$ref": "file:///etc/passwd"}` → `compatible`;
+  `{"$ref": "../../factory/contracts/jsonschema/landing-attempt-status.v1.schema.json"}` → `compatible`.
+  `_unsupported_schema` only attempts resolution when `len(schema) == 1`, and the shipped member carries two
+  keys, so a future change that resolves/rejects *single-key* `$ref` members stays green (mutant **m** survived
+  the whole trio). One extra member in the existing inert enum closes this; it needs no new document or arm.
+* Control check on the prior "removing the assertion fails" reading: deleting an assertion cannot fail, so the
+  discriminating test is the mutant above — that is the evidence reported here.
 
-## 5. Exact counts & test-plan honesty
+## 4. `_valid_schema_scalar` huge-int change (code-review Minor #3 fix)
+
+Direct evaluation at head: `ARCH._valid_schema_scalar(10**400)` → **True** (and `-10**400` → True);
+`float("nan")` → **False**; `float("inf")` → **False**; `float("-inf")` → **False**.
+
+Differential probe against the base expression (`isinstance(v,(int,float)) and not bool and math.isfinite(v)`)
+over `10**400, -10**400, 0, 1, -5, 2**53, nan, inf, -inf, 0.0, -0.0, 1.5, 1e308, True, False, None, '', 'x', [], {}, 10**6`:
+the **only** divergent inputs are the two huge ints, where base **raised `OverflowError`** and head returns True.
+Every float, bool, None, str and container verdict is identical → no float validation was loosened anywhere.
+Confirmed the fix removes a real crash, not a hypothetical one: at base
+`_unsupported_schema({"type":"number","const":10**400})` and `{"enum":[10**400]}` both raised
+`OverflowError: int too large to convert to float`; both now return without raising.
+
+Existing suites re-run as instructed: `tests.test_json_schema_subset` → `Ran 4 ... OK`, including
+`test_scalar_union_pattern_length_enum_const_and_bounds_are_enforced`; the full trio → `Ran 179 ... OK`.
+Accuracy note for the next reader: that subset test drives `tests/json_schema_subset.SubsetValidator`, a
+separate test-side validator, and never enters `_valid_schema_scalar` — so it cannot regress from this change
+and is not evidence for it. The analyzer-side call sites (line 1430 `const`, line 1450 enum items, line 1333
+recursion) are covered by the model/fitness modules, which are green.
+
+## 5. Counts and hermeticity
 
 | Set | Ran | Result |
 | --- | --- | --- |
-| `tests.test_architecture_model` | 68 | OK |
+| `tests.test_architecture_model` | 69 | OK |
 | `tests.test_architecture_fitness` | 106 | OK |
 | `tests.test_json_schema_subset` | 4 | OK |
-| plan trio combined | **178** | OK |
-| same trio at base fc8d9e6 | **177** | OK |
-| `tests.test_landing_architecture_boundaries` (3rd ls-found arch module) | 4 | OK |
-| model+fitness+landing-boundaries | 178 | OK |
-| `tests.test_change_spec` | 30 | OK |
+| **plan trio at 7aa4c30** | **179** | OK |
+| plan trio at 3831e2e (pre-remediation) | 178 | OK |
+| plan trio at base fc8d9e6 | 177 | OK |
 
-- Plan commands exist and are reproducible verbatim (unittest trio + `scripts/grok_verify.py` exists;
-  grok_verify intentionally not executed here — it writes receipts and is the parent's step).
-- The "177 architecture/contract tests" claim is stale-by-one against HEAD: it reproduces exactly at
-  base, 178 on the branch (the new test is +1). Minor honesty defect in `test-plan.md` and the
-  change-spec `success_metric`, both of which should say 178@head (or label 177 as base).
-- P1 evidence "no regression" is true and re-verified green on this head.
+`python3 -m unittest tests.test_architecture_model tests.test_architecture_fitness tests.test_json_schema_subset`
+→ `Ran 179 tests in 72.1s / OK` (single command, verbatim from `test-plan.md`).
 
-## Required remediation (to flip this PASS)
+**178-at-head / 177-at-base verdict: half right, half wrong.** 177@base reproduces exactly; 178@head does **not**
+— head is 179, because remediation commit `becd8f0` added a test method and the count was not re-synced.
+`tasks.md` now claims "178 at head; 177 pre-change" (off by one at head), while `test-plan.md`'s P1 row and the
+`change-spec.yaml` `success_metric` (which says the suites are green "on the frozen head") still read **177** —
+i.e. the count fix touched only one of the three places that carry the number. See Minor-4.
 
-1. Assert the reason tuples in the adversarial arms (`unsupported_schema_keyword` for duplicate;
-   `malformed_contract_document` for the preflight-rejected four) so future preflight relaxation
-   cannot silently convert an arm into a helper-level pass — and vice versa, so the arm's actual
-   guard is pinned.
-2. Add at least one discriminating test of the new code's reject paths, per the file's established
-   direct-private-helper convention (`ARCH._bounded_json_document`, `ARCH._unsupported_schema` are
-   already called directly): e.g. unit asserts on `ARCH._valid_enum_member` for `{1: "x"}` → False,
-   over-relative-depth member → False, counter-budget exhaustion → False (with `resolver=None`),
-   and/or a compare_contracts budget scenario chosen so preflight passes and member accounting trips
-   line 1311. Without this, mutants a–d stay alive and AC-001's budget clause plus AC-003's
-   member-boundary clause are unguarded.
-3. Either add a `$ref`-in-member opaque-data arm (FORBID-001 pin) or delete nothing — one subTest.
-4. Update `test-plan.md`/`change-spec.yaml` counts to 178-on-head, and stop citing
-   `tests.test_architecture_fitness` as AC-001 evidence (0 enum content there); it is INV-002
-   evidence only. Drop the redundant in-method `mock` import.
+Hermeticity: the in-method `from unittest import mock` is **gone** — `grep -n "import mock\|from unittest"`
+returns only the file-level line 15, so the mock helper is imported once. The new/changed region
+(lines 1999–2070) contains no `os.environ`, no `urllib`/`requests`/`http.client`/`socket`, no filesystem or
+subprocess access — pure in-memory data. `mock.patch.object(ARCH, "MAX_PARSED_NODES", …)` is a context manager,
+restored, and demonstrably effective (arms d3/d4 killed through it). `tests.test_architecture_model` +
+`tests.test_json_schema_subset` pass under a scrubbed environment (`env -i PATH=/usr/bin:/bin HOME=/tmp/…`,
+73 OK), and the model module is deterministic across three consecutive runs (69 OK, 1.8s). The only
+`os.*`/`subprocess` uses in that file are pre-existing tempdir/symlink/mkfifo fixtures outside the changed
+region, and its `urllib`/`socket`/`subprocess` hits are string literals in a forbidden-dependency assertion.
+`tests.test_architecture_fitness` is untouched by this branch (its `SENTINEL` env use is pre-existing).
+`ruff check` on both changed files → `All checks passed!`; repo-wide ruff reports 23 errors at head **and 23 at
+base fc8d9e6** (pilot/, factory/tests/, delivery/, trust-ci/), so the branch adds no lint debt and `tasks.md`'s
+"ruff clean" holds for the wave's own files.
 
-## Limits / notes
+## 6. Scope guard
 
-- Review pinned to 3831e2e as instructed. During the review the worktree moved: HEAD is now
-  a490428 ("scratch: edit capability contract") plus an uncommitted modification to
-  `factory/contracts/jsonschema/landing-backend-capability.v1.schema.json`. Neither touches
-  `architecture.py` or tests, so all findings above remain valid for the reviewed diff — but that
-  commit + dirty file edit the exact contract the wave's INV-001/FORBID-002 forbid touching; flagged
-  to the parent as a possible out-of-wave collision needing ruling, not adjudicated here.
-- Counts are unittest `Ran N`; passing subTests are counted within their parent method (1 method = 1
-  test), identical convention for the base-177 and head-178 numbers.
-- Statement coverage cannot see branch outcomes; that limitation is closed here by the mutation
-  battery itself (a–d survivors are the branch-level proof).
-- Only reachable public entry analyzed: `compare_contracts`. The counter-mode `_unsupported_schema`
-  entry has zero production callers today; if it is intentionally kept, it needs its own tests (rem.
-  #2), otherwise it is untested dead weight the plan claims coverage for.
+`git diff fc8d9e6..HEAD --name-only` → 16 paths: `.grok-stack/adaptive_grok/architecture.py`,
+`tests/test_architecture_model.py`, and 14 files under this change package. **Zero** `factory/contracts/**`
+entries, **zero** `architecture/rules.yaml`, **zero** `architecture/system.yaml`.
+
+* `git diff fc8d9e6..HEAD -- factory/contracts/` → empty (0 lines).
+* Byte-identity confirmed three ways (base blob, head blob, worktree hash) for the two contracts the wave is
+  forbidden to touch: `landing-backend-capability.v1.schema.json` `7e4f9a58…` at all three;
+  `landing-attempt-status.v1.schema.json` `302f0c42…` at all three.
+* The stray scratch commit is gone from history reachable by this head: `git merge-base --is-ancestor a490428
+  HEAD` → false. The `reset --hard` reported in `review-response.md` **stuck**, and the tree is clean.
+
+## 7. Remaining findings
+
+Important: none. Nothing blocking; the FAIL criteria from the previous round are met and no regression was found.
+
+* **Minor-1 (measurement gap, one-line fix).** Arm **d2** — deleting only the resolver-branch
+  `if not resolver.consume(): return False` — survives all 179 tests, because every direct call in the new test
+  passes `resolver=None`. The new test therefore pins the counter branch (which has no production caller) and
+  leaves the *live* production branch of the same budget clause unasserted, so AC-001's "each node charged to the
+  **resolver**/counter work budget" is only half guarded. Impact today is low and I verified why: for any
+  document reachable from `compare_contracts`, `preflight_current()` (`_bounded_json_document`) already charges
+  the shared `work_budget` for every node — ≥2 per dict entry — before the enum walk runs, so the helper's own
+  resolver charge can never be the one that trips. It is defense-in-depth, not an observable bug. Fix, verified
+  discriminating in the clone:
+  `self.assertFalse(ARCH._valid_enum_member({"a": 1}, ARCH._SchemaResolver(rec, None, [ARCH.MAX_PARSED_NODES]), None))`
+  — head returns `False`, mutant d2 returns `True`.
+* **Minor-2 (FORBID-001 half-shape).** Arm **m**: a member that is the single-key form
+  `{"$ref": "…"}` — the exact shape `_unsupported_schema` would try to resolve — is accepted at head but is in
+  no test, so rejecting or resolving it flips a public verdict with a green suite. Add one such member to the
+  existing `inert` enum (all three variants were measured `compatible`/`()` at head, so the addition passes).
+* **Minor-3 (incomplete application of prior item #1).** The `MAX_PARSED_NODES=8` arm still asserts only
+  `result.status`, no reason tuple, and it sits outside the `adversarial` tuple. Measured actual reason:
+  `('malformed_contract_document',)` — the arm is caught by preflight, not by member accounting; asserting that
+  makes it self-documenting instead of implying the helper rejected it.
+* **Minor-4 (documentation accuracy, repeat class).** Head count is 179, not the claimed 178, and
+  `test-plan.md`/`change-spec.yaml` still say 177 for a head run. Same stale-by-one defect the previous round
+  flagged, re-introduced by the fix commit; the `178 at head; 177 pre-change` wording in `tasks.md` and the
+  matching claim in `review-response.md` should become `179 at 7aa4c30; 178 at 3831e2e; 177 at base`.
+* **Minor-5 (cosmetic).** `_valid_schema_scalar`'s new `if isinstance(value, bool): return False` is
+  unreachable — bools are already returned True by the line above. Harmless, but it reads as if bool handling
+  changed when it did not. Out of scope for this wave, and worth naming so the next reader does not re-chase it:
+  the same `math.isfinite`-on-huge-int `OverflowError` the fix removed still exists at line 1470
+  (`_NUMBER_KEYWORDS`, e.g. `{"minimum": 10**400}` → raises) — verified identical at base, so it is pre-existing,
+  not introduced here.
+
+## Limits
+
+* Statement/branch inference comes only from the mutation battery itself, not from coverage percentages.
+* Only the reachable public entry (`compare_contracts`) plus direct private-helper calls were analyzed; the
+  counter-mode `_unsupported_schema` entry still has no production caller (unchanged from the prior round).
+* `scripts/grok_verify.py --mode pr` was deliberately not executed — it writes receipts and belongs to the
+  parent's evidence step.

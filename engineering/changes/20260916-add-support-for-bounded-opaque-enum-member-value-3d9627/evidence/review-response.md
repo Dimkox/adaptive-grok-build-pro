@@ -14,6 +14,24 @@ own issue comment. All are closed below; nothing was argued away that the measur
 | test review (Minor) | "177" claim stale; in-method mock import | **Fixed:** counts corrected (178 at head, 177 at base), redundant import removed. |
 | both | process flag: a scratch commit (`a490428`, "scratch: edit capability contract") and a re-serialized contract appeared in the worktree mid-review | **Removed** — `reset --hard` to the reviewed head; verified `git diff fc8d9e6..HEAD` touches **zero** contract/rules/model files and the tree is clean. The wave never contained them. Lesson for agents-dispatch: reviewer scratch work must live outside the worktree; this round's briefs said /tmp, but one reviewer wrote into the repo anyway. |
 
+## Re-review (test_review PASS on `7aa4c30`) and its minors
+
+The test re-review confirmed the FAIL is closed (all five mutation arms now killed; reason tuples match
+what the code emits; FORBID-001's inertness is independently load-bearing; scope guard holds; contracts
+byte-identical). Its remaining Minor items are applied in this round:
+
+- budget compare-arm now asserts its reason (`malformed_contract_document`), not just status;
+- a deny-on-first-`consume()` resolver stub pins the resolver branch's budget path that every earlier
+  direct call reached with `resolver=None`;
+- a single-key `{"$ref": ...}` member is asserted inert (compatible), so rejecting it would fail;
+- the now-dead `isinstance(value, bool)` line in `_valid_schema_scalar` is removed (bool handled by the
+  first branch);
+- counts corrected to 179 at head (the added re-review test made 178 stale); 177 at base;
+
+The re-review's non-blocking note that `minimum`/`maximum` still raise `OverflowError` on astronomically
+large ints is PRE-EXISTING at base (not introduced here), left untouched to keep this wave to the enum
+blind spot; a follow-up may bound the whole closed subset for huge-int keywords.
+
 ## Coverage limits stated plainly
 
 - The direct helper tests pin the helper; they do not make the OpenAPI path analyzable — the anyOf gap remains, now correctly named on #104.
