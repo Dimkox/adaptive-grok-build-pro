@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-Snapshot: **2026-09-16**. Repository `main` was observed at `78082a290f8b90cade88685351fbb2ba263689b9` (PR #98); fetch refs before assuming it is still the tip.
+Snapshot: **2026-09-16**. Repository `main` was observed at `c86b1a1989ace899a4450bde558fcd8adc00e4e2` (PR #99); fetch refs before assuming it is still the tip.
 
 - **Released:** product `2.0.17`, tag [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17), published `2026-09-16T01:17:14Z`, target `c86b1a1989ace899a4450bde558fcd8adc00e4e2`, tag object `5c6687ed97e1c365597bf27047016eb07411f28b`, ZIP `770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616`. The earlier `v2.0.16` release stays immutable; nothing in this tree rebuilds a published artifact, and no release preparation remains.
 - **Source:** M0-M9 implementation is delivered. The seven-slice L5 production runtime landed through PR #75, with a [delivery ledger](engineering/reviews/l5-delivery-stack.json); the durable Qwen→Grok→OpenAI→Claude→OpenRouter failover arrived through PR #91 and the workflow artifact adapters plus the `workflow_sources` upstream version contract through PR #93 (change `20260915-update-third-party-workflow-components-superpowe-1b0c02`), all of them inside the observed source named above. Source defaults keep provider execution off.

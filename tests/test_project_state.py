@@ -341,6 +341,11 @@ class ProjectStateTests(unittest.TestCase):
             V2017_SIDECAR_SHA256,
         )
         self.assertEqual(published["trust_ci"]["check_run_id"], 104621989321)
+        self.assertEqual(published["tag_object"], "5c6687ed97e1c365597bf27047016eb07411f28b")
+        self.assertEqual(published["published_at"], "2026-09-16T01:17:14Z")
+        self.assertEqual(published["merged_at"], "2026-09-16T01:14:19Z")
+        self.assertEqual(published["gitguardian"]["conclusion"], "SUCCESS")
+        self.assertEqual(published["gitguardian"]["check_run_id"], 104621982710)
         self.assertEqual(
             published["trust_ci"]["attestation_id"],
             V2017_ATTESTATION_ID,
@@ -403,12 +408,10 @@ class ProjectStateTests(unittest.TestCase):
         for key in ("commit", "tree"):
             self.assertEqual(local["artifact_child"][key],
                                {"commit": V2017_CHECKED_HEAD, "tree": V2017_TREE}[key])
-        if local["artifact_status"] == "pending_unpublished_artifact_child":  # SR: published, so the else arm pins them
-            for key in ("source_parent", "source_parent_tree"):
-                self.assertIsNone(local["artifact_child"][key])
-        else:
-            self.assertEqual(local["artifact_child"]["source_parent"], "78082a290f8b90cade88685351fbb2ba263689b9")
-            self.assertEqual(local["artifact_child"]["source_parent_tree"], "2283e6a09d3eb2a0aeabce8a872e06746b941176")
+        # The release-sync parent is knowable before the child merged, so the published
+        # record must name it, while the child's own identities stay the successor's.
+        self.assertEqual(local["artifact_child"]["source_parent"], "78082a290f8b90cade88685351fbb2ba263689b9")
+        self.assertEqual(local["artifact_child"]["source_parent_tree"], "2283e6a09d3eb2a0aeabce8a872e06746b941176")
         self.assertEqual(local["source_base"], V2017_SOURCE_BASE)
         self.assertEqual(local["artifact_child"]["status"], "published_as_v2.0.17")
         self.assertEqual(
@@ -421,7 +424,7 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
         landing = self.state["delivered_change_history"]["post_v2_0_16_landing"]
-        self.assertEqual(landing["status"], "landed_in_2_0_17_candidate")
+        self.assertEqual(landing["status"], "landed_in_v2_0_17_release")
         rows = landing["pull_requests"]
         self.assertEqual(
             {row["pull_request"] for row in rows},
@@ -827,7 +830,7 @@ class ProjectStateTests(unittest.TestCase):
             [
                 {"pull_request": 15, "branch": "mvp/investor-ready", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "closed_unmerged", "closed_at": "2026-09-15T20:02:30Z", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "unique_scope": "Unique investor demo and packaging hardening", "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.", "failure_cause": "not inspected or inferred"},
                 {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
-                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree still hold the only untouched copy of the never-committed original epic, so they are retained until the v2.0.17 release record references the #93 lineage; only then may branch and worktree be removed as one cleanup step."},
+                {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree hold the only untouched copy of the never-committed original epic, so they were retained until the v2.0.17 release record referenced the #93 lineage; that condition is now met (published v2.0.17, predecessors naming 280cbff), and removal is a separate explicitly approved cleanup step, not an automatic consequence of this release."},
                 {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."},
             ],
         )

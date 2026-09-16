@@ -66,35 +66,35 @@
   },
   "prior_published_releases": [
     {
-  "tag": "v2.0.16",
-  "published_at": "2026-09-13T22:04:08Z",
-  "pull_request": 79,
-  "checked_head": "2b1517986b9b5b83a95b1286baac161074c58175",
-  "merge_commit": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
-  "merged_at": "2026-09-13T22:02:03Z",
-  "tag_object": "8486ddb648f97e79a5f3a81d9b539378d2d4b301",
-  "tree": "2c24c33873c972822354218addf983b8166fa40a",
-  "artifact": {
-    "path": "packages/adaptive-grok-build-pro-v2.0.16.zip",
-    "sha256": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
-    "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256",
-    "sidecar_sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
-    "binding": "immutable_release_tag"
-  },
-  "trust_ci": {
-    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-    "conclusion": "SUCCESS",
-    "check_run_id": 103797448701,
-    "attestation_id": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
-    "signer": "0519cf1d47436f2e",
-    "github_app_id": 4694114
-  },
-  "gitguardian": {
-    "conclusion": "SUCCESS",
-    "note": "GitGuardian passed on the artifact-child head; the earlier generic-detector finding on archived grant digests (issue #73) is a different commit class and not a gate."
-  },
-  "notes": "Historical: superseded as the current published release by v2.0.17."
-},
+      "tag": "v2.0.16",
+      "published_at": "2026-09-13T22:04:08Z",
+      "pull_request": 79,
+      "checked_head": "2b1517986b9b5b83a95b1286baac161074c58175",
+      "merge_commit": "969c4f65f54ef9230f3f94587e228098d1c2ecb9",
+      "merged_at": "2026-09-13T22:02:03Z",
+      "tag_object": "8486ddb648f97e79a5f3a81d9b539378d2d4b301",
+      "tree": "2c24c33873c972822354218addf983b8166fa40a",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.16.zip",
+        "sha256": "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256",
+        "sidecar_sha256": "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 103797448701,
+        "attestation_id": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": 4694114
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS",
+        "note": "GitGuardian passed on the artifact-child head; the earlier generic-detector finding on archived grant digests (issue #73) is a different commit class and not a gate."
+      },
+      "notes": "Historical: superseded as the current published release by v2.0.17."
+    },
     {
       "tag": "v2.0.15",
       "published_at": "2026-09-05T20:17:20Z",
@@ -415,8 +415,8 @@
       }
     },
     "post_v2_0_16_landing": {
-      "status": "landed_in_2_0_17_candidate",
-      "record_scope": "Pull requests merged on main after the v2.0.16 publication at 2026-09-13T22:04:08Z. Each row is re-derived from Git, the GitHub API and the Trust CI job store; no pre-publication record is restated.",
+      "status": "landed_in_v2_0_17_release",
+      "record_scope": "Pull requests merged on main after the v2.0.16 publication at 2026-09-13T22:04:08Z and before the v2.0.17 release sync. Each row is re-derived from Git, the GitHub API and the Trust CI job store; no pre-publication record is restated. This chain's own release commits (#98 R, #99 A and the successor) are recorded through current_unreleased_change and local_candidate rather than as rows here; the v2.0.16 chain instead recorded its successor as row #81, which is why #81 stays in this list.",
       "pull_requests": [
         {
           "pull_request": 81,
@@ -1233,7 +1233,7 @@
       {
         "branch": "feature/workflow-artifact-adapters",
         "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070",
-        "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree still hold the only untouched copy of the never-committed original epic, so they are retained until the v2.0.17 release record references the #93 lineage; only then may branch and worktree be removed as one cleanup step."
+        "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree hold the only untouched copy of the never-committed original epic, so they were retained until the v2.0.17 release record referenced the #93 lineage; that condition is now met (published v2.0.17, predecessors naming 280cbff), and removal is a separate explicitly approved cleanup step, not an automatic consequence of this release."
       },
       {
         "branch": "origin/milestone/a-plus-autopilot",
@@ -1364,14 +1364,14 @@
     "source_directory": "trust-ci",
     "operator_runbooks": "engineering/runbooks",
     "last_success": {
-      "pull_request": 98,
-      "head_sha": "83738723fbdad54becbe1ff98c41305a168e6269",
-      "merge_commit": "78082a290f8b90cade88685351fbb2ba263689b9",
-      "check_run_id": 104605819798,
-      "attestation_id": "96a98471-437c-4bc7-9bef-e2bdf296f258",
+      "pull_request": 99,
+      "head_sha": "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d",
+      "merge_commit": "c86b1a1989ace899a4450bde558fcd8adc00e4e2",
+      "check_run_id": 104621989321,
+      "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
       "conclusion": "SUCCESS",
-      "record_scope": "Observed on 2026-09-16 via GitHub Checks API for the exact PR head; merge authority for PR #98 only. PR #13, #64, #94 and PR #98 are the post-publication merges recorded in delivered_change_history.post_v2_0_16_landing. The artifact child pull request is deliberately not a row here: release-chain commits (R, A, SR) are recorded through local_candidate rather than as landing rows.",
-      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104591923631"
+      "record_scope": "Observed on 2026-09-16 via the GitHub Checks API for the exact PR head; merge authority for PR #99 only. What landed on main before the release sync is listed in delivered_change_history.post_v2_0_16_landing; the release-chain commits themselves (#98 R, #99 A, this SR) are recorded through current_unreleased_change and local_candidate rather than as landing rows.",
+      "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104621989321"
     },
     "historical_last_success": {
       "pull_request": 24,

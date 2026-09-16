@@ -2,7 +2,7 @@
   "acceptance_criteria": [
     {
       "id": "AC-001",
-      "statement": "published_release names v2.0.17: pull_request 99, checked_head bbc5cdd9b8ee4dbc6927bf24244a5434f490576d, merge_commit c86b1a1989ace899a4450bde558fcd8adc00e4e2, tree 5826924586f9d42b02bf9fd5d51985bd323da31e, tag_object 5c6687ed97e1c365597bf27047016eb07411f28b, published_at 2026-09-16T01:17:14Z, artifact path/sha256 770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616 with sidecar 54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0, App check run 104621989321 and attestation b9510589-d40c-4976-aafd-cad6fc141972.",
+      "statement": "published_release names v2.0.17: pull_request 99, checked_head bbc5cdd9b8ee4dbc6927bf24244a5434f490576d, merge_commit c86b1a1989ace899a4450bde558fcd8adc00e4e2, tree 5826924586f9d42b02bf9fd5d51985bd323da31e, tag_object 5c6687ed97e1c365597bf27047016eb07411f28b, published_at 2026-09-16T01:17:14Z, artifact path/sha256 770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616 with sidecar 54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0, App check run 104621989321 and attestation b9510589-d40c-4976-aafd-cad6fc141972. The tag object, published_at, merged_at and the GitGuardian run are asserted by test_project_state, and both artifact digests are recomputed from the tracked blobs by test_manifest_package.",
       "evidence": [
         {
           "test": "tests/test_project_state.py"
