@@ -620,6 +620,34 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("externally accepted exact M4 SHA", canonical_schedule)
         self.assertIn("superseded and unachievable historical target", canonical_schedule)
 
+    def test_retained_33_entry_records_the_delivered_retake(self) -> None:
+        # Adversarial arm for the flipped entry: the #33 line may stay in the historical
+        # list only while it states the re-take was delivered by #113 with its exact merge
+        # SHA and keeps parallelism conditional on an importable pytest+xdist install.
+        entry = next(
+            item
+            for item in self.state["work_inventory"]["retained_unresolved"]
+            if item.get("pull_request") == 33
+        )
+        self.assertEqual(entry["status"], "retaken_and_delivered")
+        self.assertIn("PR #113", entry["resolution"])
+        self.assertIn("35cbbe0f857bdb03dec4eb0ecff542a148b84658", entry["resolution"])
+        self.assertIn("conditional on an importable pytest+xdist", entry["resolution"])
+        # The historical observation itself must survive untouched.
+        self.assertEqual(entry["head"], "6d72d4c859dded241b55e90ae9514ad428a7eb1b")
+        self.assertEqual(entry["observed_check_conclusion"], "FAILURE")
+        self.assertEqual(entry["closed_at"], "2026-09-16T07:21:05Z")
+        if subprocess.run(
+            ["git", "cat-file", "-e", "35cbbe0f857bdb03dec4eb0ecff542a148b84658^{commit}"],
+            cwd=ROOT, check=False, capture_output=True,
+        ).returncode:
+            return  # object not fetched here; the internal pins above still stand
+        subject = subprocess.run(
+            ["git", "show", "-s", "--format=%s", "35cbbe0f857bdb03dec4eb0ecff542a148b84658"],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        ).stdout
+        self.assertIn("(retakes #33) (#113)", subject)
+
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
         milestones = self.state["milestones"]
         integrations = (milestones["M2"]["stack_integration"], milestones["M3"]["stack_integration"])
@@ -843,10 +871,12 @@ class ProjectStateTests(unittest.TestCase):
                 "operational_activation": False,
             },
         )
+        # GENERATED: mirrors PROJECT_STATE.work_inventory.retained_unresolved verbatim;
+        # regenerate from the JSON (json.dumps fields) whenever either side changes.
         self.assertEqual(
             inventory["retained_unresolved"],
             [
-                {"branch": "perf/parallel-python-tests", "closed_at": "2026-09-16T07:21:05Z", "failure_cause": "head 6d72d4c8\u2026: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim.", "head": "6d72d4c859dded241b55e90ae9514ad428a7eb1b", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "pull_request": 33, "purpose": "Closed without merging on 2026-09-16 by maintainer decision, with the diagnosis and the re-take path recorded on the pull request: the runner must select its engine from what the interpreter actually provides, and its unittest-branch tests must be satisfiable without an importable pytest. The branch and its 1540-insertion head are kept untouched and undeleted; parallel local verification remains an open goal, not a delivered one.", "status": "retaken_and_delivered", "unique_scope": "Parallel local Python verification", "resolution": "Retaken and delivered by PR #113 (squash merge 35cbbe0f857bdb03dec4eb0ecff542a148b84658, 2026-09-16): python_test_runner selects its engine from what the interpreter provides (capability probe before execution; unimportable xdist degrades to one disclosed sequential unittest pass), and the suite passes on a pytest-free interpreter - proven locally and by the App-owned exact-head check on head 2d1c0208. The perf/parallel-python-tests branch and its head 6d72d4c8\u2026 stay retained untouched as the diagnosis exhibit; the failure_cause text above remains a historical observation of that head."},
+                {"branch": "perf/parallel-python-tests", "closed_at": "2026-09-16T07:21:05Z", "failure_cause": "head 6d72d4c8\u2026: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim.", "head": "6d72d4c859dded241b55e90ae9514ad428a7eb1b", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "pull_request": 33, "purpose": "Closed without merging on 2026-09-16 by maintainer decision, with the diagnosis and the re-take path recorded on the pull request: the runner must select its engine from what the interpreter actually provides, and its unittest-branch tests must be satisfiable without an importable pytest. The branch and its 1540-insertion head are kept untouched and undeleted; parallel local verification remains an open goal, not a delivered one.", "status": "retaken_and_delivered", "unique_scope": "Parallel local Python verification", "resolution": "Retaken and delivered by PR #113 (squash merge 35cbbe0f857bdb03dec4eb0ecff542a148b84658, 2026-09-16): python_test_runner selects its engine from what the interpreter provides (capability probe before execution; unimportable xdist degrades to one disclosed sequential unittest pass), and the suite passes on a pytest-free interpreter - proven locally and by the App-owned exact-head check on head 2d1c0208. The perf/parallel-python-tests branch and its head 6d72d4c8\u2026 stay retained untouched as the diagnosis exhibit; the failure_cause text above remains a historical observation of that head. True parallelism remains conditional on an importable pytest+xdist install: on such interpreters the runner uses xdist, elsewhere it discloses the serial degrade."},
                 {"pull_request": 15, "branch": "mvp/investor-ready", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "closed_unmerged", "closed_at": "2026-09-15T20:02:30Z", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "unique_scope": "Unique investor demo and packaging hardening", "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.", "failure_cause": "head 165d5dd9…: mandatory root-unittest exited 1 with `Ran 480 tests in 244.175s` and `FAILED (failures=1, errors=5)`. The record first shows git refusing the job's own checkout — \"fatal: detected dubious ownership in repository at '/workspace/.git'\" followed by \"fatal: Could not read from remote repository.\" — and the consequences are `ArchitectureError: base_sha is not an available commit object` from adaptive_grok/architecture_diff.py `_exact_commit` (three architecture bootstrap tests) and `RuntimeError: architecture binding requires an exact Git HEAD` (two receipt tests), with the single failure being `AssertionError: 2 != 0` in the architecture CLI bootstrap case. Historical observation; the pull request was closed without merging, so no current eligibility applies."},
                 {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
                 {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Superseded by the port on feature/third-party-components-sync, delivered by PR #93 as 280cbff12df2578da3c671d4daa8b5492f26a7fc. The branch and its worktree hold the only untouched copy of the never-committed original epic, so they were retained until the v2.0.17 release record referenced the #93 lineage; that condition is now met (published v2.0.17, predecessors naming 280cbff), and removal is a separate explicitly approved cleanup step, not an automatic consequence of this release."},
