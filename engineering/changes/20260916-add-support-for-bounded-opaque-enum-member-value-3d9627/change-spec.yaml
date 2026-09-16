@@ -48,7 +48,7 @@
     },
     {
       "id": "AC-004",
-      "statement": "The measured consequence for issue #104 is recorded on the issue with reproduced verdicts: analyzer blindness fixed, while adding qwen-omni-intl to landing-backend-capability.v1 remains incompatible under FIT-GOVERNANCE-HANDOFF-COMPATIBILITY (producer_accepted_by_old) — declaration requires either a v2 coexistence contract or an explicit human decision to govern fact-registry enums consumer-side; this wave changes neither rules.yaml nor the contract.",
+      "statement": "The measured consequence for issue #104 is recorded with reproduced verdicts and without overclaim: the capability json_schema enum is now analyzable, but editing it STILL fails fitness end-to-end because the failover OpenAPI also $refs landing-attempt-status.v1, whose anyOf is a separate blind spot (unsupported_openapi_construct) this diff does not touch; and adding a profile is a producer break under the dual json_schema policies regardless. This wave changes neither rules.yaml nor any contract, and names the anyOf blind spot as remaining #104 work.",
       "evidence": [
         {
           "receipt": "code_review"
