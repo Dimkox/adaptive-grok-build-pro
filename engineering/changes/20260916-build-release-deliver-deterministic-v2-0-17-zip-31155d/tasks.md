@@ -7,6 +7,6 @@
 - [x] Flip `local_candidate` and the currency fields with the anchor-checked map script; keep self-identities null and publication flags false.
 - [x] Re-observe the installed L5 services and bind a new dossier (`runtime-observation-post-98.json`) to this base.
 - [x] Move the coupled test literals in lockstep; `tests.test_structure`/`test_project_state`/`test_manifest_package` → 89 tests OK.
-- [ ] Independent `security_review` and `release_review` receipts on the final fingerprint, plus `grok_verify --mode pr`.
-- [ ] Open the pull request, merge only on the exact-head App check; then tag and publish, each under its own delegated grant.
-- [ ] `SR` records `merge_commit`, `tree`, `checked_head`, `pull_request`, `published=true` and `published_at`.
+- [x] Independent `security_review` and `release_review` receipts were recorded on the delivered fingerprint; both reviews reproduced the archive independently, and `grok_verify --mode pr` returned only the disclosed issue #80 blob-analysis red.
+- [x] Opened as PR #99 and merged on the exact-head App check `104621989321`; tag `v2.0.17` and the GitHub Release followed under their own delegated grant.
+- [x] `SR` (route `7c56479f61d3`, package `20260916-docs-release-record-the-published-v2-0-17-identi-7c5647`) records the merge commit, tree, checked head, pull request, `published=true` and `published_at`.

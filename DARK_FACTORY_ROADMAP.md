@@ -33,13 +33,13 @@ Current source and release observations, followed by historical integration anch
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-observed source SHA: 78082a290f8b90cade88685351fbb2ba263689b9 (2026-09-16; PR #98)
-latest published release: v2.0.16, tag target 969c4f65f54ef9230f3f94587e228098d1c2ecb9 (2026-09-13T22:04:08Z)
+observed source SHA: c86b1a1989ace899a4450bde558fcd8adc00e4e2 (2026-09-16; PR #99)
+latest published release: v2.0.17, tag target c86b1a1989ace899a4450bde558fcd8adc00e4e2 (2026-09-16T01:17:14Z); the superseded v2.0.16 targeted 969c4f65f54ef9230f3f94587e228098d1c2ecb9
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89 (PR #2 merge, 2026-08-23T22:05:31Z)
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
 v2.0.15 publication snapshot tag target: fd51dcfed6b33f4a8707c0db602328146df17cc9 (GitHub Release published 2026-09-05T20:17:20Z; not a perpetual current-ref assertion)
 L5 landing main SHA: eb9df64bca333f30ec58f8c725a021360e22ed92 (PR #75 union of slices #65-#71, merged 2026-09-13T17:35:51Z; its landed evidence follow-up merged as e737dd5c338793e274285d657354e74ecc812f89 at 2026-09-13T18:26:32Z)
-product version: 2.0.17 candidate (latest published release: v2.0.16; published 2026-09-13T22:04:08Z)
+product version: 2.0.17 (latest published release: v2.0.17; published 2026-09-16T01:17:14Z)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
@@ -95,7 +95,7 @@ M1-M9 are delivered to `main` as repository product source through PR #22. Check
 
 Published `v2.0.14` adds the offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its API/provider/render/evaluate/package path is bounded; provider and publisher defaults remain unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and repository publication supplied no operational provider, network, hosting, indexing, deployment, M8 activation, or production authority.
 
-Dated PR inventory (observed 2026-09-15; displayed checks are historical and require fresh base/head validation): PR #12 was delivered to `main` as `4eb16d2ca20091dd017a82f58906671510497bc5` on 2026-09-12, so its unique lazy CLI imports/tests are no longer outstanding. PR #13 (repository-scoped Trust CI profiles, head `9bdffde938b35fefe18b12f77a369b69af80e726`) remains open with a current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion of `SUCCESS`; its profiles stay absent from `main` until it merges. PR #15 (head `165d5dd90a2fc2831a3b85be2562a2bb241c8b14`) and PR #33 (head `6d72d4c859dded241b55e90ae9514ad428a7eb1b`) carry a current-epoch App conclusion of `FAILURE` while GitGuardian is `SUCCESS`; their failure cause was not inspected or inferred. Wholesale merge of PR #15's obsolete M1-M3 aggregate remains superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique to it. PR #64 (M8 cross-project confirmation, head `33c5f2af78cb3e8457941ec44777be3d6c7a67aa`) is open with `SUCCESS`.
+Dated PR inventory (observed 2026-09-16; displayed checks are historical and require fresh base/head validation): PR #12 was delivered to `main` as `4eb16d2ca20091dd017a82f58906671510497bc5` on 2026-09-12, so its unique lazy CLI imports/tests are no longer outstanding. PR #13 (repository-scoped Trust CI profiles) merged to `main` as `43831155ce6e1600e15ef38f4ea109294f92dae1` on 2026-09-15T21:03:37Z; the capability is source-only, so the deployed policy, holdout bundle and branch protection stay outside the pull-request trust domain. PR #15 (head `165d5dd90a2fc2831a3b85be2562a2bb241c8b14`) was closed without merging on 2026-09-15T20:02:30Z and now sits in `work_inventory.retained_unresolved`. PR #33 (head `6d72d4c859dded241b55e90ae9514ad428a7eb1b`) is the only open pull request, carrying a current-epoch App conclusion of `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of PR #15's obsolete M1-M3 aggregate remains superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique to it. PR #64 (M8 cross-project confirmation) merged as `01d64e50cb7a34199fff7ed069a807393079079f`; PR #94 (ctime-granularity repair for the mandatory gate command) merged as `7bbf42526f207db0007daafa4cc946cc2d81f465`; PR #98 carried the v2.0.17 release sync (`78082a290f8b90cade88685351fbb2ba263689b9`) and PR #99 the artifact child (`c86b1a1989ace899a4450bde558fcd8adc00e4e2`), which tag `v2.0.17` names.
 
 ### 3.4 Dated delivery history — through 2026-09-15
 

@@ -1,0 +1,63 @@
+# raw command evidence (regenerated 2026-09-16T02:26:42Z) in worktree /home/pall/grok-projects/adaptive-grok-build-pro-sr217
+
+## git ls-remote peeled tag
+5c6687ed97e1c365597bf27047016eb07411f28b	refs/tags/v2.0.17
+c86b1a1989ace899a4450bde558fcd8adc00e4e2	refs/tags/v2.0.17^{}
+
+## gh release view v2.0.17
+{"assets":[{"digest":"sha256:770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616","label":"","name":"adaptive-grok-build-pro-v2.0.17.zip","size":10940676},{"digest":"sha256:54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0","label":"","name":"adaptive-grok-build-pro-v2.0.17.zip.sha256","size":102}],"isDraft":false,"isPrerelease":false,"name":"Adaptive Grok Build Pro v2.0.17 — workflow artifact adapters, repository-scoped Trust CI profiles and durable landing failover","publishedAt":"2026-09-16T01:17:14Z","tagName":"v2.0.17"}
+
+## check runs on A head bbc5cdd9b8ee4dbc6927bf24244a5434f490576d
+{"conclusion":"success","id":104621989321,"name":"adaptive-trust-ci/verified@06ecf1c875bc","status":"completed"}
+{"conclusion":"success","id":104621982710,"name":"GitGuardian Security Checks","status":"completed"}
+
+## check-run 104621989321 summary tail
+repository-verification: pass (exit 0)
+attestation=b9510589-d40c-4976-aafd-cad6fc141972; signer=0519cf1d47436f2e
+
+## blob digests from HEAD (fixed pipeline)
+770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616  packages/adaptive-grok-build-pro-v2.0.17.zip
+54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0  packages/adaptive-grok-build-pro-v2.0.17.zip.sha256
+
+## sidecar bytes
+0000100           a   d   a   p   t   i   v   e   -   g   r   o   k   -
+0000120   b   u   i   l   d   -   p   r   o   -   v   2   .   0   .   1
+0000140   7   .   z   i   p  \n
+0000146
+
+## changed files c86b1a1..HEAD
+CHANGELOG.md
+DARK_FACTORY_ROADMAP.md
+GROK_BUILD_HANDOFF.md
+PROJECT_STATE.json
+README.md
+START_HERE.md
+engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796/tasks.md
+engineering/changes/20260916-build-release-deliver-deterministic-v2-0-17-zip-31155d/tasks.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/architecture.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/brief.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/change-spec.yaml
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/README.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/command-evidence.txt
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-release.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-response.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-security.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/runtime-observation-post-99.json
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/release.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/requirements.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/rollback.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/route.json
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/state.json
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/tasks.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/test-plan.md
+mistakes.md
+packages/README.md
+tests/test_manifest_package.py
+tests/test_project_state.py
+tests/test_structure.py
+
+## packages changes
+packages/README.md
+
+## gh pr list --state open
+[33]

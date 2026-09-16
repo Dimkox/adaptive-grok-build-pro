@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.0.17 — 2026-09-15 (candidate, unpublished)
+## 2.0.17 — 2026-09-16
 
-Twelve pull requests merged after `v2.0.16` was published. This section records **landed source on `main`** and nothing more: `v2.0.16` remains the only published artifact, and the source below reaches a release archive only once the `v2.0.17` artifact child is built from the merged release-sync tree.
+Twelve pull requests merged after `v2.0.16` was published. This section records the landed source on `main` and its publication: that source was archived by the artifact child and shipped through tag `v2.0.17`.
 
 - Records the published v2.0.16 release identity in the documentation successor, so the release record and the tag agree (PR #81, checked head `26e08254`, merged `2026-09-14T00:11:30Z` as `6d8f6ab`, App check `103814853460`)
 - Fixes the L5 draft decode path so model section-item order is canonicalized before validation, closing a live-path bug where an equivalent ordering failed repair (PR #82, checked head `6bd86207`, merged `2026-09-14T02:16:49Z` as `5f6f6ce`, App check `103833535728`)
@@ -16,7 +16,7 @@ Twelve pull requests merged after `v2.0.16` was published. This section records 
 - Adds repository-scoped immutable Trust CI profiles: commands and external holdouts are selected by exact repository, jobs, approvals, checks, replays and attestations bind to the selected policy digest, and catalog holdouts stay confined to paired server-owned trusted roots while legacy schema-v1 behavior is preserved (PR #13, checked head `6130fbb8`, merged `2026-09-15T21:03:37Z` as `4383115`, App check `104552079057`). The capability is source-only: the deployed policy, holdout bundle and branch protection are unchanged
 - Records the Caroline cross-project confirmation as dated, source-pinned observation material with an explicit zero M8 qualifying-task contribution and no activation (PR #64, checked head `45ccb04f2e524d27f97a1b49cb89db65294e891e`, App check `104567389767`, merged `2026-09-15T21:42:34Z` as `01d64e5`)
 - Makes the serialized-CAS adversarial preconditions independent of filesystem `ctime` granularity, removing an intermittent failure of the mandatory `root-unittest` gate command (PR #94, checked head `9437efed`, App check `104591923631`, merged `2026-09-15T22:58:12Z` as `7bbf425`)
-- Delivers the `v2.0.17` ZIP and sidecar as tracked bytes built from the merged release-sync tree. The tag and GitHub Release do not exist yet: publication stays a separate step with its own exact delegated authority, and `published` remains false until the successor records it
+- Delivers the `v2.0.17` ZIP and sidecar as tracked bytes built twice byte-identically from the merged release-sync tree, and publishes them through tag `v2.0.17` and the GitHub Release with both assets (PR #99, checked head `bbc5cdd9`, merged `2026-09-16T01:14:19Z` as `c86b1a1`, App check `104621989321`)
 
 ## 2.0.16 — 2026-09-13
 

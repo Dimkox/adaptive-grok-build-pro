@@ -7,9 +7,9 @@
 - [x] Identity bump: `VERSION`, `__version__`, README H1/identity line, CHANGELOG `2.0.17` section, ROADMAP identity lines, `START_HERE.md`, `GROK_BUILD_HANDOFF.md`.
 - [x] `PROJECT_STATE.json` transform: candidate product version, opened `current_unreleased_change` and pending `local_candidate`, appended post-publication landing record.
 - [x] Lockstep test edits in `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`; prove the trio is red before and green after in the frozen tree.
-- [ ] Run `python3 scripts/grok_verify.py --mode pr` on the frozen tree and record the verification receipt.
-- [ ] Independent `security_review` and `release_review` receipts for this route.
+- [x] `grok_verify --mode pr` on the frozen release-sync tree returned `RESULT: PASS | profiles=base,contracts | changed=28`, and the verification receipt was recorded with the review receipts on fingerprint `39f9e77b…`.
+- [x] Independent `security_review` (PASS, 0 Critical, 0 Important, 4 Minor — all fixed) and `release_review` (PASS, no Critical, 3 Important) receipts recorded for route `f98796afe7de`; dispositions in `evidence/review-response.md`.
 - [x] Opened as PR #98 and merged on its exact-head App check `104605819798` as `78082a290f8b90cade88685351fbb2ba263689b9`.
-- [ ] `A`: build the ZIP+sidecar from the merged `R` tree in `0700` staging with two byte-identical builds, deliver them plus the `local_candidate` flip as the artifact-child pull request.
-- [ ] Tag `v2.0.17` and publish the GitHub Release bound to `A`'s exact merged commit — requires its own explicit delegated grant (production action).
-- [ ] `SR`: documentation successor recording `merge_commit`, `artifact_child.commit`/`tree`, `published=true`, `published_at` and the joined route/branch/package identities.
+- [x] `A` delivered: two byte-identical builds of `packages/adaptive-grok-build-pro-v2.0.17.zip` (770f1db5…, 10,940,676 B) plus its sidecar, merged as PR #99 (`c86b1a1989ace899a4450bde558fcd8adc00e4e2`, App check `104621989321`).
+- [x] Published: tag `v2.0.17` (object `5c6687ed97e1c365597bf27047016eb07411f28b`) binds `c86b1a1…`, and the GitHub Release ships the ZIP plus sidecar, published `2026-09-16T01:17:14Z`, under a delegated release grant.
+- [x] `SR` in this chain: route `7c56479f61d3`, package `20260916-docs-release-record-the-published-v2-0-17-identi-7c5647`, recording `merge_commit`, `checked_head`, `tree`, `pull_request`, `published=true`, `published_at`, the tag object and both artifact digests.
