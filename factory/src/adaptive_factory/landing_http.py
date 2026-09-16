@@ -26,6 +26,7 @@ from .landing_normalizer import (
     decode_landing_draft,
 )
 from .landing_provider import (
+    EXECUTOR_CODE_CATEGORIES,
     LandingNormalizationOutcome,
     LandingNormalizationRequest,
     LandingProviderError,
@@ -58,6 +59,8 @@ HTTP_PROFILES = {
     "grok-vision": ("grok", "https://api.x.ai/v1", "grok-4.6", False, ("docx", "image", "pdf", "text")),
     "qwen-omni": ("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1",
                   "qwen3.5-omni-plus-2026-03-15", True, ("audio", "docx", "image", "pdf", "text")),
+    "qwen-omni-intl": ("qwen", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                       "qwen3.5-omni-plus-2026-03-15", True, ("audio", "docx", "image", "pdf", "text")),
 }
 HTTP_MEDIA_KINDS = frozenset({"text", "docx"})
 MAX_HTTP_REQUEST_BYTES = 30 * 1_048_576
@@ -280,10 +283,7 @@ class HttpLandingNormalizer:
             ))
             self._validate_result(result)
         except (LandingProviderError, LandingContractError, OSError, ValueError) as exc:
-            category = getattr(exc, "category", {
-                "executor_deadline": "deadline", "executor_transport": "transport",
-                "executor_usage": "accounting", "http_usage": "accounting",
-            }.get(str(exc), "protocol"))
+            category = getattr(exc, "category", EXECUTOR_CODE_CATEGORIES.get(str(exc), "protocol"))
             return self._terminal(
                 request, "needs_human", "http_outcome_unusable", started, request_digest,
                 category=category, dispatched=True, http_status=getattr(exc, "http_status", None),

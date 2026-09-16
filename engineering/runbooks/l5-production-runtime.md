@@ -16,7 +16,7 @@ The selected runtime is a dedicated `adaptive-l5` user on the existing **Claw** 
 
 The existing `adaptive-factory-server` retains its M4-M8 composition and PostgreSQL contract. Its landing settings are additive. Unconfigured landing remains absent; quarantine alone retains unavailable process-local behavior; state plus quarantine enables durable unavailable behavior. Native Codex APIs, published M0-M9 boundaries, old retained source epochs, frozen OpenAPI and landing v1 `live_url: null` are preserved. Publication is a separate versioned CLI/result described in [filesystem publication](l5-filesystem-publication.md).
 
-The dedicated template selects **`qwen-omni` / `qwen3.5-omni-plus-2026-03-15`**, with `live_enabled: false`. This is a capability choice for the five requested media classes. Actual development billed USD could not be established from II-Tonya or Pump Selector: `actual_development_cost_usd=null`. End-user application usage is not coding cost. No unsupported cost ranking informs this selection.
+The dedicated template selects **`qwen-omni` / `qwen3.5-omni-plus-2026-03-15`**, with `live_enabled: false`. This is a capability choice for the five requested media classes; **`qwen-omni-intl`** is the same capability bound to the international endpoint, which is the reachable one for an international-account key (issue #86, verified live on 2026-09-16). Actual development billed USD could not be established from II-Tonya or Pump Selector: `actual_development_cost_usd=null`. End-user application usage is not coding cost. No unsupported cost ranking informs this selection.
 
 ## Source epoch and rendering
 
@@ -31,6 +31,7 @@ Startup and each live attempt enforce exact source identity and a clean tree bef
 | Profile | Endpoint | Exact model | Accepted normalization media |
 | --- | --- | --- | --- |
 | `qwen-omni` (source template) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen3.5-omni-plus-2026-03-15` | Text, safe DOCX, textual PDF, PNG/JPEG image, WAV/MP3 audio |
+| `qwen-omni-intl` (international account) | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | `qwen3.5-omni-plus-2026-03-15` | Same five media classes. Added for issue #86: the provisioned key is international-account and keys are not interchangeable across regions |
 | `grok-vision` | `https://api.x.ai/v1` | `grok-4.6` | Text, safe DOCX, textual PDF, PNG/JPEG image |
 | `qwen-intl` (explicit Singapore) | `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` | `qwen-plus` | Text, DOCX; non-thinking JSON |
 | `qwen` (legacy explicit) | DashScope endpoint above | `qwen-plus` | Text, DOCX |

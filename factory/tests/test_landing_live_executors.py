@@ -44,6 +44,9 @@ from adaptive_factory.landing_live_executors import (
     qwen_landing_executor,
 )
 from adaptive_factory.landing_provider import LandingProviderError, LandingNormalizationRequest
+from adaptive_factory.landing_http import HTTP_PROFILES
+from adaptive_factory.landing_failover_config import PROVIDER_ORDER
+from adaptive_factory.settings import LANDING_PROVIDERS
 from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
 from adaptive_factory.landing_runtime import implemented_live_binding
 from adaptive_factory.models import Actor
@@ -373,6 +376,7 @@ class GrokReasoningUsageTests(unittest.TestCase):
             "qwen": "63bee9e18255cbbbe940f94e96e130f6fffb103147d8cf1baf9cfa09595091be",
             "qwen-intl": "2616a276a5a6257515dc30e40d27fe32a667aa7d75f8205990c567166116de08",
             "qwen-omni": "d8738006a475fbbdb5700876cec4669256933ae8c928a250853bd1775225212b",
+            "qwen-omni-intl": "4cc85b8a61d1a0b51e69b9a28d8766bbdf6158db4e145d8a8ab81992a9157f67",
         }
         for profile_id, digest in expected.items():
             with self.subTest(profile=profile_id):
@@ -813,9 +817,100 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             live, "probe_qwen", side_effect=LandingProviderError(self.value)
         ), redirect_stdout(output):
             self.assertEqual(1, live.main())
-        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed"}, json.loads(output.getvalue()))
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "protocol", "http_status": None}, json.loads(output.getvalue()))
         self.assertNotIn(self.value, output.getvalue())
 
+    def test_probe_cli_reports_authentication_class_without_the_body(self):
+        output = io.StringIO()
+        failure = live.HttpProviderFailure("executor_http", "authentication", 401)
+        with patch("sys.argv", ["probe", "--profile", "qwen-omni-intl"]), patch.object(
+            live, "probe_qwen", side_effect=failure
+        ), redirect_stdout(output):
+            self.assertEqual(1, live.main())
+        printed = json.loads(output.getvalue())
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "authentication", "http_status": 401}, printed)
+        self.assertNotIn(self.value, output.getvalue())
+        self.assertNotIn("invalid_api_key", output.getvalue())
+
+    def test_profile_facts_keep_the_backend_capability_contract_shape(self):
+        # The v1 contract declares profiles as a closed enum of exact fact objects. The fitness
+        # comparator cannot represent object-valued enum members, so the file is frozen and a new
+        # profile cannot be added to the enum until issue #104 lands. Guard what stays guardable:
+        # declared profiles stay real and byte-equal to their table facts, and an undeclared
+        # profile must emit exactly the fact shape (key set and per-key JSON types) of a declared
+        # sibling, so the new intl omni cannot drift from the grammar the contract describes.
+        import json
+        schema = json.loads((Path(live.__file__).parents[2]
+                             / "contracts/jsonschema/landing-backend-capability.v1.schema.json").read_text())
+        declared = {item["profile_id"]: item for item in schema["properties"]["profile"]["enum"]}
+        self.assertEqual(set(), set(declared) - set(HTTP_PROFILES))
+        for profile_id in HTTP_PROFILES:
+            with self.subTest(profile=profile_id):
+                facts = HttpLandingProfile.for_provider(profile_id, available=True).to_facts()
+                if profile_id in declared:
+                    self.assertEqual(declared[profile_id], facts)
+                    continue
+                twins = [item for item in declared.values() if sorted(item) == sorted(facts)]
+                self.assertTrue(twins, "undeclared profile must reuse a declared fact shape exactly")
+                twin = twins[0]
+                for key, value in facts.items():
+                    self.assertEqual(type(twin[key]).__name__, type(value).__name__, key)
+                self.assertEqual(1, facts["schema_version"])
+
+    def test_probe_failure_output_clamps_unknown_category_and_invalid_status(self):
+        for category in ("DROP TABLE", "", None, 401, "permission_ok"):
+            with self.subTest(category=category):
+                fields = live._probe_failure_fields(live.HttpProviderFailure("executor_http", category, 403))
+                self.assertEqual("protocol", fields["category"])
+                self.assertEqual(403, fields["http_status"])
+        for status in (0, 999, -1, "401", True, 1_000_000):
+            with self.subTest(status=status):
+                fields = live._probe_failure_fields(live.HttpProviderFailure("executor_http", "authentication", status))
+                self.assertIsNone(fields["http_status"])
+                self.assertEqual("authentication", fields["category"])
+        # Classes the executor really produces must stay printable rather than collapse to protocol.
+        for code, expected in (("executor_deadline", "deadline"), ("executor_transport", "transport"),
+                               ("executor_usage", "accounting")):
+            with self.subTest(code=code):
+                self.assertEqual(expected, live._probe_failure_fields(LandingProviderError(code))["category"])
+
+    def test_provider_enumerations_stay_subsets_of_the_profile_table(self):
+        self.assertEqual(set(), set(live.PROBE_PROFILES) - set(HTTP_PROFILES))
+        self.assertEqual(set(), set(LANDING_PROVIDERS) - set(HTTP_PROFILES) - {"unavailable"})
+
+    def test_failover_chain_excludes_both_omni_profiles(self):
+        # AC-003/FORBID-003: adding a profile must not silently join the durable failover chain.
+        self.assertEqual(("qwen-intl", "grok-vision", "openai", "anthropic", "openrouter"), PROVIDER_ORDER)
+        for name in ("qwen-omni", "qwen-omni-intl"):
+            self.assertNotIn(name, PROVIDER_ORDER)
+
+    def test_international_omni_profile_is_streaming_and_five_media(self):
+        profile = HttpLandingProfile.for_provider("qwen-omni-intl", available=True)
+        self.assertEqual("qwen", profile.provider_id)
+        self.assertEqual("https://dashscope-intl.aliyuncs.com/compatible-mode/v1", profile.base_url)
+        self.assertEqual("qwen3.5-omni-plus-2026-03-15", profile.model_id)
+        self.assertTrue(profile.streaming)
+        self.assertEqual(("audio", "docx", "image", "pdf", "text"), profile.media_kinds)
+        # The mainland omni profile keeps its own endpoint and every existing digest.
+        self.assertEqual("https://dashscope.aliyuncs.com/compatible-mode/v1",
+                         HttpLandingProfile.for_provider("qwen-omni").base_url)
+        self.assertNotEqual(profile.profile_digest,
+                            HttpLandingProfile.for_provider("qwen-omni", available=True).profile_digest)
+
+    def test_environment_composition_accepts_both_omni_profiles(self):
+        # A selected profile must survive the provider gate and fail later, on the paths the
+        # test does not supply; only an unknown name may be refused as a provider.
+        for name in ("qwen-omni", "qwen-omni-intl"):
+            with self.assertRaises(LandingProviderError) as raised:
+                live.compose_env_landing(blobs=object(), environ={
+                    "FACTORY_LANDING_PROVIDER": name, "DASHSCOPE_API_KEY": self.value})
+            self.assertEqual("landing_path", str(raised.exception))
+        with self.assertRaises(LandingProviderError) as refused:
+            live.compose_env_landing(blobs=object(), environ={
+                "FACTORY_LANDING_PROVIDER": "qwen-never", "DASHSCOPE_API_KEY": self.value})
+        self.assertEqual("landing_provider", str(refused.exception))
     def test_probe_rejects_malformed_draft_and_usage(self):
         self.write(f"DASHSCOPE_API_KEY={self.value}")
         for payload in ({"object": "chat.completion", "model": "qwen-plus", "choices": []},
@@ -857,7 +952,8 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             live, "probe_qwen", side_effect=lambda **kwargs: real_probe(**kwargs, transport=transport)
         ), redirect_stdout(output):
             self.assertEqual(1, live.main())
-        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed"}, json.loads(output.getvalue()))
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "protocol", "http_status": None}, json.loads(output.getvalue()))
 
 
 if __name__ == "__main__":

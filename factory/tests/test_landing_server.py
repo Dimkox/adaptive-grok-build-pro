@@ -79,7 +79,8 @@ class LandingServerOwnershipTests(unittest.TestCase):
         for field in ("landing_state_path", "landing_quarantine_path", "landing_source_path",
                       "landing_scratch_path", "landing_output_path"):
             alias = Path("/" + str(getattr(self.settings, field)))
-            for provider in ("unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-intl"):
+            for provider in ("unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-omni-intl",
+                             "qwen-intl"):
                 settings = replace(self.settings, **{field: alias}, landing_provider=provider,
                                    landing_live_enabled=provider != "unavailable")
                 with (

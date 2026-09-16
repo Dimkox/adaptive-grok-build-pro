@@ -40,6 +40,20 @@ _VERSION = re.compile(r"^[0-9]+(?:\.[0-9]+){1,2}(?:[-+][A-Za-z0-9.-]+)?$")
 _ARGUMENT = re.compile(r"^--[a-z][a-z0-9-]*(?:=[A-Za-z0-9._:/+-]{1,128})?$")
 
 
+# One mapping shared by the durable collapse in landing_http and the operator probe, so the two
+# consumers of the same failure cannot disagree about its class.
+EXECUTOR_CODE_CATEGORIES = {
+    "executor_deadline": "deadline",
+    "executor_transport": "transport",
+    "executor_usage": "accounting",
+    "http_usage": "accounting",
+}
+FAILURE_CATEGORIES = frozenset({
+    "accounting", "authentication", "deadline", "permission", "policy", "protocol", "rate_limit",
+    "transport", "unavailable",
+})
+
+
 class LandingProviderError(RuntimeError):
     pass
 

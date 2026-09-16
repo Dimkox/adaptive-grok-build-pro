@@ -707,3 +707,13 @@ Porting the epic's closed RECEIPT_KINDS byte-identically would have failed every
 ## 2026-09-16 — Hash oversized tracked binaries from a bounded stream
 
 The architecture diff now profiles any object above `MAX_ANALYZED_FILE_BYTES` by streaming 64 KiB chunks into a SHA-256 (with the streamed length required to equal the `ls-tree`/`fstat` size and the dev/ino/size/mtime tuple re-checked afterwards), rather than buffering it or excluding it. It worked: the tracked 10,940,676-byte v2.0.17 ZIP yields exactly the buffered `sha256` in both commit and worktree modes, memory stays flat, and the pre-existing limit tests still pass because oversized text and explicit `read_diff_files` requests keep refusing.
+
+## 2026-09-16 — Keep the fitness comparator closed; guard the frozen contract by shape, not membership
+
+The gate proved the comparator cannot represent object-valued enum members, which freezes
+`landing-backend-capability.v1.schema.json` against new profiles. Instead of widening `.grok-stack/adaptive_grok/architecture.py`
+inside a product PR (one historical edit only; the reviewed escape admits unchanged documents; a trust-tooling
+semantics change smuggled into feature work defeats its purpose), the PR files issue #104 with the two real
+options (reviewed comparator extension vs v2 coexistence), reverts the enum edit, and pins the strongest
+surviving invariant: declared entries byte-equal to table facts, and every undeclared profile forced to a
+declared sibling's exact key set and per-key JSON types.

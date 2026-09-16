@@ -1122,3 +1122,17 @@ gate itself performs first.
 **Durable rule:** Before launching any verification, run `git diff --check <base>..` against the committed
 head — not the working tree — and strip trailing whitespace from generated Markdown and from review
 evidence the same way as from source, since the reviewer's file is part of the delivered tree.
+
+## 2026-09-16 — Pinned a reviewer's contract fix to tests before letting fitness judge it
+
+**Symptom:** The capability-contract enum entry and its declaration test survived authoring and unit
+runs, then the first `grok_verify --mode pr` hard-failed architecture (`unsupported_schema_keyword` on
+the contract and `unsupported_openapi_construct` on everything `$ref`ing it), forcing a revert, a test
+rewrite and a wasted gate cycle.
+**Root cause:** I treated the reviewer's suggested repair as pre-validated and trusted a green unit test
+as evidence the gate could carry the change, while contract editability is decided by the fitness
+comparator's closed keyword subset, which had never been exercised against this file because no prior PR
+touched a published contract.
+**Durable rule:** Before building anything on a `factory/contracts/` edit, run
+`grok_architecture.py fitness --base … --worktree --pre-risk …` — it is seconds, the gate is minutes, and
+only the comparator says whether the contract is editable at all.

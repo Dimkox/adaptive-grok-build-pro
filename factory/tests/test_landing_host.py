@@ -42,7 +42,7 @@ class HostFixture(LandingHostFixture):
 
 class LandingHostConfigTests(HostFixture):
     def test_profiles_require_explicit_live_enablement(self):
-        for profile, enabled in itertools.product(("qwen-omni", "grok-vision", "qwen-intl"), (False, True)):
+        for profile, enabled in itertools.product(("qwen-omni", "qwen-omni-intl", "grok-vision", "qwen-intl"), (False, True)):
             with self.subTest(profile=profile, enabled=enabled):
                 self.write_config({**self.data, "selected_profile": profile, "live_enabled": enabled})
                 config = landing_host.load_host_config(self.config_path)

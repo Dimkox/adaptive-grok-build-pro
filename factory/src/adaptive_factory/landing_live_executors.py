@@ -31,7 +31,13 @@ from .landing_http import (
 )
 from .landing_normalizer import MAX_NORMALIZED_TEXT_BYTES, decode_landing_draft
 from .landing_media import MAX_AUDIO_BASE64_BYTES, MAX_IMAGE_BYTES
-from .landing_provider import LandingProviderError, HttpProviderFailure, MAX_PROVIDER_OUTPUT_BYTES
+from .landing_provider import (
+    EXECUTOR_CODE_CATEGORIES,
+    FAILURE_CATEGORIES,
+    LandingProviderError,
+    HttpProviderFailure,
+    MAX_PROVIDER_OUTPUT_BYTES,
+)
 from .landing_runtime import (
     LandingApplicationService,
     LandingJobStore,
@@ -678,7 +684,7 @@ def compose_env_landing(
     provider = source_env.get(LANDING_PROVIDER_ENV, "").strip()
     if not provider:
         return None
-    if provider not in {"grok", "qwen", "qwen-intl"}:
+    if provider not in {"grok", "qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl"}:
         raise LandingProviderError("landing_provider")
     if profile is None:
         profile = HttpLandingProfile.for_provider(provider, available=True)
@@ -703,10 +709,26 @@ def compose_env_landing(
     )
 
 
+# One tuple feeds both the CLI parser and probe_qwen, so the accepted set cannot drift in one of them.
+PROBE_PROFILES = ("qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl")
+
+
+def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
+    """Bounded classification for operator output; never includes an upstream body."""
+
+    category = getattr(exc, "category", None)
+    if not isinstance(category, str) or category not in FAILURE_CATEGORIES:
+        category = EXECUTOR_CODE_CATEGORIES.get(str(exc), "protocol")
+    status = getattr(exc, "http_status", None)
+    if status is not None and (type(status) is not int or not 100 <= status <= 599):
+        status = None
+    return {"category": category, "http_status": status}
+
+
 def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = None,
                transport: httpx.AsyncBaseTransport | None = None) -> dict[str, object]:
     """One synthetic normalization request; never reads project or customer inputs."""
-    if profile_id not in {"qwen", "qwen-intl", "qwen-omni"}:
+    if profile_id not in PROBE_PROFILES:
         raise LandingProviderError("http_profile_identity")
     profile = HttpLandingProfile.for_provider(profile_id, available=True)
     executor = qwen_landing_executor(
@@ -732,15 +754,21 @@ def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = No
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="One synthetic Qwen landing normalization probe")
-    parser.add_argument("--profile", choices=("qwen", "qwen-intl", "qwen-omni"), default="qwen-intl")
+    parser.add_argument("--profile", choices=PROBE_PROFILES, default="qwen-intl")
     parser.add_argument("--qwen-env-file", type=Path)
     args = parser.parse_args()
     try:
         result = probe_qwen(profile_id=args.profile, qwen_env_file=args.qwen_env_file)
-    except (LandingProviderError, LandingContractError, SettingsError, OSError):
+    except LandingProviderError as exc:
         # Dependency exceptions and provider bodies can contain credentials or
-        # untrusted text. The operator output is deliberately closed.
-        print(canonical_json({"state": "failed", "reason": "qwen_probe_failed"}).decode())
+        # untrusted text, so the operator output stays closed: only the allowlisted
+        # classification the executor already computed may leave the process.
+        print(canonical_json({"state": "failed", "reason": "qwen_probe_failed",
+                              **_probe_failure_fields(exc)}).decode())
+        return 1
+    except (LandingContractError, SettingsError, OSError):
+        print(canonical_json({"state": "failed", "reason": "qwen_probe_failed",
+                              "category": "protocol", "http_status": None}).decode())
         return 1
     print(canonical_json(result).decode())
     return 0
