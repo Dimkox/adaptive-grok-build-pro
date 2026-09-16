@@ -28,6 +28,7 @@ Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `859
 | `adaptive-grok-build-pro-v2.0.15.zip` | 2.0.15 (published 2026-09-05T20:17:20Z) |
 | `adaptive-grok-build-pro-v2.0.16.zip` | 2.0.16 (published 2026-09-13T22:04:08Z) |
 | `adaptive-grok-build-pro-v2.0.17.zip` | 2.0.17 (published 2026-09-16T01:17:14Z) |
+| `adaptive-grok-build-pro-v2.0.18.zip` | 2.0.18 (artifact delivered, tag and GitHub Release pending) |
 
 ## Build a future candidate
 
