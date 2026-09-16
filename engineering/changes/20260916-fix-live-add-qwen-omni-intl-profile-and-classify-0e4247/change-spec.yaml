@@ -1,0 +1,140 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-fix-live-add-qwen-omni-intl-profile-and-classify-0e4247",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the five-media Qwen Omni capability reachable with the provisioned international-account key by adding the qwen-omni-intl profile (issue #86), and let the operator probe name the class of its own failure without opening its output (the remaining half of issue #87). Both are proven: the international omni endpoint answered 200 for a real PNG and a real WAV with image/audio token accounting, and the mainland control still answered 401 with the same key.",
+    "success_metric": "HTTP 200 with finish_reason stop and prompt_tokens_details.image_tokens/audio_tokens > 0 from the international endpoint for the pinned model, and probe failure output carrying allowlisted category plus numeric http_status while never containing the credential, the exception text or the upstream body",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "live-provider",
+      "authentication",
+      "operator-tooling"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "qwen-omni-intl exists as a profile with provider qwen, base_url https://dashscope-intl.aliyuncs.com/compatible-mode/v1, model qwen3.5-omni-plus-2026-03-15, streaming required, and media classes audio/docx/image/pdf/text, and is accepted by the host-config selected_profile validator, the settings provider enum, env-based composition and the probe CLI choices.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        },
+        {
+          "test": "factory/tests/test_landing_host.py"
+        },
+        {
+          "test": "factory/tests/test_landing_server.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A failed probe reports a bounded classification: the printed object is exactly state, reason, category and http_status, category is restricted to authentication|rate_limit|policy|protocol|deadline|transport|accounting, http_status is null or 100..599, and the credential string, the exception text and any upstream body are absent.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "No existing profile changes identity: every previously pinned profile_digest stays valid, the mainland qwen-omni keeps its endpoint, and the failover PROVIDER_ORDER is untouched, so no provider is added to or removed from the durable failover chain by this fix.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        },
+        {
+          "test": "factory/tests/test_landing_failover_providers.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The international omni claim is backed by a live request rather than by documentation: one real PNG (red square on blue) and one real WAV (880 Hz sine) returned HTTP 200 with finish_reason stop, [DONE], model qwen3.5-omni-plus-2026-03-15 and non-zero image/audio token accounting, while the mainland control with the same key returned 401 invalid_api_key.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Provider execution stays default-off: this change adds no enablement path, no service start and no host mutation, and live egress remains opt-in per the dedicated host config.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_host.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Operator output remains closed: only the fixed four keys may be printed on failure; no upstream body, exception text, credential or path is added.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Widening the probe failure output to carry an exception message, provider body or anything derived from them to make diagnosis easier.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Printing, committing or copying an API key, or performing the live verification through a credential file read into the transcript; the probe consumes the process environment only.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Silently adding the omni profiles to the failover chain or re-pointing the existing mainland qwen-omni profile, either of which would change live routing for existing installations.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "probe JSON state plus category/http_status for a deliberate bad key, and the durable observation category for the same failure",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

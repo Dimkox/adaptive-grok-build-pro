@@ -58,6 +58,8 @@ HTTP_PROFILES = {
     "grok-vision": ("grok", "https://api.x.ai/v1", "grok-4.6", False, ("docx", "image", "pdf", "text")),
     "qwen-omni": ("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1",
                   "qwen3.5-omni-plus-2026-03-15", True, ("audio", "docx", "image", "pdf", "text")),
+    "qwen-omni-intl": ("qwen", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                         "qwen3.5-omni-plus-2026-03-15", True, ("audio", "docx", "image", "pdf", "text")),
 }
 HTTP_MEDIA_KINDS = frozenset({"text", "docx"})
 MAX_HTTP_REQUEST_BYTES = 30 * 1_048_576

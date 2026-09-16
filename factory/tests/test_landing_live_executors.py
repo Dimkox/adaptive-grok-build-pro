@@ -813,9 +813,48 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             live, "probe_qwen", side_effect=LandingProviderError(self.value)
         ), redirect_stdout(output):
             self.assertEqual(1, live.main())
-        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed"}, json.loads(output.getvalue()))
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "protocol", "http_status": None}, json.loads(output.getvalue()))
         self.assertNotIn(self.value, output.getvalue())
 
+    def test_probe_cli_reports_authentication_class_without_the_body(self):
+        output = io.StringIO()
+        failure = live.HttpProviderFailure("executor_http", "authentication", 401)
+        with patch("sys.argv", ["probe", "--profile", "qwen-omni-intl"]), patch.object(
+            live, "probe_qwen", side_effect=failure
+        ), redirect_stdout(output):
+            self.assertEqual(1, live.main())
+        printed = json.loads(output.getvalue())
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "authentication", "http_status": 401}, printed)
+        self.assertNotIn(self.value, output.getvalue())
+        self.assertNotIn("invalid_api_key", output.getvalue())
+
+    def test_international_omni_profile_is_streaming_and_five_media(self):
+        profile = HttpLandingProfile.for_provider("qwen-omni-intl", available=True)
+        self.assertEqual("qwen", profile.provider_id)
+        self.assertEqual("https://dashscope-intl.aliyuncs.com/compatible-mode/v1", profile.base_url)
+        self.assertEqual("qwen3.5-omni-plus-2026-03-15", profile.model_id)
+        self.assertTrue(profile.streaming)
+        self.assertEqual(("audio", "docx", "image", "pdf", "text"), profile.media_kinds)
+        # The mainland omni profile keeps its own endpoint and every existing digest.
+        self.assertEqual("https://dashscope.aliyuncs.com/compatible-mode/v1",
+                         HttpLandingProfile.for_provider("qwen-omni").base_url)
+        self.assertNotEqual(profile.profile_digest,
+                            HttpLandingProfile.for_provider("qwen-omni").profile_digest)
+
+    def test_environment_composition_accepts_both_omni_profiles(self):
+        # A selected profile must survive the provider gate and fail later, on the paths the
+        # test does not supply; only an unknown name may be refused as a provider.
+        for name in ("qwen-omni", "qwen-omni-intl"):
+            with self.assertRaises(LandingProviderError) as raised:
+                live.compose_env_landing(blobs=object(), environ={
+                    "FACTORY_LANDING_PROVIDER": name, "DASHSCOPE_API_KEY": self.value})
+            self.assertEqual("landing_path", str(raised.exception))
+        with self.assertRaises(LandingProviderError) as refused:
+            live.compose_env_landing(blobs=object(), environ={
+                "FACTORY_LANDING_PROVIDER": "qwen-never", "DASHSCOPE_API_KEY": self.value})
+        self.assertEqual("landing_provider", str(refused.exception))
     def test_probe_rejects_malformed_draft_and_usage(self):
         self.write(f"DASHSCOPE_API_KEY={self.value}")
         for payload in ({"object": "chat.completion", "model": "qwen-plus", "choices": []},
@@ -857,7 +896,8 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             live, "probe_qwen", side_effect=lambda **kwargs: real_probe(**kwargs, transport=transport)
         ), redirect_stdout(output):
             self.assertEqual(1, live.main())
-        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed"}, json.loads(output.getvalue()))
+        self.assertEqual({"state": "failed", "reason": "qwen_probe_failed",
+                          "category": "protocol", "http_status": None}, json.loads(output.getvalue()))
 
 
 if __name__ == "__main__":
