@@ -1,0 +1,35 @@
+{
+  "change_id": "20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
+  "created_at": "2026-09-16T10:41:35+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T10:41:35+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T10:55:07+00:00",
+      "from": "draft",
+      "reason": "Typed spec authored: AC/INV/FORBID with evidence bindings, red tier with pull-request-merge scope",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T10:55:07+00:00",
+      "from": "scoped",
+      "reason": "Doctrine mirrors the v2.0.17 R precedent (#98) field-for-field; scope limited to identity, records and lockstep tests",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T10:55:07+00:00",
+      "from": "approved",
+      "reason": "Identity bump, PROJECT_STATE chain records, dossier post-106, lockstep tests and package docs written in this commit",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "968b3ce9e148",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Release sync 2.0.17 to 2.0.18 identity bump R with release-chain landing rows for 101 102 105 106",
+  "updated_at": "2026-09-16T10:55:07+00:00"
+}

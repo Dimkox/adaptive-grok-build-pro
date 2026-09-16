@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Establish honest v2.0.18 candidate identity on main: VERSION/README/CHANGELOG/START_HERE/ROADMAP/HANDOFF/__version__ bumped to the 2.0.18 candidate, published_release kept as the actually-published v2.0.17 with unchanged immutable facts, the four pull requests merged after the v2.0.17 publication recorded in delivered_change_history with re-derived App-check identifiers, the published v2.0.17 candidate archived verbatim, local_candidate opened as a pending 2.0.18 slot whose ZIP+sidecar pair is asserted ABSENT until the separate artifact-child commit, a fresh read-only runtime observation re-pinning the installed units to this base, and every coupled test literal moved in the same commit (lockstep-proven).",
+    "success_metric": "tests.test_project_state + tests.test_structure + tests.test_manifest_package green in a frozen tree; grok_verify --mode pr PASS; tag v2.0.18 later targets the exact merged artifact-child commit only",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Version identity is coherent everywhere: VERSION=2.0.18 equals the README H1, adaptive_grok.__version__, the CHANGELOG top section heading '2.0.18 — 2026-09-16 (candidate, unpublished)', the ROADMAP product line and PROJECT_STATE.product_version, while latest_published_release and published_release keep naming v2.0.17.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The four pull requests merged on main after the v2.0.17 publication (#101, #102, #105 and #106) are recorded in delivered_change_history.post_v2_0_17_landing with their exact merge commits, checked heads, merged-at times and App-owned check-run identifiers re-derived from Git and the GitHub checks API during this wave; no pre-publication record is rewritten. Release-chain commits (R, A, SR) are recorded through local_candidate and current_unreleased_change rather than as additional rows there.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "local_candidate is a pending 2.0.18 artifact slot: null identities, published false, delta pair naming packages/adaptive-grok-build-pro-v2.0.18.zip plus its sidecar asserted ABSENT until the separate artifact-child commit supplies them; the published v2.0.17 candidate is archived verbatim under delivered_change_history.v2_0_17_release_preparation.published_local_candidate.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Bootstrap docs (START_HERE/README/ROADMAP/HANDOFF current-state) tell the post-#101/#102/#105/#106 truth: v2.0.17 remains the only newest published release, a 2.0.18 candidate is in preparation, issue #86 keeps its enablement remainder, #104 holds the frozen-contract decision, and the installed L5 services still run their recorded pre-#93 SHAs — re-pinned by a fresh read-only observation dossier whose source_base equals the new observed main SHA.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No historical assertion value (M0-M9 commits, published_release and prior_published_releases identifiers, schedule dates, frozen migration range, released artifact digests, archived candidate records) changes in this commit.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Nothing is published by this commit: no tag, no GitHub Release, no artifact bytes, no installation and no provider activation. Those remain later separately delegated steps.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Claiming a v2.0.18 release, artifact or operational activation anywhere in the tree while none exists.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Any credential value, private key or environment content entering the diff. The runtime dossier is limited to an explicit allowlist carried from the post-91..post-99 convention: unit names, MainPID, ActiveState/UnitFileState, the ExecStart release path, installed release SHAs, acceptance job ids and digests, elapsed timings, PR numbers and App check-run identifiers, and observation timestamps. Nothing else about the host may appear.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this pull request plus the three coupled unittest modules green in the frozen tree",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}
