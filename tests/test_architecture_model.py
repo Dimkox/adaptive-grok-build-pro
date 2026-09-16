@@ -2020,18 +2020,27 @@ class ArchitectureModelTests(unittest.TestCase):
         deep_member: object = dict(fact_a)
         for _ in range(ARCH.MAX_DEPTH + 5):
             deep_member = {"nested": deep_member}
+        # A member is opaque data: schema-looking keys inside it are values and
+        # must not be resolved or evaluated as subschemas (FORBID-001).
+        inert = _json_schema({"profile": {"enum": [dict(fact_a), {"$ref": "file:///etc/passwd", "x": [{"const": {"type": "string"}}]}]}})
+        inert_result = ARCH.compare_contracts(self._record(base), self._record(inert), "consumer_accepts_old")
+        self.assertEqual(inert_result.status, "compatible")
         adversarial = (
-            ("duplicate member", _json_schema({"profile": {"enum": [dict(fact_a), dict(fact_a)]}})),
-            ("non-finite member", _json_schema({"profile": {"enum": [{**fact_a, "x": float("nan")}]}})),
-            ("non-string key member", _json_schema({"profile": {"enum": [{1: "x"}]}})),
-            ("over-deep member", _json_schema({"profile": {"enum": [deep_member]}})),
+            ("duplicate member", _json_schema({"profile": {"enum": [dict(fact_a), dict(fact_a)]}}),
+             ("unsupported_schema_keyword",)),
+            ("non-finite member", _json_schema({"profile": {"enum": [{**fact_a, "x": float("nan")}]}}),
+             ("malformed_contract_document",)),
+            ("non-string key member", _json_schema({"profile": {"enum": [{1: "x"}]}}),
+             ("malformed_contract_document",)),
+            ("over-deep member", _json_schema({"profile": {"enum": [deep_member]}}),
+             ("malformed_contract_document",)),
         )
-        for label, doc in adversarial:
+        for label, doc, gate in adversarial:
             with self.subTest(member=label):
                 result = ARCH.compare_contracts(self._record(base), self._record(doc), "consumer_accepts_old")
                 self.assertEqual(result.status, "unsupported")
+                self.assertEqual(result.reasons, gate)
 
-        from unittest import mock
         with mock.patch.object(ARCH, "MAX_PARSED_NODES", 8):
             result = ARCH.compare_contracts(
                 self._record(base),
@@ -2039,6 +2048,26 @@ class ArchitectureModelTests(unittest.TestCase):
                 "consumer_accepts_old",
             )
         self.assertEqual(result.status, "unsupported")
+
+    def test_valid_enum_member_bounds_hold_under_direct_programmatic_documents(self) -> None:
+        # The compare-path arms above mostly die in canonical-JSON preflight before
+        # the enum walk runs, so they cannot exercise the helper's own returns;
+        # programmatic ContractRecords can. Every rejection path and the clean
+        # acceptance path are pinned here directly.
+        self.assertTrue(ARCH._valid_enum_member({"a": [1, "x", True, None, 2.5]}, None, [0]))
+        self.assertFalse(ARCH._valid_enum_member({"a": 1}, None, None))
+        self.assertFalse(ARCH._valid_enum_member({1: "non-string key"}, None, [0]))
+        self.assertFalse(ARCH._valid_enum_member([float("nan")], None, [0]))
+        self.assertFalse(ARCH._valid_enum_member([float("inf")], None, [0]))
+        deep = {"a": 1}
+        for _ in range(ARCH.MAX_DEPTH + 2):
+            deep = {"n": deep}
+        self.assertFalse(ARCH._valid_enum_member(deep, None, [0]))
+        counter = [0]
+        with mock.patch.object(ARCH, "MAX_PARSED_NODES", 2):
+            self.assertFalse(ARCH._valid_enum_member({"a": {"b": 1}}, None, counter))
+        self.assertGreater(counter[0], 1)
+        self.assertTrue(ARCH._valid_enum_member("scalar-still-fine", None, [0]))
 
     def test_openapi_comparison_rejects_removed_operation_and_weakened_authentication(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
