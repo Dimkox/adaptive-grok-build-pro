@@ -10,7 +10,7 @@
 
 ## Automated checks
 
-- `python3 -m unittest tests.test_project_state tests.test_structure` 
+- `python3 -m unittest tests.test_project_state tests.test_structure`
 - `python3 scripts/grok_verify.py --mode pr`
 
 ## Manual checks

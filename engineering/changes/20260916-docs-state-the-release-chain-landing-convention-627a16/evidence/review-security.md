@@ -51,11 +51,11 @@ FAIL: test_missing_and_corrupt_current_coverage_fail ... (scenario='missing')
 AssertionError: 1 != 0 : Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python
 ...
 FAIL: test_inherited_pytest_selection_cannot_omit_tests
- : 
+ :
 FAIL: test_opted_in_verifier_shards_each_method_once
- : 
+ :
 FAIL: test_unittest_filename_pattern_is_preserved
- : 
+ :
 Ran 642 tests in 443.587s
 FAILED (failures=7, skipped=1)
 ```

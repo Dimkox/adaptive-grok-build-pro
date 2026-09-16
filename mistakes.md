@@ -1092,3 +1092,33 @@ The Grok delivery appended a narrow source fact and recorded activation in PR/ru
 **Symptom:** Architecture analysis aborted with `worktree file exceeds analysis limit` on any tree tracking a release ZIP, so every artifact-child pull request looked locally red (issue #80), even though the release content was fine.
 **Root cause:** the changed-artifact loop needs only size, SHA-256 and a binary marker — `_line_stats` already returns `(None, None)` for content containing a NUL — yet the readers loaded the entire object first, so `MAX_ANALYZED_FILE_BYTES` converted a memory guard into a verdict failure on a file the analyzer was never going to analyse.
 **Durable rule:** When a guard rejects input that the consumer only measures, stream the measurement instead of either widening the constant or skipping the entry: skipping silently drops the file from the diff, and a larger constant only moves the cliff. Keep the refusal for the case that genuinely needs the bytes (oversized text, explicit content reads).
+
+## 2026-09-16 — Killed the external Trust CI runner while cleaning up my own verification runs
+
+**Symptom:** A gate job for an open pull request ended `verification-failed` with the
+`repository-verification` command exiting 137 (128+9, SIGKILL); the other five mandatory commands had
+already passed. The killed job was not mine: it was the self-hosted runner's own container.
+**Root cause:** two compounding habits. First, I searched for "my" processes with a pattern matching the
+tool name (`grok_verify`), which also matches the runner container's command line, because the runner
+executes the same script — my own shell then received SIGTERM from its own pattern. Second, I switched to
+`kill -9` on the PIDs the (bracketed) pattern still reported, without inspecting what they were: one was
+`docker run --name trust-ci-<job-id>…` and the other the `python3 scripts/grok_verify.py --mode pr
+--no-record --json` inside it, i.e. the live gate run.
+**Durable rule:** On this host the verifier runs in three places at once — my worktree, an ignored
+sibling worktree, and the Trust CI runner container — so a process-name pattern is never an identifier:
+list `pid,args`, match the container or `--no-record` signature, and never signal-kill a job whose lease
+owner you cannot name. A killed gate leaves a false cause in the durable record, which is worse than a
+slow one: the outcome may have been failure anyway, but the stored reason became SIGKILL instead of the
+real whitespace finding. Re-derive by pushing a new head so the next job measures the fixed tree.
+
+## 2026-09-16 — Let generated evidence carry trailing whitespace past a local check
+
+**Symptom:** `grok_verify --mode pr` reported `git-diff-check: 2/4 checks passed` on a documentation
+branch whose content was already reviewed and green in every other check.
+**Root cause:** the whitespace came from two producers, not one: my own heredoc line in a package plan,
+and quoted command output pasted into a reviewer report, where `: ` continuation lines keep a trailing
+space. I ran the file-writing script and the test module, but not the cheap diff-hygiene check that the
+gate itself performs first.
+**Durable rule:** Before launching any verification, run `git diff --check <base>..` against the committed
+head — not the working tree — and strip trailing whitespace from generated Markdown and from review
+evidence the same way as from source, since the reviewer's file is part of the delivered tree.
