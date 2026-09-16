@@ -5,7 +5,7 @@
 ## Acceptance criteria
 
 - [x] AC-001: `START_HERE.md` states that release-chain commits (R, A, SR) are recorded through `current_unreleased_change`/`local_candidate` and not as `post_v2_0_16_landing` rows, with row #81 explained as the previous chain's recorded successor.
-- [x] AC-002: the `work_inventory` entries for PRs #33, #15 and #21 each name the failing mandatory command and the observed assertion or error text, retained as historical observations.
+- [x] AC-002: the `work_inventory` entries for PRs #33, #15 and #21 each name the failing mandatory command, the summary line (`Ran …`/`FAILED …`) and the verbatim assertion or error text, each attributed to a single head and kept labelled as a historical observation; nothing is claimed beyond what the retained record states.
 - [x] AC-003: the commit claims and performs no release action, and every published release record stays byte-unchanged.
 
 ## Failure and edge cases

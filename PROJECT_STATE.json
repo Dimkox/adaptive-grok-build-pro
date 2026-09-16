@@ -1209,7 +1209,7 @@
         "gitguardian_conclusion": "SUCCESS",
         "unique_scope": "Parallel local Python verification",
         "disposition": "Refresh base/head and external Trust CI before delivery; displayed historical check is not current merge eligibility.",
-        "failure_cause": "root-unittest failed (exit 1) on head 6d72d4c8…: this pull request's own tests/test_python_test_runner.py cases raise \"pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\", because the exact runtime executing the mandatory command ships unittest and coverage only. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim."
+        "failure_cause": "head 6d72d4c8…: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim."
       }
     ],
     "retained_unresolved": [
@@ -1223,7 +1223,7 @@
         "observed_check_conclusion": "FAILURE",
         "unique_scope": "Unique investor demo and packaging hardening",
         "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.",
-        "failure_cause": "root-unittest errored on head 165d5dd9…: the architecture bootstrap and binding tests raise \"base_sha is not an available commit object\" and \"architecture binding requires an exact Git HEAD\", because the branch's recorded base was not resolvable in that checkout. Historical observation; the pull request was closed without merging."
+        "failure_cause": "head 165d5dd9…: mandatory root-unittest exited 1 with `Ran 480 tests in 244.175s` and `FAILED (failures=1, errors=5)`. The record first shows git refusing the job's own checkout — \"fatal: detected dubious ownership in repository at '/workspace/.git'\" followed by \"fatal: Could not read from remote repository.\" — and the consequences are `ArchitectureError: base_sha is not an available commit object` from adaptive_grok/architecture_diff.py `_exact_commit` (three architecture bootstrap tests) and `RuntimeError: architecture binding requires an exact Git HEAD` (two receipt tests), with the single failure being `AssertionError: 2 != 0` in the architecture CLI bootstrap case. Historical observation; the pull request was closed without merging, so no current eligibility applies."
       },
       {
         "pull_request": 14,
@@ -1272,7 +1272,7 @@
         "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
         "observed_check_conclusion": "FAILURE",
         "gitguardian_conclusion": "FAILURE",
-        "failure_cause": "root-unittest reported one error in 535 tests on the later head 571cad78…: the shipped-zip comparison test failed with \"git rev-parse --verify HEAD^{commit} returned non-zero exit status 128\", i.e. the job checkout had no resolvable HEAD. An earlier head 460a8a01… passed all six mandatory commands, so the failure belongs to the superseded head rather than to the branch content.",
+        "failure_cause": "the branch's final head 571cad78… (the pull request was later marked superseded): mandatory root-unittest exited 1 with `Ran 535 tests in 379.425s` and `FAILED (errors=1, skipped=1)`. The lone error is in tests/test_manifest_package.py's test_shipped_zip_exactly_matches_filtered_tracked_head, where the test's own git helper raised subprocess.CalledProcessError for `['git', '--no-replace-objects', '-C', '/workspace', 'rev-parse', '--verify', 'HEAD^{commit}']` with exit status 128; the same record shows the job checking out 571cad78…, so no further mechanism is claimed. An earlier head 460a8a01… passed all six mandatory commands, so the error is attributed to that job, not to the branch content. Historical observation.",
         "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."
       },
       {
