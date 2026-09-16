@@ -1136,3 +1136,14 @@ touched a published contract.
 **Durable rule:** Before building anything on a `factory/contracts/` edit, run
 `grok_architecture.py fitness --base … --worktree --pre-risk …` — it is seconds, the gate is minutes, and
 only the comparator says whether the contract is editable at all.
+
+## 2026-09-16 — Recurred the same kill-by-pattern mistake twice in one session, destroying two live gates
+
+**Symptom:** two detached `grok_verify` runs were SIGTERM'd by cleanup commands that matched their own
+command line (`pkill -f grok_verify` / bracketed variant), and a third run's empty 0-byte log was read as
+evidence it had died, when this tool simply flushes everything at exit; three gate cycles were wasted.
+**Root cause:** I applied the 2026-09-13 rule only to the *search* pattern and not to the situation: a kill
+step inside a compound command whose tail contains the script path matches itself, and liveness of a
+detached child must be established by the PID captured at launch, never by log size.
+**Durable rule:** capture `$!` (or the first exact-PID probe) at launch, poll only that PID, and never
+place pattern-based process termination in a command that mentions the target script at all.

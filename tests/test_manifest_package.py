@@ -1419,11 +1419,11 @@ module.main()
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(candidate_version, '2.0.17')
+        self.assertEqual(candidate_version, '2.0.18')
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'published_tag_bound',
+            'pending_unpublished_artifact_child',
         )
         candidate_pair = tuple(
             ROOT / path

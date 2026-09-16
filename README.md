@@ -1,14 +1,14 @@
-# Adaptive Grok Build Pro v2.0.17
+# Adaptive Grok Build Pro v2.0.18
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
 ## Current state
 
-Identity: **2.0.17**. The latest published release is [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17), published **2026-09-16T01:17:14Z** from the merged artifact-child commit `c86b1a1989ace899a4450bde558fcd8adc00e4e2`. Its tag, ZIP and sidecar are immutable; earlier releases stay untouched and no release preparation remains.
+Identity: **2.0.18** (candidate, unpublished). The latest published release is [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17), published **2026-09-16T01:17:14Z** from the merged artifact-child commit `c86b1a1989ace899a4450bde558fcd8adc00e4e2`. Its tag, ZIP and sidecar are immutable and are not rebuilt by the candidate. The `2.0.18` identity bump is in preparation: no `v2.0.18` ZIP, sidecar, tag or GitHub Release exists in this tree.
 
 | Layer | Observed state on 2026-09-16 |
 | --- | --- |
-| Repository source | `main` observed at `c86b1a1989ace899a4450bde558fcd8adc00e4e2` (PR #99). M0-M9 source is delivered; durable five-provider landing failover landed through PR #91; the workflow artifact adapters (Spec Kit/BMAD/Superpowers advisory compiler, ADR-0001 with the `workflow_sources` version contract pinning superpowers 6.3.0, BMAD 6.12.0 and spec-kit 1.0.7) landed through PR #93 and are part of this release's source. The assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
+| Repository source | `main` observed at `d146ca455d615683765b443b747f55aa4dbad436` (PR #106). M0-M9 source is delivered; durable five-provider landing failover landed through PR #91; the workflow artifact adapters landed through PR #93; oversized tracked binaries now stream through architecture analysis (PR #101); the live-proven international Qwen Omni profile and classified operator probe failures landed through PR #105 and are part of this candidate's source. The assembled L5 runtime includes bounded Qwen/Grok execution, a dedicated SQLite/Unix host, 22-member artifacts, separate filesystem publication and recovery. |
 | Installed L5 | Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce`; Grok secondary `adaptive-l5-grok.service` at `61a05da`. Both were **active and enabled**. |
 | Proven runtime result | Authenticated artifact generation succeeded for both installed SHAs. Grok produced `artifact_ready` in **29.852 s**, with one provider request and `live_url=null`. [Dated evidence and limits](engineering/runbooks/l5-runtime-observation-2026-09-15.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.18 — 2026-09-16 (candidate, unpublished)
+
+Four pull requests merged on `main` after `v2.0.17` was published. This section records the landed source; the artifact pair, tag and GitHub Release for `2.0.18` do not exist until the separate artifact-child step delivers them under their own delegated grants.
+
+- Streams oversized tracked binaries from a bounded 64 KiB reader that hashes while reading and re-checks the dev/ino/size/mtime identity afterwards, so a 10.9 MB tracked artifact no longer refuses architecture analysis (PR #101, checked head `b40fd1a4`, App check `104681990219`, merged `2026-09-16T06:14:17Z` as `83925c1`)
+- Puts the release-chain landing convention in view and records the inspected failure causes behind closed pull requests #15, #21 and #33 in the work inventory (PR #102, checked head `3f93e7bd`, App check `104704114422`, merged `2026-09-16T07:52:29Z` as `98b7769`)
+- Adds the `qwen-omni-intl` profile — capability proven live (HTTP 200 with image and audio token accounting on the international endpoint; mainland control 401 with the same key) — and classifies operator probe failures through the shared executor taxonomy; closes issue #87, advances #86 for the product half, and files the frozen-contract defect #104 (PR #105, checked head `30fea4e3`, App check `104740673782`, merged `2026-09-16T09:51:33Z` as `ad4d636`)
+- Closes the omni change package on its exact delivery evidence (`draft→ready` with per-transition reasons, tasks carrying head-SHA facts) (PR #106, checked head `0a99a4d6`, App check `104754117579`, merged `2026-09-16T10:34:51Z` as `d146ca4`)
+
 ## 2.0.17 — 2026-09-16
 
 Twelve pull requests merged after `v2.0.16` was published. This section records the landed source on `main` and its publication: that source was archived by the artifact child and shipped through tag `v2.0.17`.
