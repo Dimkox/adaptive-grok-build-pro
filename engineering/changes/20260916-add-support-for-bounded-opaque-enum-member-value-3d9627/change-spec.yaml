@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-add-support-for-bounded-opaque-enum-member-value-3d9627",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Remove the fitness comparator's blind spot for object-valued enum members (issue #104): `_unsupported_schema` rejected every non-scalar enum member, which made closed fact-registry contracts (landing-backend-capability.v1 and, through its $ref, the failover OpenAPI) permanently unmodifiable — any edit returned `unsupported`, which hard-fails architecture. Enum members become bounded opaque VALUES under the existing depth/node budget, while membership comparison, uniqueness and the closed-keyword subset stay exactly as strict as before. The wave also records, as a measured outcome, that declaring a new profile in v1 remains a producer break under the dual json_schema policies — that decision stays separate and named.",
+    "success_metric": "new characterization test proves: unchanged object-enum pair compatible, consumer-direction widening compatible, producer-direction widening incompatible (widened_producer_output), narrowing incompatible (narrowed_enum), and duplicate/non-finite/non-string-key/over-depth/budget-exhausted members all still unsupported; the full architecture/contract suites (177) and `grok_verify --mode pr` green on the frozen head",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "verification",
+      "test-infra",
+      "architecture"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "`enum` members may be dicts/lists of finite JSON scalars with string keys up to MAX_DEPTH, each node charged to the resolver/counter work budget; scalar members are unaffected. An object-enum document yields a real compatibility verdict instead of unsupported.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Membership semantics are byte-canonical and directional exactly as the scalar path already was: consumer accepts superset, producer widening is incompatible, narrowing incompatible, duplicate members (identical canonical bytes) rejected.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The fail-closed subset is not loosened anywhere else: non-string dict keys, non-finite numbers, over-MAX_DEPTH or over-budget structures still return unsupported; `const`, keywords, composition and $ref handling untouched.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The measured consequence for issue #104 is recorded on the issue with reproduced verdicts: analyzer blindness fixed, while adding qwen-omni-intl to landing-backend-capability.v1 remains incompatible under FIT-GOVERNANCE-HANDOFF-COMPATIBILITY (producer_accepted_by_old) — declaration requires either a v2 coexistence contract or an explicit human decision to govern fact-registry enums consumer-side; this wave changes neither rules.yaml nor the contract.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No tracked contract file, no architecture model (system.yaml/rules.yaml), no governance digest changes in this wave.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "All previously-supported constructs keep their exact verdicts; only the previously-unsupported object-enum class changes behavior, strictly from 'cannot analyze' to 'analyzed'.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "test": "tests/test_json_schema_subset.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Treating enum member objects as subschemas (resolving $ref inside them, validating keywords, or recursing with schema semantics) — they are opaque data.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Editing landing-backend-capability.v1 (or rules.yaml) inside this wave to force the #86 declaration the dual policy honestly calls a producer break.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "compare_contracts verdicts over the characterization matrix (statuses plus exact reason tuples) pinned by the new test; full local gate plus App check on the exact head",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

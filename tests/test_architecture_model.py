@@ -1996,6 +1996,50 @@ class ArchitectureModelTests(unittest.TestCase):
                 self.assertEqual(result.status, "incompatible")
                 self.assertIn(reason, result.reasons)
 
+    def test_object_valued_enum_members_are_bounded_opaque_values_not_schemas(self) -> None:
+        # Issue #104: closed fact registries declare enum members as full objects.
+        # Such documents must be analyzable (they were write-once while the subset
+        # rejected every structural member), membership stays byte-exact, and no
+        # adversarial member shape escapes the closed boundaries.
+        fact_a = {"profile_id": "alpha", "media_kinds": ["text"], "available": True, "limit": 10}
+        fact_b = {"profile_id": "beta", "media_kinds": ["image", "text"], "available": False, "limit": 20}
+        base = _json_schema({"profile": {"enum": [dict(fact_a)]}})
+        widened = _json_schema({"profile": {"enum": [dict(fact_a), dict(fact_b)]}})
+
+        same = ARCH.compare_contracts(self._record(base), self._record(dict(base)), "consumer_accepts_old")
+        self.assertEqual(same.status, "compatible")
+        added = ARCH.compare_contracts(self._record(base), self._record(widened), "consumer_accepts_old")
+        self.assertEqual(added.status, "compatible")
+        producer = ARCH.compare_contracts(self._record(base), self._record(widened), "producer_accepted_by_old")
+        self.assertEqual(producer.status, "incompatible")
+        self.assertIn("widened_producer_output", producer.reasons)
+        removed = ARCH.compare_contracts(self._record(widened), self._record(base), "consumer_accepts_old")
+        self.assertEqual(removed.status, "incompatible")
+        self.assertIn("narrowed_enum", removed.reasons)
+
+        deep_member: object = dict(fact_a)
+        for _ in range(ARCH.MAX_DEPTH + 5):
+            deep_member = {"nested": deep_member}
+        adversarial = (
+            ("duplicate member", _json_schema({"profile": {"enum": [dict(fact_a), dict(fact_a)]}})),
+            ("non-finite member", _json_schema({"profile": {"enum": [{**fact_a, "x": float("nan")}]}})),
+            ("non-string key member", _json_schema({"profile": {"enum": [{1: "x"}]}})),
+            ("over-deep member", _json_schema({"profile": {"enum": [deep_member]}})),
+        )
+        for label, doc in adversarial:
+            with self.subTest(member=label):
+                result = ARCH.compare_contracts(self._record(base), self._record(doc), "consumer_accepts_old")
+                self.assertEqual(result.status, "unsupported")
+
+        from unittest import mock
+        with mock.patch.object(ARCH, "MAX_PARSED_NODES", 8):
+            result = ARCH.compare_contracts(
+                self._record(base),
+                self._record(_json_schema({"profile": {"enum": [dict(fact_a), dict(fact_b)]}})),
+                "consumer_accepts_old",
+            )
+        self.assertEqual(result.status, "unsupported")
+
     def test_openapi_comparison_rejects_removed_operation_and_weakened_authentication(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
         secured = {

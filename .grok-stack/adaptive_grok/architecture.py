@@ -1291,6 +1291,44 @@ def _valid_schema_scalar(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
+def _valid_enum_member(
+    value: Any,
+    resolver: "_SchemaResolver | None",
+    counter: list[int] | None,
+    *,
+    depth: int = 0,
+) -> bool:
+    """True for a closed, bounded opaque enum VALUE (data, never a subschema).
+
+    Object-valued enums are how closed fact registries are declared; membership
+    comparison is by canonical bytes, so a member must be finite JSON data with
+    string keys and depth/node cost charged to the same analysis budget.
+    """
+    if depth > MAX_DEPTH:
+        return False
+    if resolver is not None:
+        if not resolver.consume():
+            return False
+    else:
+        if counter is None:
+            return False
+        counter[0] += 1
+        if counter[0] > MAX_PARSED_NODES:
+            return False
+    if isinstance(value, dict):
+        return all(
+            isinstance(key, str)
+            and _valid_enum_member(item, resolver, counter, depth=depth + 1)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return all(
+            _valid_enum_member(item, resolver, counter, depth=depth + 1)
+            for item in value
+        )
+    return _valid_schema_scalar(value)
+
+
 def _unsupported_schema(
     schema: Any,
     resolver: _SchemaResolver | None = None,
@@ -1405,7 +1443,12 @@ def _unsupported_schema(
             counter[0] += 1
             if counter[0] > MAX_PARSED_NODES:
                 return True
-        encoded = _canonical_bytes(item) if _valid_schema_scalar(item) else None
+        if _valid_schema_scalar(item):
+            encoded = _canonical_bytes(item)
+        elif _valid_enum_member(item, resolver, counter):
+            encoded = _canonical_bytes(item)
+        else:
+            encoded = None
         if encoded is None or encoded in enum_values:
             return True
         enum_values.add(encoded)
