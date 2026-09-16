@@ -9,7 +9,7 @@
 - [x] Lockstep test edits in `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`; prove the trio is red before and green after in the frozen tree.
 - [ ] Run `python3 scripts/grok_verify.py --mode pr` on the frozen tree and record the verification receipt.
 - [ ] Independent `security_review` and `release_review` receipts for this route.
-- [ ] Open the pull request, wait for the exact-head App check, merge `R`.
+- [x] Opened as PR #98 and merged on its exact-head App check `104605819798` as `78082a290f8b90cade88685351fbb2ba263689b9`.
 - [ ] `A`: build the ZIP+sidecar from the merged `R` tree in `0700` staging with two byte-identical builds, deliver them plus the `local_candidate` flip as the artifact-child pull request.
 - [ ] Tag `v2.0.17` and publish the GitHub Release bound to `A`'s exact merged commit — requires its own explicit delegated grant (production action).
 - [ ] `SR`: documentation successor recording `merge_commit`, `artifact_child.commit`/`tree`, `published=true`, `published_at` and the joined route/branch/package identities.

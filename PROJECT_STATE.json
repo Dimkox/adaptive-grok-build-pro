@@ -2,8 +2,8 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-15T22:59:00Z",
-  "observed_main_sha": "7bbf42526f207db0007daafa4cc946cc2d81f465",
+  "observed_at": "2026-09-16T00:24:00Z",
+  "observed_main_sha": "78082a290f8b90cade88685351fbb2ba263689b9",
   "product_version": "2.0.17",
   "latest_published_release": "v2.0.16",
   "bootstrap_entrypoint": "START_HERE.md",
@@ -149,8 +149,8 @@
     "change_package": "engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
     "identity": "v2.0.17 release sync (identity bump + bootstrap-state refresh)",
     "status": "release_sync_authored",
-    "stage": "identity_bump_in_pull_request",
-    "source_base": "7bbf42526f207db0007daafa4cc946cc2d81f465",
+    "stage": "artifact_child_delivered_pending_tag",
+    "source_base": "78082a290f8b90cade88685351fbb2ba263689b9",
     "target_version": "2.0.17",
     "scope": [
       "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md H1/Identity, CHANGELOG.md top entry, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.17 candidate",
@@ -175,7 +175,7 @@
         "check_run_id": 104552079057
       }
     ],
-    "artifact_child": "Not built. The v2.0.17 ZIP+sidecar pair arrives only with the separate artifact-child commit; this record asserts their absence.",
+    "artifact_child": "Delivered: packages/adaptive-grok-build-pro-v2.0.17.zip and its sidecar exist in the tree, built from the merged release-sync commit recorded in local_candidate.artifact_child.source_parent. The tag and GitHub Release do not exist yet.",
     "tag_and_release": "Not created. v2.0.16 remains the only tag and GitHub Release; v2.0.17 publication requires its own exact delegated actions after the artifact child merges.",
     "frozen": {
       "published_release": "v2.0.16",
@@ -184,7 +184,7 @@
     },
     "external_effect": false,
     "operational_activation": false,
-    "next_action": "Merge the release-sync pull request on its exact-head App check, then build the v2.0.17 ZIP+sidecar from the merged tree as the artifact-child pull request. Tag push and GitHub Release publication each need an explicit delegated grant that no local record can substitute. After publication, establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification.",
+    "next_action": "Merge the artifact-child pull request on its exact-head App check, then tag v2.0.17 and publish the GitHub Release bound to that merged commit — each under its own exact delegated grant, which no local record can substitute. Then land the documentation successor SR that records merge_commit, tree, checked_head, pull_request, published=true, published_at, the tag object and the digests, and closes the candidate record.",
     "record_scope": "Release preparation for 2.0.17 only. Documentation workflow belongs to its change package; runtime state is in runtime_observations.",
     "explanation": "Twelve pull requests merged after the v2.0.16 publication, so the tree can no longer claim that no release preparation remains. The candidate identity is separated from the published identity by tests, not by prose."
   },
@@ -544,11 +544,11 @@
   },
   "local_candidate": {
     "version": "2.0.17",
-    "status": "pending_release",
+    "status": "artifact_bytes_delivered",
     "route_id": "f98796afe7de",
     "branch": "feature/v2.0.17-release-sync",
     "change_package": "engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
-    "source_base": "7bbf42526f207db0007daafa4cc946cc2d81f465",
+    "source_base": "78082a290f8b90cade88685351fbb2ba263689b9",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
     "source_gate_status": "pending_final_tree",
@@ -557,29 +557,30 @@
     "merge_commit": null,
     "tree": null,
     "pull_request": null,
-    "artifact_status": "pending_unpublished_artifact_child",
+    "artifact_status": "pending_tag_and_release",
     "predecessor_record": "The published v2.0.16 candidate record is archived verbatim as delivered_change_history.v2_0_16_release_preparation.published_local_candidate.",
     "artifact_child": {
       "identity": "A",
-      "source_parent": null,
-      "source_parent_tree": null,
+      "source_parent": "78082a290f8b90cade88685351fbb2ba263689b9",
+      "source_parent_tree": "2283e6a09d3eb2a0aeabce8a872e06746b941176",
       "commit": null,
       "tree": null,
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.17.zip",
         "packages/adaptive-grok-build-pro-v2.0.17.zip.sha256"
       ],
-      "zip_sha256": null,
-      "sidecar_sha256": null,
-      "status": "not_built",
-      "requirement": "The separate artifact-child commit adds both delta_paths files built from the merged release-sync tree, flips artifact_status and the artifact identities, and keeps published, published_at, external_effect and operational_activation false; merge_commit and tree stay null because the child cannot self-record them. Until that commit exists this record intentionally ships without those bytes and grants no publication authority."
+      "zip_sha256": "770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616",
+      "sidecar_sha256": "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0",
+      "status": "built_byte_reproducible_twice",
+      "zip_source_note": "The archive was built from the merged release-sync tree 78082a290f8b90cade88685351fbb2ba263689b9; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent).",
+      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree 78082a290f8b90cade88685351fbb2ba263689b9; merge_commit, tree, checked_head and pull_request stay null because the artifact child cannot self-record its own merge identity, and published/external_effect/operational_activation stay false until the tag, the GitHub Release and the post-merge documentation successor."
     },
     "published": false,
     "published_at": null,
     "external_effect": false,
     "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "2.0.17 is the unpublished identity that will carry the twelve pull requests merged after the v2.0.16 publication, recorded in delivered_change_history.post_v2_0_16_landing. Nothing is built, tagged or released for 2.0.17; provider live egress stays default-off, the installed L5 services keep their own pre-#93 SHAs, and the systemd/install templates remain inert and uninstalled."
+    "notes": "Artifact bytes (ZIP + sidecar, 10940676 bytes, built twice byte-identically in private 0700 staging from the merged release-sync tree 78082a290f8b90cade88685351fbb2ba263689b9) are delivered into the repository tree. \"Delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect and no operational activation. published, external_effect and operational_activation remain false, and merge_commit/tree stay null because the child cannot self-record them; the tag and the Release bind to this pull request's merged commit under their own exact delegated grants."
   },
   "delivered_non_milestone_work": [
     {
@@ -612,7 +613,7 @@
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Merge the release-sync pull request on its exact-head App check, then build the v2.0.17 ZIP+sidecar from the merged tree as the artifact-child pull request. Tag push and GitHub Release publication each need an explicit delegated grant that no local record can substitute. After publication, establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification.",
+    "next_action": "Merge the artifact-child pull request on its exact-head App check, then tag v2.0.17 and publish the GitHub Release bound to that merged commit — each under its own exact delegated grant, which no local record can substitute. Then land the documentation successor SR that records merge_commit, tree, checked_head, pull_request, published=true, published_at, the tag object and the digests, and closes the candidate record.",
     "local_source_gate": {
       "status": "passed_for_published_artifact_head",
       "artifact_head": "2b1517986b9b5b83a95b1286baac161074c58175",
@@ -1332,13 +1333,13 @@
     "source_directory": "trust-ci",
     "operator_runbooks": "engineering/runbooks",
     "last_success": {
-      "pull_request": 94,
-      "head_sha": "9437efed95d839ad8076215c0e1c633757e7f353",
-      "merge_commit": "7bbf42526f207db0007daafa4cc946cc2d81f465",
-      "check_run_id": 104591923631,
-      "attestation_id": "e3bb3bfb-14dd-4a87-a99f-70bf06f78238",
+      "pull_request": 98,
+      "head_sha": "83738723fbdad54becbe1ff98c41305a168e6269",
+      "merge_commit": "78082a290f8b90cade88685351fbb2ba263689b9",
+      "check_run_id": 104605819798,
+      "attestation_id": "96a98471-437c-4bc7-9bef-e2bdf296f258",
       "conclusion": "SUCCESS",
-      "record_scope": "Observed on 2026-09-15 via GitHub Checks API for the exact PR head; merge authority for PR #94 only. PR #13, #64 and PR #94 are the post-publication merges recorded in delivered_change_history.post_v2_0_16_landing.",
+      "record_scope": "Observed on 2026-09-16 via GitHub Checks API for the exact PR head; merge authority for PR #98 only. PR #13, #64, #94 and PR #98 are the post-publication merges recorded in delivered_change_history.post_v2_0_16_landing. The artifact child pull request is deliberately not a row here: release-chain commits (R, A, SR) are recorded through local_candidate rather than as landing rows.",
       "check_url": "https://github.com/Dimkox/adaptive-grok-build-pro/runs/104591923631"
     },
     "historical_last_success": {
@@ -1369,7 +1370,7 @@
     "status": "released_and_runtime_observed_active",
     "branch": "main",
     "route_id": "2a890b6485a5",
-    "actual_main_observation": "7bbf42526f207db0007daafa4cc946cc2d81f465",
+    "actual_main_observation": "78082a290f8b90cade88685351fbb2ba263689b9",
     "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
@@ -1427,9 +1428,9 @@
     "selected_profile_note": "Observed primary installed profile/model; the default-off source template independently selects Qwen Omni."
   },
   "runtime_observations": {
-    "observed_at": "2026-09-15T23:02:27Z",
+    "observed_at": "2026-09-16T00:23:18Z",
     "host": "claw",
-    "evidence": "engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796/evidence/runtime-observation-post-94.json",
+    "evidence": "engineering/changes/20260916-build-release-deliver-deterministic-v2-0-17-zip-31155d/evidence/runtime-observation-post-98.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
       "live_enabled": false,

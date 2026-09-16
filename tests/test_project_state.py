@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "7bbf42526f207db0007daafa4cc946cc2d81f465"  # 2026-09-15 observation, PR #94
+OBSERVED_MAIN_SHA = "78082a290f8b90cade88685351fbb2ba263689b9"  # 2026-09-15 observation, PR #98 release-sync merge
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
 V2016_TREE = "2c24c33873c972822354218addf983b8166fa40a"
@@ -75,7 +75,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["product_version"], "2.0.17")
         self.assertEqual(state["latest_published_release"], "v2.0.16")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-15T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-16T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -354,7 +354,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[2]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.0.17")
-        self.assertEqual(local["status"], "pending_release")
+        self.assertEqual(local["status"], "artifact_bytes_delivered")
         self.assertEqual(local["route_id"], "f98796afe7de")
         self.assertEqual(local["branch"], "feature/v2.0.17-release-sync")
         self.assertIsNone(local["pull_request"])
@@ -362,22 +362,30 @@ class ProjectStateTests(unittest.TestCase):
             local["change_package"],
             "engineering/changes/20260915-release-sync-2-0-16-to-2-0-17-identity-bump-r-ar-f98796",
         )
-        self.assertEqual(local["artifact_status"], "pending_unpublished_artifact_child")
+        self.assertEqual(local["artifact_status"], "pending_tag_and_release")
         self.assertFalse(local["published"])
         self.assertIsNone(local["published_at"])
         self.assertFalse(local["external_effect"])
         self.assertIsNone(local["external_effect_scope"])
         self.assertFalse(local["operational_activation"])
-        self.assertIsNone(local["artifact_child"]["zip_sha256"])
-        self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
+        self.assertEqual(local["artifact_child"]["zip_sha256"], "770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616")
+        self.assertEqual(local["artifact_child"]["sidecar_sha256"], "54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0")
         for key in ("reviewed_product_head", "reviewed_product_tree",
                     "checked_head", "merge_commit", "tree"):
             self.assertIsNone(local[key], f"pending candidate must not name {key}")
-        for key in ("source_parent", "source_parent_tree", "commit", "tree"):
+        # The child can name the release-sync parent (it is known before the child merges)
+        # but never its own identities: those belong to the post-merge successor.
+        for key in ("commit", "tree"):
             self.assertIsNone(local["artifact_child"][key],
-                              f"pending artifact child must not name {key}")
+                              f"artifact child must not self-record {key}")
+        if local["artifact_status"] == "pending_unpublished_artifact_child":
+            for key in ("source_parent", "source_parent_tree"):
+                self.assertIsNone(local["artifact_child"][key])
+        else:
+            self.assertEqual(local["artifact_child"]["source_parent"], "78082a290f8b90cade88685351fbb2ba263689b9")
+            self.assertEqual(local["artifact_child"]["source_parent_tree"], "2283e6a09d3eb2a0aeabce8a872e06746b941176")
         self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(local["artifact_child"]["status"], "not_built")
+        self.assertEqual(local["artifact_child"]["status"], "built_byte_reproducible_twice")
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [
