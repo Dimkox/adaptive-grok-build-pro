@@ -8,11 +8,11 @@
 | P0 | Probe failure prints only bounded enums, never credential or body | `test_probe_cli_reports_authentication_class_without_the_body`, `test_probe_cli_failure_never_prints_exception_or_credential` |
 | P1 | Env composition admits both omni names, still refuses unknown | `test_environment_composition_accepts_both_omni_profiles` |
 | P1 | Host config and server acceptances extended | `factory/tests/test_landing_host.py`, `factory/tests/test_landing_server.py` |
-| P0 | Capability claim backed by a live request | `evidence/live-omni-probe.py` and the outputs quoted in `brief.md` |
+| P0 | Capability claim backed by a live request | `evidence/live-omni-probe.md` and the outputs quoted in `brief.md` |
 
 ## Automated checks
 
-- `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_landing_live_executors factory.tests.test_landing_host factory.tests.test_landing_server` → 95 tests OK
+- `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_landing_live_executors factory.tests.test_landing_host factory.tests.test_landing_server factory.tests.test_landing_provider` → 107 tests OK (adds capability-contract fact-shape guard — the enum itself is frozen by issue #104 — classification clamping, enumeration-subset and failover-exclusion tests)
 - `python3 -m unittest discover -s tests` and `python3 scripts/grok_verify.py --mode pr`
 
 ## Manual checks

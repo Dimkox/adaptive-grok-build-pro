@@ -18,7 +18,7 @@
   "acceptance_criteria": [
     {
       "id": "AC-001",
-      "statement": "qwen-omni-intl exists as a profile with provider qwen, base_url https://dashscope-intl.aliyuncs.com/compatible-mode/v1, model qwen3.5-omni-plus-2026-03-15, streaming required, and media classes audio/docx/image/pdf/text, and is accepted by the host-config selected_profile validator, the settings provider enum, env-based composition and the probe CLI choices.",
+      "statement": "qwen-omni-intl exists as a profile with provider qwen, base_url https://dashscope-intl.aliyuncs.com/compatible-mode/v1, model qwen3.5-omni-plus-2026-03-15, streaming required, and media classes audio/docx/image/pdf/text, and is accepted by the host-config selected_profile validator, the settings provider enum, env-based composition and the probe CLI choices. The backend capability contract cannot declare the profile: its profile enum holds exact fact objects, the fitness comparator cannot compare object-valued enum members, and the reviewed escape only covers unchanged documents, so the file is frozen until issue #104 lands; instead every table profile is asserted to emit the contract's exact fact shape (keys, JSON types, const fields).",
       "evidence": [
         {
           "test": "factory/tests/test_landing_live_executors.py"
@@ -33,7 +33,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "A failed probe reports a bounded classification: the printed object is exactly state, reason, category and http_status, category is restricted to authentication|rate_limit|policy|protocol|deadline|transport|accounting, http_status is null or 100..599, and the credential string, the exception text and any upstream body are absent.",
+      "statement": "A failed probe reports a bounded classification: the printed object is exactly state, reason, category and http_status; category is one of the nine classes the executor can actually produce (accounting, authentication, deadline, permission, policy, protocol, rate_limit, transport, unavailable) and is shared with the durable observation, so the two consumers cannot disagree; http_status is null or 100..599; and the credential, exception text and upstream body are absent.",
       "evidence": [
         {
           "test": "factory/tests/test_landing_live_executors.py"

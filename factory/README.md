@@ -69,8 +69,7 @@ PYTHONPATH=factory/src python -m adaptive_factory.landing_live_executors \
   --profile qwen-intl --qwen-env-file "$HOME/.qwen/.env"
 ```
 
-`--profile` accepts `qwen`, `qwen-intl`, `qwen-omni` and `qwen-omni-intl`; use the omni variant matching the account region of the key. A failed probe prints one closed JSON object — `state`, `reason`, plus the allowlisted `category` (`authentication`, `rate_limit`, `policy`, `protocol`, `deadline`, `transport`, `accounting`) and the numeric `http_status` — and never an upstream body, exception text or the key.
-```
+`--profile` accepts `qwen`, `qwen-intl`, `qwen-omni` and `qwen-omni-intl`; use the omni variant matching the account region of the key. A failed probe prints one closed JSON object — `state`, `reason`, plus the allowlisted `category` (one of `authentication`, `rate_limit`, `permission`, `policy`, `protocol`, `deadline`, `transport`, `accounting`, `unavailable`) and the numeric `http_status` — and never an upstream body, exception text or the key.
 
 It sends one fixed synthetic request and prints bounded status, profile/model, digests, usage and elapsed time. It does not start a service or publish a site. This command is documentation; the source extraction and automated tests do not execute it.
 

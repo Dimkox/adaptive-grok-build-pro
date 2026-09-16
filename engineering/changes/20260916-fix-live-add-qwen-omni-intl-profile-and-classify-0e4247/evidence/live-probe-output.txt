@@ -1,0 +1,23 @@
+Bounded live verification run, 2026-09-16 ~07:34Z, executed by the script preserved in evidence/live-omni-probe.md.
+The credential was taken from the process environment (DASHSCOPE_API_KEY) by the script; no key,
+no .env content and no authorization header appears in this file. Model answers are untrusted
+provider output, recorded only as evidence that the media was consumed.
+
+fixtures: png sha256=8b302049b24f04fc wav sha256=5c54dd3b6062ce32 bytes=142/6444
+intl/image   : HTTP 200 model=qwen3.5-omni-plus-2026-03-15 finish=stop done=True
+intl/image   : usage={"completion_tokens": 12, "completion_tokens_details": {"text_tokens": 12},
+                        "prompt_tokens": 107,
+                        "prompt_tokens_details": {"image_tokens": 66, "text_tokens": 41},
+                        "total_tokens": 119}
+intl/image   : answer='The image contains a red square on a blue background.'
+intl/audio   : HTTP 200 model=qwen3.5-omni-plus-2026-03-15 finish=stop done=True
+intl/audio   : usage={"completion_tokens": 14, "completion_tokens_details": {"text_tokens": 14},
+                        "prompt_tokens": 39,
+                        "prompt_tokens_details": {"audio_tokens": 2, "text_tokens": 37},
+                        "total_tokens": 53}
+intl/audio   : answer='A single, steady, high-pitched electronic tone is heard.'
+mainland/image(control): HTTP 401 code=invalid_api_key   <- reproduces issue #86 with the same key today
+
+Reading: image_tokens=66 and audio_tokens=2 are non-zero, so the media parts were ingested rather
+than ignored, and each answer describes the asset actually sent. The international endpoint serves
+the pinned omni model for a key that the mainland endpoint rejects.

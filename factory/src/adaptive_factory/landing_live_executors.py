@@ -31,7 +31,13 @@ from .landing_http import (
 )
 from .landing_normalizer import MAX_NORMALIZED_TEXT_BYTES, decode_landing_draft
 from .landing_media import MAX_AUDIO_BASE64_BYTES, MAX_IMAGE_BYTES
-from .landing_provider import LandingProviderError, HttpProviderFailure, MAX_PROVIDER_OUTPUT_BYTES
+from .landing_provider import (
+    EXECUTOR_CODE_CATEGORIES,
+    FAILURE_CATEGORIES,
+    LandingProviderError,
+    HttpProviderFailure,
+    MAX_PROVIDER_OUTPUT_BYTES,
+)
 from .landing_runtime import (
     LandingApplicationService,
     LandingJobStore,
@@ -703,14 +709,17 @@ def compose_env_landing(
     )
 
 
+# One tuple feeds both the CLI parser and probe_qwen, so the accepted set cannot drift in one of them.
+PROBE_PROFILES = ("qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl")
+
+
 def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
     """Bounded classification for operator output; never includes an upstream body."""
 
     category = getattr(exc, "category", None)
+    if not isinstance(category, str) or category not in FAILURE_CATEGORIES:
+        category = EXECUTOR_CODE_CATEGORIES.get(str(exc), "protocol")
     status = getattr(exc, "http_status", None)
-    if not isinstance(category, str) or category not in {
-            "authentication", "rate_limit", "policy", "protocol", "deadline", "transport", "accounting"}:
-        category = "protocol"
     if status is not None and (type(status) is not int or not 100 <= status <= 599):
         status = None
     return {"category": category, "http_status": status}
@@ -719,7 +728,7 @@ def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
 def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = None,
                transport: httpx.AsyncBaseTransport | None = None) -> dict[str, object]:
     """One synthetic normalization request; never reads project or customer inputs."""
-    if profile_id not in {"qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl"}:
+    if profile_id not in PROBE_PROFILES:
         raise LandingProviderError("http_profile_identity")
     profile = HttpLandingProfile.for_provider(profile_id, available=True)
     executor = qwen_landing_executor(
@@ -745,8 +754,7 @@ def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = No
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="One synthetic Qwen landing normalization probe")
-    parser.add_argument("--profile", choices=("qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl"),
-                    default="qwen-intl")
+    parser.add_argument("--profile", choices=PROBE_PROFILES, default="qwen-intl")
     parser.add_argument("--qwen-env-file", type=Path)
     args = parser.parse_args()
     try:

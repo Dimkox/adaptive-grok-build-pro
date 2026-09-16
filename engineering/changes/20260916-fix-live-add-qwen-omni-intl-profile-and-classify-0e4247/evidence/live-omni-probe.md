@@ -1,3 +1,18 @@
+# Live omni probe — reproduction script
+
+The architecture model treats `engineering/changes/**` as a documentation node (`NODE-CHANGE-SPEC-EVIDENCE`,
+type `repository`) with **no network policy**, so a tracked `.py` that imports a network family fails
+`FIT-DECLARED-NETWORK-ONLY` and escalates change risk to red (`new_network_client`). The probe is therefore
+preserved here as markdown: copy the block below to `probe.py` and run it — nothing else changes.
+
+Credential handling: read from the process environment only (`DASHSCOPE_API_KEY` or
+`FACTORY_LANDING_QWEN_API_KEY`), never printed; only a small whitelist of response facts is emitted,
+and error output carries only the structured upstream `error.code`, never the body.
+
+Result of the run recorded 2026-09-16: see `live-probe-output.txt` (intl image 200 with `image_tokens=66`,
+intl audio 200 with `audio_tokens=2`, mainland control 401 `invalid_api_key`).
+
+```python
 #!/usr/bin/env python3
 """Live capability probe: Qwen Omni on the INTERNATIONAL endpoint with real image and real audio.
 
@@ -78,8 +93,13 @@ def ask(label: str, url: str, content) -> None:
                            json=body) as response:
             status = response.status_code
             if status != 200:
-                detail = response.read()[:400].decode("utf-8", "replace")
-                print(f"{label}: HTTP {status} {detail}")
+                # Print only the allowlisted error code: an upstream body is untrusted text.
+                code = None
+                try:
+                    code = (json.loads(response.read()).get("error") or {}).get("code")
+                except (ValueError, AttributeError):
+                    code = None
+                print(f"{label}: HTTP {status} code={code if isinstance(code, str) else 'unparsed'}")
                 return
             for line in response.iter_lines():
                 if not line.startswith("data:"):
@@ -99,7 +119,7 @@ def ask(label: str, url: str, content) -> None:
                     usage = event["usage"]
     print(f"{label}: HTTP {status} model={model} finish={finish} done={seen_done}")
     print(f"{label}: usage={json.dumps(usage, sort_keys=True) if usage else None}")
-    print(f"{label}: answer={text.strip()[:200]!r}")
+    print(f"{label}: answer={text.strip()[:200]!r}  # untrusted model output")
 
 
 image = png_red_square_on_blue()
@@ -120,3 +140,4 @@ ask("mainland/image(control)", MAINLAND, [
     {"type": "text", "text": "Name the shape and the two colors in this image."},
     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64.b64encode(image).decode()}"}},
 ])
+```

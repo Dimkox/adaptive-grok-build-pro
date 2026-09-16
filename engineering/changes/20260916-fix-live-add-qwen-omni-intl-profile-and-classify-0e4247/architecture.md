@@ -13,6 +13,7 @@ One more profile in the same table with the international host and the pinned mo
 ## Components and boundaries
 
 - `landing_http.py` profile table (single source of endpoint/model/streaming/media facts).
+- `landing_provider.py` now owns `EXECUTOR_CODE_CATEGORIES`/`FAILURE_CATEGORIES`, shared by the durable collapse and the probe, so `deadline`/`transport`/`accounting` are reachable in both views of the same failure.
 - `landing_host_config.py`, `settings.py`, `landing_live_executors.py` enumerations; `landing_server.py` needs no change because it selects the composer from `profile.provider_id`.
 - Untouched: `landing_failover_config.PROVIDER_ORDER`, the mainland omni binding, every existing digest.
 
@@ -22,7 +23,15 @@ host config / `FACTORY_LANDING_PROVIDER` → profile → request body (`stream`,
 
 ## API and event contracts
 
-None changed; the probe's stdout shape is an operator interface and is extended by two bounded fields, asserted by tests.
+No machine contract is changed. The first attempt added `qwen-omni-intl` to the closed `profile` enum of
+`landing-backend-capability.v1.schema.json`, and the fitness gate rejected the edit: the comparator cannot
+represent object-valued enum members (json_schema → `unsupported_schema_keyword`; the failover OpenAPI that
+`$ref`s the file → `unsupported_openapi_construct`; any `unsupported` hard-fails architecture), and the only
+reviewed escape admits unchanged documents. The contract is therefore frozen until issue #104 decides between a
+comparator extension and a v2 coexistence contract; drift is guarded in the meantime by
+`test_profile_facts_keep_the_backend_capability_contract_shape`, which asserts declared profiles remain real and
+every table profile emits the contract's exact fact shape. The probe's stdout is an operator interface extended
+by two bounded fields.
 
 ## Governance context
 
