@@ -1209,7 +1209,7 @@
         "gitguardian_conclusion": "SUCCESS",
         "unique_scope": "Parallel local Python verification",
         "disposition": "Refresh base/head and external Trust CI before delivery; displayed historical check is not current merge eligibility.",
-        "failure_cause": "not inspected or inferred"
+        "failure_cause": "root-unittest failed (exit 1) on head 6d72d4c8…: this pull request's own tests/test_python_test_runner.py cases raise \"pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\", because the exact runtime executing the mandatory command ships unittest and coverage only. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim."
       }
     ],
     "retained_unresolved": [
@@ -1223,7 +1223,7 @@
         "observed_check_conclusion": "FAILURE",
         "unique_scope": "Unique investor demo and packaging hardening",
         "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.",
-        "failure_cause": "not inspected or inferred"
+        "failure_cause": "root-unittest errored on head 165d5dd9…: the architecture bootstrap and binding tests raise \"base_sha is not an available commit object\" and \"architecture binding requires an exact Git HEAD\", because the branch's recorded base was not resolvable in that checkout. Historical observation; the pull request was closed without merging."
       },
       {
         "pull_request": 14,
@@ -1272,7 +1272,7 @@
         "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
         "observed_check_conclusion": "FAILURE",
         "gitguardian_conclusion": "FAILURE",
-        "failure_cause": "not inspected or inferred",
+        "failure_cause": "root-unittest reported one error in 535 tests on the later head 571cad78…: the shipped-zip comparison test failed with \"git rev-parse --verify HEAD^{commit} returned non-zero exit status 128\", i.e. the job checkout had no resolvable HEAD. An earlier head 460a8a01… passed all six mandatory commands, so the failure belongs to the superseded head rather than to the branch content.",
         "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."
       },
       {
