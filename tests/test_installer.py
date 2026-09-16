@@ -63,6 +63,9 @@ def _stage_names(parent: Path) -> list[str]:
     return sorted(path.name for path in parent.glob(".adaptive-install-*"))
 
 
+PARITY_MANIFEST_SHA256 = "4e430ab088612ae1cae8c734fa6a017ee580a5bbede236709b28f0c4d6e7398b"  # no-record payload frozen at the #110 wave
+
+
 class InstallerTests(unittest.TestCase):
     def _consumer_with_record(self, root: Path, kept: list[str] | object) -> Path:
         record = root / ".grok-stack"
@@ -81,6 +84,7 @@ class InstallerTests(unittest.TestCase):
                   "state": "absent"}],
             )
             self.assertNotIn(".coveragerc", {entry["path"] for entry in plan["entries"]})
+            self.assertEqual(plan["target_state"], "directory")
 
     def test_keep_list_identical_file_is_kept_not_rewritten(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -89,6 +93,7 @@ class InstallerTests(unittest.TestCase):
             (root / ".coveragerc").write_bytes((ROOT / ".coveragerc").read_bytes())
             plan = MODULE.plan_install(ROOT, root)
             self.assertEqual(plan["kept"][0]["state"], "identical")
+            self.assertEqual(plan["target_state"], "directory")
             self.assertNotIn(".coveragerc", {entry["path"] for entry in plan["entries"]})
 
     def test_keep_list_drift_fails_the_plan_naming_the_path(self) -> None:
@@ -142,13 +147,62 @@ class InstallerTests(unittest.TestCase):
             with self.assertRaises(MODULE.UnsafeInstallTarget):
                 MODULE.plan_install(ROOT, root)
 
+    def test_keep_states_target_owned_and_unmanaged_are_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._consumer_with_record(Path(tmp) / "t",
+                                              ["architecture/adoption.json", "never-managed.yaml"])
+            plan = MODULE.plan_install(ROOT, root)
+            states = {item["path"]: (item["action"], item["state"]) for item in plan["kept"]}
+            self.assertEqual(states["architecture/adoption.json"], ("KEEP", "target-owned"))
+            self.assertEqual(states["never-managed.yaml"], ("KEEP", "unmanaged"))
+            self.assertEqual(plan["target_state"], "directory")
+
+    def test_nested_managed_dir_path_kept_across_states(self) -> None:
+        routing = ".grok-stack/config/routing.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._consumer_with_record(Path(tmp) / "t", [routing])
+            (root / "plan").mkdir()
+            plan = MODULE.plan_install(ROOT, root)
+            self.assertEqual({item["path"]: item["state"] for item in plan["kept"]}, {routing: "absent"})
+            source = (ROOT / routing).read_bytes()
+            nested_dir = root / ".grok-stack" / "config"
+            nested_dir.mkdir(parents=True)
+            (nested_dir / "routing.json").write_bytes(source)
+            plan = MODULE.plan_install(ROOT, root)
+            self.assertEqual(plan["kept"][0]["state"], "identical")
+            self.assertNotIn(routing, {entry["path"] for entry in plan["entries"]})
+            (nested_dir / "routing.json").write_text('{"max_parallel_analysis_units": 3}\n', encoding="utf-8")
+            with self.assertRaises(MODULE.UnsafeInstallTarget) as raised:
+                MODULE.plan_install(ROOT, root)
+            self.assertIn(routing, str(raised.exception))
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "host lacks mkfifo")
+    def test_fifo_at_a_kept_path_fails_closed_instead_of_hanging(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._consumer_with_record(Path(tmp) / "t", [".coveragerc"])
+            os.mkfifo(root / ".coveragerc")
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.plan_install(ROOT, root)
+
+    def test_oversized_sync_record_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            stack = root / ".grok-stack"
+            stack.mkdir(parents=True)
+            (stack / "AGBP_SYNC.json").write_text(
+                json.dumps({"schema_version": 1, "kept_local": ["x" * 40000, "y" * 40000]}), encoding="utf-8")
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.plan_install(ROOT, root)
+
     def test_target_without_record_behaves_exactly_as_before(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             plan = MODULE.plan_install(ROOT, Path(tmp) / "t")
             self.assertEqual(plan["kept"], [])
-            names = {entry["path"] for entry in plan["entries"]}
-            self.assertIn(".coveragerc", names)
-            self.assertIn("bandit.yaml", names)
+            self.assertEqual(plan["target_state"], "absent")
+            manifest = [(entry["path"], entry.get("mode"), entry.get("sha256")) for entry in plan["entries"]]
+            digest = hashlib.sha256(repr(sorted(manifest)).encode("utf-8")).hexdigest()
+            self.assertEqual(len(manifest), 352)
+            self.assertEqual(digest, PARITY_MANIFEST_SHA256)
 
     def test_existing_target_modes_are_read_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

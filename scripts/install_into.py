@@ -661,33 +661,48 @@ def _dependency_advice(
 
 
 def _read_target_relative(target: Path, relative: str, *, limit: int) -> bytes | None:
-    """No-follow read of a relative path inside target; None when it does not exist.
+    """No-follow bounded read of a relative path inside target; None when absent.
 
-    Every traversal step refuses symlinks and non-directories; anything that cannot
-    be proven a bounded regular file fails closed instead of guessing.
+    Stat-before-open on every step so a FIFO or other special file cannot block the
+    planner (the open is only ever reached for regular files), then re-verify the fd
+    identity against the pre-open stat. Unverifiable shapes fail closed; a missing
+    directory or file is absence, not an error.
     """
     parts = _path_parts(relative)
+    nofollow, directory_flag = _require_descriptor_primitives()
     binding = _open_directory_binding(target)
     descriptors: list[int] = []
     try:
         for part in parts[:-1]:
             try:
-                descriptors.append(os.open(part, os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0),
+                intermediate = os.stat(part, dir_fd=descriptors[-1] if descriptors else binding.descriptor,
+                                      follow_symlinks=False)
+                descriptors.append(os.open(part, os.O_RDONLY | directory_flag | nofollow,
                                            dir_fd=descriptors[-1] if descriptors else binding.descriptor))
             except FileNotFoundError:
-                return None  # an absent directory is an absent file, not an error
+                return None
+            if not stat.S_ISDIR(intermediate.st_mode):
+                raise UnsafeInstallTarget(f"kept path traverses a non-directory: {relative}")
         parent_fd = descriptors[-1] if descriptors else binding.descriptor
         try:
-            final = os.open(parts[-1], os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd)
+            pre = os.stat(parts[-1], dir_fd=parent_fd, follow_symlinks=False)
         except FileNotFoundError:
             return None
-        descriptors.append(final)
-        metadata = os.fstat(final)
-        if not stat.S_ISREG(metadata.st_mode):
+        if not stat.S_ISREG(pre.st_mode):
             raise UnsafeInstallTarget(f"kept path is not a regular file: {relative}")
-        if metadata.st_size > limit:
+        if pre.st_size > limit:
             raise UnsafeInstallTarget(f"kept path exceeds {limit} bytes: {relative}")
-        return os.read(final, limit + 1)
+        final = os.open(parts[-1], os.O_RDONLY | nofollow, dir_fd=parent_fd)
+        descriptors.append(final)
+        post = os.fstat(final)
+        if (post.st_dev, post.st_ino, post.st_mode, post.st_size) != (
+            pre.st_dev, pre.st_ino, pre.st_mode, pre.st_size
+        ) or not stat.S_ISREG(post.st_mode) or post.st_size > limit:
+            raise UnsafeInstallTarget(f"kept path changed during verification: {relative}")
+        data = _read_limit_plus_one(final, limit)
+        if len(data) > limit:
+            raise UnsafeInstallTarget(f"kept path exceeds {limit} bytes: {relative}")
+        return data
     except UnsafeInstallTarget:
         raise
     except OSError as exc:
@@ -782,14 +797,14 @@ def _make_plan(
         except UnsafeInstallTarget as exc:
             raise UnsafeInstallTarget(f"kept path is not safely readable: {path}") from exc
         if existing is None:
-            state = "absent"
+            keep_state = "absent"
         elif existing == entry.content:
-            state = "identical"
+            keep_state = "identical"
         else:
             raise UnsafeInstallTarget(
                 f"kept path conflicts with the stack update, which would change it: {path}"
             )
-        keep_reports.append({"action": "KEEP", "path": path, "state": state,
+        keep_reports.append({"action": "KEEP", "path": path, "state": keep_state,
                              "reason": "declared by target"})
     deliverable = tuple(entry for entry in selected_payload if entry.path not in kept)
     return {

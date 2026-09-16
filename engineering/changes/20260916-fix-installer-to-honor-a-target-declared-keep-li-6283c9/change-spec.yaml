@@ -44,7 +44,7 @@
     },
     {
       "id": "AC-004",
-      "statement": "Without a record the plan is equivalent to previous behavior (kept empty, all managed paths delivered), and the README states the two-questions rule (stack ownership vs target overrides).",
+      "statement": "Without a record the plan is equivalent to previous behavior (kept empty; the full 346-entry payload with paths, modes and digests pinned by a frozen manifest digest), target_state stays correct while keep reports are produced, and QUICKSTART states the two-questions rule (stack ownership vs target overrides). Keeping AGENTS.md is possible only while its bytes equal the stack-managed rendering.",
       "evidence": [
         {
           "test": "tests/test_installer.py"
