@@ -1,0 +1,121 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-build-release-deliver-deterministic-v2-0-17-zip-31155d",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver the v2.0.17 release artifact as repository bytes: build the ZIP and its sidecar twice from the exact merged release-sync tree 78082a290f8b90cade88685351fbb2ba263689b9 in private 0700 staging, require byte identity, commit exactly those two files, and flip local_candidate to artifact_bytes_delivered / pending_tag_and_release while published, external_effect, operational_activation stay false and the child's own merge identities stay null because it cannot self-record them.",
+    "success_metric": "two independent exact-SHA clone builds produce one digest (770f1db5\u2026, 10 940 676 bytes); the sidecar text equals '<zip-sha>  adaptive-grok-build-pro-v2.0.17.zip'; tests.test_manifest_package verifies existence plus digest and sidecar integrity",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "release-governance",
+      "packaging"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "`packages/adaptive-grok-build-pro-v2.0.17.zip` exists with SHA-256 770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616 and `packages/adaptive-grok-build-pro-v2.0.17.zip.sha256` names that digest with exactly two spaces, so the tracked pair is the archive a tag can later bind to.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "local_candidate records the delivered bytes against the release-sync lineage: source_base and observed_main_sha are 78082a290f8b90cade88685351fbb2ba263689b9, artifact_child.source_parent/source_parent_tree name 78082a290f8b90cade88685351fbb2ba263689b9 and its tree 2283e6a09d3eb2a0aeabce8a872e06746b941176, artifact_child.status is built_byte_reproducible_twice, artifact_status is pending_tag_and_release and status is artifact_bytes_delivered.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Publication is not claimed: local_candidate.published, published_at, external_effect, external_effect_scope, operational_activation, checked_head, merge_commit, tree, pull_request, reviewed_product_head and reviewed_product_tree stay false or null, and artifact_child.commit and artifact_child.tree stay null, so the child records nothing about its own merge.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "release_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Identity is not bumped by the child: VERSION, adaptive_grok.__version__, the README H1 and Identity line, the CHANGELOG 2.0.17 heading and the ROADMAP product line are exactly as the release-sync commit left them; only bytes-delivered wording changes.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No previously published artifact, tag, release record or milestone assertion changes; v2.0.13-v2.0.16 rows in packages/README and published_release/prior_published_releases stay byte-identical.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "The archive is reproducible from the recorded source parent alone: any later edit to tracked files yields a different digest and is therefore a different release.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Tagging v2.0.17, publishing a GitHub Release, or setting published/external_effect/operational_activation true from this commit.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Building from a dirty or non-exact checkout, from the working tree, or committing a byte pair whose digests differ between the two builds.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this artifact-child pull request, plus the two-build digest equality printed by the build",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

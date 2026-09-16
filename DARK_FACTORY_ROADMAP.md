@@ -33,7 +33,7 @@ Current source and release observations, followed by historical integration anch
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-observed source SHA: 7bbf42526f207db0007daafa4cc946cc2d81f465 (2026-09-15; PR #94)
+observed source SHA: 78082a290f8b90cade88685351fbb2ba263689b9 (2026-09-16; PR #98)
 latest published release: v2.0.16, tag target 969c4f65f54ef9230f3f94587e228098d1c2ecb9 (2026-09-13T22:04:08Z)
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89 (PR #2 merge, 2026-08-23T22:05:31Z)
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)

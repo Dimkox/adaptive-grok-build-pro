@@ -16,7 +16,7 @@ Twelve pull requests merged after `v2.0.16` was published. This section records 
 - Adds repository-scoped immutable Trust CI profiles: commands and external holdouts are selected by exact repository, jobs, approvals, checks, replays and attestations bind to the selected policy digest, and catalog holdouts stay confined to paired server-owned trusted roots while legacy schema-v1 behavior is preserved (PR #13, checked head `6130fbb8`, merged `2026-09-15T21:03:37Z` as `4383115`, App check `104552079057`). The capability is source-only: the deployed policy, holdout bundle and branch protection are unchanged
 - Records the Caroline cross-project confirmation as dated, source-pinned observation material with an explicit zero M8 qualifying-task contribution and no activation (PR #64, checked head `45ccb04f2e524d27f97a1b49cb89db65294e891e`, App check `104567389767`, merged `2026-09-15T21:42:34Z` as `01d64e5`)
 - Makes the serialized-CAS adversarial preconditions independent of filesystem `ctime` granularity, removing an intermittent failure of the mandatory `root-unittest` gate command (PR #94, checked head `9437efed`, App check `104591923631`, merged `2026-09-15T22:58:12Z` as `7bbf425`)
-- No `v2.0.17` ZIP, sidecar, tag or GitHub Release exists yet. The artifact child, the tag and the publication record are separate steps, each requiring its own exact delegated action
+- Delivers the `v2.0.17` ZIP and sidecar as tracked bytes built from the merged release-sync tree. The tag and GitHub Release do not exist yet: publication stays a separate step with its own exact delegated authority, and `published` remains false until the successor records it
 
 ## 2.0.16 — 2026-09-13
 

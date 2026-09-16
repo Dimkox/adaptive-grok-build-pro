@@ -1423,7 +1423,7 @@ module.main()
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'pending_unpublished_artifact_child',
+            'pending_tag_and_release',
         )
         candidate_pair = tuple(
             ROOT / path
