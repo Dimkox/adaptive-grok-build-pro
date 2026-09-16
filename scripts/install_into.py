@@ -91,6 +91,10 @@ TARGET_OWNED_GOVERNANCE = frozenset(
         "governance/canonical-examples/index.json",
     }
 )
+# A consumer repository declares its own-overridden managed paths in this record;
+# MANAGED_* answers what the stack owns, kept_local answers what this repo overrode.
+STACK_SYNC_RECORD = ".grok-stack/AGBP_SYNC.json"
+MAX_SYNC_RECORD_BYTES = 65536
 EMPTY_DIRECTORIES = (
     "engineering/changes",
     "engineering/adr",
@@ -656,6 +660,89 @@ def _dependency_advice(
     return sorted(advice, key=lambda item: str(item["id"]).encode("utf-8"))
 
 
+def _read_target_relative(target: Path, relative: str, *, limit: int) -> bytes | None:
+    """No-follow bounded read of a relative path inside target; None when absent.
+
+    Stat-before-open on every step so a FIFO or other special file cannot block the
+    planner (the open is only ever reached for regular files), then re-verify the fd
+    identity against the pre-open stat. Unverifiable shapes fail closed; a missing
+    directory or file is absence, not an error.
+    """
+    parts = _path_parts(relative)
+    nofollow, directory_flag = _require_descriptor_primitives()
+    binding = _open_directory_binding(target)
+    descriptors: list[int] = []
+    try:
+        for part in parts[:-1]:
+            try:
+                intermediate = os.stat(part, dir_fd=descriptors[-1] if descriptors else binding.descriptor,
+                                      follow_symlinks=False)
+                descriptors.append(os.open(part, os.O_RDONLY | directory_flag | nofollow,
+                                           dir_fd=descriptors[-1] if descriptors else binding.descriptor))
+            except FileNotFoundError:
+                return None
+            if not stat.S_ISDIR(intermediate.st_mode):
+                raise UnsafeInstallTarget(f"kept path traverses a non-directory: {relative}")
+        parent_fd = descriptors[-1] if descriptors else binding.descriptor
+        try:
+            pre = os.stat(parts[-1], dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            return None
+        if not stat.S_ISREG(pre.st_mode):
+            raise UnsafeInstallTarget(f"kept path is not a regular file: {relative}")
+        if pre.st_size > limit:
+            raise UnsafeInstallTarget(f"kept path exceeds {limit} bytes: {relative}")
+        final = os.open(parts[-1], os.O_RDONLY | nofollow, dir_fd=parent_fd)
+        descriptors.append(final)
+        post = os.fstat(final)
+        if (post.st_dev, post.st_ino, post.st_mode, post.st_size) != (
+            pre.st_dev, pre.st_ino, pre.st_mode, pre.st_size
+        ) or not stat.S_ISREG(post.st_mode) or post.st_size > limit:
+            raise UnsafeInstallTarget(f"kept path changed during verification: {relative}")
+        data = _read_limit_plus_one(final, limit)
+        if len(data) > limit:
+            raise UnsafeInstallTarget(f"kept path exceeds {limit} bytes: {relative}")
+        return data
+    except UnsafeInstallTarget:
+        raise
+    except OSError as exc:
+        raise UnsafeInstallTarget(f"kept path cannot be read safely: {relative}") from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        binding.close()
+
+
+def _kept_local(target: Path) -> frozenset[str]:
+    """Paths the target declares it owns, from its stack sync record (may be absent)."""
+    raw = _read_target_relative(target, STACK_SYNC_RECORD, limit=MAX_SYNC_RECORD_BYTES)
+    if raw is None:
+        return frozenset()
+    try:
+        record = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise UnsafeInstallTarget("stack sync record is not valid UTF-8 JSON") from exc
+    if not isinstance(record, dict) or set(record) - {"schema_version", "kept_local"}:
+        raise UnsafeInstallTarget("stack sync record has unknown shape or keys")
+    if record.get("schema_version", 1) != 1:
+        raise UnsafeInstallTarget("stack sync record schema_version must be 1")
+    paths = record.get("kept_local", [])
+    if not isinstance(paths, list):
+        raise UnsafeInstallTarget("stack sync record kept_local must be a list")
+    kept: list[str] = []
+    for item in paths:
+        if not isinstance(item, str):
+            raise UnsafeInstallTarget("stack sync record kept_local entries must be strings")
+        _path_parts(item)
+        kept.append(item)
+    if len(set(kept)) != len(kept):
+        raise UnsafeInstallTarget("stack sync record kept_local has duplicates")
+    return frozenset(kept)
+
+
 def _target_state(target: Path) -> str:
     absolute = Path(os.path.abspath(target))
     if not absolute.name:
@@ -691,10 +778,40 @@ def _make_plan(
     payload: tuple[InstallEntry, ...] | None = None,
 ) -> dict[str, object]:
     selected_payload = payload if payload is not None else build_payload(source)
+    state = _target_state(target)
+    kept = _kept_local(target) if state == "directory" else frozenset()
+    payload_by_path = {entry.path: entry for entry in selected_payload}
+    keep_reports: list[dict[str, str]] = []
+    for path in sorted(kept):
+        if path in TARGET_OWNED_ARCHITECTURE or path in TARGET_OWNED_GOVERNANCE:
+            keep_reports.append({"action": "KEEP", "path": path, "state": "target-owned",
+                                 "reason": "declared by target"})
+            continue
+        entry = payload_by_path.get(path)
+        if entry is None:
+            keep_reports.append({"action": "KEEP", "path": path, "state": "unmanaged",
+                                 "reason": "declared by target"})
+            continue
+        try:
+            existing = _read_target_relative(target, path, limit=MAX_SOURCE_FILE_BYTES)
+        except UnsafeInstallTarget as exc:
+            raise UnsafeInstallTarget(f"kept path is not safely readable: {path}") from exc
+        if existing is None:
+            keep_state = "absent"
+        elif existing == entry.content:
+            keep_state = "identical"
+        else:
+            raise UnsafeInstallTarget(
+                f"kept path conflicts with the stack update, which would change it: {path}"
+            )
+        keep_reports.append({"action": "KEEP", "path": path, "state": keep_state,
+                             "reason": "declared by target"})
+    deliverable = tuple(entry for entry in selected_payload if entry.path not in kept)
     return {
         "version": 1,
-        "target_state": _target_state(target),
-        "entries": [entry.manifest() for entry in selected_payload],
+        "target_state": state,
+        "kept": keep_reports,
+        "entries": [entry.manifest() for entry in deliverable],
         "dependency_advice": _dependency_advice(
             source,
             include_dependencies=include_dependencies,
