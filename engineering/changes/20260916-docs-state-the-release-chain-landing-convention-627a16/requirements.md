@@ -7,6 +7,7 @@
 - [x] AC-001: `START_HERE.md` states that release-chain commits (R, A, SR) are recorded through `current_unreleased_change`/`local_candidate` and not as `post_v2_0_16_landing` rows, with row #81 explained as the previous chain's recorded successor.
 - [x] AC-002: the `work_inventory` entries for PRs #33, #15 and #21 each name the failing mandatory command, the summary line (`Ran …`/`FAILED …`) and the verbatim assertion or error text, each attributed to a single head and kept labelled as a historical observation; nothing is claimed beyond what the retained record states.
 - [x] AC-003: the commit claims and performs no release action, and every published release record stays byte-unchanged.
+- [x] AC-005: the inventory reflects the closing of PR #33 during review — `open_pull_requests` is empty, #33 sits in `retained_unresolved` with `closed_unmerged`, its cause and its re-take condition, and the bootstrap docs that named it as open were reconciled in the same commit.
 
 ## Failure and edge cases
 

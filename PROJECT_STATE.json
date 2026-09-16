@@ -1199,20 +1199,20 @@
   },
   "work_inventory": {
     "active": [],
-    "open_pull_requests": [
+    "open_pull_requests": [],
+    "retained_unresolved": [
       {
-        "pull_request": 33,
+        "branch": "perf/parallel-python-tests",
+        "closed_at": "2026-09-16T07:21:05Z",
+        "failure_cause": "head 6d72d4c8…: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim.",
         "head": "6d72d4c859dded241b55e90ae9514ad428a7eb1b",
-        "status": "open",
         "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
         "observed_check_conclusion": "FAILURE",
-        "gitguardian_conclusion": "SUCCESS",
-        "unique_scope": "Parallel local Python verification",
-        "disposition": "Refresh base/head and external Trust CI before delivery; displayed historical check is not current merge eligibility.",
-        "failure_cause": "head 6d72d4c8…: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim."
-      }
-    ],
-    "retained_unresolved": [
+        "pull_request": 33,
+        "purpose": "Closed without merging on 2026-09-16 by maintainer decision, with the diagnosis and the re-take path recorded on the pull request: the runner must select its engine from what the interpreter actually provides, and its unittest-branch tests must be satisfiable without an importable pytest. The branch and its 1540-insertion head are kept untouched and undeleted; parallel local verification remains an open goal, not a delivered one.",
+        "status": "closed_unmerged",
+        "unique_scope": "Parallel local Python verification"
+      },
       {
         "pull_request": 15,
         "branch": "mvp/investor-ready",

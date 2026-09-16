@@ -41,6 +41,15 @@
           "receipt": "release_review"
         }
       ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The inventory reflects PR #33 being closed without merging during review: open_pull_requests is empty, #33 appears in retained_unresolved as closed_unmerged with its inspected cause and the condition for re-taking the work, and every bootstrap document that named it as open says so too.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
     }
   ],
   "invariants": [
