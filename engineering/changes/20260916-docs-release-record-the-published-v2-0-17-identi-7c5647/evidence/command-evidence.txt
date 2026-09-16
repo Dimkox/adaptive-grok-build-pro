@@ -1,4 +1,4 @@
-# raw command evidence collected 2026-09-16T02:02:32Z in worktree /home/pall/grok-projects/adaptive-grok-build-pro-sr217
+# raw command evidence (regenerated 2026-09-16T02:26:42Z) in worktree /home/pall/grok-projects/adaptive-grok-build-pro-sr217
 
 ## git ls-remote peeled tag
 5c6687ed97e1c365597bf27047016eb07411f28b	refs/tags/v2.0.17
@@ -11,33 +11,21 @@ c86b1a1989ace899a4450bde558fcd8adc00e4e2	refs/tags/v2.0.17^{}
 {"conclusion":"success","id":104621989321,"name":"adaptive-trust-ci/verified@06ecf1c875bc","status":"completed"}
 {"conclusion":"success","id":104621982710,"name":"GitGuardian Security Checks","status":"completed"}
 
-## check-run 104621989321 output summary
-holdout-bundle-integrity: pass (exit 0)
-external-holdout: pass (exit 0)
-root-unittest: pass (exit 0)
-trust-ci-unittest: pass (exit 0)
-compileall: pass (exit 0)
+## check-run 104621989321 summary tail
 repository-verification: pass (exit 0)
 attestation=b9510589-d40c-4976-aafd-cad6fc141972; signer=0519cf1d47436f2e
 
-## blob digests from HEAD
-cut: invalid decreasing range
-Try 'cut --help' for more information.
+## blob digests from HEAD (fixed pipeline)
 770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616  packages/adaptive-grok-build-pro-v2.0.17.zip
-cut: invalid decreasing range
-Try 'cut --help' for more information.
 54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0  packages/adaptive-grok-build-pro-v2.0.17.zip.sha256
+
 ## sidecar bytes
-0000000   7   7   0   f   1   d   b   5   7   2   5   e   6   6   6   b
-0000020   e   6   0   c   1   f   8   7   9   d   2   7   6   8   f   e
-0000040   a   c   b   1   5   d   d   5   3   e   1   9   4   a   1   f
-0000060   1   f   4   8   6   3   2   9   8   0   f   7   4   6   1   6
 0000100           a   d   a   p   t   i   v   e   -   g   r   o   k   -
 0000120   b   u   i   l   d   -   p   r   o   -   v   2   .   0   .   1
 0000140   7   .   z   i   p  \n
 0000146
 
-## diff name-only c86b1a1..HEAD
+## changed files c86b1a1..HEAD
 CHANGELOG.md
 DARK_FACTORY_ROADMAP.md
 GROK_BUILD_HANDOFF.md
@@ -50,6 +38,10 @@ engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/brief.md
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/change-spec.yaml
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/README.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/command-evidence.txt
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-release.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-response.md
+engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/review-security.md
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/evidence/runtime-observation-post-99.json
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/release.md
 engineering/changes/20260916-docs-release-record-the-published-v2-0-17-identi-7c5647/requirements.md
@@ -64,9 +56,8 @@ tests/test_manifest_package.py
 tests/test_project_state.py
 tests/test_structure.py
 
-## packages tree equality
-83b5e6a73b94be6d1b8bd718dda90972080000cd
-78462fd2ad9439006136e2fa09bd2ee20a939265
+## packages changes
+packages/README.md
 
 ## gh pr list --state open
 [33]

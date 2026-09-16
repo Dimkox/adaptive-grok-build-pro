@@ -37,8 +37,26 @@ historical immutability of `milestones`, `integrated_stack`, frozen migrations a
 releases. Raw command output is kept in `command-evidence.txt` in this directory so a later reader
 can see what the claims rest on.
 
-## Still open after SR
+## `review-security.md` — PASS, 0 Critical, 0 Important, 4 Minor
 
-`review-security.md` for this commit is produced by a separate independent reviewer; if it is still
-running when this is committed, its dispositions are appended to the pull request before the
-verification receipt is taken.
+Same caveat as above: this reviewer examined `8d45b31`, before the follow-up commit.
+
+| # | Finding | My check | Disposition |
+| --- | --- | --- | --- |
+| 1 | Minor — `START_HERE.md:7` and `GROK_BUILD_HANDOFF.md:304` still named `78082a2…` while the commit advanced `observed_main_sha` | reproduced with `grep -n 78082a2…` before the follow-up | **Already fixed** in the follow-up commit (same defect as release-review #3), together with `README.md:11` and `DARK_FACTORY_ROADMAP.md:36` |
+| 2 | Minor — the archived v2.0.16 block was spliced in with 2-space indentation, breaking the file's canonical dump | measured: 29 drifting lines at `8d45b31` versus 2 at base | **Already fixed** by re-serialising `PROJECT_STATE.json` with `indent=2, ensure_ascii=False` and proving the parsed content identical (release-review #8 is the same defect) |
+| 3 | Minor — the supplied `command-evidence.txt` contained two `cut: invalid decreasing range` errors, so the capture pipeline was partly broken | reproduced: my `cut -c1-0` was nonsense; the surviving digests were well formed and the reviewer recomputed both independently | **Fixed.** The evidence file is regenerated with a working pipeline (`git cat-file blob HEAD:… \| sha256sum`) and contains no error text; the digests are unchanged |
+| 4 | Minor — `SIG-001`'s exact-head check cannot exist at evidence time (only PR #33 was open) | confirmed: this successor has no pull request yet | **Accepted as a status fact.** The pull request for this branch is opened next, and merge authority is its exact-head App check; no local receipt substitutes for it, and nothing in the package claims otherwise |
+
+The reviewer's positive observations were re-checked rather than adopted: `operational_activation`
+false in both the release record and `local_candidate`, the peeled tag resolving to the recorded merge,
+GitHub's own asset digests equalling the tracked-blob digests, the sidecar's exact byte layout, and the
+field-by-field equality of the archived v2.0.16 record against the base `published_release`.
+
+## After both follow-up commits
+
+`python3 -m unittest tests.test_structure tests.test_project_state tests.test_manifest_package
+tests.test_change_spec` → **Ran 119 tests, OK**. `PROJECT_STATE.json` now satisfies the canonical dump
+check. The remaining unfixed items are none; both reviews are PASS and this file records every
+disposition.
+
