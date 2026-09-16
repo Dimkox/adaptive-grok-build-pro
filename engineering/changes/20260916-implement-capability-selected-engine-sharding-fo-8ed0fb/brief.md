@@ -12,4 +12,4 @@ Ports the preserved head (runner + suite + pin file + `_python`/`_command_check`
 
 ## Verified
 
-19 tests OK on this pytest-free host — the same condition as the Trust CI runner. External exact-head check completes the proof for the real image.
+20 tests OK on this pytest-free host (one explicit xdist-only skip; the mandatory root-unittest discover of the real repo passes 741 tests here) — the same condition as the Trust CI runner. External exact-head check completes the proof for the real image.

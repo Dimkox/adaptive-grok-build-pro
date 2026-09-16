@@ -6,6 +6,6 @@ Data flow: config/env -> requested workers -> `select_engine` (capability probe 
 
 Contracts: none (local evidence tooling; the mandatory external command shape is untouched). Trust boundary: runner output is local evidence only; merge authority remains the App-owned check. Nothing installs, nothing reaches network, nothing external is invoked.
 
-Decisions: degrade pre-execution (never post-failure retry); keep the pin contract strict when the engine is present; make parallel-only assertions conditional instead of weakening coverage — degraded semantics are tested directly (single serial pass, label correctness) in both directions.
+Decisions: degrade pre-execution (never post-failure retry); keep the pin contract strict when the engine is present; make parallel-only assertions conditional instead of weakening coverage — degraded semantics are tested directly (single serial pass, label correctness) The degraded serial semantics are tested directly (single serial pass, label correctness); the xdist-only arms (distribution shape, worker data-loss combine) are mock-pinned here and executed by the App check on a pytest-bearing image; `find_spec` probes importability, so a declared-but-broken xdist install still surfaces as the strict pin failure by design.
 
 Risks: label/claim drift between requested and used engine -> `core.workers`/versions recorded in details and asserted by tests; xdist-only scenarios (worker data loss) -> skipped solely when that engine is absent, and the skip is explicit.

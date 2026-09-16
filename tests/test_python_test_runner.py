@@ -16,7 +16,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '.grok-stack'))
 
 from adaptive_grok.verification import CheckResult, _python
-from adaptive_grok.python_test_runner import execute, parallel_engine_ready, selected_workers
+from adaptive_grok.python_test_runner import RunnerError, execute, parallel_engine_ready, selected_workers
 
 
 @contextlib.contextmanager
@@ -53,6 +53,8 @@ def fixture(*, workers: object = 2):
 
 class PythonTestRunnerTests(unittest.TestCase):
     def assert_descendant_stopped(self, pid_file: Path) -> None:
+        if sys.platform != 'linux':
+            self.skipTest('process-group verification reads /proc; Linux-only')
         status = Path('/proc') / pid_file.read_text() / 'status'
         for _ in range(100):
             try:
@@ -142,16 +144,45 @@ class PythonTestRunnerTests(unittest.TestCase):
             self.assertEqual(len({p.read_text() for p in root.glob('result-*')}), 1)
             self.assertIn('unittest-degraded', result.details[0]['versions'])
 
-    def test_importable_but_mismatched_parallel_dependency_still_fails(self) -> None:
+    def test_importable_but_wrong_versioned_parallel_dependency_still_fails(self) -> None:
         # Degradation is capability-only: with the engine importable, the declared
         # pinned contract stays strict — missing/mismatched versions fail, no serial retry.
         with fixture() as root:
-            with patch('adaptive_grok.python_test_runner.parallel_engine_ready', return_value=True), \
-                 patch('adaptive_grok.python_test_runner.metadata.version', side_effect=metadata.PackageNotFoundError):
-                result = next(check for check in _python(root) if check.name == 'python-unittest')
-            self.assertEqual(result.status, 'fail')
-            self.assertIn('python-test-requirements.txt', result.summary)
-            self.assertFalse(list(root.glob('result-*')))
+            for label, version_effect in (
+                ('missing', metadata.PackageNotFoundError),
+                ('mismatched', lambda _name: '0.0.1'),
+            ):
+                with self.subTest(pinning=label), \
+                     patch('adaptive_grok.python_test_runner.parallel_engine_ready', return_value=True), \
+                     patch('adaptive_grok.python_test_runner.metadata.version', side_effect=version_effect):
+                    result = next(check for check in _python(root) if check.name == 'python-unittest')
+                self.assertEqual(result.status, 'fail', label)
+                self.assertIn('python-test-requirements.txt' if label == 'missing' else 'requires tested version',
+                              result.summary)
+                self.assertFalse(list(root.glob('result-*')))
+
+    def test_repo_root_without_optin_keeps_legacy_verifier_path(self) -> None:
+        # AC-003 parity where it matters: THIS repository has no .grok-test-runner.json,
+        # so grok_verify's python-unittest/coverage checks must take the legacy serial
+        # commands and never enter the runner/pin machinery, even with GROK env noise.
+        repo_root = Path(__file__).resolve().parents[1]
+        self.assertFalse((repo_root / '.grok-test-runner.json').exists())
+        self.assertIsNone(selected_workers(repo_root))
+        seen: list[list[str]] = []
+
+        def capture(root, name, command, timeout=300, *, env=None):
+            seen.append(list(command))
+            return CheckResult(name, 'pass', 'exit=0', command=command)
+
+        environment = os.environ.copy()
+        environment.pop('GROK_TEST_WORKERS', None)
+        with patch.dict(os.environ, environment, clear=True), \
+             patch('adaptive_grok.verification._command_check', side_effect=capture):
+            results = {check.name: check for check in _python(repo_root, mode='pr')}
+        self.assertIn('python-unittest', results)
+        self.assertFalse(any('pytest' in cmd for cmd in seen), seen)
+        self.assertIn(['coverage', 'run'], [cmd[:2] for cmd in seen], seen)
+        self.assertTrue(any('discover' in cmd and '-s' in cmd and 'tests' in cmd for cmd in seen), seen)
 
     def test_inherited_pytest_selection_cannot_omit_tests(self) -> None:
         with fixture() as root:
@@ -264,7 +295,7 @@ class PythonTestRunnerTests(unittest.TestCase):
                     '[run]\nbranch = True\nsource = subject\n[report]\nfail_under = 74\n'
                 )
                 if scenario == 'missing-worker' and not parallel_engine_ready(measured=True):
-                    continue  # xdist worker data-loss is unobservable on a degraded serial engine
+                    self.skipTest('xdist worker data-loss is unobservable on a degraded serial engine')
                 if scenario == 'missing-worker':
                     (root / 'conftest.py').write_text(
                         'import pytest\n@pytest.hookimpl(tryfirst=True, optionalhook=True)\n'
@@ -324,10 +355,21 @@ class PythonTestRunnerTests(unittest.TestCase):
             self.assertEqual(len({p.read_text() for p in outputs}), 2 if parallel_engine_ready(False) else 1)
 
     def test_invalid_worker_setting_fails_before_running_tests(self) -> None:
-        with fixture(workers='invalid') as root:
-            result = next(check for check in _python(root) if check.name == 'python-unittest')
-            self.assertEqual(result.status, 'fail')
-            self.assertFalse(list(root.glob('result-*')))
+        for bad in ('invalid', 65, -1, 1.5, True):
+            with self.subTest(workers=bad), fixture(workers=bad) as root:
+                result = next(check for check in _python(root) if check.name == 'python-unittest')
+                self.assertEqual(result.status, 'fail')
+                self.assertFalse(list(root.glob('result-*')))
+        with fixture() as root:
+            config = root / '.grok-test-runner.json'
+            config.write_text(json.dumps({'schema_version': 2, 'workers': 2}))
+            self.assertRaises(RunnerError, selected_workers, root)
+            config.write_text(json.dumps({'schema_version': 1, 'workers': 2, 'extra': 1}))
+            self.assertRaises(RunnerError, selected_workers, root)
+        with fixture(workers=0) as root, patch.dict(os.environ, {'GROK_TEST_WORKERS': '65'}):
+            self.assertRaises(RunnerError, selected_workers, root)
+        with fixture(workers=0) as root, patch.dict(os.environ, {'GROK_TEST_WORKERS': 'invalid'}):
+            self.assertRaises(RunnerError, selected_workers, root)
         with fixture() as root:
             config = root / '.grok-test-runner.json'
             config.unlink()

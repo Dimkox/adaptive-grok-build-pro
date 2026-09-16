@@ -948,7 +948,7 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
                 results.append(CheckResult('coverage', 'fail', 'required Core run unavailable'))
             core, workers = None, -1
         if core is not None:
-            workers = core.workers
+            requested_workers, workers = workers, core.workers
             for name, process in [('python-unittest', core.tests), ('coverage', core.coverage)]:
                 if process is not None:
                     results.append(CheckResult(
@@ -957,6 +957,7 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
                         command=process.command, stdout=process.stdout[-12000:], stderr=process.stderr[-12000:],
                         details=[{'severity': 'info', 'path': 'tests',
                                   'message': f'backend={"pytest-xdist" if workers else "unittest"}; fresh invocation-owned coverage',
+                                  'requested_workers': str(requested_workers),
                                   'versions': json.dumps(core.versions, sort_keys=True),
                                   'coverage': json.dumps(core.coverage_metadata, sort_keys=True)}],
                     ))

@@ -100,7 +100,14 @@ def _stop(process: subprocess.Popen) -> None:
             pass
     elif process.poll() is None:
         process.kill()
-    process.wait(timeout=10)
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            raise RunnerError('owned process refused to exit after SIGKILL') from None
 
 
 @contextmanager
@@ -284,12 +291,14 @@ def main() -> int:
     parser.parse_args()
     try:
         root = Path.cwd().resolve()
-        workers = selected_workers(root) or 0
-        result = run_trust_tests(root, workers)
+        requested = selected_workers(root) or 0
+        workers, engine = select_engine(requested, measured=False)
+        result = run_trust_tests(root, requested)
     except RunnerError as exc:
         print(f'Trust CI tests failed: {exc}', file=sys.stderr)
         return 1
-    print(f'Trust CI: workers={workers}; seconds={result.seconds:.3f}; exit={result.returncode}')
+    print(f'Trust CI: requested_workers={requested}; workers={workers}; engine={engine}; '
+          f'seconds={result.seconds:.3f}; exit={result.returncode}')
     print(result.stdout, end='')
     print(result.stderr, end='', file=sys.stderr)
     return result.returncode if result.returncode >= 0 else 1

@@ -4,7 +4,7 @@
   "objective": {
     "id": "OBJ-001",
     "statement": "Retake closed defect 33 (parallel local verification) on the recorded condition: the runner selects its engine from what the interpreter actually provides. The preserved head 6d72d4c is ported (runner module, its test suite, the requirements pin file, and the _python/_command_check wiring) and then pivoted: select_engine/parallel_engine_ready decide BEFORE execution, an unimportable xdist engine degrades to exactly one disclosed sequential unittest pass (versions carry engine=unittest-degraded and the check's backend label follows the engine actually used), while an importable-but-unpinned engine keeps the old strict contract (fail, no silent serial retry). The ported suite is proven satisfiable on THIS pytest-free host, which is exactly the Trust CI image condition that killed the original PR.",
-    "success_metric": "tests.test_python_test_runner 19 OK with no pytest importable; mandatory root-unittest path in grok_verify --mode pr PASS on this head; the external exact-head check on this pull request is itself the proof under no-pytest conditions",
+    "success_metric": "tests/test_python_test_runner.py 20 OK (one explicit xdist-only skip) with no pytest importable; mandatory root-unittest path in grok_verify --mode pr PASS on this head; the external exact-head check on this pull request is itself the proof under no-pytest conditions",
     "target": "main"
   },
   "risk": {
@@ -47,10 +47,10 @@
     },
     {
       "id": "AC-004",
-      "statement": "The recorded re-take condition is met verifiably: the mandatory no-pytest root-unittest environment runs this suite green (measured on this host and enforced again by the App-owned exact-head check on this pull request), and work_inventory.retained_unresolved still describes the original head, not this one.",
+      "statement": "The recorded re-take condition is met verifiably: the mandatory no-pytest root-unittest environment runs this suite green — measured on this pytest-free host for the serial/degrade path; the xdist-only arms (worker data-loss) are explicitly skipped here and executed by the App-owned no-pytest check on this pull request, and work_inventory.retained_unresolved still describes the original head, not this one.",
       "evidence": [
         {
-          "test": "tests.test_python_test_runner"
+          "test": "tests/test_python_test_runner.py"
         }
       ]
     }
