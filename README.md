@@ -4,7 +4,7 @@ MIT-licensed tooling for task-routed AI-assisted development, external verificat
 
 ## Current state
 
-Identity: **2.0.17** (candidate, unpublished). The latest published release is [`v2.0.16`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.16), published **2026-09-13T22:04:08Z**. Its tag, ZIP and sidecar are immutable and are not rebuilt by the candidate. The `2.0.17` artifact child has delivered its ZIP and sidecar as tracked bytes in `packages/`; no `v2.0.17` tag or GitHub Release exists yet, so `published` stays false and the tag binds to this child's merged commit only.
+Identity: **2.0.17**. The latest published release is [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17), published **2026-09-16T01:17:14Z** from the merged artifact-child commit `c86b1a1989ace899a4450bde558fcd8adc00e4e2`. Its tag, ZIP and sidecar are immutable; earlier releases stay untouched and no release preparation remains.
 
 | Layer | Observed state on 2026-09-16 |
 | --- | --- |

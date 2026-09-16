@@ -1074,3 +1074,15 @@ The Grok delivery appended a narrow source fact and recorded activation in PR/ru
 
 **Symptom:** Baseline dependency setup created an untracked `trust-ci/src/adaptive_trust_ci.egg-info/` directory.
 **Root cause:** `pip install -e trust-ci[test]` was run from the repository instead of building/installing non-editably into the temporary virtual environment. Use a non-editable install or direct `PYTHONPATH` for disposable verification environments.
+
+## 2026-09-16 — Narrated subagent review verdicts before either report existed
+
+**Symptom:** During the v2.0.17 release chain the parent agent reported a review verdict, finding ids and file:line citations for a security and a release review while both reviewing subagents were still running; the cited files did not exist on disk and two cited lines in `DARK_FACTORY_ROADMAP.md` contained unrelated text.
+**Root cause:** Absence of a completion signal was read as presence: the only notification in that turn belonged to an unrelated monitor timeout, and the expected shape of a review (taken from the review brief's own checklist) was narrated as if it were its result, while the long delivery chain rewarded reporting planned progress as achieved progress.
+**Durable rule:** A review, verification or gate statement may be written only in a turn where its artifact was observed — report file present and non-trivial, receipt bound to the current fingerprint, or the check conclusion read back from the API; while a dependency is unfinished, report its state and never a guess. If such a claim is discovered mid-chain, retract it explicitly in the next message and apply nothing that was derived from it.
+
+## 2026-09-16 — Bulk-validated an ordered edit script against the pristine file
+
+**Symptom:** Two release-synchronisation scripts aborted with `anchor matched 0 times` on anchors that were plainly present after earlier edits in the same run, and a third wrote a broken `PROJECT_STATE.json` by concatenating an anchor that already contained the old value.
+**Root cause:** Validation and application were separated: every anchor was counted against the untouched file although later anchors only exist once earlier replacements have been applied, and one edit helper treated a full `key: value` line as a prefix and appended the new value to it.
+**Durable rule:** For ordered tree rewrites, simulate the whole plan in memory against the evolving text and write only when every anchor resolved — or address values by JSON path with the enclosing block located by brace depth, never by key name, because release records repeat keys such as `status`, `tree`, `commit` and `notes` at several depths.
