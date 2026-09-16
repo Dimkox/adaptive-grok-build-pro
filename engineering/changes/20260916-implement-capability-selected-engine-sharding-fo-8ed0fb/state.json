@@ -25,11 +25,29 @@
       "from": "approved",
       "reason": "runner+suite+pin file+wiring ported, select_engine added, contract tests reworked, 19 OK on this pytest-free host",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-16T17:26:55+00:00",
+      "from": "implementing",
+      "reason": "full gate PASS on b0976e9 changed=19; receipts recorded on that head; external exact-head SUCCESS on 2d1c0208",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-16T17:26:55+00:00",
+      "from": "verifying",
+      "reason": "code PASS 2I/5M and test PASS F1-F7 both dispositioned in evidence/review-response.md and applied in b0976e9",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-16T17:26:55+00:00",
+      "from": "reviewing",
+      "reason": "PR 113 merged as 35cbbe0f857bdb03dec4eb0ecff542a148b84658; the capability-selected engine is on main",
+      "to": "ready"
     }
   ],
   "route_id": "8ed0fb672c38",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "Implement capability-selected engine sharding for local verification unittest and pytest lanes with closed defect 33 retake",
-  "updated_at": "2026-09-16T15:06:51+00:00"
+  "updated_at": "2026-09-16T17:26:55+00:00"
 }

@@ -1403,8 +1403,9 @@
         "observed_check_conclusion": "FAILURE",
         "pull_request": 33,
         "purpose": "Closed without merging on 2026-09-16 by maintainer decision, with the diagnosis and the re-take path recorded on the pull request: the runner must select its engine from what the interpreter actually provides, and its unittest-branch tests must be satisfiable without an importable pytest. The branch and its 1540-insertion head are kept untouched and undeleted; parallel local verification remains an open goal, not a delivered one.",
-        "status": "closed_unmerged",
-        "unique_scope": "Parallel local Python verification"
+        "status": "retaken_and_delivered",
+        "unique_scope": "Parallel local Python verification",
+        "resolution": "Retaken and delivered by PR #113 (squash merge 35cbbe0f857bdb03dec4eb0ecff542a148b84658, 2026-09-16): python_test_runner selects its engine from what the interpreter provides (capability probe before execution; unimportable xdist degrades to one disclosed sequential unittest pass), and the suite passes on a pytest-free interpreter - proven locally and by the App-owned exact-head check on head 2d1c0208. The perf/parallel-python-tests branch and its head 6d72d4c8… stay retained untouched as the diagnosis exhibit; the failure_cause text above remains a historical observation of that head. True parallelism remains conditional on an importable pytest+xdist install: on such interpreters the runner uses xdist, elsewhere it discloses the serial degrade."
       },
       {
         "pull_request": 15,
