@@ -703,3 +703,7 @@ Porting the epic's closed RECEIPT_KINDS byte-identically would have failed every
 ## 2026-09-09 — Remove a misclassified import instead of declaring a false edge
 
 `FIT-DECLARED-NETWORK-ONLY` flagged `trust-ci/src/adaptive_trust_ci/settings.py` as an undeclared `tcp` client for the worker, because the fitness scanner treats any `socket` import as a network-client family. The module used `socket` for exactly one call, `socket.gethostname()`, to build a worker id. Replacing it with `platform.node()` removed a dependency the module never needed and kept the architecture model truthful; declaring a `tcp` edge would have recorded a connection that does not exist.
+
+## 2026-09-16 — Hash oversized tracked binaries from a bounded stream
+
+The architecture diff now profiles any object above `MAX_ANALYZED_FILE_BYTES` by streaming 64 KiB chunks into a SHA-256 (with the streamed length required to equal the `ls-tree`/`fstat` size and the dev/ino/size/mtime tuple re-checked afterwards), rather than buffering it or excluding it. It worked: the tracked 10,940,676-byte v2.0.17 ZIP yields exactly the buffered `sha256` in both commit and worktree modes, memory stays flat, and the pre-existing limit tests still pass because oversized text and explicit `read_diff_files` requests keep refusing.
