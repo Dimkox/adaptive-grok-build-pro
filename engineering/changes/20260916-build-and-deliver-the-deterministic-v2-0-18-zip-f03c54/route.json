@@ -1,0 +1,81 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
+  "base_fingerprint": "61fb47b379214221c9a2ee872b263ac088265ce78bc425556192d6e311a0b5dd",
+  "complexity": "high-risk",
+  "created_at": "2026-09-16T12:12:29+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk intent/domain: release",
+    "intent=release",
+    "domains=frontend,api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "f03c541d184f",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Build and deliver the deterministic v2.0.18 ZIP plus sidecar as the artifact child of release sync",
+  "task_domains": [
+    "frontend"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness",
+    "api-event-change",
+    "frontend-change"
+  ],
+  "write_agent": null
+}

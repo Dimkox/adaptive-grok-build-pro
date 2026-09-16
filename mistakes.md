@@ -1147,3 +1147,14 @@ step inside a compound command whose tail contains the script path matches itsel
 detached child must be established by the PID captured at launch, never by log size.
 **Durable rule:** capture `$!` (or the first exact-PID probe) at launch, poll only that PID, and never
 place pattern-based process termination in a command that mentions the target script at all.
+## 2026-09-16 — SR wave missed a human-readable surface the precedent flipped, because no test reads it
+
+**Symptom:** release review FAILed the v2.0.18 successor: `packages/README.md` still named v2.0.17 the latest
+published release and v2.0.18 "tag pending" after the tag and Release were live — the exact two lines the v2.0.17
+SR (#100) had edited — while all 119 coupled tests stayed green.
+**Root cause:** the wave mirrored the machine records and the four tested docs but not the fifth surface, and that
+surface has no assertion; mirrored-authoring reused the precedent's file list from memory instead of deriving it
+from `git show --name-only` on the precedent commit.
+**Durable rule:** when mirroring a precedent wave, derive the touched-file list from the precedent commit itself
+and hand-verify every current-state surface that no test covers; untested prose contradicting the record is a real
+defect even through a green gate.

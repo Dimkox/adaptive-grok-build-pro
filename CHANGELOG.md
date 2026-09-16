@@ -1,8 +1,8 @@
 # Changelog
 
-## 2.0.18 — 2026-09-16 (candidate, unpublished)
+## 2.0.18 — 2026-09-16
 
-Four pull requests merged on `main` after `v2.0.17` was published. This section records the landed source; the artifact pair, tag and GitHub Release for `2.0.18` do not exist until the separate artifact-child step delivers them under their own delegated grants.
+Four pull requests merged after `v2.0.17` was published. This section records the landed source on `main` and its publication: that source was archived by the artifact child and shipped through tag `v2.0.18`.
 
 - Streams oversized tracked binaries from a bounded 64 KiB reader that hashes while reading and re-checks the dev/ino/size/mtime identity afterwards, so a 10.9 MB tracked artifact no longer refuses architecture analysis (PR #101, checked head `b40fd1a4`, App check `104681990219`, merged `2026-09-16T06:14:17Z` as `83925c1`)
 - Puts the release-chain landing convention in view and records the inspected failure causes behind closed pull requests #15, #21 and #33 in the work inventory (PR #102, checked head `3f93e7bd`, App check `104704114422`, merged `2026-09-16T07:52:29Z` as `98b7769`)

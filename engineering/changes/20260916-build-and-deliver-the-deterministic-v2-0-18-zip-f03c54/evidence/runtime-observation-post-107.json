@@ -1,0 +1,88 @@
+{
+  "grok": {
+    "attestation_id": "8a7eb170-fd21-481e-a756-9e0a878b14c0",
+    "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "check_run_id": 104295309671,
+    "checked_pr_head_sha": "4e94f7a9e0b6a54adac5e09700ba3137a1c2e6b0",
+    "grok_config_sha256": "450657a9f7598af81093da38201c4b27117633cbd2c2359836ff58e4b632a5ad",
+    "grok_service": "adaptive-l5-grok.service",
+    "grok_socket": "/run/adaptive-l5-grok/control.sock",
+    "merged_commit": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
+    "model": "grok-4.6",
+    "pr": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/88",
+    "selected_profile": "grok-vision",
+    "smoke": {
+      "artifact_digest": "90865bde1fa3171c2a5f84bb92a18fdfde514451c659ddf26282ed8e1fed66b2",
+      "elapsed_ms": 29852,
+      "http_status": 202,
+      "job_id": "grok-connect-20260915-61a05da2bd0c",
+      "live_url": null,
+      "provider_requests": 1,
+      "state": "artifact_ready"
+    }
+  },
+  "limits": [
+    "No additional live provider calls during documentation repair.",
+    "No external maintainer-accepted pilot established.",
+    "No M8 qualifying cohort or general M9 operational qualification established.",
+    "Artifact live_url is null; no factory publication inferred.",
+    "Grok secondary installed release and artifact digests are historical acceptance facts re-confirmed live; no new provider call was made.",
+    "The qwen-omni-intl profile added by PR #105 is source-only in this observation; no installed unit loads it and no new provider call was made."
+  ],
+  "observation_provenance": {
+    "carried_forward": [
+      "published_release",
+      "qwen_historical_acceptance",
+      "grok"
+    ],
+    "carried_reason": "Those records are dated historical acceptance facts about installed artifacts; no reinstall, restart or provider activation happened between the previous dossier and this observation, so their digests must not be restated as new evidence. The published_release block advances because v2.0.17 was published before this observation.",
+    "method": "systemctl show -p MainPID -p Id -p ActiveState -p UnitFileState for both units plus systemctl show -p ExecStart for the primary, read-only, unprivileged; repeated from the previous observation",
+    "previous_dossier": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c/evidence/runtime-observation-post-106.json",
+    "unchanged_since_previous": {
+      "note": "Identical MainPID and enabled state in both dossiers; the v2.0.18 release sync (PR #107) merged source only and neither unit was restarted or reinstalled.",
+      "primary_main_pid": 698333,
+      "secondary_main_pid": 3597736
+    }
+  },
+  "observed_at": "2026-09-16T12:17:52Z",
+  "published_release": {
+    "commit": "c86b1a1989ace899a4450bde558fcd8adc00e4e2",
+    "published_at": "2026-09-16T01:17:14Z",
+    "tag": "v2.0.17",
+    "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17"
+  },
+  "qwen_current_configuration": {
+    "control_repository": "/opt/adaptive-l5/releases/5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a/repository",
+    "evidence": "ExecStart re-observed live at this observation from the release path of adaptive-l5.service (5f6f6ce1...), still the installed unit; selected_profile/model/control_repository carried from the previous dossier; no secrets read; no provider request issued.",
+    "live_enabled": true,
+    "model": "qwen-plus",
+    "selected_profile": "qwen-intl"
+  },
+  "qwen_historical_acceptance": {
+    "merged_and_installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+    "observed_at": "2026-09-14T03:31:08+00:00",
+    "socket_acceptance": {
+      "artifact_digest": "85b3360aaa28c38448c8d31770a5307df809aa7ce4829e81f1ac7b4ddddc76ed",
+      "elapsed_service_seconds": 10.314,
+      "exit_code": 0,
+      "input_digest": "6c9fb5415257b60c91e03858ef6146a6732a564fddafd50729844974a9ae668d",
+      "job_id": "pr82-smoke-5f6f6ce1ecb0",
+      "live_url": null,
+      "state": "artifact_ready",
+      "unit": "adaptive-l5-pr82-e2e-5f6f6ce1ecb0.service"
+    },
+    "status": "runtime_deployed_and_live_artifact_acceptance_passed"
+  },
+  "service_observation": "MainPID=698333\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=3597736\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled",
+  "source_base": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
+  "source_trail": {
+    "merged_source_not_installed": [
+      101,
+      102,
+      105,
+      106,
+      107
+    ],
+    "note": "PR #107 is the v2.0.18 release-sync merge on main at this base; earlier post-publication landings #101, #102, #105 and #106 carry the same status. None of it was installed into either running unit: the installed SHAs remain the recorded 5f6f6ce1... (primary) and 61a05da2... (secondary). Installing or restarting either service is a separate operational action requiring its own exact authority."
+  }
+}

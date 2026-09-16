@@ -1423,7 +1423,7 @@ module.main()
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'pending_unpublished_artifact_child',
+            'published_tag_bound',
         )
         candidate_pair = tuple(
             ROOT / path
@@ -1445,13 +1445,13 @@ module.main()
                 f"{digest}  {candidate_pair[1].name.removesuffix('.sha256')}\n",
             )
         published_version = published['tag'].removeprefix('v')
-        self.assertEqual(published_version, '2.0.17')
+        self.assertEqual(published_version, '2.0.18')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
-        expected_digest = '770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616'
+        expected_digest = '0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a'
         self.assertEqual(artifact['sha256'], expected_digest)
 
         zip_path = ROOT / expected_relative
