@@ -1653,7 +1653,7 @@
     "selected_profile_note": "Observed primary installed profile/model; the default-off source template independently selects Qwen Omni."
   },
   "runtime_observations": {
-    "observed_at": "2026-09-16T23:39:18Z",
+    "observed_at": "2026-09-17T01:55:37Z",
     "host": "claw",
     "evidence": "engineering/changes/20260916-record-the-qwen-omni-intl-executor-activation-as-9d1695/evidence/runtime-observation-omni-activation.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
@@ -1668,6 +1668,7 @@
         "installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
         "active_state": "active",
         "unit_file_state": "enabled",
+        "active_enter_timestamp": "2026-09-14T12:41:51Z",
         "live_enabled": true,
         "acceptance_observed_at": "2026-09-14T03:31:08+00:00",
         "acceptance": {
@@ -1689,6 +1690,7 @@
         "installed_sha": "61a05da2bd0c9fb09db5307f53ebc99e4e94040d",
         "active_state": "active",
         "unit_file_state": "enabled",
+        "active_enter_timestamp": "2026-09-15T08:05:29Z",
         "live_enabled": true,
         "selected_profile": "grok-vision",
         "model": "grok-4.6",
@@ -1710,7 +1712,7 @@
         "live_enabled": true,
         "selected_profile": "qwen-omni-intl",
         "model": "qwen3.5-omni-plus-2026-03-15",
-        "activated_at": "2026-09-16T23:39:18Z",
+        "active_enter_timestamp": "2026-09-16T23:33:33Z",
         "acceptance": {
           "job_id": "omni-activate-20260916-e7d0f72b",
           "http_status": 200,

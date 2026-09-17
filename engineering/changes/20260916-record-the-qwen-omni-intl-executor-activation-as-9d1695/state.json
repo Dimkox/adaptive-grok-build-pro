@@ -25,11 +25,17 @@
       "from": "approved",
       "reason": "services.omni + dossier + package docs land in this commit",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-17T02:20:00+00:00",
+      "from": "implementing",
+      "reason": "round 1 closed 10 carried-forward claims; re-review FAILed the residue (7/8/9 open, 4/6 partly, N1 introduced by round 1) and this round closes it on live re-captures: verbatim 10-field three-unit systemctl block, production_verified:false recorded, active_enter_timestamp on all three services, observed_at aligned, README/START_HERE reconciled, SIG-001/AC-003 re-grounded, third-unit pin added to test_project_state (15 OK)",
+      "to": "reviewing"
     }
   ],
   "route_id": "9d1695f3c1d4",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "reviewing",
   "title": "Record the qwen omni intl executor activation as a runtime observation on the claw host closes issue 86",
-  "updated_at": "2026-09-16T23:45:58+00:00"
+  "updated_at": "2026-09-17T02:20:00+00:00"
 }

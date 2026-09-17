@@ -34,11 +34,12 @@
   "observation_provenance": {
     "carried_forward": [
       "published_release",
+      "qwen_current_configuration",
       "qwen_historical_acceptance",
       "grok"
     ],
-    "carried_reason": "Primary and grok acceptance digests are dated historical facts re-confirmed unchanged; this observation itself adds only the omni executor. published_release already named v2.0.18 from the successor record and is carried here untouched; NRestarts=0 on all three units since their last start proves no restart of the older two happened in between.",
-    "method": "systemctl show (MainPID/Id/ActiveState/UnitFileState/NRestarts) for all three executor units, captured verbatim into service_observation, plus read-only /health probes of the omni socket; provider activation proven by one real qwen-omni-intl request returning state=normalized with token usage, and by one end-to-end landing job reaching artifact_ready through the omni socket; no credential or configuration value read into this record.",
+    "carried_reason": "Primary and grok acceptance digests are dated historical facts re-confirmed unchanged; this observation itself adds only the omni executor. published_release already named v2.0.18 from the successor record and is carried here untouched, as is qwen_current_configuration (byte-identical to the post-108 dossier; its ExecStart was re-observed live and still matches). Neither older unit was restarted in between: their re-captured ExecMainStartTimestamp/ActiveEnterTimestamp are still 2026-09-14 12:41:51 UTC and 2026-09-15 08:05:29 UTC with NRestarts=0 and identical MainPIDs.",
+    "method": "systemctl show (Restart/MainPID/Result/NRestarts/ExecMainStartTimestamp/ExecMainStatus/Id/ActiveState/UnitFileState/ActiveEnterTimestamp, in systemd's own print order) for all three executor units, captured verbatim into service_observation, plus read-only /health probes of the omni socket; provider activation proven by one real qwen-omni-intl request returning state=normalized with token usage, and by one end-to-end landing job reaching artifact_ready through the omni socket; no credential or configuration value read into this record.",
     "previous_dossier": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
     "unchanged_since_previous": {
       "note": "Primary and grok units are unchanged (identical MainPIDs 698333/3597736, active/enabled). This observation adds a THIRD executor, adaptive-l5-omni.service, activated for the first time on the tagged v2.0.18 release; adding it is not a qualification promotion and operational_activation of the release record stays false.",
@@ -46,12 +47,12 @@
       "secondary_main_pid": 3597736
     }
   },
-  "observed_at": "2026-09-17T00:30:23Z",
+  "observed_at": "2026-09-17T01:55:37Z",
   "omni": {
     "activation": {
       "endpoint_health": {
         "live": "200 {\"status\":\"live\"}",
-        "ready": "200 {\"status\":\"ready\"}"
+        "ready": "200 {\"status\":\"ready\",\"component\":\"landing-local\",\"production_verified\":false}"
       },
       "http_status": 200,
       "job_id": "omni-activate-20260916-e7d0f72b",
@@ -116,7 +117,7 @@
     },
     "status": "runtime_deployed_and_live_artifact_acceptance_passed"
   },
-  "service_observation": "MainPID=698333\nNRestarts=0\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=3597736\nNRestarts=0\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled\n\nMainPID=2470731\nNRestarts=0\nId=adaptive-l5-omni.service\nActiveState=active\nUnitFileState=enabled\n",
+  "service_observation": "Restart=no\nMainPID=698333\nResult=success\nNRestarts=0\nExecMainStartTimestamp=Mon 2026-09-14 12:41:51 UTC\nExecMainStatus=0\nId=adaptive-l5.service\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Mon 2026-09-14 12:41:51 UTC\n\nRestart=no\nMainPID=3597736\nResult=success\nNRestarts=0\nExecMainStartTimestamp=Tue 2026-09-15 08:05:29 UTC\nExecMainStatus=0\nId=adaptive-l5-grok.service\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Tue 2026-09-15 08:05:29 UTC\n\nRestart=no\nMainPID=2470731\nResult=success\nNRestarts=0\nExecMainStartTimestamp=Wed 2026-09-16 23:33:33 UTC\nExecMainStatus=0\nId=adaptive-l5-omni.service\nActiveState=active\nUnitFileState=enabled\nActiveEnterTimestamp=Wed 2026-09-16 23:33:33 UTC\n",
   "source_base": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
   "source_trail": {
     "merged_source_not_installed": [
@@ -127,6 +128,11 @@
       107,
       108
     ],
+    "merged_source_not_installed_units": [
+      "adaptive-l5.service",
+      "adaptive-l5-grok.service"
+    ],
+    "merged_source_not_installed_scope": "The key is scoped to the two units in merged_source_not_installed_units only: these six PRs ARE installed in adaptive-l5-omni.service (boot commit e7d0f72b = v2.0.18). Read key + array together with this field; the key name is inherited from the post-94/post-99/post-108 dossiers and is kept so cross-dossier leaf diffs still line up.",
     "note": "PRs #101/#102/#105/#106 and the release chain #107/#108 are ALL contained in the omni unit's boot commit e7d0f72b (v2.0.18): the omni executor runs that tagged source. Primary (5f6f6ce1...) and grok (61a05da2...) were NOT reinstalled or restarted and keep their pre-#93 SHAs; further installs or restarts remain separate operational actions requiring their own exact authority.",
     "omni_executor_activated": {
       "control_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",

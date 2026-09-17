@@ -38,7 +38,7 @@
     },
     {
       "id": "AC-003",
-      "statement": "The dossier records the activation path verbatim: three-unit systemctl observation with NRestarts=0, the failed first start (validate_source git_command on the root-owned .git/index), the shared-source chown repair with timestamps, the clean start, and the first end-to-end pilot job reaching artifact_ready; every field is an allowlisted observation fact, no credential or configuration value appears.",
+      "statement": "The dossier records the activation path verbatim: the three-unit systemctl capture (Id/ActiveState/UnitFileState/MainPID/NRestarts/Result/ExecMainStatus/ExecMainStartTimestamp/ActiveEnterTimestamp/Restart for each unit), the failed first start (validate_source git_command on the root-owned .git/index), the shared-source chown repair with timestamps, the clean start, and the first end-to-end pilot job reaching artifact_ready; every field is an allowlisted observation fact, no credential or configuration value appears.",
       "evidence": [
         {
           "receipt": "code_review"
@@ -49,7 +49,7 @@
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "Only PROJECT_STATE.runtime_observations (services.observed_at.evidence) and the new dossier change; no product code, contract, rules, release identity or qualification flag is touched.",
+      "statement": "Only the records surface changes: PROJECT_STATE.runtime_observations (observed_at, evidence, services), the new dossier, the bootstrap surfaces that describe the same unit set (README.md, START_HERE.md), this package, and one added assertion in tests/test_project_state.py pinning the third unit inside the recorded capture; no product code, contract, rules, release identity or qualification flag is touched.",
       "evidence": [
         {
           "test": "tests/test_structure.py"
@@ -94,7 +94,7 @@
   "observability": [
     {
       "id": "SIG-001",
-      "metric": "service_observation captured verbatim for all three units (unit active/enabled with NRestarts 0); socket /health/live and /health/ready 200; provider activation request normalized with token usage; pilot job b20ffd38-... at artifact_ready",
+      "metric": "service_observation captured verbatim for all three units, each showing ActiveState=active, UnitFileState=enabled, Result=success, ExecMainStatus=0 and a single ExecMainStartTimestamp/ActiveEnterTimestamp (2026-09-14 12:41:51 / 2026-09-15 08:05:29 / 2026-09-16 23:33:33 UTC); NRestarts=0 is carried because the capture is verbatim, not as a stability signal — all three units set Restart=no, so the counter cannot be non-zero. Socket /health/live and /health/ready 200 recorded verbatim including production_verified:false; provider activation request normalized with token usage; pilot job b20ffd38-... at artifact_ready",
       "proves": [
         "OBJ-001"
       ]

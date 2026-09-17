@@ -757,6 +757,16 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertIn("Id=" + service["unit"] + "\nActiveState=active\nUnitFileState=enabled",
                               evidence["service_observation"])
                 self.assertTrue(service["live_enabled"])
+        # The third executor is in the same capture, so pin all three units and their recorded
+        # boot timestamps without the acceptance-digest coupling that only primary/secondary carry.
+        for role in ("primary", "secondary", "omni"):
+            service = runtime["services"][role]
+            with self.subTest(role=role):
+                self.assertIn("Id=" + service["unit"] + "\nActiveState=active\nUnitFileState=enabled",
+                              evidence["service_observation"])
+                stamp = service["active_enter_timestamp"].replace("T", " ")
+                self.assertTrue(stamp.endswith("Z"))
+                self.assertIn(stamp[:-1] + " UTC", evidence["service_observation"])
         from adaptive_factory.landing_http import HttpLandingProfile
         for service in runtime["services"].values():
             profile = HttpLandingProfile.for_provider(service["selected_profile"])
