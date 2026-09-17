@@ -75,11 +75,64 @@ is now asserted leaf-by-leaf against the dossier's `omni.activation` (health cap
 omni identity leaves (`unit`/`selected_profile`/`model`/`installed_sha`/`live_enabled`) are compared
 between state and dossier, the probe job is asserted distinct from the pilot job, and the pilot block is
 checked against its `db_row` (job, state, `revision 3`, `2026-09-17T00:21:16.151094Z`, usage 813/364)
-including `updated_at[:19] < pilot.observed_at[:19]`. Measured with the round-2 map: the mainland
-profile swap, `installed_sha` zeroing, `live_enabled=false`, dossier `activation.job_id`/`usage`/`state`/
-`live_url` divergence, pilot observed_at inversion, and `db_row` tampering are all KILLED; the two
-reviewers' surviving-but-accepted gaps are now limited to leaves no consumer reads. What remains
+including `updated_at[:19] < pilot.observed_at[:19]`. Measured with the round-2 map: `live_enabled=false`,
+dossier `activation.job_id`/`usage`/`state`/`live_url` divergence, pilot observed_at inversion, and
+`db_row` tampering are all KILLED. Two entries in that list needed correcting after the round-5 delta
+review measured them at this head: the mainland profile swap and `installed_sha` zeroing were killed only
+as **one-sided** edits, while doing both files at once stayed green across the whole 759-test suite —
+agreement between two in-tree files cannot anchor identity. Literals close that (round 6 below), and this
+paragraph no longer claims otherwise. What remains
 genuinely open is a live re-derivation path for the provider probe leaves (`http_status`,
 `state`, `769/191`, one request, `profile_digest`) — the omni landing DB holds exactly one row and it is
 the pilot, so re-deriving needs an authenticated call, which a records wave must not make; that is
 tracked separately rather than claimed as pinned.
+
+## Rounds 5 and 6 — delta verification, and what the literals were for
+
+Round-5 delta review returned **PASS** on both sides (code: `review-code-round5.md`; test:
+`review-test-round5.md`). It caught two things the author had got wrong.
+
+**The author's dismissal of F5 was wrong.** Round 4 had argued, from packages whose routing base equals
+their merge parent, that `route.json.base_commit` was inert metadata — but those branches were never
+rebased, so the argument proved nothing, and the stale value was live: `verification.py:472` takes the
+PR-mode comparison basis from `route.base_commit`, so the gate had been measuring a **records** wave
+against a base predating #116 — 40 files, `architecture_diff.py` and `tests/test_architecture_fitness.py`
+included, another wave's production code, with INV-001 checked against a diff that was not this wave's.
+Re-pointed at the real merge-base (22 files). The fingerprint stays untouched, and the claim about it now
+says what holds: nothing recomputes or validates it, it seeds `route_id` and is recorded as a route
+field. Disclosed with it: the copy that actually drives the gate, `.grok-stack/runtime/active-route.json`,
+is gitignored — the committed file records intent, the enforced value is local runtime state — and both
+`base_commit` (R30) and `runtime_observations.runbook` (T18) are test-silent when wrong.
+
+**The round-5 guard was weaker than its own comment.** `assertNotIn(state, TERMINAL_STATES)` is a
+five-word blacklist over a value drawn from a different vocabulary: `normalized` is a member of
+`landing_observation.CATEGORIES`, of neither state set, and `normalizing` (a real job state), an invented
+`succeeded` and the case variant `Normalized` all passed it. Round 6 checks membership in the vocabulary
+the value belongs to and pins the recorded literal. The same round pinned the claims the reviewers
+measured as relabellable in both files at once: mainland profile (R22), zeroed `installed_sha` (R23), the
+`pilot.state`/`db_row.state` pair (R13) → `qwen-omni-intl`, `installed_sha == observed_main_sha ==
+source_base`, `artifact_ready`. Measured at this head, one mutant per git-ful `/tmp` copy with a green
+control: all of R13/R22/R23 plus the three probe-label mutants **KILLED**. The `observed_at` ordering was
+also made checkable in the direction that is checkable — moving all three stamps to `00:00:00Z`, earlier
+than the pilot row's `00:21:16Z`, is KILLED, while a stamp consistent with every pinned fact
+(`00:30:23Z`, `09:00:00Z`) stays green and is written down as a limit, not a closure, because no
+in-tree artefact records when a capture was taken. Finally the `factory/src` bootstrap moved to module
+scope: the method runs in isolation now, where on `main` and at every head of this wave it silently
+depended on an alphabetically earlier test importing the package first.
+
+## Corrections to this author's own recorded statements
+
+- The round-3 commit message asserts the `NRestarts` caveat is carried by "SIG-001/**AC-003**". AC-003
+  carried none (round-5 review, checked programmatically: `SIG-001 True`, `AC-003 False`). AC-003 now
+  carries it, so the sentence is true of the tree as merged; the immutable commit message that got there
+  first is disclosed rather than rewritten.
+- The round-4 message says the new loop pins "all three units **and their recorded boot timestamps**".
+  Before round 4 it pinned presence only. Corrected above in the round-3 table.
+- The round-3 paragraph claimed the mainland swap and `installed_sha` zeroing were "all KILLED". True of
+  one-sided edits only; corrected above rather than left standing.
+- `state.json`'s `implementing → reviewing` entry carries `2026-09-17T02:20:00+00:00`, which was
+  **written by hand** and lands four minutes after the commit's own author date (`02:16:44+00:00`). A
+  guessed timestamp in a ledger is a defect in the ledger; the entry stays because history is
+  append-only, and every transition from here is stamped from `date -u`.
+- Round 4's F5 disposition, and round 5's "it only seeds `route_id`", were both wrong as written and are
+  corrected here rather than quietly amended inside the reports that contain them.

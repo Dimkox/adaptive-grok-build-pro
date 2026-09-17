@@ -10,6 +10,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+_FACTORY_SRC = str(ROOT / "factory" / "src")
+if _FACTORY_SRC not in sys.path:
+    sys.path.insert(0, _FACTORY_SRC)
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
@@ -798,12 +801,22 @@ class ProjectStateTests(unittest.TestCase):
         for key in ("unit", "selected_profile", "model", "installed_sha", "live_enabled"):
             with self.subTest(key=key):
                 self.assertEqual(omni[key], dossier_omni[key])
+        # Agreement is not identity: both files can be rewritten together. These are the literals the
+        # record is about - the international profile (the mainland one carries the same model id, so
+        # the model-vs-code check above cannot tell them apart) and the exact release source the unit
+        # booted, which is the same SHA the release-bound main observation names.
+        self.assertEqual(omni["selected_profile"], "qwen-omni-intl")
+        self.assertEqual(omni["installed_sha"], state["observed_main_sha"])
+        self.assertEqual(omni["installed_sha"], evidence["source_base"])
         # The pilot record is corroborated by the unit's own landing-state row, so the recorded job,
         # state, revision and completion instant are re-derivable and not just a quoted string.
         pilot = dossier_omni["pilot"]
         row = pilot["db_row"]
         self.assertEqual(pilot["job_id"], row["job_id"])
         self.assertEqual(pilot["state"], row["state"])
+        # The pair agrees by construction (the row is read from the same place), so the value itself
+        # has to be pinned: "reached artifact_ready" is the claim AC-003 offers as end-to-end proof.
+        self.assertEqual(pilot["state"], "artifact_ready")
         self.assertEqual(3, row["revision"])
         self.assertEqual("2026-09-17T00:21:16.151094Z", row["updated_at"])
         self.assertTrue(row["updated_at"].endswith("Z"))
@@ -813,17 +826,24 @@ class ProjectStateTests(unittest.TestCase):
         self.assertNotEqual(omni["acceptance"]["job_id"], pilot["job_id"])
         self.assertNotEqual(omni["acceptance"]["usage_input_units"], row["usage_input_units"])
         self.assertLess(row["updated_at"][:19], pilot["observed_at"][:19])
+        # An observation stamp also has to be plausible in time: it cannot precede the facts it claims
+        # to have observed. Both sides are compared at the same precision.
+        self.assertGreaterEqual(runtime["observed_at"][:19], omni["active_enter_timestamp"][:19])
+        self.assertGreaterEqual(runtime["observed_at"][:19], row["updated_at"][:19])
+        self.assertGreaterEqual(runtime["observed_at"][:19], pilot["observed_at"][:19])
         # Both files record the same activation probe, so every leaf must agree; only the health
         # capture exists on the dossier side. A divergence here would mean one file describes an
         # event the other never observed.
         self.assertEqual(omni["acceptance"],
                          {k: v for k, v in dossier_omni["activation"].items() if k != "endpoint_health"})
-        # Two files agreeing is not the same as being true: a relabelled probe would satisfy the
-        # equality above. The activation produced no artifact, so a terminal landing state here would
-        # be the promotion this wave exists to refuse - `limits[]` says so in prose, and prose is
-        # outside every gate. Vocabulary comes from the shipped state machine, not from a test-local set.
-        from adaptive_factory.landing_failover_contracts import TERMINAL_STATES
-        self.assertNotIn(omni["acceptance"]["state"], TERMINAL_STATES)
+        # Two files agreeing is not the same as being true, and a five-word blacklist of another
+        # machine's terminal states would catch only five spellings of a lie. The recorded value is an
+        # observation category (`landing_observation.CATEGORIES`), so pin it to that vocabulary and to
+        # the one value the activation actually produced: no artifact, no promotion.
+        from adaptive_factory.landing_observation import CATEGORIES
+        self.assertIn(omni["acceptance"]["state"], CATEGORIES)
+        self.assertEqual(omni["acceptance"]["state"], "normalized")
+        self.assertIsNone(omni["acceptance"]["live_url"])
         primary = runtime["services"]["primary"]
         self.assertEqual(Path(primary["control_repository"]).parent.name, primary["installed_sha"])
         self.assertEqual(state["l5_production_preparation"]["selected_profile"], primary["selected_profile"])
@@ -846,9 +866,6 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
-        factory_src = str(ROOT / "factory" / "src")
-        if factory_src not in sys.path:
-            sys.path.insert(0, factory_src)
         from adaptive_factory.models import TaskStatus
 
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")

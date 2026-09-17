@@ -38,7 +38,7 @@
     },
     {
       "id": "AC-003",
-      "statement": "The dossier records the activation path verbatim: the three-unit systemctl capture (Id/ActiveState/UnitFileState/MainPID/NRestarts/Result/ExecMainStatus/ExecMainStartTimestamp/ActiveEnterTimestamp/Restart for each unit), the failed first start (validate_source git_command on the root-owned .git/index), the shared-source chown repair with timestamps, the clean start, and the first end-to-end pilot job reaching artifact_ready; every field is an allowlisted observation fact, no credential or configuration value appears.",
+      "statement": "The dossier records the activation path verbatim: the three-unit systemctl capture (Id/ActiveState/UnitFileState/MainPID/NRestarts/Result/ExecMainStatus/ExecMainStartTimestamp/ActiveEnterTimestamp/Restart for each unit), the failed first start (validate_source git_command on the root-owned .git/index), the shared-source chown repair with timestamps, the clean start, and the first end-to-end pilot job reaching artifact_ready; every field is an allowlisted observation fact, no credential or configuration value appears. `NRestarts` is carried because the capture is verbatim and is not a stability signal: every unit sets `Restart=no`, so the counter cannot be non-zero — the same statement SIG-001, `README.md` and `START_HERE.md` make.",
       "evidence": [
         {
           "receipt": "code_review"
