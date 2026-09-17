@@ -818,6 +818,12 @@ class ProjectStateTests(unittest.TestCase):
         # event the other never observed.
         self.assertEqual(omni["acceptance"],
                          {k: v for k, v in dossier_omni["activation"].items() if k != "endpoint_health"})
+        # Two files agreeing is not the same as being true: a relabelled probe would satisfy the
+        # equality above. The activation produced no artifact, so a terminal landing state here would
+        # be the promotion this wave exists to refuse - `limits[]` says so in prose, and prose is
+        # outside every gate. Vocabulary comes from the shipped state machine, not from a test-local set.
+        from adaptive_factory.landing_failover_contracts import TERMINAL_STATES
+        self.assertNotIn(omni["acceptance"]["state"], TERMINAL_STATES)
         primary = runtime["services"]["primary"]
         self.assertEqual(Path(primary["control_repository"]).parent.name, primary["installed_sha"])
         self.assertEqual(state["l5_production_preparation"]["selected_profile"], primary["selected_profile"])
