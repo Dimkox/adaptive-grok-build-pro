@@ -31,11 +31,17 @@
       "from": "implementing",
       "reason": "round 1 closed 10 carried-forward claims; re-review FAILed the residue (7/8/9 open, 4/6 partly, N1 introduced by round 1) and this round closes it on live re-captures: verbatim 10-field three-unit systemctl block, production_verified:false recorded, active_enter_timestamp on all three services, observed_at aligned, README/START_HERE reconciled, SIG-001/AC-003 re-grounded, third-unit pin added to test_project_state (15 OK)",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-09-17T04:09:07+00:00",
+      "from": "reviewing",
+      "reason": "round 3 on 3c379ca returned code review FAIL (F1-F6) and test review PASS with contingencies; F1/F2/F3/F6 and the reviewer's own db_row SQL catch are closed in this commit, F4/F5 are disclosed with measurements rather than fixed, and the previously deferred omni state<->dossier equality landed here (identity leaves, activation leaves, probe!=pilot, pilot vs its db_row: revision 3, 2026-09-17T00:21:16.151094Z, usage 813/364). Re-verifying on the new head; round-4 review of this delta is required before receipts, because the round-3 reviewers saw 3c379ca only",
+      "to": "verifying"
     }
   ],
   "route_id": "9d1695f3c1d4",
   "schema_version": 1,
-  "status": "reviewing",
+  "status": "verifying",
   "title": "Record the qwen omni intl executor activation as a runtime observation on the claw host closes issue 86",
-  "updated_at": "2026-09-17T02:20:00+00:00"
+  "updated_at": "2026-09-17T04:09:07+00:00"
 }

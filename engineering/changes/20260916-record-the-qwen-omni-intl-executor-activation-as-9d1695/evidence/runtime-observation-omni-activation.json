@@ -78,10 +78,19 @@
     "model": "qwen3.5-omni-plus-2026-03-15",
     "n_restarts": 0,
     "pilot": {
+      "db_row": {
+        "job_id": "b20ffd38-e633-45f4-ad39-618bcfde738c",
+        "revision": 3,
+        "source": "the unit's own landing-state DB, opened read-only (mode=ro): select job_id, state, revision, updated_at, json_extract(observation_json,'$.usage_input_units'), json_extract(observation_json,'$.usage_output_units') from landing_jobs - one row in the table; usage is stored inside observation_json, not as a column, so it is extracted in the query; values verbatim as sqlite returned them",
+        "state": "artifact_ready",
+        "updated_at": "2026-09-17T00:21:16.151094Z",
+        "usage_input_units": 813,
+        "usage_output_units": 364
+      },
       "input_digest": "cad56558adf50e1c61e431f5b8d391b911e92f65f5406447d5337082937a1aef",
       "input_media": "image/png",
       "job_id": "b20ffd38-e633-45f4-ad39-618bcfde738c",
-      "note": "First end-to-end landing task through the omni unit: real image submitted to /v1/landing-inputs against the approved source identity fde60e04.../21817e70..., job reached artifact_ready. This is the run, not yet a maintainer acceptance; the qualification flag stays false until the operator says so.",
+      "note": "First end-to-end landing task through the omni unit: real image submitted to /v1/landing-inputs against the approved source identity fde60e04.../21817e70..., job reached artifact_ready. This is the run, not yet a maintainer acceptance; the qualification flag stays false until the operator says so. omni.activation is the earlier activation probe (job omni-activate-20260916-e7d0f72b, usage 769/191); this block is the end-to-end job (usage 813/364 per db_row), so the two records are distinct events, not one copied from the other.",
       "observed_at": "2026-09-17T00:30:23Z",
       "state": "artifact_ready"
     },
@@ -128,11 +137,11 @@
       107,
       108
     ],
+    "merged_source_not_installed_scope": "The key is scoped to the two units in merged_source_not_installed_units only: these six PRs ARE installed in adaptive-l5-omni.service (boot commit e7d0f72b = v2.0.18). Read key + array together with this field; the key name is inherited from the post-94/post-99/post-108 dossiers and is kept so cross-dossier leaf diffs still line up.",
     "merged_source_not_installed_units": [
       "adaptive-l5.service",
       "adaptive-l5-grok.service"
     ],
-    "merged_source_not_installed_scope": "The key is scoped to the two units in merged_source_not_installed_units only: these six PRs ARE installed in adaptive-l5-omni.service (boot commit e7d0f72b = v2.0.18). Read key + array together with this field; the key name is inherited from the post-94/post-99/post-108 dossiers and is kept so cross-dossier leaf diffs still line up.",
     "note": "PRs #101/#102/#105/#106 and the release chain #107/#108 are ALL contained in the omni unit's boot commit e7d0f72b (v2.0.18): the omni executor runs that tagged source. Primary (5f6f6ce1...) and grok (61a05da2...) were NOT reinstalled or restarted and keep their pre-#93 SHAs; further installs or restarts remain separate operational actions requiring their own exact authority.",
     "omni_executor_activated": {
       "control_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",

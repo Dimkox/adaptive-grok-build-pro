@@ -49,10 +49,13 @@
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "Only the records surface changes: PROJECT_STATE.runtime_observations (observed_at, evidence, services), the new dossier, the bootstrap surfaces that describe the same unit set (README.md, START_HERE.md), this package, and one added assertion in tests/test_project_state.py pinning the third unit inside the recorded capture; no product code, contract, rules, release identity or qualification flag is touched.",
+      "statement": "Only the records surface changes: PROJECT_STATE top-level/runtime observation stamps and runtime_observations.services, the new dossier, the bootstrap surfaces that describe the same unit set (README.md, START_HERE.md), this package, and the added pins in tests/test_project_state.py that bind each recorded service to its own block of the captured systemctl output and the omni leaves to their dossier evidence; no product code, contract, rules, release identity or qualification flag is touched.",
       "evidence": [
         {
           "test": "tests/test_structure.py"
+        },
+        {
+          "receipt": "code_review"
         }
       ]
     },
