@@ -1,0 +1,53 @@
+{
+  "change_id": "20260917-fix-trust-ci-a-killed-mandatory-job-command-must-688330",
+  "created_at": "2026-09-17T03:39:01+00:00",
+  "history": [
+    {
+      "at": "2026-09-17T03:39:01+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-17T04:18:50+00:00",
+      "from": "draft",
+      "reason": "typed AC-001..AC-006 + INV/FORBID written and validated (grok_spec validate ok:true); scope is trust-ci source only, no SQL file touched (git diff --name-only 2f66ba6 -- '*.sql' is empty). Correction after review F1: the wording first filed here as 'migrations 001-018 frozen and untouched' misnamed trust-ci/sql/, which holds 3 files, while the 001-018 numbering is the factory resource migration set (it reaches 020)",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-17T04:18:50+00:00",
+      "from": "scoped",
+      "reason": "no named human gate on this route (bugfix, standard/medium); source-only delivery: deployed Trust CI service and the stored PR #102 job are explicitly out of reach and disclosed",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-17T04:18:50+00:00",
+      "from": "approved",
+      "reason": "classify_command_abort/CommandAbort in sandbox.py, terminal failure_code derivation in runner.py incl. attestation replay, api.py +1; 20 tests added across test_ops/test_runner/test_api",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-17T04:18:50+00:00",
+      "from": "implementing",
+      "reason": "root suite 759 OK (skipped=1) twice on this tree; focused trust-ci suites green; awaiting independent review reports and the fingerprint-bound gate",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-17T05:59:00+00:00",
+      "from": "verifying",
+      "reason": "implementation and focused verification complete on the final bytes; independent reviews running (code_review r1/r2 PASS, test_review r1 FAIL->closed, r2 cancelled by the coordinator, r3 narrow)",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-17T05:59:00+00:00",
+      "from": "reviewing",
+      "reason": "all review findings dispositioned in evidence/review-response.md; r3 T-1 (a false line-count in tasks.md) applied by the coordinator and re-verified by grep; trust-ci 269 OK (skipped=10), focused 87 OK, root 759 OK, ruff clean, typed gate ok:true; source-only delivery: deployed Trust CI service and the PR #102 stored row untouched",
+      "to": "ready"
+    }
+  ],
+  "route_id": "68833064bec9",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "fix(trust-ci): a killed mandatory job command must be recorded as interrupted, not verification-failed (#103)",
+  "updated_at": "2026-09-17T05:59:00+00:00"
+}

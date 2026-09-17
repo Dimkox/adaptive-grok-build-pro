@@ -14,17 +14,25 @@ from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
 from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, AttestationPayload, Checkout, CommandResult, JobRequest
 from adaptive_trust_ci.policy import Policy, PolicyCatalog
-from adaptive_trust_ci.runner import JobRunner, SpecMetadataError, extract_spec_metadata
+from adaptive_trust_ci.runner import (
+    JobRunner,
+    SpecMetadataError,
+    _attested_command_abort,
+    _terminal_failure_code,
+    extract_spec_metadata,
+)
+from adaptive_trust_ci.sandbox import classify_command_abort
 from adaptive_trust_ci.signing import Signer, sign_approval, sign_attestation, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
 from adaptive_trust_ci.workspace import GitWorkspace, WorkspaceMutationError
 
 
 class FakeGitHub:
-    def __init__(self, *, fail_success_once: bool = False) -> None:
+    def __init__(self, *, fail_success_once: bool = False, fail_once_for: str | None = None) -> None:
         self.ensured = []
         self.completed = []
         self.fail_success_once = fail_success_once
+        self.fail_once_for = fail_once_for
 
     def ensure_check_run(self, repository, sha_value, **kwargs):
         self.ensured.append((repository, sha_value, kwargs))
@@ -32,6 +40,9 @@ class FakeGitHub:
 
     def complete_check_run(self, repository, check_run_id, **kwargs):
         self.completed.append((repository, check_run_id, kwargs))
+        if kwargs['conclusion'] == self.fail_once_for:
+            self.fail_once_for = None
+            raise RuntimeError('GitHub unavailable')
         if kwargs['conclusion'] == 'success' and self.fail_success_once:
             self.fail_success_once = False
             raise RuntimeError('GitHub unavailable')
@@ -98,6 +109,19 @@ def result(name: str, status: str = 'pass') -> CommandResult:
         stdout_tail='ok' if status == 'pass' else '',
         stderr_tail='' if status == 'pass' else 'failed',
         output_sha256=hashlib.sha256(f'{name}:{status}'.encode()).hexdigest(),
+    )
+
+
+def killed(name: str, exit_code: int, stderr_tail: str = '') -> CommandResult:
+    """A mandatory command whose process died from an outside signal or the sandbox deadline."""
+    return CommandResult(
+        name=name,
+        status='fail',
+        exit_code=exit_code,
+        duration_seconds=0.1,
+        stdout_tail='',
+        stderr_tail=stderr_tail,
+        output_sha256=hashlib.sha256(f'{name}:{exit_code}'.encode()).hexdigest(),
     )
 
 
@@ -645,6 +669,200 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(len(executor.calls), 1)
         self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
 
+    def test_control_genuine_verification_failure_keeps_its_failure_code(self) -> None:
+        """The contradictory control for #103: exit 1 must stay verification-failed."""
+        github = FakeGitHub()
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[result('external-holdout'), result('unit', 'fail'), result('compile')],
+            github=github,
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.status, 'failed')
+        self.assertEqual(job.failure_code, 'verification-failed')
+        self.assertNotIn('abort', job.result)
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
+        self.assertNotIn('aborted', github.completed[-1][2]['title'])
+
+    def test_passed_job_records_no_failure_code_at_all(self) -> None:
+        """A passed run must never carry a cause, on either side of the derivation (G-2)."""
+        self.assertIsNone(_terminal_failure_code('passed', None))
+        self.assertIsNone(_terminal_failure_code('passed', classify_command_abort(name='unit', exit_code=137)))
+        self.assertEqual(_terminal_failure_code('failed', None), 'verification-failed')
+        self.assertEqual(
+            _terminal_failure_code('failed', classify_command_abort(name='unit', exit_code=137)),
+            'aborted-by-signal',
+        )
+        github = FakeGitHub()
+        runner, _, _, _ = self.build_runner(changed_files=['docs/x.md'], github=github)
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'passed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.status, 'passed')
+        self.assertIsNone(job.failure_code)
+        self.assertNotIn('abort', job.result)
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'success')
+
+    def test_malformed_exit_codes_are_never_aborts(self) -> None:
+        """Signed attestation rows are recovered JSON: no type may raise or invent a signal (G-1)."""
+        for exit_code in (None, '137', True, False, 137.0):
+            with self.subTest(exit_code=repr(exit_code)):
+                self.assertIsNone(
+                    _attested_command_abort(
+                        [{'name': 'unit', 'status': 'fail', 'exit_code': exit_code}]
+                    )
+                )
+        # A malformed row must not blind the loop to a real kill in the same attestation.
+        abort = _attested_command_abort(
+            [
+                {'name': 'typed-spec-metadata', 'status': 'fail', 'exit_code': None},
+                {'name': 'unit', 'status': 'pass', 'exit_code': 'garbage'},
+                {'name': 'compile', 'status': 'fail', 'exit_code': 137},
+            ]
+        )
+        assert abort is not None
+        self.assertEqual((abort.command, abort.signal, abort.exit_code), ('compile', 'SIGKILL', 137))
+        self.assertIsNone(_attested_command_abort([]))
+
+    def test_command_killed_by_external_sigkill_is_not_verification_failed(self) -> None:
+        """Characterization of #103: exit 128+SIGKILL must be distinguishable in the durable record."""
+        github = FakeGitHub()
+        runner, executor, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[result('external-holdout'), killed('unit', 137), result('compile')],
+            github=github,
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(len(executor.calls), 2)
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.status, 'failed')
+        self.assertNotEqual(job.failure_code, 'verification-failed')
+        self.assertEqual(job.failure_code, 'aborted-by-signal')
+        self.assertEqual(
+            job.result['abort'],
+            {
+                'kind': 'signal',
+                'command': 'unit',
+                'exit_code': 137,
+                'signal': 'SIGKILL',
+                'signal_number': 9,
+                'failure_code': 'aborted-by-signal',
+            },
+        )
+        completed = github.completed[-1][2]
+        self.assertEqual(completed['conclusion'], 'failure')
+        self.assertIn('aborted', completed['title'])
+        self.assertIn('SIGKILL', completed['title'])
+        self.assertIn('SIGKILL', completed['summary'])
+        self.assertIn('unit', completed['summary'])
+        stored = self.store.get_attestation(self.job.job_id)
+        assert stored is not None
+        payload = verify_attestation(stored, self.signer.public_key_pem())
+        self.assertEqual(payload.status, 'failed')
+        self.assertEqual(
+            [item['exit_code'] for item in payload.command_results],
+            [0, 0, 137],
+        )
+
+    def test_command_killed_by_external_sigterm_is_recorded_as_interrupted(self) -> None:
+        github = FakeGitHub()
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[result('external-holdout'), killed('unit', 143), result('compile')],
+            github=github,
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.failure_code, 'aborted-by-signal')
+        self.assertEqual(job.result['abort']['signal'], 'SIGTERM')
+        self.assertEqual(job.result['abort']['signal_number'], 15)
+        self.assertIn('SIGTERM', github.completed[-1][2]['title'])
+
+    def test_negative_client_return_code_is_recorded_as_interrupted(self) -> None:
+        """The host-side variant: the container client process itself was signalled."""
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[result('external-holdout'), killed('unit', -9), result('compile')],
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.failure_code, 'aborted-by-signal')
+        self.assertEqual(job.result['abort']['signal'], 'SIGKILL')
+        self.assertEqual(job.result['abort']['exit_code'], -9)
+
+    def test_holdout_command_kill_is_recorded_as_interrupted(self) -> None:
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[killed('external-holdout', 137), result('unit'), result('compile')],
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.failure_code, 'aborted-by-signal')
+        self.assertEqual(job.result['abort']['command'], 'external-holdout')
+
+    def test_sandbox_deadline_is_a_distinct_interrupted_class(self) -> None:
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[
+                result('external-holdout'),
+                killed('unit', 124, 'command timed out after 120s'),
+                result('compile'),
+            ],
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.failure_code, 'aborted-by-timeout')
+        self.assertEqual(job.result['abort']['kind'], 'timeout')
+        self.assertIsNone(job.result['abort']['signal'])
+        self.assertIn('timeout', str(job.result['abort']).lower())
+
+    def test_source_integrity_failure_is_not_reported_as_an_abort(self) -> None:
+        """Exit 97 is synthetic and must not be misread as a killed process."""
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            mutate_on=['external-holdout'],
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(self.store.get_job(self.job.job_id).failure_code, 'verification-failed')
+
+    def test_replayed_abort_attestation_keeps_the_interrupted_failure_code(self) -> None:
+        """A re-claim of a recorded abort must not silently rewrite it as verification-failed."""
+        runner, _, _, _ = self.build_runner(
+            changed_files=['docs/x.md'],
+            results=[result('external-holdout'), killed('unit', 137), result('compile')],
+            github=FakeGitHub(fail_once_for='failure'),
+        )
+        with self.assertRaisesRegex(RuntimeError, 'GitHub unavailable'):
+            runner.process(self.job, 'worker-1')
+        self.assertIsNotNone(self.store.get_attestation(self.job.job_id))
+        self.store.retry(self.job.job_id, 'worker-1', 'GitHub unavailable', now=now())
+        reclaimed = self.store.claim('worker-2', self.policy.lease_seconds, now=now())
+        assert reclaimed is not None
+        second_github = FakeGitHub()
+        replay_runner, replay_executor, workspaces, _tokens = self.build_runner(
+            changed_files=['should-not-checkout'],
+            results=[],
+            github=second_github,
+        )
+        outcome = replay_runner.process(reclaimed, 'worker-2')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(replay_executor.calls, [])
+        self.assertEqual(workspaces, [])
+        job = self.store.get_job(self.job.job_id)
+        self.assertEqual(job.status, 'failed')
+        self.assertEqual(job.failure_code, 'aborted-by-signal')
+        self.assertEqual(job.result['abort']['signal'], 'SIGKILL')
+        self.assertTrue(job.result['replayed'])
+        self.assertEqual(second_github.completed[-1][2]['conclusion'], 'failure')
+
     def test_successful_command_that_mutates_checkout_fails_pipeline(self) -> None:
         runner, executor, _, _ = self.build_runner(
             changed_files=['docs/x.md'],
@@ -699,6 +917,11 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(tokens, [])
         self.assertEqual(second_github.completed[-1][2]['conclusion'], 'success')
         self.assertIn('replayed', second_github.completed[-1][2]['summary'])
+        replayed_job = self.store.get_job(self.job.job_id)
+        self.assertEqual(replayed_job.status, 'passed')
+        self.assertIsNone(replayed_job.failure_code)
+        self.assertNotIn('abort', replayed_job.result)
+        self.assertTrue(replayed_job.result['replayed'])
 
     def test_catalog_old_job_replay_keeps_old_epoch_and_does_not_reexecute_after_profile_change(self) -> None:
         common = policy_data()

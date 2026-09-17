@@ -4,15 +4,99 @@ import hashlib
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .models import CommandResult
 from .policy import CommandSpec, SandboxSpec
+
+
+_SANDBOX_TIMEOUT_EXIT_CODE = 124
+_SIGNAL_BASE = 128
+# The highest representable signal on the Linux CI host (SIGRTMAX); anything above is not a signal death.
+_MAX_SIGNAL_NUMBER = 64
+_SANDBOX_TIMEOUT_MARKER_RE = re.compile(r'command timed out after [0-9.]+s\s*\Z')
+
+
+@dataclass(frozen=True)
+class CommandAbort:
+    """A mandatory command whose process died before it could render a verification verdict."""
+
+    kind: str
+    command: str
+    exit_code: int
+    signal_number: int | None
+
+    @property
+    def signal(self) -> str | None:
+        if self.signal_number is None:
+            return None
+        try:
+            return signal.Signals(self.signal_number).name
+        except ValueError:
+            return f'SIG{self.signal_number}'
+
+    @property
+    def failure_code(self) -> str:
+        return 'aborted-by-signal' if self.kind == 'signal' else 'aborted-by-timeout'
+
+    def detail(self) -> str:
+        if self.kind == 'signal':
+            return f'aborted: {self.signal} terminated {self.command} (exit {self.exit_code})'
+        return f'aborted: {self.command} reached the sandbox deadline (exit {self.exit_code})'
+
+    def to_result(self) -> dict[str, Any]:
+        return {
+            'kind': self.kind,
+            'command': self.command,
+            'exit_code': self.exit_code,
+            'signal': self.signal,
+            'signal_number': self.signal_number,
+            'failure_code': self.failure_code,
+        }
+
+
+def classify_command_abort(
+    *,
+    name: str,
+    exit_code: Any,
+    stderr_tail: Any = '',
+) -> CommandAbort | None:
+    """Interpret the exit status the container client reported for one mandatory command.
+
+    This is the counterpart of the conventions minted in :meth:`ContainerExecutor.run`, so they live
+    together: exit ``128 + n`` is the shell/docker rendering of death by signal ``n``, a negative value
+    is ``subprocess`` reporting the same for the client process itself, and ``124`` is this sandbox's own
+    deadline. An aborted command measured nothing, so it must not be stored as a verification verdict
+    (issue #103). ``124`` is claimed only when the timeout marker this sandbox appends to stderr is
+    present, because a command may legitimately exit ``124`` on its own; signal death needs no corroboration.
+
+    Total by construction on both inputs, because callers recover them from stored JSON: anything that is not
+    a plain integer ``exit_code`` (null, a string, a float, a bool) is not an exit status and yields no claim
+    rather than raising or minting a fractional signal number, and a ``stderr_tail`` that is not a string
+    simply carries no corroboration — so a timeout is not claimed, while a signal kill is still reported from
+    the exit status alone.
+    """
+    if isinstance(exit_code, bool) or not isinstance(exit_code, int):
+        return None
+    tail = stderr_tail if isinstance(stderr_tail, str) else ''
+    if exit_code < 0:
+        signal_number = -exit_code
+    elif _SIGNAL_BASE < exit_code <= _SIGNAL_BASE + _MAX_SIGNAL_NUMBER:
+        signal_number = exit_code - _SIGNAL_BASE
+    else:
+        signal_number = 0
+    if 0 < signal_number <= _MAX_SIGNAL_NUMBER:
+        return CommandAbort(kind='signal', command=name, exit_code=exit_code, signal_number=signal_number)
+    if exit_code == _SANDBOX_TIMEOUT_EXIT_CODE and _SANDBOX_TIMEOUT_MARKER_RE.search(tail):
+        return CommandAbort(kind='timeout', command=name, exit_code=exit_code, signal_number=None)
+    return None
 
 
 @dataclass
