@@ -717,3 +717,11 @@ semantics change smuggled into feature work defeats its purpose), the PR files i
 options (reviewed comparator extension vs v2 coexistence), reverts the enum edit, and pins the strongest
 surviving invariant: declared entries byte-equal to table facts, and every undeclared profile forced to a
 declared sibling's exact key set and per-key JSON types.
+
+## 2026-09-17 — Re-derive an issue's root cause from the code before scoping the fix
+
+Issue #109 asked for the platform gating that `_run_capped` supposedly had and `_stream_git_blob` lacked;
+the module never had any `os.name` dispatch, so implementing the request literally would have added a
+branch while leaving the real defect (untyped setup path, child stop only for named exceptions, unguarded
+close order) in place. The wave fixes what the code actually does and publishes the correction of the false
+sentence on the issue before merging, because the issue trail must match the shipped code.
