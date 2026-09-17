@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "change_id": "20260916-fix-blob-stream-platform-gating-and-guarantee-th-db46e7",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Close issue #109 (a real defect #101 shipped): _stream_git_blob leaked its git cat-file child on any exception the handlers do not name (the finally closed pipes but never stopped the process) and surfaced selector-setup failures as a raw traceback instead of the ArchitectureError(code=io) contract its sibling _run_capped already honors; _profile_worktree_blob's unguarded two-close finally could leak the directory fd behind a failing descriptor close. Fix: typed setup wrapper mirroring _run_capped, unconditional child-stop guard in the streaming finally (poll() is None -> _stop_process), nested guard on the worktree close pair, and three regression arms that fail on the pre-fix code, including a live sleep-child poll assertion. The issue text's own mistaken 'os.name dispatch' claim is publicly corrected on the issue before merging (verified: no platform branch exists in this module; the shared selector usage is the real gap).",
+    "success_metric": "tests.test_architecture_fitness 109 OK (three new arms red-then-green); full grok_verify --mode pr PASS; no orphan sleep/git children after the suite",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "verification",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Selector-creation/register failures inside _stream_git_blob raise ArchitectureError(code=io) whose message contains 'setup', and the spawned child is stopped (poll() not None) — proven by the BoomSelector arm with a real sleep child under fake Popen.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "ANY exception escaping the streaming loop (named or not — SelectBoom RuntimeError arm) still stops the child before propagation; named paths keep their existing typed/timeout semantics; success path unchanged (all oversized-binary streaming tests still green).",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "_profile_worktree_blob's finally guarantees the directory close even when the descriptor close raises (nested try/finally), proven by the spy-identified descriptor-failure arm asserting the directory fd was closed; the original OSError still surfaces.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The issue's mistaken platform-dispatch claim is corrected publicly with code evidence before merge; the shipped fix types+guarantees instead of inventing a windows streaming path.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No behavior change on success or on the previously-handled exception classes; _run_capped, _stop_process semantics, caps, deadlines and digest/binary logic untouched.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Swallowing exceptions to make cleanup 'succeed' (the stop guard must not mask the original error), and adding a platform dispatch that the module never had.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "After failure paths, every spawned child's poll() is terminal (asserted in-process)",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "change_id": "20260916-fix-blob-stream-platform-gating-and-guarantee-th-db46e7",
+  "created_at": "2026-09-16T23:58:14+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T23:58:14+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-17T00:08:03+00:00",
+      "from": "draft",
+      "reason": "red-then-green arms typed; spec mirrors _run_capped conventions",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-17T00:08:03+00:00",
+      "from": "scoped",
+      "reason": "fix scope verified against code (no platform dispatch invented; issue claim corrected publicly)",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-17T00:08:03+00:00",
+      "from": "approved",
+      "reason": "typed setup + terminal stop guard + nested close order with three regression arms, 109 module tests OK",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-17T02:10:00+00:00",
+      "from": "implementing",
+      "reason": "code review PASS (22f4926, tree identical to amended 8b4d82a) and test review PASS (executed red/green matrix, leak differentials); Finding 1 closed in-wave by pinning the literal setup-failed message (M4 now killed); final gate + receipts pending on this head",
+      "to": "reviewing"
+    }
+  ],
+  "route_id": "db46e7c782d5",
+  "schema_version": 1,
+  "status": "reviewing",
+  "title": "Fix blob stream platform gating and guarantee the git child is stopped on every exception closes issue 109",
+  "updated_at": "2026-09-17T02:10:00+00:00"
+}

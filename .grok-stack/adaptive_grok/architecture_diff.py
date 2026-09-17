@@ -480,8 +480,10 @@ def _profile_worktree_blob(root: Path, path: str) -> _BlobProfile | None:
     except OSError as exc:
         raise ArchitectureError(f"worktree file read failed: {path}: {exc}", code="io") from exc
     finally:
-        os.close(descriptor)
-        os.close(directory)
+        try:
+            os.close(descriptor)
+        finally:
+            os.close(directory)
     if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
         after.st_dev,
         after.st_ino,
@@ -521,10 +523,15 @@ def _stream_git_blob(root: Path, object_id: str, expected_size: int, path: str) 
     try:
         if process.stdout is None or process.stderr is None:
             raise ArchitectureError("streamed blob pipes are unavailable", code="io")
-        selector = selectors.DefaultSelector()
-        for stream in (process.stdout, process.stderr):
-            os.set_blocking(stream.fileno(), False)
-            selector.register(stream, selectors.EVENT_READ)
+        try:
+            selector = selectors.DefaultSelector()
+            for stream in (process.stdout, process.stderr):
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ)
+        except Exception as exc:
+            raise ArchitectureError(
+                f"streamed blob setup failed: {path}: {exc}", code="io"
+            ) from exc
         deadline = time.monotonic() + _GIT_TIMEOUT_SECONDS
         while selector.get_map():
             remaining = deadline - time.monotonic()
@@ -561,6 +568,8 @@ def _stream_git_blob(root: Path, object_id: str, expected_size: int, path: str) 
         for stream in (process.stdout, process.stderr):
             if stream is not None and not stream.closed:
                 stream.close()
+        if process.poll() is None:
+            _stop_process(process)
     if returncode:
         detail = bytes(stderr).decode("utf-8", "replace").strip()
         raise ArchitectureError(

@@ -2631,6 +2631,112 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(DIFF.MAX_DIFF_ARTIFACT_BYTES, 50_000_000)
         self.assertLess(DIFF.BLOB_STREAM_CHUNK_BYTES, DIFF.MAX_ANALYZED_FILE_BYTES)
 
+    def test_stream_git_blob_setup_failure_is_typed_and_stops_child(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        blob = b"\0" + b"z" * 4096
+        repo.write_bytes("packages/stoppable.bin", blob)
+        head = repo.commit("stream-stop target")
+        oid = subprocess.run(
+            ["git", "-C", str(repo.root), "rev-parse", f"{head}:packages/stoppable.bin"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        real_popen = subprocess.Popen
+        spawned: list = []
+
+        def fake_popen(args, **kwargs):
+            proc = real_popen(["sleep", "120"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              start_new_session=True)
+            spawned.append(proc)
+            return proc
+
+        class BoomSelector:
+            def __init__(self, *args, **kwargs):
+                raise RuntimeError("simulated selector setup failure")
+
+        with patch.object(DIFF.subprocess, "Popen", fake_popen), \
+             patch.object(DIFF.selectors, "DefaultSelector", BoomSelector):
+            with self.assertRaises(ARCHITECTURE.ArchitectureError) as raised:
+                DIFF._stream_git_blob(repo.root, oid, len(blob), "packages/stoppable.bin")
+        self.assertEqual(raised.exception.code, "io")
+        self.assertIn("streamed blob setup failed", str(raised.exception))
+        self.assertEqual(len(spawned), 1)
+        self.assertIsNotNone(spawned[0].poll(), "git cat-file child survived a setup failure")
+        for stream in (spawned[0].stdout, spawned[0].stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
+
+    def test_stream_git_blob_stops_child_on_unnamed_exception(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        blob = b"\0" + b"w" * 2048
+        repo.write_bytes("packages/midstream.bin", blob)
+        head = repo.commit("mid-stream target")
+        oid = subprocess.run(
+            ["git", "-C", str(repo.root), "rev-parse", f"{head}:packages/midstream.bin"],
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        real_popen = subprocess.Popen
+        spawned: list = []
+
+        def fake_popen(args, **kwargs):
+            proc = real_popen(["sleep", "120"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              start_new_session=True)
+            spawned.append(proc)
+            return proc
+
+        class SelectBoom:
+            def register(self, *args, **kwargs):
+                return None
+            def select(self, timeout):
+                raise RuntimeError("simulated unnamed mid-loop failure")
+            def get_map(self):
+                return {"open": None}
+            def unregister(self, fileobj):
+                return None
+            def close(self):
+                return None
+
+        with patch.object(DIFF.subprocess, "Popen", fake_popen), \
+             patch.object(DIFF.selectors, "DefaultSelector", SelectBoom):
+            with self.assertRaises(RuntimeError):
+                DIFF._stream_git_blob(repo.root, oid, len(blob), "packages/midstream.bin")
+        self.assertEqual(len(spawned), 1)
+        self.assertIsNotNone(spawned[0].poll(), "child survived an exception the handlers do not name")
+        for stream in (spawned[0].stdout, spawned[0].stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
+
+    def test_profile_worktree_blob_closes_directory_when_descriptor_close_fails(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        repo.write_bytes("packages/small.bin", b"abc\n")
+        repo.commit("small file")
+        real_open = DIFF._open_worktree_file
+        real_close = DIFF.os.close
+        captured: dict = {}
+
+        def spy(root_, parts, **kwargs):
+            directory, descriptor = real_open(root_, parts, **kwargs)
+            captured["directory"], captured["descriptor"] = directory, descriptor
+            return directory, descriptor
+
+        closed: list[int] = []
+
+        def flaky_close(fd: int) -> None:
+            if captured.get("descriptor") is not None and fd == captured["descriptor"]:
+                closed.append(fd)
+                raise OSError("simulated descriptor-close failure")
+            closed.append(fd)
+            real_close(fd)
+
+        with patch.object(DIFF, "_open_worktree_file", side_effect=spy), \
+             patch.object(DIFF.os, "close", side_effect=flaky_close):
+            with self.assertRaises(OSError):
+                DIFF._profile_worktree_blob(repo.root, "packages/small.bin")
+        self.assertIn(captured["directory"], closed, "directory fd leaked behind a failing descriptor close")
+        real_close(captured["descriptor"])
+
     def test_oversized_binary_marker_is_found_anywhere_in_the_stream(self) -> None:
         repo = GitArchitectureRepo(self)
         repo.model(_system(), _rules())
