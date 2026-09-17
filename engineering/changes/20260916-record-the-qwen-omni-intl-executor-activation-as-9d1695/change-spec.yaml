@@ -1,0 +1,115 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "runtime_observations gains services.omni (unit, installed_sha=e7d0f72b..., active/enabled, selected_profile=qwen-omni-intl with model matching HTTP_PROFILES, live_enabled=true, activation facts with http 200 and token usage and live_url null), and the evidence pointer moves to the new dossier whose source_base equals observed_main_sha; test_runtime_observations stays green."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Nothing is promoted by this record: the six operational_qualification flags and local_candidate.operational_activation remain false, published_release and prior lists byte-unchanged, source_defaults/template/FactorySettings live-disabled untouched."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "The dossier records the activation path verbatim: the three-unit systemctl capture (Id/ActiveState/UnitFileState/MainPID/NRestarts/Result/ExecMainStatus/ExecMainStartTimestamp/ActiveEnterTimestamp/Restart for each unit), the failed first start (validate_source git_command on the root-owned .git/index), the shared-source chown repair with timestamps, the clean start, and the first end-to-end pilot job reaching artifact_ready; every field is an allowlisted observation fact, no credential or configuration value appears. `NRestarts` is carried because the capture is verbatim and is not a stability signal: every unit sets `Restart=no`, so the counter cannot be non-zero — the same statement SIG-001, `README.md` and `START_HERE.md` make."
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  },
+  "change_id": "20260916-record-the-qwen-omni-intl-executor-activation-as-9d1695",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Reading any credential value into the repo: the record carries digests, counters and public endpoints only."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Presenting the activation as pilot acceptance, M8 cohort/activation, M9 qualification or release operational_activation."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "Only the records surface changes: PROJECT_STATE top-level/runtime observation stamps and runtime_observations.services, the new dossier, the bootstrap surfaces that describe the same unit set (README.md, START_HERE.md), this package, and the added pins in tests/test_project_state.py that bind each recorded service to its own block of the captured systemctl output and the omni leaves to their dossier evidence; no product code, contract, rules, release identity or qualification flag is touched."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The two pre-existing executor units on claw were not restarted, re-pointed or modified by the activation being recorded; their observation entries stay byte-identical except what a re-observation proves equal."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Record the live qwen-omni-intl executor activation on claw without promoting any qualification: a third runtime_observations service (adaptive-l5-omni.service) backed by a new observation dossier proves the unit is active/enabled on the tagged v2.0.18 release e7d0f72b with host-level live_enabled=true and one real DashScope-intl HTTP 200 (state=normalized, usage 769/191, profile_digest 4cc85b8a...), while all six operational_qualification flags, local_candidate.operational_activation, observed_main_sha and published_release stay deliberately unchanged. The record also discloses the root-owned .git/index incident and its repair: chown -R on the SHARED landing source, which closes the hazard for all three current units.",
+    "success_metric": "tests.test_project_state green with three services; evidence source_base still equals observed_main_sha; no credential value in the diff; full grok_verify --mode pr PASS",
+    "target": "main"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "three-unit systemctl show block captured verbatim over ten properties (Id/ActiveState/UnitFileState/MainPID/NRestarts/Result/ExecMainStatus/ExecMainStartTimestamp/ActiveEnterTimestamp/Restart) and byte-equal to the live host; each unit active+enabled with Result=success, ExecMainStatus=0 and one start; omni socket /health/ready recorded verbatim incl. production_verified:false; pilot row artifact_ready with revision 3 and completion instant. NRestarts is structural (Restart=no): see AC-003.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "documentation",
+      "verification"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

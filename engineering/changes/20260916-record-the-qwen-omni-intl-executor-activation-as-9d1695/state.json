@@ -1,0 +1,60 @@
+{
+  "change_id": "20260916-record-the-qwen-omni-intl-executor-activation-as-9d1695",
+  "created_at": "2026-09-16T23:45:13+00:00",
+  "history": [
+    {
+      "at": "2026-09-16T23:45:13+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-16T23:45:58+00:00",
+      "from": "draft",
+      "reason": "typed AC/INV/FORBID for a zero-promotion runtime record",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-16T23:45:58+00:00",
+      "from": "scoped",
+      "reason": "single-writer fact re-derivation; evidence bound to observed_main_sha; incident disclosed",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-16T23:45:58+00:00",
+      "from": "approved",
+      "reason": "services.omni + dossier + package docs land in this commit",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-17T02:20:00+00:00",
+      "from": "implementing",
+      "reason": "round 1 closed 10 carried-forward claims; re-review FAILed the residue (7/8/9 open, 4/6 partly, N1 introduced by round 1) and this round closes it on live re-captures: verbatim 10-field three-unit systemctl block, production_verified:false recorded, active_enter_timestamp on all three services, observed_at aligned, README/START_HERE reconciled, SIG-001/AC-003 re-grounded, third-unit pin added to test_project_state (15 OK)",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-17T04:09:07+00:00",
+      "from": "reviewing",
+      "note": "",
+      "reason": "round 3 on 3c379ca returned code review FAIL (F1-F6) and test review PASS with contingencies; F1/F2/F3/F6 and the reviewer's own db_row SQL catch are closed in this commit, F4/F5 are disclosed with measurements rather than fixed, and the previously deferred omni state<->dossier equality landed here (identity leaves, activation leaves, probe!=pilot, pilot vs its db_row: revision 3, 2026-09-17T00:21:16.151094Z, usage 813/364). Re-verifying on the new head; round-4 review of this delta is required before receipts, because the round-3 reviewers saw 3c379ca only",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-17T05:11:03+00:00",
+      "from": "verifying",
+      "reason": "round 5 (stamped from date -u, not by hand): routing base re-pointed to the real merge-base after two reviewers disproved the author's round-4 dismissal; TERMINAL_STATES guard added",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-17T05:11:03+00:00",
+      "from": "verifying",
+      "reason": "round 6: round-5 delta reviews returned PASS (both) and named two HIGH residues closed here by literals (profile, installed_sha anchors, pilot.state), the blacklist replaced by landing_observation.CATEGORIES membership, observed_at ordering made checkable where it can be, and the factory/src bootstrap hoisted so the method runs in isolation; measured 15 OK / 120 OK, isolated run OK, ruff clean, R13/R22/R23 and the three probe-label mutants KILLED",
+      "to": "reviewing"
+    }
+  ],
+  "route_id": "9d1695f3c1d4",
+  "schema_version": 1,
+  "status": "reviewing",
+  "title": "Record the qwen omni intl executor activation as a runtime observation on the claw host closes issue 86",
+  "updated_at": "2026-09-17T05:11:03+00:00"
+}

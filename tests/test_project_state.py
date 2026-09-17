@@ -10,6 +10,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+_FACTORY_SRC = str(ROOT / "factory" / "src")
+if _FACTORY_SRC not in sys.path:
+    sys.path.insert(0, _FACTORY_SRC)
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
@@ -92,7 +95,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["product_version"], "2.0.18")
         self.assertEqual(state["latest_published_release"], "v2.0.18")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-16T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-17T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -757,10 +760,90 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertIn("Id=" + service["unit"] + "\nActiveState=active\nUnitFileState=enabled",
                               evidence["service_observation"])
                 self.assertTrue(service["live_enabled"])
+        self.assertEqual(runtime["observed_at"], evidence["observed_at"])
+        # The document's own observation stamp must not fall behind the section it just re-captured:
+        # at base the two were equal, and a stale top-level invites reading this activation as an
+        # older fact than it is.
+        self.assertEqual(state["observed_at"], runtime["observed_at"])
+        # Each recorded service is pinned to its own block of the verbatim systemctl capture, so a
+        # timestamp cannot be borrowed from another unit or from a different systemd property.
+        blocks: dict[str, str] = {}
+        for chunk in evidence["service_observation"].split("\n\n"):
+            for line in chunk.splitlines():
+                if line.startswith("Id="):
+                    blocks.setdefault(line[len("Id="):], chunk)
+                    break
+        self.assertEqual(sorted(blocks), sorted(s["unit"] for s in runtime["services"].values()))
+        for role, service in runtime["services"].items():
+            with self.subTest(role=role):
+                props = dict(line.split("=", 1) for line in blocks[service["unit"]].splitlines() if "=" in line)
+                self.assertEqual("active", props.get("ActiveState"))
+                self.assertEqual("enabled", props.get("UnitFileState"))
+                self.assertEqual(service["active_state"], props.get("ActiveState"))
+                self.assertEqual(service["unit_file_state"], props.get("UnitFileState"))
+                self.assertTrue(service["live_enabled"])
+                self.assertIsNone(service["acceptance"]["live_url"])
+                stamp = service["active_enter_timestamp"]
+                self.assertTrue(stamp.endswith("Z"), f"{role}: boot stamp must be UTC 'Z'")
+                self.assertTrue(
+                    props.get("ActiveEnterTimestamp", "").endswith(stamp[:-1].replace("T", " ") + " UTC"),
+                    f"{role}: state boot stamp {stamp} is not the unit's ActiveEnterTimestamp",
+                )
         from adaptive_factory.landing_http import HttpLandingProfile
         for service in runtime["services"].values():
             profile = HttpLandingProfile.for_provider(service["selected_profile"])
             self.assertEqual(service["model"], profile.model_id)
+        omni = runtime["services"]["omni"]
+        dossier_omni = evidence["omni"]
+        # Identity agreement: the state entry and its dossier must name the same executor. Without
+        # this, swapping the recorded profile to the mainland `qwen-omni` stays silent because that
+        # profile carries the same model id, so the model-vs-code check above cannot see it.
+        for key in ("unit", "selected_profile", "model", "installed_sha", "live_enabled"):
+            with self.subTest(key=key):
+                self.assertEqual(omni[key], dossier_omni[key])
+        # Agreement is not identity: both files can be rewritten together. These are the literals the
+        # record is about - the international profile (the mainland one carries the same model id, so
+        # the model-vs-code check above cannot tell them apart) and the exact release source the unit
+        # booted, which is the same SHA the release-bound main observation names.
+        self.assertEqual(omni["selected_profile"], "qwen-omni-intl")
+        self.assertEqual(omni["installed_sha"], state["observed_main_sha"])
+        self.assertEqual(omni["installed_sha"], evidence["source_base"])
+        # The pilot record is corroborated by the unit's own landing-state row, so the recorded job,
+        # state, revision and completion instant are re-derivable and not just a quoted string.
+        pilot = dossier_omni["pilot"]
+        row = pilot["db_row"]
+        self.assertEqual(pilot["job_id"], row["job_id"])
+        self.assertEqual(pilot["state"], row["state"])
+        # The pair agrees by construction (the row is read from the same place), so the value itself
+        # has to be pinned: "reached artifact_ready" is the claim AC-003 offers as end-to-end proof.
+        self.assertEqual(pilot["state"], "artifact_ready")
+        self.assertEqual(3, row["revision"])
+        self.assertEqual("2026-09-17T00:21:16.151094Z", row["updated_at"])
+        self.assertTrue(row["updated_at"].endswith("Z"))
+        self.assertEqual(813, row["usage_input_units"])
+        self.assertEqual(364, row["usage_output_units"])
+        # The probe and the end-to-end job are different events: same unit, different job and usage.
+        self.assertNotEqual(omni["acceptance"]["job_id"], pilot["job_id"])
+        self.assertNotEqual(omni["acceptance"]["usage_input_units"], row["usage_input_units"])
+        self.assertLess(row["updated_at"][:19], pilot["observed_at"][:19])
+        # An observation stamp also has to be plausible in time: it cannot precede the facts it claims
+        # to have observed. Both sides are compared at the same precision.
+        self.assertGreaterEqual(runtime["observed_at"][:19], omni["active_enter_timestamp"][:19])
+        self.assertGreaterEqual(runtime["observed_at"][:19], row["updated_at"][:19])
+        self.assertGreaterEqual(runtime["observed_at"][:19], pilot["observed_at"][:19])
+        # Both files record the same activation probe, so every leaf must agree; only the health
+        # capture exists on the dossier side. A divergence here would mean one file describes an
+        # event the other never observed.
+        self.assertEqual(omni["acceptance"],
+                         {k: v for k, v in dossier_omni["activation"].items() if k != "endpoint_health"})
+        # Two files agreeing is not the same as being true, and a five-word blacklist of another
+        # machine's terminal states would catch only five spellings of a lie. The recorded value is an
+        # observation category (`landing_observation.CATEGORIES`), so pin it to that vocabulary and to
+        # the one value the activation actually produced: no artifact, no promotion.
+        from adaptive_factory.landing_observation import CATEGORIES
+        self.assertIn(omni["acceptance"]["state"], CATEGORIES)
+        self.assertEqual(omni["acceptance"]["state"], "normalized")
+        self.assertIsNone(omni["acceptance"]["live_url"])
         primary = runtime["services"]["primary"]
         self.assertEqual(Path(primary["control_repository"]).parent.name, primary["installed_sha"])
         self.assertEqual(state["l5_production_preparation"]["selected_profile"], primary["selected_profile"])
@@ -783,9 +866,6 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["observed_main_sha"], state["published_release"]["merge_commit"])
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
-        factory_src = str(ROOT / "factory" / "src")
-        if factory_src not in sys.path:
-            sys.path.insert(0, factory_src)
         from adaptive_factory.models import TaskStatus
 
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
