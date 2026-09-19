@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "change_id": "20260917-enforce-and-report-route-approval-gates-126-e405d5",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Route-declared human gates are visible and fail closed at their intended local workflow and delegated-action boundaries.",
+    "success_metric": "All declared-gate negative and positive authorization cases in the acceptance matrix produce the expected result.",
+    "target": "100% of declared route gates are reported, scope-bound, and enforced before matching transitions or delegated actions."
+  },
+  "risk": {"tier": "red", "domains": ["api", "security"]},
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A current explicit local decision is required before a route with scope_and_design_approval can enter approved implementation state.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Production and external-write grants and their consumers enforce the matching declared gate in addition to the exact delegated grant.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "security_review"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "grok_status reports every declared gate as pending, approved/current, declined, stale, or invalid, with evidence location.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Legacy routes with declared gates and no decision artifact remain pending and do not become implicitly approved.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Removing or changing the active route's human_gates while retaining route_id fails closed for production actions, external writes, and approved transitions.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "security_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Local gate decisions, local grants, Trust CI signed approvals, and the external exact-SHA attestation remain distinct authority types.",
+      "evidence": [{"receipt": "security_review"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Gate approval is bound to route, change, gate name, and the approved scope digest; scope changes invalidate it.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Satisfying a local route gate never creates, widens, or substitutes for an exact delegated grant.",
+      "evidence": [{"receipt": "security_review"}]
+    },
+    {
+      "id": "INV-004",
+      "statement": "The route gate declaration is captured and digest-bound when the change package is created; active and package route copies must match it.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "security_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A missing, declined, stale, malformed, or mismatched gate record authorizes a protected transition or delegated operation.",
+      "evidence": [{"receipt": "security_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "A local gate decision is presented or consumed as a human-signed Trust CI approval or merge authority.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "contracts": {"openapi": [], "events": [], "json_schema": []},
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "grok_status exposes the state and evidence reference for every declared route gate.",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "approvals": {"required_scopes": ["scope_and_design_approval", "production_action_approval"]},
+  "rollback": {"strategy": "forward_fix", "maximum_steps": 1}
+}

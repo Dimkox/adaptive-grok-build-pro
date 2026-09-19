@@ -70,11 +70,16 @@ def start_change(root: Path, title: str | None = None) -> dict[str, Any]:
                 content = content.replace(key, str(value))
             file.write_text(content, encoding='utf-8')
     dump_json(path / 'route.json', route)
+    from .human_gates import route_gate_digest
+
+    human_gates = route.get('human_gates', [])
     state = {
         'schema_version': 1,
         'change_id': change_id,
         'title': title,
         'route_id': route['route_id'],
+        'human_gates': human_gates,
+        'human_gates_digest': route_gate_digest(route['route_id'], human_gates),
         'status': 'draft',
         'created_at': now_utc(),
         'updated_at': now_utc(),
@@ -94,6 +99,11 @@ def transition(root: Path, change_id: str, target: str, reason: str) -> dict[str
     current = state['status']
     if target not in TRANSITIONS.get(current, set()):
         raise ValueError(f'Invalid transition {current} -> {target}')
+    from .human_gates import gate_transition_block_reason
+
+    gate_reason = gate_transition_block_reason(root, target, change_id)
+    if gate_reason:
+        raise ValueError(gate_reason)
     state['status'] = target
     state['updated_at'] = now_utc()
     state.setdefault('history', []).append({'from': current, 'to': target, 'at': now_utc(), 'reason': reason})

@@ -1169,3 +1169,9 @@ defect even through a green gate.
 **Symptom:** PR #101's `_stream_git_blob` streamed a `git cat-file` child but stopped it only inside the two `except` clauses it named; any other escape closed the pipes in `finally` and left the child running on a nobody-waits pipe, and selector/descriptor setup failures escaped raw where the module promises `ArchitectureError(code=...)`. Issue #109 found it; the base tree's architecture suites stayed green (106 test methods in `tests/test_architecture_fitness.py`, 69 in `tests/test_architecture_model.py`).
 **Root cause:** the new helper was written beside `_run_capped` and mirrored its read loop, not its cleanup contract — and no test asserted the "child is stopped" property at all (`grep _stop_process tests/` → no hits), so the copy could diverge silently. The exposure class is also invisible to this repo's gate, which executes those suites on POSIX only.
 **Durable rule:** when adding a second helper that spawns a child, copy the cleanup contract (terminal stop in `finally`) and assert that invariant for the new path in the same wave; a shape-only copy of a proven routine is a new, untested code path.
+
+## 2026-09-17 — Assumed a `.yaml` change spec accepted YAML syntax
+
+**Symptom:** `grok_spec.py validate --gate` rejected the drafted #126 spec at byte one because it expects canonical JSON despite the `.yaml` filename.
+**Root cause:** I trusted the extension and started drafting before checking the repository's parser/schema and a valid nested evidence/observability example.
+**Durable rule:** inspect `grok_spec.py`, the schema, and a current valid package example before writing a change spec; this repository stores canonical JSON in `change-spec.yaml` with typed evidence references.
