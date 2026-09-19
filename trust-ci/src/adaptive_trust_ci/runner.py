@@ -9,14 +9,14 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterable, Mapping, Protocol
 
 from .github import GitHubClient
 from .holdout import HoldoutError, verify_bundle
 from .lease import LeaseKeeper
 from .models import AttestationPayload, CommandResult, Job, RunOutcome, utc_now
 from .policy import CommandSpec, Policy
-from .sandbox import ContainerExecutor
+from .sandbox import CommandAbort, ContainerExecutor, classify_command_abort
 from .signing import Signer, sign_attestation, verify_attestation
 from .store import Store
 from .workspace import GitWorkspace, WorkspaceMutationError
@@ -260,6 +260,51 @@ class Workspace(Protocol):
     def cleanup(self) -> None: ...
 
 
+_VERIFICATION_FAILED = 'verification-failed'
+
+
+def _first_command_abort(outcomes: Iterable[tuple[str, Any, str]]) -> CommandAbort | None:
+    """Describe the first mandatory command that died instead of deciding, if there was one.
+
+    Totality is guaranteed inside :func:`classify_command_abort`; the type guard here is a second layer that
+    keeps a non-integer recovered from stored JSON out of the classifier entirely.
+    """
+    for name, exit_code, stderr_tail in outcomes:
+        if isinstance(exit_code, bool) or not isinstance(exit_code, int):
+            continue
+        abort = classify_command_abort(name=str(name), exit_code=exit_code, stderr_tail=stderr_tail)
+        if abort is not None:
+            return abort
+    return None
+
+
+def _live_command_abort(command_results: Iterable[CommandResult]) -> CommandAbort | None:
+    return _first_command_abort(
+        (item.name, item.exit_code, item.stderr_tail) for item in command_results if item.status != 'pass'
+    )
+
+
+def _attested_command_abort(command_results: Iterable[Mapping[str, Any]]) -> CommandAbort | None:
+    """Reclassify a stored attestation. Its signed rows carry no output, so only signal death is provable there."""
+    return _first_command_abort(
+        (item.get('name') or 'command', item.get('exit_code'), '')
+        for item in command_results
+        if item.get('status') != 'pass'
+    )
+
+
+def _terminal_failure_code(status: str, abort: CommandAbort | None) -> str | None:
+    if status == 'passed':
+        return None
+    return abort.failure_code if abort is not None else _VERIFICATION_FAILED
+
+
+def _abort_check_title(abort: CommandAbort | None) -> str | None:
+    if abort is None:
+        return None
+    return f'Trust CI run aborted: {abort.signal or "sandbox timeout"} in {abort.command}'
+
+
 @dataclass
 class JobRunner:
     store: Store
@@ -323,26 +368,34 @@ class JobRunner:
         if existing is not None:
             payload = verify_attestation(existing, self.signer.public_key_pem())
             self._validate_existing_attestation(job, payload)
+            replayed_abort = _attested_command_abort(payload.command_results)
+            replay_summary = (
+                'Stored signed attestation replayed without rerunning pull-request code. '
+                f'attestation={payload.attestation_id}; signer={payload.key_id}'
+            )
+            if replayed_abort is not None:
+                replay_summary = f'{replayed_abort.detail()}\n{replay_summary}'
             self._complete_check(
                 job,
                 check_run_id,
                 payload.status,
-                summary=(
-                    'Stored signed attestation replayed without rerunning pull-request code. '
-                    f'attestation={payload.attestation_id}; signer={payload.key_id}'
-                ),
+                summary=replay_summary,
+                title=_abort_check_title(replayed_abort),
             )
+            replay_details: dict[str, Any] = {
+                'attestation': existing.to_dict(),
+                'replayed': True,
+                'check_run_id': check_run_id,
+                'holdout_digest': verified_holdout_digest,
+            }
+            if replayed_abort is not None:
+                replay_details['abort'] = replayed_abort.to_result()
             finished = self.store.finish(
                 job.job_id,
                 worker_id,
                 payload.status,
-                {
-                    'attestation': existing.to_dict(),
-                    'replayed': True,
-                    'check_run_id': check_run_id,
-                    'holdout_digest': verified_holdout_digest,
-                },
-                failure_code=None if payload.status == 'passed' else 'verification-failed',
+                replay_details,
+                failure_code=_terminal_failure_code(payload.status, replayed_abort),
                 now=self.now_fn(),
             )
             return RunOutcome(finished.job_id, finished.status, finished.result)
@@ -491,12 +544,21 @@ class JobRunner:
                 )
                 envelope = sign_attestation(payload, self.signer)
                 self.store.record_attestation(job.job_id, envelope)
+                abort = _live_command_abort(command_results)
                 summary = '\n'.join(
                     f'{item.name}: {item.status} (exit {item.exit_code})' for item in command_results
                 )
                 summary += f'\nattestation={payload.attestation_id}; signer={payload.key_id}'
-                self._complete_check(job, check_run_id, status, summary=summary)
-                details = {
+                if abort is not None:
+                    summary = f'{abort.detail()}\n{summary}'
+                self._complete_check(
+                    job,
+                    check_run_id,
+                    status,
+                    summary=summary,
+                    title=_abort_check_title(abort),
+                )
+                details: dict[str, Any] = {
                     'attestation': envelope.to_dict(),
                     'check_run_id': check_run_id,
                     'holdout_digest': verified_holdout_digest,
@@ -509,12 +571,14 @@ class JobRunner:
                         for item in command_results
                     ],
                 }
+                if abort is not None:
+                    details['abort'] = abort.to_result()
                 finished = self.store.finish(
                     job.job_id,
                     worker_id,
                     status,
                     details,
-                    failure_code=None if status == 'passed' else 'verification-failed',
+                    failure_code=_terminal_failure_code(status, abort),
                     now=self.now_fn(),
                 )
                 return RunOutcome(finished.job_id, finished.status, finished.result)
@@ -612,13 +676,23 @@ class JobRunner:
         )
         return RunOutcome(finished.job_id, finished.status, finished.result)
 
-    def _complete_check(self, job: Job, check_run_id: int, status: str, *, summary: str) -> None:
+    def _complete_check(
+        self,
+        job: Job,
+        check_run_id: int,
+        status: str,
+        *,
+        summary: str,
+        title: str | None = None,
+    ) -> None:
         passed = status == 'passed'
         self.github.complete_check_run(
             job.repository,
             check_run_id,
             conclusion='success' if passed else 'failure',
-            title='Exact SHA passed independent Trust CI' if passed else 'Exact SHA failed independent Trust CI',
+            title=title or (
+                'Exact SHA passed independent Trust CI' if passed else 'Exact SHA failed independent Trust CI'
+            ),
             summary=summary or ('Signed attestation recorded.' if passed else 'One or more mandatory checks failed.'),
             completed_at=self.now_fn(),
         )

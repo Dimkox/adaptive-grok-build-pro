@@ -420,6 +420,55 @@ class ApiTests(unittest.TestCase):
         self.assertNotIn('stdout_tail', response.text)
         self.assertNotIn('secret output', response.text)
 
+    def test_authorized_job_endpoint_exposes_the_interrupted_cause_without_output(self) -> None:
+        """Issue #103: an API reader must separate an external kill from a real verification failure."""
+        request = JobRequest(
+            repository='Dimkox/adaptive-grok-build-pro',
+            pr_number=15,
+            base_sha=sha('a'),
+            head_sha=sha('b'),
+            head_ref='feat/x',
+            base_ref='main',
+        )
+        job, _ = self.store.enqueue(request, self.policy.digest, self.policy.max_attempts, now=now())
+        claimed = self.store.claim('worker', self.policy.lease_seconds, now=now())
+        assert claimed is not None
+        self.store.finish(
+            job.job_id,
+            'worker',
+            'failed',
+            {
+                'abort': {
+                    'kind': 'signal',
+                    'command': 'repository-verification',
+                    'exit_code': 137,
+                    'signal': 'SIGKILL',
+                    'signal_number': 9,
+                    'failure_code': 'aborted-by-signal',
+                },
+                'commands': [
+                    {
+                        'name': 'repository-verification',
+                        'status': 'fail',
+                        'exit_code': 137,
+                        'stdout_tail': 'secret output',
+                        'stderr_tail': 'killed by something',
+                    }
+                ],
+            },
+            failure_code='aborted-by-signal',
+            now=now(),
+        )
+        response = self.client.get(f'/jobs/{job.job_id}', headers=self.read_headers)
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['status'], 'failed')
+        self.assertEqual(payload['failure_code'], 'aborted-by-signal')
+        self.assertEqual(payload['result']['abort']['signal'], 'SIGKILL')
+        self.assertNotIn('stdout_tail', response.text)
+        self.assertNotIn('secret output', response.text)
+        self.assertNotIn('killed by something', response.text)
+
     def test_metrics_require_bearer_and_expose_no_high_cardinality_data(self) -> None:
         body = self.webhook_body()
         queued = self.client.post('/webhooks/github', content=body, headers=self.headers(body)).json()

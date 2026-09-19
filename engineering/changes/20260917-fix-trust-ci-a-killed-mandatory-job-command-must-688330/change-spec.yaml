@@ -1,0 +1,156 @@
+{
+  "schema_version": 2,
+  "change_id": "20260917-fix-trust-ci-a-killed-mandatory-job-command-must-688330",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Close issue #103: a Trust CI mandatory command killed from outside was stored as an ordinary status=failed, failure_code=verification-failed, indistinguishable in the durable record from a genuine verification failure, while the strongest evidence of the kill (the process exit status, e.g. 137=128+SIGKILL, 143=128+SIGTERM, or the negative subprocess return code) sat unread inside result->commands[*].exit_code. Interpret that exit status where the exit-status conventions are already minted (trust-ci/src/adaptive_trust_ci/sandbox.py: classify_command_abort/CommandAbort) and let the runner derive the terminal cause from it: a signal-killed command records failure_code=aborted-by-signal, a command the sandbox itself deadline-killed records failure_code=aborted-by-timeout, and anything else keeps verification-failed. Source-only: the status column keeps using the frozen 001_schema.sql vocabulary, failure_code stays unconstrained text, no .sql file in the tree is changed (git diff --name-only 2f66ba6 -- '*.sql' is empty: the three trust-ci/sql/*.sql deployment files, their three packaged copies and the twenty factory resource migrations are all untouched), the already-misclassified job of PR #102 head 123ac93c is not rewritten, and the deployed Trust CI service is not updated by this commit.",
+    "success_metric": "trust-ci suite 269 OK (10 postgres skips) = base 243 + 26 added. Red-before-fix by baseline: 18 of round 1's 20 on the base code; 1 of the 6 review-round tests on the round-1 code (stderr_tail totality). The rest are pins that fire only under a mutation: MU6b/MU11/MU4/MT1/MT2/MT3 KILLED, MU6 equivalent-only. ruff + compileall clean; root 759 OK. Verbatim in test-plan.md/tasks.md",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A mandatory command that died from an external signal records failure_code=aborted-by-signal (never verification-failed) with status still failed, and result.abort carries kind=signal, the terminating signal name and number, the raw exit code and the command name; the exit statuses interpreted are 128+n as propagated by the container client (137 SIGKILL, 143 SIGTERM, 130 SIGINT, 161 unmapped->SIG33) and the negative subprocess return code of the client itself (-9, -15, -2, -1), bounded to signal numbers 1..64.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        },
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The sandbox's own deadline is a distinct interrupted class failure_code=aborted-by-timeout with abort.kind=timeout and no signal, claimed only when the marker that ContainerExecutor.run appends to stderr is the last thing in the stored tail (so it also survives output truncation, and a command that merely printed the phrase mid-output is not mistaken for it); a bare exit 124 without that ending marker is not claimed as an abort and stays verification-failed.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        },
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Backward compatibility: every non-abort failure keeps failure_code=verification-failed unchanged (ordinary exit 1, synthetic spec exit 96, source-integrity exit 97, out-of-range codes 0/125/126/127/128/193/255), the terminal status stays inside the frozen 001_schema.sql CHECK vocabulary, and no consumer that reads status=failed as not-verified changes behavior.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        },
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "A re-claimed job that replays a stored signed attestation preserves the interrupted class derived from that attestation's signed command rows (failure_code=aborted-by-signal plus result.abort, result.replayed stays true) instead of rewriting the record as verification-failed; a replayed pass still records no failure code.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The distinguishing cause reaches the reader without weakening redaction: GET /jobs/{job_id} returns the new failure_code and the additive result.abort member, while command stdout_tail/stderr_tail content is still absent from the response.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_api.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "The App-owned GitHub check states the abort in its title and summary (e.g. \"Trust CI run aborted: SIGKILL in unit\" plus the abort detail line) while its conclusion stays the non-success failure value, so an aborted run certifies nothing in either direction.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The classification is pure and total at its own boundary on both recovered inputs: classify_command_abort itself returns no claim for an exit_code that is not a plain integer (null, string, float or bool from recovered JSON) and never coerces a non-string stderr_tail into a timeout corroboration, so it cannot raise and cannot mint a fractional signal number, while a signal kill is still reported from the exit status alone; the type check in runner._first_command_abort is a second, independent layer, so deleting either one alone cannot produce a wrong record and a passed status can never carry any failure_code.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        },
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "No SQL is changed by this branch: git diff --name-only 2f66ba6 -- '*.sql' is empty. That covers all three numbered-SQL sets in the tree - the three trust-ci/sql/*.sql deployment files (001_schema.sql, 002_operational_indexes.sql, 003_database_roles.sql), the three packaged copies under trust-ci/src/adaptive_trust_ci/resources/ that test_packaged_migrations_match_deployment_migrations keeps byte-equal to them, and factory/src/adaptive_factory/resources/ (20 files today, last 020_execution_v2_priced_usage.sql; exactly 18 at tag v2.0.13, last 018_semantic_validation_bridge.sql). The latter is what the string '001-018' counts where it actually appears: PROJECT_STATE.json current_unreleased_change.frozen.postgresql_migrations (plus two archived copies and active_delivery.integrated_stack.migrations), README.md, START_HERE.md and CHANGELOG.md - not AGENTS.md, which carries no such number (grep -c 018 AGENTS.md -> 0; its data rule at line 130 says only that schema changes use versioned migrations). The durable record expresses the distinction only through the existing unconstrained failure_code text column plus an additive JSON member inside the existing result column.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "An aborted measurement recorded as verification-failed (live path or attestation replay), or any abort class able to read as success or as passed.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_runner.py"
+        },
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Expressing the distinction with a new job status value, a new migration, a schema change, a backfill, or any rewrite of the already-stored PR #102 job row.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "terminal trust_ci_jobs rows counted by failure_code, with aborted-by-signal and aborted-by-timeout now separable from verification-failed in SQL, in GET /jobs/{job_id} (.failure_code plus .result.abort) and in the check run title",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}

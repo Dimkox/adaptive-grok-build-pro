@@ -725,3 +725,13 @@ the module never had any `os.name` dispatch, so implementing the request literal
 branch while leaving the real defect (untyped setup path, child stop only for named exceptions, unguarded
 close order) in place. The wave fixes what the code actually does and publishes the correction of the false
 sentence on the issue before merging, because the issue trail must match the shipped code.
+
+## 2026-09-17 — Express a new outcome through the unconstrained column, next to the code that mints it
+
+For issue #103 the frozen `status IN (…)` CHECK in `001_schema.sql` made a new job status impossible without a
+migration, so the interrupted/killed distinction was expressed through the already-unconstrained
+`failure_code text` plus one additive member of `result jsonb`, choosing values that stay non-success so old
+readers still see "not verified". The exit-status interpreter went into `sandbox.py`, the module that already
+mints `124` and its stderr marker, rather than a new module or the runner. It worked: no schema change and no
+consumer change, and the tests that signal a real child process pin the platform contract the classifier leans
+on instead of trusting a convention nobody had checked.

@@ -229,6 +229,7 @@ def _public_result(value: Any) -> dict[str, Any]:
         'infrastructure_error',
         'replayed',
         'attestation',
+        'abort',
     ):
         if key in value:
             public[key] = value[key]
