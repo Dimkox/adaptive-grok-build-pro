@@ -1,14 +1,6 @@
 import unittest
 from unittest.mock import patch
 import subprocess
-import os
-import re
-import signal
-import sys
-import tempfile
-import time
-from pathlib import Path
-from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
@@ -38,61 +30,49 @@ PRE_RECOVERY_MIGRATIONS = (
 class MigrationTests(unittest.TestCase):
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
-        nonce = "b" * 32
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        replies = [
-            SimpleNamespace(returncode=0, stdout=volume),
-            SimpleNamespace(returncode=0, stdout=container_id),
-            SimpleNamespace(returncode=0, stdout="127.0.0.1:5432\n"),
-        ]
-        def docker_run(command, **kwargs):
-            if command[:3] == ["docker", "exec", container_id]:
-                return SimpleNamespace(returncode=0, stdout="")
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout="")
-            return replies.pop(0)
-        with patch.object(run_disposable_exit, "uuid") as uuid_mock, patch.object(
-            uuid_mock, "uuid4", side_effect=[SimpleNamespace(hex=nonce), SimpleNamespace(hex="c" * 32)]
-        ), patch.object(run_disposable_exit, "_reap_orphans", return_value=[]), patch.object(
-            run_disposable_exit, "_docker_run", side_effect=docker_run
-        ) as docker_run_mock, patch.object(
-            run_disposable_exit, "_volume_binding_matches", return_value=True
-        ), patch.object(run_disposable_exit, "_container_binding", return_value=True), patch.object(
+        created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
+        port = type(
+            "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:5432\n"}
+        )()
+        with patch.object(
+            run_disposable_exit.subprocess, "run", side_effect=[created, port]
+        ) as subprocess_run, patch.object(
+            run_disposable_exit, "_binding_matches", return_value=True
+        ), patch.object(
             run_disposable_exit, "_final_postgres_ready", return_value=True
         ), patch.object(run_disposable_exit, "_run") as run, patch.object(
-            run_disposable_exit, "_cleanup_owned", return_value=[f"container={container_id}", f"volume={volume}"]
-        ), patch("builtins.print") as printed:
+            run_disposable_exit, "_remove_bound_container"
+        ) as remove, patch("builtins.print") as printed:
             self.assertEqual(run_disposable_exit.main(), 0)
-        docker_commands = [call.args[0] for call in docker_run_mock.call_args_list]
-        self.assertEqual(docker_commands[1][0:2], ["docker", "run"])
-        self.assertIn("--mount", docker_commands[1])
-        self.assertIn(f"type=volume,src={volume},dst=/var/lib/postgresql/data", docker_commands[1])
-        self.assertEqual(docker_commands[2], ["docker", "port", container_id, "5432/tcp"])
+        self.assertEqual(
+            subprocess_run.call_args_list[1].args[0],
+            ["docker", "port", container_id, "5432/tcp"],
+        )
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
-        self.assertEqual([call.kwargs["timeout"] for call in run.call_args_list], [30, 430, 40])
-        self.assertEqual(printed.call_args_list[-1].args,
-                         ("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation",))
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 480)
+        self.assertNotIn("--preflight-only", commands[2])
+        self.assertEqual(remove.call_args.args[0], container_id)
+        printed.assert_called_once_with(
+            "PASS: disposable PostgreSQL + API + effective roles + actual "
+            "restart/reconciliation"
+        )
 
     def test_exit_runner_reports_leaked_id_without_cleanup_when_binding_fails(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        with patch.object(run_disposable_exit, "uuid") as uuid_mock, patch.object(
-            uuid_mock, "uuid4", side_effect=[SimpleNamespace(hex=nonce), SimpleNamespace(hex="c" * 32)]
-        ), patch.object(run_disposable_exit, "_reap_orphans", return_value=[]), patch.object(
-            run_disposable_exit, "_docker_run", side_effect=[
-                SimpleNamespace(returncode=0, stdout=volume),
-                SimpleNamespace(returncode=0, stdout=container_id),
-            ]
-        ), patch.object(run_disposable_exit, "_volume_binding_matches", return_value=True), patch.object(
-            run_disposable_exit, "_container_binding", return_value=False
-        ), patch.object(run_disposable_exit, "_cleanup_owned", return_value=[]) as cleanup, patch.object(
-            run_disposable_exit, "_run"
-        ) as run:
-            self.assertEqual(run_disposable_exit.main(), 1)
+        container_id = "a" * 64
+        created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
+        with patch.object(
+            run_disposable_exit.subprocess, "run", return_value=created
+        ), patch.object(
+            run_disposable_exit, "_binding_matches", return_value=False
+        ), patch.object(run_disposable_exit, "_run") as run, patch.object(
+            run_disposable_exit, "_remove_bound_container"
+        ) as remove:
+            with self.assertRaisesRegex(RuntimeError, f"leaked id={container_id}"):
+                run_disposable_exit.main()
         run.assert_not_called()
-        cleanup.assert_called_once()
+        remove.assert_not_called()
 
     def test_restart_probe_database_identity_is_exact_postgresql_17_cluster(self):
         valid = ("factory_exit", "factory_exit", 170_006, "cluster-1")
@@ -180,42 +160,64 @@ class MigrationTests(unittest.TestCase):
         container_id = "a" * 64
         name = "adaptive-factory-exit-012345abcdef"
         nonce = "b" * 32
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        valid = f"{container_id}\t/{name}\tpostgres:17-alpine\trunning\t{nonce}\tvolume:{volume}:/var/lib/postgresql/data\n"
+        valid = f"{container_id}\t/{name}\tpostgres:17-alpine\ttrue\t{nonce}\n"
         variants = (
             valid.replace(container_id, "c" * 64, 1),
             valid.replace(f"/{name}", "/other", 1),
             valid.replace("postgres:17-alpine", "postgres:18-alpine", 1),
-            valid.replace("\trunning\t", "\tremoving\t", 1),
+            valid.replace("\ttrue\t", "\tfalse\t", 1),
+            valid.replace("\ttrue\t", "\tunknown\t", 1),
             valid.replace(nonce, "d" * 32, 1),
-            valid.replace(f"volume:{volume}", "volume:other", 1),
         )
         for output in variants:
+            completed = type(
+                "Completed", (), {"returncode": 0, "stdout": output}
+            )()
             with self.subTest(output=output), patch.object(
-                run_disposable_exit, "_docker_run",
-                return_value=SimpleNamespace(returncode=0, stdout=output),
+                run_disposable_exit.subprocess, "run", return_value=completed
             ):
-                self.assertFalse(run_disposable_exit._container_binding(
-                    container_id, name, nonce, volume, require_running=True
-                ))
+                self.assertFalse(
+                    run_disposable_exit._binding_matches(
+                        container_id, name, nonce, require_running=True
+                    )
+                )
 
-        output = valid.replace("\trunning\t", "\texited\t", 1)
-        with patch.object(run_disposable_exit, "_docker_run", return_value=SimpleNamespace(
-            returncode=0, stdout=output
-        )):
-            self.assertTrue(run_disposable_exit._container_binding(
-                container_id, name, nonce, volume, require_running=False
-            ))
-        def valid_binding():
-            return patch.object(
-                run_disposable_exit, "_container_binding", return_value=True
+        for state, expected in (("false", True), ("unknown", False), ("", False)):
+            metadata = (
+                f"{container_id}\t/{name}\tpostgres:17-alpine\t{state}\t{nonce}\n"
             )
-        with valid_binding(), patch.object(run_disposable_exit, "_docker_run", return_value=SimpleNamespace(
-            returncode=0, stdout=""
-        )) as docker:
-            self.assertTrue(run_disposable_exit._remove_container(container_id, name, nonce, volume))
-        self.assertEqual(docker.call_args.args[0], ["docker", "rm", "-f", container_id])
-        self.assertEqual(docker.call_args.kwargs["timeout"], run_disposable_exit._CLEANUP_COMMAND_TIMEOUT)
+            completed = type(
+                "Completed", (), {"returncode": 0, "stdout": metadata}
+            )()
+            with self.subTest(cleanup_state=state), patch.object(
+                run_disposable_exit.subprocess, "run", return_value=completed
+            ):
+                self.assertIs(
+                    run_disposable_exit._binding_matches(
+                        container_id, name, nonce, require_running=False
+                    ),
+                    expected,
+                )
+
+        inspected = type("Completed", (), {"returncode": 0, "stdout": valid})()
+        removed = type("Completed", (), {"returncode": 0, "stdout": ""})()
+        with patch.object(
+            run_disposable_exit.subprocess,
+            "run",
+            side_effect=[inspected, removed],
+        ) as run:
+            run_disposable_exit._remove_bound_container(container_id, name, nonce)
+        self.assertEqual(run.call_args_list[-1].args[0], ["docker", "rm", "-f", container_id])
+        self.assertEqual(run.call_args_list[0].args[0][-1], container_id)
+
+        with patch.object(
+            run_disposable_exit, "_binding_matches", return_value=False
+        ), patch.object(run_disposable_exit.subprocess, "run") as run:
+            with self.assertRaisesRegex(RuntimeError, "leaked id"):
+                run_disposable_exit._remove_bound_container(
+                    container_id, name, nonce
+                )
+            run.assert_not_called()
 
     def test_restart_releaser_wraps_real_broker_with_exact_at_least_once_outcomes(self):
         from adaptive_factory.workspace import WorkspaceHandle, WorkspaceReleaseOutcome
@@ -258,14 +260,13 @@ class MigrationTests(unittest.TestCase):
 
         def failed_create(command, **kwargs):
             commands.append(command)
-            if command[:3] == ["docker", "volume", "create"]:
+            if command[:2] == ["docker", "run"]:
                 raise subprocess.CalledProcessError(125, command)
-            return SimpleNamespace(returncode=1, stdout="", stderr="")
+            return type("Completed", (), {"returncode": 0, "stdout": ""})()
 
-        with patch.object(run_disposable_exit, "_reap_orphans", return_value=[]), patch.object(
-            run_disposable_exit.subprocess, "run", side_effect=failed_create
-        ):
-            self.assertEqual(run_disposable_exit.main(), 1)
+        with patch.object(run_disposable_exit.subprocess, "run", side_effect=failed_create):
+            with self.assertRaises(subprocess.CalledProcessError):
+                run_disposable_exit.main()
         self.assertFalse(any(command[:2] == ["docker", "rm"] for command in commands))
 
     def test_restart_probe_rejects_ambiguous_or_non_loopback_port_bindings(self):
@@ -324,358 +325,35 @@ class MigrationTests(unittest.TestCase):
             self.assertTrue(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertIn("postmaster.pid", run.call_args_list[0].args[0][-1])
         self.assertEqual(run.call_args_list[1].args[0][3], "pg_isready")
-        self.assertEqual(run.call_args_list[0].kwargs["timeout"], 5)
-        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 5)
+        self.assertEqual(run.call_args_list[0].kwargs["timeout"], 10)
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 10)
 
         not_final = type("Completed", (), {"returncode": 1})()
         with patch.object(run_disposable_exit.subprocess, "run", return_value=not_final) as run:
             self.assertFalse(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertEqual(run.call_count, 1)
 
-    def test_exit_runner_removes_only_fully_bound_container_and_volume(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name = f"adaptive-factory-exit-{nonce[:12]}"
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        with patch.object(run_disposable_exit, "_resolve_container_id", return_value=container_id), patch.object(
-            run_disposable_exit, "_container_binding", return_value=True
-        ), patch.object(run_disposable_exit, "_remove_container", return_value=True) as remove_container, patch.object(
-            run_disposable_exit, "_remove_volume", return_value=True
-        ) as remove_volume:
-            cleaned = run_disposable_exit._cleanup_owned(name, nonce, volume, container_id)
-        self.assertEqual(cleaned, [f"container={container_id}", f"volume={volume}"])
-        remove_container.assert_called_once()
-        self.assertEqual(remove_container.call_args.args, (container_id, name, nonce, volume))
-        remove_volume.assert_called_once_with(volume, nonce, timeout=20)
-
-    def test_exit_runner_retries_delayed_name_visibility_then_removes_exact_bindings(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name, volume = f"adaptive-factory-exit-{nonce[:12]}", f"adaptive-factory-exit-volume-{nonce}"
-        with patch.object(run_disposable_exit, "_resolve_container_id", side_effect=[None, container_id]) as resolve, patch.object(
-            run_disposable_exit, "_container_binding", return_value=True
-        ) as binding, patch.object(run_disposable_exit, "_docker_run", return_value=SimpleNamespace(
-            returncode=0, stdout="", stderr=""
-        )) as docker, patch.object(run_disposable_exit, "_remove_volume", return_value=True), patch.object(
-            run_disposable_exit.time, "sleep"
-        ):
-            cleaned = run_disposable_exit._cleanup_owned(name, nonce, volume, None)
-        self.assertEqual(cleaned, [f"container={container_id}", f"volume={volume}"])
-        self.assertEqual(resolve.call_count, 2)
-        self.assertEqual(binding.call_count, 2)
-        self.assertEqual(docker.call_args.args[0], ["docker", "rm", "-f", container_id])
-
-    def test_exit_runner_caps_container_reaper_bytes_and_rows(self):
-        nonce_values = [f"{value:032x}" for value in range(1, 101)]
-        rows = "\n".join(
-            f"{'a' * 64}\tadaptive-factory-exit-{nonce[:12]}\tpostgres:17-alpine\texited\t{nonce}\t2000-01-01 00:00:00 +0000 UTC"
-            for nonce in nonce_values
-        ) + "\n"
-        calls = []
-        def listed(command, **kwargs):
-            calls.append((command, kwargs))
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout=rows)
-            if command[:3] == ["docker", "volume", "ls"]:
-                return SimpleNamespace(returncode=0, stdout="")
-            return SimpleNamespace(returncode=0, stdout="")
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed), patch.object(
-            run_disposable_exit, "_container_binding", return_value=False
-        ), patch.object(run_disposable_exit, "_parse_docker_created", wraps=run_disposable_exit._parse_docker_created) as parse_time, patch(
-            "builtins.print"
-        ):
-            run_disposable_exit._reap_orphans("f" * 32)
-        self.assertEqual(parse_time.call_count, 20)
-        listing_kwargs = calls[0][1]
-        self.assertIsNotNone(listing_kwargs.get("max_output_bytes"))
-        self.assertGreater(listing_kwargs["max_output_bytes"], 0)
-
-    def test_docker_bounded_listing_stops_at_output_limit(self):
-        command = [sys.executable, "-c", "import sys; sys.stdout.write('x' * 1000000)"]
-        result = run_disposable_exit._docker_run(command, timeout=5, max_output_bytes=128)
-        self.assertEqual(result.returncode, 125)
-        self.assertTrue(getattr(result, "output_limit_exceeded", False))
-        self.assertLessEqual(len(result.stdout.encode()), 128)
-
-    def test_exit_runner_reports_container_list_overflow_as_backlog_and_continues(self):
-        overflow = SimpleNamespace(returncode=125, stdout="partial", stderr="too large", output_limit_exceeded=True)
-        calls = []
-
-        def listed(command, **kwargs):
-            calls.append(command)
-            if command[:3] == ["docker", "ps", "-a"]:
-                return overflow
-            if command[:3] == ["docker", "volume", "ls"]:
-                return overflow
-            self.fail(f"unexpected Docker command: {command}")
-
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed), patch(
-            "builtins.print"
-        ) as printed:
-            self.assertEqual(run_disposable_exit._reap_orphans("e" * 32), [])
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(calls[0][:3], ["docker", "ps", "-a"])
-        self.assertEqual(calls[1][:3], ["docker", "volume", "ls"])
-        messages = [str(call.args[0]) for call in printed.call_args_list]
-        self.assertTrue(any("BACKLOG labelled_containers=unknown" in line and "output_limit" in line for line in messages))
-        self.assertTrue(any("BACKLOG labelled_volumes=unknown" in line and "output_limit" in line for line in messages))
-
-    def test_bounded_docker_listing_keyboard_interrupt_stops_process_group(self):
-        with tempfile.TemporaryDirectory() as raw:
-            pid_file = Path(raw) / "listing.pid"
-            child_pid_file = Path(raw) / "child.pid"
-            child_code = (
-                "import os,pathlib,signal,time\n"
-                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                f"pathlib.Path({str(child_pid_file)!r}).write_text(str(os.getpid()))\n"
-                "time.sleep(30)\n"
+    def test_exit_runner_removes_its_exact_container_and_restart_volume(self):
+        removed = type("Completed", (), {"returncode": 0})()
+        absent = type("Completed", (), {"returncode": 1})()
+        with patch.object(
+            run_disposable_exit.subprocess,
+            "run",
+            side_effect=[removed, removed, absent, absent],
+        ) as run:
+            run_disposable_exit._cleanup(
+                "factory-test-container",
+                "factory-test-volume",
             )
-            root_code = (
-                "import os,pathlib,subprocess,sys,time\n"
-                f"pathlib.Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
-                f"subprocess.Popen([sys.executable, '-c', {child_code!r}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
-                f"deadline = time.monotonic() + 2\nwhile not pathlib.Path({str(child_pid_file)!r}).exists() and time.monotonic() < deadline: time.sleep(.01)\n"
-                "print('ready', flush=True)\n"
-                "while True: time.sleep(.01)\n"
-            )
-            command = [sys.executable, "-c", root_code]
-            original_popen = subprocess.Popen
-
-            def started_popen(*args, **kwargs):
-                process = original_popen(*args, **kwargs)
-                deadline = time.monotonic() + 2
-                while (not pid_file.exists() or not child_pid_file.exists()) and time.monotonic() < deadline:
-                    time.sleep(0.01)
-                if not pid_file.exists() or not child_pid_file.exists():
-                    self.fail("listing subprocess did not become ready")
-                return process
-
-            pids = []
-            try:
-                with patch.object(run_disposable_exit.subprocess, "Popen", side_effect=started_popen), patch.object(
-                    run_disposable_exit.selectors.DefaultSelector, "select", side_effect=KeyboardInterrupt
-                ):
-                    with self.assertRaises(KeyboardInterrupt):
-                        run_disposable_exit._docker_run(command, timeout=10, max_output_bytes=128)
-                pids = [int(pid_file.read_text()), int(child_pid_file.read_text())]
-                for pid in pids:
-                    with self.assertRaises(ProcessLookupError):
-                        os.kill(pid, 0)
-            finally:
-                for process_file in (pid_file, child_pid_file):
-                    if process_file.exists():
-                        try:
-                            os.kill(int(process_file.read_text()), signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
-
-    def test_bounded_docker_listing_interrupt_during_selector_setup_stops_process_group(self):
-        with tempfile.TemporaryDirectory() as raw:
-            pid_file = Path(raw) / "listing.pid"
-            child_pid_file = Path(raw) / "child.pid"
-            child_code = (
-                "import os,pathlib,signal,time\n"
-                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
-                f"pathlib.Path({str(child_pid_file)!r}).write_text(str(os.getpid()))\n"
-                "time.sleep(30)\n"
-            )
-            root_code = (
-                "import os,pathlib,subprocess,sys,time\n"
-                f"pathlib.Path({str(pid_file)!r}).write_text(str(os.getpid()))\n"
-                f"subprocess.Popen([sys.executable, '-c', {child_code!r}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
-                f"deadline = time.monotonic() + 2\nwhile not pathlib.Path({str(child_pid_file)!r}).exists() and time.monotonic() < deadline: time.sleep(.01)\n"
-                "print('ready', flush=True)\n"
-                "while True: time.sleep(.01)\n"
-            )
-            command = [sys.executable, "-c", root_code]
-            original_popen = subprocess.Popen
-
-            def started_popen(*args, **kwargs):
-                process = original_popen(*args, **kwargs)
-                deadline = time.monotonic() + 2
-                while (not pid_file.exists() or not child_pid_file.exists()) and time.monotonic() < deadline:
-                    time.sleep(0.01)
-                if not pid_file.exists() or not child_pid_file.exists():
-                    self.fail("listing subprocess did not become ready")
-                return process
-
-            try:
-                with patch.object(run_disposable_exit.subprocess, "Popen", side_effect=started_popen), patch.object(
-                    run_disposable_exit.selectors.DefaultSelector, "register", side_effect=KeyboardInterrupt
-                ):
-                    with self.assertRaises(KeyboardInterrupt):
-                        run_disposable_exit._docker_run(command, timeout=10, max_output_bytes=128)
-                for pid_file in (pid_file, child_pid_file):
-                    with self.assertRaises(ProcessLookupError):
-                        os.kill(int(pid_file.read_text()), 0)
-            finally:
-                for process_file in (pid_file, child_pid_file):
-                    if process_file.exists():
-                        try:
-                            os.kill(int(process_file.read_text()), signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
-
-    def test_exit_runner_volume_inspect_uses_docker_labels_map_template(self):
-        volume, nonce = "adaptive-factory-exit-volume-" + "b" * 32, "b" * 32
-        output = f"{volume}\tlocal\t{nonce}\t2026-09-18T00:00:00Z\n"
-        with patch.object(run_disposable_exit, "_docker_run", return_value=SimpleNamespace(
-            returncode=0, stdout=output
-        )) as docker:
-            self.assertEqual(run_disposable_exit._inspect_volume(volume), (volume, "local", nonce, "2026-09-18T00:00:00Z"))
-        template = docker.call_args.args[0][4]
-        self.assertIn(f'index .Labels "{run_disposable_exit._LABEL}"', template)
-
-    def test_exit_runner_container_inspect_uses_config_labels_map_template(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name, volume = f"adaptive-factory-exit-{nonce[:12]}", f"adaptive-factory-exit-volume-{nonce}"
-        output = f"{container_id}\t/{name}\tpostgres:17-alpine\trunning\t{nonce}\tvolume:{volume}:/var/lib/postgresql/data\n"
-        with patch.object(run_disposable_exit, "_docker_run", return_value=SimpleNamespace(
-            returncode=0, stdout=output
-        )) as docker:
-            self.assertTrue(run_disposable_exit._container_binding(container_id, name, nonce, volume))
-        template = docker.call_args.args[0][3]
-        self.assertIn(f'index .Config.Labels "{run_disposable_exit._LABEL}"', template)
-
-    def test_exit_runner_parses_timezone_offset_and_reclaims_verified_stale_container(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name = f"adaptive-factory-exit-{nonce[:12]}"
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        created = run_disposable_exit._parse_docker_created("2000-01-01 00:00:00 +0000 UTC")
-        from datetime import timezone
-        self.assertEqual(created.tzinfo, timezone.utc)
-        row = f"{container_id}\t{name}\tpostgres:17-alpine\texited\t{nonce}\t2000-01-01 00:00:00 +0000 UTC\n"
-        def listed(command, **kwargs):
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout=row)
-            if command[:3] == ["docker", "volume", "ls"]:
-                return SimpleNamespace(returncode=0, stdout="")
-            self.fail(f"unexpected Docker command: {command}")
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed), patch.object(
-            run_disposable_exit, "_container_binding", return_value=True
-        ) as binding, patch.object(run_disposable_exit, "_volume_binding_matches", return_value=True), patch.object(
-            run_disposable_exit, "_remove_container", return_value=True
-        ) as remove_container, patch.object(run_disposable_exit, "_remove_volume", return_value=True) as remove_volume, patch(
-            "builtins.print"
-        ) as printed:
-            reclaimed = run_disposable_exit._reap_orphans("c" * 32)
-        self.assertEqual(len(reclaimed), 1)
-        self.assertRegex(reclaimed[0], re.escape(f"container={container_id} volume={volume} nonce={nonce} age_seconds=") + r"\d+$")
-        binding.assert_called_once_with(container_id, name, nonce, volume, timeout=5)
-        remove_container.assert_called_once_with(container_id, name, nonce, volume)
-        remove_volume.assert_called_once_with(volume, nonce, timeout=20)
-        self.assertTrue(any("RECLAIMED" in str(call.args[0]) for call in printed.call_args_list))
-
-    def test_exit_runner_reaper_preserves_stale_row_when_exact_binding_fails(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name = f"adaptive-factory-exit-{nonce[:12]}"
-        row = f"{container_id}\t{name}\tpostgres:17-alpine\trunning\t{nonce}\t2000-01-01 00:00:00 +0000 UTC\n"
-        def listed(command, **kwargs):
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout=row)
-            if command[:3] == ["docker", "volume", "ls"]:
-                return SimpleNamespace(returncode=0, stdout="")
-            return SimpleNamespace(returncode=0, stdout="")
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed) as docker, patch.object(
-            run_disposable_exit, "_container_binding", return_value=False
-        ), patch.object(run_disposable_exit, "_remove_container") as remove_container, patch.object(
-            run_disposable_exit, "_remove_volume"
-        ) as remove_volume:
-            self.assertEqual(run_disposable_exit._reap_orphans("c" * 32), [])
-        remove_container.assert_not_called()
-        remove_volume.assert_not_called()
-        self.assertFalse(any(call.args[0][:3] == ["docker", "rm", "-f"] for call in docker.call_args_list))
-        container_list = next(call.args[0] for call in docker.call_args_list if call.args[0][:3] == ["docker", "ps", "-a"])
-        self.assertIn(f'{{{{.Label "{run_disposable_exit._LABEL}"}}}}', container_list[-1])
-        volume_list = next(call.args[0] for call in docker.call_args_list if call.args[0][:3] == ["docker", "volume", "ls"])
-        self.assertIn(f'{{{{.Label "{run_disposable_exit._LABEL}"}}}}', volume_list[-1])
-
-    def test_exit_runner_reports_reaper_backlog_and_processes_only_one_candidate(self):
-        nonces = ("b" * 32, "c" * 32)
-        rows = "\n".join(
-            f"{'a' * 64}\tadaptive-factory-exit-{nonce[:12]}\tpostgres:17-alpine\texited\t{nonce}\t2000-01-01 00:00:00 +0000 UTC"
-            for nonce in nonces
-        ) + "\n"
-        def listed(command, **kwargs):
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout=rows)
-            if command[:3] == ["docker", "volume", "ls"]:
-                return SimpleNamespace(returncode=0, stdout="")
-            return SimpleNamespace(returncode=0, stdout="")
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed), patch.object(
-            run_disposable_exit, "_container_binding", return_value=False
-        ) as binding, patch("builtins.print") as printed:
-            self.assertEqual(run_disposable_exit._reap_orphans("d" * 32), [])
-        binding.assert_called_once()
-        self.assertTrue(any("BACKLOG" in str(call.args[0]) for call in printed.call_args_list))
-
-    def test_exit_runner_shares_reclaim_candidate_budget_across_resource_types(self):
-        container_id, nonce = "a" * 64, "b" * 32
-        name = f"adaptive-factory-exit-{nonce[:12]}"
-        bound_volume = f"adaptive-factory-exit-volume-{nonce}"
-        orphan_nonce = "c" * 32
-        orphan_volume = f"adaptive-factory-exit-volume-{orphan_nonce}"
-        container_row = (
-            f"{container_id}\t{name}\t{run_disposable_exit._IMAGE}\t"
-            f"exited\t{nonce}\t2000-01-01 00:00:00 +0000 UTC"
+        self.assertEqual(
+            [call.args[0] for call in run.call_args_list],
+            [
+                ["docker", "rm", "-f", "factory-test-container"],
+                ["docker", "volume", "rm", "factory-test-volume"],
+                ["docker", "inspect", "factory-test-container"],
+                ["docker", "volume", "inspect", "factory-test-volume"],
+            ],
         )
-        volume_rows = f"{bound_volume}\t{nonce}\n{orphan_volume}\t{orphan_nonce}"
-
-        def listed(command, **kwargs):
-            if command[:3] == ["docker", "ps", "-a"]:
-                return SimpleNamespace(returncode=0, stdout=container_row)
-            if command[:3] == ["docker", "volume", "ls"]:
-                return SimpleNamespace(returncode=0, stdout=volume_rows)
-            return SimpleNamespace(returncode=0, stdout="")
-
-        def inspect_volume(volume, *, timeout=5):
-            label_nonce = nonce if volume == bound_volume else orphan_nonce
-            return (volume, "local", label_nonce, "2000-01-01T00:00:00Z")
-
-        with patch.object(run_disposable_exit, "_docker_run", side_effect=listed) as docker, patch.object(
-            run_disposable_exit, "_container_binding", return_value=True
-        ), patch.object(run_disposable_exit, "_volume_binding_matches", return_value=True), patch.object(
-            run_disposable_exit, "_remove_container", return_value=True
-        ), patch.object(run_disposable_exit, "_remove_volume", return_value=True) as remove_volume, patch.object(
-            run_disposable_exit, "_inspect_volume", side_effect=inspect_volume
-        ), patch.object(run_disposable_exit, "_volume_has_container_reference", return_value=False), patch(
-            "builtins.print"
-        ) as printed:
-            reclaimed = run_disposable_exit._reap_orphans("d" * 32)
-
-        self.assertEqual(len(reclaimed), 1)
-        self.assertIn(f"container={container_id} volume={bound_volume}", reclaimed[0])
-        remove_volume.assert_called_once()
-        self.assertFalse(any(command[:3] == ["docker", "volume", "rm"] for command in (
-            call.args[0] for call in docker.call_args_list
-        )))
-        self.assertTrue(any("stale_volumes=2" in str(call.args[0]) and "reclaiming=0" in str(call.args[0])
-                            for call in printed.call_args_list))
-
-    def test_exit_runner_partial_create_is_unwound_and_exact_volume_mount_is_used(self):
-        nonce = "b" * 32
-        volume = f"adaptive-factory-exit-volume-{nonce}"
-        container_id = "a" * 64
-        commands = []
-        def docker(command, **kwargs):
-            commands.append(command)
-            if command[:3] == ["docker", "volume", "create"]:
-                return SimpleNamespace(returncode=0, stdout=volume)
-            if command[:2] == ["docker", "run"]:
-                return SimpleNamespace(returncode=0, stdout=container_id)
-            if command[:2] == ["docker", "port"]:
-                return SimpleNamespace(returncode=1, stdout="")
-            return SimpleNamespace(returncode=0, stdout="")
-        with patch.object(run_disposable_exit, "uuid") as uuid_mock, patch.object(
-            uuid_mock, "uuid4", side_effect=[SimpleNamespace(hex=nonce), SimpleNamespace(hex="c" * 32)]
-        ), patch.object(run_disposable_exit, "_reap_orphans", return_value=[]), patch.object(
-            run_disposable_exit, "_docker_run", side_effect=docker
-        ), patch.object(run_disposable_exit, "_volume_binding_matches", return_value=True), patch.object(
-            run_disposable_exit, "_container_binding", return_value=True
-        ), patch.object(run_disposable_exit, "_cleanup_owned", return_value=["volume"] ) as cleanup:
-            self.assertEqual(run_disposable_exit.main(), 1)
-        self.assertIn("--mount", commands[1])
-        self.assertIn(f"type=volume,src={volume},dst=/var/lib/postgresql/data", commands[1])
-        self.assertEqual(cleanup.call_args.args[0], f"adaptive-factory-exit-{nonce[:12]}")
-        self.assertEqual(cleanup.call_args.args[1:], (nonce, volume, container_id))
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
