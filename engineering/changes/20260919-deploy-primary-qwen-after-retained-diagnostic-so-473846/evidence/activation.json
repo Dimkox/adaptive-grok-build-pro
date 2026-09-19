@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"phase\": \"activate\", \"service\": \"qwen\", \"active_state\": \"active\", \"new_sha\": \"f12807c2b75750072ba768fc95ed492362ae6489\"}\n",
+  "stderr": ""
+}

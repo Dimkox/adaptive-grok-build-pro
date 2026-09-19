@@ -1,0 +1,112 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The exact externally attested merged source is installed immutably; primary source/profile, installed bytes and dependency versions match the operation binding.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A fresh complete snapshot precedes offline schema1-to2 startup; historical counts and other units are unchanged.",
+      "evidence": [
+        {
+          "production_signal": "SIG-002"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "One fixed job reaches authenticated artifact_ready with matched sealed v1/v2 facts, then is read again without POST; otherwise operational acceptance remains failed and recovery facts are preserved.",
+      "evidence": [
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "production_action_approval",
+      "migration_or_external_write_approval"
+    ]
+  },
+  "change_id": "20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Never delete earlier failed records, enrich the old event, replay a provider job or start old code against schema2.",
+      "evidence": [
+        {
+          "production_signal": "SIG-002"
+        },
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Never mutate runtime before exact source acceptance, alter other services or CI infrastructure, or infer external pilot/M8/media acceptance from this text event.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        },
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    }
+  ],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deploy existing Claw primary adaptive-l5.service to the exact externally attested merged revision containing a4023258047a03e1176daa3a35695c9d9b49f8be. Select qwen-omni-intl; preserve data with a complete SQLite snapshot and staged disabled startup; one bounded synthetic acceptance and complete rollback. User authorizes this continuation of the earlier deployment. Grok and separate Omni remain as observed. No application source or CI infrastructure changes. Prepare while external attestation is pending; activate only after merge.",
+    "success_metric": "Primary unit on the exact accepted merged source with qwen-omni-intl, preserved history and one factual durable artifact result",
+    "target": "One accepted primary upgrade; otherwise a preserved terminal outcome and validated recovery, without claiming acceptance"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "exact head/base/App check and merged source/tree, installed bytes/dependencies and per-unit identity",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "fresh snapshot manifest, stopped/offline schema and aggregate counts, preserved roots and recovery identity",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-003",
+      "metric": "fixed job POST count, sealed attempt and response hash, factual usage and artifact read-back or preserved terminal failure",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 7,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

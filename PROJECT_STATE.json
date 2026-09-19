@@ -1397,7 +1397,7 @@
       {
         "branch": "perf/parallel-python-tests",
         "closed_at": "2026-09-16T07:21:05Z",
-        "failure_cause": "head 6d72d4c8…: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim.",
+        "failure_cause": "head 6d72d4c8\u2026: mandatory root-unittest exited 1 with `Ran 642 tests in 443.587s` and `FAILED (failures=7, skipped=1)`; all seven failures are inside this pull request's own tests/test_python_test_runner.py. One reports \"Trust CI tests failed: pytest missing; install .grok-stack/config/python-test-requirements.txt with this Python\" (the workers=2 trust-CLI case); the remaining six assert `'fail' != 'pass'`, including the unittest-path case test_unittest_filename_pattern_is_preserved. The record does not state the runtime's package inventory, so no wider claim is made than that message. Historical observation for that head; refresh base/head and re-derive eligibility before any delivery claim.",
         "head": "6d72d4c859dded241b55e90ae9514ad428a7eb1b",
         "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
         "observed_check_conclusion": "FAILURE",
@@ -1405,7 +1405,7 @@
         "purpose": "Closed without merging on 2026-09-16 by maintainer decision, with the diagnosis and the re-take path recorded on the pull request: the runner must select its engine from what the interpreter actually provides, and its unittest-branch tests must be satisfiable without an importable pytest. The branch and its 1540-insertion head are kept untouched and undeleted; parallel local verification remains an open goal, not a delivered one.",
         "status": "retaken_and_delivered",
         "unique_scope": "Parallel local Python verification",
-        "resolution": "Retaken and delivered by PR #113 (squash merge 35cbbe0f857bdb03dec4eb0ecff542a148b84658, 2026-09-16): python_test_runner selects its engine from what the interpreter provides (capability probe before execution; unimportable xdist degrades to one disclosed sequential unittest pass), and the suite passes on a pytest-free interpreter - proven locally and by the App-owned exact-head check on head 2d1c0208. The perf/parallel-python-tests branch and its head 6d72d4c8… stay retained untouched as the diagnosis exhibit; the failure_cause text above remains a historical observation of that head. True parallelism remains conditional on an importable pytest+xdist install: on such interpreters the runner uses xdist, elsewhere it discloses the serial degrade."
+        "resolution": "Retaken and delivered by PR #113 (squash merge 35cbbe0f857bdb03dec4eb0ecff542a148b84658, 2026-09-16): python_test_runner selects its engine from what the interpreter provides (capability probe before execution; unimportable xdist degrades to one disclosed sequential unittest pass), and the suite passes on a pytest-free interpreter - proven locally and by the App-owned exact-head check on head 2d1c0208. The perf/parallel-python-tests branch and its head 6d72d4c8\u2026 stay retained untouched as the diagnosis exhibit; the failure_cause text above remains a historical observation of that head. True parallelism remains conditional on an importable pytest+xdist install: on such interpreters the runner uses xdist, elsewhere it discloses the serial degrade."
       },
       {
         "pull_request": 15,
@@ -1417,7 +1417,7 @@
         "observed_check_conclusion": "FAILURE",
         "unique_scope": "Unique investor demo and packaging hardening",
         "purpose": "Closed without merging on 2026-09-15T20:02:30Z; its displayed failure conclusion is historical evidence, and any reuse needs a fresh scoped extraction rather than a reopen.",
-        "failure_cause": "head 165d5dd9…: mandatory root-unittest exited 1 with `Ran 480 tests in 244.175s` and `FAILED (failures=1, errors=5)`. The record first shows git refusing the job's own checkout — \"fatal: detected dubious ownership in repository at '/workspace/.git'\" followed by \"fatal: Could not read from remote repository.\" — and the consequences are `ArchitectureError: base_sha is not an available commit object` from adaptive_grok/architecture_diff.py `_exact_commit` (three architecture bootstrap tests) and `RuntimeError: architecture binding requires an exact Git HEAD` (two receipt tests), with the single failure being `AssertionError: 2 != 0` in the architecture CLI bootstrap case. Historical observation; the pull request was closed without merging, so no current eligibility applies."
+        "failure_cause": "head 165d5dd9\u2026: mandatory root-unittest exited 1 with `Ran 480 tests in 244.175s` and `FAILED (failures=1, errors=5)`. The record first shows git refusing the job's own checkout \u2014 \"fatal: detected dubious ownership in repository at '/workspace/.git'\" followed by \"fatal: Could not read from remote repository.\" \u2014 and the consequences are `ArchitectureError: base_sha is not an available commit object` from adaptive_grok/architecture_diff.py `_exact_commit` (three architecture bootstrap tests) and `RuntimeError: architecture binding requires an exact Git HEAD` (two receipt tests), with the single failure being `AssertionError: 2 != 0` in the architecture CLI bootstrap case. Historical observation; the pull request was closed without merging, so no current eligibility applies."
       },
       {
         "pull_request": 14,
@@ -1466,7 +1466,7 @@
         "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
         "observed_check_conclusion": "FAILURE",
         "gitguardian_conclusion": "FAILURE",
-        "failure_cause": "the branch's final head 571cad78… (the pull request was later marked superseded): mandatory root-unittest exited 1 with `Ran 535 tests in 379.425s` and `FAILED (errors=1, skipped=1)`. The lone error is in tests/test_manifest_package.py's test_shipped_zip_exactly_matches_filtered_tracked_head, where the test's own git helper raised subprocess.CalledProcessError for `['git', '--no-replace-objects', '-C', '/workspace', 'rev-parse', '--verify', 'HEAD^{commit}']` with exit status 128; the same record shows the job checking out 571cad78…, so no further mechanism is claimed. An earlier head 460a8a01… passed all six mandatory commands, so the error is attributed to that job, not to the branch content. Historical observation.",
+        "failure_cause": "the branch's final head 571cad78\u2026 (the pull request was later marked superseded): mandatory root-unittest exited 1 with `Ran 535 tests in 379.425s` and `FAILED (errors=1, skipped=1)`. The lone error is in tests/test_manifest_package.py's test_shipped_zip_exactly_matches_filtered_tracked_head, where the test's own git helper raised subprocess.CalledProcessError for `['git', '--no-replace-objects', '-C', '/workspace', 'rev-parse', '--verify', 'HEAD^{commit}']` with exit status 128; the same record shows the job checking out 571cad78\u2026, so no further mechanism is claimed. An earlier head 460a8a01\u2026 passed all six mandatory commands, so the error is attributed to that job, not to the branch content. Historical observation.",
         "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."
       },
       {
@@ -1714,5 +1714,149 @@
     "factory_site_publication": false,
     "record_scope": "False means not established by available evidence. L5 live artifact acceptance does not qualify the full external pilot, M8 cohort or general M9 production/recovery path.",
     "complete_pilot_cost_and_human_intervention_accounting": false
+  },
+  "latest_runtime_operation": {
+    "observed_at": "2026-09-19T19:55:00Z",
+    "status": "primary_qwen_omni_accepted",
+    "target_source": "f12807c2b75750072ba768fc95ed492362ae6489",
+    "source_pull_request": 154,
+    "change_package": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
+    "evidence": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846/evidence/final-runtime.json",
+    "acceptance_evidence": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846/evidence/acceptance-summary.json",
+    "runbook": "engineering/runbooks/l5-primary-continuation-2026-09-19.md",
+    "services": {
+      "primary": {
+        "unit": "adaptive-l5.service",
+        "installed_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+        "profile": "qwen-omni-intl",
+        "model": "qwen3.5-omni-plus-2026-03-15",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 3502600,
+        "schema": 2,
+        "target_accepted": true,
+        "job_id": "runtime-qwen-f12807c2b757-473846",
+        "artifact_digest": "eb03ca2bb5683daed42cd9f20c5cce2d146450cde1a7f8bb05120ef748d5de6e",
+        "job_counts": {
+          "artifact_ready": 2,
+          "needs_human": 4,
+          "provider_unavailable": 1
+        },
+        "unit_sha256": "095fb1fc154abb581792d4b305c8164d44e1ee9fdccfd04c6e8b0a2a545617cd",
+        "client_posts": 1,
+        "readback_posts": 0,
+        "elapsed_ms": 4991
+      },
+      "secondary": {
+        "unit": "adaptive-l5-grok.service",
+        "installed_sha": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+        "profile": "grok-vision",
+        "model": "grok-4.6",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 2287703,
+        "schema": 2,
+        "target_accepted": true,
+        "job_counts": {
+          "artifact_ready": 2,
+          "needs_human": 1
+        },
+        "unit_sha256": "3df99c0168103e691e7571c162609c5859914ca8963aeb2c4cf03718572b08c0"
+      },
+      "separate_omni": {
+        "unit": "adaptive-l5-omni.service",
+        "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+        "profile": "qwen-omni-intl",
+        "model": "qwen3.5-omni-plus-2026-03-15",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 2204064,
+        "operation": "unchanged",
+        "unit_sha256": "1d501478e343fb61e369513cff7d340c2f260877b4343bbdd45236f838879de8"
+      }
+    },
+    "next_action": "Finish PR151 operational-record delivery, then establish one external issue-to-PR outcome with maintainer acceptance. Do not rerun this accepted synthetic provider cycle for paperwork.",
+    "historical_record": "runtime_observations preserves the dated September16 observation; runtime_operation_history preserves the earlier September19 failure and recovery."
+  },
+  "runtime_operation_history": {
+    "20260919_080b28": {
+      "observed_at": "2026-09-19T12:56:21.093490+00:00",
+      "status": "partial_qwen_rolled_back",
+      "target_source": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+      "change_package": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
+      "evidence": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
+      "runbook": "engineering/runbooks/l5-runtime-upgrade-2026-09-19.md",
+      "services": {
+        "primary": {
+          "unit": "adaptive-l5.service",
+          "installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+          "profile": "qwen-intl",
+          "model": "qwen-plus",
+          "active_state": "active",
+          "unit_file_state": "enabled",
+          "live_enabled": true,
+          "pid": 2326158,
+          "schema": 1,
+          "target_accepted": false,
+          "recovery": "full_snapshot_restored",
+          "job_counts": {
+            "artifact_ready": 1,
+            "needs_human": 4,
+            "provider_unavailable": 1
+          },
+          "unit_sha256": "c0fd42ba8dd576323ba677df82fbcf27e9c4df7c8a2a0fbd4312b6caa187d5a6"
+        },
+        "secondary": {
+          "unit": "adaptive-l5-grok.service",
+          "installed_sha": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+          "profile": "grok-vision",
+          "model": "grok-4.6",
+          "active_state": "active",
+          "unit_file_state": "enabled",
+          "live_enabled": true,
+          "pid": 2287703,
+          "schema": 2,
+          "target_accepted": true,
+          "job_counts": {
+            "artifact_ready": 2,
+            "needs_human": 1
+          },
+          "unit_sha256": "3df99c0168103e691e7571c162609c5859914ca8963aeb2c4cf03718572b08c0"
+        },
+        "separate_omni": {
+          "unit": "adaptive-l5-omni.service",
+          "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+          "profile": "qwen-omni-intl",
+          "model": "qwen3.5-omni-plus-2026-03-15",
+          "active_state": "active",
+          "unit_file_state": "enabled",
+          "live_enabled": true,
+          "pid": 2204064,
+          "operation": "unchanged",
+          "unit_sha256": "1d501478e343fb61e369513cff7d340c2f260877b4343bbdd45236f838879de8"
+        }
+      },
+      "next_action": "Resolve the Qwen draft-diagnostic gap with offline regression coverage before a new bounded acceptance; do not repeat the discarded call or mark the target primary accepted.",
+      "historical_record": "runtime_observations remains the dated September 16 release observation; use this newer operation for current installation identity."
+    }
+  },
+  "latest_source_observation": {
+    "observed_at": "2026-09-19T19:55:00Z",
+    "main_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+    "source_pull_request": 154,
+    "source_role": "current accepted source; separate from immutable release observation"
+  },
+  "active_operation_delivery": {
+    "route_id": "473846f79243",
+    "branch": "ops/claw-runtime-upgrade-20260919",
+    "pull_request": 151,
+    "change_package": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
+    "status": "runtime_accepted_operational_record_delivery_pending",
+    "source_pull_request": 154,
+    "source_merge": "f12807c2b75750072ba768fc95ed492362ae6489",
+    "next_action": "Deliver final operational record through PR151 on the current main base and exact App-owned check. No provider replay or release/tag bump. Afterward the next unmet outcome is one external issue with a maintainer-accepted PR."
   }
 }

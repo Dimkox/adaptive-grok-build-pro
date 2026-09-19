@@ -726,6 +726,13 @@ branch while leaving the real defect (untyped setup path, child stop only for na
 close order) in place. The wave fixes what the code actually does and publishes the correction of the false
 sentence on the issue before merging, because the issue trail must match the shipped code.
 
+### 2026-09-19 — Per-service acceptance and full snapshot rollback
+
+Keep each upgraded service's acceptance and recovery independent: Grok's real artifact allowed its upgrade to remain while Qwen's rejected draft triggered containment and full snapshot restoration. Holding both old writer locks and preserving v2 roots before restoring v1 protected the failed attempt and recovered the prior artifact without another provider call. This prevented a partial rollout from becoming either a false two-service success or an unnecessary rollback of the working service.
+
+### 2026-09-19 — One-off operator script evidence
+Store retired and explicitly delegated one-off operator command bodies as exact-byte archives with an original-path/hash index and an explicit external execution boundary. This keeps repository evidence inert without granting fictitious TCP rights to the evidence node; separate actual-body reviews and hash-checked grants still govern execution.
+
 ### 2026-09-19 — Retain rejected-draft diagnostics in the existing reason field
 
 Static consumer analysis found reason_code already persisted and sealed with no value enum, while observation v1 has a closed field set. Reusing reason_code avoids a schema migration and preserves old receipts; only fixed allowlisted codes may cross the model-output boundary. Retaining adapter/profile identity is appropriate for this observability correction because provider wire behavior, accepted drafts, prompt/model and decoder policy stay unchanged; the deployed source SHA identifies the correction.

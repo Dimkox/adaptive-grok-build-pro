@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"service\": \"qwen\", \"files\": 3, \"manifest_sha256\": \"e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e\", \"provider_replay\": false, \"status\": \"snapshot_saved\", \"bytes\": 234033, \"before\": {\"schema\": 1, \"jobs\": {\"artifact_ready\": 1, \"needs_human\": 4, \"provider_unavailable\": 1}}}\n",
+  "stderr": ""
+}

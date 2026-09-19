@@ -1330,6 +1330,20 @@ closed. When overwriting another lane's
 text, prove the replacement against the source file before deleting the original; if it cannot be proven, keep the
 lane's value. Same-pass additions get the *stricter* review, not the looser one, because nobody has read them yet.
 
+### 2026-09-19 — Runtime upgrade preflight and dependent command ordering
+
+The initial Grok backup failed because preflight checked storage space and state but missed ownership of the existing backups parent; the old unit was resumed before migration, then only that parent was corrected under an exact grant. A separate offline smoke failed because I treated an exec session as completed and launched its dependent client before startup finished. Check parent permissions up front and wait for the actual process result plus readiness before dependent work; preserve both failures instead of reporting an uninterrupted green rollout.
+
+### 2026-09-19 — Validate operational specifications before pushing records
+
+I skipped the full local product suite correctly for an operation-record-only change, but also omitted the cheap gate-profile validation of its new typed specification. The red-risk package therefore omitted mandatory forbidden_outcomes and approvals.required_scopes, making PR151 fail repository-verification after its code suites had passed. Validate changed specs directly before push; a no-op product exemption does not exempt the new document from its own schema.
+
+### 2026-09-19 — Executable-looking operator evidence
+Archiving one-off operational command bodies as repository `.py` files incorrectly made the evidence node own executable network clients, including a false TCP inference from `socket.gethostname()`. Preserve exact bytes in indexed inert archives, document the external operator boundary, and verify actual execution bodies separately instead of granting network permissions to the evidence repository.
+
+### 2026-09-19 — Runtime audit executable identity
+A read-only post-acceptance audit guessed `adaptive-landing-host` instead of comparing the reviewed unit’s actual `adaptive-landing-server` executable and therefore falsely failed one assertion. Read the installed unit identity rather than infer CLI names; the corrected metadata-only audit passed without any new provider call or service change.
+
 ### 2026-09-19 — Refresh origin/HEAD after repointing a local clone
 
 The operational clone retained origin/HEAD from its former local remote, so its linked implementation worktree pointed to a deleted release branch even after fetching GitHub. The full verifier completed every test successfully but correctly rejected that unresolved PR target; `git remote set-head origin -a` repaired the local reference and the unchanged-tree Git check passed without rerunning tests. Refresh this reference and run the cheap Git target check before a long verifier when repointing a clone.

@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"capability_http_status\": 409, \"client_posts\": 0, \"job_id\": \"runtime-qwen-f12807c2b757-473846\", \"mode\": \"offline\", \"service\": \"qwen\", \"status\": \"offline_ready\", \"target_sha\": \"f12807c2b75750072ba768fc95ed492362ae6489\"}\n",
+  "stderr": ""
+}

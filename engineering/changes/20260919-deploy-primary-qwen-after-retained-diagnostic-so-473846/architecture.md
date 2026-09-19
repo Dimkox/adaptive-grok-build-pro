@@ -1,0 +1,15 @@
+# Operational architecture delta
+
+Reuse the already-reviewed installer and three finite operational scripts from change080b28. Restrict the continuation to the primary unit and parameterize only the exact40hex target source SHA, using it to derive unique snapshot, preservation, rejected-root and job names. Exact local grants bind the eventual SHA, script hashes and resources; dynamic parameters do not authorize arbitrary deployment targets.
+
+No schema beyond the existing additive landing SQLite v1-to-v2 migration, dependency upgrade, new service, API, queue, provider or application behavior is introduced. Preserve the current installed third-party dependency versions during inert installation, excluding old local application file references from constraints. Source and installed package bytes must match the merged revision.
+
+Server-side request/accounting/diagnostic behavior is the independently delivered source. The opaque systemd credential client exposes only sealed safe result facts. The controller never handles credential bytes. Full stopped-writer recovery retains both existing state/publication inode locks and restores the complete snapshot before starting the old binary disabled.
+
+## Archived script bodies and external operator boundary
+
+The eight one-off scripts from change080b28 and this continuation are inert exact-byte `.py.txt` evidence archives under `NODE-CHANGE-SPEC-EVIDENCE`, not installed application entrypoints. [script-archive-index.json](evidence/script-archive-index.json) preserves every original path, archive path, purpose and SHA-256. Original reports refer to the original names; this index resolves those names without rewriting historical execution bytes or results.
+
+For this already-delegated operation only, the controller checks the frozen archive SHA-256 and extracts the four current bodies to `/opt/adaptive-l5/releases/f12807c2b75750072ba768fc95ed492362ae6489/ops-473846/` under an exact external-write grant. No executable copy or shim remains in the checkout. The service installer does not ship these commands. Their root operator process controls only the named existing primary unit, configs, snapshot and recovery roots. The separate transient client runs as `adaptive-l5`; systemd supplies its opaque credential and it contacts only the existing `/run/adaptive-l5/control.sock` HTTP API. `socket.gethostname()` is a local host identity check, not a TCP call. Existing server-side provider egress remains the accepted application boundary.
+
+Repository architecture fitness covers repository source and does **not** validate archived executable semantics. Actual script bodies remain bound to the independent security/data/release reviews and 13 offline operational guard checks; execution additionally requires exact source/install provenance, fresh grants and runtime checkpoints. No architecture classifier, base, network policy or deployed Trust CI policy was changed. A reusable or maintained operator tool would require its own global architecture declaration and implementation route.

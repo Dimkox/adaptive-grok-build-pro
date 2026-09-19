@@ -1,0 +1,40 @@
+{
+  "config_sha256": "c62eb10b9b1b1f59f2e0967d170bf6e53fc231ff8133e54918313cdda282a68f",
+  "installed_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+  "live_enabled": true,
+  "metadata": {
+    "jobs": {
+      "artifact_ready": 2,
+      "needs_human": 4,
+      "provider_unavailable": 1
+    },
+    "schema": 2
+  },
+  "old_rejected_roots_preserved": true,
+  "selected_profile": "qwen-omni-intl",
+  "status": "accepted",
+  "unit_sha256": "095fb1fc154abb581792d4b305c8164d44e1ee9fdccfd04c6e8b0a2a545617cd",
+  "units": {
+    "adaptive-l5-grok.service": {
+      "ActiveState": "active",
+      "ExecStart": "{ path=/opt/adaptive-l5/releases/26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960/venv/bin/adaptive-landing-server ; argv[]=/opt/adaptive-l5/releases/26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960/venv/bin/adaptive-landing-server --config /opt/adaptive-l5/releases/26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960/grok-host.json ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }",
+      "MainPID": "2287703",
+      "SubState": "running",
+      "UnitFileState": "enabled"
+    },
+    "adaptive-l5-omni.service": {
+      "ActiveState": "active",
+      "ExecStart": "{ path=/opt/adaptive-l5/releases/e7d0f72bf834b75eb543d9424ee47c7829cc65c0/venv/bin/adaptive-landing-server ; argv[]=/opt/adaptive-l5/releases/e7d0f72bf834b75eb543d9424ee47c7829cc65c0/venv/bin/adaptive-landing-server --config /etc/adaptive-l5/omni-host.json ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 }",
+      "MainPID": "2204064",
+      "SubState": "running",
+      "UnitFileState": "enabled"
+    },
+    "adaptive-l5.service": {
+      "ActiveState": "active",
+      "ExecStart": "{ path=/opt/adaptive-l5/releases/f12807c2b75750072ba768fc95ed492362ae6489/venv/bin/adaptive-landing-server ; argv[]=/opt/adaptive-l5/releases/f12807c2b75750072ba768fc95ed492362ae6489/venv/bin/adaptive-landing-server --config /opt/adaptive-l5/releases/f12807c2b75750072ba768fc95ed492362ae6489/qwen-host.json ; ignore_errors=no ; start_time=[Sat 2026-09-19 19:52:53 UTC] ; stop_time=[n/a] ; pid=3502600 ; code=(null) ; status=0/0 }",
+      "MainPID": "3502600",
+      "SubState": "running",
+      "UnitFileState": "enabled"
+    }
+  }
+}

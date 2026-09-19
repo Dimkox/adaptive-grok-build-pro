@@ -1,0 +1,53 @@
+{
+  "change_id": "20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
+  "created_at": "2026-09-19T19:12:00+00:00",
+  "history": [
+    {
+      "at": "2026-09-19T19:12:00+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-19T19:18:50+00:00",
+      "from": "draft",
+      "reason": "Five independent delta analyses completed; primary-only scope, durable single-submit marker, current snapshot recovery and exact-source gates recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-19T19:18:50+00:00",
+      "from": "scoped",
+      "reason": "Existing explicit user direction to upgrade by factory rules and continue covers this same primary/profile operation; concrete grants follow source and script binding.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-19T19:18:50+00:00",
+      "from": "approved",
+      "reason": "No application write agent is selected; controller prepares bounded operational scripts, without runtime mutation before merged source acceptance.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-19T19:26:09+00:00",
+      "from": "implementing",
+      "reason": "Primary-only operational scripts are frozen; nine offline reservation/argument/syntax checks pass with zero provider/runtime effects. Source tests belong to independently checked PR154.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T20:05:03+00:00",
+      "from": "verifying",
+      "reason": "Final bounded operational evidence independently reviewed; product source equals accepted main.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T20:05:03+00:00",
+      "from": "reviewing",
+      "reason": "Security, data and release reviews pass; one accepted primary job and zero-POST identical readback. Final PR151 exact-head external delivery remains required.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "473846f79243",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Deploy primary Qwen after retained-diagnostic source delivery",
+  "updated_at": "2026-09-19T20:05:03+00:00"
+}

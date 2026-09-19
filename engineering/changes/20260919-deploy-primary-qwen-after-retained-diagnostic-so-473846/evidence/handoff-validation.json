@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "command": "python3 -m unittest discover -s tests -p test_project_state.py -q",
+  "tests": 15,
+  "duration_seconds": 0.165,
+  "scope": "Existing historical-release and current handoff invariants; no application source changes.",
+  "initial_failure": "One historical PR19 pointer was removed from START_HERE; restored that factual link before final pass. Legacy immutable release fields retained; current operation facts use additive explicitly named fields.",
+  "provider_calls": 0,
+  "full_suites_repeated": false
+}
