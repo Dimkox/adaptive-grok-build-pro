@@ -1,0 +1,74 @@
+{
+  "failed_check_run_id": 105901207480,
+  "failed_head": "0455d2b82c0af1a4d67660d5d992c3514227ea89",
+  "failed_command": "repository-verification",
+  "other_external_commands": "holdout-bundle-integrity, external-holdout, root-unittest, trust-ci-unittest and compileall passed",
+  "failed_checks": [
+    {
+      "name": "change-spec",
+      "summary": "1 specs checked; exempt=False",
+      "details": [
+        {
+          "severity": "error",
+          "code": "change-spec-invalid",
+          "path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml",
+          "message": "/workspace/engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml: red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes"
+        }
+      ]
+    }
+  ],
+  "local_before": {
+    "coverage": {
+      "criterion_mapped": 3,
+      "criterion_total": 3,
+      "evidence_counts": {
+        "attestation": 1,
+        "production_signal": 3,
+        "receipt": 0,
+        "test": 1
+      },
+      "mapped_ids": [
+        "AC-001",
+        "AC-002",
+        "AC-003"
+      ],
+      "spec_count": 1,
+      "unmapped_ids": []
+    },
+    "digest": "564c47aca5faf0e800a94e802aa840092cf99406cbb73ccda992178d75b6c0e2",
+    "errors": [
+      "/var/tmp/adaptive-l5-upgrade-26a0d3-20260919/engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml: red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes"
+    ],
+    "ok": false,
+    "path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml",
+    "profile": "gate"
+  },
+  "local_after": {
+    "coverage": {
+      "criterion_mapped": 3,
+      "criterion_total": 3,
+      "evidence_counts": {
+        "attestation": 1,
+        "production_signal": 3,
+        "receipt": 0,
+        "test": 1
+      },
+      "mapped_ids": [
+        "AC-001",
+        "AC-002",
+        "AC-003"
+      ],
+      "spec_count": 1,
+      "unmapped_ids": []
+    },
+    "digest": "e251b03a3f6d13ae4ae15b8721e2fba9f4855f426879cd90a6841b1160665d9f",
+    "errors": [],
+    "fingerprint": "ee319af0fc689f760d4df0e19d06b32d542015930fdc250fcdd8793516538d2c",
+    "ok": true,
+    "path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml",
+    "profile": "gate"
+  },
+  "source_code_changed": false,
+  "runtime_replayed": false,
+  "runtime_objective_still": "partial_qwen_rolled_back"
+}

@@ -35,7 +35,10 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": [
+      "production_action_approval",
+      "migration_or_external_write_approval"
+    ]
   },
   "change_id": "20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
   "contracts": {
@@ -43,7 +46,29 @@
     "json_schema": [],
     "openapi": []
   },
-  "forbidden_outcomes": [],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Do not delete original records, replay a provider job, or start the old binary against a v2 store during recovery.",
+      "evidence": [
+        {
+          "production_signal": "SIG-002"
+        },
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Do not claim Qwen target acceptance from the successful Grok result or the restored historical artifact.",
+      "evidence": [
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    }
+  ],
   "invariants": [],
   "objective": {
     "id": "OBJ-001",

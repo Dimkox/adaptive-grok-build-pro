@@ -1333,3 +1333,7 @@ lane's value. Same-pass additions get the *stricter* review, not the looser one,
 ### 2026-09-19 — Runtime upgrade preflight and dependent command ordering
 
 The initial Grok backup failed because preflight checked storage space and state but missed ownership of the existing backups parent; the old unit was resumed before migration, then only that parent was corrected under an exact grant. A separate offline smoke failed because I treated an exec session as completed and launched its dependent client before startup finished. Check parent permissions up front and wait for the actual process result plus readiness before dependent work; preserve both failures instead of reporting an uninterrupted green rollout.
+
+### 2026-09-19 — Validate operational specifications before pushing records
+
+I skipped the full local product suite correctly for an operation-record-only change, but also omitted the cheap gate-profile validation of its new typed specification. The red-risk package therefore omitted mandatory forbidden_outcomes and approvals.required_scopes, making PR151 fail repository-verification after its code suites had passed. Validate changed specs directly before push; a no-op product exemption does not exempt the new document from its own schema.
