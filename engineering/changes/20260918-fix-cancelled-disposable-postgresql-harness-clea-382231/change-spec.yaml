@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "change_id": "20260918-fix-cancelled-disposable-postgresql-harness-clea-382231",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the disposable PostgreSQL exit check and verifier-owned command timeouts stop descendants, recover only owned resources, and distinguish inconclusive timeout outcomes.",
+    "success_metric": "Every created disposable container and volume is either removed by the owning run or reclaimed by a later run after the documented safe TTL; timed-out command descendants are terminated before a result is returned; ambiguous resources are preserved and reported.",
+    "target": "factory/tests/run_disposable_exit.py, .grok-stack/adaptive_grok/util.py, and verifier timeout handling"
+  },
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Startup reclaims only resources older than a TTL above the bounded maximum run time and fully matching the harness nonce, container, mount, and volume ownership; each reclaim is reported. The one per-run candidate allowance is global across stale container bundles and detached volumes; a bound container+volume pair counts as one candidate.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-002","statement":"Handled SIGTERM/SIGINT stops and reaps owned descendants before finally cleanup removes the exact container and volume; cancellation never reports pass.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-003","statement":"Inner and outer timeout outcomes remain failing and explicitly report phase, elapsed time, and budget; ordinary assertion failure is distinguishable and repository-sandbox capability skip remains explicit.","evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-004","statement":"A timed-out generic verifier command terminates its POSIX process group with bounded TERM then KILL escalation, reaps its direct child, and returns only after the group is gone or an explicit cleanup-incomplete diagnostic is attached.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"AC-005","statement":"Cancellation cleanup retries name-to-full-ID resolution and exact binding validation only within a strict bounded deadline before exact-ID container and nonce-volume removal.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-006","statement":"Startup container and volume reaper listings enforce both an output-byte cap and a row scan cap, report backlog, and never broaden deletion beyond exact stale bindings; output overflow is distinguishable from Docker/list failure and skips the incomplete snapshot safely.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-007","statement":"KeyboardInterrupt during generic verifier commands or bounded Docker listings stops and reaps the isolated process group with bounded TERM then KILL before re-raising cancellation.","evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-008","statement":"A nested Trust CLI invocation does not inherit the outer test runner's private child marker, its Trust suite paths retain import precedence, and inherited pinned test-tool paths remain available so its configured worker count is evaluated independently.","evidence":[{"test":"tests/test_python_test_runner.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Never delete a resource using only its name, prefix, or broad label; revalidate exact full ID, nonce, image, mount, volume driver and label immediately before deletion.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"INV-002","statement":"The 600 second outer check remains bounded and fail-closed; cleanup has reserved headroom and timeout/cancellation never becomes success.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"INV-003","statement":"Every generic verifier subprocess timeout owns an isolated POSIX session and does not return while its process group remains live after bounded escalation.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"INV-004","statement":"Docker listing output and the number of inspected candidate rows are bounded per invocation; excess candidates and truncated snapshots are reported as backlog and truncated snapshots are not used for deletion.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"INV-005","statement":"Python cancellation cannot leave owned generic command or Docker listing process groups running after unwind begins.","evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"INV-006","statement":"Harness-private child-worker state is removed before launching nested Trust CLI commands; Trust suite paths precede inherited test-tool paths, which remain available to the nested CLI.","evidence":[{"test":"tests/test_python_test_runner.py"}]}
+  ],
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No cron, global Docker prune, or deletion of unlabelled, fresh, current, or ambiguously bound resources.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"FORBID-002","statement":"No GitHub Actions dependency and no production/durable factory database mutation.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "observability": [
+    {"id":"SIG-001","metric":"reclaimed resources, timeout/cancellation phase and elapsed/budget are reported with exact identities","proves":["OBJ-001"]}
+  ],
+  "contracts":{"events":[],"json_schema":[],"openapi":[]},
+  "approvals":{"required_scopes":[]},
+  "risk":{"tier":"yellow","domains":["data","api"]},
+  "rollback":{"strategy":"forward_fix","maximum_steps":1}
+}

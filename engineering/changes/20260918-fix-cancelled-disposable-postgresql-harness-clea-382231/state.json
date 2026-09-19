@@ -1,0 +1,35 @@
+{
+  "change_id": "20260918-fix-cancelled-disposable-postgresql-harness-clea-382231",
+  "created_at": "2026-09-18T06:54:14+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T06:54:14+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T06:57:36+00:00",
+      "from": "draft",
+      "reason": "Read-only analysis confirms resource-volume leaks, missing signal ownership, and flattened timeout outcomes; scope and tests are specified.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T06:57:50+00:00",
+      "from": "scoped",
+      "reason": "Analysis reports identify safe ownership boundaries, TTL constraints, signal order, timeout semantics, and regression coverage; no human gate applies.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T06:57:50+00:00",
+      "from": "approved",
+      "reason": "Begin implementation under the route-selected sole writer data_implementer.",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "3822310b0593",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix cancelled disposable PostgreSQL harness cleanup, orphan recovery, and timeout reporting (#128)",
+  "updated_at": "2026-09-18T06:57:50+00:00"
+}
