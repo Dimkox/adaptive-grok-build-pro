@@ -1,0 +1,85 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect"
+  ],
+  "base_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+  "base_fingerprint": "fbf78170cf311a70fe871e453908233b5bcc4855a34c217f8f1560b0090cbfdb",
+  "complexity": "standard",
+  "created_at": "2026-09-19T18:31:22+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "data"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api,data",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "814ed9c452cd",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix issue 152 in the landing provider normalizer: retain a bounded allowlisted draft validator diagnostic and the validated real provider response digest when a completed response fails draft decoding. Preserve needs_human rejection, reported usage, historical SQLite job records and existing API/receipt compatibility. Add offline regression tests including distinct decoder failures, sensitive unknown exceptions and durable job/API round-trip. No provider call or deployment during implementation.",
+  "task_domains": [
+    "api",
+    "data"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "data-change"
+  ],
+  "write_agent": "data_implementer"
+}

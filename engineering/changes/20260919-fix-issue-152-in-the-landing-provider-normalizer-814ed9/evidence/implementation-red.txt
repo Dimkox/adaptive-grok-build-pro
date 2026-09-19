@@ -1,0 +1,331 @@
+FFF....FFF.FFFFFFFFFFFFFFF..FFF.
+======================================================================
+FAIL: test_distinct_draft_failures_retain_safe_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_distinct_draft_failures_retain_safe_reasons) (reason='draft_fields')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 102, in test_distinct_draft_failures_retain_safe_reasons
+    self.assertEqual(("needs_human", reason), (outcome.state, outcome.reason_code))
+AssertionError: Tuples differ: ('needs_human', 'draft_fields') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_fields'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_fields')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_distinct_draft_failures_retain_safe_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_distinct_draft_failures_retain_safe_reasons) (reason='draft_sections')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 102, in test_distinct_draft_failures_retain_safe_reasons
+    self.assertEqual(("needs_human", reason), (outcome.state, outcome.reason_code))
+AssertionError: Tuples differ: ('needs_human', 'draft_sections') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_sections'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_sections')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_distinct_draft_failures_retain_safe_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_distinct_draft_failures_retain_safe_reasons)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 111, in test_distinct_draft_failures_retain_safe_reasons
+    self.assertNotEqual(outcomes[0].reason_code, outcomes[1].reason_code)
+AssertionError: 'http_outcome_unusable' == 'http_outcome_unusable'
+
+======================================================================
+FAIL: test_rejected_drafts_preserve_exact_wire_response_digests (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_rejected_drafts_preserve_exact_wire_response_digests) (content='{}')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 127, in test_rejected_drafts_preserve_exact_wire_response_digests
+    self.assertEqual(expected_digest, outcome.evidence.response_digest)
+AssertionError: 'a5131bc00854dc67cc1d45cfa87b1ea1f010c27d62587bdd1d766cc339e3f41e' != 'de8de4a2bddbc411c6dc3bc45b8d03c92bcdd8064596be13d92b9499723f9977'
+- a5131bc00854dc67cc1d45cfa87b1ea1f010c27d62587bdd1d766cc339e3f41e
++ de8de4a2bddbc411c6dc3bc45b8d03c92bcdd8064596be13d92b9499723f9977
+
+
+======================================================================
+FAIL: test_rejected_drafts_preserve_exact_wire_response_digests (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_rejected_drafts_preserve_exact_wire_response_digests) (content='{"description": "A deterministic Stage 3 preview.", "direction": "ltr", "locale": "en", "sections": [], "title": "Bounded local landing"}')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 127, in test_rejected_drafts_preserve_exact_wire_response_digests
+    self.assertEqual(expected_digest, outcome.evidence.response_digest)
+AssertionError: '456175cbce90f56a77aedff93215a1858007e12b44e0fa5513ee5d108ef59631' != 'de8de4a2bddbc411c6dc3bc45b8d03c92bcdd8064596be13d92b9499723f9977'
+- 456175cbce90f56a77aedff93215a1858007e12b44e0fa5513ee5d108ef59631
++ de8de4a2bddbc411c6dc3bc45b8d03c92bcdd8064596be13d92b9499723f9977
+
+
+======================================================================
+FAIL: test_rejected_drafts_preserve_exact_wire_response_digests (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_rejected_drafts_preserve_exact_wire_response_digests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 130, in test_rejected_drafts_preserve_exact_wire_response_digests
+    self.assertNotEqual(observations[0]["evidence"]["provider_evidence_digest"],
+AssertionError: 'd1fb05078d0e8e4031babfa080fcb5d0e6624bd83296c34a1936b993cdee9992' == 'd1fb05078d0e8e4031babfa080fcb5d0e6624bd83296c34a1936b993cdee9992'
+
+======================================================================
+FAIL: test_sensitive_model_keys_leave_only_allowlisted_draft_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_sensitive_model_keys_leave_only_allowlisted_draft_reasons) (reason='draft_fields')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 146, in test_sensitive_model_keys_leave_only_allowlisted_draft_reasons
+    self.assertEqual(reason, outcome.reason_code)
+AssertionError: 'draft_fields' != 'http_outcome_unusable'
+- draft_fields
++ http_outcome_unusable
+
+
+======================================================================
+FAIL: test_sensitive_model_keys_leave_only_allowlisted_draft_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_sensitive_model_keys_leave_only_allowlisted_draft_reasons) (reason='draft_unknown_fields')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 146, in test_sensitive_model_keys_leave_only_allowlisted_draft_reasons
+    self.assertEqual(reason, outcome.reason_code)
+AssertionError: 'draft_unknown_fields' != 'http_outcome_unusable'
+- draft_unknown_fields
++ http_outcome_unusable
+
+
+======================================================================
+FAIL: test_sensitive_model_keys_leave_only_allowlisted_draft_reasons (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_sensitive_model_keys_leave_only_allowlisted_draft_reasons) (reason='draft_duplicate_json_key')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 146, in test_sensitive_model_keys_leave_only_allowlisted_draft_reasons
+    self.assertEqual(reason, outcome.reason_code)
+AssertionError: 'draft_duplicate_json_key' != 'http_outcome_unusable'
+- draft_duplicate_json_key
++ http_outcome_unusable
+
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='ValueError', args=('SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='OSError', args=('SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingProviderError', args=('SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingProviderError', args=('draft_fields: SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingProviderError', args=('draft_fields', 'SENSITIVE_EXCEPTION_152'))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingProviderError', args=('sections',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=('unrecognized: SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=('sections:SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=('None: SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=('3: SENSITIVE_EXCEPTION_152',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=("['sections']: SENSITIVE_EXCEPTION_152",))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_unknown_or_malformed_decoder_errors_use_one_safe_fallback (factory.tests.test_landing_failover_providers.ProviderObservationTests.test_unknown_or_malformed_decoder_errors_use_one_safe_fallback) (error_type='LandingContractError', args=("{'sections': 'SENSITIVE_EXCEPTION_152'}: SENSITIVE_EXCEPTION_152",))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_providers.py", line 168, in test_unknown_or_malformed_decoder_errors_use_one_safe_fallback
+    self.assertEqual(("needs_human", "draft_validation_failed"),
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_draft_diagnostics_survive_restart_and_authenticated_receipt_read (factory.tests.test_landing_failover_backend.DraftReceiptPersistenceTests.test_draft_diagnostics_survive_restart_and_authenticated_receipt_read) (reason='draft_fields')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_backend.py", line 185, in test_draft_diagnostics_survive_restart_and_authenticated_receipt_read
+    self.assertEqual(("needs_human", reason), (receipt["state"], receipt["reason_code"]))
+AssertionError: Tuples differ: ('needs_human', 'draft_fields') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_fields'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_fields')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_draft_diagnostics_survive_restart_and_authenticated_receipt_read (factory.tests.test_landing_failover_backend.DraftReceiptPersistenceTests.test_draft_diagnostics_survive_restart_and_authenticated_receipt_read) (reason='draft_sections')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_backend.py", line 185, in test_draft_diagnostics_survive_restart_and_authenticated_receipt_read
+    self.assertEqual(("needs_human", reason), (receipt["state"], receipt["reason_code"]))
+AssertionError: Tuples differ: ('needs_human', 'draft_sections') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_sections'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_sections')
++ ('needs_human', 'http_outcome_unusable')
+
+======================================================================
+FAIL: test_draft_diagnostics_survive_restart_and_authenticated_receipt_read (factory.tests.test_landing_failover_backend.DraftReceiptPersistenceTests.test_draft_diagnostics_survive_restart_and_authenticated_receipt_read) (reason='draft_validation_failed')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/tmp/adaptive-issue152-20260919/factory/tests/test_landing_failover_backend.py", line 185, in test_draft_diagnostics_survive_restart_and_authenticated_receipt_read
+    self.assertEqual(("needs_human", reason), (receipt["state"], receipt["reason_code"]))
+AssertionError: Tuples differ: ('needs_human', 'draft_validation_failed') != ('needs_human', 'http_outcome_unusable')
+
+First differing element 1:
+'draft_validation_failed'
+'http_outcome_unusable'
+
+- ('needs_human', 'draft_validation_failed')
++ ('needs_human', 'http_outcome_unusable')
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.462s
+
+FAILED (failures=24)

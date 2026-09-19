@@ -1,18 +1,22 @@
 """Offline provider protocol and durable failure-observation regressions."""
 
 from datetime import datetime, timezone
+from dataclasses import replace
 import hashlib
 import json
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import tempfile
 
 import httpx
 
 from adaptive_factory.contracts import canonical_json
-from adaptive_factory.landing_http import HttpLandingNormalizer, HttpLandingProfile, HttpLandingExecutionRequest, HTTP_NORMALIZER_PROMPT, HTTP_PROTOCOL_VERSION
+from adaptive_factory.landing_contracts import LandingContractError
+from adaptive_factory.landing_http import HttpLandingNormalizer, HttpLandingProfile, HttpLandingExecutionRequest, HttpLandingExecutionResult, HTTP_NORMALIZER_PROMPT, HTTP_PROTOCOL_VERSION
 from adaptive_factory.landing_live_executors import OpenAICompatibleLandingExecutor
-from adaptive_factory.landing_provider import LandingNormalizationRequest
+from adaptive_factory.landing_observation import LandingProviderObservation
+from adaptive_factory.landing_provider import LandingNormalizationRequest, LandingProviderError
 from factory.tests.test_landing_normalizer import draft, source
 
 
@@ -50,7 +54,7 @@ class ProviderObservationTests(unittest.TestCase):
                 self.assertEqual("protocol", observation.category)
                 self.assertEqual(status, observation.http_status)
 
-    def normalize(self, status=200, *, content=None, error=None, stream=None):
+    def normalize(self, status=200, *, content=None, error=None, stream=None, response_body=None):
         profile = HttpLandingProfile.for_provider("qwen-intl", available=True)
         body = error if error is not None else {
             "object": "chat.completion", "model": profile.model_id,
@@ -60,7 +64,9 @@ class ProviderObservationTests(unittest.TestCase):
         }
         transport = httpx.MockTransport(lambda request: httpx.Response(
             status, headers={"content-type": "application/json"},
-            stream=stream if stream is not None else httpx.ByteStream(canonical_json(body)),
+            stream=stream if stream is not None else httpx.ByteStream(
+                canonical_json(body) if response_body is None else response_body,
+            ),
         ))
         executor = OpenAICompatibleLandingExecutor(
             provider_id=profile.provider_id, base_url=profile.base_url,
@@ -83,6 +89,117 @@ class ProviderObservationTests(unittest.TestCase):
         self.assertEqual("draft", observation.category)
         self.assertEqual("reported", observation.usage_status)
         self.assertEqual((12, 34), (observation.usage_input_units, observation.usage_output_units))
+
+    def test_distinct_draft_failures_retain_safe_reasons(self):
+        document = json.loads(draft())
+        cases = (("{}", "draft_fields"),
+                 (json.dumps({**document, "sections": []}), "draft_sections"))
+        outcomes = []
+        for content, reason in cases:
+            with self.subTest(reason=reason):
+                outcome = self.normalize(content=content)
+                outcomes.append(outcome)
+                self.assertEqual(("needs_human", reason), (outcome.state, outcome.reason_code))
+                self.assertIsNone(outcome.spec)
+                self.assertEqual("provider_unavailable", outcome.evidence.disposition)
+                self.assertEqual("draft", outcome.observation.category)
+                self.assertTrue(outcome.observation.dispatched)
+                self.assertEqual("reported", outcome.observation.usage_status)
+                self.assertEqual((12, 34), (outcome.observation.usage_input_units,
+                                          outcome.observation.usage_output_units))
+        self.assertEqual(outcomes[0].evidence.input_digest, outcomes[1].evidence.input_digest)
+        self.assertNotEqual(outcomes[0].reason_code, outcomes[1].reason_code)
+
+    def test_rejected_drafts_preserve_exact_wire_response_digests(self):
+        observations = []
+        for content in ("{}", json.dumps({**json.loads(draft()), "sections": []})):
+            with self.subTest(content=content):
+                response = json.dumps({
+                    "object": "chat.completion", "model": "qwen-plus",
+                    "choices": [{"index": 0, "finish_reason": "stop", "message": {
+                        "role": "assistant", "content": content,
+                    }}], "usage": {"prompt_tokens": 12, "completion_tokens": 34, "total_tokens": 46},
+                }).encode()
+                expected_digest = hashlib.sha256(response).hexdigest()
+                outcome = self.normalize(response_body=response)
+                observation = outcome.observation.to_dict()
+                observations.append(observation)
+                self.assertEqual(expected_digest, outcome.evidence.response_digest)
+                self.assertNotEqual(hashlib.sha256(content.encode()).hexdigest(), expected_digest)
+                self.assertEqual(outcome.observation, LandingProviderObservation.from_dict(observation))
+        self.assertNotEqual(observations[0]["evidence"]["provider_evidence_digest"],
+                            observations[1]["evidence"]["provider_evidence_digest"])
+        self.assertNotEqual(observations[0]["observation_digest"], observations[1]["observation_digest"])
+
+    def test_sensitive_model_keys_leave_only_allowlisted_draft_reasons(self):
+        sensitive = "SENSITIVE_MODEL_KEY_152"
+        document = json.loads(draft())
+        unknown_section = {**document, "sections": [{**document["sections"][0], sensitive: True}]}
+        cases = (
+            (json.dumps({**document, sensitive: True}), "draft_fields"),
+            (json.dumps(unknown_section), "draft_unknown_fields"),
+            ('{"' + sensitive + '":1,"' + sensitive + '":2}', "draft_duplicate_json_key"),
+        )
+        for content, reason in cases:
+            with self.subTest(reason=reason):
+                outcome = self.normalize(content=content)
+                self.assertEqual(reason, outcome.reason_code)
+                serialized = json.dumps({"reason_code": outcome.reason_code,
+                                         "observation": outcome.observation.to_dict()})
+                self.assertNotIn(sensitive, serialized)
+
+    def test_unknown_or_malformed_decoder_errors_use_one_safe_fallback(self):
+        sensitive = "SENSITIVE_EXCEPTION_152"
+        errors = (
+            ValueError(sensitive), OSError(sensitive), LandingProviderError(sensitive),
+            LandingProviderError("draft_fields: " + sensitive),
+            LandingProviderError("draft_fields", sensitive), LandingProviderError("sections"),
+            LandingContractError("unrecognized", sensitive),
+            LandingContractError("sections:" + sensitive),
+            LandingContractError(None, sensitive), LandingContractError(3, sensitive),
+            LandingContractError(["sections"], sensitive),
+            LandingContractError({"sections": sensitive}, sensitive),
+        )
+        for error in errors:
+            with self.subTest(error_type=type(error).__name__, args=error.args), patch(
+                "adaptive_factory.landing_http.decode_landing_draft", side_effect=error,
+            ):
+                outcome = self.normalize()
+                self.assertEqual(("needs_human", "draft_validation_failed"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertEqual("draft", outcome.observation.category)
+                self.assertEqual("reported", outcome.observation.usage_status)
+                self.assertIsNone(outcome.spec)
+                serialized = json.dumps({"reason_code": outcome.reason_code,
+                                         "observation": outcome.observation.to_dict()})
+                self.assertNotIn(sensitive, serialized)
+
+    def test_invalid_executor_results_keep_generic_reason_and_synthetic_evidence(self):
+        valid = HttpLandingExecutionResult(b"{}", "a" * 64, 25, 12, 34)
+        synthetic_digest = hashlib.sha256(
+            b'{"contract":"adaptive-factory.landing-provider-response/v1",'
+            b'"reason_code":"http_outcome_unusable","state":"needs_human"}'
+        ).hexdigest()
+        cases = (
+            (None, "protocol"), (replace(valid, stdout="{}"), "protocol"),
+            (replace(valid, response_digest="SENSITIVE_INVALID_DIGEST"), "protocol"),
+            (replace(valid, elapsed_ms=-1), "protocol"),
+            (replace(valid, usage_input_units=True), "accounting"),
+            (replace(valid, usage_output_units=-1), "accounting"),
+        )
+        for result, category in cases:
+            with self.subTest(result=result), patch.object(
+                OpenAICompatibleLandingExecutor, "run", return_value=result,
+            ), patch("adaptive_factory.landing_http.decode_landing_draft",
+                     side_effect=AssertionError("unvalidated result reached draft decoder")):
+                outcome = self.normalize()
+                self.assertEqual(("needs_human", "http_outcome_unusable"),
+                                 (outcome.state, outcome.reason_code))
+                self.assertEqual(synthetic_digest, outcome.evidence.response_digest)
+                self.assertEqual(category, outcome.observation.category)
+                self.assertEqual("unavailable", outcome.observation.usage_status)
+                self.assertIsNone(outcome.observation.usage_input_units)
+                self.assertIsNone(outcome.observation.usage_output_units)
 
     def test_provider_authentication_is_distinct_and_usage_is_unknown(self):
         result = self.normalize(401, error={"error": {"code": "invalid_api_key"}})
