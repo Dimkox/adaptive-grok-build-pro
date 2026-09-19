@@ -1,0 +1,74 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+  "base_fingerprint": "e68f8c0ba9eb1e904b75b9b93d63e983c97f68cba782e13935c3e5e51c45917b",
+  "complexity": "standard",
+  "created_at": "2026-09-18T02:25:10+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "a8759f7ed815",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix #117: add automated validation in the Python review-record verifier for command and repository path evidence, with regression tests.",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}
