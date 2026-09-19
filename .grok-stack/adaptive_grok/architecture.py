@@ -4,12 +4,13 @@ import hashlib
 import json
 import math
 import os
+import posixpath
 import re
 import stat
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Container, Iterable, Mapping
 
 from .spec import SpecError, _schema_preflight, validate_schema
 from .util import run
@@ -1120,6 +1121,202 @@ def _has_only_keys(value: Any, allowed: set[str]) -> bool:
     )
 
 
+SCHEMA_REFERENCE_UNSAFE = "unsafe schema reference"
+SCHEMA_REFERENCE_ESCAPE = "schema reference escapes inventory"
+SCHEMA_REFERENCE_UNDECLARED = "undeclared schema reference"
+SCHEMA_REFERENCE_AMBIGUOUS = "ambiguous declared schema id"
+SCHEMA_REFERENCE_NOT_A_PATH = "schema reference is not a repository path"
+#: Reasons that provably name no declared contract, so a caller may drop the reverse edge.
+#: ``SCHEMA_REFERENCE_NOT_A_PATH`` is a base that is not a path reference at all (an IRI such
+#: as ``urn:``/``https:``, a filesystem-absolute path, or text no repository path can hold);
+#: ``SCHEMA_REFERENCE_ESCAPE`` is a base that leaves the repository, which is exactly what the
+#: pre-issue-#146 normalisation refused as well.
+#:
+#: ``SCHEMA_REFERENCE_UNSAFE`` is deliberately **absent**.  It means only "this base *is* a
+#: relative path and this grammar refused it" (``./sibling.json``, a segment holding a space or
+#: a ``+``), and the repository's path rules accept such paths, so a dependency edge existed
+#: before the grammar was strict.  Dropping it would re-open the silent under-verification
+#: issue #146 was opened for; the fitness closure resolves that reason through
+#: ``schema_reference_identity_path`` instead of dropping it.
+SCHEMA_REFERENCE_UNRESOLVED = frozenset(
+    {SCHEMA_REFERENCE_NOT_A_PATH, SCHEMA_REFERENCE_ESCAPE, SCHEMA_REFERENCE_UNDECLARED}
+)
+#: A reference base that is both another contract's declared path and some contract's
+#: declared ``$id`` is resolved by ``$id`` (the comparator's long-standing precedence, see
+#: the sibling issue for the shadowing defect it allows) or by path (one of the two tables
+#: the fitness gate's dependency closure consults; it never substitutes one for the other).
+SCHEMA_REFERENCE_ID_FIRST = "declared_id_first"
+SCHEMA_REFERENCE_PATH_FIRST = "declared_path_first"
+
+
+def schema_reference_parts(reference: str) -> tuple[str, str | None]:
+    """Split a ``$ref`` into ``(base, fragment)``; the only grammar the gate follows.
+
+    Shared by the contract comparator and the architecture-fitness dependency closure so
+    that the two cannot disagree about what a ``$ref`` points at.
+    """
+    if "#" in reference:
+        base, fragment = reference.split("#", 1)
+        return base, fragment
+    return reference, None
+
+
+def schema_reference_identity_path(referrer_path: str, reference_base: str) -> tuple[str | None, str]:
+    """Repository path a ``$ref`` base names, or the reason it cannot name a declared one.
+
+    This is the *identity* normalisation, not a resolver: the base is folded onto the
+    referrer's directory exactly the way ``posixpath.normpath`` folded it before the shared
+    grammar existed, and the result is then tested with the repository's own path rule -- the
+    rule every declared contract path passes.  A caller can therefore ask the only question
+    dependency identity needs ("could a declared contract live where this reference points?")
+    without re-implementing the fold.
+
+    ``schema_reference_relative_path`` uses it to tell its two refusals apart and the fitness
+    dependency closure uses it to recover an edge the strict grammar declined, so both
+    readings of a ``$ref`` come from one implementation.  Returns ``(path, "")`` when the fold
+    is a legal repository-relative path, ``(None, SCHEMA_REFERENCE_ESCAPE)`` when it leaves the
+    repository, and ``(None, SCHEMA_REFERENCE_NOT_A_PATH)`` when it is not a repository path at
+    all.  Like ``schema_reference_target_path`` it reports a miss instead of raising.
+    """
+    normalized = posixpath.normpath(
+        posixpath.join(posixpath.dirname(referrer_path), reference_base)
+    )
+    if normalized == ".." or normalized.startswith("../"):
+        return None, SCHEMA_REFERENCE_ESCAPE
+    if posixpath.isabs(normalized):
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
+    try:
+        return _safe_relative_path(normalized, label="schema reference identity path"), ""
+    except ArchitectureError:
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
+
+
+def schema_reference_relative_path(referrer_path: str, reference_base: str) -> str:
+    """Repository-relative path a plain relative ``$ref`` base resolves to.
+
+    Raises ArchitectureError for any grammar that is not a repository-relative pointer, and
+    keeps the two refusals apart: ``SCHEMA_REFERENCE_NOT_A_PATH`` for a base that is not a path
+    reference at all, and ``SCHEMA_REFERENCE_UNSAFE`` for a relative path this grammar refuses.
+    The split changes which reason is reported, never which bases are accepted: every base that
+    resolved before still resolves, and every base that was refused still is.
+
+    The difference is the caller's policy.  A not-a-path base cannot name a declared contract
+    under any normalisation, so an edge is legitimately absent; a refused relative path can and
+    did, so a closure must resolve it through ``schema_reference_identity_path`` rather than
+    drop it -- that loss is issue #146 finding C2.
+    """
+    if not reference_base or "#" in reference_base:
+        raise ArchitectureError(SCHEMA_REFERENCE_NOT_A_PATH, code="contract")
+    if reference_base.startswith("/") or re.match(
+        r"^[A-Za-z][A-Za-z0-9+.-]*:", reference_base
+    ):
+        #: A filesystem-absolute path can never be a declared contract path, and an IRI is not
+        #: a repository pointer: the gate reaches an IRI through the declared ``$id`` table.
+        #: A contract *file* named ``urn:...json`` would be a legal repository path, so this is
+        #: the one refusal that is a decision rather than a proof; measured on the declared
+        #: inventory, no contract path carries a scheme, so nothing is dropped today.
+        raise ArchitectureError(SCHEMA_REFERENCE_NOT_A_PATH, code="contract")
+    identity_path, identity_reason = schema_reference_identity_path(
+        referrer_path, reference_base
+    )
+    if identity_path is None:
+        #: The fold itself leaves the repository, or its result is text the repository's path
+        #: rule forbids (a backslash, control or non-NFC text).  No declared contract path can
+        #: equal it, so the pre-issue-#146 closure named no contract here either.
+        raise ArchitectureError(identity_reason, code="contract")
+    parts = list(PurePosixPath(referrer_path).parent.parts)
+    for part in reference_base.split("/"):
+        if part in {"", "."}:
+            raise ArchitectureError(SCHEMA_REFERENCE_UNSAFE, code="contract")
+        if part == "..":
+            if not parts:
+                raise ArchitectureError(SCHEMA_REFERENCE_ESCAPE, code="contract")
+            parts.pop()
+        elif not _SAFE_REFERENCE_SEGMENT.fullmatch(part):
+            raise ArchitectureError(SCHEMA_REFERENCE_UNSAFE, code="contract")
+        else:
+            parts.append(part)
+    if not parts:
+        raise ArchitectureError(SCHEMA_REFERENCE_UNSAFE, code="contract")
+    return "/".join(parts)
+
+
+def _schema_reference_by_declared_id(
+    declared: list[str] | None,
+) -> tuple[str | None, str]:
+    if declared is None:
+        return None, SCHEMA_REFERENCE_UNDECLARED
+    if len(declared) != 1:
+        return None, SCHEMA_REFERENCE_AMBIGUOUS
+    return declared[0], ""
+
+
+def _schema_reference_by_declared_path(
+    referrer_path: str,
+    reference_base: str,
+    declared_paths: Container[str],
+) -> tuple[str | None, str]:
+    try:
+        relative = schema_reference_relative_path(referrer_path, reference_base)
+    except ArchitectureError as exc:
+        return None, str(exc)
+    if relative in declared_paths:
+        return relative, ""
+    return None, SCHEMA_REFERENCE_UNDECLARED
+
+
+def schema_reference_target_path(
+    referrer_path: str,
+    reference_base: str,
+    paths_by_schema_id: Mapping[str, list[str]],
+    declared_paths: Container[str],
+    *,
+    precedence: str,
+) -> tuple[str | None, str]:
+    """Declared contract path a non-local ``$ref`` base points at, plus a failure reason.
+
+    Returns ``(path, "")`` when the base names a declared contract, otherwise
+    ``(None, reason)`` where reason is one of ``SCHEMA_REFERENCE_*``.  The reference
+    grammar and both identity tables are the comparator's own, so a gate that walks
+    references cannot invent a third interpretation of a ``$ref``.
+
+    ``precedence`` is the one part that is caller policy, because the comparator and the
+    fitness dependency closure deliberately disagree about a base that is simultaneously
+    another contract's declared path and some contract's declared ``$id``: the comparator
+    keeps its long-standing SCHEMA_REFERENCE_ID_FIRST ordering (shadowing is a separate
+    defect), while the closure calls this function once per table and unions the two
+    answers, so a dependent is re-verified against the contract whose path the reference
+    names *and* against a claimant that shadows that path with an ``$id``.
+
+    This function reports a miss instead of raising for any reference, so each caller
+    chooses its own policy for a reason; only an unknown ``precedence`` raises, because
+    that is a caller bug.  The comparator turns any reason into the matching
+    ArchitectureError, while the fitness dependency closure may drop an edge only for a
+    reason in SCHEMA_REFERENCE_UNRESOLVED -- and resolves SCHEMA_REFERENCE_UNSAFE through
+    ``schema_reference_identity_path`` instead, because that reason says a declared contract
+    may well sit where the reference points.
+    """
+    if not reference_base:
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
+    by_path = _schema_reference_by_declared_path(
+        referrer_path, reference_base, declared_paths
+    )
+    by_schema_id = _schema_reference_by_declared_id(paths_by_schema_id.get(reference_base))
+    if precedence == SCHEMA_REFERENCE_PATH_FIRST:
+        first, second = by_path, by_schema_id
+    elif precedence == SCHEMA_REFERENCE_ID_FIRST:
+        first, second = by_schema_id, by_path
+    else:
+        raise ArchitectureError("unknown schema reference precedence", code="contract")
+    if first[0] is not None:
+        return first
+    if first[1] not in SCHEMA_REFERENCE_UNRESOLVED:
+        return first
+    if second[0] is not None:
+        return second
+    return second
+
+
 class _SchemaResolver:
     def __init__(
         self,
@@ -1167,11 +1364,11 @@ class _SchemaResolver:
         self.current = current
         self.inventory_current = inventory_current
         self.records = by_path
-        self.records_by_schema_id: dict[str, list[ContractRecord]] = {}
-        for record in records:
+        self.paths_by_schema_id: dict[str, list[str]] = {}
+        for path, record in by_path.items():
             schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
             if isinstance(schema_id, str):
-                self.records_by_schema_id.setdefault(schema_id, []).append(record)
+                self.paths_by_schema_id.setdefault(schema_id, []).append(path)
         self.work_budget = work_budget
         self.resolved_paths: set[str] = {current.path}
         self.preflighted_paths: set[str] = set()
@@ -1192,36 +1389,6 @@ class _SchemaResolver:
         self.preflighted_paths.add(self.current.path)
         return True
 
-    @staticmethod
-    def _relative_path(current_path: str, reference: str) -> str:
-        if (
-            not reference
-            or "\\" in reference
-            or "?" in reference
-            or "%" in reference
-            or "#" in reference
-            or _unsafe_text(reference)
-            or unicodedata.normalize("NFC", reference) != reference
-            or reference.startswith("/")
-            or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", reference)
-        ):
-            raise ArchitectureError("unsafe schema reference", code="contract")
-        parts = list(PurePosixPath(current_path).parent.parts)
-        for part in reference.split("/"):
-            if part in {"", "."}:
-                raise ArchitectureError("unsafe schema reference", code="contract")
-            if part == "..":
-                if not parts:
-                    raise ArchitectureError("schema reference escapes inventory", code="contract")
-                parts.pop()
-            elif not _SAFE_REFERENCE_SEGMENT.fullmatch(part):
-                raise ArchitectureError("unsafe schema reference", code="contract")
-            else:
-                parts.append(part)
-        if not parts:
-            raise ArchitectureError("unsafe schema reference", code="contract")
-        return "/".join(parts)
-
     def resolve(
         self,
         reference: Any,
@@ -1231,26 +1398,21 @@ class _SchemaResolver:
             raise ArchitectureError("malformed schema reference", code="contract")
         if not self.consume():
             raise ArchitectureError("schema reference budget exceeded", code="limit")
-        if "#" in reference:
-            reference_base, fragment = reference.split("#", 1)
-        else:
-            reference_base, fragment = reference, None
+        reference_base, fragment = schema_reference_parts(reference)
         target_record = current
         if reference_base:
-            declared = self.records_by_schema_id.get(reference_base, [])
-            if declared:
-                if len(declared) != 1:
-                    raise ArchitectureError("ambiguous declared schema id", code="contract")
-                target_record = declared[0]
-            else:
-                target_path = self._relative_path(current.path, reference_base)
-                target_record = self.records.get(target_path)
-            if target_record is None or target_record.kind not in {
-                "event",
-                "json_schema",
-                "signed_payload",
-            }:
-                raise ArchitectureError("undeclared schema reference", code="contract")
+            declared_path, failure = schema_reference_target_path(
+                current.path,
+                reference_base,
+                self.paths_by_schema_id,
+                self.records,
+                precedence=SCHEMA_REFERENCE_ID_FIRST,
+            )
+            if declared_path is None:
+                raise ArchitectureError(failure, code="contract")
+            target_record = self.records[declared_path]
+            if target_record.kind not in {"event", "json_schema", "signed_payload"}:
+                raise ArchitectureError(SCHEMA_REFERENCE_UNDECLARED, code="contract")
         if not isinstance(target_record.document, dict):
             raise ArchitectureError("malformed referenced schema", code="contract")
         target_path = target_record.path

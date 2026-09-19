@@ -1,0 +1,84 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "d871ea6d5d654406281dd65626a3dce61bf933fa",
+  "base_fingerprint": "40e33fd4686db3d1edeaff32b5f38651b07950996577c947a4e08f5e7e0d1163",
+  "complexity": "standard",
+  "created_at": "2026-09-19T04:17:09+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "8cf75202079d",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix issue #146: the architecture gate drops reverse edges for $id-based and file#fragment contract references, so a changed contract is never re-verified against the dependents that reference it through those grammars. Make the closure resolve the same reference grammar the comparator resolves, with regression coverage for an $id edge, a fragment edge and the plain-relative control; do not change comparator semantics, compatibility policy or any contract.",
+  "task_domains": [
+    "ai"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "ai-rag-change"
+  ],
+  "write_agent": "ai_implementer"
+}
