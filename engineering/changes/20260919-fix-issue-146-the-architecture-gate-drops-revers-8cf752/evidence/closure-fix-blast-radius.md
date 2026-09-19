@@ -56,6 +56,8 @@ see this **before** merge, not in CI.
 
 The closure and the comparator must agree on what a reference points at. Precedence is deliberately **not** unified:
 the comparator keeps declared-`$id`-first (so issue #147's behaviour is byte-identical and unfixed here) while the
-closure is path-first, because for dependency identity the safe answer is "re-verify the contract the path names".
+closure attaches **both** candidates, because for dependency identity either single precedence can be wrong: the path
+holder may be the real dependency, and so may the record that declared the base as its `$id` (issue #147 keeps the
+comparator on the latter). Attaching both can only add re-verification.
 `test_contract_dependency_closure_uses_declared_path_precedence_issue_146` pins that, and the implementer's mutation
 arm M7 (closure passing `id_first`) fails it — the anti-inheritance lock.

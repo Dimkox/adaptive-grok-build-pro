@@ -492,7 +492,7 @@ spellings rather than assume the split survived.
 4. **Paperwork the controller still has to absorb** (outside this implementer's contour; re-checked 07:12 on
    the bytes the controller had just edited): the "10 -> 27" metric is **already fixed** — `change-spec.yaml`
    `objective.success_metric` now reads "22 -> 27 with 0 edges lost and 5 gained", SIG-001 points at findings,
-   and `release.md`/`brief.md` carry 22→27 and 14 cross-contract. Still open: `INV-003` says a reference
+   and `release.md`/`brief.md` carry 22→27 and 14 cross-contract. **Resolved since this line was written:** `INV-003` now states the union (never a substitution) with the comparator keeping `$id`-first as policy, `AC-005` states the three-way collision policy, `AC-002`/`AC-003` cite arms that exercise them, and the original-invariance clause moved to controller measurement. The items still genuinely open are listed in `residual-risks.md` (issues #147 and #148 above all). The old "Still open: `INV-003` says a reference
    naming a declared path is attached "never to a record that merely declares it as `$id`", which the union
    deliberately contradicts (path candidate kept, `$id` candidate added); `FORBID-003` remains satisfied
    literally — the closure never *orders* `$id` before path, it consults both tables — but its wording invites

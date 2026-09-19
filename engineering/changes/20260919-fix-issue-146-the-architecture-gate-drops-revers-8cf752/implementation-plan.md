@@ -11,7 +11,8 @@ changing any comparator verdict.
    today), a plain-relative pair (works today, and must keep working).
 2. Lift the reference grammar out of `_SchemaResolver` into three shared functions; leave resolution *policy* at the
    call site by passing an explicit `precedence` — `SCHEMA_REFERENCE_ID_FIRST` for the comparator (byte-identical, so
-   issue #147 is neither fixed nor worsened here) and `SCHEMA_REFERENCE_PATH_FIRST` for the closure.
+   issue #147 is neither fixed nor worsened here) while the closure walks **both** precedences and attaches the union of
+   their hits, so no single precedence can lose an edge.
 3. Rebuild `_external_contract_reference_paths` on the shared functions with per-inventory `$id`→paths and
    declared-path tables; make its drop policy a deny-list (`SCHEMA_REFERENCE_UNRESOLVED`) so a future reason cannot
    silently discard an edge.

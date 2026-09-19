@@ -257,3 +257,84 @@ base, and no test in `tests/test_architecture_model.py` mentions `unsafe schema 
    forced through the comparator) yet never re-verifies that referrer — and
    `tests/test_architecture_fitness.py:4392` asserts that drop as intended, while
    `closure-fix-blast-radius.md:52-55` calls path-first "the safe answer" (Important 4, measured).
+
+## Re-review on 0ab702f
+
+RE-REVIEW VERDICT: PASS
+
+Re-measured independently in private clones under `/tmp/qw146r/` (`git clone --local`, one process per tree;
+code bytes `30a07c6`, paperwork `0ab702f` — verified `git diff 30a07c6..HEAD -- .grok-stack/ tests/` empty, so
+the later commits are package-only). No `grok_verify.py` run; the delivery worktree was untouched apart from
+this appended section. `Ran 125 tests in 81.921s / OK` at `30a07c6` (fitness), `Ran 79 / OK` (model).
+
+1. **Critical 1 (mixed-unit widening metric) — CLOSED.** Every published count now carries its unit and every
+   one reproduces on the delivered bytes with one method in each tree: direct one-hop **incl.** self-edges
+   10 → 17, direct **cross-contract** 10 → 14, transitive 22 → 27, lost 0, gained 5 (gained set identical to
+   the five named in the matrix), targets-with-dependent/dependents 9/6 → 13/9, self pairs at head = 3.
+   `objective.success_metric`, `SIG-001`, `release.md:21-22`, `brief.md:24`, `architecture.md:16-17`,
+   `controller-verification.md` §4b and `closure-fix-blast-radius.md:14` all state the unit they mean; the
+   "gains the dependent (three) vs gains a new failure (two)" split is defined in-file. No *number* splices
+   conventions any more. Residual prose (non-blocking, fix before the PR text is copied):
+   (a) `closure-fix-blast-radius.md:59` still says "the closure is path-first, because … the safe answer is
+   're-verify the contract the path names'" — the sentence my Important 4 disproved, now contradicting the
+   same file's table and the correct `INV-003`; (b) `tasks.md:5` "closure uses `PATH_FIRST`" and
+   `implementation-plan.md:14` likewise; (c) the comparator differential is quoted as 555 (`SIG-002`,
+   `release.md`, `rollback.md`), 1050 (`success_metric`, `residual-risks.md:11`) and 1473 (matrix §9) with no
+   line saying which grid produced which (each does state "rows/lines", and 0-differing is true — my own
+   1473-line differential is the §9 one); (d) matrix §11.4's "Still open" list is stale: AC-002/AC-003,
+   `INV-003`, `FORBID-003` and the `tasks.md` arm count were all fixed after it was written at 07:12.
+2. **Critical 2 / my Important 3 (surviving `(after,)` mutation) — CLOSED.** Re-ran my M-S4 both ways, full
+   125-test module in its own clone each: `(after, True)` only → `FAILED (failures=2)`, killed by
+   `test_contract_dependency_closure_keeps_base_only_reference_dependents` **and**
+   `bounds_duplicate_declared_id_to_certified_state (arm='base-only collision')`; `(before, False)` only →
+   `FAILED (failures=5)`, killed by `..._adds_head_only_reference_dependents` plus duplicate-`$id
+   (colliding=True)` and 3 bounds arms. Both counts and arm names match the matrix U3/U4 rows, so those rows
+   are reproducible, not inherited.
+3. **Critical 3 / my Important 4 (path-first substituting) — CLOSED.** `_reference_identity_candidates` now
+   loops both precedences and unions the candidates; comparator still `SCHEMA_REFERENCE_ID_FIRST`
+   (`architecture.py:1409`). Re-ran my original Demo B1 (`$id: "dir/target.json"` on the claimant, referrer
+   byte-identical) through `_contract_compatibility` on the delivered bytes: `status=fail`,
+   `scope=[CONTRACT-CLAIMANT, CONTRACT-REFERRER]`, `findings=[CONTRACT-CLAIMANT: narrowed_constraint,
+   CONTRACT-REFERRER: narrowed_constraint]` — and the forced-comparator value is
+   `incompatible:narrowed_constraint`, so the reported row now equals the verdict the comparator computes.
+   The escape my `:4392` citation pinned is reversed (that arm now asserts `changed_contract ∈ scope` **and**
+   a `CONTRACT-REFERRER:` finding). FORBID-003 holds both directions, measured: collapsing the union to
+   `(PATH_FIRST,)` → `FAILED (failures=2)` (`..._issue_146 (CONTRACT-CLAIMANT)` + the spy arm, = their U1 row);
+   flipping the **comparator** to `PATH_FIRST` → `FAILED (failures=1)`, killed only by
+   `..._issue_146 (CONTRACT-CLAIMANT)` (model suite stays green — so the comparator half has a single-test
+   lock; the cited FORBID-003 evidence does fire, but only there).
+4. **Reason-split class — CLOSED.** `SCHEMA_REFERENCE_UNRESOLVED = {NOT_A_PATH, ESCAPE, UNDECLARED}`;
+   `SCHEMA_REFERENCE_UNSAFE` is outside it and is recovered through `schema_reference_identity_path`. My six
+   shapes (`./x.json`, `a b.json`, `c+d.json`, `c%2Bd.json`, `urn:x:u`, `../outside/e.json`) gave
+   **JSON-identical** scope/status/findings between `d871ea6` and `30a07c6` — the three declined spellings and
+   the percent form keep their edge, the two controls keep having none. Merging `UNSAFE` back into the deny-list
+   → `FAILED (failures=4)`: the named tripwire
+   `test_reference_reasons_keep_declined_paths_apart_from_non_paths` plus all three spellings of
+   `..._reverifies_declined_relative_path_referrers`.
+5. **Bookkeeping — CLOSED except two nice-to-haves.** Arm counts: `tasks.md:6` says six new at first
+   delivery / ten from this contour / 16 versus `d871ea6` — measured exactly 6, 10, 16 added `def test_` with
+   **0** deleted (109 → 125 methods) ✓; matrix §7 and `controller-verification.md` §4 carry the same
+   correction. Matrix: `evidence/mutation-matrix.md` exists, states the per-arm command, the copy-per-arm
+   method, and per-arm killed lists; U3/U4/U1 rows reproduced exactly as quoted above. Superset claim:
+   `test_real_contract_closure_supersets_legacy_fold_per_target` is real and asserts `assertEqual(lost, [])`
+   **and** `assertGreater(len(gained), 0)`; I checked its in-test fold is not a strawman — re-derived on the
+   delivered tree it gives 22 pairs **set-equal** to the real `d871ea6` closure. Fleet `M7-*` targets: still
+   **prose-only** — `grep -rn "READY-BUNDLE|M7-SHADOW|TASK-EVIDENCE|PREDECESSOR|OPERATOR-HANDOFF" tests/` → 0
+   matches — and the package claims exactly that (matrix §11.3, `residual-risks.md:7`), so the claim is
+   accurate rather than aspirational. Still open nice-to-haves: my Minor 9 (spy still reads
+   `keywords.get("precedence","")`, so a positional call would redden a green behaviour) and my Minor 10
+   (nothing records that `path#/$defs` is synthetic-only: measured fleet spellings are 479 bare/`$id`+fragment,
+   76 `urn`, 10 plain path, 0 repository-path+fragment).
+6. **Coverage hunt — no survivor found.** Seven mutants beyond my first report, each in its own clone on the
+   delivered bytes: `(after,)`, `(before,)`, union→`PATH_FIRST`-only, comparator→`PATH_FIRST`,
+   `UNSAFE` re-merged, BFS transitivity removed (dependents not re-enqueued), ambiguous `$id` silently
+   attaching all claimants. All seven die; the last two die by exactly **one** arm each
+   (`test_real_contract_closure_supersets_legacy_fold_per_target` for transitivity;
+   `..._issue_146 (CONTRACT-CLAIMANT)` for comparator precedence), so those two properties are single-test
+   locks that would go blind if the fleet inventory lost its chains — worth a synthetic arm, not a blocker.
+   Plainly: within the budget I could not make the suite stay green with the closure wrong.
+
+**Receipt basis.** All three delivered Criticals are closed by measurement, the reason-split and both union
+halves are falsified, and the remaining items are stale sentences inside `engineering/changes/…` plus two
+nice-to-haves; none misstates a measurement, an AC's evidence, or a verdict. A `test_review` receipt bound to
+this tree is honest. Any further tracked write re-stales it.

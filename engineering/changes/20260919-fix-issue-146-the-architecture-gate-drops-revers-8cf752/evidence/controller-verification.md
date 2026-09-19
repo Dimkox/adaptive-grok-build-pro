@@ -88,6 +88,20 @@ The 17-vs-14 gap is exactly three self-edges, which `requirements.md` forbids an
 removed. Publish the self-edge-free direct count together with the transitive count, and never one of each from
 different trees.
 
+## 4c. Reconciling the three differential sizes quoted in this wave
+
+Three sweeps of the same claim exist, each with its own row count and each produced by a different harness; all three
+report zero differing rows, and `wc -l` on the retained outputs gives their sizes:
+
+| sweep | rows | unsupported rows | whose harness | what it covers |
+| --- | --- | --- | --- | --- |
+| controller, per-contract perturbation grid | 555 | 80 | `probe_full_inventory.py`-style sweep over declared records × edits × 3 policies | identity + 6 edits per record where the record's shape allows it |
+| controller, fixed grid | 1050 | — | 50 records × (identity + 6 edits) × 3 policies | the full grid, including cells a record cannot exhibit |
+| implementer / reviewer, wider grid | 1473 | 415 | `comparator_diff.py`, 7 perturbations × 5 modes | independently re-run by the test reviewer at 1473 rows, 0 differing |
+
+No claim in this package should quote one of these numbers without the row count and the harness: quoting a count
+without its grid is the same splice-error class as mixing one-hop and transitive edge counts, which §4b exists to stop.
+
 ## 5. Corrections to my own earlier note
 
 `closure-fix-blast-radius.md` first claimed "exactly one creates a new failure". That was wrong: it enumerated only
