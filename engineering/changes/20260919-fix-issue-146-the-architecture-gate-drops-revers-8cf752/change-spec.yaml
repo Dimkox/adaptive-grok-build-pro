@@ -15,14 +15,17 @@
           "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_dependents_of_every_reference_grammar"
         },
         {
-          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_unchanged_declared_ref_dependents"
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_reverifies_declined_relative_path_referrers"
         }
       ],
       "id": "AC-002",
-      "statement": "Given a declared dependent that reaches a target through a file#/$defs/... reference, when the target changes, then the dependent is inside the re-verified set (the fragment is not part of contract identity)."
+      "statement": "Given a declared dependent that reaches a target through `file#/$defs/...`, when the target changes, then the dependent is inside the re-verified set (the fragment is not part of contract identity). Pinned by the per-grammar arm's `path with JSON pointer` and `declared $id with JSON pointer` sub-tests."
     },
     {
       "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_real_contract_closure_supersets_legacy_fold_per_target"
+        },
         {
           "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_unchanged_declared_ref_dependents"
         }
@@ -46,10 +49,16 @@
       "evidence": [
         {
           "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_fails_closed_on_duplicate_declared_schema_id"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_bounds_duplicate_declared_id_to_certified_state"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_attaches_named_path_despite_ambiguous_ids"
         }
       ],
       "id": "AC-005",
-      "statement": "Given two declared contracts carrying the same $id that a reference actually names, the closure fails closed with the comparator's own ambiguity error instead of attaching the dependent to an arbitrary target."
+      "statement": "A declared-$id collision is never silent and never wedges the gate. When the colliding base names no declared path and the collision is in the certified (head) state, the run fails closed with the comparator's ambiguity error naming the $id, its carrier paths and the referrer. When the base names a declared path, that path's edge is attached and the unattributable claimants are reported as an attributed unattributed-reference signal instead of guessing a target. A collision inherited from the base state alone must not abort, so the pull request that removes the collision can complete."
     },
     {
       "evidence": [
@@ -136,7 +145,7 @@
     {
       "evidence": [
         {
-          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_unchanged_declared_ref_dependents"
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_real_contract_closure_supersets_legacy_fold_per_target"
         }
       ],
       "id": "INV-002",
@@ -146,22 +155,25 @@
       "evidence": [
         {
           "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_uses_declared_path_precedence_issue_146"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_shares_the_comparator_reference_grammar"
         }
       ],
       "id": "INV-003",
-      "statement": "The closure resolves path-first: a reference naming a declared path is attached to the contract at that path, never to a record that merely declares it as $id."
+      "statement": "Reverse-edge identity is a union, never a substitution: when a reference base names both a declared path and a declared $id, the closure attaches BOTH contracts, so no dependent can escape re-verification because the two tables disagree. Resolution precedence is a comparator policy and stays declared-$id-first there; the closure does not inherit it."
     }
   ],
   "objective": {
     "id": "OBJ-001",
     "statement": "Fix issue #146: the architecture gate drops reverse edges for $id-based and file#fragment contract references, so a changed contract is never re-verified against the dependents that reference it through those grammars. Make the closure resolve the same reference grammar the comparator resolves, with regression coverage for an $id edge, a fragment edge and the plain-relative control; do not change comparator semantics, compatibility policy or any contract.",
-    "success_metric": "Measured on the declared 50-record inventory through the gate's own API, one process per tree: closure target->dependent pairs 22 -> 27 with 0 edges lost and 5 gained; every relative-path spelling the pre-change closure attached (plain, ../, ./, space, +) still attaches its referrer, while the $id grammar changed from not-attached to attached; comparator verdicts identical across a 555-row differential; structural superset pinned by test_real_contract_closure_supersets_legacy_fold_per_target.",
+    "success_metric": "One method, both trees, declared 50-record inventory, self-edges excluded: direct one-hop target->dependent pairs 10 -> 14 and transitive pairs 22 -> 27, with zero edges lost at pair and reach level and legacy fold proved a subset of the shipped closure per target. Comparator verdicts identical across 1050 differential rows (same md5 both trees); an end-to-end gate run on a declined-path reference is byte-identical to the base tree, where the intermediate revision had turned that failure into a silent pass.",
     "target": "adaptive-grok-build-pro main: the architecture-fitness contract dependency closure in .grok-stack/adaptive_grok/architecture_fitness.py and the reference grammar it shares with .grok-stack/adaptive_grok/architecture.py"
   },
   "observability": [
     {
       "id": "SIG-001",
-      "metric": "contract_compatibility findings for an edit to a $id- or fragment-referenced contract must name the dependent (applicability.scanned_scope is always the whole head inventory and cannot carry this signal)",
+      "metric": "for an edit to a $id-, fragment- or declined-path-referenced contract, the contract_compatibility report row's findings must name the dependent; the row's scanned_scope is always the whole head inventory (measured: 54 entries on passing and failing runs alike) and must not be cited as evidence",
       "proves": [
         "OBJ-001"
       ]
