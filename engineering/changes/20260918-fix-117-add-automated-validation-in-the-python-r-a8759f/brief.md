@@ -2,7 +2,7 @@
 
 > Typed authority: [`change-spec.yaml`](change-spec.yaml).
 
-Change ID: `20260918-fix-117-add-automated-validation-in-the-python-r-a8759f`  
+Change ID: `20260918-fix-117-add-automated-validation-in-the-python-r-a8759f`
 Risk: yellow; local workflow evidence only.
 
 ## Problem
