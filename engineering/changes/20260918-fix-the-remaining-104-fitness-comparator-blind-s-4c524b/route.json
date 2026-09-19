@@ -1,0 +1,85 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "ai_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "ai_architect"
+  ],
+  "base_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+  "base_fingerprint": "7b15054875b359f46c8f0b9442809ec545f7460e4fd72600a1ea9b2dc8abd1a6",
+  "complexity": "standard",
+  "created_at": "2026-09-18T20:07:13+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "ai"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api,ai",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "4c524b83df59",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix the remaining #104 fitness comparator blind spot: OpenAPI contracts that reference the landing backend capability JSON Schema become unsupported when that schema changes. Extend the bounded compatibility subset to analyze the referenced composition constructs accurately, with regression coverage; do not change producer-output policy or declare new profile facts.",
+  "task_domains": [
+    "api",
+    "ai"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "ai-rag-change"
+  ],
+  "write_agent": "ai_implementer"
+}

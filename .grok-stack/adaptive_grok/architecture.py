@@ -479,6 +479,29 @@ def _canonical_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _schema_value_key(value: Any) -> tuple[Any, ...]:
+    """Return JSON Schema value equality with integers/floats as one number type."""
+    if value is None:
+        return ("null",)
+    if isinstance(value, bool):
+        return ("boolean", value)
+    if isinstance(value, (int, float)):
+        return ("number", value)
+    if isinstance(value, str):
+        return ("string", value)
+    if isinstance(value, list):
+        return ("array", tuple(_schema_value_key(item) for item in value))
+    if isinstance(value, dict):
+        return (
+            "object",
+            tuple(
+                (key, _schema_value_key(item))
+                for key, item in sorted(value.items())
+            ),
+        )
+    return ("other", _canonical_bytes(value))
+
+
 def _canonical_source_bytes(value: Any) -> bytes:
     text = json.dumps(
         value,
@@ -1043,6 +1066,7 @@ _SUPPORTED_SCHEMA_KEYS = {
     "enum",
     "const",
     "items",
+    "$defs",
     "minItems",
     "maxItems",
     "uniqueItems",
@@ -1051,6 +1075,8 @@ _SUPPORTED_SCHEMA_KEYS = {
     "minimum",
     "maximum",
     "pattern",
+    "format",
+    "anyOf",
     "oneOf",
     "allOf",
     "if",
@@ -1141,6 +1167,11 @@ class _SchemaResolver:
         self.current = current
         self.inventory_current = inventory_current
         self.records = by_path
+        self.records_by_schema_id: dict[str, list[ContractRecord]] = {}
+        for record in records:
+            schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
+            if isinstance(schema_id, str):
+                self.records_by_schema_id.setdefault(schema_id, []).append(record)
         self.work_budget = work_budget
         self.resolved_paths: set[str] = {current.path}
         self.preflighted_paths: set[str] = set()
@@ -1198,37 +1229,79 @@ class _SchemaResolver:
     ) -> tuple[dict[str, Any], ContractRecord, tuple[str, str]]:
         if not isinstance(reference, str):
             raise ArchitectureError("malformed schema reference", code="contract")
-        if reference.startswith("#"):
-            prefix = "#/components/schemas/"
-            name = reference[len(prefix) :] if reference.startswith(prefix) else ""
-            if (
-                current.kind != "openapi"
-                or not name
-                or not _SAFE_COMPONENT_NAME.fullmatch(name)
-            ):
-                raise ArchitectureError("unsupported local schema reference", code="contract")
-            components = current.document.get("components")
-            schemas = components.get("schemas") if isinstance(components, dict) else None
-            target = schemas.get(name) if isinstance(schemas, dict) else None
-            if not isinstance(target, dict):
-                raise ArchitectureError("dangling local schema reference", code="contract")
-            return target, current, (current.path, reference)
-        target_path = self._relative_path(current.path, reference)
-        target_record = self.records.get(target_path)
-        if target_record is None or target_record.kind not in {
-            "event",
-            "json_schema",
-            "signed_payload",
-        }:
-            raise ArchitectureError("undeclared schema reference", code="contract")
+        if not self.consume():
+            raise ArchitectureError("schema reference budget exceeded", code="limit")
+        if "#" in reference:
+            reference_base, fragment = reference.split("#", 1)
+        else:
+            reference_base, fragment = reference, None
+        target_record = current
+        if reference_base:
+            declared = self.records_by_schema_id.get(reference_base, [])
+            if declared:
+                if len(declared) != 1:
+                    raise ArchitectureError("ambiguous declared schema id", code="contract")
+                target_record = declared[0]
+            else:
+                target_path = self._relative_path(current.path, reference_base)
+                target_record = self.records.get(target_path)
+            if target_record is None or target_record.kind not in {
+                "event",
+                "json_schema",
+                "signed_payload",
+            }:
+                raise ArchitectureError("undeclared schema reference", code="contract")
         if not isinstance(target_record.document, dict):
             raise ArchitectureError("malformed referenced schema", code="contract")
+        target_path = target_record.path
         if target_path not in self.preflighted_paths:
             if not _bounded_json_document(target_record.document, self):
                 raise ArchitectureError("malformed referenced schema", code="contract")
             self.preflighted_paths.add(target_path)
+        if fragment in (None, ""):
+            pointer: tuple[str, ...] = ()
+        else:
+            if not fragment.startswith("/") or "%" in fragment:
+                raise ArchitectureError("unsupported schema pointer", code="contract")
+            pointer_parts: list[str] = []
+            for part in fragment[1:].split("/"):
+                decoded: list[str] = []
+                index = 0
+                while index < len(part):
+                    if part[index] == "~":
+                        if index + 1 >= len(part) or part[index + 1] not in "01":
+                            raise ArchitectureError("malformed JSON pointer escape", code="contract")
+                        decoded.append("~" if part[index + 1] == "0" else "/")
+                        index += 2
+                    else:
+                        decoded.append(part[index])
+                        index += 1
+                pointer_parts.append("".join(decoded))
+            pointer = tuple(pointer_parts)
+        target: Any = target_record.document
+        for part in pointer:
+            if not self.consume():
+                raise ArchitectureError("schema pointer budget exceeded", code="limit")
+            if isinstance(target, dict):
+                if part not in target:
+                    raise ArchitectureError("dangling schema pointer", code="contract")
+                target = target[part]
+            elif isinstance(target, list):
+                if not part.isdigit() or (len(part) > 1 and part.startswith("0")):
+                    raise ArchitectureError("malformed array JSON pointer", code="contract")
+                array_index = int(part)
+                if array_index >= len(target):
+                    raise ArchitectureError("dangling schema pointer", code="contract")
+                target = target[array_index]
+            else:
+                raise ArchitectureError("dangling schema pointer", code="contract")
+        if not isinstance(target, dict):
+            raise ArchitectureError("schema reference target is not an object", code="contract")
         self.resolved_paths.add(target_path)
-        return target_record.document, target_record, (target_path, "")
+        normalized_pointer = "/" + "/".join(
+            part.replace("~", "~0").replace("/", "~1") for part in pointer
+        ) if pointer else ""
+        return target, target_record, (target_path, normalized_pointer)
 
     def graph_identity(self) -> tuple[tuple[str, bytes], ...]:
         if not self.resolved_paths <= self.preflighted_paths:
@@ -1356,8 +1429,23 @@ def _unsupported_schema(
     if not _has_only_keys(schema, _SUPPORTED_SCHEMA_KEYS):
         return True
     if "$ref" in schema:
-        if len(schema) != 1 or resolver is None or current is None:
+        if (
+            set(schema) - {"$ref", "$defs"}
+            or resolver is None
+            or current is None
+        ):
             return True
+        definitions = schema.get("$defs", {})
+        if not isinstance(definitions, dict):
+            return True
+        for name, definition in definitions.items():
+            if resolver is not None and not resolver.consume():
+                return True
+            if not isinstance(name, str) or _unsupported_schema(
+                definition, resolver, current, depth=depth + 1,
+                stack=stack, counter=counter,
+            ):
+                return True
         try:
             target, target_record, identity = resolver.resolve(schema["$ref"], current)
         except ArchitectureError:
@@ -1394,6 +1482,31 @@ def _unsupported_schema(
             return True
     for key in ("$id", "$schema", "description", "title"):
         if key in schema and not isinstance(schema[key], str):
+            return True
+    if "format" in schema:
+        if (
+            schema["format"] != "date-time"
+            or "type" not in schema
+            or "string" not in (
+                {schema["type"]}
+                if isinstance(schema["type"], str)
+                else set(schema["type"]) if isinstance(schema["type"], list) else set()
+            )
+        ):
+            return True
+    definitions = schema.get("$defs", {})
+    if not isinstance(definitions, dict):
+        return True
+    for name, definition in definitions.items():
+        if resolver is not None:
+            if not resolver.consume():
+                return True
+        else:
+            assert counter is not None
+            counter[0] += 1
+            if counter[0] > MAX_PARSED_NODES:
+                return True
+        if not isinstance(name, str) or not isinstance(definition, dict):
             return True
     properties = schema.get("properties", {})
     if not isinstance(properties, dict):
@@ -1435,7 +1548,7 @@ def _unsupported_schema(
     enum = schema.get("enum", [])
     if not isinstance(enum, list) or ("enum" in schema and not enum):
         return True
-    enum_values: set[bytes] = set()
+    enum_values: set[tuple[Any, ...]] = set()
     for item in enum:
         if resolver is not None:
             if not resolver.consume():
@@ -1446,9 +1559,9 @@ def _unsupported_schema(
             if counter[0] > MAX_PARSED_NODES:
                 return True
         if _valid_schema_scalar(item):
-            encoded = _canonical_bytes(item)
+            encoded = _schema_value_key(item)
         elif _valid_enum_member(item, resolver, counter):
-            encoded = _canonical_bytes(item)
+            encoded = _schema_value_key(item)
         else:
             encoded = None
         if encoded is None or encoded in enum_values:
@@ -1485,7 +1598,7 @@ def _unsupported_schema(
     if "items" in schema and not isinstance(schema["items"], dict):
         return True
     compositions: dict[str, list[dict[str, Any]]] = {}
-    for key in ("oneOf", "allOf"):
+    for key in ("anyOf", "oneOf", "allOf"):
         value = schema.get(key, [])
         if key in schema and (
             not isinstance(value, list)
@@ -1509,6 +1622,8 @@ def _unsupported_schema(
         "counter": counter,
     }
     if any(_unsupported_schema(child, **child_arguments) for child in properties.values()):
+        return True
+    if any(_unsupported_schema(child, **child_arguments) for child in definitions.values()):
         return True
     if "items" in schema and _unsupported_schema(schema["items"], **child_arguments):
         return True
@@ -1568,15 +1683,395 @@ def _comparison_values(
     return result
 
 
-def _comparison_canonical_values(
+def _comparison_schema_value_keys(
     values: Iterable[Any], resolver: _SchemaResolver | None
-) -> set[bytes]:
-    result: set[bytes] = set()
+) -> set[tuple[Any, ...]]:
+    result: set[tuple[Any, ...]] = set()
     for value in values:
         if resolver is not None:
             _require_comparison_work(resolver)
-        result.add(_canonical_bytes(value))
+        result.add(_schema_value_key(value))
     return result
+
+
+_SCALAR_PROOF_KEYS = {
+    "type", "const", "enum", "minimum", "maximum", "minLength", "maxLength",
+    "format", "$id", "$schema", "title", "description",
+}
+
+
+def _schema_types(schema: dict[str, Any]) -> set[str] | None:
+    value = schema.get("type")
+    if isinstance(value, str):
+        return {value}
+    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+        return set(value)
+    return None
+
+
+def _type_overlap(left: set[str], right: set[str]) -> bool:
+    return bool(left & right) or ("integer" in left and "number" in right) or (
+        "number" in left and "integer" in right
+    )
+
+
+def _type_included(source: set[str], destination: set[str]) -> bool:
+    return all(
+        item in destination or (item == "integer" and "number" in destination)
+        for item in source
+    )
+
+
+def _branch_relation(
+    source: dict[str, Any],
+    destination: dict[str, Any],
+    source_resolver: _SchemaResolver | None,
+    destination_resolver: _SchemaResolver | None,
+    source_current: ContractRecord | None,
+    destination_current: ContractRecord | None,
+    *,
+    depth: int = 0,
+) -> str:
+    """Return included, disjoint, or unknown using only bounded scalar proofs."""
+    if depth > MAX_DEPTH:
+        return "unknown"
+    if source_resolver is not None and not source_resolver.consume():
+        raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+    if "$ref" in source:
+        if source_resolver is None or source_current is None:
+            return "unknown"
+        source, source_current = _resolve_comparison_schema(source, source_resolver, source_current)
+    if "$ref" in destination:
+        if destination_resolver is None or destination_current is None:
+            return "unknown"
+        destination, destination_current = _resolve_comparison_schema(
+            destination, destination_resolver, destination_current
+        )
+    if _canonical_bytes(source) == _canonical_bytes(destination):
+        return "included"
+    if "anyOf" in source or "anyOf" in destination:
+        source_has_union = "anyOf" in source
+        destination_has_union = "anyOf" in destination
+        source_branches = source["anyOf"] if source_has_union else [source]
+        destination_branches = destination["anyOf"] if destination_has_union else [destination]
+        source_siblings = {key: value for key, value in source.items() if key != "anyOf"} if source_has_union else {}
+        destination_siblings = {key: value for key, value in destination.items() if key != "anyOf"} if destination_has_union else {}
+        if source_has_union and destination_has_union and _canonical_bytes(source_siblings) != _canonical_bytes(destination_siblings):
+            return "unknown"
+        if source_has_union and not destination_has_union and source_siblings:
+            return "unknown"
+        if destination_has_union and not source_has_union and destination_siblings:
+            return "unknown"
+        return _union_inclusion(
+            source_branches, destination_branches,
+            source_resolver, destination_resolver,
+            source_current, destination_current, depth=depth + 1
+        )
+    if not _has_only_keys(source, _SCALAR_PROOF_KEYS) or not _has_only_keys(
+        destination, _SCALAR_PROOF_KEYS
+    ):
+        return "unknown"
+    source_types = _schema_types(source)
+    destination_types = _schema_types(destination)
+    if source_types is None or destination_types is None:
+        return "unknown"
+    metadata = ("$id", "$schema", "title", "description")
+    if any(source.get(key) != destination.get(key) for key in metadata):
+        return "unknown"
+    if "pattern" in source or "pattern" in destination:
+        return "unknown"
+    if any(
+        ("const" in schema and not _valid_schema_scalar(schema["const"]))
+        or (
+            "enum" in schema
+            and any(not _valid_schema_scalar(item) for item in schema["enum"])
+        )
+        for schema in (source, destination)
+    ):
+        return "unknown"
+    # Finite scalar declarations allow exact membership proofs.
+    source_values: list[Any] | None = None
+    if "const" in source:
+        source_values = [source["const"]]
+    elif "enum" in source:
+        source_values = source["enum"]
+    if source_values is not None and all(_valid_schema_scalar(item) for item in source_values):
+        valid_source_values = [
+            item for item in source_values if _scalar_satisfies(item, source)
+        ]
+        if not valid_source_values:
+            return "included"
+        accepted = [
+            _scalar_satisfies(item, destination) for item in valid_source_values
+        ]
+        if all(accepted):
+            return "included"
+        if not any(accepted):
+            return "disjoint"
+        return "unknown"
+    if "const" in destination or "enum" in destination:
+        source_finite_types = _schema_types(source)
+        destination_finite_types = _schema_types(destination)
+        if source_finite_types is None or destination_finite_types is None:
+            return "unknown"
+        if not _type_overlap(source_finite_types, destination_finite_types):
+            return "disjoint"
+        # A finite destination cannot cover an unconstrained source branch unless
+        # the source itself has an explicit finite domain (handled above).
+        return "unknown"
+    if not _type_overlap(source_types, destination_types):
+        return "disjoint"
+    if not _type_included(source_types, destination_types):
+        return "unknown"
+    interval_groups = (
+        (("minimum", "maximum"), {"integer", "number"}),
+        (("minLength", "maxLength"), {"string"}),
+    )
+    for (lower, upper), applicable_types in interval_groups:
+        if source_types.isdisjoint(applicable_types):
+            # JSON Schema ignores keywords from other type families.
+            continue
+        if not source_types.issubset(applicable_types):
+            # A single interval cannot prove inclusion/disjointness for a mixed
+            # source type; leave that relationship fail-closed.
+            if lower in source or upper in source or lower in destination or upper in destination:
+                return "unknown"
+            continue
+        source_lower = source.get(lower, float("-inf"))
+        source_upper = source.get(upper, float("inf"))
+        destination_lower = destination.get(lower, float("-inf"))
+        destination_upper = destination.get(upper, float("inf"))
+        if source_upper < destination_lower or destination_upper < source_lower:
+            return "disjoint"
+        if lower in destination and source_lower < destination_lower:
+            return "unknown"
+        if upper in destination and source_upper > destination_upper:
+            return "unknown"
+    if source.get("pattern") != destination.get("pattern"):
+        return "unknown"
+    # Only constraints explicitly modeled above participate in a proof.
+    return "included"
+
+
+def _scalar_satisfies(value: Any, schema: dict[str, Any]) -> bool:
+    value_type = (
+        "null" if value is None else "boolean" if isinstance(value, bool)
+        else "integer" if isinstance(value, int) or (
+            isinstance(value, float) and value.is_integer()
+        ) else "number" if isinstance(value, float)
+        else "string" if isinstance(value, str) else None
+    )
+    types = _schema_types(schema)
+    if value_type is None or types is None or not (
+        value_type in types or (value_type == "integer" and "number" in types)
+    ):
+        return False
+    if "const" in schema and _schema_value_key(value) != _schema_value_key(schema["const"]):
+        return False
+    if "enum" in schema and _schema_value_key(value) not in {
+        _schema_value_key(item) for item in schema["enum"]
+    }:
+        return False
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            return False
+        if "maximum" in schema and value > schema["maximum"]:
+            return False
+    if isinstance(value, str):
+        if "minLength" in schema and len(value) < schema["minLength"]:
+            return False
+        if "maxLength" in schema and len(value) > schema["maxLength"]:
+            return False
+    return True
+
+
+def _union_inclusion(
+    source: list[dict[str, Any]],
+    destination: list[dict[str, Any]],
+    source_resolver: _SchemaResolver | None,
+    destination_resolver: _SchemaResolver | None,
+    source_current: ContractRecord | None,
+    destination_current: ContractRecord | None,
+    *,
+    depth: int = 0,
+) -> str:
+    if (
+        not isinstance(source, list) or not isinstance(destination, list)
+        or not 1 <= len(source) <= 16 or not 1 <= len(destination) <= 16
+    ):
+        return "unknown"
+    def normalize(
+        branches: list[dict[str, Any]], resolver: _SchemaResolver | None
+    ) -> list[dict[str, Any]]:
+        unique: dict[bytes, dict[str, Any]] = {}
+        for branch in branches:
+            if resolver is not None and not resolver.consume():
+                raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+            if not isinstance(branch, dict):
+                return []
+            unique.setdefault(_canonical_bytes(branch), branch)
+        return [unique[key] for key in sorted(unique)]
+    source = normalize(source, source_resolver)
+    destination = normalize(destination, destination_resolver)
+    if not source or not destination:
+        return "unknown"
+    pair_attempts = 0
+    for source_branch in source:
+        covered = False
+        source_disjoint_from_all = True
+        unknown_pair = False
+        for destination_branch in destination:
+            pair_attempts += 1
+            if pair_attempts > 256:
+                raise ArchitectureError("anyOf branch comparison limit exceeded", code="limit")
+            if source_resolver is not None and not source_resolver.consume():
+                raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+            if destination_resolver is not None and not destination_resolver.consume():
+                raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+            relation = _branch_relation(
+                source_branch, destination_branch,
+                source_resolver, destination_resolver,
+                source_current, destination_current, depth=depth + 1
+            )
+            if relation == "included":
+                covered = True
+                source_disjoint_from_all = False
+                break
+            if relation != "disjoint":
+                source_disjoint_from_all = False
+                unknown_pair = True
+        if not covered:
+            if source_disjoint_from_all and not unknown_pair:
+                return "disjoint"
+            return "unknown"
+    return "included"
+
+
+def _anyof_format_changed(
+    source: list[dict[str, Any]],
+    destination: list[dict[str, Any]],
+    source_resolver: _SchemaResolver | None,
+    destination_resolver: _SchemaResolver | None,
+    source_current: ContractRecord | None,
+    destination_current: ContractRecord | None,
+) -> str:
+    def normalized(
+        schema: dict[str, Any],
+        resolver: _SchemaResolver | None,
+        current: ContractRecord | None,
+        *,
+        depth: int,
+    ) -> tuple[dict[str, Any], dict[str, Any], int]:
+        if depth > MAX_DEPTH:
+            raise ArchitectureError("schema comparison depth exceeded", code="limit")
+        if resolver is not None and not resolver.consume():
+            raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+        if "$ref" in schema:
+            if resolver is None or current is None:
+                raise ArchitectureError("unresolved schema reference", code="contract")
+            schema, current = _resolve_comparison_schema(schema, resolver, current)
+
+        full = dict(schema)
+        shape = {key: value for key, value in schema.items() if key != "format"}
+        format_count = int(schema.get("format") == "date-time")
+        for map_key in ("$defs", "properties"):
+            children = schema.get(map_key)
+            if isinstance(children, dict):
+                full_children: dict[str, Any] = {}
+                shape_children: dict[str, Any] = {}
+                for name, child in children.items():
+                    if resolver is not None and not resolver.consume():
+                        raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+                    full_child, shape_child, child_format_count = normalized(
+                        child, resolver, current, depth=depth + 1
+                    )
+                    format_count += child_format_count
+                    full_children[name] = full_child
+                    shape_children[name] = shape_child
+                full[map_key] = full_children
+                shape[map_key] = shape_children
+        for single_key in ("items", "if", "then"):
+            child = schema.get(single_key)
+            if isinstance(child, dict):
+                full_child, shape_child, child_format_count = normalized(
+                    child, resolver, current, depth=depth + 1
+                )
+                format_count += child_format_count
+                full[single_key] = full_child
+                shape[single_key] = shape_child
+        for composition in ("anyOf", "oneOf", "allOf"):
+            children = schema.get(composition)
+            if not isinstance(children, list):
+                continue
+            normalized_children = []
+            for child in children:
+                if resolver is not None and not resolver.consume():
+                    raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+                full_child, shape_child, child_format_count = normalized(
+                    child, resolver, current, depth=depth + 1
+                )
+                normalized_children.append((full_child, shape_child, child_format_count))
+            if composition == "anyOf":
+                # `anyOf` is a set of alternatives: erase positional and duplicate noise.
+                full_unique = {
+                    _canonical_bytes(full_child): full_child
+                    for full_child, _shape_child, _format_count in normalized_children
+                }
+                shape_unique = {
+                    _canonical_bytes(shape_child): shape_child
+                    for _full_child, shape_child, _format_count in normalized_children
+                }
+                full[composition] = [full_unique[key] for key in sorted(full_unique)]
+                shape[composition] = [shape_unique[key] for key in sorted(shape_unique)]
+            else:
+                full[composition] = [item[0] for item in normalized_children]
+                shape[composition] = [item[1] for item in normalized_children]
+            if composition == "anyOf":
+                format_count += sum(
+                    count for full_child, _shape_child, count in normalized_children
+                    if _canonical_bytes(full_child) in full_unique
+                )
+            else:
+                format_count += sum(item[2] for item in normalized_children)
+        return full, shape, format_count
+
+    def normalize_union(
+        branches: list[dict[str, Any]],
+        resolver: _SchemaResolver | None,
+        current: ContractRecord | None,
+    ) -> tuple[bytes, bytes, int]:
+        full_values: dict[bytes, tuple[dict[str, Any], dict[str, Any], int]] = {}
+        for branch in branches:
+            if resolver is not None and not resolver.consume():
+                raise ArchitectureError("contract comparison work limit exceeded", code="limit")
+            full, shape, format_count = normalized(branch, resolver, current, depth=0)
+            full_values.setdefault(_canonical_bytes(full), (full, shape, format_count))
+        ordered = [full_values[key] for key in sorted(full_values)]
+        full_union = [item[0] for item in ordered]
+        shape_values = {
+            _canonical_bytes(item[1]): item[1] for item in ordered
+        }
+        shape_union = [shape_values[key] for key in sorted(shape_values)]
+        return (
+            _canonical_bytes(full_union), _canonical_bytes(shape_union),
+            sum(item[2] for item in ordered),
+        )
+
+    source_full, source_shape, source_formats = normalize_union(
+        source, source_resolver, source_current
+    )
+    destination_full, destination_shape, destination_formats = normalize_union(
+        destination, destination_resolver, destination_current
+    )
+    if source_shape == destination_shape and source_full == destination_full:
+        return "same"
+    if source_formats != destination_formats:
+        return "changed"
+    if source_shape == destination_shape and source_full != destination_full:
+        return "changed"
+    if source_formats or destination_formats:
+        return "unknown"
+    return "same"
 
 
 def _resolve_comparison_schema(
@@ -1628,13 +2123,54 @@ def _compare_schema_direction(
         head, head_current = _resolve_comparison_schema(
             head, head_resolver, head_current
         )
+    if base.get("format") != head.get("format"):
+        reasons.add("changed_constraint")
+    if "anyOf" in base or "anyOf" in head:
+        base_has_union = "anyOf" in base
+        head_has_union = "anyOf" in head
+        base_siblings = {key: value for key, value in base.items() if key not in {"anyOf", "format"}} if base_has_union else {}
+        head_siblings = {key: value for key, value in head.items() if key not in {"anyOf", "format"}} if head_has_union else {}
+        if base_has_union and head_has_union and _canonical_bytes(base_siblings) != _canonical_bytes(head_siblings):
+            reasons.add("unsupported_schema_comparison")
+            return
+        if base_has_union and not head_has_union and base_siblings:
+            reasons.add("unsupported_schema_comparison")
+            return
+        if head_has_union and not base_has_union and head_siblings:
+            reasons.add("unsupported_schema_comparison")
+            return
+        base_branches = base["anyOf"] if base_has_union else [base]
+        head_branches = head["anyOf"] if head_has_union else [head]
+        format_state = _anyof_format_changed(
+            base_branches, head_branches,
+            base_resolver, head_resolver, base_current, head_current,
+        )
+        if format_state == "changed":
+            reasons.add("changed_constraint")
+        elif format_state == "unknown":
+            reasons.add("unsupported_schema_comparison")
+        if direction == "consumer":
+            relation = _union_inclusion(
+                base_branches, head_branches,
+                base_resolver, head_resolver, base_current, head_current,
+            )
+        else:
+            relation = _union_inclusion(
+                head_branches, base_branches,
+                head_resolver, base_resolver, head_current, base_current,
+            )
+        if relation == "disjoint":
+            reasons.add("changed_constraint")
+        elif relation == "unknown":
+            reasons.add("unsupported_schema_comparison")
+        return
     for key in ("$id", "$schema"):
         if _canonical_bytes(base.get(key)) != _canonical_bytes(head.get(key)):
             reasons.add("changed_constraint")
     base_has_const = "const" in base
     head_has_const = "const" in head
     if base_has_const and head_has_const:
-        if _canonical_bytes(base["const"]) != _canonical_bytes(head["const"]):
+        if _schema_value_key(base["const"]) != _schema_value_key(head["const"]):
             reasons.add("changed_constraint")
     elif direction == "consumer" and head_has_const:
         reasons.add("narrowed_constraint")
@@ -1646,6 +2182,8 @@ def _compare_schema_direction(
         reasons.add("narrowed_constraint")
     elif direction == "producer" and base_unique and not head_unique:
         reasons.add("widened_producer_output")
+    if base.get("format") != head.get("format"):
+        reasons.add("changed_constraint")
     for key in ("oneOf", "allOf", "if", "then"):
         if _canonical_bytes(base.get(key)) != _canonical_bytes(head.get(key)):
             reasons.add("changed_constraint")
@@ -1673,10 +2211,10 @@ def _compare_schema_direction(
         if type_breaks:
             reasons.add("changed_type")
             return
-    base_enum = _comparison_canonical_values(
+    base_enum = _comparison_schema_value_keys(
         base.get("enum", []), base_resolver
     )
-    head_enum = _comparison_canonical_values(
+    head_enum = _comparison_schema_value_keys(
         head.get("enum", []), head_resolver
     )
     if direction == "consumer":
@@ -2667,6 +3205,8 @@ def _compare_contracts_impl(
             return CompatibilityResult(
                 "unsupported", ("contract_comparison_work_limit",)
             )
+    if "unsupported_schema_comparison" in reasons:
+        return CompatibilityResult("unsupported", ("unsupported_schema_comparison",))
     return CompatibilityResult("incompatible" if reasons else "compatible", tuple(sorted(reasons)))
 
 

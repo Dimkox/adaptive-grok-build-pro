@@ -1834,7 +1834,7 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(result.status, "compatible")
         self.assertEqual(result.reasons, ())
 
-    def test_governance_handoff_exception_rejects_changed_supported_copies(self) -> None:
+    def test_governance_handoff_changed_supported_copies_are_compared(self) -> None:
         snapshot = ARCH.load_architecture(ROOT)
         frozen = next(
             item
@@ -1877,8 +1877,9 @@ class ArchitectureModelTests(unittest.TestCase):
                     result = ARCH.compare_contracts(
                         base, head, "consumer_accepts_old"
                     )
-                    self.assertEqual(result.status, "unsupported")
-                    self.assertEqual(result.reasons, ("unsupported_schema_keyword",))
+                    self.assertEqual(result.status, "incompatible")
+                    self.assertTrue(result.reasons)
+                    self.assertNotIn("unsupported_schema_keyword", result.reasons)
 
     def test_schema_type_arrays_are_bounded_sets_with_directional_semantics(self) -> None:
         string = {"type": "string"}
@@ -2720,6 +2721,426 @@ class ArchitectureModelTests(unittest.TestCase):
             ).status,
             "incompatible",
         )
+
+    def test_openapi_dependency_closure_accepts_existing_nullable_schemas(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        records = ARCH.contract_inventory(ROOT, snapshot)
+        failover = next(
+            record for record in records
+            if record.id == "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1"
+        )
+        result = ARCH.compare_contracts(
+            failover, failover, "bidirectional",
+            base_inventory=records, head_inventory=records,
+        )
+        self.assertEqual(result.status, "compatible", result.reasons)
+        resolver = ARCH._SchemaResolver(failover, records, [0])
+        self.assertTrue(resolver.preflight_current())
+        self.assertIsNotNone(ARCH._openapi_schemas(failover.document, resolver, failover))
+        self.assertEqual(len(resolver.resolved_paths), 8)  # Seven referenced schemas plus this OpenAPI.
+
+        capability = next(
+            record for record in records
+            if record.id == "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1"
+        )
+        changed_document = copy.deepcopy(capability.document)
+        changed_document["description"] = changed_document.get("description", "") + " revised"
+        changed_capability = ARCH.ContractRecord(
+            capability.id, capability.kind, capability.path, capability.version,
+            capability.role, capability.compatibility, capability.digest, changed_document,
+        )
+        changed_records = tuple(
+            changed_capability if record.id == capability.id else record for record in records
+        )
+        metadata_edit = ARCH.compare_contracts(
+            failover, failover, "bidirectional",
+            base_inventory=records, head_inventory=changed_records,
+        )
+        self.assertNotEqual(metadata_edit.status, "unsupported", metadata_edit.reasons)
+
+    def test_anyof_directional_union_inclusion_is_proven(self) -> None:
+        def record(schema: dict, mode: str = "consumer_accepts_old"):
+            return ARCH.ContractRecord(
+                "CONTRACT-UNION", "json_schema", "contracts/union.json", "1",
+                "producer", mode, "0" * 64, schema,
+            )
+
+        base = {"anyOf": [{"type": "string"}, {"type": "null"}]}
+        reordered = {"anyOf": [{"type": "null"}, {"type": "string"}, {"type": "string"}]}
+        for mode in ("consumer_accepts_old", "producer_accepted_by_old", "bidirectional"):
+            with self.subTest(mode=mode):
+                result = ARCH.compare_contracts(record(base, mode), record(reordered, mode), mode)
+                self.assertEqual(result.status, "compatible", result.reasons)
+
+        bounded_source = {"anyOf": [{"type": "integer", "const": index} for index in range(16)]}
+        bounded_reordered = {"anyOf": list(reversed(bounded_source["anyOf"]))}
+        self.assertEqual(
+            ARCH.compare_contracts(
+                record(bounded_source), record(bounded_reordered), "consumer_accepts_old"
+            ).status,
+            "compatible",
+        )
+
+        widened = {"anyOf": [{"type": "string"}, {"type": "null"}, {"type": "integer"}]}
+        self.assertEqual(
+            ARCH.compare_contracts(record(base), record(widened), "consumer_accepts_old").status,
+            "compatible",
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(record(base), record(widened, "producer_accepted_by_old"), "producer_accepted_by_old").status,
+            "incompatible",
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(record(widened), record(base, "producer_accepted_by_old"), "producer_accepted_by_old").status,
+            "compatible",
+        )
+        narrowed = {"anyOf": [{"type": "string", "maxLength": 4}, {"type": "null"}]}
+        self.assertEqual(
+            ARCH.compare_contracts(record(base), record(narrowed), "consumer_accepts_old").status,
+            "unsupported",
+        )
+        old_limited = {"anyOf": [{"type": "string", "maxLength": 4}, {"type": "null"}]}
+        new_limited = {"anyOf": [{"type": "string", "maxLength": 8}, {"type": "null"}]}
+        self.assertEqual(
+            ARCH.compare_contracts(record(old_limited), record(new_limited), "consumer_accepts_old").status,
+            "compatible",
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(record(old_limited, "producer_accepted_by_old"), record(new_limited, "producer_accepted_by_old"), "producer_accepted_by_old").status,
+            "unsupported",
+        )
+        for finite_keyword, finite_value in (("enum", ["x"]), ("const", "x")):
+            unconstrained = {"anyOf": [{"type": "string"}]}
+            finite = {"anyOf": [{"type": "string", finite_keyword: finite_value}]}
+            for mode, source_schema, destination_schema, expected in (
+                ("consumer_accepts_old", unconstrained, finite, "unsupported"),
+                ("producer_accepted_by_old", unconstrained, finite, "compatible"),
+                ("consumer_accepts_old", finite, unconstrained, "compatible"),
+                ("producer_accepted_by_old", finite, unconstrained, "unsupported"),
+            ):
+                with self.subTest(finite_keyword=finite_keyword, mode=mode, reverse=source_schema is finite):
+                    result = ARCH.compare_contracts(
+                        record(source_schema, mode), record(destination_schema, mode), mode
+                    )
+                    self.assertEqual(result.status, expected, result.reasons)
+
+        integral_float = {"type": "number", "const": 2.0}
+        integer = {"type": "integer"}
+        self.assertEqual(
+            ARCH._branch_relation(integral_float, integer, None, None, None, None),
+            "included",
+        )
+        self.assertEqual(
+            ARCH._branch_relation(integer, integral_float, None, None, None, None),
+            "unknown",
+        )
+
+        removed_branch = {"anyOf": [{"type": "null"}]}
+        self.assertEqual(
+            ARCH.compare_contracts(record(base), record(removed_branch), "consumer_accepts_old").status,
+            "incompatible",
+        )
+
+    def test_anyof_disjointness_ignores_constraints_for_other_json_types(self) -> None:
+        cases = (
+            (
+                {"type": "integer", "maxLength": 0},
+                {"type": "integer", "minLength": 2},
+                "string-length keywords do not constrain integers",
+            ),
+            (
+                {"type": "string", "minimum": 10},
+                {"type": "string", "maximum": 0},
+                "numeric bounds do not constrain strings",
+            ),
+        )
+        for source, destination, reason in cases:
+            with self.subTest(reason=reason):
+                self.assertEqual(
+                    ARCH._branch_relation(source, destination, None, None, None, None),
+                    "included",
+                )
+
+                def record(schema: dict, mode: str):
+                    return ARCH.ContractRecord(
+                        "CONTRACT-UNION", "json_schema", "contracts/union.json", "1",
+                        "producer", mode, "0" * 64, {"anyOf": [schema]},
+                    )
+
+                for mode in ("consumer_accepts_old", "producer_accepted_by_old"):
+                    result = ARCH.compare_contracts(
+                        record(source, mode), record(destination, mode), mode
+                    )
+                    with self.subTest(mode=mode):
+                        self.assertEqual(result.status, "compatible", result.reasons)
+
+        self.assertEqual(
+            ARCH._branch_relation(
+                {"type": ["integer", "string"], "minimum": 10},
+                {"type": ["integer", "string"], "maximum": 0},
+                None, None, None, None,
+            ),
+            "unknown",
+        )
+
+    def test_json_schema_numeric_equality_normalizes_const_and_enum(self) -> None:
+        def record(schema: dict, mode: str):
+            return ARCH.ContractRecord(
+                "CONTRACT-NUMERIC", "json_schema", "contracts/numeric.json", "1",
+                "producer", mode, "0" * 64, schema,
+            )
+
+        for keyword, integer_value, float_value in (
+            ("const", 1, 1.0),
+            ("enum", [1], [1.0]),
+        ):
+            for mode in ("consumer_accepts_old", "producer_accepted_by_old"):
+                with self.subTest(keyword=keyword, mode=mode):
+                    integer_record = record({"type": "number", keyword: integer_value}, mode)
+                    float_record = record({"type": "number", keyword: float_value}, mode)
+                    result = ARCH.compare_contracts(integer_record, float_record, mode)
+                    self.assertEqual(result.status, "compatible", result.reasons)
+
+        self.assertEqual(
+            ARCH._branch_relation(
+                {"type": "number", "const": 1},
+                {"type": "number", "const": 1.0},
+                None, None, None, None,
+            ),
+            "included",
+        )
+        self.assertNotEqual(ARCH._schema_value_key(True), ARCH._schema_value_key(1))
+        boolean_vs_number = ARCH.compare_contracts(
+            record({"type": "boolean", "const": True}, "consumer_accepts_old"),
+            record({"type": "number", "const": 1}, "consumer_accepts_old"),
+            "consumer_accepts_old",
+        )
+        self.assertEqual(boolean_vs_number.status, "incompatible")
+
+    def test_anyof_ambiguous_union_coverage_fails_closed(self) -> None:
+        def record(schema: dict):
+            return ARCH.ContractRecord(
+                "CONTRACT-UNION", "json_schema", "contracts/union.json", "1",
+                "producer", "consumer_accepts_old", "0" * 64, schema,
+            )
+
+        source = {"anyOf": [{"type": "integer", "minimum": 0, "maximum": 10}]}
+        split_coverage = {
+            "anyOf": [
+                {"type": "integer", "minimum": 0, "maximum": 5},
+                {"type": "integer", "minimum": 5, "maximum": 10},
+            ]
+        }
+        result = ARCH.compare_contracts(record(source), record(split_coverage), "consumer_accepts_old")
+        self.assertEqual(result.status, "unsupported", result.reasons)
+
+        overlapping_source = {
+            "anyOf": [{"type": "number", "minimum": 0}, {"type": "integer", "maximum": 5}]
+        }
+        destination = {"anyOf": [{"type": "number", "minimum": 0}]}
+        self.assertEqual(
+            ARCH.compare_contracts(record(overlapping_source), record(destination), "consumer_accepts_old").status,
+            "unsupported",
+        )
+
+    def test_schema_resolver_supports_bounded_json_pointers(self) -> None:
+        current = ARCH.ContractRecord(
+            "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "producer",
+            "consumer_accepts_old", "0" * 64,
+            {"$defs": {"node/name": {"type": "string"}}, "$ref": "#/$defs/node~1name"},
+        )
+        self.assertEqual(ARCH.compare_contracts(current, current, current.compatibility).status, "compatible")
+
+        target = ARCH.ContractRecord(
+            "CONTRACT-TARGET", "json_schema", "contracts/target.json", "1", "producer",
+            "consumer_accepts_old", "1" * 64,
+            {"$id": "urn:adaptive-test:target", "$defs": {"value": {"type": "string"}}},
+        )
+        refs = (
+            "target.json#/$defs/value",
+            "urn:adaptive-test:target#/$defs/value",
+        )
+        for reference in refs:
+            root = ARCH.ContractRecord(
+                "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "producer",
+                "consumer_accepts_old", "2" * 64, {"$ref": reference},
+            )
+            result = ARCH.compare_contracts(
+                root, root, root.compatibility,
+                base_inventory=(root, target), head_inventory=(root, target),
+            )
+            with self.subTest(reference=reference):
+                self.assertEqual(result.status, "compatible", result.reasons)
+
+    def test_schema_resolver_and_anyof_limits_fail_closed(self) -> None:
+        target = ARCH.ContractRecord(
+            "CONTRACT-TARGET", "json_schema", "contracts/target.json", "1", "producer",
+            "consumer_accepts_old", "1" * 64,
+            {"$id": "urn:adaptive-test:target", "$defs": {"value": {"type": "string"}}},
+        )
+        bad_refs = (
+            "#/$defs/missing", "#/$defs/bad~2escape", "missing.json#/$defs/value",
+            "../outside.json#/$defs/value", "https://example.invalid/schema#/$defs/value",
+            "urn:adaptive-test:unknown#/$defs/value",
+        )
+        for reference in bad_refs:
+            root = ARCH.ContractRecord(
+                "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "producer",
+                "consumer_accepts_old", "2" * 64, {"$defs": {}, "$ref": reference},
+            )
+            with self.subTest(reference=reference):
+                self.assertEqual(
+                    ARCH.compare_contracts(root, root, root.compatibility, base_inventory=(root, target), head_inventory=(root, target)).status,
+                    "unsupported",
+                )
+
+        ambiguous_target = ARCH.ContractRecord(
+            "CONTRACT-OTHER-TARGET", "json_schema", "contracts/other-target.json", "1",
+            "producer", "consumer_accepts_old", "4" * 64,
+            {"$id": "urn:adaptive-test:target", "$defs": {"value": {"type": "integer"}}},
+        )
+        by_id = ARCH.ContractRecord(
+            "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "producer",
+            "consumer_accepts_old", "5" * 64,
+            {"$ref": "urn:adaptive-test:target#/$defs/value"},
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(
+                by_id, by_id, by_id.compatibility,
+                base_inventory=(by_id, target, ambiguous_target),
+                head_inventory=(by_id, target, ambiguous_target),
+            ).status,
+            "unsupported",
+        )
+
+        cyclic = ARCH.ContractRecord(
+            "CONTRACT-CYCLIC", "json_schema", "contracts/cyclic.json", "1", "producer",
+            "consumer_accepts_old", "6" * 64,
+            {"$defs": {"node": {"$ref": "#/$defs/node"}}, "type": "object"},
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(cyclic, cyclic, cyclic.compatibility).status,
+            "unsupported",
+        )
+
+        many = {"anyOf": [{"type": "string", "minLength": index} for index in range(17)]}
+        record = ARCH.ContractRecord(
+            "CONTRACT-UNION", "json_schema", "contracts/union.json", "1", "producer",
+            "consumer_accepts_old", "3" * 64, many,
+        )
+        self.assertEqual(ARCH.compare_contracts(record, record, record.compatibility).status, "unsupported")
+
+        base_record = self._record({"type": "object"})
+        head_record = ARCH.ContractRecord(
+            base_record.id, base_record.kind, base_record.path, base_record.version,
+            base_record.role, base_record.compatibility, "7" * 64, {"type": "object"},
+        )
+        budget = [0]
+        base_resolver = ARCH._SchemaResolver(base_record, (base_record,), budget)
+        head_resolver = ARCH._SchemaResolver(head_record, (head_record,), budget)
+        branches = [{"type": "integer", "minimum": index} for index in range(16)]
+        with mock.patch.object(ARCH, "MAX_PARSED_NODES", 32):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "comparison work limit"):
+                ARCH._union_inclusion(
+                    branches, copy.deepcopy(branches),
+                    base_resolver, head_resolver, base_record, head_record,
+                )
+
+    def test_date_time_format_is_compared_as_contract_metadata(self) -> None:
+        original = {"type": "string", "format": "date-time"}
+        same = self._record(original)
+        self.assertEqual(ARCH.compare_contracts(same, same, same.compatibility).status, "compatible")
+        changed = self._record({"type": "string"})
+        result = ARCH.compare_contracts(same, changed, same.compatibility)
+        self.assertEqual(result.status, "incompatible")
+        self.assertIn("changed_constraint", result.reasons)
+        unknown_format = self._record({"type": "string", "format": "date"})
+        self.assertEqual(
+            ARCH.compare_contracts(same, unknown_format, same.compatibility).status,
+            "unsupported",
+        )
+        union_with_format = self._record(
+            {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+        )
+        union_without_format = self._record(
+            {"anyOf": [{"type": "string"}, {"type": "null"}]}
+        )
+        union_result = ARCH.compare_contracts(
+            union_with_format, union_without_format, union_with_format.compatibility
+        )
+        self.assertEqual(union_result.status, "incompatible")
+        self.assertIn("changed_constraint", union_result.reasons)
+        nested_schema_with_format = {
+            "anyOf": [{"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}]
+        }
+        nested_schema_without_format = {
+            "anyOf": [{"anyOf": [{"type": "string"}, {"type": "null"}]}]
+        }
+        nested_schema_with_other_change_with_format = {
+            "anyOf": [{"anyOf": [{"type": "string", "format": "date-time", "minLength": 10}, {"type": "null"}]}]
+        }
+        nested_schema_with_other_change_without_format = {
+            "anyOf": [{"anyOf": [{"type": "string", "minLength": 5}, {"type": "null"}]}]
+        }
+        for direction in ("consumer_accepts_old", "producer_accepted_by_old"):
+            nested_with_format = self._record(
+                nested_schema_with_other_change_with_format, compatibility=direction
+            )
+            nested_without_format = self._record(
+                nested_schema_with_other_change_without_format, compatibility=direction
+            )
+            nested_result = ARCH.compare_contracts(
+                nested_with_format, nested_without_format, direction
+            )
+            with self.subTest(direction=direction, concurrent_min_length_change=True):
+                self.assertIn(nested_result.status, {"incompatible", "unsupported"}, nested_result.reasons)
+                if nested_result.status == "incompatible":
+                    self.assertIn("changed_constraint", nested_result.reasons)
+
+        for direction in ("consumer_accepts_old", "producer_accepted_by_old"):
+            nested_with_format = self._record(
+                nested_schema_with_format, compatibility=direction
+            )
+            nested_without_format = self._record(
+                nested_schema_without_format, compatibility=direction
+            )
+            nested_result = ARCH.compare_contracts(
+                nested_with_format, nested_without_format, direction
+            )
+            with self.subTest(direction=direction):
+                self.assertEqual(nested_result.status, "incompatible", nested_result.reasons)
+                self.assertIn("changed_constraint", nested_result.reasons)
+
+    def test_unrelated_schema_keywords_remain_unsupported(self) -> None:
+        schema = {"type": "array", "prefixItems": [{"type": "string"}]}
+        record = self._record(schema)
+        result = ARCH.compare_contracts(record, record, record.compatibility)
+        self.assertEqual(result.status, "unsupported")
+
+    def test_producer_policy_and_profile_contract_are_unchanged(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        records = ARCH.contract_inventory(ROOT, snapshot)
+        capability = next(
+            record for record in records
+            if record.id == "CONTRACT-FACTORY-LANDING-BACKEND-CAPABILITY-V1"
+        )
+        before = copy.deepcopy(capability.document["properties"]["profile"]["enum"])
+        candidate_document = copy.deepcopy(capability.document)
+        added_profile = copy.deepcopy(before[0])
+        added_profile["profile_id"] = "test-unapproved-profile"
+        added_profile["model_id"] = "test-only"
+        candidate_document["properties"]["profile"]["enum"].append(added_profile)
+        candidate = ARCH.ContractRecord(
+            capability.id, capability.kind, capability.path, capability.version,
+            capability.role, capability.compatibility, "f" * 64, candidate_document,
+        )
+        result = ARCH.compare_contracts(
+            capability, candidate, capability.compatibility,
+            base_inventory=(capability,), head_inventory=(candidate,),
+        )
+        self.assertEqual(result.status, "incompatible", result.reasons)
+        self.assertIn("widened_producer_output", result.reasons)
+        self.assertEqual(capability.document["properties"]["profile"]["enum"], before)
 
     def test_schema_refs_resolve_only_from_bounded_declared_in_memory_inventory(self) -> None:
         packet_base = self._record(
