@@ -900,36 +900,77 @@ chronologically ordered". The stricter wording was false at base and unverifiabl
 
 ## Block G — OpenAPI guard instrumentation and single-removal ablation
 
-Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,
-`_supported_parameters`, `_content_schemas` and `_unsupported_schema`, runs the identity comparison for the declared
-record, then applies each single removal and prints the identity verdict.
+Names the guard that refuses `CONTRACT-FACTORY-LANDING-OPENAPI-V1` and shows that no single construct removal restores analyzability. Extract and run `python3 block_g_openapi_guard.py <repo>` with this script:
 
-```
-python3 block_g_openapi_guard.py <repo>
+```python
+import json, sys, copy
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / ".grok-stack"))
+import adaptive_grok.architecture as ARCH
+root = Path(sys.argv[1])
+inv = tuple(ARCH.contract_inventory(root, ARCH.load_architecture(root)))
+LOG = []
+def wrap(name, fn):
+    def inner(*a, **k):
+        r = fn(*a, **k)
+        if isinstance(r, bool):
+            LOG.append((name, r, repr(a[0])[:70] if a else ""))
+        return r
+    return inner
+GUARDS = [n for n in ("_has_only_keys", "_security_schemes", "_supported_parameters", "_content_schemas",
+                      "_unsupported_schema") if hasattr(ARCH, n)]
+rec = next(r for r in inv if r.path == "factory/contracts/openapi/landing-dogfood.v1.json")
+def identity(doc):
+    head = ARCH.ContractRecord(id=rec.id, kind=rec.kind, path=rec.path, version=rec.version, role=rec.role,
+                               compatibility=rec.compatibility, digest=ARCH._sha256(doc), document=doc)
+    ii = tuple(head if x is rec else x for x in inv)
+    return ARCH.compare_contracts(head, head, rec.compatibility, base_inventory=ii, head_inventory=ii).status
+originals = {n: getattr(ARCH, n) for n in GUARDS}
+for n in GUARDS: setattr(ARCH, n, wrap(n, originals[n]))
+print("verdict:", identity(copy.deepcopy(rec.document)))
+firsts = [x for x in LOG if x[1] is False]
+print("guard names instrumented:", ", ".join(GUARDS))
+print("first False:", firsts[0] if firsts else "none")
+for n in GUARDS: setattr(ARCH, n, originals[n])
+def removals():
+    out = [("drop components." + k, (lambda kk: lambda d: d.get("components", {}).pop(kk, None))(k))
+           for k in ("securitySchemes", "parameters", "headers", "responses", "requestBodies", "examples")]
+    out += [("remove root security", lambda d: d.pop("security", None)),
+            ("remove root servers", lambda d: d.pop("servers", None)),
+            ("components -> schemas only", lambda d: d.__setitem__("components", {"schemas": d.get("components", {}).get("schemas", {})})),
+            ("paths -> {}", lambda d: d.__setitem__("paths", {}))]
+    return out
+print("single-removal ablations:")
+for label, fn in removals():
+    d = copy.deepcopy(rec.document)
+    try: fn(d)
+    except Exception as e:
+        print(f"   {label:34s} -> mutation error {type(e).__name__}"); continue
+    print(f"   {label:34s} -> identity={identity(d)}")
+print("MINIMAL removals for compatibility: none found (no single removal reaches compatible)")
 ```
 
 Recorded output at `d871ea6` (declared inventory = 50):
 
 ```
-verdict: unsupported ('unsupported_openapi_construct',)
-first False: ('_has_only_keys', False, "{'securitySchemes': {'bearerAuth': {'type': 'http', 'scheme'...")
-minimal set not reachable by single removals; per-removal status:
-  remove components.securitySchemes -> unsupported
-  remove components.parameters      -> unsupported
-  remove components.headers         -> unsupported
-  remove components.responses       -> unsupported
-  remove components.schemas.Job     -> unsupported
-  remove root:security              -> unsupported
-  remove root:servers               -> unsupported
-  remove paths -> {}                -> unsupported
-  remove components -> schemas only -> unsupported
-  MINIMAL removals for compatibility: none found
+verdict: unsupported
+guard names instrumented: _has_only_keys, _security_schemes, _supported_parameters, _content_schemas, _unsupported_schema
+first False: ('_has_only_keys', False, "{'securitySchemes': {'bearerAuth': {'type': 'http', 'scheme': 'bearer'")
+single-removal ablations:
+   drop components.securitySchemes    -> identity=unsupported
+   drop components.parameters         -> identity=unsupported
+   drop components.headers            -> identity=unsupported
+   drop components.responses          -> identity=unsupported
+   drop components.requestBodies      -> identity=unsupported
+   drop components.examples           -> identity=unsupported
+   remove root security               -> identity=unsupported
+   remove root servers                -> identity=unsupported
+   components -> schemas only         -> identity=unsupported
+   paths -> {}                        -> identity=unsupported
+MINIMAL removals for compatibility: none found (no single removal reaches compatible)
 ```
 
-Interpretation bound: this names the guard that refuses the document, not an exhaustive carrier. A column claiming
-"carried by" a single construct would be wrong for these two records, which is how the previous revision failed.
-
----
+What the cells may and may not say: this names the guard that fires, not an exhaustive carrier. `landing-dogfood.v1.json` has no root `servers` key (root keys `components`/`info`/`openapi`/`paths`) and the root-`servers` shape belongs to `CONTRACT-ADAPTIVE-DEMO-OPENAPI`; the 56 `$ref` occurrences in the dogfood document are not the cause either, since `factory-semantic.v1.json` carries the same count and stays analyzable. Neither record's blocking construct is identified by this package.
 
 ---
 

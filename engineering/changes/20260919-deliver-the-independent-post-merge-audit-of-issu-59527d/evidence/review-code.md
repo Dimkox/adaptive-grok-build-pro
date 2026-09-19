@@ -296,3 +296,28 @@ script, or change that format spec to `:64s` and re-record — and the cells at 
    163/21 and 155/57 above; it is reviewer text, not a package claim, so it is not counted against the package.
 3. `resolves_by_path=False` for both `urn:` refs is true but unexplained at row 36; a reader could take it as a
    second, unnamed failure mode.
+
+## Micro-confirmation on 3512d4b
+MICRO-CONFIRMATION VERDICT: PASS
+
+Environment: `chmod 700` dir `/home/pall/grok-projects/micro104-3512d4b` holding `clone` (branch tip `3512d4b`,
+0 dirty lines) and `wt-base` (detached `d871ea6d5d654406281dd65626a3dce61bf933fa`, clean on product paths). Scripts
+were extracted from the harness `.md` at runtime; nothing was written into the package.
+
+**5 closed — block H reproduces byte-for-byte.** Its own ```python fence saved as `block_h.py`, run
+`python3 block_h.py <wt-base>`, exits 0 and prints 8/8 lines identical to the recorded fence, tabs and padding
+included, same digest (`3ee4874b34eb2cd9` both sides). The `:58s` drift is gone.
+**Control — block F still reproduces:** `python3 block_f.py <clone> d871ea6 HEAD` → 12/12 lines byte-exact (`8a2bb92ab9c18f00`).
+**Block G — fence present, no embedded script to match it against.** G carries a 13-line recorded fence but only the
+bare command `python3 block_g_openapi_guard.py <repo>`; that file exists nowhere (`find <pkg> -name '*.py'` → 0), so
+G's fence is not regenerable from the harness — a standing limitation, unchanged by these commits (G's section is
+byte-identical to its `fc9d877` self; the change was a move). The five guard names its intro cites all exist at
+`d871ea6` (`def` count 1 each) and its `first False` repr matches my prior-round instrumentation.
+**Order/index:** headings now A·B·C·C-2·D·E·F(825)·[Index 884]·G(901)·H(936) — matches `blocks A–H` at
+`evidence/README.md:17`, `architecture.md:36`, `test-plan.md:11`. Package grep for `A–F|A-F|seven blocks|7 blocks`
+(md+yaml) → only my own prior-round prose at lines 220/225; 8 ```python fences. Residual (non-blocking): the Index
+table (884-899) still has no rows for G or H.
+**No new false statement.** `3512d4b` is a pure move (line multiset identical to `6009932`). `6009932`'s only new
+prose is the re-padded two lines plus the `resolves_by_path=False` paragraph, and that mechanism claim holds:
+`architecture.py:1170-1174` builds `records_by_schema_id` from each document's `$id` and `resolve()` consults it at
+`:1240` before any path fallback. Cosmetic only: the move left a duplicated `---` rule between G and H (932/934).
