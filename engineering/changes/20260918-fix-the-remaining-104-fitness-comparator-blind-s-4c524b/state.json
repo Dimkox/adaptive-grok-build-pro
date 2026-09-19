@@ -1,0 +1,29 @@
+{
+  "change_id": "20260918-fix-the-remaining-104-fitness-comparator-blind-s-4c524b",
+  "created_at": "2026-09-18T20:07:35+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T20:07:35+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T20:23:48+00:00",
+      "from": "draft",
+      "reason": "Reproduction and five independent analyses establish the exact inventory-bound closure, anyOf inclusion rules, and fail-closed edges.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T20:23:48+00:00",
+      "from": "scoped",
+      "reason": "User directed full implementation of #104; no change to producer policy or profile facts is authorized by this scope.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "4c524b83df59",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Fix the remaining #104 fitness comparator blind spot: OpenAPI contracts that reference the landing backend capability JSON Schema become unsupported when that schema changes. Extend the bounded compatibility subset to analyze the referenced composition constructs accurately, with regression coverage; do not change producer-output policy or declare new profile facts.",
+  "updated_at": "2026-09-18T20:23:48+00:00"
+}

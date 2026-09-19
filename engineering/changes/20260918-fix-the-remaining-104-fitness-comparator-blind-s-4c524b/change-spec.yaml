@@ -1,0 +1,69 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The declared landing OpenAPI dependency closure resolves existing anyOf, $defs, JSON Pointer, and date-time schema forms without unsupported_openapi_construct.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_openapi_dependency_closure_accepts_existing_nullable_schemas"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Directional anyOf compatibility is compatible only when source-union inclusion is proven; ambiguous coverage never passes.",
+      "evidence": [
+        {"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_anyof_directional_union_inclusion_is_proven"},
+        {"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_anyof_ambiguous_union_coverage_fails_closed"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Unsafe or unprovable references and over-budget union comparisons fail closed without remote retrieval.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_schema_resolver_and_anyof_limits_fail_closed"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "date-time format changes are reported as contract drift without claiming instance validation.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_date_time_format_is_compared_as_contract_metadata"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Unrelated schema keywords such as prefixItems remain outside the supported subset.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_unrelated_schema_keywords_remain_unsupported"}]
+    }
+  ],
+  "approvals": {"required_scopes": []},
+  "change_id": "20260918-fix-the-remaining-104-fitness-comparator-blind-s-4c524b",
+  "contracts": {"events": [], "json_schema": [], "openapi": []},
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Do not change producer-output policy, deployed Trust CI, or add profile facts to the capability contract.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_producer_policy_and_profile_contract_are_unchanged"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Do not accept unsupported unrelated schema keywords such as prefixItems.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_unrelated_schema_keywords_remain_unsupported"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The union analyzer returns compatible only with a sound proof of directional inclusion and retains bounded work and cycle rejection.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_anyof_ambiguous_union_coverage_fails_closed"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "References resolve only within the current document or an exact declared contract inventory record.",
+      "evidence": [{"test": "tests/test_architecture_model.py::ArchitectureModelTests.test_schema_resolver_and_anyof_limits_fail_closed"}]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Complete the remaining technical #104 comparator fix by analyzing the declared OpenAPI dependency closure and directional anyOf unions without changing producer policy or profile facts.",
+    "success_metric": "landing_failover_dependency_comparison_is_supported_and_sound",
+    "target": "the existing seven-schema closure is analyzed; compatible is emitted only for proven inclusion and unknown cases fail closed"
+  },
+  "observability": [],
+  "risk": {"domains": ["ai", "api"], "tier": "yellow"},
+  "rollback": {"maximum_steps": 1, "strategy": "forward_fix"},
+  "schema_version": 2
+}
