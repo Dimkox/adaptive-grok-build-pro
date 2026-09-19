@@ -7,11 +7,47 @@
       "from": null,
       "reason": "created",
       "to": "draft"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "draft",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "scoped",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "approved",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "implementing",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "verifying",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T08:45:39+00:00",
+      "from": "reviewing",
+      "reason": "implementation, 16 new test arms, three reviews (code re-reviewed to PASS on delivered bytes) and controller verification complete; seven residuals recorded in evidence/residual-risks.md",
+      "to": "ready"
     }
   ],
   "route_id": "8cf75202079d",
   "schema_version": 1,
-  "status": "draft",
+  "status": "ready",
   "title": "Fix issue #146: the architecture gate drops reverse edges for $id-based and file#fragment contract references, so a changed contract is never re-verified against the dependents that reference it through those grammars. Make the closure resolve the same reference grammar the comparator resolves, with regression coverage for an $id edge, a fragment edge and the plain-relative control; do not change comparator semantics, compatibility policy or any contract.",
-  "updated_at": "2026-09-19T04:17:27+00:00"
+  "updated_at": "2026-09-19T08:45:39+00:00"
 }

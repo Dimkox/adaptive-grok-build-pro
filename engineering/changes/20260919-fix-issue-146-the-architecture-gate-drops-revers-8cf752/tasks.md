@@ -8,6 +8,8 @@
 - [x] Independent controller verification of the patch in private clones (differential, closure sweep, end-to-end arms) → `controller-verification.md`.
 - [x] Correct the controller's own blast-radius note after measurement (one new failure → three, all on `M7-READY-BUNDLE-V1`).
 - [x] Run selected quality profiles: `base` + `contracts` focused modules, full root discovery, `git diff --check`, `ruff`.
-- [ ] Complete independent reviews (route-selected: code, test, security).
+- [x] Complete independent reviews (route-selected: code, test, security): code FAILed the first commit and
+      PASSed the delivered bytes on re-review, the two test Criticals and all three security Importants are closed
+      with arms; `evidence/residual-risks.md` records the seven things still open.
 - [ ] Bind the `verification` and review receipts to the final tree fingerprint.
 - [ ] Push branch, open pull request, wait for the App-owned exact-SHA check; merge is a separately delegated action.
