@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 import json
 
 from adaptive_grok.receipts import validate_evidence
+from adaptive_grok.human_gates import ARTIFACT_NOTICE, gate_statuses
 from adaptive_grok.state import get_active_change, get_active_route, get_agent_state
 from adaptive_grok.util import find_root
 
@@ -18,5 +19,7 @@ print(json.dumps({
     'route': route,
     'change': get_active_change(root),
     'agents': get_agent_state(root),
+    'human_gates': gate_statuses(root),
+    'human_gate_notice': ARTIFACT_NOTICE,
     'evidence_gaps': validate_evidence(root, route) if route else [],
 }, ensure_ascii=False, indent=2))

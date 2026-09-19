@@ -273,12 +273,15 @@ The independent `trust-ci/` service is deployed once as infrastructure; it is no
 
 Local loop: route → change → verify → independent reviews → `ready` → pull request. `scripts/grok_deploy.py` is prepare-only and must not bypass protected-branch or exact-SHA requirements.
 
+Declared route `human_gates` require a separate decision in the active change package. The package stores the initial gate declaration and a digest; a missing or changed declaration in the active route or route snapshot fails closed. Inspect gate status with `python3 scripts/grok_gate.py status`; record only an explicit operator decision with `python3 scripts/grok_gate.py decide <gate> <approved|rejected> --reason "..." --actor "..."` (production decisions also require `--action`; approve the migration plan with `--action migration-plan`; external-write decisions require exact `--action external-write --resource ...`). Decisions are bound to the active route, change, gate and scope digest. They are mutable local workflow evidence, not authenticated human identity, delegated grants, Trust CI signed approvals or merge authority. Production and external-write operations still require their exact delegated grants.
+
 | Script | Role |
 |--------|------|
 | `scripts/grok_route.py` | Classify / show route |
 | `scripts/grok_change.py` | Start durable local change package |
 | `scripts/grok_governance.py` | Validate/summarize target-owned governance, check read-only projections, and emit an exact clean-state handoff |
 | `scripts/grok_status.py` | Local runtime status |
+| `scripts/grok_gate.py` | Inspect or record route-bound local human-gate decisions |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |

@@ -1,0 +1,19 @@
+{
+  "change_id": "20260917-enforce-and-report-route-approval-gates-126-e405d5",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user-in-conversation",
+      "change_id": "20260917-enforce-and-report-route-approval-gates-126-e405d5",
+      "decided_at": "2026-09-18T11:07:26+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User approved the fail-closed durable human-gate design bound to change, route, and scope, independent from delegated grants and Trust CI.",
+      "resource": null,
+      "route_id": "e405d570fc4f",
+      "scope_digest": "10ee6fbeaeffe36631d476e0975a7255e5c82bc5b21d383612e3d01fb0425978"
+    }
+  ],
+  "route_id": "e405d570fc4f",
+  "schema_version": 1
+}

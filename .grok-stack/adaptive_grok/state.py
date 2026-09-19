@@ -218,6 +218,22 @@ def add_approval(
     if normalized_scope in {'external-write', 'protected-path'} and not normalized_resources:
         raise ValueError(f'{normalized_scope} grants require explicit resources')
 
+    from .human_gates import gate_block_reason, route_has_gate
+
+    if normalized_scope == 'external-write':
+        if any(any(char in resource for char in '*?[') for resource in normalized_resources):
+            if route_has_gate(root, 'migration_or_external_write_approval'):
+                raise ValueError('route external-write gate requires exact resources, not patterns')
+        for resource in normalized_resources:
+            gate_reason = gate_block_reason(root, normalized_scope, 'external-write', resource)
+            if gate_reason:
+                raise ValueError(gate_reason)
+    else:
+        for action in normalized_actions:
+            gate_reason = gate_block_reason(root, normalized_scope, action)
+            if gate_reason:
+                raise ValueError(gate_reason)
+
     head = git_head(root)
     if not head:
         raise RuntimeError('an exact Git HEAD is required for delegated approval')
@@ -257,6 +273,11 @@ def has_valid_approval(
     resource: str | None = None,
 ) -> bool:
     """Validate a delegated grant against the current route, repository, HEAD and tree."""
+    if scope in {'production', 'external-write'} and action:
+        from .human_gates import gate_block_reason
+
+        if gate_block_reason(root, scope, action, resource):
+            return False
     approvals = load_json(approvals_path(root), [])
     if not isinstance(approvals, list):
         return False
