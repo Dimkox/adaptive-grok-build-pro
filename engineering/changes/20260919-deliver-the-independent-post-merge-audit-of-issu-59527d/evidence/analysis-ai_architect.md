@@ -49,6 +49,11 @@ directions — the single widest residual.
 
 ## Table C — the real gate path (`scripts/grok_architecture.py fitness --pre-risk yellow`)
 
+> [ANNOTATION added by the controller] The `00709f4` / `0284d33` identifiers in the table below are probe commits made in
+> throwaway clones of the delivery tree; they are not objects of this repository (`git cat-file -t` fails for both), so
+> treat them as labels for the recorded command output, not as retrievable evidence. The quoted `findings` strings are the
+> reproduced artifact; block C of `measurement-harness.md` re-derives the in-process cells behind them.
+
 | probe (base=d871ea6) | `contract_compatibility` | findings verbatim |
 |---|---|---|
 | `00709f4` title inside `reason_code.anyOf[0]` | **`unsupported`** (`unsupported_contract_semantics`) | `CONTRACT-FACTORY-LANDING-ATTEMPT-STATUS-V1: unsupported compatibility semantics`; `CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1: unsupported compatibility semantics`; `CONTRACT-FACTORY-LANDING-FAILOVER-RESULT-V1: unsupported compatibility semantics` |
@@ -100,6 +105,10 @@ bounded `anyOf` subset is incomplete — see follow-up (composition-proof residu
 > is now "incompleteness **plus one latent false certification**", not "incompleteness only". One cross-reference in
 > the annotated passage has also drifted: this package's `requirements.md` AC-005 is the path-scrub criterion, and the
 > fail-closed disclosure the agent meant is now AC-002/AC-003.
+
+> [ANNOTATION added by the controller] In this section "the package", `brief.md`, `requirements.md` AC-005 and
+> `review-test.md` refer to route `4c524b83df59`'s change package (`engineering/changes/20260918-…-4c524b/`), the
+> #104 delivery this lane audited — not to the audit package this file was copied into.
 
 Nothing in the package overclaims past that: `brief.md` Outcome says "producing directionally sound results for
 supported `anyOf` unions instead of stopping at a false unsupported verdict", which Table B/C show is only

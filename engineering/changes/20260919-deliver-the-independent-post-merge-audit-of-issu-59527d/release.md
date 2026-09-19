@@ -19,8 +19,9 @@ No production signal. The observable success checks are repository-local and det
 `git diff --numstat <base>...<delivered-head> -- mistakes.md` shows additions with a zero deleted column (78 0 at the
 head this package was built on), and `ls engineering/changes/<this package>/evidence/analysis-*.md | wc -l` prints 5 —
 four lanes from route `59527d5a28f8` plus the `ai_architect` lane owned by route `4c524b83df59` — alongside
-`controller-declared-inventory-table.md` and `measurement-harness.md`. Both numbers are printed by blocks A and F of
-that harness.
+`controller-declared-inventory-table.md` and `measurement-harness.md`. Provenance of each figure: the analyzability
+numbers come from block A and the chronology line from block F of that harness, while the report count is printed by
+the `ls … | wc -l` command quoted in this paragraph, not by a harness block.
 
 ## Go/no-go criteria
 

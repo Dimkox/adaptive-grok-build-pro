@@ -34,11 +34,13 @@ Blocked at `d871ea6`, by name:
 |---|---|---|---|
 | `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1` | json_schema | `unsupported_schema_keyword` | `prefixItems` (per `analysis-ai_architect.md` follow-up item 10) |
 | `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | json_schema | `unsupported_schema_keyword` | urn-`$ref` cascade into `prefixItems` (same source) |
-| `CONTRACT-FACTORY-LANDING-OPENAPI-V1` | openapi | `unsupported_openapi_construct` | root `servers` (same source) |
+| `CONTRACT-FACTORY-LANDING-OPENAPI-V1` | openapi | `unsupported_openapi_construct` | measured: no `servers` key at root (`landing-dogfood.v1.json` root keys are `components`/`info`/`openapi`/`paths`) and 56 `$ref` occurrences; the root-`servers` shape belongs to `CONTRACT-ADAPTIVE-DEMO-OPENAPI` in the row below |
 | `CONTRACT-ADAPTIVE-DEMO-OPENAPI` | openapi | `unsupported_compatibility_policy` | not a construct gap: `_compare_contracts_impl` admits `openapi` only under `bidirectional`/`exact`/`versioned_break` (`architecture.py:3105-3107`) while this record declares `producer_accepted_by_old` — blocked identically at both trees, so it is not part of the unlock delta |
 
-#133 unlocked **24** of the 38 declared `json_schema` contracts and **25** of 50 across all kinds — and not the
-three `anyOf` ones.
+#133 unlocked **24** of the 38 declared `json_schema` contracts and **25** of 50 across all kinds. Exactly **3** of
+those unlocked records contain an `anyOf` (the three landing unions this audit was about), so `anyOf` was necessary for those three
+and nowhere near sufficient for the other 22 — the wording is deliberately not "the three `anyOf` ones", which reads as if
+no unlocked contract used `anyOf` at all.
 
 > Superseded row: the first revision of this table (commit `d3e0d49`) stated the pre-#133 json_schema row as
 > "14 / 38 | 26 blocked" and derived "#133 unlocked 22 contracts" from it. `14 + 26 = 40 ≠ 38`, so the row was
@@ -207,7 +209,7 @@ note about the collision it resolves.
 `contract_compatibility` reports `unsupported compatibility semantics` for `LANDING-ATTEMPT-STATUS-V1`,
 `LANDING-FAILOVER-OPENAPI-V1` and `LANDING-FAILOVER-RESULT-V1` on a title-in-branch probe, while capability-only
 edits no longer produce `unsupported_openapi_construct` anywhere. Those gate runs are recorded in
-`analysis-ai_architect.md` Table C (commits `00709f4`, `0284d33`); the in-process cells that drive them are
+`analysis-ai_architect.md` Table C, whose `00709f4`/`0284d33` identifiers are **probe commits in throwaway clones** and resolve as objects in no repository (verified with `git cat-file -t`); the in-process cells that drive them are
 reproduced here by block C (title-in-branch row, all three contracts) and block A (analyzability of the same
 contracts at head). The gate command itself is **not** re-run in `measurement-harness.md` — it needs throwaway
 commits, so it stays attributed to the lane that executed it rather than promoted to a reproducible block.

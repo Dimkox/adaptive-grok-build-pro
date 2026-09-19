@@ -103,6 +103,10 @@ returning `"included"` for `{"type":"string"}` → `{"type":"string","format":"d
 `_anyof_format_changed` format-count check converts that to `changed_constraint`, so no compatible verdict escapes.
 `_schema_value_key` *widens* equality (`const:1` ≡ `1.0`, `enum:[1]` ≡ `[1.0]`) and *narrows* acceptance:
 `enum:[1,1.0]` is now a duplicate → `unsupported_schema_keyword` (no declared contract has one).
+> [ANNOTATION added by the controller] The baseline figure in this sentence is wrong: block A of
+> `measurement-harness.md` measures **21/50** analyzable at the pre-#133 tree, not 20/50. The head half (46/50) and
+> the four names listed below it are correct. The lane's own text is left byte-unchanged as issued.
+
 Net unlock at pr/133: **46/50 declared contracts fully in-subset (baseline 20/50)**; still blocked
 `CONTRACT-ADAPTIVE-DEMO-OPENAPI`, `CONTRACT-FACTORY-LANDING-OPENAPI-V1`, `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1`,
 `CONTRACT-FACTORY-M7-READY-BUNDLE-V1`.
@@ -135,6 +139,10 @@ passing receipt" — never refuted on `2cbfa12` by a clean isolated re-run.
 ## Does #133 close #104?
 Yes for #104's stated defect (object-valued enum members freezing fact-identity contracts) and for the symptom this
 package named (capability-contract edit → `unsupported_openapi_construct` through the failover OpenAPI). Named
+> [ANNOTATION added by the controller] "the package" here and below means route `4c524b83df59`'s change package
+> (`engineering/changes/20260918-…-4c524b/`), whose `review-test.md` / `review-security.md` /
+> `verification-attempt.md` are quoted; this audit package holds its own reviewer reports under the same names.
+
 residuals, quoted from the package: review-test.md — "One non-blocking precision gap remains in the concurrent nested
 `date-time` plus length-constraint case: the test accepts either `incompatible` or `unsupported` for both directions…
 could be tightened to protect its classification."; review-security.md — "The private pointer resolver uses
