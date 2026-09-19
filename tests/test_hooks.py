@@ -13,7 +13,7 @@ from adaptive_grok.router import build_route
 from adaptive_grok.state import add_approval, get_active_route, set_active_route
 import subprocess
 
-from tests._support import project_copy, run_hook
+from tests._support import project_copy, run_hook, write_review_report
 
 
 class HookTests(unittest.TestCase):
@@ -769,8 +769,10 @@ class HookTests(unittest.TestCase):
             route['required_evidence'] = ['verification', 'code_review', 'test_review']
             set_active_route(root, route)
             (root / 'feature.txt').write_text('changed')
+            reports = {kind: write_review_report(root, kind) for kind in ('code_review', 'test_review')}
             for kind in route['required_evidence']:
-                write_receipt(root, kind, 'pass')
+                report = reports.get(kind)
+                write_receipt(root, kind, 'pass', str(report.relative_to(root)) if report else None)
             _, data, err = run_hook(root, 'stop_gate.py', {'cwd': str(root), 'stop_hook_active': False})
             self.assertEqual(data, {}, err)
             self.assertEqual(get_active_route(root)['status'], 'completed')
@@ -780,7 +782,8 @@ class HookTests(unittest.TestCase):
             route = build_route(root, 'Review current change', 's1').to_dict()
             route['required_evidence'] = ['code_review']
             set_active_route(root, route)
-            write_receipt(root, 'code_review', 'pass')
+            report = write_review_report(root, 'code_review')
+            write_receipt(root, 'code_review', 'pass', str(report.relative_to(root)))
             # Establish previous fingerprint marker.
             run_hook(root, 'post_tool_use.py', {'cwd': str(root), 'tool_name': 'Write', 'tool_input': {}})
             (root / 'changed.txt').write_text('x')

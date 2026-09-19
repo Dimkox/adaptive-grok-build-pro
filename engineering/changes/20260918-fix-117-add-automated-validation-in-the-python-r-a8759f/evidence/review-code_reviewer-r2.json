@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "review_kind": "code_review",
+  "status": "pass",
+  "revision": {
+    "revision_id": "review-r2",
+    "previous_report": null,
+    "previous_digest": null,
+    "changed_claim_ids": [],
+    "fresh_evidence_claim_ids": [],
+    "changed_report_fields": []
+  },
+  "claims": [
+    {
+      "id": "SRC-001",
+      "type": "source_citation",
+      "statement": "The revision validator derives claim additions and modifications by stable ID, requires exact changed and fresh ID lists, derives status-field changes, and requires changed evidence.",
+      "citations": [
+        {
+          "path": ".grok-stack/adaptive_grok/review_evidence.py",
+          "start_line": 321,
+          "end_line": 346,
+          "span_sha256": "4b612bb1111987c52782537f89b27bd5e27b118766843620812a57733e68ca9b"
+        }
+      ]
+    },
+    {
+      "id": "TEST-001",
+      "type": "source_citation",
+      "statement": "Regression coverage rejects an unlisted contradictory statement, silent claim removal, and status transitions without changed claims.",
+      "citations": [
+        {
+          "path": "tests/test_review_evidence.py",
+          "start_line": 184,
+          "end_line": 234,
+          "span_sha256": "9697e076226bc108af592177894b6264b47e3e9923c5d2b73a41ed979ed402d2"
+        }
+      ]
+    },
+    {
+      "id": "TEST-002",
+      "type": "source_citation",
+      "statement": "Regression coverage rejects an added claim omitted from change lists and a status transition omitting changed_report_fields.",
+      "citations": [
+        {
+          "path": "tests/test_review_evidence.py",
+          "start_line": 236,
+          "end_line": 277,
+          "span_sha256": "08cf7cf642364ec3ab2e8c117479bf8acbf8c430b4ab227a9f0a4d7eaa90774e"
+        }
+      ]
+    },
+    {
+      "id": "SRC-002",
+      "type": "source_citation",
+      "statement": "Passing review receipts bind validated report digests and summaries, and evidence validation rechecks the report and digest.",
+      "citations": [
+        {
+          "path": ".grok-stack/adaptive_grok/receipts.py",
+          "start_line": 542,
+          "end_line": 565,
+          "span_sha256": "5115d114694785f8c458d7a3021d0daa2032f5de991fe1328a93c98e14fa56dd"
+        },
+        {
+          "path": ".grok-stack/adaptive_grok/receipts.py",
+          "start_line": 712,
+          "end_line": 726,
+          "span_sha256": "2920adc16edc44045c7e90fe0304b44dcbd2a5bbd9bf80abd6d2e83a1d5a29c3"
+        }
+      ]
+    },
+    {
+      "id": "EXEC-001",
+      "type": "execution",
+      "statement": "A focused test command and its output are recorded for reproducibility only; this self-reported record is unverified and is not proof of execution.",
+      "command": {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_review_evidence",
+          "tests.test_change_receipts",
+          "tests.test_hooks"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "stdout_excerpt": "Ran 68 tests in 48.526s\nOK",
+        "stderr_excerpt": "",
+        "provenance": "self_reported_unverified"
+      }
+    },
+    {
+      "id": "REV-001",
+      "type": "inference",
+      "statement": "The revised code closes the reviewed revision-delta finding and meets the code-review acceptance criteria for structured report validation and receipt binding; the local command record remains unverified.",
+      "basis_claim_ids": [
+        "SRC-001",
+        "TEST-001",
+        "TEST-002",
+        "SRC-002",
+        "EXEC-001"
+      ]
+    }
+  ]
+}

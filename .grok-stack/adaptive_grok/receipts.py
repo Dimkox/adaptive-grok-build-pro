@@ -32,6 +32,7 @@ from .governance import (
     load_governance,
 )
 from .spec import canonical_spec_digest, load_spec, spec_fingerprint, validate_spec
+from .review_evidence import REVIEW_KINDS, ReviewEvidenceError, validate_review_report
 from .state import get_active_change, get_active_route
 from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
 
@@ -538,6 +539,14 @@ def write_receipt(
         binding = current
     else:
         binding = explicit
+    validated_report: dict[str, Any] | None = None
+    if kind in REVIEW_KINDS:
+        if report is None:
+            if status == "pass":
+                raise ReviewEvidenceError("passing review receipts require a validated structured report")
+        else:
+            validated_report = validate_review_report(root, report, expected_kind=kind, expected_status=status)
+            report = str(validated_report["report_path"])
     data = {
         'schema_version': 1,
         'route_id': route['route_id'],
@@ -551,6 +560,9 @@ def write_receipt(
         **(current_architecture or {}),
         **(current_governance or {}),
     }
+    if validated_report is not None:
+        data['report_digest'] = validated_report['report_digest']
+        data['report_validation'] = validated_report['summary']
     after_tree = tree_fingerprint(root)
     after_binding = _active_spec_binding(root, route, kind)
     after_architecture = active_architecture_binding(root, route)
@@ -697,6 +709,21 @@ def validate_evidence(
             missing.append(f'{kind}: malformed receipt envelope')
         if receipt.get('status') != 'pass':
             missing.append(f'{kind}: status={receipt.get("status")}')
+        if kind in REVIEW_KINDS and receipt.get('status') == 'pass':
+            report = receipt.get('report')
+            report_digest = receipt.get('report_digest')
+            report_validation = receipt.get('report_validation')
+            if not isinstance(report, str) or not isinstance(report_digest, str) or not isinstance(report_validation, dict):
+                missing.append(f'{kind}: passing review receipt lacks structured report binding')
+            else:
+                try:
+                    validated_report = validate_review_report(root, report, expected_kind=kind, expected_status=receipt.get('status'))
+                    if validated_report['report_digest'] != report_digest:
+                        missing.append(f'{kind}: review report digest mismatch')
+                    if validated_report['summary'] != report_validation:
+                        missing.append(f'{kind}: review report validation summary mismatch')
+                except ReviewEvidenceError as exc:
+                    missing.append(f'{kind}: review report is missing or invalid: {exc}')
         if receipt.get('stale') is True:
             missing.append(f'{kind}: explicitly invalidated')
         if receipt.get('tree_fingerprint') != current:
