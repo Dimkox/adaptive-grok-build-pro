@@ -198,15 +198,22 @@ def parallel_engine_ready(measured: bool) -> bool:
     return all(importlib.util.find_spec(name) is not None for name in modules)
 
 
+def _parallel_process_cleanup_supported() -> bool:
+    """Whether this host can safely own and clean up the parallel process group."""
+    return os.name == 'posix'
+
+
 def select_engine(workers: int, measured: bool) -> tuple[int, str]:
-    """Capability-selected engine: parallel xdist only when actually importable.
+    """Capability-selected engine: xdist only when importable and safely cleanable.
 
     Retake of closed defect 33: the Trust CI runner image has no pytest, so a
     requested-parallel run must degrade to one disclosed sequential unittest
     pass before execution, never after a failure, and never claim the parallel
     backend it did not use.
     """
-    if workers > 0 and not parallel_engine_ready(measured):
+    if workers > 0 and (
+        not parallel_engine_ready(measured) or not _parallel_process_cleanup_supported()
+    ):
         return 0, "unittest-degraded"
     if workers > 0:
         return workers, "pytest-xdist"

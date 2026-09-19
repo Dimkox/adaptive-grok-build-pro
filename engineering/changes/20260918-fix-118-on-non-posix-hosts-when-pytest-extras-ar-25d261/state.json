@@ -1,0 +1,65 @@
+{
+  "change_id": "20260918-fix-118-on-non-posix-hosts-when-pytest-extras-ar-25d261",
+  "created_at": "2026-09-18T01:21:05+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T01:21:05+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T01:24:39+00:00",
+      "from": "draft",
+      "reason": "Four-agent analysis confirms platform capability mismatch; scope and regressions recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T01:24:39+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; implement bounded non-POSIX backend-selection fallback",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T01:26:56+00:00",
+      "from": "approved",
+      "reason": "Route writer completed failing Windows-emulation regression and bounded selection fix",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T01:26:56+00:00",
+      "from": "implementing",
+      "reason": "Start full route-selected PR gate",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-18T01:45:53+00:00",
+      "from": "verifying",
+      "reason": "Added measured PR-mode coverage requested by test review",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T01:45:53+00:00",
+      "from": "implementing",
+      "reason": "Rerun full gate for updated candidate",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-18T02:04:04+00:00",
+      "from": "verifying",
+      "reason": "Full verification and updated independent reviews passed for measured Windows fallback",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-18T02:04:04+00:00",
+      "from": "reviewing",
+      "reason": "Required verification and review evidence recorded",
+      "to": "ready"
+    }
+  ],
+  "route_id": "25d2611360c5",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix #118: on non-POSIX hosts when pytest extras are installed and workers is an explicit integer, capability-selected grok_verify must degrade to sequential test execution instead of failing; add a Windows-emulated regression test.",
+  "updated_at": "2026-09-18T02:04:04+00:00"
+}

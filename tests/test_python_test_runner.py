@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import io
 from importlib import metadata
 import json
 import os
@@ -16,6 +17,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / '.grok-stack'))
 
 from adaptive_grok.verification import CheckResult, _python
+from adaptive_grok import python_test_runner
 from adaptive_grok.python_test_runner import RunnerError, execute, parallel_engine_ready, selected_workers
 
 
@@ -143,6 +145,84 @@ class PythonTestRunnerTests(unittest.TestCase):
             self.assertEqual(len(list(root.glob('result-*'))), 4)
             self.assertEqual(len({p.read_text() for p in root.glob('result-*')}), 1)
             self.assertIn('unittest-degraded', result.details[0]['versions'])
+
+    def test_non_posix_cleanup_capability_degrades_core_and_trust_before_launch(self) -> None:
+        # Emulate Windows through the runner capability seam, without changing
+        # os.name globally (which would alter pathlib and subprocess behavior).
+        with fixture() as root, \
+             patch.object(python_test_runner, '_parallel_process_cleanup_supported',
+                          return_value=False, create=True), \
+             patch.object(python_test_runner, 'parallel_engine_ready', return_value=True), \
+             patch.object(python_test_runner.metadata, 'version',
+                          side_effect=lambda name: python_test_runner.PINS[name]):
+            self.assertEqual(python_test_runner.select_engine(2, measured=False),
+                             (0, 'unittest-degraded'))
+            core = python_test_runner.run_core_tests(root, 'fast', 2)
+            self.assertEqual(core.tests.returncode, 0, core.tests.stdout + core.tests.stderr)
+            self.assertEqual(core.workers, 0)
+            self.assertEqual(core.versions['engine'], 'unittest-degraded')
+            self.assertEqual(core.tests.command[1:4], ['-m', 'unittest', 'discover'])
+            self.assertEqual(len(list(root.glob('result-*'))), 4)
+
+            trust = root / 'trust-ci'
+            (trust / 'tests').mkdir(parents=True)
+            (trust / 'tests/test_trust.py').write_text(
+                'import unittest\nclass Trust(unittest.TestCase):\n'
+                ' def test_pass(self): self.assertTrue(True)\n'
+            )
+            result = python_test_runner.run_trust_tests(root, 2)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(result.command[1:4], ['-m', 'unittest', 'discover'])
+            self.assertEqual(python_test_runner.select_engine(0, measured=False),
+                             (0, 'unittest'))
+
+            from contextlib import redirect_stdout
+            output = io.StringIO()
+            with patch.object(Path, 'cwd', return_value=root), \
+                 patch.object(sys, 'argv', ['python_test_runner', '--suite', 'trust-ci']), \
+                 redirect_stdout(output):
+                self.assertEqual(python_test_runner.main(), 0)
+            self.assertIn('workers=0; engine=unittest-degraded', output.getvalue())
+
+    def test_posix_cleanup_capability_keeps_xdist_and_strict_pins(self) -> None:
+        with patch.object(python_test_runner, '_parallel_process_cleanup_supported',
+                          return_value=True, create=True), \
+             patch.object(python_test_runner, 'parallel_engine_ready', return_value=True):
+            self.assertEqual(python_test_runner.select_engine(2, measured=True),
+                             (2, 'pytest-xdist'))
+
+    def test_non_posix_measured_core_degrades_with_coverage_without_xdist_pins(self) -> None:
+        with fixture() as root:
+            (root / 'subject.py').write_text('value = 42\n')
+            sample = root / 'tests/test_sample.py'
+            sample.write_text('import subject\n' + sample.read_text())
+            (root / '.coveragerc').write_text(
+                '[run]\nbranch = True\nsource = subject\n'
+                '[report]\nfail_under = 74\n'
+            )
+            real_version = metadata.version
+
+            def coverage_only_version(name):
+                if name != 'coverage':
+                    raise AssertionError(f'unexpected dependency pin check: {name}')
+                return real_version(name)
+
+            with patch.object(python_test_runner, '_parallel_process_cleanup_supported',
+                              return_value=False), \
+                 patch.object(python_test_runner, 'parallel_engine_ready', return_value=True), \
+                 patch.object(python_test_runner.metadata, 'version',
+                              side_effect=coverage_only_version):
+                core = python_test_runner.run_core_tests(root, 'pr', 2)
+
+            self.assertEqual(core.tests.returncode, 0, core.tests.stdout + core.tests.stderr)
+            self.assertEqual(core.tests.command[1:4], ['-m', 'coverage', 'run'])
+            self.assertEqual(core.workers, 0)
+            self.assertEqual(core.versions, {'coverage': real_version('coverage'),
+                                             'engine': 'unittest-degraded'})
+            self.assertIsNotNone(core.coverage)
+            self.assertEqual(core.coverage.returncode, 0,
+                             core.coverage.stdout + core.coverage.stderr)
+            self.assertTrue(core.coverage_metadata['files'])
 
     def test_importable_but_wrong_versioned_parallel_dependency_still_fails(self) -> None:
         # Degradation is capability-only: with the engine importable, the declared
