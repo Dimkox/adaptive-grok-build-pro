@@ -28,6 +28,43 @@ ROOT_ENTRIES = frozenset(
 
 
 class StructureTests(unittest.TestCase):
+    def test_grok_verify_rejects_script_from_another_repository(self):
+        import shutil
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            source = base / "source"
+            target = base / "target"
+            (source / ".grok-stack").mkdir(parents=True)
+            (target / ".grok-stack").mkdir(parents=True)
+            (source / "scripts").mkdir()
+            shutil.copy2(ROOT / "scripts/grok_verify.py", source / "scripts/grok_verify.py")
+            shutil.copytree(
+                ROOT / ".grok-stack/adaptive_grok",
+                source / ".grok-stack/adaptive_grok",
+                ignore=shutil.ignore_patterns("__pycache__"),
+            )
+
+            mismatch = subprocess.run(
+                [sys.executable, str(source / "scripts/grok_verify.py"), "--mode", "fast", "--json"],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(mismatch.returncode, 0)
+            self.assertIn("verifier source root", mismatch.stderr.lower())
+            self.assertIn(str(source.resolve()), mismatch.stderr)
+            self.assertIn(str(target.resolve()), mismatch.stderr)
+            self.assertFalse((target / ".grok-stack/runtime").exists())
+
+    def test_grok_verify_root_identity_accepts_same_checkout(self):
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        from adaptive_grok.util import same_repository_root
+
+        self.assertTrue(same_repository_root(ROOT, ROOT / "scripts" / ".."))
+
     def test_repository_root_holds_only_canonical_entries(self):
         tracked = subprocess.run(
             ("git", "ls-tree", "--name-only", "HEAD"),
