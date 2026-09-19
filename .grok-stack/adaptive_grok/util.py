@@ -40,6 +40,11 @@ def find_root(start: str | Path | None = None) -> Path:
     return current
 
 
+def same_repository_root(source_root: str | Path, repository_root: str | Path) -> bool:
+    """Return whether verifier source and target resolve to the same checkout root."""
+    return Path(source_root).resolve() == Path(repository_root).resolve()
+
+
 def runtime_dir(root: Path) -> Path:
     path = root / RUNTIME_REL
     path.mkdir(parents=True, exist_ok=True)

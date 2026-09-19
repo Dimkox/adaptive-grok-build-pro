@@ -1,0 +1,77 @@
+{
+  "change_id": "20260918-fix-issue-95-enforce-repository-and-verifier-sou-caf9d6",
+  "created_at": "2026-09-18T05:06:43+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T05:06:43+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T05:10:35+00:00",
+      "from": "draft",
+      "reason": "Analysis confirmed split source/target repository identity; fail closed before verification or receipt writes and cover cross-worktree invocation.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T05:10:39+00:00",
+      "from": "scoped",
+      "reason": "Read-only analysis complete; no human gate is configured for this bounded fail-closed bugfix.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T05:10:39+00:00",
+      "from": "approved",
+      "reason": "Begin sole-owner implementation with cross-worktree subprocess regression.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T05:13:34+00:00",
+      "from": "implementing",
+      "reason": "Implementation and focused regression are complete; run route quality profile and full PR preflight.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-18T05:31:01+00:00",
+      "from": "verifying",
+      "reason": "Correct malformed package acceptance criteria revealed by change-spec gate; no product code changes.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T05:31:01+00:00",
+      "from": "implementing",
+      "reason": "Spec schema corrected and focused tests passed; rerun full PR preflight on stable tree.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-18T05:49:35+00:00",
+      "from": "verifying",
+      "reason": "Fix all typed change-spec schema fields; direct schema gate now passes.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T05:49:35+00:00",
+      "from": "implementing",
+      "reason": "Typed change spec validates cleanly; rerun final PR preflight on stable tree.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-18T06:11:38+00:00",
+      "from": "verifying",
+      "reason": "Implementation and focused regressions are complete; route PR preflight ran but factory-postgres-exit exposed an unrelated stale test fixture failure, now documented for independent review.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T00:13:39+00:00",
+      "from": "reviewing",
+      "reason": "local receipts and reviews current",
+      "to": "ready"
+    }
+  ],
+  "route_id": "caf9d68fd113",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix issue 95: enforce repository and verifier-source identity in grok_verify; add a cross-worktree regression test for external script copies.",
+  "updated_at": "2026-09-19T00:13:39+00:00"
+}
