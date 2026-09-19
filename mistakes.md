@@ -1343,3 +1343,11 @@ Archiving one-off operational command bodies as repository `.py` files incorrect
 
 ### 2026-09-19 — Runtime audit executable identity
 A read-only post-acceptance audit guessed `adaptive-landing-host` instead of comparing the reviewed unit’s actual `adaptive-landing-server` executable and therefore falsely failed one assertion. Read the installed unit identity rather than infer CLI names; the corrected metadata-only audit passed without any new provider call or service change.
+
+### 2026-09-19 — Refresh origin/HEAD after repointing a local clone
+
+The operational clone retained origin/HEAD from its former local remote, so its linked implementation worktree pointed to a deleted release branch even after fetching GitHub. The full verifier completed every test successfully but correctly rejected that unresolved PR target; `git remote set-head origin -a` repaired the local reference and the unchanged-tree Git check passed without rerunning tests. Refresh this reference and run the cheap Git target check before a long verifier when repointing a clone.
+
+### 2026-09-19 — Keep orchestration helpers outside the source checkout
+
+An ignored Python helper under .grok-stack/runtime was still discovered by the architecture source inventory and correctly rejected as unowned source. Move task-only orchestration scripts to an external temporary path rather than adding an architecture exception; repository evidence can stay in its intended package.

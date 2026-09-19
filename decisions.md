@@ -732,3 +732,11 @@ Keep each upgraded service's acceptance and recovery independent: Grok's real ar
 
 ### 2026-09-19 — One-off operator script evidence
 Store retired and explicitly delegated one-off operator command bodies as exact-byte archives with an original-path/hash index and an explicit external execution boundary. This keeps repository evidence inert without granting fictitious TCP rights to the evidence node; separate actual-body reviews and hash-checked grants still govern execution.
+
+### 2026-09-19 — Retain rejected-draft diagnostics in the existing reason field
+
+Static consumer analysis found reason_code already persisted and sealed with no value enum, while observation v1 has a closed field set. Reusing reason_code avoids a schema migration and preserves old receipts; only fixed allowlisted codes may cross the model-output boundary. Retaining adapter/profile identity is appropriate for this observability correction because provider wire behavior, accepted drafts, prompt/model and decoder policy stay unchanged; the deployed source SHA identifies the correction.
+
+### 2026-09-19 — Independently preserve wire hashes and historical receipts in regression tests
+
+Hash the exact mocked HTTP envelope independently and freeze a historical receipt before editing the normalizer. These fixtures caught both the lost upstream digest and generic rejection reason, while preventing current serializers from silently regenerating the expected historical evidence.

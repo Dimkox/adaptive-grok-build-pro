@@ -447,7 +447,7 @@ class HttpLandingDraftNormalizationTests(unittest.TestCase):
         for sections in (None, 3, True, {}, "invalid", [], document["sections"] * 13):
             with self.subTest(sections=sections):
                 outcome, request = self.normalize({**document, "sections": sections})
-                self.assertEqual(("needs_human", "http_outcome_unusable"),
+                self.assertEqual(("needs_human", "draft_sections"),
                                  (outcome.state, outcome.reason_code))
                 self.assertIsNone(outcome.spec)
                 self.assertEqual("provider_unavailable", outcome.evidence.disposition)
@@ -513,7 +513,7 @@ class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
                     )
                     retained = self.store.get("tenant-1", TARGET_REPOSITORY_ID, job_id)
                     self.assertEqual(created.job, retained)
-                    self.assertEqual(("needs_human", "http_outcome_unusable"),
+                    self.assertEqual(("needs_human", "draft_sections"),
                                      (retained.state, retained.reason_code))
                     self.assertRegex(retained.provider_evidence_digest, r"^[0-9a-f]{64}$")
                     self.assertIsNone(retained.artifact)
