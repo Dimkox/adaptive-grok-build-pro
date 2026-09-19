@@ -860,11 +860,11 @@ for h in added:
 ```
 
 ```console
-$ python3 chronology_check.py <worktree> d871ea6 HEAD
-mistakes.md numstat d871ea6...HEAD (added deleted) = 78	0	mistakes.md
-d871ea6: dated entries=211  out-of-order adjacent date pairs=12
-HEAD: dated entries=219  out-of-order adjacent date pairs=12
-dated entry headings added=8
+$ python3 chronology_check.py <worktree> b51b1175e HEAD
+mistakes.md numstat b51b1175e...HEAD (added deleted) = 154	0	mistakes.md
+b51b1175e: dated entries=211  out-of-order adjacent date pairs=12
+HEAD: dated entries=223  out-of-order adjacent date pairs=12
+dated entry headings added=12
    + 2026-09-17 — Asked another CLI model "what is going on" while handing it the answer, and read its echo as corroboration
    + 2026-09-17 — Tore down a shared worktree on the assumption that its author was dead
    + 2026-09-17 — Edited a file a machine had started reading, and reported my reruns by overwriting the raw rows
@@ -873,10 +873,17 @@ dated entry headings added=8
    + 2026-09-18 — Wrote "RESULT: PASS" from a gate whose verdict I never read, because the pipeline returned tail's status
    + 2026-09-19 — Re-implemented a task that was already delivered, because the route file was read as current state
    + 2026-09-19 — Published "this construct is unanalyzable" from a probe whose inventory could not resolve its own $refs
+   + 2026-09-19 — Published a widening metric built by splicing two different measurement conventions
+   + 2026-09-19 — Compared two source trees inside one process and reported the module against itself
+   + 2026-09-19 — Ran two write agents in the same worktree and let a whole-file rewrite destroy the other's evidence
+   + 2026-09-19 — Corrected a package, and in the correcting commit overwrote a lane's true attribution with an unmeasured one
 ```
 
-The eight listed headings are the six recovered entries (dated 2026-09-17 and 2026-09-18, present in the primary
-working tree's uncommitted file) plus this wave's two 2026-09-19 entries.
+The listed headings are the six recovered entries (dated 2026-09-17 and 2026-09-18, present in the primary working
+tree's uncommitted file) plus this wave's six 2026-09-19 entries: the duplicate wave read from a stale route file,
+the truncated-inventory probe, a widening metric that spliced two counting conventions, an A/B harness that compared
+a tree with itself through `sys.modules`, two write agents in one worktree, and the correction pass that invented
+fresh facts while fixing invented ones.
 **12 out-of-order adjacent date pairs already existed at the base** and the count is still 12, so this change adds
 none — which is why `AC-004` says "ordered locally among the entries this change adds", not "the file stays
 chronologically ordered". The stricter wording was false at base and unverifiable as a gate.

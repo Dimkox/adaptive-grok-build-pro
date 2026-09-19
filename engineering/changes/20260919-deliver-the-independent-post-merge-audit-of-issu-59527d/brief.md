@@ -12,7 +12,7 @@ Domains: api
 
 Issue #104 was closed by merging PR #133 (`d871ea6d5d654406281dd65626a3dce61bf933fa`) on 2026-09-19. The wave that was
 supposed to implement the same task turned into an independent post-merge audit of it, and that audit — plus the
-measurement corrections it forced and eight agent-behavior lessons — existed only in untracked working trees and in
+measurement corrections it forced and six agent-behavior lessons — existed only in untracked working trees and in
 chat. On the measurement side the first pass corrected the two tables built on a truncated factory-only inventory and
 one built on a probe-polluted working tree; independent review of that pass forced four more (the typed-in pre-#133
 identity row `14 / 38`, which contradicted its own denominator; the ablation line that mixed the 38-record
@@ -46,7 +46,7 @@ Every number above is reproduced by a block in `evidence/measurement-harness.md`
   documentation research, integration, AI/contract domain: the first four are the lanes route `59527d5a28f8` selects,
   the `ai_architect` lane belongs to route `4c524b83df59`), the controller's re-measured verdict tables, and
   `measurement-harness.md` with the commands behind every number in them.
-- `mistakes.md` — eight insertions: six recovered orphan entries placed in chronological position, two new entries
+- `mistakes.md` — twelve insertions: six recovered orphan entries placed in chronological position, two new entries
   from this wave. No existing line is modified or removed.
 - Package paperwork for this documentation change.
 

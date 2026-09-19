@@ -13,7 +13,7 @@ exist only as an uncommitted tail of the primary working tree, reachable from no
 
 The audit becomes repository content under this package: **five** analysis reports, the controller's re-measured
 verdict tables (with each superseded table marked superseded and its cause named), a reproduction harness holding the
-copy-pasteable command behind every number, and eight `mistakes.md` entries placed without touching a single existing
+copy-pasteable command behind every number, and twelve `mistakes.md` entries placed without touching a single existing
 line.
 
 Lane provenance is stated because it is not uniform: four of the five lanes (`repo_explorer`, `architect`,

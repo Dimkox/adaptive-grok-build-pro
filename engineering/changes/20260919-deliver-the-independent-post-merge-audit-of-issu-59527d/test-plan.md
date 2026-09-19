@@ -24,7 +24,7 @@
 ## Manual checks
 
 - Read the recovered six entries against the primary working tree's file to confirm they were copied verbatim.
-- Confirm the eight new entries are internally chronological and that the base file's 12 pre-existing out-of-order
+- Confirm the twelve new entries are internally chronological and that the base file's 12 pre-existing out-of-order
   date pairs are unchanged (harness block F prints both counts), and that no existing entry's text was reflowed.
 - Confirm **CAR-1 … CAR-4 are phrased as fail-closed incompleteness** (no verdict rendered, so nothing wrong is
   certified), while **CAR-5 is phrased as a latent soundness defect** with its reachability measurement attached

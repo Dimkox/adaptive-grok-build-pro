@@ -34,7 +34,7 @@
         }
       ],
       "id": "AC-004",
-      "statement": "mistakes.md gains the eight lesson entries (six recovered from an uncommitted working-tree tail at the maintainer's explicit direction, two produced by this wave) with zero deleted lines in the diff; the eight new entries are internally ordered by their own dates, and the count of out-of-order adjacent date pairs already present at the base (12) is not increased - this change adds none, and the pre-existing disorder is not this change's to repair."
+      "statement": "mistakes.md gains the twelve lesson entries (six recovered from an uncommitted working-tree tail at the maintainer's explicit direction, six produced by this wave) with zero deleted lines in the diff, and the added block stays locally chronological; measured: git diff --numstat origin/main...HEAD -- mistakes.md = 154 added / 0 deleted, 12 dated headings added, out-of-order adjacent date pairs unchanged at 12."
     },
     {
       "evidence": [
@@ -131,7 +131,7 @@
   "observability": [
     {
       "id": "SIG-001",
-      "metric": "git diff --numstat <base>...<delivered-head> -- mistakes.md prints a positive added column and a zero deleted column (78 0 at the head this package was built on), and ls engineering/changes/<this package>/evidence/analysis-*.md | wc -l prints 5 - the four lanes route 59527d5a28f8 selects plus the ai_architect lane owned by route 4c524b83df59; both numbers are printed by block F and block A of evidence/measurement-harness.md",
+      "metric": "git diff --numstat <base>...<delivered-head> -- mistakes.md shows additions with a zero deleted column (measured 154 0) and block F prints 12 dated headings added",
       "proves": [
         "OBJ-001"
       ]
