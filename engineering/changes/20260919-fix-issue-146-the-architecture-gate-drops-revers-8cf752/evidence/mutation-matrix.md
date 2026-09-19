@@ -255,12 +255,21 @@ stayed green.
 The controller asked that M0 and every arm be re-run so that no row is inherited and no control row can read
 later as an unverified claim. That pass is recorded here — the file is this implementer's evidence, and an
 independent measurement of the same rows is the cheapest way to make them checkable twice. It bound the
-**same bytes** the final-pass table above claims (`architecture.py` 06:46:30, `architecture_fitness.py`
-06:56:07, `tests/test_architecture_fitness.py` 07:03:57; sha256 over those three files
-`030fe6cd58d19971…`), and it copied the tree **once** into a private snapshot and mutated copies of that
+**same bytes the delivered commit carries**: sha256 over `architecture.py` + `architecture_fitness.py` +
+`tests/test_architecture_fitness.py` is `030fe6cd58d19971…`, and that is the value the same three files have
+**at `30a07c6` and at the current HEAD `6e79d0c`** (verified with `git show <ref>:<path>`, not with the working
+tree, which was being edited concurrently). So no row below is inherited and none is bound to bytes
+that were never committed. The pass copied the tree **once** into a private snapshot and mutated copies of that
 snapshot, so no arm can be measured against different bytes. That matters because the 06:50 pass had copied
 the live worktree per arm and three of its arms (M3, M5, M8) came back `ANCHOR NOT UNIQUE` against the
-grammar the concurrent author was editing at the time.
+grammar the concurrent author was editing at the time. Harness and raw logs, for anyone who wants the
+transcripts rather than the tables: `~/.cache/closure146-r2/mut_matrix.py` (arm definitions),
+`rerun_matrix.py` (snapshot binding and the two passes), `rerun-named-125.log`, `rerun-full-125.log`,
+`rerun-ashort-125.log`, `rerun-rseries-125.log`, `comparator-diff-125.log`, `edge_sets.py`. Every anchor was
+re-checked for uniqueness on the committed bytes before anything was reported (`check_anchors.py`: nineteen
+anchor edits across the seventeen §5 arms); the four reason-split and four A-series mutations were applied by
+the same copy-and-abort routine, so each of them also matched exactly once — an anchor that did not is printed
+as `ANCHOR NOT UNIQUE` and yields no verdict.
 
 Verdict: **all seventeen named-arm rows and all seventeen full-module rows reproduced the table above
 exactly** — same `Ran 17 tests` / `Ran 125 tests` counts, same `FAILED (…)` totals, M0 `OK` in both passes.
