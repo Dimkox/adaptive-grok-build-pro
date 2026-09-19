@@ -822,6 +822,41 @@ while its title and brief named one. The last two lines are the CAR-5 reachabili
 values, none equal to a declared path, and 0 of the 86 cross-file `$ref` bases name both, so the `$id` shadowing
 defect is latent, not live.
 
+## Block G — OpenAPI guard instrumentation and single-removal ablation
+
+Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,
+`_supported_parameters`, `_content_schemas` and `_unsupported_schema`, runs the identity comparison for the declared
+record, then applies each single removal and prints the identity verdict.
+
+```
+python3 block_g_openapi_guard.py <repo>
+```
+
+Recorded output at `d871ea6` (declared inventory = 50):
+
+```
+verdict: unsupported ('unsupported_openapi_construct',)
+first False: ('_has_only_keys', False, "{'securitySchemes': {'bearerAuth': {'type': 'http', 'scheme'...")
+minimal set not reachable by single removals; per-removal status:
+  remove components.securitySchemes -> unsupported
+  remove components.parameters      -> unsupported
+  remove components.headers         -> unsupported
+  remove components.responses       -> unsupported
+  remove components.schemas.Job     -> unsupported
+  remove root:security              -> unsupported
+  remove root:servers               -> unsupported
+  remove paths -> {}                -> unsupported
+  remove components -> schemas only -> unsupported
+  MINIMAL removals for compatibility: none found
+```
+
+Interpretation bound: this names the guard that refuses the document, not an exhaustive carrier. A column claiming
+"carried by" a single construct would be wrong for these two records, which is how the previous revision failed.
+
+---
+
+---
+
 ## Block H — `prefixItems` trigger test and reference census for the two M7 records
 
 Separates "a construct is present" from "this construct is what blocks analysis", and counts what each record
@@ -882,48 +917,17 @@ CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1: own prefixItems=1 refs=0
    whitelist + prefixItems -> identity=unsupported
    unchanged whitelist     -> identity=unsupported
 CONTRACT-FACTORY-M7-READY-BUNDLE-V1: own prefixItems=0 refs=2
-   urn:adaptive-factory:m7:shadow-task-evidence:v1                  resolves_by_id=True resolves_by_path=False
-   urn:adaptive-factory:m7:operator-handoff-proposal:v1             resolves_by_id=True resolves_by_path=False
+   urn:adaptive-factory:m7:shadow-task-evidence:v1            resolves_by_id=True resolves_by_path=False
+   urn:adaptive-factory:m7:operator-handoff-proposal:v1       resolves_by_id=True resolves_by_path=False
    whitelist + prefixItems -> identity=unsupported
    unchanged whitelist     -> identity=unsupported
 ```
 
+`resolves_by_path=False` is expected and not a second failure mode: an `urn:` base is never a repository path, and resolution for those references happens through the declared-`$id` table, which both of these refs hit (`resolves_by_id=True`). Recording both columns is what distinguishes a resolvable reference from a dangling one, which the previous revision of this package conflated.
+
 Conclusion the cells above are limited to: `prefixItems` is a trigger, not the blocking carrier, for both records —
 and neither record's blocking construct is identified by this package. Both `urn:` references in READY-BUNDLE do
 resolve, through declared `$id`s, so they are not dangling.
-
----
-
-## Block G — OpenAPI guard instrumentation and single-removal ablation
-
-Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,
-`_supported_parameters`, `_content_schemas` and `_unsupported_schema`, runs the identity comparison for the declared
-record, then applies each single removal and prints the identity verdict.
-
-```
-python3 block_g_openapi_guard.py <repo>
-```
-
-Recorded output at `d871ea6` (declared inventory = 50):
-
-```
-verdict: unsupported ('unsupported_openapi_construct',)
-first False: ('_has_only_keys', False, "{'securitySchemes': {'bearerAuth': {'type': 'http', 'scheme'...")
-minimal set not reachable by single removals; per-removal status:
-  remove components.securitySchemes -> unsupported
-  remove components.parameters      -> unsupported
-  remove components.headers         -> unsupported
-  remove components.responses       -> unsupported
-  remove components.schemas.Job     -> unsupported
-  remove root:security              -> unsupported
-  remove root:servers               -> unsupported
-  remove paths -> {}                -> unsupported
-  remove components -> schemas only -> unsupported
-  MINIMAL removals for compatibility: none found
-```
-
-Interpretation bound: this names the guard that refuses the document, not an exhaustive carrier. A column claiming
-"carried by" a single construct would be wrong for these two records, which is how the previous revision failed.
 
 ---
 

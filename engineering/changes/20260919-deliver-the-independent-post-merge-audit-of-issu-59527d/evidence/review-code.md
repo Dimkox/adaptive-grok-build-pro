@@ -239,3 +239,60 @@ whitelist patch, `$ref` walk vs the declared-`$id` table, `anyOf` ablation over 
 once per tree + `comm` for the 25/0 split. Fence extraction (7 ```python; per-block name counts; block G grepped for
 `prefixItems`), `grep -c '\$ref'` on both M7 schemas, blob-to-blob `git diff --numstat`, `git cat-file -t` on both
 probe ids, the gate run.
+
+## Narrow confirmation on fc9d877
+CONFIRMATION VERDICT: FAIL
+
+Scope: the four flagged statements plus block H executability, nothing else. `chmod 700` clone of the bytes at
+`/home/pall/grok-projects/nc-clone-parent` (`repo` on `fc9d877`, worktree `wt-d871ea6` on `d871ea6`, 0 dirty lines,
+one process per tree). My extracted `block_h_prefix_items_census.py` / `block_f.py` live in the parent, never in the
+package (`find <pkg> -name '*.py'` → 0).
+
+**1 — OPERATOR-HANDOFF cell: TRUE (4/4).** Inventory read at `d871ea6`: `$id=urn:...:operator-handoff-proposal:v1`,
+own `"prefixItems"` = **1**, `'$ref'` occurrences = **0**. Block H: `whitelist + prefixItems -> identity=unsupported`
+and `unchanged whitelist -> identity=unsupported`, so whitelisting `prefixItems` alone does not unblock it. The cell
+says plainly "the blocking construct is elsewhere in the document and this package does not name it" — it names
+nothing. All four parts hold.
+
+**2 — READY-BUNDLE cell: TRUE.** Own `prefixItems` = **0**; 2 `urn:adaptive-factory:m7:` refs, both
+`resolves_by_id=True` (`shadow-task-evidence:v1` = declared `$id` of `CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1`,
+`operator-handoff-proposal:v1` = `$id` of OPERATOR-HANDOFF-V1 — both read off the live inventory, not assumed);
+`resolves_by_path=False` is consistent with `$ref`-by-`$id`, and the cell claims resolution, not paths. Whitelisting
+result as in row 1; cause unnamed.
+
+**3 — Rewritten-lane counts: TRUE.** `git diff --numstat --no-index` of `fc9d877`'s copies against `4c524b`'s:
+`analysis-ai_architect.md` → **163 21**, `analysis-integration_architect.md` → **155 57**. The only in-package
+assertion is ai_architect's "163 added / 21 deleted" ✓ (integration carries no count, as before). Standalone `205`
+and `209` appear nowhere in the package outside `review-code.md:169,213` (my own prior-round text).
+
+**4 — Index: TRUE.** `evidence/README.md:17`, `architecture.md:36`, `test-plan.md:11` all read "blocks A–H".
+Package-wide grep for `A–F|A-F|A–G|seven blocks|7 blocks|eight blocks|8 blocks` (md+yaml) → 0 hits outside
+`review-code.md`. Harness now has 8 ` ```python ` fences (was 7).
+
+**5 — Block H runnable, but its recorded output is NOT what the committed script prints: FAIL (cosmetic, one line).**
+`python3 block_h_prefix_items_census.py <wt-d871ea6>` exits 0 and reproduces **6 of 8** lines byte-for-byte,
+including both `identity=unsupported` pairs and `prefixItems=1 refs=0` / `prefixItems=0 refs=2`. The two
+`resolves_by_id=True` lines are **110** recorded vs **104** printed chars: the harness says `{ref[:58]:58s}`, the
+recorded block was emitted at field width **64** (+6 spaces, both lines). So the block was recorded against an
+earlier revision of the script above it and not regenerated — the exact script→output pairing test-plan P1 relies
+on. Control, same file: block F extracted and run (`python3 block_f.py <repo> d871ea6 HEAD`) reproduces **12/12**
+lines byte-exactly, tabs included, so the drift is not markdown or my extraction. Every *number* the cells assert is
+correct; the falsified statement is the new "Recorded output at `d871ea6`" pairing itself, introduced by `fc9d877`.
+Also verified: stdlib-only (imports across all 8 blocks = `collections, copy, json, pathlib, posixpath, re,
+subprocess, sys` + `adaptive_grok.architecture`); `find <pkg> -name '*.py'` → 0;
+`python3 scripts/grok_spec.py validate --gate --change-id 20260919-…-59527d --json` → `"ok": true`, `"errors": []`,
+`criterion_mapped 6 / criterion_total 6`.
+
+**Fix to PASS (one edit, nothing reopens):** either regenerate block H's output fence from the committed `:58s`
+script, or change that format spec to `:64s` and re-record — and the cells at rows 35–36 need no change either way.
+
+**Invariants:** `mistakes.md` is untouched by `fc9d877` (not among its 7 files) and
+`git diff --numstat d871ea6..fc9d877 -- mistakes.md` → **78 added / 0 deleted**.
+
+## Residual (non-blocking)
+1. Block H sits above block G in file order but is indexed last in the A–H range; `^```console` scrapers still skip
+   block G (bare fences), unchanged from the prior round.
+2. `review-code.md:169` still reads "by 205 and 209 lines" — my round-3 prose, now contradicted by the measured
+   163/21 and 155/57 above; it is reviewer text, not a package claim, so it is not counted against the package.
+3. `resolves_by_path=False` for both `urn:` refs is true but unexplained at row 36; a reader could take it as a
+   second, unnamed failure mode.
