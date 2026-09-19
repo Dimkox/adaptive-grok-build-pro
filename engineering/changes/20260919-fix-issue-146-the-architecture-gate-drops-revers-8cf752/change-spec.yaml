@@ -28,7 +28,7 @@
         }
       ],
       "id": "AC-003",
-      "statement": "Given the plain-relative reference grammar that works today, its closure behaviour is unchanged: the same dependents are re-verified and the end-to-end finding set for a control edit is byte-identical before and after."
+      "statement": "Given the plain-relative reference grammar that works today, its closure behaviour is unchanged: the same dependents remain in the re-verified set (pinned by test_contract_compatibility_rechecks_unchanged_declared_ref_dependents). The stronger claim that the end-to-end finding set for a control edit is byte-identical before and after is recorded as a controller measurement, not as repository coverage."
     },
     {
       "evidence": [
@@ -124,11 +124,14 @@
     {
       "evidence": [
         {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_reference_reasons_keep_declined_paths_apart_from_non_paths"
+        },
+        {
           "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_shares_the_comparator_reference_grammar"
         }
       ],
       "id": "INV-001",
-      "statement": "One reference grammar exists: the closure and the comparator resolve a $ref through the same shared functions, so a future grammar addition cannot be visible to one and invisible to the other."
+      "statement": "One reference grammar exists and the reason vocabulary keeps 'this base is not a path reference' (droppable) separate from 'a relative path the grammar declined' (never droppable), so a future keyword or reason cannot silently delete a reverse edge. Pinned by test_reference_reasons_keep_declined_paths_apart_from_non_paths and test_contract_dependency_closure_shares_the_comparator_reference_grammar."
     },
     {
       "evidence": [
@@ -152,13 +155,13 @@
   "objective": {
     "id": "OBJ-001",
     "statement": "Fix issue #146: the architecture gate drops reverse edges for $id-based and file#fragment contract references, so a changed contract is never re-verified against the dependents that reference it through those grammars. Make the closure resolve the same reference grammar the comparator resolves, with regression coverage for an $id edge, a fragment edge and the plain-relative control; do not change comparator semantics, compatibility policy or any contract.",
-    "success_metric": "Measured on the declared 50-record inventory: closure target->dependent pairs go 10 -> 27 with zero edges lost; the end-to-end gate surfaces the previously invisible dependent (CONTRACT-FACTORY-M7-SHADOW-COHORT-V1) for an edit to its referenced contract, while the plain-relative control reports a byte-identical finding set; comparator verdicts are unchanged across 555 differential lines.",
+    "success_metric": "Measured on the declared 50-record inventory through the gate's own API, one process per tree: closure target->dependent pairs 22 -> 27 with 0 edges lost and 5 gained; every relative-path spelling the pre-change closure attached (plain, ../, ./, space, +) still attaches its referrer, while the $id grammar changed from not-attached to attached; comparator verdicts identical across a 555-row differential; structural superset pinned by test_real_contract_closure_supersets_legacy_fold_per_target.",
     "target": "adaptive-grok-build-pro main: the architecture-fitness contract dependency closure in .grok-stack/adaptive_grok/architecture_fitness.py and the reference grammar it shares with .grok-stack/adaptive_grok/architecture.py"
   },
   "observability": [
     {
       "id": "SIG-001",
-      "metric": "contract_compatibility applicability.scope size for an edit to a $id-referenced contract (10 -> 27 target->dependent pairs fleet-wide)",
+      "metric": "contract_compatibility findings for an edit to a $id- or fragment-referenced contract must name the dependent (applicability.scanned_scope is always the whole head inventory and cannot carry this signal)",
       "proves": [
         "OBJ-001"
       ]

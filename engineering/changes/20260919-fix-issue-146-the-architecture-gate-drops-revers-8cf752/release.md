@@ -17,7 +17,9 @@ silence the fix removes. The behaviour is pinned by tests rather than gated by a
 
 ## Metrics and alerts
 
-- `SIG-001` — closure target→dependent pairs: **10 → 27**, zero edges lost (measured, `controller-verification.md`).
+- `SIG-001` — closure target→dependent pairs on the declared inventory, transitive as the gate computes them:
+  **22 → 27**, zero edges lost, five gained (one process per tree; `evidence/controller-verification.md` §4b
+  reconciles this with the one-hop counts 10 → 17 including self-edges and 10 → 14 excluding them).
 - `SIG-002` — comparator differential: **0 differing lines of 555** between `d871ea6` and the delivered head.
 - Expected new symptom after merge: pull requests touching `M7-OPERATOR-HANDOFF-V1`, `M7-PREDECESSOR-BRIDGES-V1` or
   `M7-TASK-EVIDENCE-V1` may fail `contract_compatibility` with `unsupported compatibility semantics` on

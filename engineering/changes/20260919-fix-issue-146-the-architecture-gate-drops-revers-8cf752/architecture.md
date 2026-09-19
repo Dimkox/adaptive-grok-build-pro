@@ -10,9 +10,11 @@
 `posixpath.normpath(posixpath.join(posixpath.dirname(record.path), reference))` and keeps it only when it is not
 `..`-escaping. That string is looked up in `by_path` (declared paths → ids).
 
-Consequence, measured at `d871ea6`: 9 of 19 cross-contract edges are lost, all of them using a grammar the
-comparator learned in PR #133 — `urn:adaptive-factory:…:v1` (declared `$id`) and `file#/$defs/member` (path plus
-JSON Pointer). The referrer is simply never compared.
+Consequence, measured at `d871ea6` on the declared 50-record inventory: 4 of 14 cross-contract edges are lost, all
+of them using a grammar the comparator learned in PR #133 — `urn:adaptive-factory:…:v1` (declared `$id`) and
+`file#/$defs/member` (path plus JSON Pointer). The referrer is simply never compared. Once the edge computation
+follows the same grammar, transitive closure pairs go 22 → 27 with zero lost (one process per tree; §4b of
+`evidence/controller-verification.md` reconciles the one-hop counts 10 → 17 with self-edges and 10 → 14 without).
 
 ```
 editing shadow-outcome.v1      -> findings: CONTRACT-FACTORY-M7-SHADOW-OUTCOME-V1: removed_property,widened_producer_output

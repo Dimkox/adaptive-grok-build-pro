@@ -20,8 +20,15 @@ declared contract path, so `_contract_dependency_closure` (`:905`) never creates
 re-verified. The comparator itself, since PR #133, *does* follow all three grammars. Two implementations of "what
 does this `$ref` point at" have diverged.
 
-Measured on the shipped inventory (38 declared factory contracts, 89 non-local `$ref`s): 19 cross-contract edges,
-**9 invisible to the closure**, 4 of those pointing at contracts that are analyzable today.
+Measured on the inventory the gate itself builds (`load_architecture` + `contract_inventory`: 50 declared contracts
+— 38 `json_schema`, 9 `openapi`, 2 `signed_payload`, 1 `event`): 14 cross-contract edges under the comparator's
+grammar, of which **4 are invisible to the closure** today — `ready-for-pr-bundle → operator-handoff`,
+`ready-for-pr-bundle → shadow-task-evidence`, `shadow-cohort → shadow-outcome`,
+`shadow-task-evidence → m7-predecessor-bridges`.
+
+> An earlier revision of this paragraph said "38 declared factory contracts … 19 edges, 9 invisible". That was a
+> `factory/contracts/**/*.json` file sweep — two of those files are not declared contracts at all — mislabelled as
+> the declared set. The same correction is posted on issue #146.
 
 ## Outcome
 

@@ -57,8 +57,7 @@ introduced or masked by this change.
 
 ## 4. Test arms
 
-`python3 -m unittest -q tests.test_architecture_fitness` in the patched clone → `Ran 115 tests — OK`, including the
-seven new arms in `ArchitectureFitnessTests`:
+`python3 -m unittest -q tests.test_architecture_fitness` in the patched clone → `Ran 115 tests — OK`, including the arms in `ArchitectureFitnessTests`. **Count correction:** six of them are new; `test_contract_compatibility_rechecks_unchanged_declared_ref_dependents` already exists at base `d871ea6:3961` (verified with `git show d871ea6:tests/test_architecture_fitness.py | grep -c`), so it cannot be cited as new evidence of this fix:
 
 ```
 test_contract_compatibility_rechecks_unchanged_declared_ref_dependents
@@ -74,6 +73,20 @@ The implementer's mutation matrix (M0–M8) reports the anti-inheritance lock: f
 fails both `..._issue_146` arms and the spy guard. I did not re-run all nine arms; the two that matter most to me —
 M1 (revert the fix: the `$id`/fragment arms fail while the plain-relative control stays green) and M7 (inherit the
 comparator precedence: fail) — are pinned by named tests rather than by my re-run, which is the stronger artifact.
+
+## 4b. Reconciling the three edge counts seen in this wave
+
+Three reviewers and I produced four different numbers for the same fix, all correct under their own definition:
+
+| definition | base | patched |
+| --- | --- | --- |
+| direct (one-hop) pairs **including** self-edges | 10 | 17 |
+| direct pairs **excluding** self-edges | 10 | 14 |
+| transitive pairs (what the gate BFS actually re-verifies) | 22 | 27 |
+
+The 17-vs-14 gap is exactly three self-edges, which `requirements.md` forbids and no test covered; they are being
+removed. Publish the self-edge-free direct count together with the transitive count, and never one of each from
+different trees.
 
 ## 5. Corrections to my own earlier note
 

@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import os
+import posixpath
 import re
 import stat
 import unicodedata
@@ -1124,15 +1125,26 @@ SCHEMA_REFERENCE_UNSAFE = "unsafe schema reference"
 SCHEMA_REFERENCE_ESCAPE = "schema reference escapes inventory"
 SCHEMA_REFERENCE_UNDECLARED = "undeclared schema reference"
 SCHEMA_REFERENCE_AMBIGUOUS = "ambiguous declared schema id"
-#: Reasons that only mean "this $ref does not name a declared contract".  Any other
-#: reason (including one added later) must fail closed instead of dropping an edge.
+SCHEMA_REFERENCE_NOT_A_PATH = "schema reference is not a repository path"
+#: Reasons that provably name no declared contract, so a caller may drop the reverse edge.
+#: ``SCHEMA_REFERENCE_NOT_A_PATH`` is a base that is not a path reference at all (an IRI such
+#: as ``urn:``/``https:``, a filesystem-absolute path, or text no repository path can hold);
+#: ``SCHEMA_REFERENCE_ESCAPE`` is a base that leaves the repository, which is exactly what the
+#: pre-issue-#146 normalisation refused as well.
+#:
+#: ``SCHEMA_REFERENCE_UNSAFE`` is deliberately **absent**.  It means only "this base *is* a
+#: relative path and this grammar refused it" (``./sibling.json``, a segment holding a space or
+#: a ``+``), and the repository's path rules accept such paths, so a dependency edge existed
+#: before the grammar was strict.  Dropping it would re-open the silent under-verification
+#: issue #146 was opened for; the fitness closure resolves that reason through
+#: ``schema_reference_identity_path`` instead of dropping it.
 SCHEMA_REFERENCE_UNRESOLVED = frozenset(
-    {SCHEMA_REFERENCE_UNSAFE, SCHEMA_REFERENCE_ESCAPE, SCHEMA_REFERENCE_UNDECLARED}
+    {SCHEMA_REFERENCE_NOT_A_PATH, SCHEMA_REFERENCE_ESCAPE, SCHEMA_REFERENCE_UNDECLARED}
 )
 #: A reference base that is both another contract's declared path and some contract's
 #: declared ``$id`` is resolved by ``$id`` (the comparator's long-standing precedence, see
-#: the sibling issue for the shadowing defect it allows) or by path (the fitness gate's
-#: dependency closure, which must never attach a dependent to a claimant contract).
+#: the sibling issue for the shadowing defect it allows) or by path (one of the two tables
+#: the fitness gate's dependency closure consults; it never substitutes one for the other).
 SCHEMA_REFERENCE_ID_FIRST = "declared_id_first"
 SCHEMA_REFERENCE_PATH_FIRST = "declared_path_first"
 
@@ -1149,23 +1161,69 @@ def schema_reference_parts(reference: str) -> tuple[str, str | None]:
     return reference, None
 
 
+def schema_reference_identity_path(referrer_path: str, reference_base: str) -> tuple[str | None, str]:
+    """Repository path a ``$ref`` base names, or the reason it cannot name a declared one.
+
+    This is the *identity* normalisation, not a resolver: the base is folded onto the
+    referrer's directory exactly the way ``posixpath.normpath`` folded it before the shared
+    grammar existed, and the result is then tested with the repository's own path rule -- the
+    rule every declared contract path passes.  A caller can therefore ask the only question
+    dependency identity needs ("could a declared contract live where this reference points?")
+    without re-implementing the fold.
+
+    ``schema_reference_relative_path`` uses it to tell its two refusals apart and the fitness
+    dependency closure uses it to recover an edge the strict grammar declined, so both
+    readings of a ``$ref`` come from one implementation.  Returns ``(path, "")`` when the fold
+    is a legal repository-relative path, ``(None, SCHEMA_REFERENCE_ESCAPE)`` when it leaves the
+    repository, and ``(None, SCHEMA_REFERENCE_NOT_A_PATH)`` when it is not a repository path at
+    all.  Like ``schema_reference_target_path`` it reports a miss instead of raising.
+    """
+    normalized = posixpath.normpath(
+        posixpath.join(posixpath.dirname(referrer_path), reference_base)
+    )
+    if normalized == ".." or normalized.startswith("../"):
+        return None, SCHEMA_REFERENCE_ESCAPE
+    if posixpath.isabs(normalized):
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
+    try:
+        return _safe_relative_path(normalized, label="schema reference identity path"), ""
+    except ArchitectureError:
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
+
+
 def schema_reference_relative_path(referrer_path: str, reference_base: str) -> str:
     """Repository-relative path a plain relative ``$ref`` base resolves to.
 
-    Raises ArchitectureError for any grammar that is not a repository-relative pointer.
+    Raises ArchitectureError for any grammar that is not a repository-relative pointer, and
+    keeps the two refusals apart: ``SCHEMA_REFERENCE_NOT_A_PATH`` for a base that is not a path
+    reference at all, and ``SCHEMA_REFERENCE_UNSAFE`` for a relative path this grammar refuses.
+    The split changes which reason is reported, never which bases are accepted: every base that
+    resolved before still resolves, and every base that was refused still is.
+
+    The difference is the caller's policy.  A not-a-path base cannot name a declared contract
+    under any normalisation, so an edge is legitimately absent; a refused relative path can and
+    did, so a closure must resolve it through ``schema_reference_identity_path`` rather than
+    drop it -- that loss is issue #146 finding C2.
     """
-    if (
-        not reference_base
-        or "\\" in reference_base
-        or "?" in reference_base
-        or "%" in reference_base
-        or "#" in reference_base
-        or _unsafe_text(reference_base)
-        or unicodedata.normalize("NFC", reference_base) != reference_base
-        or reference_base.startswith("/")
-        or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", reference_base)
+    if not reference_base or "#" in reference_base:
+        raise ArchitectureError(SCHEMA_REFERENCE_NOT_A_PATH, code="contract")
+    if reference_base.startswith("/") or re.match(
+        r"^[A-Za-z][A-Za-z0-9+.-]*:", reference_base
     ):
-        raise ArchitectureError(SCHEMA_REFERENCE_UNSAFE, code="contract")
+        #: A filesystem-absolute path can never be a declared contract path, and an IRI is not
+        #: a repository pointer: the gate reaches an IRI through the declared ``$id`` table.
+        #: A contract *file* named ``urn:...json`` would be a legal repository path, so this is
+        #: the one refusal that is a decision rather than a proof; measured on the declared
+        #: inventory, no contract path carries a scheme, so nothing is dropped today.
+        raise ArchitectureError(SCHEMA_REFERENCE_NOT_A_PATH, code="contract")
+    identity_path, identity_reason = schema_reference_identity_path(
+        referrer_path, reference_base
+    )
+    if identity_path is None:
+        #: The fold itself leaves the repository, or its result is text the repository's path
+        #: rule forbids (a backslash, control or non-NFC text).  No declared contract path can
+        #: equal it, so the pre-issue-#146 closure named no contract here either.
+        raise ArchitectureError(identity_reason, code="contract")
     parts = list(PurePosixPath(referrer_path).parent.parts)
     for part in reference_base.split("/"):
         if part in {"", "."}:
@@ -1226,17 +1284,20 @@ def schema_reference_target_path(
     fitness dependency closure deliberately disagree about a base that is simultaneously
     another contract's declared path and some contract's declared ``$id``: the comparator
     keeps its long-standing SCHEMA_REFERENCE_ID_FIRST ordering (shadowing is a separate
-    defect), while the closure uses SCHEMA_REFERENCE_PATH_FIRST so a dependent can never
-    be attached to a claimant contract instead of the contract it really references.
+    defect), while the closure calls this function once per table and unions the two
+    answers, so a dependent is re-verified against the contract whose path the reference
+    names *and* against a claimant that shadows that path with an ``$id``.
 
     This function reports a miss instead of raising for any reference, so each caller
     chooses its own policy for a reason; only an unknown ``precedence`` raises, because
     that is a caller bug.  The comparator turns any reason into the matching
     ArchitectureError, while the fitness dependency closure may drop an edge only for a
-    reason in SCHEMA_REFERENCE_UNRESOLVED.
+    reason in SCHEMA_REFERENCE_UNRESOLVED -- and resolves SCHEMA_REFERENCE_UNSAFE through
+    ``schema_reference_identity_path`` instead, because that reason says a declared contract
+    may well sit where the reference points.
     """
     if not reference_base:
-        return None, SCHEMA_REFERENCE_UNSAFE
+        return None, SCHEMA_REFERENCE_NOT_A_PATH
     by_path = _schema_reference_by_declared_path(
         referrer_path, reference_base, declared_paths
     )

@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import os
+import posixpath
 import signal
 import subprocess
 import sys
@@ -4312,21 +4313,21 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertNotEqual(result.status, "pass")
 
     def test_contract_dependency_closure_uses_declared_path_precedence_issue_146(self) -> None:
-        """Issue #146: a reverse edge must follow the path a $ref points at, not a claimant.
+        """Issue #146: a reverse edge names every contract a ``$ref`` can point at.
 
         ``CONTRACT-CLAIMANT`` declares an ``$id`` that is textually identical to the
         referrer's ``$ref`` base, and that same base resolves to ``CONTRACT-TARGET``'s
         declared path.  The comparator resolves such a base through the ``$id`` first (the
-        sibling shadowing defect); the closure must not copy that ordering, so the
-        dependent is re-verified when the contract it really references changes and is not
-        dragged in when only the claimant changes.
+        sibling shadowing defect), so the referrer's verdict is a function of the
+        *claimant's* document; a closure that resolved path-first by *substitution* would
+        attach the referrer only to ``CONTRACT-TARGET`` and never re-verify it when the
+        claimant narrows.  Reverse identity is therefore the union of both tables: the path
+        candidate is kept (issue #146 proper) and the ``$id`` candidate is added, never
+        swapped for it.
         """
         shadowed_path = "engineering/contracts/dir/target.json"
         reference_text = "dir/target.json"
-        for changed_contract, expected_dependent in (
-            ("CONTRACT-TARGET", True),
-            ("CONTRACT-CLAIMANT", False),
-        ):
+        for changed_contract in ("CONTRACT-TARGET", "CONTRACT-CLAIMANT"):
             with self.subTest(changed_contract=changed_contract):
                 system = _system()
                 system["contracts"] = [
@@ -4388,18 +4389,43 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 head = repo.commit("narrowed constraint")
                 diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
                 result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
-                dependent_in_scope = "CONTRACT-REFERRER" in result.applicability.scanned_scope
-                self.assertEqual(dependent_in_scope, expected_dependent)
-                self.assertIn(changed_contract, result.applicability.scanned_scope)
+                # The dependent is re-verified whichever of the two candidates changed, and
+                # nothing else is dragged in: the union is exactly path candidate + $id
+                # candidate, so widening cannot degenerate into "compare everything".
+                self.assertEqual(
+                    set(result.applicability.scanned_scope),
+                    {changed_contract, "CONTRACT-REFERRER"},
+                )
+                self.assertEqual(result.status, "fail")
+                self.assertTrue(
+                    any(
+                        finding.startswith(f"{changed_contract}:")
+                        for finding in result.findings
+                    ),
+                    result.findings,
+                )
+                if changed_contract == "CONTRACT-CLAIMANT":
+                    # The measured consequence of the union: the comparator resolves the
+                    # referrer's $ref through the claimant's $id, so re-verifying the
+                    # referrer reports the claimant's narrowing instead of passing it.
+                    self.assertTrue(
+                        any(
+                            finding.startswith("CONTRACT-REFERRER:")
+                            for finding in result.findings
+                        ),
+                        result.findings,
+                    )
+                else:
+                    self.assertIn("narrowed_constraint", " ".join(result.findings))
 
     def test_contract_dependency_closure_shares_the_comparator_reference_grammar(self) -> None:
         """Issue #146 guard: the closure interprets ``$ref`` through the comparator's function.
 
         The two symbols are asserted to be one implementation, then a spy proves an
-        ``$id`` reference actually travelled through it with declared-path precedence.  A
-        closure that grows its own grammar again, or one that is "simplified" into the
-        comparator's ``resolve()`` ordering, fails here even while its edges still look
-        plausible.
+        ``$id`` reference actually travelled through it under both identity tables, with the
+        declared-path look-up among them.  A closure that grows its own grammar again, one
+        that is "simplified" into the comparator's ``resolve()`` ordering, or one that
+        consults only a single table fails here even while its edges still look plausible.
         """
         self.assertIs(
             FIT.schema_reference_target_path, ARCHITECTURE.schema_reference_target_path
@@ -4426,6 +4452,14 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "engineering/contracts/event.json",
                 declared_id,
                 ARCHITECTURE.SCHEMA_REFERENCE_PATH_FIRST,
+            ),
+            seen,
+        )
+        self.assertIn(
+            (
+                "engineering/contracts/event.json",
+                declared_id,
+                ARCHITECTURE.SCHEMA_REFERENCE_ID_FIRST,
             ),
             seen,
         )
@@ -4518,6 +4552,806 @@ class ArchitectureFitnessTests(unittest.TestCase):
                         diff._head_state.snapshot, diff
                     )
                     self.assertIn("CONTRACT-DEPENDENT", result.applicability.scanned_scope)
+
+    def _duplicate_declared_id_repo(
+        self, base_a_id: str, head_edits: dict[str, dict]
+    ) -> tuple[GitArchitectureRepo, str, str]:
+        """Repo where ``CONTRACT-COLLIDER-A`` carries ``base_a_id`` and head applies edits.
+
+        ``CONTRACT-DEPENDENT`` references ``urn:adaptive-grok.test:money``, which
+        ``CONTRACT-COLLIDER-B`` declares in both states, so the only thing that decides
+        whether the reference is attributable is which state ``CONTRACT-COLLIDER-A`` shares
+        that ``$id`` in.  Every arm below differs from another by one inventory only.
+        """
+        referenced_id = "urn:adaptive-grok.test:money"
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": identity,
+                "kind": "json_schema",
+                "path": path,
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            }
+            for identity, path in (
+                ("CONTRACT-COLLIDER-A", "engineering/contracts/a.json"),
+                ("CONTRACT-COLLIDER-B", "engineering/contracts/b.json"),
+                ("CONTRACT-DEPENDENT", "engineering/contracts/dependent.json"),
+                ("CONTRACT-UNRELATED", "engineering/contracts/unrelated.json"),
+            )
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json(
+            "engineering/contracts/a.json",
+            {"$id": base_a_id, "type": "integer", "description": "a base"},
+        )
+        repo.write_json(
+            "engineering/contracts/b.json",
+            {"$id": referenced_id, "type": "integer", "description": "b base"},
+        )
+        repo.write_json(
+            "engineering/contracts/dependent.json",
+            {"$ref": referenced_id, "description": "dependent base"},
+        )
+        repo.write_json(
+            "engineering/contracts/unrelated.json",
+            {"type": "string", "description": "unrelated base"},
+        )
+        base = repo.commit("duplicate declared id baseline")
+        for path, document in head_edits.items():
+            repo.write_json(path, document)
+        head = repo.commit("duplicate declared id change")
+        return repo, base, head
+
+    def test_contract_compatibility_bounds_duplicate_declared_id_to_certified_state(
+        self
+    ) -> None:
+        """Review finding A: an ``$id`` collision may only abort the state being certified.
+
+        The closure walks both inventories.  When only the base carries a shared ``$id``, the
+        collision is inherited authored state, and aborting on it made every contract pull
+        request against that base fail in the gate *and* the request that removes the
+        collision too -- its own base is the poisoned one -- so recovery needed a revert of
+        the gate change.  These arms pin the bounded rule: a collision in the certified state
+        still fails closed naming the offenders, a base-only collision is degraded to an
+        attributed row and the dependent is still re-verified, and the cleanup pull request
+        completes and reports.
+        """
+        referenced_id = "urn:adaptive-grok.test:money"
+        clean_id = "urn:adaptive-grok.test:other"
+        a_path = "engineering/contracts/a.json"
+        b_path = "engineering/contracts/b.json"
+        collider = {
+            "colliding": referenced_id,
+            "clean": clean_id,
+        }
+
+        def declared(schema_id: str, note: str) -> dict:
+            return {"$id": schema_id, "type": "integer", "description": note}
+
+        # Arms where the certified (head) state still carries the collision: fail closed and
+        # name the offending id and both declared paths, so no operator has to read the gate.
+        for arm, base_id, head_edits in (
+            (
+                "head-only collision",
+                collider["clean"],
+                {a_path: declared(collider["colliding"], "a head")},
+            ),
+            (
+                "collision in both states",
+                collider["colliding"],
+                {a_path: declared(collider["colliding"], "a head")},
+            ),
+        ):
+            with self.subTest(arm=arm):
+                repo, base, head = self._duplicate_declared_id_repo(base_id, head_edits)
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                with self.assertRaises(FIT.ArchitectureError) as captured:
+                    FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                message = str(captured.exception)
+                self.assertEqual(captured.exception.code, "contract")
+                self.assertIn("ambiguous declared schema id", message)
+                self.assertIn(referenced_id, message)
+                self.assertIn(a_path, message)
+                self.assertIn(b_path, message)
+
+        # Arm: the collision exists only in the base.  The dependent is still pulled in
+        # through the head inventory, its own comparison degrades the way the comparator
+        # already degrades an ambiguous reference, and the attributed row names the offenders.
+        for arm, base_id, head_edits in (
+            (
+                "base-only collision",
+                collider["colliding"],
+                {
+                    a_path: declared(collider["clean"], "a base"),
+                    b_path: declared(collider["colliding"], "b head"),
+                },
+            ),
+            (
+                "cleanup pull request with an unrelated contract edited",
+                collider["colliding"],
+                {
+                    a_path: declared(collider["clean"], "a head"),
+                    "engineering/contracts/unrelated.json": {
+                        "type": "string",
+                        "description": "unrelated head",
+                    },
+                },
+            ),
+        ):
+            with self.subTest(arm=arm):
+                repo, base, head = self._duplicate_declared_id_repo(base_id, head_edits)
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._contract_compatibility(
+                    diff._head_state.snapshot, diff
+                )
+                scope = set(result.applicability.scanned_scope)
+                self.assertIn("CONTRACT-COLLIDER-A", scope)
+                findings = "\n".join(result.findings)
+                if arm == "base-only collision":
+                    self.assertIn("CONTRACT-DEPENDENT", scope)
+                    self.assertIn(
+                        "CONTRACT-DEPENDENT: unsupported compatibility semantics",
+                        result.findings,
+                    )
+                    self.assertIn(
+                        "CONTRACT-DEPENDENT: unattributed reference: ambiguous declared"
+                        f" schema id '{referenced_id}' declared by {a_path}, {b_path}",
+                        findings,
+                    )
+                    self.assertEqual(result.status, "unsupported")
+                else:
+                    # Nothing the untouched referrer depends on moved, so its inherited
+                    # collision is not this change's verdict and must not be charged to it.
+                    self.assertNotIn("CONTRACT-DEPENDENT", scope)
+                    self.assertNotIn("CONTRACT-DEPENDENT", findings)
+                    self.assertIn("CONTRACT-UNRELATED", scope)
+
+    def _one_sided_declared_id_repo(
+        self, declare_id_in: str
+    ) -> tuple[GitArchitectureRepo, str, str]:
+        """Referrer byte-identical across the diff; only a declared ``$id`` moves state.
+
+        ``declare_id_in`` picks which of the two states carries the ``$id`` the referrer
+        names.  The reverse edge then exists in exactly one inventory, which is the only
+        way to falsify the closure's union over ``before`` and ``after``: a case where both
+        states carry the reference cannot tell a two-inventory walk from a one-inventory
+        walk, and that is how the base-side half of the union went unpinned once already.
+        """
+        declared_id = "urn:adaptive-grok.test:transient"
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-REFERRER",
+                "kind": "json_schema",
+                "path": "engineering/contracts/referrer.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-TARGET",
+                "kind": "json_schema",
+                "path": "engineering/contracts/target.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/referrer.json", {"$ref": declared_id})
+        base_document = {"type": "integer", "description": "base"}
+        head_document = {"type": "integer", "description": "head"}
+        if declare_id_in in {"base", "both"}:
+            base_document = {"$id": declared_id, **base_document}
+        if declare_id_in in {"head", "both"}:
+            head_document = {"$id": declared_id, **head_document}
+        repo.write_json("engineering/contracts/target.json", base_document)
+        base = repo.commit("one sided declared id baseline")
+        repo.write_json("engineering/contracts/target.json", head_document)
+        head = repo.commit("referenced contract changed")
+        return repo, base, head
+
+    def test_contract_dependency_closure_keeps_base_only_reference_dependents(self) -> None:
+        """The ``before`` inventory is load-bearing: a retracted ``$id`` must not drop the edge.
+
+        The referrer never changes and head no longer declares the ``$id`` its ``$ref``
+        names, so only the base table can produce this dependency.  A closure that walked
+        ``after`` alone silently loses the dependent's identity and its verdict, which is
+        the exact failure class issue #146 was opened for.
+        """
+        repo, base, head = self._one_sided_declared_id_repo("base")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {"CONTRACT-TARGET", "CONTRACT-REFERRER"},
+        )
+        self.assertTrue(
+            any(
+                finding.startswith("CONTRACT-REFERRER:") for finding in result.findings
+            ),
+            result.findings,
+        )
+        self.assertNotEqual(result.status, "pass")
+
+    def test_contract_dependency_closure_adds_head_only_reference_dependents(self) -> None:
+        """The symmetric lock: an edge that exists only in the ``after`` inventory.
+
+        The target *gains* the ``$id`` the byte-identical referrer already named, so a
+        closure restricted to the base state keeps every older edge and still misses this
+        one; pinning only the base side would leave half of the union unfalsified.
+        """
+        repo, base, head = self._one_sided_declared_id_repo("head")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {"CONTRACT-TARGET", "CONTRACT-REFERRER"},
+        )
+        self.assertTrue(
+            any(
+                finding.startswith("CONTRACT-REFERRER:") for finding in result.findings
+            ),
+            result.findings,
+        )
+        self.assertNotEqual(result.status, "pass")
+
+    def test_contract_dependency_closure_attaches_named_path_despite_ambiguous_ids(self) -> None:
+        """An unattributable ``$id`` candidate must not cost the edge the path table names.
+
+        Two claimants share the ``$id`` that also shadows a declared path.  Attaching one of
+        them would be guessing, so neither is attached and nothing raises: the path edge
+        stays, and the ambiguity still fails closed one step later through the comparator's
+        own verdict for the referrer.  Raising here instead would let a pre-existing ``$id``
+        collision break every gate run, including runs that touch neither claimant nor
+        referrer.
+        """
+        shadowed_path = "engineering/contracts/dir/target.json"
+        reference_text = "dir/target.json"
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": id_,
+                "kind": "json_schema",
+                "path": path,
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            }
+            for id_, path in (
+                ("CONTRACT-REFERRER", "engineering/contracts/referrer.json"),
+                ("CONTRACT-TARGET", shadowed_path),
+                ("CONTRACT-CLAIMANT-A", "engineering/contracts/claimant-a.json"),
+                ("CONTRACT-CLAIMANT-B", "engineering/contracts/claimant-b.json"),
+            )
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/referrer.json", {"$ref": reference_text})
+        repo.write_json(
+            shadowed_path, {"type": "string", "description": "target base"}
+        )
+        for name in ("claimant-a", "claimant-b"):
+            repo.write_json(
+                f"engineering/contracts/{name}.json",
+                {"$id": reference_text, "type": "string", "minLength": 1},
+            )
+        base = repo.commit("ambiguous claimant ids baseline")
+        repo.write_json(
+            shadowed_path, {"type": "string", "description": "target head"}
+        )
+        head = repo.commit("referenced contract changed")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {"CONTRACT-TARGET", "CONTRACT-REFERRER"},
+        )
+        self.assertNotIn("CONTRACT-CLAIMANT-A", result.applicability.scanned_scope)
+        self.assertNotIn("CONTRACT-CLAIMANT-B", result.applicability.scanned_scope)
+        self.assertTrue(
+            any(
+                finding.startswith("CONTRACT-REFERRER:") for finding in result.findings
+            ),
+            result.findings,
+        )
+        self.assertNotEqual(result.status, "pass")
+
+    def test_contract_dependency_closure_terminates_on_self_reference(self) -> None:
+        """Requirements edge case: a contract whose ``$ref`` names its own ``$id``.
+
+        The real inventory contains three of these.  A self reference must not become a
+        dependent (which would loop the BFS) and must not drag any other contract into the
+        re-verified set; the closure of a self-referencing contract is that contract alone.
+        """
+        declared_id = "urn:adaptive-grok.test:self"
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-SELF",
+                "kind": "json_schema",
+                "path": "engineering/contracts/self.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-UNRELATED",
+                "kind": "json_schema",
+                "path": "engineering/contracts/unrelated.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json(
+            "engineering/contracts/self.json",
+            {"$id": declared_id, "$ref": declared_id, "description": "base"},
+        )
+        repo.write_json("engineering/contracts/unrelated.json", {"type": "string"})
+        base = repo.commit("self reference baseline")
+        repo.write_json(
+            "engineering/contracts/self.json",
+            {"$id": declared_id, "$ref": declared_id, "description": "head"},
+        )
+        head = repo.commit("self referencing contract changed")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        before = {item.id: item for item in diff._base_state.contracts}
+        after = {item.id: item for item in diff._head_state.contracts}
+        self.assertEqual(
+            FIT._contract_dependency_closure({"CONTRACT-SELF"}, before, after),
+            {"CONTRACT-SELF"},
+        )
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(set(result.applicability.scanned_scope), {"CONTRACT-SELF"})
+        self.assertNotIn("CONTRACT-UNRELATED", result.applicability.scanned_scope)
+
+    def _declined_relative_repo(
+        self, event_reference: str, common_path: str
+    ) -> tuple[GitArchitectureRepo, str, str]:
+        """Inventory whose one dependency is a relative path the strict grammar declines.
+
+        The same shape as ``_reference_grammar_repo`` -- only the referenced contract
+        changes, only the spelling of the ``$ref`` differs -- except the referenced file
+        lives at ``common_path``, the legacy fold of the declined spelling.  A closure that
+        treats ``SCHEMA_REFERENCE_UNSAFE`` as an ordinary miss loses the only edge here.
+        """
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-EVENT",
+                "kind": "event",
+                "path": "engineering/contracts/event.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-COMMON",
+                "kind": "json_schema",
+                "path": common_path,
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-UNRELATED",
+                "kind": "json_schema",
+                "path": "engineering/contracts/unrelated.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["event", "json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/event.json", {"$ref": event_reference})
+        repo.write_json(common_path, {"type": "integer", "description": "money is cents"})
+        repo.write_json(
+            "engineering/contracts/unrelated.json",
+            {"type": "string", "description": "unrelated alpha"},
+        )
+        base = repo.commit("declined relative-path reference baseline")
+        repo.write_json(common_path, {"type": "integer", "description": "money is dollars"})
+        head = repo.commit("declined-path dependency changed")
+        return repo, base, head
+
+    def test_contract_dependency_closure_reverifies_declined_relative_path_referrers(
+        self
+    ) -> None:
+        """Finding C2, one arm per declined spelling: the referrer must be re-verified.
+
+        ``./common.json``, a segment holding a space and a segment holding a ``+`` are
+        relative paths the repository's own path rules accept, so the pre-issue-#146
+        closure had already attached the referrer to the contract folded onto.  Each arm
+        changes only the referenced contract and requires the byte-identical referrer in
+        the closure *and* in the re-verified scanned scope.  Re-collapsing the reasons --
+        putting ``SCHEMA_REFERENCE_UNSAFE`` back into ``SCHEMA_REFERENCE_UNRESOLVED`` or
+        deleting the ``schema_reference_identity_path`` recovery -- drops the referrer for
+        exactly these spellings and fails all three arms.
+        """
+        for spelling, reference, common_path in (
+            ("dot-slash", "./common.json", "engineering/contracts/common.json"),
+            ("space", "com mon.json", "engineering/contracts/com mon.json"),
+            ("plus", "com+mon.json", "engineering/contracts/com+mon.json"),
+        ):
+            with self.subTest(spelling=spelling):
+                repo, base, head = self._declined_relative_repo(reference, common_path)
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                before = {item.id: item for item in diff._base_state.contracts}
+                after = {item.id: item for item in diff._head_state.contracts}
+                closure = FIT._contract_dependency_closure({"CONTRACT-COMMON"}, before, after)
+                self.assertIn("CONTRACT-EVENT", closure)
+                result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
+                self.assertIn("CONTRACT-EVENT", " ".join(result.findings))
+                self.assertNotEqual(result.status, "pass")
+
+    def test_reference_reasons_keep_declined_paths_apart_from_non_paths(self) -> None:
+        """The C2 root cause was two meanings sharing one reason; pin them apart.
+
+        ``SCHEMA_REFERENCE_UNSAFE`` means "a relative path the grammar declined" and is
+        recoverable, so it must never sit in ``SCHEMA_REFERENCE_UNRESOLVED``;
+        ``SCHEMA_REFERENCE_NOT_A_PATH`` means "no fold names a repository path" and stays
+        droppable, which is what leaves the comparator's IRI/``$id`` semantics untouched.
+        Asserted per refused spelling on both the raised reason and the recovered fold, so
+        collapsing either direction fails here first.
+        """
+        self.assertNotIn(
+            ARCHITECTURE.SCHEMA_REFERENCE_UNSAFE, ARCHITECTURE.SCHEMA_REFERENCE_UNRESOLVED
+        )
+        for droppable in (
+            ARCHITECTURE.SCHEMA_REFERENCE_NOT_A_PATH,
+            ARCHITECTURE.SCHEMA_REFERENCE_ESCAPE,
+            ARCHITECTURE.SCHEMA_REFERENCE_UNDECLARED,
+        ):
+            self.assertIn(droppable, ARCHITECTURE.SCHEMA_REFERENCE_UNRESOLVED)
+        for reference in ("./target.json", "ta rget.json", "ta+rget.json"):
+            with self.subTest(declined=reference):
+                with self.assertRaises(ARCHITECTURE.ArchitectureError) as refused:
+                    ARCHITECTURE.schema_reference_relative_path(
+                        "dir/referrer.json", reference
+                    )
+                self.assertEqual(
+                    str(refused.exception), ARCHITECTURE.SCHEMA_REFERENCE_UNSAFE
+                )
+                self.assertEqual(
+                    ARCHITECTURE.schema_reference_identity_path(
+                        "dir/referrer.json", reference
+                    ),
+                    (posixpath.normpath(posixpath.join("dir", reference)), ""),
+                )
+        with self.assertRaises(ARCHITECTURE.ArchitectureError) as refused:
+            ARCHITECTURE.schema_reference_relative_path("dir/referrer.json", "urn:x:target")
+        self.assertEqual(str(refused.exception), ARCHITECTURE.SCHEMA_REFERENCE_NOT_A_PATH)
+        self.assertEqual(
+            ARCHITECTURE.schema_reference_identity_path("dir/referrer.json", "/abs/x.json"),
+            (None, ARCHITECTURE.SCHEMA_REFERENCE_NOT_A_PATH),
+        )
+        self.assertEqual(
+            ARCHITECTURE.schema_reference_identity_path("referrer.json", "../x.json"),
+            (None, ARCHITECTURE.SCHEMA_REFERENCE_ESCAPE),
+        )
+
+    def test_real_contract_closure_supersets_legacy_fold_per_target(self) -> None:
+        """Structural lock for the release.md No-go line: zero lost closure edges.
+
+        Re-derives the d871ea6 dependency relation inside the test -- normalise
+        ``posixpath.join(dirname(referrer.path), $ref)`` over the *whole* reference text
+        (no fragment split), keep it only when it names a declared path -- and asserts,
+        for every contract declared in this repository, that the legacy transitive
+        dependents all sit inside what ``_contract_dependency_closure`` re-verifies on the
+        shipped inventory: measured in the review that is 22 -> 27 pairs with zero lost.
+        Self-pairs are excluded because the self edge is forbidden outright, locked by
+        ``test_contract_dependency_closure_terminates_on_self_reference``.  The gained
+        assertion keeps the superset meaningful: zero gained pairs would mean the fleet
+        no longer exercises the widened tables and this arm had gone vacuous.
+        """
+        snapshot = ARCHITECTURE.load_architecture(ROOT)
+        records = ARCHITECTURE.contract_inventory(ROOT, snapshot)
+        state = {record.id: record for record in records}
+        declared = {record.path: record.id for record in records}
+        self.assertTrue(
+            all("#" not in path for path in declared),
+            "a declared contract path holding '#' breaks the fold this arm models",
+        )
+        reverse: dict[str, set[str]] = {}
+        for record in records:
+            pending = [record.document]
+            while pending:
+                value = pending.pop()
+                if isinstance(value, dict):
+                    reference = value.get("$ref")
+                    if isinstance(reference, str) and not reference.startswith("#"):
+                        normalized = posixpath.normpath(
+                            posixpath.join(posixpath.dirname(record.path), reference)
+                        )
+                        if normalized != ".." and not normalized.startswith("../"):
+                            target_id = declared.get(normalized)
+                            if target_id is not None and target_id != record.id:
+                                reverse.setdefault(target_id, set()).add(record.id)
+                    pending.extend(value.values())
+                elif isinstance(value, list):
+                    pending.extend(value)
+
+        def legacy_closure(target_id: str) -> set[str]:
+            closure = {target_id}
+            frontier = [target_id]
+            while frontier:
+                node = frontier.pop()
+                for dependent in reverse.get(node, ()):
+                    if dependent not in closure:
+                        closure.add(dependent)
+                        frontier.append(dependent)
+            return closure - {target_id}
+
+        lost = []
+        gained = set()
+        for target_id in sorted(state):
+            legacy = legacy_closure(target_id)
+            shipped = FIT._contract_dependency_closure(
+                {target_id}, dict(state), dict(state)
+            ) - {target_id}
+            lost.extend((target_id, dependent) for dependent in sorted(legacy - shipped))
+            gained.update((target_id, dependent) for dependent in sorted(shipped - legacy))
+        self.assertEqual(
+            lost,
+            [],
+            "lost closure edges (No-go: any lost edge): "
+            + ", ".join(f"{target}<-{dependent}" for target, dependent in lost),
+        )
+        self.assertGreater(
+            len(gained),
+            0,
+            "shipped closure must still attach dependents the legacy fold could not "
+            "($id-table references); zero gained pairs mean this arm is vacuous",
+        )
+
+    def test_contract_dependency_closure_keeps_parent_segment_references_inside_repository(
+        self
+    ) -> None:
+        """Finding C2's fourth shape: ``../`` that stays inside the repository.
+
+        ``../shared/common.json`` is resolved identically by the strict grammar and by the
+        legacy fold, so this arm is the control that says the C2 recovery did not have to
+        widen anything for the spelling the shipped inventory already uses (the landing
+        openapi contracts reference ``../jsonschema/...``).  The escaped form is the
+        contradiction pair: still no edge and still nothing raised, because there is no
+        declared contract outside the inventory to attach.  Both readings go through
+        ``architecture.schema_reference_identity_path``, asserted to be the one fold the
+        closure shares -- a closure that grew its own normalisation would pass both arms
+        here and still drift from the comparator.
+        """
+        self.assertIs(
+            FIT.schema_reference_identity_path,
+            ARCHITECTURE.schema_reference_identity_path,
+        )
+        repo, base, head = self._declined_relative_repo(
+            "../shared/common.json", "engineering/shared/common.json"
+        )
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        before = {item.id: item for item in diff._base_state.contracts}
+        after = {item.id: item for item in diff._head_state.contracts}
+        self.assertEqual(
+            FIT._reverse_contract_dependencies(
+                after, fail_closed=True, unattributed={}
+            ),
+            {"CONTRACT-COMMON": {"CONTRACT-EVENT"}},
+        )
+        self.assertEqual(
+            FIT._contract_dependency_closure({"CONTRACT-COMMON"}, before, after),
+            {"CONTRACT-COMMON", "CONTRACT-EVENT"},
+        )
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
+        escaped, escaped_base, escaped_head = self._reference_grammar_repo(
+            "../../../outside/common.json",
+            {"type": "integer", "description": "money is cents"},
+            {"type": "integer", "description": "money is dollars"},
+        )
+        escaped_diff = FIT.diff_architecture(
+            escaped.root, base_sha=escaped_base, head_sha=escaped_head
+        )
+        escaped_result = FIT._contract_compatibility(
+            escaped_diff._head_state.snapshot, escaped_diff
+        )
+        self.assertEqual(
+            set(escaped_result.applicability.scanned_scope), {"CONTRACT-COMMON"}
+        )
+        self.assertEqual(escaped_result.status, "pass", escaped_result.findings)
+
+    def test_contract_dependency_closure_creates_no_self_edge(self) -> None:
+        """Finding C3: a ``$ref`` that resolves through the referrer's own identity is no edge.
+
+        ``test_contract_dependency_closure_terminates_on_self_reference`` cannot see a self edge:
+        the walk seeds the changed contract, so a dependent that *is* the target is already in the
+        returned set and the closure is identical with or without the edge.  The direct edge map is
+        the unit that carried three self edges after the ``$id`` widening -- the 17-versus-14 gap
+        in the published count -- so it is asserted here, for both self spellings (through the
+        referrer's own ``$id`` and through its own path), for the ordinary local pointer
+        (``#/$defs/...``, which was never an edge), and for every contract declared in this
+        repository.  A genuine dependency on a *different* contract that happens to be referenced
+        by the self-referencing file must survive: excluding self edges is not a narrowing.
+        """
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-SELF-ID",
+                "kind": "json_schema",
+                "path": "engineering/contracts/self-id.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-SELF-PATH",
+                "kind": "json_schema",
+                "path": "engineering/contracts/self-path.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-LOCAL-POINTER",
+                "kind": "json_schema",
+                "path": "engineering/contracts/local.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-OTHER",
+                "kind": "json_schema",
+                "path": "engineering/contracts/other.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json(
+            "engineering/contracts/self-id.json",
+            {
+                "$id": "urn:adaptive-grok.test:self",
+                "$ref": "urn:adaptive-grok.test:self",
+                "description": "references its own declared id",
+            },
+        )
+        repo.write_json(
+            "engineering/contracts/self-path.json",
+            {"$ref": "self-path.json", "description": "references its own file"},
+        )
+        repo.write_json(
+            "engineering/contracts/local.json",
+            {
+                "$ref": "#/$defs/money",
+                "$defs": {"money": {"type": "integer"}},
+                "description": "local pointer only",
+            },
+        )
+        repo.write_json(
+            "engineering/contracts/other.json",
+            {"$ref": "self-id.json", "description": "a real dependency"},
+        )
+        state = {
+            record.id: record
+            for record in ARCHITECTURE.contract_inventory(
+                repo.root, FIT.load_architecture(repo.root)
+            )
+        }
+        edges = FIT._reverse_contract_dependencies(
+            state, fail_closed=True, unattributed={}
+        )
+        self.assertEqual(edges, {"CONTRACT-SELF-ID": {"CONTRACT-OTHER"}})
+        for identity, expected_dependents in (
+            ("CONTRACT-SELF-ID", {"CONTRACT-OTHER"}),
+            ("CONTRACT-SELF-PATH", set()),
+            ("CONTRACT-LOCAL-POINTER", set()),
+        ):
+            with self.subTest(self_referencer=identity):
+                self.assertEqual(
+                    FIT._contract_dependency_closure({identity}, dict(state), dict(state))
+                    - {identity},
+                    expected_dependents,
+                )
+        fleet = {
+            record.id: record
+            for record in ARCHITECTURE.contract_inventory(
+                ROOT, ARCHITECTURE.load_architecture(ROOT)
+            )
+        }
+        shipped = FIT._reverse_contract_dependencies(
+            fleet, fail_closed=True, unattributed={}
+        )
+        self.assertEqual(
+            sorted(target for target, dependents in shipped.items() if target in dependents),
+            [],
+            "the shipped inventory must not produce a self edge for any contract",
+        )
+        self.assertGreater(
+            sum(len(dependents) for dependents in shipped.values()),
+            0,
+            "a vacuous fleet-wide edge map would make the self-edge assertion meaningless",
+        )
 
     def test_contract_compatibility_has_one_aggregate_comparison_budget(self) -> None:
         system = _system()

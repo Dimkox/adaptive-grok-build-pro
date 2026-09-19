@@ -8,17 +8,21 @@ import re
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Iterable, NamedTuple
+from typing import Any, Iterable, Mapping, NamedTuple
 
 from .architecture import (
     ArchitectureError,
     ArchitectureSnapshot,
+    SCHEMA_REFERENCE_AMBIGUOUS,
+    SCHEMA_REFERENCE_ID_FIRST,
     SCHEMA_REFERENCE_PATH_FIRST,
     SCHEMA_REFERENCE_UNRESOLVED,
+    SCHEMA_REFERENCE_UNSAFE,
     architecture_digests,
     compare_contracts,
     contract_inventory_digest,
     load_architecture,
+    schema_reference_identity_path,
     schema_reference_parts,
     schema_reference_target_path,
 )
@@ -855,7 +859,10 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
         )
     before = {item.id: item for item in (diff._base_state.contracts if diff._base_state else ())}
     after = {item.id: item for item in diff._head_state.contracts}
-    changed_ids = _contract_dependency_closure(directly_changed_ids, before, after)
+    unattributed_references: dict[str, list[str]] = {}
+    changed_ids = _contract_dependency_closure(
+        directly_changed_ids, before, after, unattributed_references
+    )
     findings: list[str] = []
     unsupported: list[str] = []
     used_rules: set[str] = set()
@@ -888,6 +895,18 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
                     unsupported.append(f"{identity}: unsupported compatibility semantics")
                 elif result.status != "compatible":
                     findings.append(f"{identity}: {','.join(result.reasons)}")
+    #: An unattributed reference is reported only where it can have cost a re-verification,
+    #: which is where the referrer is itself inside the certified scope: that is the case in
+    #: which the comparator's own pair verdict is degraded and the outcome would otherwise be
+    #: lost.  A pull request that touches nothing related must not have somebody else's
+    #: collision charged to it, and must certainly not abort -- that was the non-self-healing
+    #: wedge: the pull request repairing the collision inherits the poisoned base it must fix.
+    unsupported.extend(
+        f"{identity}: unattributed reference: {detail}"
+        for identity in sorted(unattributed_references)
+        if identity in changed_ids
+        for detail in sorted(unattributed_references[identity])
+    )
     if unsupported:
         status = "unsupported"
     elif findings:
@@ -905,30 +924,79 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
     )
 
 
+#: Declared contracts named in one ``$id`` ambiguity message before the list is elided.
+_AMBIGUITY_OWNER_LIMIT = 5
+
+
+def _reverse_contract_dependencies(
+    inventory: dict[str, Any],
+    *,
+    fail_closed: bool,
+    unattributed: dict[str, list[str]],
+) -> dict[str, set[str]]:
+    """Declared target identity -> referrer identities, for a single inventory state.
+
+    The map is the closure's whole dependency structure: every direct edge the gate will
+    re-verify transitively, so it is also the unit a reviewer can count.  A contract that
+    ``$ref``s its own declared ``$id`` (or its own path) contributes **no** edge -- identity is
+    per contract, requirements.md forbids the self edge, and a changed contract is already
+    re-verified by the changed-contract row, so omitting it cannot narrow what the gate reads.
+    Reference bases are interpreted only through
+    ``_external_contract_reference_paths``/``architecture.schema_reference_target_path``.
+    """
+    reverse_dependencies: dict[str, set[str]] = {}
+    records = tuple(inventory.values())
+    by_path = {record.path: record.id for record in records}
+    paths_by_schema_id: dict[str, list[str]] = {}
+    for record in records:
+        schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
+        if isinstance(schema_id, str):
+            paths_by_schema_id.setdefault(schema_id, []).append(record.path)
+    declared_paths = frozenset(by_path)
+    for record in records:
+        signals: list[str] = []
+        for target_path in _external_contract_reference_paths(
+            record,
+            paths_by_schema_id,
+            declared_paths,
+            fail_closed=fail_closed,
+            signals=signals,
+        ):
+            target_id = by_path.get(target_path)
+            if target_id is not None and target_id != record.id:
+                reverse_dependencies.setdefault(target_id, set()).add(record.id)
+        if signals:
+            unattributed.setdefault(record.id, []).extend(signals)
+    return reverse_dependencies
+
+
 def _contract_dependency_closure(
     changed_ids: set[str],
     before: dict[str, Any],
     after: dict[str, Any],
+    unattributed: dict[str, list[str]] | None = None,
 ) -> set[str]:
-    """Return changed contracts plus declared contracts that reference them."""
+    """Return changed contracts plus declared contracts that reference them.
+
+    ``unattributed`` is an optional output map: every reference this walk could not
+    attribute because two declared contracts carry the same ``$id`` is recorded there under
+    its referrer's identity.  It is a signal, not an abort: see
+    ``_reference_identity_candidates``.
+    """
 
     reverse_dependencies: dict[str, set[str]] = {}
-    for inventory in (before, after):
-        records = tuple(inventory.values())
-        by_path = {record.path: record.id for record in records}
-        paths_by_schema_id: dict[str, list[str]] = {}
-        for record in records:
-            schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
-            if isinstance(schema_id, str):
-                paths_by_schema_id.setdefault(schema_id, []).append(record.path)
-        declared_paths = frozenset(by_path)
-        for record in records:
-            for target_path in _external_contract_reference_paths(
-                record, paths_by_schema_id, declared_paths
-            ):
-                target_id = by_path.get(target_path)
-                if target_id is not None:
-                    reverse_dependencies.setdefault(target_id, set()).add(record.id)
+    collected: dict[str, list[str]] = {} if unattributed is None else unattributed
+    #: The head inventory is the state being certified, so a reference that names nothing but
+    #: a shared ``$id`` there fails closed.  The base inventory is inherited authored state:
+    #: aborting on it would block every contract pull request against that base *and* the one
+    #: pull request that repairs it, because the repair's own base is the poisoned state.  A
+    #: base-side ambiguity is therefore degraded to an attributed signal, which is also how
+    #: the comparator treats the same reference per pair.
+    for inventory, fail_closed in ((before, False), (after, True)):
+        for target_id, dependents in _reverse_contract_dependencies(
+            inventory, fail_closed=fail_closed, unattributed=collected
+        ).items():
+            reverse_dependencies.setdefault(target_id, set()).update(dependents)
 
     closure = set(changed_ids)
     pending = deque(sorted(changed_ids))
@@ -941,21 +1009,144 @@ def _contract_dependency_closure(
     return closure
 
 
+def _unattributable_reference_detail(
+    failure: str,
+    reference_base: str,
+    referrer_path: str,
+    paths_by_schema_id: Mapping[str, list[str]],
+) -> str:
+    """Name the offending reference, the contracts that collide over it and who referenced it.
+
+    Both the abort and the signal have to be actionable without reading the inventory, so the
+    text carries the colliding ``$id``, the declared paths that carry it and the referrer that
+    hit it.  The carrier list is bounded because the inventory is capped at ``MAX_CONTRACTS``
+    and an unbounded message would crowd out the rest of the finding.
+    """
+    if failure != SCHEMA_REFERENCE_AMBIGUOUS:
+        return failure
+    owners = sorted(set(paths_by_schema_id.get(reference_base, ())))
+    shown = owners[:_AMBIGUITY_OWNER_LIMIT]
+    hidden = len(owners) - len(shown)
+    suffix = f" (+{hidden} more)" if hidden > 0 else ""
+    return (
+        f"{failure} '{reference_base}' declared by {', '.join(shown)}{suffix}"
+        f"; referenced by {referrer_path}"
+    )
+
+
+def _reference_identity_candidates(
+    referrer_path: str,
+    reference_base: str,
+    paths_by_schema_id: dict[str, list[str]],
+    declared_paths: frozenset[str],
+    *,
+    fail_closed: bool,
+    signals: list[str],
+) -> set[str]:
+    """Every declared contract path a single ``$ref`` base can name, under either table.
+
+    Both look-ups go through the comparator's shared grammar, so no third interpretation of
+    a ``$ref`` can appear here.  The result is a union rather than a choice: dependency
+    identity must not lose an edge because two tables disagree, and the comparator resolves
+    such a base through the declared ``$id`` first (issue #147), so a contract that merely
+    *claims* the base really can break this referrer.
+
+    A reference that two declared contracts collide over is never *silent*: the detail lands
+    in ``signals`` for the referrer, and the comparator fails the same reference closed as an
+    ``unsupported`` pair verdict as soon as that referrer is re-verified.  ``fail_closed`` then
+    decides only the extra step of whether the whole run aborts.  In the certified (head)
+    state a look-up that misses for a reason outside ``SCHEMA_REFERENCE_UNRESOLVED`` (an
+    ``$id`` shared by two declared contracts, for example) with no path candidate aborts,
+    because guessing which claimant to attach would silently verify the wrong one and a
+    collision in the state under certification must not pass.  In the inherited base state the
+    same reference is skipped, not fatal: an ``$id`` collision authored by one contributor
+    would otherwise wedge every other contributor's gate run *and* the pull request that
+    removes the collision, so recovery would require reverting this gate change.  When the
+    path table did name a contract the ambiguity never aborts in either state -- the named
+    path is attached, the unattributable claimants are not.  A reason outside the deny-list
+    fails closed in both states: the deny-list is a deny-list, and its two relief rules are
+    ``$id`` ambiguity (signalled, fatal only in the certified state) and the declined
+    relative path resolved immediately below -- never a silent drop.
+
+    ``SCHEMA_REFERENCE_UNSAFE`` is on this side of the deny-list for one reason (finding C2):
+    it says *"this base is a relative path and the strict grammar refused it"* -- ``./x.json``,
+    a segment holding a space or a ``+`` -- and the repository's own path rules permit such a
+    path, so the pre-issue-#146 closure had already attached a dependent to whatever was
+    declared there.  Dropping the edge would be a new silent under-verification, the exact
+    defect this change removes, so the base is resolved for identity through
+    ``architecture.schema_reference_identity_path``: the same fold the old closure used, now
+    single-sourced.  A declined path that names no declared contract yields no edge and raises
+    nothing, which is AC-004: there was never a dependent to lose.
+    """
+    candidates: set[str] = set()
+    failures: list[str] = []
+    for precedence in (SCHEMA_REFERENCE_PATH_FIRST, SCHEMA_REFERENCE_ID_FIRST):
+        target_path, failure = schema_reference_target_path(
+            referrer_path,
+            reference_base,
+            paths_by_schema_id,
+            declared_paths,
+            precedence=precedence,
+        )
+        if target_path is not None:
+            candidates.add(target_path)
+            continue
+        if failure in SCHEMA_REFERENCE_UNRESOLVED:
+            continue
+        if failure == SCHEMA_REFERENCE_UNSAFE:
+            identity_path, _reason = schema_reference_identity_path(
+                referrer_path, reference_base
+            )
+            if identity_path is not None and identity_path in declared_paths:
+                candidates.add(identity_path)
+            continue
+        failures.append(failure)
+    if SCHEMA_REFERENCE_AMBIGUOUS in failures:
+        signals.append(
+            _unattributable_reference_detail(
+                SCHEMA_REFERENCE_AMBIGUOUS, reference_base, referrer_path, paths_by_schema_id
+            )
+        )
+    if not candidates and failures:
+        for failure in failures:
+            if failure == SCHEMA_REFERENCE_AMBIGUOUS and not fail_closed:
+                continue
+            raise ArchitectureError(
+                _unattributable_reference_detail(
+                    failure, reference_base, referrer_path, paths_by_schema_id
+                ),
+                code="contract",
+            )
+    return candidates
+
+
 def _external_contract_reference_paths(
     record: Any,
     paths_by_schema_id: dict[str, list[str]],
     declared_paths: frozenset[str],
+    *,
+    fail_closed: bool,
+    signals: list[str],
 ) -> set[str]:
     """Declared contract paths this record's ``$ref`` values point at.
 
     The reference grammar is the comparator's: ``architecture.schema_reference_target_path``
     is the only place a ``$ref`` base is interpreted, so a dependent that references a
     contract by ``$id`` or through ``file#/$defs/...`` cannot be dropped from the closure.
-    Reverse edges use declared-path precedence, unlike the comparator: a base that is both
-    another contract's path and some contract's ``$id`` must attach the dependent to the
-    contract it really references rather than to a claimant that shadows the path.
-    A reference that does not name a declared contract yields no edge; an ``$id`` that two
-    declared contracts share cannot be resolved without guessing, so it fails closed.
+    Reverse edges take the **union** of the declared-path and declared-``$id`` candidates
+    rather than one table's precedence: for dependency identity the safe answer is to
+    re-verify every contract a ``$ref`` can name, which can only ever widen the re-verified
+    set.  Substituting one table for the other is what leaves a hole: a path-first closure
+    that drops the ``$id`` claimant stops re-verifying a referrer whose verdict the
+    comparator computes from that claimant's document.  The comparator itself is untouched
+    and stays ``$id``-first (FORBID-003; issue #147 owns that decision).
+    A reference that does not name a declared contract yields no edge; a reference two
+    declared contracts collide over is reported through ``signals`` and aborts the run only
+    where ``fail_closed`` says the colliding state is the one being certified.  An edge is
+    never lost because the strict grammar refused a relative path the repository could declare
+    -- that case is resolved for identity, see ``_reference_identity_candidates`` (finding C2).
+    The returned set may name the referrer's own path; a self reference is not a dependency and
+    is excluded where the reverse map is built (finding C3).
     """
     references: set[str] = set()
     pending: list[Any] = [record.document]
@@ -966,17 +1157,16 @@ def _external_contract_reference_paths(
             if isinstance(reference, str) and not reference.startswith("#"):
                 reference_base, _fragment = schema_reference_parts(reference)
                 if reference_base:
-                    target_path, failure = schema_reference_target_path(
-                        record.path,
-                        reference_base,
-                        paths_by_schema_id,
-                        declared_paths,
-                        precedence=SCHEMA_REFERENCE_PATH_FIRST,
+                    references.update(
+                        _reference_identity_candidates(
+                            record.path,
+                            reference_base,
+                            paths_by_schema_id,
+                            declared_paths,
+                            fail_closed=fail_closed,
+                            signals=signals,
+                        )
                     )
-                    if target_path is not None:
-                        references.add(target_path)
-                    elif failure not in SCHEMA_REFERENCE_UNRESOLVED:
-                        raise ArchitectureError(failure, code="contract")
             pending.extend(value.values())
         elif isinstance(value, list):
             pending.extend(value)
