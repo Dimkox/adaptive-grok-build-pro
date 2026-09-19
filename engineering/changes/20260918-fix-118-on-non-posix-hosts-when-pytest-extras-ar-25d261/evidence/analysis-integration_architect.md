@@ -1,0 +1,29 @@
+# Integration analysis — issue #118
+
+## Invocation and current failure
+
+- `.grok-stack/adaptive_grok/verification.py::_python()` reads `.grok-test-runner.json` / `GROK_TEST_WORKERS` via `selected_workers()`. When opt-in is absent it preserves the legacy path; when opt-in is present it calls `run_core_tests(root, mode, workers)` and reports the resulting command, actual worker count, and `core.versions` in the `python-unittest`/`coverage` check evidence.
+- `selected_workers()` validates the closed schema (`schema_version: 1`, `workers` only), accepts explicit integers 0..64 or `"auto"`, and lets a validated environment override win. `workers=0` forces serial mode; `"auto"` is bounded to 28 and already resolves to zero on non-POSIX; the child-process flag also forces zero. An explicit positive integer stays positive on Windows.
+- `run_core_tests()` calls `select_engine()` before checking tool versions or constructing the command. `select_engine()` currently treats importability of pytest/xdist/(pytest-cov when measured) as the only capability gate. Therefore an explicit positive request with importable extras stays positive, `_pytest_command()` then raises `RunnerError('parallel process cleanup requires POSIX; use GROK_TEST_WORKERS=0')`, and `_python()` records a failed `python-unittest` plus failed measured coverage. This is the precise gap; it is a selection-order/capability mismatch, not an xdist test failure.
+- The same condition reaches `run_trust_tests()` and the `python_test_runner --suite trust-ci` CLI: both select a positive worker count from dependency importability, then call `_pytest_command()`, which rejects Windows. The CLI's printed engine is computed with `select_engine()` and should continue to disclose the serial degrade accurately after the capability predicate is corrected.
+
+## Dispatch semantics and compatibility boundary
+
+- Positive workers plus all required dependencies and POSIX process-group support should continue to choose `pytest-xdist` (Core uses `worksteal`; Trust CI uses `loadfile`, keeping each file on one worker). Dependency pins remain strict whenever the parallel engine is actually selected; an installed but wrong-version parallel engine must still fail before tests, with no silent retry.
+- Positive workers without an importable parallel engine already choose one serial unittest pass with engine `unittest-degraded`. The reported backend for Core currently derives from actual `core.workers` (`0` means unittest), while the detailed versions JSON carries `engine`; Trust CLI prints the engine directly. Preserve this distinction and ensure no Windows-degraded execution is described as xdist.
+- If platform capability prevents xdist, engine selection should happen before `_tool_versions()` and command construction, exactly like the existing missing-dependency degrade. For measured `pr`/`release` Core runs this still requires the pinned `coverage` tool and `.coveragerc`, runs unittest under coverage, and qualifies current-run coverage as before. Fast Core and Trust CI serial runs do not acquire pytest dependencies. This keeps the existing runner contract and avoids installing or invoking pytest on Windows just because optional modules happen to be present.
+- No change is needed to config keys, worker counts, public API/schema contracts, process cleanup, or POSIX parallel behavior. The safe boundary is to make the parallel-engine capability decision include the cleanup prerequisite already enforced by `_pytest_command()`, not to remove that guard or add a broad catch-and-retry around command execution (which could mask unrelated configuration, pin, launch, or test failures).
+
+## Test and downstream coverage
+
+- Existing tests cover the worker schema/override/child behavior, CPU-bounded `auto`, missing-engine degradation, strict pins when the engine is importable, Core PR coverage, and Trust CLI routing. They do not combine a positive explicit worker request, non-POSIX, and importable pinned extras; the issue's reproduction occupies this missing matrix cell.
+- Add a Windows-emulated test that patches a narrow platform-capability seam or predicate rather than mutating the global `os.name` module: changing `os.name` can alter `pathlib`'s concrete path type and contaminate unrelated subprocess/test-fixture behavior. Force parallel modules available, then exercise `run_core_tests()` or `_python()` with positive workers and assert one sequential pass, success, and `unittest-degraded` disclosure. For measured mode, also assert current coverage is produced and evaluated. Exercise the Trust path/CLI too, or assert the shared selector returns zero plus the degraded engine so its downstream command cannot reach `_pytest_command()`.
+- Keep a companion POSIX-capable case to prove positive workers still select xdist when extras are available. Existing no-module and bad-pin tests should remain unchanged and green. Since CI here may run only on POSIX, the emulation test proves decision/dispatch behavior, not execution on a real Windows host; record that limit rather than claiming native Windows validation.
+
+## Evidence examined
+
+- `.grok-stack/adaptive_grok/python_test_runner.py`: `selected_workers`, `parallel_engine_ready`, `select_engine`, `_pytest_command`, `run_core_tests`, `run_trust_tests`, and CLI `main`.
+- `.grok-stack/adaptive_grok/verification.py::_python()` (runner dispatch, result labels, and coverage handling).
+- `tests/test_python_test_runner.py` (configuration, degradation, pin, Trust CLI, and coverage cases).
+- `.grok-stack/config/python-test-requirements.txt` (pinned optional runner/coverage tools).
+- Prior delivered runner contract: `engineering/changes/20260916-implement-capability-selected-engine-sharding-fo-8ed0fb/change-spec.yaml` and its test plan; that contract explicitly treats POSIX-only parallel execution and truthful degradation as intended semantics.

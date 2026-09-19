@@ -1,0 +1,42 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Non-POSIX with explicit positive workers and importable parallel modules selects the disclosed sequential unittest backend before launch.","evidence":[{"test":"tests/test_python_test_runner.py"}]},
+    {"id":"AC-002","statement":"Both Core and Trust CI runner paths use the non-POSIX sequential fallback without raising the POSIX process-cleanup error.","evidence":[{"test":"tests/test_python_test_runner.py"}]},
+    {"id":"AC-003","statement":"POSIX parallel selection, strict dependency pins, auto workers and zero workers retain existing behavior.","evidence":[{"test":"tests/test_python_test_runner.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-fix-118-on-non-posix-hosts-when-pytest-extras-ar-25d261",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Do not claim xdist or parallel execution when the selected backend is sequential.","evidence":[{"test":"tests/test_python_test_runner.py"}]},
+    {"id":"FORBID-002","statement":"Do not weaken pinned dependency checks for a platform that selects the parallel backend.","evidence":[{"test":"tests/test_python_test_runner.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Engine selection and reported workers describe the backend actually executed.","evidence":[{"test":"tests/test_python_test_runner.py"}]},
+    {"id":"INV-002","statement":"Parallel process execution is selected only when required modules and safe process cleanup are both available.","evidence":[{"test":"tests/test_python_test_runner.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix #118: on non-POSIX hosts when pytest extras are installed and workers is an explicit integer, capability-selected grok_verify must degrade to sequential test execution instead of failing; add a Windows-emulated regression test.",
+    "success_metric": "All non-POSIX explicit-positive-worker requests degrade before process launch and both runner entry points pass regression tests.",
+    "target": "AC-001 through AC-003 pass with INV-001/002 preserved and no forbidden outcome."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
