@@ -75,6 +75,37 @@ GROK_HTTP_DECODER_DIGEST = hashlib.sha256(
 ).hexdigest()
 
 
+_DRAFT_FAILURE_REASONS = {
+    "invalid_json": "draft_invalid_json",
+    "json_too_large": "draft_json_too_large",
+    "duplicate_json_key": "draft_duplicate_json_key",
+    "nonfinite_json": "draft_nonfinite_json",
+    "invalid_json_object": "draft_invalid_json_object",
+    "draft_fields": "draft_fields",
+    "sections": "draft_sections",
+    "locale": "draft_locale",
+    "direction": "draft_direction",
+    "invalid_object": "draft_invalid_object",
+    "unknown_fields": "draft_unknown_fields",
+    "missing_fields": "draft_missing_fields",
+    "section_kind": "draft_section_kind",
+    "section_items": "draft_section_items",
+    "invalid_text": "draft_invalid_text",
+    "unsafe_content": "draft_unsafe_content",
+    "cta_path": "draft_cta_path",
+}
+
+
+def _draft_failure_reason(error: Exception) -> str:
+    # Contract details can contain model-supplied keys; only emit fixed local codes.
+    if isinstance(error, LandingContractError) and type(error.code) is str:
+        return _DRAFT_FAILURE_REASONS.get(error.code, "draft_validation_failed")
+    if (isinstance(error, LandingProviderError) and len(error.args) == 1
+            and type(error.args[0]) is str and error.args[0] == "draft_fields"):
+        return "draft_fields"
+    return "draft_validation_failed"
+
+
 @dataclass(frozen=True)
 class HttpLandingProfile:
     provider_id: str
@@ -292,9 +323,9 @@ class HttpLandingNormalizer:
             spec = decode_landing_draft(
                 request.source.input_digest, result.stdout, maximum=MAX_PROVIDER_OUTPUT_BYTES
             )
-        except (LandingProviderError, LandingContractError, OSError, ValueError):
+        except (LandingProviderError, LandingContractError, OSError, ValueError) as exc:
             return self._terminal(
-                request, "needs_human", "http_outcome_unusable", started, request_digest,
+                request, "needs_human", _draft_failure_reason(exc), started, request_digest,
                 category="draft", dispatched=True, result=result,
             )
         evidence = self._evidence(
@@ -323,9 +354,11 @@ class HttpLandingNormalizer:
 
     def _terminal(self, request, state, reason, started, request_digest, *,
                   category="input", dispatched=False, http_status=None, result=None):
+        # Only the post-validation draft failure path supplies a completed result.
+        response_digest = (result.response_digest if result is not None else
+                           landing_digest("provider-response", {"state": state, "reason_code": reason}))
         evidence = self._evidence(
-            request, started, request_digest,
-            landing_digest("provider-response", {"state": state, "reason_code": reason}),
+            request, started, request_digest, response_digest,
             0, 0, "rejected" if state == "rejected" else "provider_unavailable",
         )
         observation = LandingProviderObservation(

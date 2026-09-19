@@ -1,0 +1,53 @@
+{
+  "change_id": "20260919-fix-issue-152-in-the-landing-provider-normalizer-814ed9",
+  "created_at": "2026-09-19T18:31:22+00:00",
+  "history": [
+    {
+      "at": "2026-09-19T18:31:22+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-19T18:38:07+00:00",
+      "from": "draft",
+      "reason": "Existing-field repair and offline regression coverage recorded from five route-selected analyses.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-19T18:38:07+00:00",
+      "from": "scoped",
+      "reason": "User says continue fixing the Qwen blocker; no named human gate applies to this bounded backward-compatible bugfix.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-19T18:38:07+00:00",
+      "from": "approved",
+      "reason": "Assign route-selected data_implementer as sole application/test writer.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-19T18:49:37+00:00",
+      "from": "implementing",
+      "reason": "Bounded repair frozen; red/green reproduction and 92 affected offline tests passed; controller verification starts next.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T19:00:04+00:00",
+      "from": "verifying",
+      "reason": "All product checks passed; only stale local origin/HEAD was repaired and the Git check revalidated on an identical tree without repeating tests.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T19:06:47+00:00",
+      "from": "reviewing",
+      "reason": "Independent code, test and data reviews pass on the frozen verified product hashes; source delivery still requires exact-head external Trust CI.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "814ed9c452cd",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix issue 152 in the landing provider normalizer: retain a bounded allowlisted draft validator diagnostic and the validated real provider response digest when a completed response fails draft decoding. Preserve needs_human rejection, reported usage, historical SQLite job records and existing API/receipt compatibility. Add offline regression tests including distinct decoder failures, sensitive unknown exceptions and durable job/API round-trip. No provider call or deployment during implementation.",
+  "updated_at": "2026-09-19T19:06:47+00:00"
+}

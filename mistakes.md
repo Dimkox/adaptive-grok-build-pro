@@ -1329,3 +1329,11 @@ as unreviewed new code: list every sentence it adds and name the command behind 
 closed. When overwriting another lane's
 text, prove the replacement against the source file before deleting the original; if it cannot be proven, keep the
 lane's value. Same-pass additions get the *stricter* review, not the looser one, because nobody has read them yet.
+
+### 2026-09-19 — Refresh origin/HEAD after repointing a local clone
+
+The operational clone retained origin/HEAD from its former local remote, so its linked implementation worktree pointed to a deleted release branch even after fetching GitHub. The full verifier completed every test successfully but correctly rejected that unresolved PR target; `git remote set-head origin -a` repaired the local reference and the unchanged-tree Git check passed without rerunning tests. Refresh this reference and run the cheap Git target check before a long verifier when repointing a clone.
+
+### 2026-09-19 — Keep orchestration helpers outside the source checkout
+
+An ignored Python helper under .grok-stack/runtime was still discovered by the architecture source inventory and correctly rejected as unowned source. Move task-only orchestration scripts to an external temporary path rather than adding an architecture exception; repository evidence can stay in its intended package.

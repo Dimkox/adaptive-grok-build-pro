@@ -1,0 +1,135 @@
+{
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960,pr-target:26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960"
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "1 specs checked; exempt=False"
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass"
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current"
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured"
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets"
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "0 contracts checked"
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings"
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=12 exit=0 seconds=87.738"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=12 exit=0 seconds=1.456"
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable"
+    }
+  ],
+  "command": "PATH=/var/tmp/adaptive-issue152-tools/bin:$PATH GROK_TEST_WORKERS=12 PYTHONDONTWRITEBYTECODE=1 python3 scripts/grok_verify.py --mode pr --json",
+  "external_trust_ci_authority": false,
+  "product_files": {
+    "factory/src/adaptive_factory/landing_http.py": "21c03d67fe6f2db1126238397d59e4fec5d38c17de6a82de2eb22d565ca01ddc",
+    "factory/tests/fixtures/landing-legacy-draft-attempt.json": "55b684d1a6603b2a4da3e9ef7ecda75656e96d004e9e0f4e1d36837ef3a11d1c",
+    "factory/tests/test_landing_failover_backend.py": "77628b032986c6643aa27bb00392204f1de6244a16f0f972a1714fe8bc308ad7",
+    "factory/tests/test_landing_failover_providers.py": "c5ced5327e4608c8656bbdb3f2e96faa4523820c2762589aa80bb7da015d3841",
+    "factory/tests/test_landing_live_executors.py": "107a4da22510b43f658524d88484bf46d6f3626b232a383a0ff165bc700996f8"
+  },
+  "provenance": {
+    "full_invocation_exit_code": 1,
+    "full_tests_repeated": false,
+    "identical_changed_file_inventory": true,
+    "identical_tree_fingerprint": true,
+    "kind": "targeted_failed_check_repair",
+    "original_report_sha256": "bf5e31b8ee6f5dc65c017c37d14903acf4e682da72f8b17f02bf835342b65f86",
+    "rechecked_only": "git-diff-check via existing verifier functions",
+    "repair": "git remote set-head origin -a updated stale local origin/HEAD to GitHub main"
+  },
+  "provider_calls": 0,
+  "route_id": "814ed9c452cd",
+  "status": "pass_after_targeted_local_git_ref_repair",
+  "test_results": {
+    "affected_suites": {
+      "run": 92,
+      "seconds": 4.599
+    },
+    "core": {
+      "passed": 785,
+      "seconds": 87.738,
+      "subtests_passed": 1098,
+      "workers": 12
+    },
+    "coverage_percent": 80,
+    "factory_postgres_exit": {
+      "actual_restarts": 2,
+      "run": 774,
+      "seconds": 346.578,
+      "skipped": 2
+    },
+    "factory_unit": {
+      "run": 51,
+      "seconds": 0.109
+    },
+    "pilot": {
+      "run": 44,
+      "seconds": 1.606,
+      "skipped": 1
+    }
+  },
+  "verified_tree_fingerprint": "2c3d1ec45d2ec2b56b5622a98ca524bb0040030231be2eb1e429702fb4633b96"
+}
