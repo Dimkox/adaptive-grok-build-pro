@@ -1,8 +1,8 @@
 # Independent Security Review — #126
 
-**Verdict: PASS**  
-**Reviewed route:** `e405d570fc4f`  
-**Reviewed change:** `20260917-enforce-and-report-route-approval-gates-126-e405d5`  
+**Verdict: PASS**
+**Reviewed route:** `e405d570fc4f`
+**Reviewed change:** `20260917-enforce-and-report-route-approval-gates-126-e405d5`
 **Scope:** current implementation diff, gate decision artifact handling, route/package binding, grant creation and consumption, production and external-write enforcement, release preparation, and Trust CI boundary.
 
 ## Findings

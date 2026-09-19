@@ -35,4 +35,3 @@ For `scope_and_design_approval`, map the gate to implementation authorization (w
 6. `tests/test_repo_router.py`: preserve current route classification assertions and ensure known gate IDs only are emitted.
 
 Keep existing tests that prove exact local grants and external Trust CI are separate. Avoid changing deployed Trust CI source, policy, holdout bundle, or signed approval protocol as part of this issue.
-
