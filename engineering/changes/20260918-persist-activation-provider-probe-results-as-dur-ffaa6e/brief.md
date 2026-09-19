@@ -2,9 +2,9 @@
 
 > Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown explains context and cannot override typed requirements.
 
-Change ID: `20260918-persist-activation-provider-probe-results-as-dur-ffaa6e`  
-Route ID: `ffaa6e006773`  
-Risk: yellow; API, data, security  
+Change ID: `20260918-persist-activation-provider-probe-results-as-dur-ffaa6e`
+Route ID: `ffaa6e006773`
+Risk: yellow; API, data, security
 Historical boundary decision: future probes become durable; the old 769/191 response remains attested only.
 
 ## Problem and outcome
