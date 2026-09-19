@@ -18,12 +18,15 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 from adaptive_grok.doctor import run_doctor
 from adaptive_grok import architecture as architecture_module
 from adaptive_grok import receipts as receipts_module
+from adaptive_grok import util as util_module
 from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
 from adaptive_grok.state import get_active_change, set_active_route
 from adaptive_grok.verification import (
     CheckResult,
+    GitRangeSelection,
+    _git_diff_check,
     _change_specs,
     _contracts,
     _governance_check,
@@ -352,6 +355,56 @@ class VerificationTests(unittest.TestCase):
             }
             self.assertIn(('route', route_base, route_base), checked)
             self.assertIn(('pr-target', merge_base, target), checked)
+
+    def test_diff_check_keeps_non_utf8_filename_failure_serializable(self) -> None:
+        if os.name != 'posix':
+            self.skipTest('raw-byte POSIX filenames are required')
+        with project_copy(git=True) as root:
+            raw_path = os.fsencode(root) + b'/invalid-\xff-name.txt'
+            try:
+                descriptor = os.open(
+                    raw_path,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                )
+            except (OSError, ValueError) as exc:
+                self.skipTest(f'filesystem cannot represent an invalid UTF-8 filename: {exc}')
+            with os.fdopen(descriptor, 'wb') as handle:
+                handle.write(b'trailing whitespace  \n')
+            subprocess.run(['git', 'config', 'core.quotePath', 'false'], cwd=root, check=True)
+            subprocess.run(['git', 'add', '--all'], cwd=root, check=True)
+
+            check = _git_diff_check(root, 'fast', GitRangeSelection())
+            serialized = json.dumps(check.to_dict(), ensure_ascii=True)
+
+            self.assertEqual(check.status, 'fail')
+            self.assertIn('diff-check-failed', serialized)
+            failure = next(item for item in check.details if item.get('code') == 'diff-check-failed')
+            self.assertRegex(failure['message'], r'exit=[1-9][0-9]*:')
+            self.assertIn(r'\xff', check.stdout + check.stderr)
+            self.assertNotIn('\\udcff', serialized.lower())
+
+    def test_run_decode_opt_in_preserves_strict_default_and_timeout_contract(self) -> None:
+        completed = subprocess.CompletedProcess(['cmd'], 0, 'ordinary output', '')
+        with patch.object(util_module.subprocess, 'run', return_value=completed) as invoke:
+            default_result = util_module.run(['cmd'], cwd=ROOT)
+        self.assertEqual(default_result.stdout, 'ordinary output')
+        self.assertNotIn('encoding', invoke.call_args.kwargs)
+        self.assertNotIn('errors', invoke.call_args.kwargs)
+
+        timeout = subprocess.TimeoutExpired(['cmd'], 1, output=b'partial-\xff', stderr=b'err-\xfe')
+        with patch.object(util_module.subprocess, 'run', side_effect=timeout):
+            timed_out = util_module.run(
+                ['cmd'], cwd=ROOT, encoding='utf-8', errors='backslashreplace'
+            )
+        self.assertEqual(timed_out.returncode, 124)
+        self.assertEqual(timed_out.stdout, r'partial-\xff')
+        self.assertEqual(timed_out.stderr, r'err-\xfe')
+
+        with patch.object(util_module.subprocess, 'run', side_effect=FileNotFoundError):
+            missing = util_module.run(['missing'], cwd=ROOT, encoding='utf-8', errors='backslashreplace')
+        self.assertEqual(missing.returncode, 127)
+        self.assertEqual(missing.stderr, 'command not found: missing')
 
     def test_pr_changed_file_inventory_unions_route_and_local_target_ranges(self) -> None:
         contract = 'engineering/contracts/schemas/pr-only.schema.json'

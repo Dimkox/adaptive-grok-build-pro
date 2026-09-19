@@ -624,7 +624,13 @@ def _git_diff_check(
     output: list[str] = []
     errors: list[str] = []
     for label, command in checks:
-        proc = run(command, cwd=root, timeout=60)
+        proc = run(
+            command,
+            cwd=root,
+            timeout=60,
+            encoding='utf-8',
+            errors='backslashreplace',
+        )
         if proc.stdout:
             output.append(f'[{label}]\n{proc.stdout.rstrip()}')
         if proc.stderr:

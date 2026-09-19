@@ -1,0 +1,29 @@
+{
+  "change_id": "20260918-fix-issue-129-keep-verifier-diff-diagnostics-saf-d0ef1f",
+  "created_at": "2026-09-18T18:07:39+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T18:07:39+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T18:12:36+00:00",
+      "from": "draft",
+      "reason": "All route-selected analyses are complete; bounded implementation design and typed AC/INV/FORBID evidence are recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T18:12:37+00:00",
+      "from": "scoped",
+      "reason": "Approve scoped local diagnostic decoding and regression test; no human gates.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "d0ef1f25a526",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Fix issue #129: keep verifier diff diagnostics safe for non-UTF-8 repository paths",
+  "updated_at": "2026-09-18T18:12:37+00:00"
+}
