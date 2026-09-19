@@ -107,3 +107,63 @@ Private `--local` clone + two detached worktrees (`2f66ba6`, `d871ea6`); both cl
 6. Not re-litigated by me: the `grok_architecture.py fitness` gate rows stay attributed to the executing lane,
    which the controller now says explicitly, and `CONTRACT-ADAPTIVE-DEMO-OPENAPI`'s "not a construct gap" is true
    under its declared policy but incomplete — under `bidirectional` it *also* hits `unsupported_openapi_construct`.
+
+## Delta re-check on 0b6299b
+
+RE-REVIEW VERDICT: FAIL
+
+Scope: the five deltas and every line `0b6299b` touched; nothing re-litigated. Method: private `chmod 700` clones
+at `2f66ba6`/`d871ea6`, one process per tree; Blocks A/B/F extracted verbatim from `measurement-harness.md`;
+`_openapi_schemas`/`_security_schemes` instrumented guard-by-guard to locate the real failing check.
+
+1. **Delta 1 — NOT CLOSED (blocking).** Every figure requested is true: `landing-dogfood.v1.json` root keys
+   `components`/`info`/`openapi`/`paths`, no `servers`, 56 `"$ref"`; `adaptive-demo.v1.json` has root `servers`;
+   record→path pairing in `architecture/system.yaml` is as cited, and instrumenting the comparator confirms
+   `ADAPTIVE-DEMO` is the record that trips the root-key whitelist (`architecture.py:2543`). But the cell sits under
+   a column headed **"carried by"**, and the `$ref` count is not the carrier. Measured: strip all 56 `$ref`
+   keys → still `unsupported_openapi_construct`; `factory-semantic.v1.json` carries exactly 56 refs with the same
+   root keys and **is** analyzable at head; the first guard that actually fails is `_security_schemes`'
+   `components` whitelist (`architecture.py:2431`) because `components` also holds `parameters`/`headers`/
+   `responses`, and with those removed a second construct still fails at `architecture.py:2665`
+   (`_supported_parameters`). Round two failed this cell for naming a false carrier; `0b6299b` replaced it with
+   true facts naming no carrier, and the block index still has no row for it (only `ADAPTIVE-DEMO`'s "policy mode,
+   not a construct").
+2. **Delta 2 — CLOSED.** Block F really prints `mistakes.md numstat d871ea6...HEAD (added deleted) = 78 0` (and
+   `78 0` still holds at `0b6299b`); block A really prints the analyzability numbers; `ls evidence/analysis-*.md |
+   wc -l` = 5; no harness block prints a report count. Nit: the paragraph holds no analyzability figure, so "the
+   analyzability numbers come from block A" gives provenance for a number that is not in the paragraph.
+3. **Delta 3 — CLOSED.** Independent set-diff of my two sweeps: unlocked 25 all-kinds / 24 json_schema, base
+   blocked 26 / 29, head 2 / 4 — and exactly **3** unlocked records contain a literal `anyOf`
+   (LANDING-ATTEMPT-STATUS-V1, LANDING-FAILOVER-RESULT-V1, LANDING-PROVIDER-OBSERVATION-V1), the same 3 that flip
+   under the `anyOf` ablation. Nit: necessity is **4** of 25 (block B's own all-kinds number), since
+   `LANDING-FAILOVER-OPENAPI-V1` needs `anyOf` through a `$ref` while containing none — "necessary for those three
+   … the other 22" is short by one.
+4. **Delta 4 — annotated in both places; the test is real.** `git cat-file -t 00709f4` and `0284d33` both fail
+   here *and* in the primary repo (this tree is a linked worktree sharing its object DB). Two wording defects:
+   "resolve as objects in no repository" is a universal negative nothing here measures (by the package's own
+   account they existed in the throwaway clones), and the new Table C note says block C "re-derives the in-process
+   cells behind them" though block C's recorded output covers only 2 of the 3 contracts Table C names — it has no
+   `LANDING-FAILOVER-OPENAPI-V1` section; line 213's "all three contracts" is the same over-cite (pre-existing).
+5. **Delta 5 — referents all check out; one false clause.** `4c524b83df59`'s package really holds `brief.md`
+   (Outcome, its line 17, verbatim), `requirements.md` AC-005 = "`prefixItems` … remains `unsupported`" (a genuine
+   fail-closed disclosure, so the annotated sentence is true under this referent), and `review-test.md` /
+   `review-security.md` / `verification-attempt.md`, each really containing its quoted fragment and all three
+   really quoted in the annotated section. Both lane files are pure insertions (`9 0`, `8 0`) → lane text
+   byte-unchanged. Block A yields **21/50** at base on my own run, 46/50 at head with exactly the four names
+   listed. **False:** "this audit package holds its own reviewer reports under the same names" — it holds only
+   `evidence/review-code.md` (route `59527d5a28f8` requires `verification` + `code_review`); no `review-test.md`,
+   `review-security.md` or `verification-attempt.md` exists in it, and round two's item 3 said the opposite.
+
+Your question — remaining descriptive cells with no measurement or block behind them:
+
+* Line 37: the delta-1 carrier above — true facts, no named carrier, no block, absent from the block index.
+* Lines 35–36 (`prefixItems`; "urn-`$ref` cascade into `prefixItems`"): attributed to a lane report, not a block.
+  They survive my check (1 literal `prefixItems` at `$/properties/instructions`; READY-BUNDLE has none of its own
+  and does carry the two `urn:adaptive-factory:m7:` refs) but are weaker than written — whitelisting `prefixItems`
+  alone leaves **both** records `unsupported_schema_keyword`, so it is a trigger, not the whole carrier.
+* Lines 41–43: "necessary for those three … the other 22" (necessity is 4).
+* `analysis-ai_architect.md` pre-existing note "the fail-closed disclosure the agent meant is now AC-002/AC-003":
+  in this package AC-002 is "the record says plainly what #133 fixed" and AC-003 is "superseded tables are marked",
+  neither a comparator fail-closed disclosure — and it now collides with the new annotation assigning AC-005 to
+  `4c524b`'s `requirements.md`.
+* Same annotation's "copied into": both lane files differ from `4c524b`'s by 205 and 209 lines — rewritten.

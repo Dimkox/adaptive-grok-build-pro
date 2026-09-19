@@ -141,7 +141,8 @@ Yes for #104's stated defect (object-valued enum members freezing fact-identity 
 package named (capability-contract edit → `unsupported_openapi_construct` through the failover OpenAPI). Named
 > [ANNOTATION added by the controller] "the package" here and below means route `4c524b83df59`'s change package
 > (`engineering/changes/20260918-…-4c524b/`), whose `review-test.md` / `review-security.md` /
-> `verification-attempt.md` are quoted; this audit package holds its own reviewer reports under the same names.
+> `verification-attempt.md` are quoted. This audit package holds only `review-code.md`: its route asks for
+> `verification` + `code_review`, so the same-name files are distinct artifacts, not copies.
 
 residuals, quoted from the package: review-test.md — "One non-blocking precision gap remains in the concurrent nested
 `date-time` plus length-constraint case: the test accepts either `incompatible` or `unsupported` for both directions…

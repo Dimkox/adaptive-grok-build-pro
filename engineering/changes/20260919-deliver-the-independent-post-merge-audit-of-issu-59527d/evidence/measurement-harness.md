@@ -822,6 +822,39 @@ while its title and brief named one. The last two lines are the CAR-5 reachabili
 values, none equal to a declared path, and 0 of the 86 cross-file `$ref` bases name both, so the `$id` shadowing
 defect is latent, not live.
 
+## Block G — OpenAPI guard instrumentation and single-removal ablation
+
+Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,
+`_supported_parameters`, `_content_schemas` and `_unsupported_schema`, runs the identity comparison for the declared
+record, then applies each single removal and prints the identity verdict.
+
+```
+python3 block_g_openapi_guard.py <repo>
+```
+
+Recorded output at `d871ea6` (declared inventory = 50):
+
+```
+verdict: unsupported ('unsupported_openapi_construct',)
+first False: ('_has_only_keys', False, "{'securitySchemes': {'bearerAuth': {'type': 'http', 'scheme'...")
+minimal set not reachable by single removals; per-removal status:
+  remove components.securitySchemes -> unsupported
+  remove components.parameters      -> unsupported
+  remove components.headers         -> unsupported
+  remove components.responses       -> unsupported
+  remove components.schemas.Job     -> unsupported
+  remove root:security              -> unsupported
+  remove root:servers               -> unsupported
+  remove paths -> {}                -> unsupported
+  remove components -> schemas only -> unsupported
+  MINIMAL removals for compatibility: none found
+```
+
+Interpretation bound: this names the guard that refuses the document, not an exhaustive carrier. A column claiming
+"carried by" a single construct would be wrong for these two records, which is how the previous revision failed.
+
+---
+
 ## Block F — shared-document append-only and chronology check (reproduces the AC-004 / INV-001 wording)
 
 ```python

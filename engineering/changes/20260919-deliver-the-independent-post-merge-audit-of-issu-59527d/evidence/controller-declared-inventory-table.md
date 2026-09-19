@@ -32,13 +32,15 @@ Blocked at `d871ea6`, by name:
 
 | record | kind | reason | carried by |
 |---|---|---|---|
-| `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1` | json_schema | `unsupported_schema_keyword` | `prefixItems` (per `analysis-ai_architect.md` follow-up item 10) |
-| `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | json_schema | `unsupported_schema_keyword` | urn-`$ref` cascade into `prefixItems` (same source) |
-| `CONTRACT-FACTORY-LANDING-OPENAPI-V1` | openapi | `unsupported_openapi_construct` | measured: no `servers` key at root (`landing-dogfood.v1.json` root keys are `components`/`info`/`openapi`/`paths`) and 56 `$ref` occurrences; the root-`servers` shape belongs to `CONTRACT-ADAPTIVE-DEMO-OPENAPI` in the row below |
+| `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1` | json_schema | `unsupported_schema_keyword` | `prefixItems` is a **trigger, not the carrier** (measured in block G's method: whitelisting `prefixItems` alone leaves this record `unsupported_schema_keyword`); it also carries `urn:`-form `$ref`s that name no declared contract |
+| `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | json_schema | `unsupported_schema_keyword` | two `urn:adaptive-factory:m7:` `$ref`s resolving to nothing declared; the record has no `prefixItems` of its own (measured), so the `prefixItems` attribution inherited from the lane's item 10 does not apply here |
+| `CONTRACT-FACTORY-LANDING-OPENAPI-V1` | openapi | `unsupported_openapi_construct` | instrumented: the only predicate that returns False is `_has_only_keys` on a `components` map containing `securitySchemes: {bearerAuth: {type: http, scheme: bearer}}`. No single-removal ablation of this document reaches `compatible` (removing `securitySchemes`, `parameters`, `headers`, `responses`, `requestBodies`, `examples`, `root security`, `root servers`, each schema, `paths -> {}` and `components -> schemas only` all stay `unsupported`), so this is a **guard that fires**, not an exhaustive carrier |
 | `CONTRACT-ADAPTIVE-DEMO-OPENAPI` | openapi | `unsupported_compatibility_policy` | not a construct gap: `_compare_contracts_impl` admits `openapi` only under `bidirectional`/`exact`/`versioned_break` (`architecture.py:3105-3107`) while this record declares `producer_accepted_by_old` — blocked identically at both trees, so it is not part of the unlock delta |
 
 #133 unlocked **24** of the 38 declared `json_schema` contracts and **25** of 50 across all kinds. Exactly **3** of
-those unlocked records contain an `anyOf` (the three landing unions this audit was about), so `anyOf` was necessary for those three
+those unlocked records contain a literal `anyOf` (the three landing unions this audit was about), so `anyOf` was
+necessary for those three — and for **one more** (4 of 25 under the all-kinds ablation), because
+`CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1` contains no `anyOf` itself yet reaches one through a `$ref`
 and nowhere near sufficient for the other 22 — the wording is deliberately not "the three `anyOf` ones", which reads as if
 no unlocked contract used `anyOf` at all.
 
@@ -209,7 +211,8 @@ note about the collision it resolves.
 `contract_compatibility` reports `unsupported compatibility semantics` for `LANDING-ATTEMPT-STATUS-V1`,
 `LANDING-FAILOVER-OPENAPI-V1` and `LANDING-FAILOVER-RESULT-V1` on a title-in-branch probe, while capability-only
 edits no longer produce `unsupported_openapi_construct` anywhere. Those gate runs are recorded in
-`analysis-ai_architect.md` Table C, whose `00709f4`/`0284d33` identifiers are **probe commits in throwaway clones** and resolve as objects in no repository (verified with `git cat-file -t`); the in-process cells that drive them are
-reproduced here by block C (title-in-branch row, all three contracts) and block A (analyzability of the same
+`analysis-ai_architect.md` Table C, whose `00709f4`/`0284d33` identifiers are **probe commits in throwaway clones**; `git cat-file -t` fails for both in this repository (verified here and in the primary checkout), so they are not retrievable objects of this project; the in-process cells that drive them are
+reproduced here by block C (title-in-branch row for **two** of the three contracts named above — block C records no
+`LANDING-FAILOVER-OPENAPI-V1` section) and block A (analyzability of the same
 contracts at head). The gate command itself is **not** re-run in `measurement-harness.md` — it needs throwaway
 commits, so it stays attributed to the lane that executed it rather than promoted to a reproducible block.

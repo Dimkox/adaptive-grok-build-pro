@@ -104,11 +104,12 @@ bounded `anyOf` subset is incomplete — see follow-up (composition-proof residu
 > them exercises resolution order, which is a different mechanism from union inclusion — but the package's conclusion
 > is now "incompleteness **plus one latent false certification**", not "incompleteness only". One cross-reference in
 > the annotated passage has also drifted: this package's `requirements.md` AC-005 is the path-scrub criterion, and the
-> fail-closed disclosure the agent meant is now AC-002/AC-003.
+> fail-closed disclosure the agent meant is AC-005 of route `4c524b83df59`'s package; this package's AC-002 and
+> AC-003 govern honest recording of what #133 fixed and of superseded tables, not comparator fail-closed behaviour.
 
 > [ANNOTATION added by the controller] In this section "the package", `brief.md`, `requirements.md` AC-005 and
 > `review-test.md` refer to route `4c524b83df59`'s change package (`engineering/changes/20260918-…-4c524b/`), the
-> #104 delivery this lane audited — not to the audit package this file was copied into.
+> #104 delivery this lane audited — not to the audit package this file was carried forward from that lane and rewritten (205 lines differ from the 4c524b original).
 
 Nothing in the package overclaims past that: `brief.md` Outcome says "producing directionally sound results for
 supported `anyOf` unions instead of stopping at a false unsupported verdict", which Table B/C show is only
