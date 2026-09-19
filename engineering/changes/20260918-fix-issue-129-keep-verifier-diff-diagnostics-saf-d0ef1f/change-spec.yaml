@@ -1,0 +1,41 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"A non-UTF-8 byte echoed by `git diff --check` is rendered as safe diagnostic text and the verifier returns a normal git-diff-check result instead of raising UnicodeDecodeError.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"AC-002","statement":"When git diff --check reports trailing whitespace in a path containing undecodable bytes, the result remains fail based on the command exit status and retains the diagnostic in serializable CheckResult text.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"AC-003","statement":"Ordinary UTF-8 diagnostics and missing-command/timeout behavior remain compatible; timeout output is normalized to text under the selected decoding policy.","evidence":[{"test":"tests/test_verification_doctor.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-fix-issue-129-keep-verifier-diff-diagnostics-saf-d0ef1f",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"The shared `util.run()` default decoding contract must not become lossy for unrelated Git ref, SHA, and structured-output consumers; undecodable diagnostic bytes must not be ignored or turn a nonzero diff-check into a pass.","evidence":[{"test":"tests/test_verification_doctor.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Diff-check findings and pass/fail status remain determined by each subprocess exit code and existing range-selection findings, independent of diagnostic decoding.","evidence":[{"test":"tests/test_verification_doctor.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #129: git diff --check can emit non-UTF8 repository bytes; strict text decoding in util.run aborts grok_verify before any unit runs. Preserve binary evidence safely without crashing; add regression coverage.",
+    "success_metric": "A regression using an actual non-UTF-8 repository path proves verify returns a serializable failed CheckResult; all focused verification tests and the complete PR verifier pass on the frozen tree.",
+    "target": "git diff --check diagnostics tolerate invalid UTF-8 without changing exit-code semantics, ordinary output, or shared util.run defaults."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
