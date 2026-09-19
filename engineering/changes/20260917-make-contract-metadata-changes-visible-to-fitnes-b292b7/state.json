@@ -1,0 +1,53 @@
+{
+  "change_id": "20260917-make-contract-metadata-changes-visible-to-fitnes-b292b7",
+  "created_at": "2026-09-17T23:17:51+00:00",
+  "history": [
+    {
+      "at": "2026-09-17T23:17:51+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-17T23:22:09+00:00",
+      "from": "draft",
+      "reason": "Exact metadata-only and structural repros are recorded; option 1 is prepared as a separate review finding, pending required scope/design approval.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T08:04:09+00:00",
+      "from": "scoped",
+      "reason": "User approved treating root schema title/description changes as semantic; recorded bounded implementation and tests.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T08:04:09+00:00",
+      "from": "approved",
+      "reason": "Scope approved; route-selected implementation may begin.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T08:14:34+00:00",
+      "from": "implementing",
+      "reason": "Implementation and focused quality checks complete; full route verifier and independent reviews remain.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T00:13:39+00:00",
+      "from": "verifying",
+      "reason": "verification and five reviews current",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T00:13:39+00:00",
+      "from": "reviewing",
+      "reason": "All route evidence is current and independent reviews pass.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "b292b7fffd88",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Make contract metadata changes visible to fitness (#120)",
+  "updated_at": "2026-09-19T00:13:39+00:00"
+}

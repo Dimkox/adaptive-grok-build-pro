@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "change_id": "20260917-make-contract-metadata-changes-visible-to-fitnes-b292b7",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Registered JSON Schema document metadata edits produce an explicit review signal distinct from wire-shape compatibility.",
+    "success_metric": "Metadata-only, structural-only, combined, and unchanged controls yield their specified fitness findings.",
+    "target": "All four comparator control cases produce the expected stable result with no unqualified pass for metadata-only changes."
+  },
+  "risk": {"tier": "red", "domains": ["api", "security"]},
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A registered JSON Schema root title or description change emits stable changed_documentation review finding and is not reported as wire incompatibility.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Structural-only compatibility findings and directional behavior remain unchanged.",
+      "evidence": [{"receipt": "test_review"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Combined metadata and structural edits preserve both distinct findings, while unchanged documents retain existing pass behavior.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Existing event semantics, route schema, receipt schema, and Trust CI authority remain unchanged; OpenAPI behavior is not claimed.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Documentation metadata findings are not represented as wire-shape incompatibility.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "All pre-existing structural compatibility and unsupported-schema checks remain active.",
+      "evidence": [{"receipt": "test_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A metadata-only JSON Schema change passes with no finding or is mislabeled as structural incompatibility.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "test_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "The change weakens existing structural checks or modifies deployed Trust CI policy/holdout/approvals.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "contracts": {"openapi": [], "events": [], "json_schema": []},
+  "observability": [],
+  "approvals": {"required_scopes": ["scope_and_design_approval"]},
+  "rollback": {"strategy": "forward_fix", "maximum_steps": 1}
+}

@@ -1,0 +1,25 @@
+# Integration architecture analysis — issue #120
+
+## Trace of the current evidence path
+
+1. `architecture_diff._change_records()` projects each `ContractRecord` into `{id, kind, path, version, role, compatibility, document_digest}`. The contract file's byte digest therefore makes a metadata-only edit a `kind=contract, change=changed` item. `diff_architecture()` also binds changed paths/artifact digests and includes the change records in its diff digest.
+2. Both exact-commit and worktree materialization load the registered JSON document into `ContractRecord.document`; inventory records retain its SHA-256 and are bounded by the existing contract count, file, and JSON parsing limits (`architecture.contract_inventory`). Thus the information is available at comparison time; it is not lost at loading or diffing.
+3. `architecture_fitness._contract_compatibility()` selects those changed IDs and applies each matching `contract_policy`. For existing JSON Schema contracts it calls `architecture.compare_contracts()`. `_compare_schema_direction()` inspects schema/wire-shape keywords and `$id`/`$schema`, but not document-level `title` or `description`. A prose-only change consequently yields `CompatibilityResult(status="compatible", reasons=())`; the aggregate result says `pass` with no findings. Unsupported-schema and structural comparison guards remain separate.
+4. `verification._architecture_check()` calls the same diff/fitness code, makes non-pass fitness fail the architecture check, and commits fitness status/evidence digest, exact base, changed-tree inventory, architecture digests and generated diagram digests into its architecture evidence. The verifier then records a fingerprint-bound local verification receipt through the standard receipt path. Receipt and governance bindings digest the architecture evidence; they do not add semantic comparison of contract prose. `scripts/grok_verify.py` is only the CLI adapter to this flow. Local receipts are evidence, not merge authority.
+5. Existing tests cover directional structural breaks and architecture-model metadata (`system.yaml` contract `version`/`role`/`compatibility`, and signal description). They do not assert behavior for document-level JSON Schema `title`/`description`; the latter are accepted by the schema subset but omitted from `_compare_schema_direction`.
+
+## Stable representation and named semantics recommendation
+
+Select issue option 1 explicitly: **registered contract-document `title` and `description` are governed, reviewable metadata, while remaining distinct from wire-shape compatibility**. Emit a stable reason token `changed_documentation` for a changed value/presence of those top-level keys, and retain the ordinary directional structural comparison unchanged. For the current closed-contract gate, make that token a fitness finding requiring review (result `fail`) rather than claiming a structural incompatibility; structural-only changes must continue to produce the existing directional reasons. This is conservative because repository contract descriptions currently carry normative meaning; “informational pass” would still let a meaning-bearing rewrite through the gate without a required review. The reason token and finding are additive to the existing JSON result envelope, so no new status enum or receipt schema is needed.
+
+Compare only the explicitly governed top-level keys and their presence/value using canonical JSON equality; do not classify every unrecognized/extension field as governed metadata. Keep the existing schema preflight, supported-key checks, work budgets, reference handling, and structural comparator in force. Do not transform or strip metadata before structural validation. This preserves fail-closed structural behavior and avoids silently broadening the accepted schema vocabulary.
+
+## Required regression coverage
+
+- For a registered supported JSON Schema, change only `title`, only `description`, remove each, and change each value: assert `changed_documentation` is visible and the gate requires review.
+- Keep a structural control (e.g. optional output property / narrowed consumer constraint) asserting the current directional finding remains present; test combined metadata + structural edits retain both signals.
+- Unchanged document metadata remains compatible; unrelated unregistered contract remains out of scope.
+- Verify malformed/unsupported documents remain `unsupported` (never converted to a metadata pass), and exact-commit plus worktree paths agree.
+- Assert report/receipt digests bind the edited contract bytes and resulting fitness finding; do not change receipt or Trust CI authority semantics.
+
+The issue's experiment measured only `json_schema`; apply this recommendation only to that demonstrated format unless corresponding OpenAPI/event semantics receive their own evidence and explicit policy. The active change route has a scope/design gate, so the option 1 choice above is a recommendation for the authorized design decision, not evidence that another human/operator has already approved it.

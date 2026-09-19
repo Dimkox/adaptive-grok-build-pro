@@ -2603,6 +2603,20 @@ def _compare_contracts_impl(
     )
     if canonical_graphs_match:
         return CompatibilityResult("compatible", ())
+    documentation_changed = (
+        base.kind == "json_schema"
+        and base.id == head.id
+        and base.path == head.path
+        and not any(
+            document.get("$ref") is not None
+            for document in (base.document, head.document)
+        )
+        and any(
+            _canonical_bytes(base.document.get(key))
+            != _canonical_bytes(head.document.get(key))
+            for key in ("title", "description")
+        )
+    )
     if mode == "exact":
         return CompatibilityResult("incompatible", ("same_version_semantic_change",))
     if mode == "versioned_break":
@@ -2667,6 +2681,8 @@ def _compare_contracts_impl(
             return CompatibilityResult(
                 "unsupported", ("contract_comparison_work_limit",)
             )
+    if documentation_changed:
+        reasons.add("changed_documentation")
     return CompatibilityResult("incompatible" if reasons else "compatible", tuple(sorted(reasons)))
 
 
