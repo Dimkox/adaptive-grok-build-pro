@@ -19,4 +19,4 @@
 
 ## Manual checks
 
-- 
+-
