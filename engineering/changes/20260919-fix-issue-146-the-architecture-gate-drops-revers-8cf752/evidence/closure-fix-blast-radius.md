@@ -18,9 +18,14 @@ point at the same contract:
 
 | edited target | newly re-verified dependent | dependent verdict | effect |
 |---|---|---|---|
-| `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1` | `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | `unsupported_schema_keyword` | **new hard gate failure** on an untouched contract |
+| `CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1` | `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | `unsupported_schema_keyword` | **not a new failure**: its own identity verdict is already `unsupported`, so editing it fails on its own row before and after |
 | `CONTRACT-FACTORY-M7-PREDECESSOR-BRIDGES-V1` | `CONTRACT-FACTORY-M7-READY-BUNDLE-V1`, `CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1` | `unsupported` / `compatible` | **new hard gate failure** (transitive, via task-evidence) |
 | `CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1` | `CONTRACT-FACTORY-M7-READY-BUNDLE-V1` | `unsupported_schema_keyword` | **new hard gate failure** |
+
+> Counting discipline, added after review: three targets gain the *dependent*, but under one stated definition —
+> the edited target is itself verdictable while the newly added dependent is not — only **two** gain a new
+> *failure* (`M7-PREDECESSOR-BRIDGES-V1`, `M7-TASK-EVIDENCE-V1`). An earlier revision marked all three rows
+> "new hard gate failure", double-counting `M7-OPERATOR-HANDOFF-V1`.
 | `CONTRACT-FACTORY-M7-SHADOW-OUTCOME-V1` | `CONTRACT-FACTORY-M7-SHADOW-COHORT-V1` | `compatible` | none |
 | `CONTRACT-FACTORY-LANDING-INPUT-V1` (control) | attempt-status, failover-openapi, failover-result | all `compatible` | unchanged |
 
@@ -35,7 +40,7 @@ other). So the honest description is not "the fix breaks three things" but:
 
 `_contract_compatibility` maps any `unsupported` dependent to `unsupported compatibility semantics` and the run fails
 overall. That is the correct trust posture — an unverifiable dependency is not a verified one — but it means the next
-pull request touching any of those three targets will be blocked by a contract it did not touch, and reviewers must
+pull request touching either of those two targets will be blocked by a contract it did not touch, and reviewers must
 see this **before** merge, not in CI.
 
 ## Sequencing options, in the order the evidence supports
