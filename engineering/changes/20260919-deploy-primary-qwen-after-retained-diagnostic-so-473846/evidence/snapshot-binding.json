@@ -1,0 +1,18 @@
+{
+  "files": 3,
+  "manifest_sha256": "e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e",
+  "provider_replay": false,
+  "status": "snapshot_saved",
+  "target_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+  "run_id": "f12807c2b757-473846",
+  "snapshot": "/var/lib/adaptive-l5/backups/pre-qwen-f12807c2b757-473846",
+  "bytes": 234033,
+  "before": {
+    "schema": 1,
+    "jobs": {
+      "artifact_ready": 1,
+      "needs_human": 4,
+      "provider_unavailable": 1
+    }
+  }
+}

@@ -1337,3 +1337,9 @@ The initial Grok backup failed because preflight checked storage space and state
 ### 2026-09-19 — Validate operational specifications before pushing records
 
 I skipped the full local product suite correctly for an operation-record-only change, but also omitted the cheap gate-profile validation of its new typed specification. The red-risk package therefore omitted mandatory forbidden_outcomes and approvals.required_scopes, making PR151 fail repository-verification after its code suites had passed. Validate changed specs directly before push; a no-op product exemption does not exempt the new document from its own schema.
+
+### 2026-09-19 — Executable-looking operator evidence
+Archiving one-off operational command bodies as repository `.py` files incorrectly made the evidence node own executable network clients, including a false TCP inference from `socket.gethostname()`. Preserve exact bytes in indexed inert archives, document the external operator boundary, and verify actual execution bodies separately instead of granting network permissions to the evidence repository.
+
+### 2026-09-19 — Runtime audit executable identity
+A read-only post-acceptance audit guessed `adaptive-landing-host` instead of comparing the reviewed unit’s actual `adaptive-landing-server` executable and therefore falsely failed one assertion. Read the installed unit identity rather than infer CLI names; the corrected metadata-only audit passed without any new provider call or service change.

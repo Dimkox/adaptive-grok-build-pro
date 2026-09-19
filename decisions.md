@@ -729,3 +729,6 @@ sentence on the issue before merging, because the issue trail must match the shi
 ### 2026-09-19 — Per-service acceptance and full snapshot rollback
 
 Keep each upgraded service's acceptance and recovery independent: Grok's real artifact allowed its upgrade to remain while Qwen's rejected draft triggered containment and full snapshot restoration. Holding both old writer locks and preserving v2 roots before restoring v1 protected the failed attempt and recovered the prior artifact without another provider call. This prevented a partial rollout from becoming either a false two-service success or an unnecessary rollback of the working service.
+
+### 2026-09-19 — One-off operator script evidence
+Store retired and explicitly delegated one-off operator command bodies as exact-byte archives with an original-path/hash index and an explicit external execution boundary. This keeps repository evidence inert without granting fictitious TCP rights to the evidence node; separate actual-body reviews and hash-checked grants still govern execution.

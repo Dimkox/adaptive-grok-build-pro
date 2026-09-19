@@ -1,0 +1,90 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+  "base_fingerprint": "5bca390817a63f61298540f5a62e0d1d0e49477a540ce34cb57047abc1c53b8d",
+  "complexity": "high-risk",
+  "created_at": "2026-09-19T19:11:47+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk signal: deploy",
+    "intent=release",
+    "domains=data,security,api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "473846f79243",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Deploy existing Claw primary adaptive-l5.service to the exact externally attested merged revision containing a4023258047a03e1176daa3a35695c9d9b49f8be. Select qwen-omni-intl; preserve data with a complete SQLite snapshot and staged disabled startup; one bounded synthetic acceptance and complete rollback. User authorizes this continuation of the earlier deployment. Grok and separate Omni remain as observed. No application source or CI infrastructure changes. Prepare while external attestation is pending; activate only after merge.",
+  "task_domains": [
+    "data",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

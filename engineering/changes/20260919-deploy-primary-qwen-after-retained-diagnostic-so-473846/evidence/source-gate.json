@@ -1,0 +1,30 @@
+{
+  "pull_request": {
+    "baseRefOid": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+    "headRefOid": "a4023258047a03e1176daa3a35695c9d9b49f8be",
+    "mergeCommit": {
+      "oid": "f12807c2b75750072ba768fc95ed492362ae6489"
+    },
+    "mergedAt": "2026-09-19T19:35:28Z",
+    "state": "MERGED",
+    "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/154"
+  },
+  "target_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+  "checked_head_tree": "c7a020c6293a89d6470ee83c53d5f5a412a3eef1",
+  "merged_tree": "c7a020c6293a89d6470ee83c53d5f5a412a3eef1",
+  "tree_equal": true,
+  "merge_method": "squash",
+  "check": {
+    "id": 105951303627,
+    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "head_sha": "a4023258047a03e1176daa3a35695c9d9b49f8be",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-09-19T19:09:17Z",
+    "completed_at": "2026-09-19T19:30:18Z"
+  },
+  "github_app_id": 4694114,
+  "summary": "holdout-bundle-integrity: pass (exit 0)\nexternal-holdout: pass (exit 0)\nroot-unittest: pass (exit 0)\ntrust-ci-unittest: pass (exit 0)\ncompileall: pass (exit 0)\nrepository-verification: pass (exit 0)\nattestation=2a36d29d-24d2-4c68-98c6-7d2ee6957671; signer=0519cf1d47436f2e",
+  "source_clone": "/var/tmp/adaptive-qwen-source-473846",
+  "installed": false
+}

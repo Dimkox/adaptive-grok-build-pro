@@ -1,0 +1,36 @@
+{
+  "status": "pass",
+  "target_sha": "f12807c2b75750072ba768fc95ed492362ae6489",
+  "job_id": "runtime-qwen-f12807c2b757-473846",
+  "acceptance_client_posts": 1,
+  "observation_client_posts": 0,
+  "elapsed_ms": 4991,
+  "state": "artifact_ready",
+  "artifact_digest": "eb03ca2bb5683daed42cd9f20c5cce2d146450cde1a7f8bb05120ef748d5de6e",
+  "profile": "qwen-omni-intl",
+  "model": "qwen3.5-omni-plus-2026-03-15",
+  "profile_digest": "4cc85b8a61d1a0b51e69b9a28d8766bbdf6158db4e145d8a8ab81992a9157f67",
+  "provider_response_digest": "0437697a8d0a5396e2b537a6107413d5a52eea88378fa6fdb359023499aa688f",
+  "usage": {
+    "category": "normalized",
+    "dispatched": true,
+    "http_status": null,
+    "usage_input_units": 766,
+    "usage_output_units": 195,
+    "usage_status": "reported"
+  },
+  "same_retained_receipt": true,
+  "rollback_executed": false,
+  "snapshot": "/var/lib/adaptive-l5/backups/pre-qwen-f12807c2b757-473846",
+  "snapshot_manifest_sha256": "e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e",
+  "current_schema": 2,
+  "current_job_counts": {
+    "artifact_ready": 2,
+    "needs_human": 4,
+    "provider_unavailable": 1
+  },
+  "other_service_pids_unchanged": true,
+  "historical_failed_roots_preserved": true,
+  "live_url": null,
+  "scope": "One direct synthetic text job. No new public deployment, external maintainer acceptance, full-media/failover qualification or M8/M9 activation."
+}

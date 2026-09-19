@@ -1,0 +1,194 @@
+"""One stopped-writer Qwen rollback; retain the rejected v2 attempt intact."""
+import argparse
+import atexit
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import pwd
+import re
+import socket
+import sqlite3
+import stat
+import subprocess
+
+OLD = Path('/opt/adaptive-l5/releases/5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a')
+DATA = Path('/var/lib/adaptive-l5')
+UNIT = Path('/etc/systemd/system/adaptive-l5.service')
+
+def run(*args, timeout=30):
+    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=timeout).stdout.strip()
+
+def put(path, data, mode=0o600, uid=0, gid=0):
+    with path.open('xb') as stream:
+        stream.write(data)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.chown(path, uid, gid)
+    os.chmod(path, mode)
+
+def metadata(root):
+    with sqlite3.connect((root / 'landing.sqlite3').as_uri() + '?mode=ro', uri=True, timeout=5) as db:
+        db.execute('PRAGMA query_only=ON')
+        return {'schema': db.execute('PRAGMA user_version').fetchone()[0],
+                'jobs': dict(db.execute('SELECT state, count(*) FROM landing_jobs GROUP BY state'))}
+
+def bound_job(root, target_sha, terminal_state, marker):
+    job_id = 'runtime-qwen-' + target_sha[:12] + '-473846'
+    with sqlite3.connect((root / 'landing.sqlite3').as_uri() + '?mode=ro', uri=True, timeout=5) as db:
+        db.execute('PRAGMA query_only=ON')
+        rows = db.execute('SELECT tenant_id, repository_id, job_id, state, source_json, reason_code, revision, provider_evidence_digest FROM landing_jobs WHERE job_id = ?', (job_id,)).fetchall()
+    if terminal_state == 'no_new_job':
+        assert not rows, 'synthetic job exists; leave stopped'
+        return None
+    assert len(rows) == 1, 'exact synthetic terminal job required; leave stopped'
+    tenant, repository, actual_id, state, raw_source, reason, revision, evidence = rows[0]
+    assert state == terminal_state, 'synthetic job is not in the selected terminal state'
+    fd = os.open(marker, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(fd, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        assert stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and stat.S_IMODE(info.st_mode) == 0o600
+        assert info.st_uid == root.stat().st_uid and info.st_size <= 8192
+        submission_bytes = stream.read(8193)
+        submission = json.loads(submission_bytes)
+    assert (submission['target_sha'], submission['job_id'], submission['actor_id']) == (target_sha, job_id, tenant)
+    assert repository == submission['repository_id'] == 'github.com/Dimkox/ai-dark-factory-landing'
+    source = json.loads(raw_source)
+    assert (source['job_id'], source['tenant_id'], source['repository_id']) == (actual_id, tenant, repository)
+    assert source['content_sha256'] == submission['body_sha256']
+    assert source['exact_base_sha'] == submission['exact_base_sha'] == 'fde60e040167c10975b00d11f578c4da6763069a'
+    assert source['exact_base_tree'] == submission['exact_base_tree'] == '21817e70e079b772e1f3114a80dfc0320d1ada91'
+    return {'job_id': actual_id, 'tenant_id': tenant, 'repository_id': repository, 'state': state,
+            'input_digest': source['input_digest'], 'reason_code': reason, 'revision': revision,
+            'provider_evidence_digest': evidence, 'submission_sha256': hashlib.sha256(submission_bytes).hexdigest()}
+
+def hold_existing_writer_lock(path, uid):
+    fd = os.open(path, os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC)
+    atexit.register(os.close, fd)
+    info = os.fstat(fd)
+    assert stat.S_ISREG(info.st_mode) and info.st_uid == uid and info.st_nlink == 1
+    assert stat.S_IMODE(info.st_mode) == 0o600
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    current = path.stat(follow_symlinks=False)
+    assert (current.st_dev, current.st_ino) == (info.st_dev, info.st_ino)
+
+def ready():
+    # systemd start can return before bind; bounded condition check, no provider.
+    import time
+    for _ in range(20):
+        result = subprocess.run(['runuser', '-u', 'adaptive-l5', '--', 'curl', '--fail', '--silent',
+            '--max-time', '2', '--unix-socket', '/run/adaptive-l5/control.sock',
+            'http://localhost/health/ready'], capture_output=True, text=True, timeout=3)
+        if result.returncode == 0 and json.loads(result.stdout) == {
+            'status': 'ready', 'component': 'landing-local', 'production_verified': False}:
+            return
+        time.sleep(0.5)
+    raise RuntimeError('readiness_deadline')
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('phase', choices=('restore', 'activate'))
+    parser.add_argument('--target-sha', required=True)
+    parser.add_argument('--terminal-state', required=True, choices=('no_new_job', 'artifact_ready', 'needs_human', 'provider_unavailable', 'rejected'))
+    args = parser.parse_args()
+    phase = args.phase
+    assert re.fullmatch(r'[0-9a-f]{40}', args.target_sha), 'exact target SHA required'
+    assert os.geteuid() == 0 and socket.gethostname().lower() == 'claw'
+    NEW = Path('/opt/adaptive-l5/releases') / args.target_sha
+    run_id = args.target_sha[:12] + '-473846'
+    SAVE = Path('/var/tmp/adaptive-qwen-continuation-' + run_id) / 'qwen'
+    CONFIG = NEW / 'qwen-rollback-offline.json'
+    SNAPSHOT = DATA / ('backups/pre-qwen-' + run_id)
+    rejected_suffix = '.rejected-qwen-' + run_id
+    backup_bytes = (SAVE / 'backup.json').read_bytes()
+    backup = json.loads(backup_bytes)
+    backup_sha256 = hashlib.sha256(backup_bytes).hexdigest()
+    assert backup['target_sha'] == args.target_sha and backup['run_id'] == run_id
+    assert backup['snapshot'] == str(SNAPSHOT) and backup['status'] == 'snapshot_saved'
+    MANIFEST = backup['manifest_sha256']
+    assert isinstance(MANIFEST, str) and re.fullmatch(r'[0-9a-f]{64}', MANIFEST)
+    BEFORE = backup['before']
+    assert BEFORE['schema'] == 1 and isinstance(BEFORE['jobs'], dict)
+    assert all(type(n) is int and n >= 0 for n in BEFORE['jobs'].values())
+    expected_jobs = dict(BEFORE['jobs'])
+    if args.terminal_state != 'no_new_job':
+        expected_jobs[args.terminal_state] = expected_jobs.get(args.terminal_state, 0) + 1
+    FAILED = {'schema': 2, 'jobs': expected_jobs}
+    assert not any(expected_jobs.get(state, 0) for state in ('accepted', 'normalizing', 'generating', 'evaluating')), 'ambiguous work remains stopped'
+    assert os.geteuid() == 0 and socket.gethostname().lower() == 'claw'
+    account = pwd.getpwnam('adaptive-l5')
+    original = (SAVE / 'old-config.json').read_bytes()
+    assert hashlib.sha256(original).hexdigest() == 'f80b12107136d473ce06ffc12ea0817e960d137380fb12f60017bfc54e2a5ad6'
+    assert (OLD / 'landing-host.json').read_bytes() == original
+    old_unit = (SAVE / 'old-unit').read_bytes()
+    assert hashlib.sha256(old_unit).hexdigest() == 'c0fd42ba8dd576323ba677df82fbcf27e9c4df7c8a2a0fbd4312b6caa187d5a6'
+    assert hashlib.sha256((SNAPSHOT / 'manifest.json').read_bytes()).hexdigest() == MANIFEST
+    old_config = json.loads(original)
+    roots = {name: DATA / name for name in ('state', 'publication', 'artifacts')}
+    assert tuple(old_config[k] for k in ('state_path', 'publication_state_path', 'output_path')) == tuple(str(p) for p in roots.values())
+    disabled_unit = old_unit.decode().replace('--config ' + str(OLD / 'landing-host.json'), '--config ' + str(CONFIG)).encode()
+    assert disabled_unit != old_unit and old_unit.decode().count('ExecStart=') == 1
+    if phase == 'restore':
+        assert not CONFIG.exists() and not (SAVE / 'rollback-offline.json').exists()
+        assert UNIT.read_bytes() == (SAVE / 'new-unit').read_bytes()
+        assert json.loads((NEW / 'qwen-host.json').read_bytes())['live_enabled'] is False
+        for root in roots.values():
+            assert root.is_dir() and not root.is_symlink()
+            assert not root.with_name(root.name + rejected_suffix).exists()
+        assert metadata(roots['state']) == FAILED
+        run('systemctl', 'stop', 'adaptive-l5.service', timeout=380)
+        assert run('systemctl', 'show', 'adaptive-l5.service', '-p', 'ActiveState', '--value') == 'inactive'
+        # Keep both existing inode locks until this process exits. A separate
+        # publication writer must not survive the root renames unnoticed.
+        hold_existing_writer_lock(roots['state'] / 'landing.writer.lock', account.pw_uid)
+        hold_existing_writer_lock(roots['publication'] / '.intent-writer.lock', account.pw_uid)
+        assert metadata(roots['state']) == FAILED, 'changed after stop; leave stopped'
+        # The final stopped observation is bound under both held inode locks.
+        job = bound_job(roots['state'], args.target_sha, args.terminal_state, NEW / 'qwen-473846-submission.once')
+        frozen = {'target_sha': args.target_sha, 'metadata': FAILED, 'terminal_state': args.terminal_state,
+                  'job': job, 'backup_sha256': backup_sha256}
+        put(SAVE / 'failed-final-state.json', json.dumps(frozen, sort_keys=True).encode())
+        put(CONFIG, (json.dumps(dict(old_config, live_enabled=False), indent=2) + '\n').encode(), uid=account.pw_uid, gid=account.pw_gid)
+        put(SAVE / 'rollback-disabled-unit', disabled_unit)
+        for root in roots.values():
+            root.rename(root.with_name(root.name + rejected_suffix))
+        restored = json.loads(run('runuser', '-u', 'adaptive-l5', '--', str(OLD / 'venv/bin/adaptive-landing-state'),
+            'restore', '--config', str(CONFIG), '--snapshot', str(SNAPSHOT), '--manifest-sha256', MANIFEST, timeout=190))
+        assert restored['status'] == 'restored_inactive' and restored['provider_replay'] is False
+        assert metadata(roots['state']) == BEFORE
+        run('install', '-m', '0644', str(SAVE / 'rollback-disabled-unit'), str(UNIT))
+        run('systemctl', 'daemon-reload')
+        run('systemctl', 'start', 'adaptive-l5.service')
+        ready()
+        assert metadata(roots['state']) == BEFORE
+        record = {'phase': 'restored_offline', 'metadata': BEFORE, 'snapshot_manifest': MANIFEST,
+                  'preserved_failed_metadata': FAILED, 'provider_replay': False}
+        put(SAVE / 'rollback-offline.json', json.dumps(record, sort_keys=True).encode())
+    else:
+        assert (SAVE / 'rollback-offline.json').is_file()
+        frozen = json.loads((SAVE / 'failed-final-state.json').read_bytes())
+        job = bound_job(DATA / ('state' + rejected_suffix), args.target_sha, args.terminal_state, NEW / 'qwen-473846-submission.once')
+        assert frozen == {'target_sha': args.target_sha, 'metadata': FAILED, 'terminal_state': args.terminal_state,
+                          'job': job, 'backup_sha256': backup_sha256}
+        assert UNIT.read_bytes() == disabled_unit
+        assert json.loads(CONFIG.read_bytes()) == dict(old_config, live_enabled=False)
+        assert old_config['live_enabled'] is True and old_config['selected_profile'] == 'qwen-intl'
+        assert metadata(roots['state']) == BEFORE
+        run('systemctl', 'stop', 'adaptive-l5.service', timeout=380)
+        assert run('systemctl', 'show', 'adaptive-l5.service', '-p', 'ActiveState', '--value') == 'inactive'
+        assert metadata(roots['state']) == BEFORE, 'changed after stop; leave stopped'
+        run('install', '-m', '0644', str(SAVE / 'old-unit'), str(UNIT))
+        run('systemctl', 'daemon-reload')
+        run('systemctl', 'start', 'adaptive-l5.service')
+        ready()
+        assert metadata(roots['state']) == BEFORE
+        assert metadata(DATA / ('state' + rejected_suffix)) == FAILED
+        record = {'phase': 'old_primary_restored', 'installed_sha': OLD.name, 'selected_profile': 'qwen-intl',
+                  'live_enabled': True, 'metadata': BEFORE, 'provider_calls_in_rollback': 0,
+                  'new_profile_accepted': False}
+        put(SAVE / 'rollback-final.json', json.dumps(record, sort_keys=True).encode())
+    print(json.dumps(record, sort_keys=True))
+
+if __name__ == '__main__':
+    main()

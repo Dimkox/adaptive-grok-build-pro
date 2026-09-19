@@ -1,0 +1,67 @@
+{
+  "check_count": 13,
+  "checks": [
+    {
+      "name": "first reservation succeeds; crash/retry cannot reserve again",
+      "status": "pass"
+    },
+    {
+      "name": "existing marker binds exact facts",
+      "status": "pass"
+    },
+    {
+      "name": "unsafe metadata and symlink marker rejected",
+      "status": "pass"
+    },
+    {
+      "name": "partial marker remains a fail-closed submission fence",
+      "status": "pass"
+    },
+    {
+      "name": "four simultaneous reservers produce exactly one submission owner",
+      "status": "pass"
+    },
+    {
+      "name": "reservation file and parent directory are fsynced before dispatch",
+      "status": "pass"
+    },
+    {
+      "name": "same aggregate delta from unrelated terminal job cannot authorize rollback",
+      "status": "pass"
+    },
+    {
+      "name": "rollback binds exact synthetic source identity and observed terminal state",
+      "status": "pass"
+    },
+    {
+      "name": "pending synthetic job cannot authorize terminal rollback",
+      "status": "pass"
+    },
+    {
+      "name": "actual snapshot and pre-start baseline guards reject changed stores",
+      "status": "pass"
+    },
+    {
+      "name": "all operational entrypoints expose help without runtime effects",
+      "status": "pass"
+    },
+    {
+      "name": "invalid or wrong installed target is rejected before credential/runtime access",
+      "status": "pass"
+    },
+    {
+      "name": "all four operational scripts parse",
+      "status": "pass"
+    }
+  ],
+  "provider_calls": 0,
+  "runtime_mutations": 0,
+  "scope": "Offline syntax and single-submit guard checks. No claim of installed runtime acceptance.",
+  "script_sha256": {
+    "accept-primary.py": "6b40bf6802eec78fe04967c8f2efc503d9ad63ecd1420f35f85b53435a13b898",
+    "read-restored-qwen.py": "a1fff81289f5bdab033b7943f03cfb8b1bd81ede96fe11c353050825dec91c4e",
+    "rollback-primary.py": "0a636c89bd69e20e9ee8cda0ada916cbb387dd721e39181e642cde487a99282d",
+    "upgrade-primary.py": "defd025a98d346e7fc57b36928639b087d92515fe11a6e7bfa550fc59e692157"
+  },
+  "status": "pass"
+}

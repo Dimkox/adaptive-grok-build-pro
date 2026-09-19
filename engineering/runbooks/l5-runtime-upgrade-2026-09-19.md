@@ -1,5 +1,7 @@
 # Claw runtime upgrade observed on 2026-09-19
 
+Historical first attempt. The [later successful primary continuation](l5-primary-continuation-2026-09-19.md) supersedes the current-state claim below; all original failure/recovery facts are retained.
+
 The requested two-service upgrade is **partial**. Grok accepted the merged target `26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960`. Primary Qwen rejected the only new-profile response and was restored from its pre-upgrade snapshot to `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` / `qwen-intl`. Both services are active and enabled. The separate `adaptive-l5-omni.service` remains unchanged at `e7d0f72bf834b75eb543d9424ee47c7829cc65c0` / `qwen-omni-intl`.
 
 | Operation | Observed result |

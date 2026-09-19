@@ -1,0 +1,5 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"phase\": \"staged\", \"service\": \"qwen\", \"profile\": \"qwen-omni-intl\"}\n",
+  "stderr": ""
+}
