@@ -1,0 +1,201 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_dependents_of_every_reference_grammar"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Given a declared dependent that reaches a target through a declared $id (IRI form), when the target changes, then the dependent is inside the re-verified set and its verdict is reported."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_dependents_of_every_reference_grammar"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_reverifies_declined_relative_path_referrers"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Given a declared dependent that reaches a target through `file#/$defs/...`, when the target changes, then the dependent is inside the re-verified set (the fragment is not part of contract identity). Pinned by the per-grammar arm's `path with JSON pointer` and `declared $id with JSON pointer` sub-tests."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_real_contract_closure_supersets_legacy_fold_per_target"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_rechecks_unchanged_declared_ref_dependents"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Given the plain-relative reference grammar that works today, its closure behaviour is unchanged: the same dependents remain in the re-verified set (pinned by test_contract_compatibility_rechecks_unchanged_declared_ref_dependents). The stronger claim that the end-to-end finding set for a control edit is byte-identical before and after is recorded as a controller measurement, not as repository coverage."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_ignores_reference_without_declared_target"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_still_reports_referrer_with_undeclared_reference"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Given a reference whose target is not a declared contract, the closure creates no edge and raises nothing, while the referrer still fails closed through the comparator when the referrer itself is compared."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_fails_closed_on_duplicate_declared_schema_id"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_compatibility_bounds_duplicate_declared_id_to_certified_state"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_attaches_named_path_despite_ambiguous_ids"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "A declared-$id collision is never silent and never wedges the gate. When the colliding base names no declared path and the collision is in the certified (head) state, the run fails closed with the comparator's ambiguity error naming the $id, its carrier paths and the referrer. When the base names a declared path, that path's edge is attached and the unattributable claimants are reported as an attributed unattributed-reference signal instead of guessing a target. A collision inherited from the base state alone must not abort, so the pull request that removes the collision can complete."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_shares_the_comparator_reference_grammar"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_uses_declared_path_precedence_issue_146"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "No comparator verdict changes: over the declared inventory, identity and perturbed pairs produce identical status and reason tuples before and after the change, and the comparator keeps declared-$id-first resolution so issue #147 behaviour is untouched."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ],
+      "id": "AC-007",
+      "statement": "The delivered head passes python3 scripts/grok_verify.py --mode pr and carries the verification, code_review, test_review and security_review receipts bound to its tree fingerprint, plus the App-owned exact-SHA check on the same head."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260919-fix-issue-146-the-architecture-gate-drops-revers-8cf752",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "No existing assertion is weakened, skipped or deleted to make the widened closure pass; a test that newly fails must be explained by a real behaviour change, not edited away."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "No contract document, architecture/system.yaml, architecture/rules.yaml, compatibility mode or producer-output policy is changed by this work."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_uses_declared_path_precedence_issue_146"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "The closure must not inherit declared-$id-before-path precedence, and the comparator must not be moved to path-first in this change: issue #147 owns that decision."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_reference_reasons_keep_declined_paths_apart_from_non_paths"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_shares_the_comparator_reference_grammar"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "One reference grammar exists and the reason vocabulary keeps 'this base is not a path reference' (droppable) separate from 'a relative path the grammar declined' (never droppable), so a future keyword or reason cannot silently delete a reverse edge. Pinned by test_reference_reasons_keep_declined_paths_apart_from_non_paths and test_contract_dependency_closure_shares_the_comparator_reference_grammar."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_real_contract_closure_supersets_legacy_fold_per_target"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The closure never loses an edge it had before this change: every target->dependent pair measured at d871ea6 is still present on the patched tree."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_uses_declared_path_precedence_issue_146"
+        },
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_shares_the_comparator_reference_grammar"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "Reverse-edge identity is a union, never a substitution: when a reference base names both a declared path and a declared $id, the closure attaches BOTH contracts, so no dependent can escape re-verification because the two tables disagree. Resolution precedence is a comparator policy and stays declared-$id-first there; the closure does not inherit it."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #146: the architecture gate drops reverse edges for $id-based and file#fragment contract references, so a changed contract is never re-verified against the dependents that reference it through those grammars. Make the closure resolve the same reference grammar the comparator resolves, with regression coverage for an $id edge, a fragment edge and the plain-relative control; do not change comparator semantics, compatibility policy or any contract.",
+    "success_metric": "One method, both trees, declared 50-record inventory, self-edges excluded: direct one-hop target->dependent pairs 10 -> 14 and transitive pairs 22 -> 27, with zero edges lost at pair and reach level and legacy fold proved a subset of the shipped closure per target. Comparator verdicts identical across 1050 differential rows (same md5 both trees); an end-to-end gate run on a declined-path reference is byte-identical to the base tree, where the intermediate revision had turned that failure into a silent pass.",
+    "target": "adaptive-grok-build-pro main: the architecture-fitness contract dependency closure in .grok-stack/adaptive_grok/architecture_fitness.py and the reference grammar it shares with .grok-stack/adaptive_grok/architecture.py"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "for an edit to a $id-, fragment- or declined-path-referenced contract, the contract_compatibility report row's findings must name the dependent; the row's scanned_scope is always the whole head inventory (measured: 54 entries on passing and failing runs alike) and must not be cited as evidence",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "count of differing lines in the 555-line comparator differential between d871ea6 and the delivered head (expected 0)",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
