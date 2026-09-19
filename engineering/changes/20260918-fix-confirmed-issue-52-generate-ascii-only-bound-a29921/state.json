@@ -1,0 +1,35 @@
+{
+  "change_id": "20260918-fix-confirmed-issue-52-generate-ascii-only-bound-a29921",
+  "created_at": "2026-09-18T23:43:50+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T23:43:50+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T23:48:01+00:00",
+      "from": "draft",
+      "reason": "Scope, acceptance criteria, and migration boundary recorded from four independent analyses.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T23:48:01+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; bounded forward-only naming change approved.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T23:48:01+00:00",
+      "from": "approved",
+      "reason": "Begin regression-first implementation by the route's sole write owner.",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "a2992155fce7",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix confirmed issue #52: generate ASCII-only bounded change-package directory IDs from safe task metadata, never raw user prompt; add regression tests and document legacy-path migration limits. Preserve existing packages and other repo behavior.",
+  "updated_at": "2026-09-18T23:48:01+00:00"
+}

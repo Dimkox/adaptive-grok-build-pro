@@ -12,7 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.change import start_change, transition
+from adaptive_grok.change import _safe_path_slug, start_change, transition
 from adaptive_grok import architecture_diff as ARCHITECTURE_DIFF
 from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
 from adaptive_grok.architecture_diagrams import render_diagrams
@@ -66,6 +66,55 @@ class ChangeTests(unittest.TestCase):
                 self.assertNotIn('{{GOVERNANCE_AUTHORITY_NOTICE}}', text)
             self.assertIn('bitrix', (change / 'route.json').read_text(encoding='utf-8'))
             self.assertEqual(get_active_route(root)['change_id'], state['change_id'])
+
+    def test_start_uses_prompt_independent_ascii_change_id(self) -> None:
+        with project_copy() as root:
+            prompt = 'Исправить API клиента Альфа, token=ghp_example_sensitive_value'
+            route = build_route(root, prompt, 'issue-52').to_dict()
+            set_active_route(root, route)
+
+            state = start_change(root, title='Срочно: клиент Альфа / токен ghp_title_secret')
+            change_id = state['change_id']
+            package = root / 'engineering' / 'changes' / change_id
+
+            self.assertTrue(change_id.isascii())
+            self.assertLessEqual(len(change_id), 64)
+            self.assertIn('srochno-klient', change_id)
+            self.assertIn(f"-{route['intent']}-{route['route_id']}", change_id)
+            self.assertNotIn('альфа', change_id.lower())
+            self.assertNotIn('ghp_', change_id.lower())
+            self.assertTrue(package.is_dir())
+            self.assertEqual(get_active_route(root)['change_id'], change_id)
+
+    def test_start_rejects_existing_id_owned_by_another_route(self) -> None:
+        with project_copy() as root:
+            first = build_route(root, 'Сделать API', 'issue-52-a').to_dict()
+            set_active_route(root, first)
+            state = start_change(root)
+            package = root / 'engineering' / 'changes' / state['change_id']
+            second = dict(first)
+            second['route_id'] = first['route_id'][:-1] + ('0' if first['route_id'][-1] != '0' else '1')
+            (package / 'route.json').write_text(json.dumps(second), encoding='utf-8')
+            set_active_route(root, first)
+            with self.assertRaises(FileExistsError):
+                start_change(root)
+            self.assertTrue(package.is_dir())
+
+    def test_safe_path_slug_redacts_common_sensitive_values_and_falls_back(self) -> None:
+        value = 'Publish https://example.test/a user@example.test Bearer abc123 api_key=xyz password:secret'
+        slug = _safe_path_slug(value)
+        self.assertNotIn('example', slug)
+        self.assertNotIn('user', slug)
+        self.assertNotIn('abc123', slug)
+        self.assertNotIn('xyz', slug)
+        self.assertNotIn('secret', slug)
+        self.assertEqual(_safe_path_slug('😀🧪'), 'change')
+
+    def test_safe_path_slug_bounds_long_input(self) -> None:
+        slug = _safe_path_slug('Привет ' + ('длинный текст ' * 100), max_length=28)
+        self.assertLessEqual(len(slug), 28)
+        self.assertTrue(slug.isascii())
+        self.assertTrue(slug)
 
     def test_valid_transitions(self) -> None:
         with project_copy() as root:
