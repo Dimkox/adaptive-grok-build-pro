@@ -1,0 +1,127 @@
+{
+  "grok-accept": {
+    "exit_code": 0,
+    "result": {
+      "artifact_digest": "d8054688fef4b4bbb53e3741f05188e20cd0d98a0ae881dceab30a12cb6f6674",
+      "attempt_digest": "863cb7316377c504859336a80f9e4418a9e113c892e8b3a421c24209a978728f",
+      "client_posts": 1,
+      "elapsed_ms": 26947,
+      "job_id": "runtime-26a0d3d-20260919-grok",
+      "live_url": null,
+      "mode": "accept",
+      "model": "grok-4.6",
+      "observation": {
+        "category": "normalized",
+        "dispatched": true,
+        "http_status": null,
+        "usage_input_units": 1341,
+        "usage_output_units": 1642,
+        "usage_status": "reported"
+      },
+      "profile": "grok-vision",
+      "profile_digest": "53ac56c1115d8913e21c0feb3e56dbe3f360df46d222885b0d7c293231aa11cf",
+      "provider_evidence_digest": "e358bda3f1f5273a0f423e117c0fad70d61c29f9c1c9c4543a5a4e19125bc15b",
+      "reason_code": null,
+      "service": "grok",
+      "state": "artifact_ready",
+      "status": "accepted_runtime_artifact",
+      "submit_http_status": 202
+    },
+    "stderr_present": false
+  },
+  "grok-observe": {
+    "exit_code": 0,
+    "result": {
+      "artifact_digest": "d8054688fef4b4bbb53e3741f05188e20cd0d98a0ae881dceab30a12cb6f6674",
+      "attempt_digest": "863cb7316377c504859336a80f9e4418a9e113c892e8b3a421c24209a978728f",
+      "client_posts": 0,
+      "job_id": "runtime-26a0d3d-20260919-grok",
+      "live_url": null,
+      "mode": "observe",
+      "model": "grok-4.6",
+      "observation": {
+        "category": "normalized",
+        "dispatched": true,
+        "http_status": null,
+        "usage_input_units": 1341,
+        "usage_output_units": 1642,
+        "usage_status": "reported"
+      },
+      "profile": "grok-vision",
+      "profile_digest": "53ac56c1115d8913e21c0feb3e56dbe3f360df46d222885b0d7c293231aa11cf",
+      "provider_evidence_digest": "e358bda3f1f5273a0f423e117c0fad70d61c29f9c1c9c4543a5a4e19125bc15b",
+      "reason_code": null,
+      "service": "grok",
+      "state": "artifact_ready",
+      "status": "accepted_runtime_artifact"
+    },
+    "stderr_present": false
+  },
+  "grok-offline": {
+    "exit_code": 1,
+    "result": {
+      "client_posts": 0,
+      "error_type": "ConnectError",
+      "job_id": "runtime-26a0d3d-20260919-grok",
+      "mode": "offline",
+      "service": "grok",
+      "status": "failed"
+    },
+    "stderr_present": false
+  },
+  "grok-offline-after-ready": {
+    "exit_code": 0,
+    "result": {
+      "capability_http_status": 409,
+      "client_posts": 0,
+      "job_id": "runtime-26a0d3d-20260919-grok",
+      "mode": "offline",
+      "service": "grok",
+      "status": "offline_ready"
+    },
+    "stderr_present": false
+  },
+  "qwen-accept": {
+    "exit_code": 1,
+    "result": {
+      "artifact_digest": null,
+      "attempt_digest": "17d80b960fd6b817dbbb5c353bf6992582ca217bf470f36768ba8bf586a6abff",
+      "client_posts": 1,
+      "elapsed_ms": 3225,
+      "error_type": "AssertionError",
+      "job_id": "runtime-26a0d3d-20260919-qwen",
+      "live_url": null,
+      "mode": "accept",
+      "model": "qwen3.5-omni-plus-2026-03-15",
+      "observation": {
+        "category": "draft",
+        "dispatched": true,
+        "http_status": null,
+        "usage_input_units": 761,
+        "usage_output_units": 195,
+        "usage_status": "reported"
+      },
+      "profile": "qwen-omni-intl",
+      "profile_digest": "4cc85b8a61d1a0b51e69b9a28d8766bbdf6158db4e145d8a8ab81992a9157f67",
+      "provider_evidence_digest": "856bbf3ac4bff63fe8b954074407870b6aeb8d30ee3ea76d0fbb04f1a86f2771",
+      "reason_code": "http_outcome_unusable",
+      "service": "qwen",
+      "state": "needs_human",
+      "status": "failed",
+      "submit_http_status": 202
+    },
+    "stderr_present": false
+  },
+  "qwen-offline": {
+    "exit_code": 0,
+    "result": {
+      "capability_http_status": 409,
+      "client_posts": 0,
+      "job_id": "runtime-26a0d3d-20260919-qwen",
+      "mode": "offline",
+      "service": "qwen",
+      "status": "offline_ready"
+    },
+    "stderr_present": false
+  }
+}

@@ -725,3 +725,7 @@ the module never had any `os.name` dispatch, so implementing the request literal
 branch while leaving the real defect (untyped setup path, child stop only for named exceptions, unguarded
 close order) in place. The wave fixes what the code actually does and publishes the correction of the false
 sentence on the issue before merging, because the issue trail must match the shipped code.
+
+### 2026-09-19 — Per-service acceptance and full snapshot rollback
+
+Keep each upgraded service's acceptance and recovery independent: Grok's real artifact allowed its upgrade to remain while Qwen's rejected draft triggered containment and full snapshot restoration. Holding both old writer locks and preserving v2 roots before restoring v1 protected the failed attempt and recovered the prior artifact without another provider call. This prevented a partial rollout from becoming either a false two-service success or an unnecessary rollback of the working service.

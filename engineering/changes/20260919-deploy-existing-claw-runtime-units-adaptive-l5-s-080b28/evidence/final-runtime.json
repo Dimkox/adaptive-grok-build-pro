@@ -1,0 +1,90 @@
+{
+  "acceptance_posts": 2,
+  "host": "claw",
+  "kind": "claw-runtime-upgrade-observation",
+  "new_qwen_config_live_enabled": false,
+  "observed_at": "2026-09-19T12:56:21.093490+00:00",
+  "preserved_failure": {
+    "artifacts_path": "/var/lib/adaptive-l5/artifacts.rejected-26a0d3-20260919",
+    "category": "draft",
+    "exact_decoder_error_retained": false,
+    "job_counts": {
+      "artifact_ready": 1,
+      "needs_human": 5,
+      "provider_unavailable": 1
+    },
+    "job_id": "runtime-26a0d3d-20260919-qwen",
+    "observation_digest": "607324d3978283ac4c13c4b263b5523d26480458aaae543430f9813857363554",
+    "observation_validated": true,
+    "publication_path": "/var/lib/adaptive-l5/publication.rejected-26a0d3-20260919",
+    "raw_reply_retained": false,
+    "schema": 2,
+    "state": "needs_human",
+    "state_path": "/var/lib/adaptive-l5/state.rejected-26a0d3-20260919",
+    "usage_input_units": 761,
+    "usage_output_units": 195
+  },
+  "rollback_provider_calls": 0,
+  "schema_version": 1,
+  "scope_limits": {
+    "full_external_pilot": false,
+    "full_failover_chain": false,
+    "m8_activation": false,
+    "m9_general_qualification": false,
+    "public_site_publication": false
+  },
+  "services": {
+    "primary": {
+      "active_state": "active",
+      "installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+      "job_counts": {
+        "artifact_ready": 1,
+        "needs_human": 4,
+        "provider_unavailable": 1
+      },
+      "live_enabled": true,
+      "model": "qwen-plus",
+      "pid": 2326158,
+      "profile": "qwen-intl",
+      "recovery": "full_snapshot_restored",
+      "schema": 1,
+      "target_accepted": false,
+      "unit": "adaptive-l5.service",
+      "unit_file_state": "enabled",
+      "unit_sha256": "c0fd42ba8dd576323ba677df82fbcf27e9c4df7c8a2a0fbd4312b6caa187d5a6"
+    },
+    "secondary": {
+      "active_state": "active",
+      "installed_sha": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+      "job_counts": {
+        "artifact_ready": 2,
+        "needs_human": 1
+      },
+      "live_enabled": true,
+      "model": "grok-4.6",
+      "pid": 2287703,
+      "profile": "grok-vision",
+      "schema": 2,
+      "target_accepted": true,
+      "unit": "adaptive-l5-grok.service",
+      "unit_file_state": "enabled",
+      "unit_sha256": "3df99c0168103e691e7571c162609c5859914ca8963aeb2c4cf03718572b08c0"
+    },
+    "separate_omni": {
+      "active_state": "active",
+      "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+      "live_enabled": true,
+      "model": "qwen3.5-omni-plus-2026-03-15",
+      "operation": "unchanged",
+      "pid": 2204064,
+      "profile": "qwen-omni-intl",
+      "unit": "adaptive-l5-omni.service",
+      "unit_file_state": "enabled",
+      "unit_sha256": "1d501478e343fb61e369513cff7d340c2f260877b4343bbdd45236f838879de8"
+    }
+  },
+  "status": "partial_qwen_rolled_back",
+  "target_accepted_services": 1,
+  "target_requested_services": 2,
+  "target_source": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960"
+}

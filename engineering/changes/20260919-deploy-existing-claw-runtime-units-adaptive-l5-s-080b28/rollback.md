@@ -1,0 +1,9 @@
+# Runtime recovery
+
+Contain with the new schema-compatible binary and live_enabled=false using upgrade-operations.py contain SERVICE. Preserve all job records. No old executable may open a v2 store.
+
+For full binary rollback, stop the corresponding service, preserve its state/publication/artifact roots at named inactive paths, restore its complete pre-upgrade snapshot with the old matching adaptive-landing-state CLI to the original absent paths and a disabled copy of its original config. First point the old-binary unit to that disabled recovery config and verify offline readiness/state restoration. Only after that succeeds restore the original saved unit bytes and original live profile: the original unit's original config has live_enabled=true and must not be used for the offline validation step. Original bytes, manifest digests and each snapshot path are retained under /var/tmp/adaptive-l5-preserved-20260919-26a0d3/SERVICE; no credential files are copied. Other services and the public site are outside this recovery operation.
+
+## Exercised Qwen rollback scope
+
+Qwen acceptance failed at draft validation and was contained. The reviewed `evidence/rollback-qwen.py` restores only the primary from manifest `e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e`. It retains the new state, publication and artifact roots as `/var/lib/adaptive-l5/{state,publication,artifacts}.rejected-26a0d3-20260919`, taking both original writer locks before renaming. The disabled recovery config is `/opt/adaptive-l5/releases/26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960/qwen-rollback-offline.json`. Restore and activation are separate phases; a failed phase is not repeated. The historical artifact is read once using `evidence/read-restored-qwen.py`; no provider is called by recovery. A successful rollback does not satisfy the new-profile acceptance criterion.
