@@ -40,5 +40,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 - Reliability: deterministic ordering preserved (the closure already sorts identities); no new exception class
   escaping `evaluate_fitness`.
 - Performance: closure cost is O(inventory + refs), same as today plus one `$id` map build per inventory.
-- Observability: the widened scope is visible in the existing `applicability.scope` of the `contract_compatibility`
-  fitness row — no new telemetry surface.
+- Observability: the widened verification is visible **only in the `findings` and `status` of the
+  `contract_compatibility` row** — its `applicability.scanned_scope` is bound to the whole head inventory by
+  `_bind_applicability_inventory` (measured: 54 entries on passing and failing runs alike) and must not be
+  cited as evidence of the widening.

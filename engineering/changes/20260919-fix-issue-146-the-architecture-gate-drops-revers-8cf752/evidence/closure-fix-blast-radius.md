@@ -11,7 +11,8 @@ dependent is then classified by its own identity verdict. Reproduced in `control
 
 ## Result
 
-Fleet-wide the closure goes from **10 to 27** target→dependent pairs; **no** previously visible edge is lost (the
+Fleet-wide the closure goes from **10 to 14** direct one-hop target→dependent pairs, i.e. **22 to 27** transitively as
+the gate's BFS computes it, and **no** previously visible edge is lost (the
 plain-relative control row is the contradiction check). Three targets gain an *unanalyzable* dependent, and all three
 point at the same contract:
 
