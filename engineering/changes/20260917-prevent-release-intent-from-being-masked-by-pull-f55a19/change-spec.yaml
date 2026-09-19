@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "change_id": "20260917-prevent-release-intent-from-being-masked-by-pull-f55a19",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Release delivery wording cannot lower the task's risk classification or remove release controls.",
+    "success_metric": "All route-control matrix cases match their expected full route contract.",
+    "target": "100% of paired release, explicit review, and release-fix prompt cases preserve the expected intent and controls."
+  },
+  "risk": {"tier": "red", "domains": ["api", "security"]},
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Release wording with or without pull-request references, including co-occurring review wording about the rollout, routes as high-risk release with both human gates, release/security reviewers, release evidence, and release-readiness skill.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Standalone explicit review and review-pull-request prompts remain review routes with review controls.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "A release-installer bugfix remains bugfix when it mentions a pull request; bugfix-before-release precedence remains unchanged.",
+      "evidence": [{"receipt": "test_review"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Route schema and serialization remain version 1 and backward compatible.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "A generic feature task that mentions only pull request or PR delivery wording does not become review intent and retains a write owner.",
+      "evidence": [{"receipt": "verification"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Delivery mechanism terms alone never suppress a matched release intent.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Route metadata remains a separate authority from exact delegated grants and external Trust CI approvals.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A release prompt that mentions a pull request becomes a medium-risk review route or loses any release control.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "release_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "The fix changes delegated grant, external Trust CI, branch protection, or production behavior.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "contracts": {"openapi": [], "events": [], "json_schema": []},
+  "observability": [],
+  "approvals": {"required_scopes": ["scope_and_design_approval", "production_action_approval"]},
+  "rollback": {"strategy": "forward_fix", "maximum_steps": 1}
+}

@@ -39,6 +39,127 @@ class RepoDetectionTests(unittest.TestCase):
 
 
 class RouterTests(unittest.TestCase):
+    @staticmethod
+    def _control_contract(route):
+        return {
+            "schema_version": route.schema_version,
+            "intent": route.intent,
+            "domains": route.domains,
+            "task_domains": route.task_domains,
+            "risk": route.risk,
+            "complexity": route.complexity,
+            "primary_skill": route.primary_skill,
+            "workflow_skills": route.workflow_skills,
+            "analysis_agents": route.analysis_agents,
+            "write_agent": route.write_agent,
+            "review_agents": route.review_agents,
+            "allowed_agents": route.allowed_agents,
+            "quality_profiles": route.quality_profiles,
+            "required_evidence": route.required_evidence,
+            "human_gates": route.human_gates,
+            "delivery_expected": route.delivery_expected,
+            "status": route.status,
+        }
+
+    def test_release_intent_is_not_masked_by_pull_request_delivery_wording(self) -> None:
+        prompts = (
+            "Prepare the production release and canary rollout",
+            "Prepare the release and review the rollout",
+            "Prepare the production release and canary rollout; include its pull request in the report",
+            "Prepare the production release and canary rollout; mention PR #42 among merged pull requests",
+        )
+        with project_copy() as root:
+            routes = [build_route(root, prompt, f"release-{index}") for index, prompt in enumerate(prompts)]
+
+        expected = {
+            "schema_version": 1,
+            "intent": "release",
+            "domains": ["generic"],
+            "task_domains": [],
+            "risk": "high",
+            "complexity": "high-risk",
+            "primary_skill": "adaptive-delivery",
+            "workflow_skills": ["adaptive-delivery", "release-readiness"],
+            "analysis_agents": ["repo_explorer", "architect", "docs_researcher"],
+            "write_agent": None,
+            "review_agents": ["security_reviewer", "release_reviewer"],
+            "allowed_agents": ["repo_explorer", "architect", "docs_researcher", "security_reviewer", "release_reviewer"],
+            "quality_profiles": ["base"],
+            "required_evidence": ["verification", "security_review", "release_review"],
+            "human_gates": ["scope_and_design_approval", "production_action_approval"],
+            "delivery_expected": True,
+            "status": "routed",
+        }
+        for route in routes:
+            with self.subTest(prompt=route.task):
+                self.assertEqual(self._control_contract(route), expected)
+        self.assertEqual(self._control_contract(routes[0]), self._control_contract(routes[1]))
+        self.assertEqual(self._control_contract(routes[0]), self._control_contract(routes[2]))
+
+    def test_explicit_review_of_pull_request_remains_review_route(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, "Review this pull request for security vulnerabilities", "explicit-review")
+        self.assertEqual(
+            self._control_contract(route),
+            {
+                "schema_version": 1,
+                "intent": "review",
+                "domains": ["security"],
+                "task_domains": ["security"],
+                "risk": "high",
+                "complexity": "high-risk",
+                "primary_skill": "adaptive-delivery",
+                "workflow_skills": ["adaptive-delivery", "verification-evidence", "security-sensitive-change"],
+                "analysis_agents": ["repo_explorer", "architect", "docs_researcher"],
+                "write_agent": None,
+                "review_agents": ["code_reviewer", "test_reviewer", "security_reviewer", "release_reviewer"],
+                "allowed_agents": ["repo_explorer", "architect", "docs_researcher", "code_reviewer", "test_reviewer", "security_reviewer", "release_reviewer"],
+                "quality_profiles": ["base"],
+                "required_evidence": ["verification", "code_review", "test_review", "security_review", "release_review"],
+                "human_gates": ["scope_and_design_approval"],
+                "delivery_expected": True,
+                "status": "routed",
+            },
+        )
+
+    def test_bare_pull_request_or_pr_wording_does_not_create_review_intent(self) -> None:
+        prompts = (
+            "Implement a cache refresh option and mention the pull request in the report",
+            "Implement a cache refresh option and include PR #42 in the report",
+        )
+        with project_copy() as root:
+            routes = [build_route(root, prompt, f"delivery-word-{index}") for index, prompt in enumerate(prompts)]
+        for route in routes:
+            with self.subTest(prompt=route.task):
+                self.assertEqual(route.intent, "feature")
+                self.assertIsNotNone(route.write_agent)
+
+    def test_release_installer_bugfix_with_pull_request_stays_bugfix(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, "Fix the release installer bug and mention the pull request in the report", "release-bugfix")
+        self.assertEqual(
+            self._control_contract(route),
+            {
+                "schema_version": 1,
+                "intent": "bugfix",
+                "domains": ["generic"],
+                "task_domains": [],
+                "risk": "low",
+                "complexity": "micro",
+                "primary_skill": "adaptive-delivery",
+                "workflow_skills": ["adaptive-delivery", "bugfix-workflow"],
+                "analysis_agents": ["repo_explorer"],
+                "write_agent": "general_implementer",
+                "review_agents": ["code_reviewer", "test_reviewer"],
+                "allowed_agents": ["repo_explorer", "code_reviewer", "test_reviewer", "general_implementer"],
+                "quality_profiles": ["base"],
+                "required_evidence": ["verification", "code_review", "test_review"],
+                "human_gates": [],
+                "delivery_expected": True,
+                "status": "routed",
+            },
+        )
+
     def test_bitrix_bug_routes_specialists(self) -> None:
         with project_copy() as root:
             (root / 'bitrix').mkdir()
