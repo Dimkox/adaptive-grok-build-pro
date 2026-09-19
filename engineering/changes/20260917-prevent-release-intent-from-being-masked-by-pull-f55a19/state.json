@@ -1,0 +1,53 @@
+{
+  "change_id": "20260917-prevent-release-intent-from-being-masked-by-pull-f55a19",
+  "created_at": "2026-09-17T23:06:58+00:00",
+  "history": [
+    {
+      "at": "2026-09-17T23:06:58+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-17T23:10:45+00:00",
+      "from": "draft",
+      "reason": "Read-only analysis reproduced intent masking; bounded fix and complete route-control matrix recorded for required human design approval.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T08:24:02+00:00",
+      "from": "scoped",
+      "reason": "User approved release intent higher priority than review; explicit review requests remain recognized.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-18T08:24:02+00:00",
+      "from": "approved",
+      "reason": "Approved route and scope; implementation begins.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-18T08:26:53+00:00",
+      "from": "implementing",
+      "reason": "Matched route-control matrix passes all 29 router tests; compile, diff, and change-spec checks pass; full verification and independent reviews remain.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T00:13:39+00:00",
+      "from": "verifying",
+      "reason": "verification and five reviews current",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T00:13:40+00:00",
+      "from": "reviewing",
+      "reason": "All route evidence is current and independent reviews pass.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "f55a194f40df",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Prevent release intent from being masked by pull-request wording (#123)",
+  "updated_at": "2026-09-19T00:13:40+00:00"
+}
