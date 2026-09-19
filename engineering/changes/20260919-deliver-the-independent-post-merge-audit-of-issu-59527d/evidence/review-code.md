@@ -1,0 +1,323 @@
+FAIL
+
+## Re-review on b81849a
+
+Every quantity I failed at `d3e0d49`/`cbc65ac` is now correct and reproduces. What is not correct is two
+*citation* cells that `b81849a` introduced next to the corrected numbers — and citations are this package's
+product. Both are one-line fixes; none is a re-derivation.
+
+- **C1 identity analyzability — CLOSED.** My own re-run of extracted block A, four processes: base `2f66ba6`
+  = **12/38** json_schema (26 blocked), **21/50** all kinds (29 blocked); head `d871ea6` = **36/38**, **46/50**;
+  unlocked **24** / **25**. My independent set-diff (my code, not block A) proves gained = 25 all-kinds / 24
+  json_schema with **zero** regressions, so "moved from un-analyzable to analyzable" is exact. The old
+  `14 / 38` row survives only inside marked supersession sentences (`grep -rn "14 */ *38"` → 7 hits: controller
+  supersession blockquote, requirements AC-002 *Superseded*, brief, rollback, change-spec AC-003, harness intro).
+- **C2 ablation per unit — CLOSED** (all six cells re-derived, not two). Block B verbatim: all-kinds `$defs` 24 /
+  `format` 10 / `anyOf` 4; json_schema-only 23 / 9 / 3; denominators and the intermediate `13/38`, `22/50`,
+  `27/38`, `36/50`, `33/50`, `42/50` all print as transcribed, plus the contrast rows (`oneOf` 6/3, `allOf` 8/6).
+- **I4 CAR-1 — CLOSED.** Block C verbatim on the three real contracts: novel non-subsuming scalar →
+  `incompatible ('changed_constraint',)` on attempt-status (`integer` over `string(1..128)|null`) and
+  provider-observation (`boolean` over `integer(0..1e7)|null`); non-verdicts land on the subsuming, object-valued
+  and `$ref`-valued arms and on failover-result's `$ref`-bearing union. The edit-class table now names each
+  inserted branch shape in the header and per row, and the failover "tighten" cell is labelled a no-op, which I
+  confirmed (branch 0 is a bare `$ref`).
+- **I6 CAR vs R namespace — CLOSED.** `grep -rniE "residual R[1-5]"` → 0 hits. `R-n` outside `ai_architect`:
+  8 lines, every one discussing the collision or the mapping table; the mapping table exists and names both
+  referents. `\bR[1-5]\b` counts match the file's claim (0 on the other four lanes, 17 on `ai_architect`).
+- **I3 annotation, agent text intact — CLOSED.** `git diff -U1 d3e0d49 b81849a -- <agent files>` shows only added
+  `>` blockquotes; the agent's words survive identically, with one paragraph break moved (`… R1-R5)."`* Nothing
+  in the package overclaims…` split after the quote). Substance of the annotation checks out: the §1 case it
+  cites is real (see my control-arm measurement below) and its census is block E's.
+- **I1/I2 test-plan, report count, provenance — CLOSED except SIG-001 attribution.** The fail-closed demand for
+  CAR-5 is gone and inverted ("Do **not** smooth CAR-5 into fail-closed wording"); five reports, both route ids
+  named, and both are checkable: `route.json` `analysis_agents` = 4 lanes (no `ai_architect`) for `59527d5a28f8`,
+  and `ai_architect` is in `4c524b83df59`'s five. Falsity: `release.md` and `change-spec.yaml` SIG-001 say
+  "both numbers are printed by block F and block A" — no block prints the 5 (see What I measured).
+- **I5 harness — CLOSED as a mechanism.** `evidence/measurement-harness.md` exists (900 lines), stdlib-only
+  (`collections copy json posixpath re subprocess sys pathlib` + the module under test), `find <pkg> -name '*.py'`
+  → **0**. I extracted **all seven** embedded blocks programmatically and ran them one process per tree: every
+  printed line in the file matches what I got, byte-for-byte. This is not re-wording.
+- **Minors — CLOSED.** `architecture.py` cites all check out at `d871ea6`: `1240-1247` `$id` table consulted
+  before the path table, table built `1170-1174`; also `1429`, `1431-1437`, `1697-1700`, `2131-2135`, `3037`,
+  `3105-3107`. Chronology is locally phrased and measured: block F prints `78 0`, 211→219 entries, 12
+  out-of-order pairs at both trees, 8 added headings. Architect header annotation present.
+- **NEW false cell (decides this verdict): the "carried by" column for `CONTRACT-FACTORY-LANDING-OPENAPI-V1`.**
+  It reads `root `servers`` and cites `analysis-ai_architect.md` item 10. The document named has **no `servers`
+  key**, and item 10 attributes `root servers` to `CONTRACT-ADAPTIVE-DEMO-OPENAPI` and `$ref` response objects to
+  the landing record (56 `$ref`s in it). The controller overwrote the lane's correct attribution with an
+  un-blocked, un-measured one — the CAR-1 mistake class, re-committed. Fix: `$ref` response objects, or a block
+  that prints the construct.
+
+## What I measured
+
+Private `--local` clone + two detached worktrees (`2f66ba6`, `d871ea6`); both clean
+(`git status --porcelain -- factory/contracts architecture .grok-stack` → 0 lines); no probe string in any contract.
+
+- `python3 extract_blocks.py` (regex on `^```python` fences) → `python blocks found = 7`, `console blocks = 11`.
+- Block A (extracted) → `A: baserepo all 21/50, 29 blocked` · `baserepo json_schema 12/38, 26 blocked` ·
+  `newmain all 46/50, 4 blocked` · `newmain json_schema 36/38, 2 blocked`; head blocked names are exactly the
+  table's four.
+- My own `my_analyzable.py` per tree: `n=21` / `n=46`; `comm` gained = 25 all-kinds, 24 json_schema, lost = ∅;
+  module paths printed per process, so no same-process contamination.
+- Block B → `$defs 24→22/50 / 23→13/38`, `format 10→36/50 / 9→27/38`, `anyOf 4→42/50 / 3→33/38` (+ 8 rows).
+- Blocks C, C-2 (9 cells, 9 non-verdicts), D, E → verbatim; E: `_SUPPORTED_SCHEMA_KEYS=24 → 27`, delta
+  `{'$defs','anyOf','format'}`, glob 38 = 28 json_schema+7 openapi+1 event+2 undeclared, 10 declared
+  json_schema outside the glob, `$id`=41 distinct, 0 equal a path, 86 ref bases (76 urn), 0 ambiguous.
+- Block F → `mistakes.md numstat d871ea6...b81849a = 78  0`, `211 → 219`, `out-of-order=12` both, 8 headings.
+- CAR-5 and both control arms, my own script, one process per tree: with claimant — base
+  `incompatible ('narrowed_constraint',)` vs head `compatible ()`; `c/y.json` absent — base
+  `unsupported ('unsupported_schema_keyword',)` vs head `compatible`; **`$id` claimant absent — both trees
+  `incompatible ('narrowed_constraint',)`**, so the controller's control-flipped sentence is true (but is
+  recorded nowhere as runnable; §1's committed snippet needs an uncommitted `real.py`).
+- `grep -n "analysis-\*|wc -l|ls engineering" measurement-harness.md` → only line 63 (a `diff --name-only`);
+  no block prints the 5-report count.
+- `git diff --name-only d871ea6...HEAD` → this package + `mistakes.md` only (INV-002). `gh issue view 147` →
+  OPEN, title matches CAR-5. `git cat-file -t 2cbfa12`/`d48aa5d3` → commit; `00709f4`/`0284d33` → **not valid
+  objects** anywhere in this repo.
+- anyOf presence among the 25 unlocked: `anyOf` 3, `$defs` 20, `format` 6; the 3 are the three landing unions,
+  all blocked at base and analyzable at head.
+
+## Residual risks
+
+1. **"and not the three `anyOf` ones"** (controller, lines 40-41, surviving fragment of the superseded sentence) has
+   a false literal reading — that #133 left the three `anyOf` contracts locked, when it unlocked exactly those
+   three, which the same file then probes. The measured intent is fine — only 3 of 25 unlocked records contain
+   `anyOf` — but a durable record cannot rest on a clause whose literal reading contradicts its own table. State
+   the 3-of-25 split.
+2. **`analysis-architect.md` §1 is the package's only soundness demonstration and cannot be run as committed**
+   (first line imports `<private-scratch>/real.py`; the no-`.py` rule keeps it out). My 40-line reconstruction
+   confirms every number in it. Promote it to block G using ground rule 1's documented `exec(compile(...))`
+   exception, and cover arm C there.
+3. **Dangling in-package citations** in the two carried lanes: `brief.md` "producing directionally sound results"
+   (this `brief.md` never contained it — 4c524b's does), and `review-test.md` / `review-security.md` /
+   `verification-attempt.md` quoted "from the package" (all three exist only in route 4c524b's package). The new
+   annotation fixed the AC-number drift in that same sentence and stopped short of these. One controller note
+   ("these file names belong to the 4c524b package") closes the class. Likewise label `00709f4`/`0284d33` as
+   throwaway-clone ids unreachable here, whose Table C rows are the durable record.
+4. **The 20/50 question you asked.** Leaving the agent's sentence verbatim is right and I would not change the
+   policy; recording it only in the controller table is not enough. `analysis-integration_architect.md:106` is a
+   file a reader can open alone, and its bolded "baseline 20/50" then reads as measured. The package already owns
+   the correct instrument — the `[ANNOTATION added by the controller]` blockquote used on `ai_architect` — and
+   applying it beside line 106 costs one blockquote and breaks no rule. As shipped, the treatment of two stale
+   numbers in two agent files is asymmetric, and the asymmetry is invisible from inside either file.
+5. **One unlabelled comparator over-strictness:** `allOf [S,S] → [S]` is instance-set-preserving yet reports
+   `incompatible (changed_constraint)` — the single cell where a provably neutral edit yields a verdict instead of
+   degrading to `unsupported`. Fail-closed, so not a soundness item, but its neighbours are annotated "correct"
+   and it is not, so it deserves the same one-word label.
+6. Not re-litigated by me: the `grok_architecture.py fitness` gate rows stay attributed to the executing lane,
+   which the controller now says explicitly, and `CONTRACT-ADAPTIVE-DEMO-OPENAPI`'s "not a construct gap" is true
+   under its declared policy but incomplete — under `bidirectional` it *also* hits `unsupported_openapi_construct`.
+
+## Delta re-check on 0b6299b
+
+RE-REVIEW VERDICT: FAIL
+
+Scope: the five deltas and every line `0b6299b` touched; nothing re-litigated. Method: private `chmod 700` clones
+at `2f66ba6`/`d871ea6`, one process per tree; Blocks A/B/F extracted verbatim from `measurement-harness.md`;
+`_openapi_schemas`/`_security_schemes` instrumented guard-by-guard to locate the real failing check.
+
+1. **Delta 1 — NOT CLOSED (blocking).** Every figure requested is true: `landing-dogfood.v1.json` root keys
+   `components`/`info`/`openapi`/`paths`, no `servers`, 56 `"$ref"`; `adaptive-demo.v1.json` has root `servers`;
+   record→path pairing in `architecture/system.yaml` is as cited, and instrumenting the comparator confirms
+   `ADAPTIVE-DEMO` is the record that trips the root-key whitelist (`architecture.py:2543`). But the cell sits under
+   a column headed **"carried by"**, and the `$ref` count is not the carrier. Measured: strip all 56 `$ref`
+   keys → still `unsupported_openapi_construct`; `factory-semantic.v1.json` carries exactly 56 refs with the same
+   root keys and **is** analyzable at head; the first guard that actually fails is `_security_schemes`'
+   `components` whitelist (`architecture.py:2431`) because `components` also holds `parameters`/`headers`/
+   `responses`, and with those removed a second construct still fails at `architecture.py:2665`
+   (`_supported_parameters`). Round two failed this cell for naming a false carrier; `0b6299b` replaced it with
+   true facts naming no carrier, and the block index still has no row for it (only `ADAPTIVE-DEMO`'s "policy mode,
+   not a construct").
+2. **Delta 2 — CLOSED.** Block F really prints `mistakes.md numstat d871ea6...HEAD (added deleted) = 78 0` (and
+   `78 0` still holds at `0b6299b`); block A really prints the analyzability numbers; `ls evidence/analysis-*.md |
+   wc -l` = 5; no harness block prints a report count. Nit: the paragraph holds no analyzability figure, so "the
+   analyzability numbers come from block A" gives provenance for a number that is not in the paragraph.
+3. **Delta 3 — CLOSED.** Independent set-diff of my two sweeps: unlocked 25 all-kinds / 24 json_schema, base
+   blocked 26 / 29, head 2 / 4 — and exactly **3** unlocked records contain a literal `anyOf`
+   (LANDING-ATTEMPT-STATUS-V1, LANDING-FAILOVER-RESULT-V1, LANDING-PROVIDER-OBSERVATION-V1), the same 3 that flip
+   under the `anyOf` ablation. Nit: necessity is **4** of 25 (block B's own all-kinds number), since
+   `LANDING-FAILOVER-OPENAPI-V1` needs `anyOf` through a `$ref` while containing none — "necessary for those three
+   … the other 22" is short by one.
+4. **Delta 4 — annotated in both places; the test is real.** `git cat-file -t 00709f4` and `0284d33` both fail
+   here *and* in the primary repo (this tree is a linked worktree sharing its object DB). Two wording defects:
+   "resolve as objects in no repository" is a universal negative nothing here measures (by the package's own
+   account they existed in the throwaway clones), and the new Table C note says block C "re-derives the in-process
+   cells behind them" though block C's recorded output covers only 2 of the 3 contracts Table C names — it has no
+   `LANDING-FAILOVER-OPENAPI-V1` section; line 213's "all three contracts" is the same over-cite (pre-existing).
+5. **Delta 5 — referents all check out; one false clause.** `4c524b83df59`'s package really holds `brief.md`
+   (Outcome, its line 17, verbatim), `requirements.md` AC-005 = "`prefixItems` … remains `unsupported`" (a genuine
+   fail-closed disclosure, so the annotated sentence is true under this referent), and `review-test.md` /
+   `review-security.md` / `verification-attempt.md`, each really containing its quoted fragment and all three
+   really quoted in the annotated section. Both lane files are pure insertions (`9 0`, `8 0`) → lane text
+   byte-unchanged. Block A yields **21/50** at base on my own run, 46/50 at head with exactly the four names
+   listed. **False:** "this audit package holds its own reviewer reports under the same names" — it holds only
+   `evidence/review-code.md` (route `59527d5a28f8` requires `verification` + `code_review`); no `review-test.md`,
+   `review-security.md` or `verification-attempt.md` exists in it, and round two's item 3 said the opposite.
+
+Your question — remaining descriptive cells with no measurement or block behind them:
+
+* Line 37: the delta-1 carrier above — true facts, no named carrier, no block, absent from the block index.
+* Lines 35–36 (`prefixItems`; "urn-`$ref` cascade into `prefixItems`"): attributed to a lane report, not a block.
+  They survive my check (1 literal `prefixItems` at `$/properties/instructions`; READY-BUNDLE has none of its own
+  and does carry the two `urn:adaptive-factory:m7:` refs) but are weaker than written — whitelisting `prefixItems`
+  alone leaves **both** records `unsupported_schema_keyword`, so it is a trigger, not the whole carrier.
+* Lines 41–43: "necessary for those three … the other 22" (necessity is 4).
+* `analysis-ai_architect.md` pre-existing note "the fail-closed disclosure the agent meant is now AC-002/AC-003":
+  in this package AC-002 is "the record says plainly what #133 fixed" and AC-003 is "superseded tables are marked",
+  neither a comparator fail-closed disclosure — and it now collides with the new annotation assigning AC-005 to
+  `4c524b`'s `requirements.md`.
+* Same annotation's "copied into": both lane files differ from `4c524b`'s by 205 and 209 lines — rewritten.
+
+## Final delta check on fed04cb
+RE-REVIEW VERDICT: FAIL
+
+Scope: `fed04cb` (5 files, 107+/9−) and the five flagged cells only. `chmod 700` clone, worktrees `2f66ba6`/`d871ea6`,
+one process per tree; the instrumentation and whitelist patches are my code, never the package's.
+
+**(a) `LANDING-OPENAPI-V1` guard cell — CLOSED.** Head tree: identity verdict `unsupported
+('unsupported_openapi_construct',)`; the only predicate returning **False** is `_has_only_keys` at
+`architecture.py:2430` (inside `_security_schemes`) on the components map whose first key is
+`securitySchemes: {bearerAuth: {type: http, scheme: bearer}}` — repr matches block G's `first False` record. All single
+removals stay `unsupported` (securitySchemes, parameters, headers, responses, each of the 3 schemas, `paths->{}`,
+`components->schemas only`), as does dropping parameters+headers+responses together. "Guard that fires, not an
+exhaustive carrier" is exactly the measured limit; the unnamed cause is now named as unnamed.
+
+**(b) `prefixItems` cells — NOT CLOSED (blocking).** Trigger half true and re-measured: whitelisting `prefixItems` alone
+leaves both records `unsupported_schema_keyword`; OPERATOR-HANDOFF has 1 literal `prefixItems`, READY-BUNDLE 0. But
+three added claims fail:
+- "OPERATOR-HANDOFF … also carries `urn:`-form `$ref`s that name no declared contract" — that document carries **no
+  `$ref` at all** (`grep -c '\$ref'` → 0; my recursive walk → 0). It is a self-contained inline schema.
+- "READY-BUNDLE: two `urn:adaptive-factory:m7:` `$ref`s resolving to nothing declared" — both targets **are**
+  declared: `urn:...:shadow-task-evidence:v1` (M7-TASK-EVIDENCE-V1) and `urn:...:operator-handoff-proposal:v1`
+  (OPERATOR-HANDOFF-V1). The truth is a cascade into a declared, still-blocked record (round 3's reading).
+- Both rows cite block G for this, and block G holds no `prefixItems` experiment (0 hits in its section) and no code
+  at all: the harness still has exactly 7 ```python fences, so `python3 block_g_openapi_guard.py <repo>` names a file
+  existing nowhere (`find <pkg> -name '*.py'` → 0) — against the harness's own "every block … lives inside this
+  `.md`" / "each committed table names the block below that reproduces it" and test-plan P1.
+Fix: drop the two `$ref` clauses (or say "cascade"), cite block B/E's whitelist method.
+
+**(c) necessity 4 of 25 — CLOSED.** Base 21/50, head 46/50, unlocked **25**, regressions 0 (my two sweeps, `comm`).
+Removing `anyOf` from the 27-key head whitelist flips exactly **4**, all inside the unlocked 25: the three
+literal-`anyOf` landing schemas plus `LANDING-FAILOVER-OPENAPI-V1`, which has no `anyOf` of its own and reaches one via
+`../jsonschema/landing-attempt-status.v1.schema.json`. "Exactly 3 literal" ✓; "the other 22" is sufficiency, no clash.
+
+**(d) AC-005 referent — CLOSED.** `4c524b83df59` AC-005 = "an unrelated unsupported keyword such as `prefixItems` … remains
+`unsupported`" ✓; this package's AC-005 is the path-scrub criterion ✓, AC-002/AC-003 the honest-recording and
+superseded-tables criteria ✓. Table C's "two of the three … no `LANDING-FAILOVER-OPENAPI-V1` section" is true (hits 2/3/0
+for ATTEMPT-STATUS/FAILOVER-RESULT/FAILOVER-OPENAPI); the universal negative is gone.
+
+**(e) "carried forward and rewritten" — NOT CLOSED (blocking, one number).** Semantics right: route `59527d5a28f8`
+`required_evidence = ["verification","code_review"]` ✓, this package holds one reviewer report (`review-code.md`) ✓,
+`4c524b`'s holds the three quoted same-name files ✓ → "distinct artifacts, not copies" is true. The inserted count is
+not: at `fed04cb`, `git diff --numstat` for `analysis-ai_architect.md` vs `4c524b`'s copy is **163 / 21** and plain
+`diff` says **206**; 205 was the `0b6299b` value, and the line stating it is the line that changed it. "209" appears
+nowhere in the package (integration: 155/57, plain 210) — that figure is my round-3 text, not theirs.
+
+**Invariants — held except the index.** `git diff --numstat d871ea6 fed04cb` = 2661 added / **0 deleted** over all
+20 files; `mistakes.md` 78/0 in range and untouched by `fed04cb`; my two earlier reports byte-unchanged above; 0 `.py`
+in the package and block imports stdlib + `adaptive_grok` only; `grok_spec.py validate --gate` → `"ok": true`,
+`"errors": []`, 6 ACs. Block G is at `measurement-harness.md:825` but **not** indexed: `evidence/README.md:17`,
+`architecture.md:36`, `test-plan.md:11` still read "blocks A–F".
+
+## Residual (non-blocking)
+1. Cell lists 11 removals, block G prints 9; `requestBodies`, `examples`, root `security`, root `servers` are keys this
+   document lacks — four vacuous no-ops inside the enumeration.
+2. Block G sits between E and F with bare ``` fences where A–F use ```console, so `^```console` scrapers skip it; it
+   also takes the name I reserved in round 3 for `analysis-architect.md` §1.
+3. "verified here and in the primary checkout" is one object DB (linked worktree of `adaptive-grok-build-pro/.git`);
+   my fresh-store `--local` clone rejects both probe ids too — cite that instead.
+4. Block G's "wrong for these two records" reads back onto the `prefixItems` rows though G is one openapi record; the
+   rewritten annotation is ungrammatical ("the audit package this file was carried forward from that lane and
+   rewritten") and integration's companion carries no count.
+5. Untouched, not re-argued: `analysis-architect.md` §1 needs an uncommitted `real.py`, and
+   `analysis-integration_architect.md:106` keeps a bolded stale 20/50 with no annotation.
+
+## What I measured
+Worktrees under `/tmp/fc-audit-delta`, both clean on `factory/contracts architecture .grok-stack` (0 lines). `myg.py`:
+5 predicate wrappers logging caller/lineno on every falsey return + 15 removal variants. `mybc.py`: `prefixItems`
+whitelist patch, `$ref` walk vs the declared-`$id` table, `anyOf` ablation over the head-compatible set. `names.py`
+once per tree + `comm` for the 25/0 split. Fence extraction (7 ```python; per-block name counts; block G grepped for
+`prefixItems`), `grep -c '\$ref'` on both M7 schemas, blob-to-blob `git diff --numstat`, `git cat-file -t` on both
+probe ids, the gate run.
+
+## Narrow confirmation on fc9d877
+CONFIRMATION VERDICT: FAIL
+
+Scope: the four flagged statements plus block H executability, nothing else. `chmod 700` clone of the bytes at
+`/home/pall/grok-projects/nc-clone-parent` (`repo` on `fc9d877`, worktree `wt-d871ea6` on `d871ea6`, 0 dirty lines,
+one process per tree). My extracted `block_h_prefix_items_census.py` / `block_f.py` live in the parent, never in the
+package (`find <pkg> -name '*.py'` → 0).
+
+**1 — OPERATOR-HANDOFF cell: TRUE (4/4).** Inventory read at `d871ea6`: `$id=urn:...:operator-handoff-proposal:v1`,
+own `"prefixItems"` = **1**, `'$ref'` occurrences = **0**. Block H: `whitelist + prefixItems -> identity=unsupported`
+and `unchanged whitelist -> identity=unsupported`, so whitelisting `prefixItems` alone does not unblock it. The cell
+says plainly "the blocking construct is elsewhere in the document and this package does not name it" — it names
+nothing. All four parts hold.
+
+**2 — READY-BUNDLE cell: TRUE.** Own `prefixItems` = **0**; 2 `urn:adaptive-factory:m7:` refs, both
+`resolves_by_id=True` (`shadow-task-evidence:v1` = declared `$id` of `CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1`,
+`operator-handoff-proposal:v1` = `$id` of OPERATOR-HANDOFF-V1 — both read off the live inventory, not assumed);
+`resolves_by_path=False` is consistent with `$ref`-by-`$id`, and the cell claims resolution, not paths. Whitelisting
+result as in row 1; cause unnamed.
+
+**3 — Rewritten-lane counts: TRUE.** `git diff --numstat --no-index` of `fc9d877`'s copies against `4c524b`'s:
+`analysis-ai_architect.md` → **163 21**, `analysis-integration_architect.md` → **155 57**. The only in-package
+assertion is ai_architect's "163 added / 21 deleted" ✓ (integration carries no count, as before). Standalone `205`
+and `209` appear nowhere in the package outside `review-code.md:169,213` (my own prior-round text).
+
+**4 — Index: TRUE.** `evidence/README.md:17`, `architecture.md:36`, `test-plan.md:11` all read "blocks A–H".
+Package-wide grep for `A–F|A-F|A–G|seven blocks|7 blocks|eight blocks|8 blocks` (md+yaml) → 0 hits outside
+`review-code.md`. Harness now has 8 ` ```python ` fences (was 7).
+
+**5 — Block H runnable, but its recorded output is NOT what the committed script prints: FAIL (cosmetic, one line).**
+`python3 block_h_prefix_items_census.py <wt-d871ea6>` exits 0 and reproduces **6 of 8** lines byte-for-byte,
+including both `identity=unsupported` pairs and `prefixItems=1 refs=0` / `prefixItems=0 refs=2`. The two
+`resolves_by_id=True` lines are **110** recorded vs **104** printed chars: the harness says `{ref[:58]:58s}`, the
+recorded block was emitted at field width **64** (+6 spaces, both lines). So the block was recorded against an
+earlier revision of the script above it and not regenerated — the exact script→output pairing test-plan P1 relies
+on. Control, same file: block F extracted and run (`python3 block_f.py <repo> d871ea6 HEAD`) reproduces **12/12**
+lines byte-exactly, tabs included, so the drift is not markdown or my extraction. Every *number* the cells assert is
+correct; the falsified statement is the new "Recorded output at `d871ea6`" pairing itself, introduced by `fc9d877`.
+Also verified: stdlib-only (imports across all 8 blocks = `collections, copy, json, pathlib, posixpath, re,
+subprocess, sys` + `adaptive_grok.architecture`); `find <pkg> -name '*.py'` → 0;
+`python3 scripts/grok_spec.py validate --gate --change-id 20260919-…-59527d --json` → `"ok": true`, `"errors": []`,
+`criterion_mapped 6 / criterion_total 6`.
+
+**Fix to PASS (one edit, nothing reopens):** either regenerate block H's output fence from the committed `:58s`
+script, or change that format spec to `:64s` and re-record — and the cells at rows 35–36 need no change either way.
+
+**Invariants:** `mistakes.md` is untouched by `fc9d877` (not among its 7 files) and
+`git diff --numstat d871ea6..fc9d877 -- mistakes.md` → **78 added / 0 deleted**.
+
+## Residual (non-blocking)
+1. Block H sits above block G in file order but is indexed last in the A–H range; `^```console` scrapers still skip
+   block G (bare fences), unchanged from the prior round.
+2. `review-code.md:169` still reads "by 205 and 209 lines" — my round-3 prose, now contradicted by the measured
+   163/21 and 155/57 above; it is reviewer text, not a package claim, so it is not counted against the package.
+3. `resolves_by_path=False` for both `urn:` refs is true but unexplained at row 36; a reader could take it as a
+   second, unnamed failure mode.
+
+## Micro-confirmation on 3512d4b
+MICRO-CONFIRMATION VERDICT: PASS
+
+Environment: `chmod 700` dir `/home/pall/grok-projects/micro104-3512d4b` holding `clone` (branch tip `3512d4b`,
+0 dirty lines) and `wt-base` (detached `d871ea6d5d654406281dd65626a3dce61bf933fa`, clean on product paths). Scripts
+were extracted from the harness `.md` at runtime; nothing was written into the package.
+
+**5 closed — block H reproduces byte-for-byte.** Its own ```python fence saved as `block_h.py`, run
+`python3 block_h.py <wt-base>`, exits 0 and prints 8/8 lines identical to the recorded fence, tabs and padding
+included, same digest (`3ee4874b34eb2cd9` both sides). The `:58s` drift is gone.
+**Control — block F still reproduces:** `python3 block_f.py <clone> d871ea6 HEAD` → 12/12 lines byte-exact (`8a2bb92ab9c18f00`).
+**Block G — fence present, no embedded script to match it against.** G carries a 13-line recorded fence but only the
+bare command `python3 block_g_openapi_guard.py <repo>`; that file exists nowhere (`find <pkg> -name '*.py'` → 0), so
+G's fence is not regenerable from the harness — a standing limitation, unchanged by these commits (G's section is
+byte-identical to its `fc9d877` self; the change was a move). The five guard names its intro cites all exist at
+`d871ea6` (`def` count 1 each) and its `first False` repr matches my prior-round instrumentation.
+**Order/index:** headings now A·B·C·C-2·D·E·F(825)·[Index 884]·G(901)·H(936) — matches `blocks A–H` at
+`evidence/README.md:17`, `architecture.md:36`, `test-plan.md:11`. Package grep for `A–F|A-F|seven blocks|7 blocks`
+(md+yaml) → only my own prior-round prose at lines 220/225; 8 ```python fences. Residual (non-blocking): the Index
+table (884-899) still has no rows for G or H.
+**No new false statement.** `3512d4b` is a pure move (line multiset identical to `6009932`). `6009932`'s only new
+prose is the re-padded two lines plus the `resolves_by_path=False` paragraph, and that mechanism claim holds:
+`architecture.py:1170-1174` builds `records_by_schema_id` from each document's `$id` and `resolve()` consults it at
+`:1240` before any path fallback. Cosmetic only: the move left a duplicated `---` rule between G and H (932/934).

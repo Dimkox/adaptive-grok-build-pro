@@ -1,0 +1,151 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "The post-merge audit of the #104 composition analysis is durable repository content: five analysis reports under this package's evidence/ (four lanes selected by this change's route 59527d5a28f8 - repo_explorer, architect, docs_researcher, integration_architect - plus the ai_architect lane, which route 59527d5a28f8 does not list and which belongs to route 4c524b83df59, the #133 delivery wave whose scaffold this evidence was carried from), the controller's re-measured tables, and evidence/measurement-harness.md carrying the copy-pasteable commands; every numeric claim names the block or command that reproduces it."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "The record states honestly what merged PR #133 did and did not fix: 36/38 declared json_schema contracts are identity-analyzable (was 12/38) and 46/50 across all declared kinds (was 21/50), so #133 unlocked 24 json_schema contracts and 25 of 50 in total, and the unsupported_openapi_construct symptom is gone; residuals CAR-1 to CAR-4 are named as fail-closed incompleteness while CAR-5 is named as a latent soundness defect; and one genuine latent false-certification path found by this audit - declared-$id precedence over the declared-path table - is reported as a soundness defect and filed as issue #147 with a control-flipped reproduction."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Every superseded measurement is labelled as superseded with its cause: two tables built on a truncated (factory-only, 38-file) contract inventory, one built on a working tree still carrying a probe commit, the pre-#133 identity row typed as 14/38 with 26 blocked (arithmetically impossible against the 38 denominator), the ablation line that mixed the 38-record json_schema unit with the 50-record all-kinds unit, the edit-class cell that reported a producer-break verdict for an edit the comparator reports as a non-verdict, and the placeholder cells in the synthetic soundness table - all are marked as wrong, so no later wave re-quotes them."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "mistakes.md gains the twelve lesson entries (six recovered from an uncommitted working-tree tail at the maintainer's explicit direction, six produced by this wave) with zero deleted lines in the diff, and the added block stays locally chronological; measured: git diff --numstat origin/main...HEAD -- mistakes.md = 154 added / 0 deleted, 12 dated headings added, out-of-order adjacent date pairs unchanged at 12."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "Committed evidence carries no machine-local absolute paths, host names, key material or credential material: every worktree and scratch path is rendered as a placeholder."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "The delivered head passes python3 scripts/grok_verify.py --mode pr with the verification and code_review receipts bound to its tree fingerprint; this criterion is satisfied only by those receipts, never by ticking it in advance."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260919-deliver-the-independent-post-merge-audit-of-issu-59527d",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "This wave must not alter comparator, contract, rules or policy content, and must not reopen, re-close or re-scope issue #104: follow-up work belongs to issue #146 and to the named residuals CAR-1 to CAR-5, not to documentation."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "No agent-reported number may be committed as a measurement without a command that reproduces it; a claim that cannot be re-run is recorded as an open question instead."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "The shared append-only documents must not be rewritten: any diff hunk that removes or reorders existing mistakes.md content is a defect of this change, not a cleanup."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "mistakes.md is append-only in this change: git diff --numstat reports zero deleted lines for it on the delivered head."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The delivered tree changes no file under .grok-stack/, factory/, architecture/, governance/, schemas/ or tests/; the only touched paths are this package and mistakes.md."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "Every verdict table in the committed evidence names the inventory it was computed against and the unit it is counted in (38 declared json_schema records vs 50 declared records of all kinds), and cites the reproduction block in evidence/measurement-harness.md that recomputes it, because an under-declared inventory turns real verdicts into unsupported and an unlabeled unit turns 24 into 23."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver the independent post-merge audit of issue #104 composition analysis as durable change-package evidence, plus the two agent-behavior lessons it produced: a duplicate implementation wave started from a stale route file, and comparator probes whose truncated contract inventory fabricated unsupported verdicts. Documentation only: no product, contract, rule or policy change.",
+    "success_metric": "Eight lesson entries and seven audit artifacts (five analysis reports, the controller's re-measured tables, and the reproduction harness) are tracked in Git on the delivered head with zero deletions to the shared document, and the residual list CAR-1 to CAR-5 plus issues #146 and #147 are the only open claims left from this wave.",
+    "target": "adaptive-grok-build-pro main: engineering/changes/20260919-deliver-the-independent-post-merge-audit-of-issu-59527d/evidence/ and mistakes.md"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "git diff --numstat <base>...<delivered-head> -- mistakes.md shows additions with a zero deleted column (measured 154 0) and block F prints 12 dated headings added",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
