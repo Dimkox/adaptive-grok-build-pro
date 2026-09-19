@@ -1714,5 +1714,65 @@
     "factory_site_publication": false,
     "record_scope": "False means not established by available evidence. L5 live artifact acceptance does not qualify the full external pilot, M8 cohort or general M9 production/recovery path.",
     "complete_pilot_cost_and_human_intervention_accounting": false
+  },
+  "latest_runtime_operation": {
+    "observed_at": "2026-09-19T12:56:21.093490+00:00",
+    "status": "partial_qwen_rolled_back",
+    "target_source": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+    "change_package": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
+    "evidence": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
+    "runbook": "engineering/runbooks/l5-runtime-upgrade-2026-09-19.md",
+    "services": {
+      "primary": {
+        "unit": "adaptive-l5.service",
+        "installed_sha": "5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a",
+        "profile": "qwen-intl",
+        "model": "qwen-plus",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 2326158,
+        "schema": 1,
+        "target_accepted": false,
+        "recovery": "full_snapshot_restored",
+        "job_counts": {
+          "artifact_ready": 1,
+          "needs_human": 4,
+          "provider_unavailable": 1
+        },
+        "unit_sha256": "c0fd42ba8dd576323ba677df82fbcf27e9c4df7c8a2a0fbd4312b6caa187d5a6"
+      },
+      "secondary": {
+        "unit": "adaptive-l5-grok.service",
+        "installed_sha": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+        "profile": "grok-vision",
+        "model": "grok-4.6",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 2287703,
+        "schema": 2,
+        "target_accepted": true,
+        "job_counts": {
+          "artifact_ready": 2,
+          "needs_human": 1
+        },
+        "unit_sha256": "3df99c0168103e691e7571c162609c5859914ca8963aeb2c4cf03718572b08c0"
+      },
+      "separate_omni": {
+        "unit": "adaptive-l5-omni.service",
+        "installed_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+        "profile": "qwen-omni-intl",
+        "model": "qwen3.5-omni-plus-2026-03-15",
+        "active_state": "active",
+        "unit_file_state": "enabled",
+        "live_enabled": true,
+        "pid": 2204064,
+        "operation": "unchanged",
+        "unit_sha256": "1d501478e343fb61e369513cff7d340c2f260877b4343bbdd45236f838879de8"
+      }
+    },
+    "next_action": "Resolve the Qwen draft-diagnostic gap with offline regression coverage before a new bounded acceptance; do not repeat the discarded call or mark the target primary accepted.",
+    "historical_record": "runtime_observations remains the dated September 16 release observation; use this newer operation for current installation identity."
   }
 }

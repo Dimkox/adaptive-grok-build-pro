@@ -1,0 +1,90 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+  "base_fingerprint": "80ef301d01f1b0edf405e1f2777bf48dbfa15234ae06bec314167c3f7c63333f",
+  "complexity": "high-risk",
+  "created_at": "2026-09-19T12:16:27+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk signal: deploy",
+    "intent=release",
+    "domains=data,security,api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "080b283b0cf3",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Deploy existing Claw runtime units adaptive-l5.service and adaptive-l5-grok.service to already merged revision 26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960. Set primary profile qwen-omni-intl and retain grok-vision. Prepare immutable installation, SQLite backup and rollback, offline-first startup and bounded authenticated live acceptance. The user explicitly authorizes this operational deployment. Product source and Trust CI infrastructure remain unchanged.",
+  "task_domains": [
+    "data",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

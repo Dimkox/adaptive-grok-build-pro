@@ -1,0 +1,13 @@
+{
+  "exit_code": 0,
+  "result": {
+    "artifact_digest": "85b3360aaa28c38448c8d31770a5307df809aa7ce4829e81f1ac7b4ddddc76ed",
+    "client_posts": 0,
+    "job_id": "pr82-smoke-5f6f6ce1ecb0",
+    "live_url": null,
+    "new_profile_acceptance": false,
+    "state": "artifact_ready",
+    "status": "historical_artifact_restored"
+  },
+  "stderr_present": false
+}

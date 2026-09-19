@@ -1,0 +1,90 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Both units run merged 26a0d3d and are active/running/enabled; installed sources and dependencies verified.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        },
+        {
+          "attestation": "a5f713cf-22c4-4ba0-93e2-f45f3fdcd394"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A complete per-unit pre-upgrade snapshot precedes v1 to v2 startup; historical state counts remain unchanged offline.",
+      "evidence": [
+        {
+          "production_signal": "SIG-002"
+        },
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Each unit serves exact-profile capability and one validated same-job artifact_ready result, observed again without resubmission; no public publication.",
+      "evidence": [
+        {
+          "production_signal": "SIG-003"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deploy existing Claw runtime units adaptive-l5.service and adaptive-l5-grok.service to already merged revision 26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960. Set primary profile qwen-omni-intl and retain grok-vision. Prepare immutable installation, SQLite backup and rollback, offline-first startup and bounded authenticated live acceptance. The user explicitly authorizes this operational deployment. Product source and Trust CI infrastructure remain unchanged.",
+    "success_metric": "Number of named existing units running target source with preserved data and authenticated exact-profile artifact acceptance",
+    "target": "2 of 2: Qwen qwen-omni-intl and Grok grok-vision; separate Omni unchanged"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "systemctl executable SHA, active/running/enabled and installed source byte comparison for both units",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "per-unit snapshot manifest digest, schema 1-to-2 and unchanged stopped/offline counts",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-003",
+      "metric": "same-job authenticated profile and v1/v2 artifact acceptance plus observe-only recheck for each service",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 7,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

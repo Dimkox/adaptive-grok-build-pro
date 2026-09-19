@@ -1,0 +1,52 @@
+{
+  "grok": {
+    "backup": {
+      "before": {
+        "jobs": {
+          "artifact_ready": 1,
+          "needs_human": 1
+        },
+        "schema": 1
+      },
+      "bytes": 225830,
+      "files": 3,
+      "manifest_sha256": "e5d46c38a051774439c3a59e9e3e3e141a4112691edc5067c52c38393d4e58ec",
+      "provider_replay": false,
+      "snapshot": "/var/lib/adaptive-l5-grok/backups/pre-upgrade-20260919-26a0d3db8fa9",
+      "status": "snapshot_saved"
+    },
+    "offline-state": {
+      "jobs": {
+        "artifact_ready": 1,
+        "needs_human": 1
+      },
+      "schema": 2
+    }
+  },
+  "qwen": {
+    "backup": {
+      "before": {
+        "jobs": {
+          "artifact_ready": 1,
+          "needs_human": 4,
+          "provider_unavailable": 1
+        },
+        "schema": 1
+      },
+      "bytes": 234033,
+      "files": 3,
+      "manifest_sha256": "e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e",
+      "provider_replay": false,
+      "snapshot": "/var/lib/adaptive-l5/backups/pre-upgrade-20260919-26a0d3db8fa9",
+      "status": "snapshot_saved"
+    },
+    "offline-state": {
+      "jobs": {
+        "artifact_ready": 1,
+        "needs_human": 4,
+        "provider_unavailable": 1
+      },
+      "schema": 2
+    }
+  }
+}

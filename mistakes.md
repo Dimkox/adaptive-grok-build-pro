@@ -1329,3 +1329,7 @@ as unreviewed new code: list every sentence it adds and name the command behind 
 closed. When overwriting another lane's
 text, prove the replacement against the source file before deleting the original; if it cannot be proven, keep the
 lane's value. Same-pass additions get the *stricter* review, not the looser one, because nobody has read them yet.
+
+### 2026-09-19 — Runtime upgrade preflight and dependent command ordering
+
+The initial Grok backup failed because preflight checked storage space and state but missed ownership of the existing backups parent; the old unit was resumed before migration, then only that parent was corrected under an exact grant. A separate offline smoke failed because I treated an exec session as completed and launched its dependent client before startup finished. Check parent permissions up front and wait for the actual process result plus readiness before dependent work; preserve both failures instead of reporting an uninterrupted green rollout.

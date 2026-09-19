@@ -1,0 +1,41 @@
+{
+  "change_id": "20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
+  "created_at": "2026-09-19T12:16:27+00:00",
+  "history": [
+    {
+      "at": "2026-09-19T12:16:27+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-19T12:24:45+00:00",
+      "from": "draft",
+      "reason": "Exact two-unit operation, backups, target Trust CI provenance and rollback written in evidence/operations-plan.md",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-19T12:24:45+00:00",
+      "from": "scoped",
+      "reason": "User explicitly delegated moving existing services to current code by factory rules; operational scope and exact resources recorded. No human security signature is fabricated.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-19T12:59:57+00:00",
+      "from": "approved",
+      "reason": "Recording executed exact-grant deployment and reviewed Qwen recovery; no application source modification.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-19T12:59:57+00:00",
+      "from": "implementing",
+      "reason": "Grok target accepted; Qwen Omni acceptance failed and original primary restored. AC-001 and AC-003 remain unmet; do not transition ready.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "080b283b0cf3",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Deploy existing Claw runtime units adaptive-l5.service and adaptive-l5-grok.service to already merged revision 26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960. Set primary profile qwen-omni-intl and retain grok-vision. Prepare immutable installation, SQLite backup and rollback, offline-first startup and bounded authenticated live acceptance. The user explicitly authorizes this operational deployment. Product source and Trust CI infrastructure remain unchanged.",
+  "updated_at": "2026-09-19T12:59:57+00:00"
+}
