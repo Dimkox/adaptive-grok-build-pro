@@ -1253,3 +1253,79 @@ so it measured my own scaffolding, not the comparator. The same pair gave `unsup
 declared set, and the report must state the inventory size plus the work-units consumed; an `unsupported` from a small probe
 is evidence about the probe. Cross-check any such claim against the real gate path
 (`grok_architecture.py fitness --base <sha> --head <probe-sha>`) before quoting it.
+
+## 2026-09-19 — Published a widening metric built by splicing two different measurement conventions
+
+**Symptom:** a change package, its typed spec and an issue comment claimed the contract-closure fix widened
+verification from "10 -> 27" target-dependent pairs. Independent review measured the same trees under one stated
+method and got 22 -> 27 transitively, 10 -> 17 one-hop. The published figure combined a *direct* count taken from the
+unpatched tree with a *transitive* count taken from the patched tree, inflating the effect roughly 2.5x. The same
+review also caught a related mislabel: counts described as "declared contracts" had been computed from a
+`factory/contracts/**/*.json` glob (38 files), two of which are not declared contracts at all, so four of nine
+"lost edges" named files outside the gate's scope.
+**Root cause:** two probes written minutes apart at different scopes and depths, then joined in prose without either
+being recomputed at the other's scope. No single command produced "10 -> 27"; each endpoint came from a different
+convention, and the direction that felt impressive is the direction that went unchecked.
+**Durable rule:** every reported before/after pair must come from one script run over both trees, printing both
+conventions (direct and transitive) and the inventory it used, and the number quoted in prose must be one of the
+printed lines verbatim. When reviewing my own measurement, recompute it with the same tool the reviewer used before
+defending or discarding it — here the reviewer was right twice, about the metric and about the inventory label.
+## 2026-09-19 — Compared two source trees inside one process and reported the module against itself
+
+**Symptom:** a "canonical before/after" script took both repository paths as arguments, did
+`sys.path.insert(0, repo)` and `import adaptive_grok.architecture` per repo, then printed
+`base=22 patched=22, new failure paths: 0` — which looked like a refutation of both reviewers. The reviewers' numbers
+(22 -> 27) were right; my script was measuring the first tree twice.
+**Root cause:** Python caches modules by name in `sys.modules`, so a second `import` of the same package name from a
+different `sys.path` entry returns the already-loaded module; changing `sys.path` between iterations has no effect.
+Because both trees expose the identical package name, the "comparison" was a self-comparison and its zero differences
+were tautological, not empirical.
+**Durable rule:** when comparing code across two checkouts of the same package, run one process per tree, have each
+emit machine-readable output to a file, and compare the artifacts. Never import the same top-level package name twice
+in one process, and treat a suspiciously clean `no differences` from a hand-rolled A/B harness as the default suspicion
+it deserves: verify by making the harness report a difference you already know exists (here: the 5 new closure edges).
+## 2026-09-19 — Ran two write agents in the same worktree and let a whole-file rewrite destroy the other's evidence
+
+**Symptom:** an issue-#146 follow-up agent reported that its appended section in
+`evidence/mutation-matrix.md` had been clobbered and had to be re-appended, and that a second agent had changed
+comparator-visible behaviour in files it believed it owned. The controller (me) had also committed the tree while one
+of the two was still working in it, so the commit message asserted a state neither agent had finished declaring.
+**Root cause:** I treated "one wave = one write owner" as satisfied because I dispatched the follow-up to a *resumed*
+task handle, while the earlier handle's work was still live in the same directory. Two writers, one tree, and a tool
+that writes whole files: the later write silently deletes the earlier append. Nothing in the contract detects it, and
+`git status` looked clean because both authors were working on the same uncommitted content.
+**Durable rule:** before launching any agent that edits files, prove no other agent owns that tree — check the running
+roster for a task whose write scope overlaps, and give a follow-up to a *quiescent* owner only. If a wave must
+continue while its owner is still active, it gets its own worktree, not a second opinion on the same bytes. Before
+committing, read the working tree's `git status` and the last-modified time of every file in the diff, and never write
+a commit message about a state an agent has not finished reporting. Evidence files must be appended by the tool that
+owns them, and the controller must assume whole-file writes are destructive unless the agent reports its append was
+verified present afterwards.
+## 2026-09-19 — Corrected a package, and in the correcting commit overwrote a lane's true attribution with an unmeasured one
+
+**Symptom:** after a review forced the audit package to re-derive every number on the declared inventory, the
+correcting commit `b81849a` introduced a *new* false cell: the blocked-contract table said
+`CONTRACT-FACTORY-LANDING-OPENAPI-V1` was carried by a root `servers` key. Measured: that contract
+(`factory/contracts/openapi/landing-dogfood.v1.json`) has root keys `components`/`info`/`openapi`/`paths`, no
+`servers` at all, and 56 `$ref` occurrences; the root-`servers` shape belongs to a different contract,
+`CONTRACT-ADAPTIVE-DEMO-OPENAPI`. The analysis lane's original text had the attribution right, and the rewrite
+replaced it with a remembered guess. A reviewer also caught two same-family overclaims in that commit: a claim that
+harness blocks printed a number only a shell `ls` prints, and a clause readable as "no unlocked contract used
+`anyOf`" when exactly 3 of 25 did.
+**Root cause:** in a correction pass, prose that already *looks* verified inherits the trust earned by the numbers
+next to it. I re-derived the counts with a script and then filled an adjacent descriptive cell from memory, in the
+same edit that confessed to descriptive-from-memory errors. There is no separate gate for "adjective" claims, so the
+unit-level discipline has to cover every cell, not just the numerators.
+**Recurred immediately, which is the actual finding:** the next correction commit (`fc9d877`'s predecessor review round) invented
+three more facts the same way — that a record "carries `urn:`-form `$ref`s" (measured: it has zero `$ref`s of any
+kind), that two `urn:` references "resolve to nothing declared" (both resolve through declared `$id`s of other
+contracts), and line counts "205 / 209 lines differ" that no command reproduces (`git diff --numstat --no-index`
+gives 163/21 and 155/57). So this is not one lapse of attention but a property of correction mode: the pass is
+primed to re-derive the *numbers the reviewer quoted* and fills adjacent descriptive prose from recall, and each
+fix commit adds a fresh unreviewed surface that the next round must catch.
+**Durable rule:** in a correction commit, every changed cell — numeric *or* descriptive — must come from a command
+run in that pass, and the commit must state which block or command produced each. Treat the correction diff itself
+as unreviewed new code: list every sentence it adds and name the command behind each, before declaring the finding
+closed. When overwriting another lane's
+text, prove the replacement against the source file before deleting the original; if it cannot be proven, keep the
+lane's value. Same-pass additions get the *stricter* review, not the looser one, because nobody has read them yet.
