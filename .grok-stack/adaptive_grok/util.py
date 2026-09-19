@@ -4,14 +4,18 @@ import hashlib
 import json
 import os
 import re
+import signal
 import shutil
 import subprocess
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 RUNTIME_REL = Path('.grok-stack/runtime')
+_RUN_TERM_GRACE_SECONDS = 2.0
+_RUN_KILL_REAP_SECONDS = 5.0
 
 
 def now_utc() -> str:
@@ -84,19 +88,93 @@ def run(
     if env:
         merged.update(env)
     try:
-        return subprocess.run(
+        process = subprocess.Popen(
             args,
             cwd=cwd,
             text=True,
-            capture_output=True,
-            timeout=timeout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             env=merged,
-            check=False,
+            start_new_session=(os.name == 'posix'),
         )
     except FileNotFoundError:
         return subprocess.CompletedProcess(args, 127, '', f'command not found: {args[0]}')
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired as exc:
-        return subprocess.CompletedProcess(args, 124, exc.stdout or '', exc.stderr or 'timeout')
+        stdout, stderr = _terminate_timed_out_process(process, exc)
+        return subprocess.CompletedProcess(args, 124, stdout or exc.stdout or '', stderr or exc.stderr or 'timeout')
+    except BaseException:
+        try:
+            _terminate_timed_out_process(process, subprocess.TimeoutExpired(args, timeout))
+        finally:
+            if process.stdout is not None:
+                process.stdout.close()
+            if process.stderr is not None:
+                process.stderr.close()
+        raise
+    return subprocess.CompletedProcess(args, process.returncode, stdout or '', stderr or '')
+
+
+def _terminate_timed_out_process(
+    process: subprocess.Popen[str], timeout_error: subprocess.TimeoutExpired,
+) -> tuple[str | bytes | None, str | bytes | None]:
+    """Stop the timed-out command's process group and reap its direct child."""
+    if os.name == 'posix':
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        deadline = time.monotonic() + _RUN_TERM_GRACE_SECONDS
+        while time.monotonic() < deadline and _process_group_exists(process.pid):
+            process.poll()
+            time.sleep(0.05)
+        if _process_group_exists(process.pid):
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    elif process.poll() is None:
+        process.terminate()
+    try:
+        stdout, stderr = process.communicate(timeout=_RUN_KILL_REAP_SECONDS)
+    except subprocess.TimeoutExpired:
+        if os.name == 'posix':
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        elif process.poll() is None:
+            process.kill()
+        try:
+            stdout, stderr = process.communicate(timeout=_RUN_KILL_REAP_SECONDS)
+        except subprocess.TimeoutExpired:
+            if os.name == 'posix':
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            elif process.poll() is None:
+                process.kill()
+            stdout, stderr = timeout_error.output, timeout_error.stderr
+    group_remains = False
+    if os.name == 'posix':
+        deadline = time.monotonic() + _RUN_KILL_REAP_SECONDS
+        while _process_group_exists(process.pid) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        group_remains = _process_group_exists(process.pid)
+    if group_remains:
+        diagnostic = "timed out command process group remained after SIGKILL/reap deadline"
+        stderr = (stderr + "\n" + diagnostic) if stderr else diagnostic
+    return stdout, stderr
+
+
+def _process_group_exists(process_group_id: int) -> bool:
+    try:
+        os.killpg(process_group_id, 0)
+        return True
+    except ProcessLookupError:
+        return False
 
 
 def command_exists(name: str) -> bool:

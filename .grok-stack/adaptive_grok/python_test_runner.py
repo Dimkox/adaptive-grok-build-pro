@@ -281,7 +281,11 @@ def run_trust_tests(root: Path, workers: int) -> ProcessResult:
     ]
     with tempfile.TemporaryDirectory(prefix='grok-trust-tests-') as directory:
         environment = _environment(suite, Path(directory) / '.coverage')
-        environment['PYTHONPATH'] = os.pathsep.join(str(path) for path in (suite / 'src', suite / 'tests', suite))
+        suite_paths = (suite / 'src', suite / 'tests', suite)
+        environment['PYTHONPATH'] = os.pathsep.join(dict.fromkeys((
+            *(str(path) for path in suite_paths),
+            *(path for path in environment.get('PYTHONPATH', '').split(os.pathsep) if path),
+        )))
         return execute(command, suite, environment)
 
 

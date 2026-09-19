@@ -4,10 +4,13 @@ import contextlib
 import json
 import os
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -18,6 +21,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 from adaptive_grok.doctor import run_doctor
 from adaptive_grok import architecture as architecture_module
 from adaptive_grok import receipts as receipts_module
+from adaptive_grok import util as util_module
 from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
@@ -26,14 +30,21 @@ from adaptive_grok.verification import (
     CheckResult,
     _change_specs,
     _contracts,
+    _command_check,
     _governance_check,
     _workflow_artifacts_check,
+    _factory_postgres_exit_check,
+    _FACTORY_EXIT_OUTER_BUDGET,
+    _FACTORY_EXIT_CLEANUP_RESERVE,
+    _FACTORY_EXIT_TERM_GRACE,
+    _FACTORY_EXIT_ESCALATION_GRACE,
     _node,
     _python,
     _secret_scan,
     _sql_safety,
     verify,
 )
+from factory.tests import run_disposable_exit as disposable_exit_module
 from tests._support import project_copy
 
 _PASSING_UNITTEST = (
@@ -289,6 +300,141 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_factory_exit_term_window_covers_harness_cleanup_within_outer_cap(self) -> None:
+        # _run may spend one TERM grace plus its bounded wait/reap windows.
+        # Count one additional reap quantum for cancellation handoff and outer
+        # polling, then include delayed name resolution and exact resource cleanup.
+        harness_unwind = (
+            disposable_exit_module._RUN_TERM_GRACE_SECONDS
+            + 5 * disposable_exit_module._RUN_KILL_REAP_SECONDS
+            + disposable_exit_module._NAME_RESOLUTION_BUDGET_SECONDS
+            + 2 * 5
+            + disposable_exit_module._CLEANUP_COMMAND_TIMEOUT
+            + 3 * 5
+            + disposable_exit_module._CLEANUP_COMMAND_TIMEOUT
+        )
+        self.assertGreater(_FACTORY_EXIT_TERM_GRACE, harness_unwind)
+        self.assertGreaterEqual(
+            _FACTORY_EXIT_CLEANUP_RESERVE,
+            _FACTORY_EXIT_TERM_GRACE + _FACTORY_EXIT_ESCALATION_GRACE + 5,
+        )
+        work_budget = _FACTORY_EXIT_OUTER_BUDGET - _FACTORY_EXIT_CLEANUP_RESERVE
+        self.assertLessEqual(
+            work_budget + _FACTORY_EXIT_TERM_GRACE + _FACTORY_EXIT_ESCALATION_GRACE + 5 + 0.05,
+            _FACTORY_EXIT_OUTER_BUDGET,
+        )
+
+    def test_util_run_keyboard_interrupt_stops_descendants_before_reraising(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            root_pid_file, child_pid_file = root / 'root.pid', root / 'child.pid'
+            child_code = (
+                'import os,signal,time\n'
+                'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+                f"open({str(child_pid_file)!r}, 'w').write(str(os.getpid()))\n"
+                'while True: time.sleep(.01)\n'
+            )
+            root_code = (
+                'import os,signal,subprocess,sys,time\n'
+                'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+                f"open({str(root_pid_file)!r}, 'w').write(str(os.getpid()))\n"
+                f"subprocess.Popen([sys.executable, '-c', {child_code!r}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+                'while True:\n'
+                f"  if __import__('pathlib').Path({str(child_pid_file)!r}).exists(): break\n"
+                '  time.sleep(.01)\n'
+                'print("ready", flush=True)\n'
+                'while True: time.sleep(.01)\n'
+            )
+            original_communicate = subprocess.Popen.communicate
+            injected = False
+
+            def interrupt_after_timeout(process, timeout=None):
+                nonlocal injected
+                if injected:
+                    return original_communicate(process, timeout=timeout)
+                try:
+                    original_communicate(process, timeout=0.3)
+                except subprocess.TimeoutExpired:
+                    injected = True
+                    raise KeyboardInterrupt
+                self.fail('blocking process unexpectedly completed')
+
+            pids: list[int] = []
+            try:
+                with patch.object(subprocess.Popen, 'communicate', interrupt_after_timeout), patch(
+                    'adaptive_grok.util._RUN_TERM_GRACE_SECONDS', 0.1
+                ):
+                    with self.assertRaises(KeyboardInterrupt):
+                        util_module.run([sys.executable, '-c', root_code], cwd=root, timeout=10)
+                pids = [int(root_pid_file.read_text()), int(child_pid_file.read_text())]
+                for pid in pids:
+                    with self.assertRaises(ProcessLookupError):
+                        os.kill(pid, 0)
+            finally:
+                for pid_file in (root_pid_file, child_pid_file):
+                    if pid_file.exists():
+                        try:
+                            os.kill(int(pid_file.read_text()), signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+
+    def test_util_run_timeout_terminates_descendants_before_return(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            root_pid_file, child_pid_file = root / 'root.pid', root / 'child.pid'
+            child_code = (
+                'import os,signal,time\n'
+                'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+                f"open({str(child_pid_file)!r}, 'w').write(str(os.getpid()))\n"
+                'while True: time.sleep(.01)\n'
+            )
+            root_code = (
+                'import os,signal,subprocess,sys,time\n'
+                'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+                f"open({str(root_pid_file)!r}, 'w').write(str(os.getpid()))\n"
+                f"subprocess.Popen([sys.executable, '-c', {child_code!r}], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)\n"
+                'while True:\n'
+                f"  if __import__('pathlib').Path({str(child_pid_file)!r}).exists(): break\n"
+                '  time.sleep(.01)\n'
+                'print("begin", flush=True)\n'
+                'while True: time.sleep(.01)\n'
+            )
+            pids: list[int] = []
+            try:
+                with patch('adaptive_grok.util._RUN_TERM_GRACE_SECONDS', 0.1, create=True):
+                    result = util_module.run(
+                        [sys.executable, '-c', root_code], cwd=root, timeout=0.3
+                    )
+                pids = [int(root_pid_file.read_text()), int(child_pid_file.read_text())]
+                self.assertEqual(result.returncode, 124)
+                output = result.stdout.decode('utf-8', errors='replace') if isinstance(result.stdout, bytes) else result.stdout
+                self.assertIn('begin', output)
+                for pid in pids:
+                    with self.assertRaises(ProcessLookupError):
+                        os.kill(pid, 0)
+            finally:
+                for pid_file in (root_pid_file, child_pid_file):
+                    if pid_file.exists():
+                        pid = int(pid_file.read_text())
+                        try:
+                            os.kill(pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+
+    def test_command_check_normalizes_timeout_output_bytes_for_json(self) -> None:
+        timed_out = subprocess.CompletedProcess(
+            ['fake-test'], 124, b'begin\n', b'timed out\n'
+        )
+        with tempfile.TemporaryDirectory() as raw, patch(
+            'adaptive_grok.verification.run', return_value=timed_out
+        ):
+            result = _command_check(Path(raw), 'root-tests', ['fake-test'], 0.1)
+        self.assertEqual(result.status, 'fail')
+        self.assertEqual(result.summary, 'exit=124')
+        self.assertEqual(result.stdout, 'begin\n')
+        self.assertEqual(result.stderr, 'timed out\n')
+        json.dumps(result.to_dict())
+
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
         for rel in (
@@ -1155,6 +1301,142 @@ class VerificationTests(unittest.TestCase):
             postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
             self.assertIsNotNone(postgres)
             self.assertEqual(postgres.status, 'fail')
+
+    def test_factory_postgres_exit_timeout_is_distinct_from_command_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            failing = _factory_postgres_exit_check(
+                root, [sys.executable, '-c', 'raise SystemExit(1)']
+            )
+            timed_out = _factory_postgres_exit_check(
+                root, [sys.executable, '-c',
+                       'import sys; print("TIMEOUT phase=factory-unittest elapsed=2.5s budget=220.0s", file=sys.stderr); raise SystemExit(124)']
+            )
+        self.assertEqual(failing.status, 'fail')
+        self.assertIn('exit=1', failing.summary)
+        self.assertNotIn('timeout', failing.summary)
+        self.assertEqual(timed_out.status, 'fail')
+        self.assertEqual(timed_out.summary, 'timeout phase=factory-unittest elapsed=2.5s budget=220.0s')
+
+    def test_factory_postgres_exit_cancellation_waits_for_harness_unwind(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            marker = Path(raw) / 'cleanup.marker'
+            script = (
+                'import pathlib,signal,sys,time\n'
+                f"marker=pathlib.Path({str(marker)!r})\n"
+                'def stop(sig, frame): marker.write_text("cleanup"); raise SystemExit(143)\n'
+                'signal.signal(signal.SIGTERM, stop)\n'
+                f"pathlib.Path({str(marker)!r} + '.ready').write_text('ready')\n"
+                'print("ready", flush=True)\n'
+                'while True: time.sleep(.02)\n'
+            )
+            parent_pid = os.getpid()
+            ready = Path(str(marker) + '.ready')
+            def cancel_when_ready():
+                deadline = time.monotonic() + 3
+                while not ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                os.kill(parent_pid, signal.SIGTERM)
+            timer = threading.Thread(target=cancel_when_ready)
+            timer.start()
+            result = _factory_postgres_exit_check(Path(raw), [sys.executable, '-c', script])
+            timer.join(timeout=3)
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('cancelled signal=SIGTERM', result.summary)
+            self.assertEqual(marker.read_text() if marker.exists() else None, 'cleanup',
+                             f'child output={result.stdout!r} stderr={result.stderr!r}')
+
+    def test_factory_postgres_exit_waits_for_delayed_cleanup_before_escalation(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            marker, ready = root / 'cleanup.marker', root / 'ready'
+            script = (
+                'import pathlib,signal,sys,time\n'
+                f"marker=pathlib.Path({str(marker)!r})\n"
+                'def stop(sig, frame):\n'
+                ' time.sleep(0.2)\n'
+                " marker.write_text('cleanup')\n"
+                ' raise SystemExit(143)\n'
+                'signal.signal(signal.SIGTERM, stop)\n'
+                f"pathlib.Path({str(ready)!r}).write_text('ready')\n"
+                'while True: time.sleep(.02)\n'
+            )
+            parent_pid = os.getpid()
+
+            def cancel_when_ready():
+                deadline = time.monotonic() + 3
+                while not ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                os.kill(parent_pid, signal.SIGTERM)
+
+            timer = threading.Thread(target=cancel_when_ready)
+            timer.start()
+            with patch('adaptive_grok.verification._FACTORY_EXIT_TERM_GRACE', 0.5), patch(
+                'adaptive_grok.verification._FACTORY_EXIT_ESCALATION_GRACE', 0.1
+            ):
+                result = _factory_postgres_exit_check(root, [sys.executable, '-c', script])
+            timer.join(timeout=3)
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('cancelled signal=SIGTERM', result.summary)
+            self.assertEqual(marker.read_text() if marker.exists() else None, 'cleanup')
+
+    def test_factory_postgres_exit_escalates_and_reaps_unresponsive_harness(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            pidfile = Path(raw) / 'pid'
+            script = (
+                'import os,pathlib,signal,time\n'
+                f"pathlib.Path({str(pidfile)!r}).write_text(str(os.getpid()))\n"
+                'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+                'while True: time.sleep(.02)\n'
+            )
+            with patch('adaptive_grok.verification._FACTORY_EXIT_OUTER_BUDGET', 0.25), patch(
+                'adaptive_grok.verification._FACTORY_EXIT_CLEANUP_RESERVE', 0.15
+            ), patch('adaptive_grok.verification._FACTORY_EXIT_TERM_GRACE', 0.1), patch(
+                'adaptive_grok.verification._FACTORY_EXIT_ESCALATION_GRACE', 0.1
+            ):
+                result = _factory_postgres_exit_check(Path(raw), [sys.executable, '-c', script])
+            pid = int(pidfile.read_text())
+            with self.assertRaises(ProcessLookupError):
+                os.kill(pid, 0)
+        self.assertEqual(result.status, 'fail')
+        self.assertIn('timeout', result.summary)
+        self.assertIn('phase=factory-postgres-exit', result.summary)
+        self.assertRegex(result.summary, r'elapsed=[0-9.]+s budget=0\.1s outer_budget=0\.2s')
+
+    def test_harness_run_stops_child_group_before_cleanup_unwinds(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            log = Path(raw) / 'order.log'
+            child_code = (
+                'import pathlib,signal,time\n'
+                f"p=pathlib.Path({str(log)!r})\n"
+                'def stop(sig, frame): p.open("a").write("child-stopped\\n"); raise SystemExit(0)\n'
+                'signal.signal(signal.SIGTERM, stop)\n'
+                'while True: time.sleep(.02)\n'
+            )
+            command_code = (
+                'import subprocess,sys,time\n'
+                f"subprocess.Popen([sys.executable, '-c', {child_code!r}])\n"
+                'while True: time.sleep(.02)\n'
+            )
+            driver = (
+                'import pathlib,signal,sys,time\n'
+                'sys.path.insert(0, "factory")\n'
+                'from tests import run_disposable_exit as harness\n'
+                'def stop(sig, frame): raise KeyboardInterrupt()\n'
+                'signal.signal(signal.SIGTERM, stop)\n'
+                'try: harness._run([sys.executable, "-c", ' + repr(command_code) + '], timeout=60, phase="fixture")\n'
+                f"except KeyboardInterrupt: pathlib.Path({str(log)!r}).open('a').write('cleanup\\n')\n"
+            )
+            runner = subprocess.Popen([sys.executable, '-c', driver], cwd=ROOT)
+            try:
+                time.sleep(0.3)
+                runner.send_signal(signal.SIGTERM)
+                self.assertEqual(runner.wait(timeout=8), 0)
+            finally:
+                if runner.poll() is None:
+                    runner.kill()
+                    runner.wait(timeout=3)
+            self.assertEqual(log.read_text().splitlines(), ['child-stopped', 'cleanup'])
 
     def test_python_pr_does_not_trust_arbitrary_verifier_capability(self) -> None:
         with project_copy() as root:

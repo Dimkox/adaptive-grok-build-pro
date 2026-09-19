@@ -4,8 +4,11 @@ import hashlib
 import json
 import os
 import re
+import signal
 import sys
 import tempfile
+import subprocess
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -352,14 +355,125 @@ def _workflow_artifacts_check(
 
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300, *, env: dict[str, str] | None = None) -> CheckResult:
     proc = run(command, cwd=root, timeout=timeout, env=env)
+    stdout = _command_output_text(proc.stdout)
+    stderr = _command_output_text(proc.stderr)
     return CheckResult(
         name=name,
         status='pass' if proc.returncode == 0 else 'fail',
         summary=f'exit={proc.returncode}',
         command=command,
-        stdout=proc.stdout[-12000:],
-        stderr=proc.stderr[-12000:],
+        stdout=stdout[-12000:],
+        stderr=stderr[-12000:],
     )
+
+
+def _command_output_text(value: str | bytes | None) -> str:
+    if isinstance(value, bytes):
+        return value.decode('utf-8', errors='replace')
+    return value or ''
+
+
+_FACTORY_EXIT_OUTER_BUDGET = 600.0
+# Harness unwind is bounded by process-group stop/reap plus exact container and
+# volume cleanup. Keep the TERM window longer than that bound, then reserve the
+# final escalation/reap allowance inside the unchanged 600s outer cap.
+_FACTORY_EXIT_CLEANUP_RESERVE = 110.0
+_FACTORY_EXIT_TERM_GRACE = 101.0
+_FACTORY_EXIT_ESCALATION_GRACE = 2.0
+
+
+def _factory_postgres_exit_check(root: Path, command: list[str]) -> CheckResult:
+    """Own only the disposable harness process and let it unwind before escalation."""
+    started = time.monotonic()
+    work_budget = _FACTORY_EXIT_OUTER_BUDGET - _FACTORY_EXIT_CLEANUP_RESERVE
+    deadline = started + work_budget
+    received_signal: int | None = None
+    stop_started: float | None = None
+    stop_reason: str | None = None
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+
+    def on_signal(signum, _frame):
+        nonlocal received_signal
+        if received_signal is None:
+            received_signal = signum
+
+    for sig in previous:
+        signal.signal(sig, on_signal)
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        try:
+            try:
+                process = subprocess.Popen(
+                    command, cwd=root, stdout=stdout_file, stderr=stderr_file,
+                    start_new_session=(os.name == 'posix'),
+                )
+            except OSError as exc:
+                return CheckResult('factory-postgres-exit', 'fail', f'exit=127: {exc}', command=command)
+            while process.poll() is None:
+                now = time.monotonic()
+                if received_signal is not None and stop_started is None:
+                    stop_started = now
+                    stop_reason = 'cancelled'
+                    try:
+                        process.send_signal(received_signal)
+                    except ProcessLookupError:
+                        pass
+                elif stop_started is None and now >= deadline:
+                    stop_started = now
+                    stop_reason = 'timeout'
+                    process.send_signal(signal.SIGTERM)
+                elif stop_started is not None and now - stop_started >= _FACTORY_EXIT_TERM_GRACE:
+                    if os.name == 'posix':
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    else:
+                        process.kill()
+                    break
+                time.sleep(0.05)
+            try:
+                process.wait(timeout=_FACTORY_EXIT_ESCALATION_GRACE)
+            except subprocess.TimeoutExpired:
+                if os.name == 'posix':
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                else:
+                    process.kill()
+                process.wait(timeout=5)
+        finally:
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
+        elapsed = time.monotonic() - started
+        stdout = _tail_file(stdout_file)
+        stderr = _tail_file(stderr_file)
+    if stop_reason == 'cancelled':
+        signame = signal.Signals(received_signal).name if received_signal else 'signal'
+        return CheckResult('factory-postgres-exit', 'fail',
+                           f'cancelled signal={signame} elapsed={elapsed:.1f}s budget={_FACTORY_EXIT_OUTER_BUDGET:.0f}s',
+                           command=command, stdout=stdout, stderr=stderr)
+    if stop_reason == 'timeout':
+        return CheckResult('factory-postgres-exit', 'fail',
+                           f'timeout phase=factory-postgres-exit elapsed={elapsed:.1f}s budget={work_budget:.1f}s outer_budget={_FACTORY_EXIT_OUTER_BUDGET:.1f}s',
+                           command=command, stdout=stdout, stderr=stderr)
+    if process.returncode == 124:
+        match = re.search(r'TIMEOUT phase=([^\s]+) elapsed=([0-9.]+)s budget=([0-9.]+)s', stdout + '\n' + stderr)
+        if match:
+            summary = f'timeout phase={match.group(1)} elapsed={match.group(2)}s budget={match.group(3)}s'
+        else:
+            summary = f'exit=124 elapsed={elapsed:.1f}s budget={_FACTORY_EXIT_OUTER_BUDGET:.0f}s'
+        return CheckResult('factory-postgres-exit', 'fail', summary, command=command, stdout=stdout, stderr=stderr)
+    return CheckResult('factory-postgres-exit', 'pass' if process.returncode == 0 else 'fail',
+                       f'exit={process.returncode} elapsed={elapsed:.1f}s budget={_FACTORY_EXIT_OUTER_BUDGET:.0f}s',
+                       command=command, stdout=stdout, stderr=stderr)
+
+
+def _tail_file(stream, limit: int = 12000) -> str:
+    stream.seek(0, os.SEEK_END)
+    size = stream.tell()
+    stream.seek(max(0, size - limit))
+    return stream.read(limit).decode('utf-8', errors='replace')
 
 
 _EXACT_SHA = re.compile(r'^[0-9a-fA-F]{40}$')
@@ -1013,11 +1127,9 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
             )
         else:
             results.append(
-                _command_check(
+                _factory_postgres_exit_check(
                     root,
-                    'factory-postgres-exit',
                     [sys.executable, str(factory_exit.relative_to(root))],
-                    600,
                 )
             )
     return results

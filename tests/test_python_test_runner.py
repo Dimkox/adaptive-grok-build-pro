@@ -71,6 +71,9 @@ class PythonTestRunnerTests(unittest.TestCase):
                 trust = root / 'trust-ci'
                 (trust / 'src').mkdir(parents=True)
                 (trust / 'src/subject.py').write_text('value = 42\n')
+                foreign_tools = root / 'outer-test-tools'
+                foreign_tools.mkdir()
+                (foreign_tools / 'subject.py').write_text('value = 0\n')
                 (trust / 'tests').mkdir()
                 (trust / 'tests/__init__.py').write_text('')
                 (trust / 'tests/_support.py').write_text('from subject import value\n')
@@ -88,9 +91,23 @@ class PythonTestRunnerTests(unittest.TestCase):
                         )
                     )
                 command = [sys.executable, '-m', 'adaptive_grok.python_test_runner', '--suite', 'trust-ci']
-                environment = {**os.environ, 'PYTHONPATH': str(Path(__file__).resolve().parents[1] / '.grok-stack')}
+                inherited_path = os.pathsep.join(filter(None, (
+                    str(foreign_tools), os.environ.get('PYTHONPATH', ''),
+                )))
+                inherited_environment = {
+                    **os.environ, '_GROK_TEST_CHILD': '1', 'PYTHONPATH': inherited_path,
+                }
+                local_stack = str(Path(__file__).resolve().parents[1] / '.grok-stack')
+                environment = {
+                    **inherited_environment,
+                    'PYTHONPATH': os.pathsep.join(filter(None, (local_stack, inherited_environment.get('PYTHONPATH', '')))),
+                }
+                environment.pop('_GROK_TEST_CHILD', None)
+                self.assertNotIn('_GROK_TEST_CHILD', environment)
                 result = execute(command, root, environment)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                if workers and parallel_engine_ready(False):
+                    self.assertIn('engine=pytest-xdist', result.stdout)
                 self.assertEqual(len(list(trust.glob('*.pid'))), 6)
                 for name in ('alpha', 'beta'):
                     self.assertEqual(len({p.read_text() for p in trust.glob(f'{name}-*.pid')}), 1)
