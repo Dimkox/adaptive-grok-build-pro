@@ -3958,10 +3958,219 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("CONTRACT-TEST", " ".join(result.findings))
 
+    def test_json_schema_root_documentation_changes_are_distinct_findings(self) -> None:
+        cases = (
+            ("description", "A contract", "B contract"),
+            ("title", "Contract A", "Contract B"),
+            ("description", "A contract", None),
+            ("title", None, "Contract B"),
+        )
+        for field, old, new in cases:
+            with self.subTest(field=field, old=old, new=new):
+                system = _system()
+                system["contracts"] = [{
+                    "id": "CONTRACT-TEST", "kind": "json_schema",
+                    "path": "engineering/contracts/test.json", "version": "1",
+                    "role": "consumer", "compatibility": "consumer_accepts_old",
+                }]
+                system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+                rules = _rules()
+                rules["contract_policies"] = [{
+                    "id": "FIT-CONTRACT", "contract_kinds": ["json_schema"],
+                    "compatibility": "consumer_accepts_old", "severity": "error",
+                }]
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                base_doc = _json_schema({"id": {"type": "string"}})
+                head_doc = copy.deepcopy(base_doc)
+                if old is not None:
+                    base_doc[field] = old
+                if new is not None:
+                    head_doc[field] = new
+                repo.write_json("engineering/contracts/test.json", base_doc)
+                base = repo.commit("contract base")
+                repo.write_json("engineering/contracts/test.json", head_doc)
+                head = repo.commit("contract documentation changed")
+
+                result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+                self.assertEqual(result.status, "fail")
+                joined = " ".join(result.findings)
+                self.assertIn("changed_documentation", joined)
+                self.assertNotIn("widened_producer_output", joined)
+
+    def test_json_schema_nested_documentation_is_not_root_metadata(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST", "kind": "json_schema",
+            "path": "engineering/contracts/test.json", "version": "1",
+            "role": "consumer", "compatibility": "consumer_accepts_old",
+        }]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT", "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old", "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        base_doc = _json_schema({"id": {"type": "string", "title": "Old", "description": "Old details"}})
+        repo.write_json("engineering/contracts/test.json", base_doc)
+        base = repo.commit("contract base with nested annotations")
+        head_doc = copy.deepcopy(base_doc)
+        head_doc["properties"]["id"].update(title="New", description="New details")
+        repo.write_json("engineering/contracts/test.json", head_doc)
+        head = repo.commit("nested annotations changed")
+
+        result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+        self.assertEqual(result.status, "pass")
+        self.assertNotIn("changed_documentation", " ".join(result.findings))
+
+    def test_json_schema_combined_documentation_and_structure_findings(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST", "kind": "json_schema",
+            "path": "engineering/contracts/test.json", "version": "1",
+            "role": "consumer", "compatibility": "consumer_accepts_old",
+        }]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT-CONSUMER", "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old", "severity": "error",
+        }, {
+            "id": "FIT-CONTRACT-PRODUCER", "contract_kinds": ["json_schema"],
+            "compatibility": "producer_accepted_by_old", "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/test.json", _json_schema({"id": {"type": "string"}}))
+        base = repo.commit("contract base")
+        head_doc = _json_schema({"id": {"type": "string"}, "extra": {"type": "string"}})
+        head_doc["description"] = "Changed meaning"
+        repo.write_json("engineering/contracts/test.json", head_doc)
+        head = repo.commit("contract metadata and structure changed")
+
+        result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+        joined = " ".join(result.findings)
+        self.assertEqual(result.status, "fail")
+        self.assertIn("changed_documentation", joined)
+        self.assertIn("widened_producer_output", joined)
+
+    def test_json_schema_unchanged_documentation_and_structural_control(self) -> None:
+        def evaluate(head_doc):
+            system = _system()
+            system["contracts"] = [{
+                "id": "CONTRACT-TEST", "kind": "json_schema",
+                "path": "engineering/contracts/test.json", "version": "1",
+                "role": "consumer", "compatibility": "consumer_accepts_old",
+            }]
+            system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+            rules = _rules()
+            rules["contract_policies"] = [{
+                "id": "FIT-CONTRACT-CONSUMER", "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old", "severity": "error",
+            }, {
+                "id": "FIT-CONTRACT-PRODUCER", "contract_kinds": ["json_schema"],
+                "compatibility": "producer_accepted_by_old", "severity": "error",
+            }]
+            repo = GitArchitectureRepo(self)
+            repo.model(system, rules)
+            repo.write_json("engineering/contracts/test.json", _json_schema({"id": {"type": "string"}}))
+            base = repo.commit("contract base")
+            repo.write_json("engineering/contracts/test.json", head_doc)
+            head = repo.commit("contract head")
+            return self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+
+        unchanged = _json_schema({"id": {"type": "string"}})
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST", "kind": "json_schema",
+            "path": "engineering/contracts/test.json", "version": "1",
+            "role": "consumer", "compatibility": "consumer_accepts_old",
+        }]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT-CONSUMER", "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old", "severity": "error",
+        }, {
+            "id": "FIT-CONTRACT-PRODUCER", "contract_kinds": ["json_schema"],
+            "compatibility": "producer_accepted_by_old", "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/test.json", unchanged)
+        base = repo.commit("contract base")
+        head = base
+        same = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+        self.assertIn(same.status, {"pass", "not_applicable"})
+        self.assertNotIn("changed_documentation", " ".join(same.findings))
+
+        structural = _json_schema({"id": {"type": "string"}, "extra": {"type": "string"}})
+        structural_result = evaluate(structural)
+        self.assertEqual(structural_result.status, "fail")
+        self.assertIn("widened_producer_output", " ".join(structural_result.findings))
+        self.assertNotIn("changed_documentation", " ".join(structural_result.findings))
+
+    def test_json_schema_metadata_semantics_apply_in_both_comparison_directions(self) -> None:
+        for role, compatibility in (
+            ("consumer", "consumer_accepts_old"),
+            ("producer", "producer_accepted_by_old"),
+        ):
+            with self.subTest(role=role):
+                system = _system()
+                system["contracts"] = [{
+                    "id": "CONTRACT-TEST", "kind": "json_schema",
+                    "path": "engineering/contracts/test.json", "version": "1",
+                    "role": role, "compatibility": compatibility,
+                }]
+                system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+                rules = _rules()
+                rules["contract_policies"] = [{
+                    "id": "FIT-CONTRACT", "contract_kinds": ["json_schema"],
+                    "compatibility": compatibility, "severity": "error",
+                }]
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_json("engineering/contracts/test.json", _json_schema({"id": {"type": "string"}}))
+                base = repo.commit("contract base")
+                head_doc = _json_schema({"id": {"type": "string"}})
+                head_doc["title"] = "Changed"
+                repo.write_json("engineering/contracts/test.json", head_doc)
+                head = repo.commit("contract metadata changed")
+                result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+                self.assertEqual(result.status, "fail")
+                self.assertIn("changed_documentation", " ".join(result.findings))
+
+    def test_json_schema_root_reference_with_sibling_metadata_is_unsupported(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST", "kind": "json_schema",
+            "path": "engineering/contracts/test.json", "version": "1",
+            "role": "consumer", "compatibility": "consumer_accepts_old",
+        }]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT", "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old", "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/test.json", {"$ref": "target.json", "title": "Before"})
+        repo.write_json("engineering/contracts/target.json", {"type": "string"})
+        base = repo.commit("root reference contract baseline")
+        repo.write_json("engineering/contracts/test.json", {"$ref": "target.json", "title": "After"})
+        head = repo.commit("root reference contract title changed")
+
+        result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
+        self.assertEqual(result.status, "unsupported")
+        self.assertIn("unsupported compatibility semantics", " ".join(result.findings))
+
     def test_contract_compatibility_rechecks_unchanged_declared_ref_dependents(self) -> None:
         for changed_contract, expected_status in (
             ("CONTRACT-COMMON", "fail"),
-            ("CONTRACT-UNRELATED", "pass"),
+            ("CONTRACT-UNRELATED", "fail"),
         ):
             with self.subTest(changed_contract=changed_contract):
                 system = _system()
@@ -4034,7 +4243,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 ]
                 self.assertEqual(result.status, expected_status)
                 if expected_status == "fail":
-                    self.assertIn("CONTRACT-EVENT", " ".join(result.findings))
+                    findings = " ".join(result.findings)
+                    if changed_contract == "CONTRACT-COMMON":
+                        self.assertIn("CONTRACT-EVENT", findings)
+                    else:
+                        self.assertIn("CONTRACT-UNRELATED: changed_documentation", findings)
+                        self.assertNotIn("CONTRACT-EVENT", findings)
 
     def test_contract_compatibility_ignores_unrelated_unsupported_contracts(self) -> None:
         system = _system()

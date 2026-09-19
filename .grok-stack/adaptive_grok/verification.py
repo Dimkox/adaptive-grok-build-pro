@@ -7,7 +7,7 @@ import re
 import sys
 import tempfile
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from .bitrix_checks import check_bitrix
 from .architecture import ArchitectureError, load_architecture, validate_repository_drift
@@ -696,6 +696,17 @@ def _bitrix(root: Path, files: list[str]) -> CheckResult:
     )
 
 
+def _is_api_contract_yaml(rel: str) -> bool:
+    path = PurePosixPath(rel.lower())
+    if path.parts[:2] == ("engineering", "changes"):
+        return False
+    if {"openapi", "asyncapi", "contracts", "contract"}.intersection(path.parts[:-1]):
+        return True
+    return path.name.endswith((
+        ".openapi.yaml", ".openapi.yml", ".asyncapi.yaml", ".asyncapi.yml",
+    )) or path.name in {"openapi.yaml", "openapi.yml", "asyncapi.yaml", "asyncapi.yml"}
+
+
 def _contracts(root: Path, files: list[str]) -> CheckResult:
     findings: list[dict[str, str]] = []
     checked = 0
@@ -710,7 +721,7 @@ def _contracts(root: Path, files: list[str]) -> CheckResult:
                 json.loads(path.read_text(encoding='utf-8'))
             except (json.JSONDecodeError, OSError) as exc:
                 findings.append({'severity': 'error', 'code': 'invalid-json-contract', 'path': rel, 'message': str(exc)})
-        if lower.endswith(('.yaml', '.yml')) and any(token in lower for token in ('openapi', 'asyncapi', 'contract')):
+        if lower.endswith(('.yaml', '.yml')) and _is_api_contract_yaml(rel):
             checked += 1
             text = read_text_limited(path)
             if 'openapi:' not in text and 'asyncapi:' not in text:

@@ -622,6 +622,40 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(result.status, 'fail')
             self.assertTrue(any(item['code'] == 'openapi-paths' for item in result.details))
 
+    def test_change_package_spec_yaml_is_not_treated_as_api_contract(self) -> None:
+        with project_copy() as root:
+            api = root / 'engineering/contracts/openapi/test.yaml'
+            api.parent.mkdir(parents=True, exist_ok=True)
+            api.write_text('openapi: 3.1.0\ninfo: {}\npaths: {}\n')
+            change_spec = root / (
+                'engineering/changes/20260917-make-contract-metadata-changes-visible-to-fitnes-b292b7/change-spec.yaml'
+            )
+            change_spec.parent.mkdir(parents=True, exist_ok=True)
+            change_spec.write_text('change_id: metadata-change\n')
+            asyncapi = root / 'engineering/messages/events.asyncapi.yaml'
+            asyncapi.parent.mkdir(parents=True, exist_ok=True)
+            asyncapi.write_text('asyncapi: 3.0.0\nchannels: {}\n')
+            partner = root / 'engineering/contracts/partner.yaml'
+            partner.parent.mkdir(parents=True, exist_ok=True)
+            partner.write_text('openapi: 3.1.0\ninfo: {}\npaths: {}\n')
+            package_openapi = root / (
+                'engineering/changes/20260917-make-contract-metadata-changes-visible-to-fitnes-b292b7/contracts/openapi.yaml'
+            )
+            package_openapi.parent.mkdir(parents=True, exist_ok=True)
+            package_openapi.write_text('openapi: 3.1.0\ninfo: {}\npaths: {}\n')
+
+            result = _contracts(root, [
+                'engineering/contracts/openapi/test.yaml',
+                change_spec.relative_to(root).as_posix(),
+                asyncapi.relative_to(root).as_posix(),
+                partner.relative_to(root).as_posix(),
+                package_openapi.relative_to(root).as_posix(),
+            ])
+
+            self.assertEqual(result.status, 'pass')
+            self.assertEqual(result.summary, '3 contracts checked')
+            self.assertFalse(any(item['path'].startswith('engineering/changes/') for item in result.details))
+
     def test_unsafe_sql_fails(self) -> None:
         with project_copy() as root:
             path = root / 'migrations/001.sql'
