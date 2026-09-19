@@ -1,0 +1,12 @@
+# Security review — change-spec category coverage (#125)
+
+**Review scope:** final current diff in `.grok-stack/adaptive_grok/spec.py`, `.grok-stack/adaptive_grok/verification.py`, tests, and package. Focused on trust boundaries, signed v1 attestation compatibility, evidence spoofing, stable IDs, and fail-closed behavior. Read-only; no product source edits.
+
+**Result: PASS. No security findings.**
+
+- Gate validation now requires non-empty evidence arrays for AC, INV, and FORBID. Schema/semantic validation still limits evidence to one supported key and bounded values, validates receipt kinds and test-path shape, and resolves production signals against declared signals. An invalid non-empty evidence array may appear mapped in descriptive coverage, but validation still marks the spec invalid; the PR/release check fails closed. Missing category evidence is reported by stable ID and prevents a passing gate.
+- AC, INV, and FORBID retain distinct ID formats. Semantic validation enforces uniqueness across all three criterion collections within a spec. Category coverage keeps those categories separate; the gate checks every category's unmapped IDs. Aggregate bare IDs are local summary metadata and cannot override validation errors.
+- The final diff adds `attestation_criterion_coverage(spec)` as an explicit adapter for the exact existing Trust CI v1 AC-only wire shape. Its test passes that shape through Trust CI's strict `normalize_criterion_coverage`. The Trust CI source and signed payload model are unchanged. No local category-aware coverage object is inserted into the signed v1 field.
+- Evidence references remain claims/pointers, not proof that referenced tests, receipts, or attestations are authentic. Neither the adapter nor local verifier grants authority. The Trust CI runner independently parses exact changed-SHA repository content and signs its own result under deployed policy; the authoritative merge check remains the App-owned exact-head check. The package also explicitly forbids claiming local coverage/verification as Trust CI authority.
+
+**Limits:** This review does not verify that each declared reference names a real or authentic artifact. That is intentionally distinct from structural coverage and requires the corresponding evidence and external Trust CI result. No Trust CI deployed policy, holdout, key, approval, or branch-protection state is changed here.
