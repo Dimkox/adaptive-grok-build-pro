@@ -1,0 +1,101 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Russian/Cyrillic task and title text produce readable lowercase ASCII-English transliterations in new change-package path IDs."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Common credential assignments, bearer/API token values, email addresses, and URLs are excluded from the slug; the complete ID is ASCII and at most 64 characters."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Legacy public package directories remain untouched and continue to be handled using the existing ASCII-safe consumer rules."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-fix-confirmed-issue-52-generate-ascii-only-bound-a29921",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Renaming legacy public directories or rewriting public Git history as part of this fix."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Leaving raw non-ASCII task/title text or common secret values in newly generated directory names."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "A newly generated package ID contains no non-ASCII characters and no common credential/email/URL values."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The date and validated route suffix remain in the ID so the slug is bounded and traceable to the route."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix confirmed issue #52: generate ASCII-only bounded change-package directory IDs from safe task metadata, never raw user prompt; add regression tests and document legacy-path migration limits. Preserve existing packages and other repo behavior.",
+    "success_metric": "Every new change ID uses readable lowercase ASCII-English transliteration, is at most 64 characters, and removes common credential/email/URL values from its slug.",
+    "target": "New packages use a safe transliterated summary plus validated date and route suffix; old paths remain unchanged."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
