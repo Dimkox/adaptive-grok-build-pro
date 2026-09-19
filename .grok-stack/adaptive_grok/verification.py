@@ -1114,7 +1114,28 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     trivy = _trivy_config(root)
     if trivy is not None:
         results.append(trivy)
-    results.extend(_python(root, mode))
+    cancellation: dict[str, object] | None = None
+    try:
+        results.extend(_python(root, mode))
+    except SystemExit as exc:
+        if exc.code != 143:
+            raise
+        cancellation = {
+            'reason': 'test runner terminated after SIGTERM',
+            'signal': 15,
+            'exit_code': 143,
+        }
+    except KeyboardInterrupt:
+        cancellation = {'reason': 'verification interrupted by KeyboardInterrupt', 'signal': 2}
+    if cancellation is not None:
+        results.append(
+            CheckResult(
+                'verification-cancellation',
+                'fail',
+                str(cancellation['reason']),
+                details=[{'severity': 'error', 'message': json.dumps(cancellation, sort_keys=True)}],
+            )
+        )
 
     final_fingerprint = tree_fingerprint(root)
     source_stable = final_fingerprint == checked_fingerprint
@@ -1145,9 +1166,18 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'governance': governance_metadata,
         'workflow_artifacts': workflow_metadata,
         'status': 'pass' if not failures else 'fail',
+        'outcome': (
+            'cancelled'
+            if cancellation is not None
+            else 'completed' if not failures else 'failed'
+        ),
+        'cancellation': cancellation,
         'checks': [item.to_dict() for item in results],
     }
-    if record and route and governance_check.status != 'fail' and source_stable:
+    if record and route and (
+        cancellation is not None
+        or (source_stable and governance_check.status != 'fail')
+    ):
         write_receipt(
             root,
             'verification',

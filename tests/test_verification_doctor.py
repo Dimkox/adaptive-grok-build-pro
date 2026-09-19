@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+import io
+import runpy
 import json
 import os
 import shutil
@@ -647,6 +649,61 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'pass')
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_verify_records_cancelled_run_and_replaces_pass_receipt(self) -> None:
+        for cancellation in (SystemExit(143), KeyboardInterrupt()):
+            with self.subTest(cancellation=type(cancellation).__name__), project_copy(git=True) as root:
+                route = build_route(root, 'Review current code', 's1').to_dict()
+                route['quality_profiles'] = ['base']
+                set_active_route(root, route)
+                receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
+                receipt.parent.mkdir(parents=True, exist_ok=True)
+                receipt.write_text(json.dumps({'status': 'pass', 'route_id': route['route_id']}), encoding='utf-8')
+
+                with patch('adaptive_grok.verification._python', side_effect=cancellation):
+                    report = verify(root, mode='fast', record=True)
+
+                self.assertEqual(report['status'], 'fail')
+                self.assertTrue(report['checks'])  # Earlier checks remain in the cancellation report.
+                self.assertEqual(report['outcome'], 'cancelled')
+                self.assertIsNotNone(report['cancellation'])
+                self.assertEqual(_check(report, 'verification-cancellation')['status'], 'fail')
+                saved = json.loads(receipt.read_text(encoding='utf-8'))
+                self.assertEqual(saved['status'], 'fail')
+                self.assertEqual(saved['details']['outcome'], 'cancelled')
+                self.assertIn('cancellation', saved['details'])
+
+    def test_grok_verify_cli_reports_cancelled_and_preserves_exit_mapping(self) -> None:
+        for signal_number, expected_exit in ((15, 143), (2, 130)):
+            with self.subTest(signal=signal_number):
+                report = {
+                    'status': 'fail',
+                    'outcome': 'cancelled',
+                    'cancellation': {'signal': signal_number},
+                    'profiles': ['base'],
+                    'changed_files': [],
+                    'checks': [{'name': 'verification-cancellation', 'status': 'fail', 'summary': 'cancelled'}],
+                }
+                output = io.StringIO()
+                with (
+                    patch('adaptive_grok.verification.verify', return_value=report),
+                    patch('adaptive_grok.util.find_root', return_value=ROOT),
+                    patch.object(sys, 'argv', ['scripts/grok_verify.py']),
+                    contextlib.redirect_stdout(output),
+                    self.assertRaises(SystemExit) as raised,
+                ):
+                    runpy.run_path(str(ROOT / 'scripts/grok_verify.py'))
+                self.assertEqual(raised.exception.code, expected_exit)
+                self.assertIn('RESULT: CANCELLED', output.getvalue())
+
+    def test_verify_does_not_mislabel_unrecognized_system_exit(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            set_active_route(root, route)
+            with patch('adaptive_grok.verification._python', side_effect=SystemExit(2)):
+                with self.assertRaises(SystemExit) as raised:
+                    verify(root, mode='fast', record=True)
+            self.assertEqual(raised.exception.code, 2)
 
     def test_governance_runs_after_spec_and_architecture_and_failure_is_not_receipted(self) -> None:
         with project_copy(git=True) as root:
