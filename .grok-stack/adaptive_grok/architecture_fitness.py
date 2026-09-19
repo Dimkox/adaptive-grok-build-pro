@@ -4,7 +4,6 @@ import ast
 from collections import deque
 import hashlib
 import json
-import posixpath
 import re
 import sys
 from dataclasses import dataclass, replace
@@ -14,10 +13,14 @@ from typing import Any, Iterable, NamedTuple
 from .architecture import (
     ArchitectureError,
     ArchitectureSnapshot,
+    SCHEMA_REFERENCE_PATH_FIRST,
+    SCHEMA_REFERENCE_UNRESOLVED,
     architecture_digests,
     compare_contracts,
     contract_inventory_digest,
     load_architecture,
+    schema_reference_parts,
+    schema_reference_target_path,
 )
 from .architecture_diff import (
     ADOPTION_BASE_SHA,
@@ -911,9 +914,18 @@ def _contract_dependency_closure(
 
     reverse_dependencies: dict[str, set[str]] = {}
     for inventory in (before, after):
-        by_path = {record.path: record.id for record in inventory.values()}
-        for record in inventory.values():
-            for target_path in _external_contract_reference_paths(record):
+        records = tuple(inventory.values())
+        by_path = {record.path: record.id for record in records}
+        paths_by_schema_id: dict[str, list[str]] = {}
+        for record in records:
+            schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
+            if isinstance(schema_id, str):
+                paths_by_schema_id.setdefault(schema_id, []).append(record.path)
+        declared_paths = frozenset(by_path)
+        for record in records:
+            for target_path in _external_contract_reference_paths(
+                record, paths_by_schema_id, declared_paths
+            ):
                 target_id = by_path.get(target_path)
                 if target_id is not None:
                     reverse_dependencies.setdefault(target_id, set()).add(record.id)
@@ -929,7 +941,22 @@ def _contract_dependency_closure(
     return closure
 
 
-def _external_contract_reference_paths(record: Any) -> set[str]:
+def _external_contract_reference_paths(
+    record: Any,
+    paths_by_schema_id: dict[str, list[str]],
+    declared_paths: frozenset[str],
+) -> set[str]:
+    """Declared contract paths this record's ``$ref`` values point at.
+
+    The reference grammar is the comparator's: ``architecture.schema_reference_target_path``
+    is the only place a ``$ref`` base is interpreted, so a dependent that references a
+    contract by ``$id`` or through ``file#/$defs/...`` cannot be dropped from the closure.
+    Reverse edges use declared-path precedence, unlike the comparator: a base that is both
+    another contract's path and some contract's ``$id`` must attach the dependent to the
+    contract it really references rather than to a claimant that shadows the path.
+    A reference that does not name a declared contract yields no edge; an ``$id`` that two
+    declared contracts share cannot be resolved without guessing, so it fails closed.
+    """
     references: set[str] = set()
     pending: list[Any] = [record.document]
     while pending:
@@ -937,11 +964,19 @@ def _external_contract_reference_paths(record: Any) -> set[str]:
         if isinstance(value, dict):
             reference = value.get("$ref")
             if isinstance(reference, str) and not reference.startswith("#"):
-                normalized = posixpath.normpath(
-                    posixpath.join(posixpath.dirname(record.path), reference)
-                )
-                if normalized != ".." and not normalized.startswith("../"):
-                    references.add(normalized)
+                reference_base, _fragment = schema_reference_parts(reference)
+                if reference_base:
+                    target_path, failure = schema_reference_target_path(
+                        record.path,
+                        reference_base,
+                        paths_by_schema_id,
+                        declared_paths,
+                        precedence=SCHEMA_REFERENCE_PATH_FIRST,
+                    )
+                    if target_path is not None:
+                        references.add(target_path)
+                    elif failure not in SCHEMA_REFERENCE_UNRESOLVED:
+                        raise ArchitectureError(failure, code="contract")
             pending.extend(value.values())
         elif isinstance(value, list):
             pending.extend(value)

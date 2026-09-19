@@ -4097,6 +4097,428 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
         self.assertNotIn("CONTRACT-UNRELATED", result.applicability.scanned_scope)
 
+    def _reference_grammar_repo(
+        self,
+        event_reference: str,
+        common_document: dict,
+        changed_common_document: dict,
+        changed_event_document: dict | None = None,
+    ) -> tuple[GitArchitectureRepo, str, str]:
+        """Inventory where only ``CONTRACT-EVENT`` points at ``CONTRACT-COMMON``.
+
+        Every reference-grammar case shares this inventory, the same policy and the same
+        description-only change to the referenced contract; only the spelling of the
+        ``$ref`` differs.  A dependent that drops out of the comparison therefore fails
+        because of the grammar and nothing else.
+        """
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-EVENT",
+                "kind": "event",
+                "path": "engineering/contracts/event.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-COMMON",
+                "kind": "json_schema",
+                "path": "engineering/contracts/common.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-UNRELATED",
+                "kind": "json_schema",
+                "path": "engineering/contracts/unrelated.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["event", "json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/event.json", {"$ref": event_reference})
+        repo.write_json("engineering/contracts/common.json", common_document)
+        repo.write_json(
+            "engineering/contracts/unrelated.json",
+            {"type": "string", "description": "unrelated alpha"},
+        )
+        base = repo.commit("reference grammar baseline")
+        if changed_event_document is not None:
+            repo.write_json("engineering/contracts/event.json", changed_event_document)
+        repo.write_json("engineering/contracts/common.json", changed_common_document)
+        head = repo.commit("referenced contract changed")
+        return repo, base, head
+
+    def test_contract_compatibility_rechecks_dependents_of_every_reference_grammar(self) -> None:
+        whole_document = {"type": "integer", "description": "money is cents"}
+        whole_document_changed = {"type": "integer", "description": "money is dollars"}
+        fragment_bearing = {"$defs": {"money": whole_document}}
+        fragment_bearing_changed = {"$defs": {"money": whole_document_changed}}
+        declared_id = {"$id": "urn:adaptive-grok.test:common", **fragment_bearing}
+        declared_id_changed = {"$id": "urn:adaptive-grok.test:common", **fragment_bearing_changed}
+        for case in (
+            {
+                "label": "plain relative path",
+                "reference": "common.json",
+                "common": whole_document,
+                "changed": whole_document_changed,
+            },
+            {
+                "label": "declared $id",
+                "reference": "urn:adaptive-grok.test:common",
+                "common": {"$id": "urn:adaptive-grok.test:common", **whole_document},
+                "changed": {"$id": "urn:adaptive-grok.test:common", **whole_document_changed},
+            },
+            {
+                "label": "path with JSON pointer",
+                "reference": "common.json#/$defs/money",
+                "common": fragment_bearing,
+                "changed": fragment_bearing_changed,
+            },
+            {
+                "label": "declared $id with JSON pointer",
+                "reference": "urn:adaptive-grok.test:common#/$defs/money",
+                "common": declared_id,
+                "changed": declared_id_changed,
+            },
+        ):
+            with self.subTest(grammar=case["label"]):
+                repo, base, head = self._reference_grammar_repo(
+                    case["reference"], case["common"], case["changed"]
+                )
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
+                self.assertNotIn("CONTRACT-UNRELATED", result.applicability.scanned_scope)
+                self.assertEqual(result.status, "fail")
+                self.assertTrue(
+                    any(
+                        finding.startswith("CONTRACT-EVENT:")
+                        for finding in result.findings
+                    ),
+                    result.findings,
+                )
+
+    def test_contract_compatibility_ignores_reference_without_declared_target(self) -> None:
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-COMMON",
+                "kind": "json_schema",
+                "path": "engineering/contracts/common.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-ORPHAN",
+                "kind": "json_schema",
+                "path": "engineering/contracts/orphan.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-ESCAPE",
+                "kind": "json_schema",
+                "path": "engineering/contracts/escape.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+            {
+                "id": "CONTRACT-EXTERNAL",
+                "kind": "json_schema",
+                "path": "engineering/contracts/external.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            },
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json(
+            "engineering/contracts/common.json",
+            {"type": "integer", "description": "money is cents"},
+        )
+        repo.write_json(
+            "engineering/contracts/orphan.json",
+            {"$ref": "urn:adaptive-grok.test:undeclared"},
+        )
+        repo.write_json(
+            "engineering/contracts/escape.json",
+            {"$ref": "../../../outside/money.json"},
+        )
+        repo.write_json(
+            "engineering/contracts/external.json",
+            {"$ref": "https://example.test/schema.json"},
+        )
+        base = repo.commit("undeclared reference baseline")
+        repo.write_json(
+            "engineering/contracts/common.json",
+            {"type": "integer", "description": "money is dollars"},
+        )
+        head = repo.commit("referenced contract changed")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(result.status, "pass")
+        self.assertEqual(set(result.applicability.scanned_scope), {"CONTRACT-COMMON"})
+
+    def test_contract_compatibility_still_reports_referrer_with_undeclared_reference(self) -> None:
+        for reference in (
+            "urn:adaptive-grok.test:undeclared",
+            "../../../outside/money.json",
+            "https://example.test/schema.json",
+        ):
+            with self.subTest(reference=reference):
+                repo, base, head = self._reference_grammar_repo(
+                    reference,
+                    {"type": "integer", "description": "money is cents"},
+                    {"type": "integer", "description": "money is dollars"},
+                    changed_event_document={"$ref": reference, "description": "referrer changed"},
+                )
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
+                self.assertIn("CONTRACT-EVENT", " ".join(result.findings))
+                self.assertNotEqual(result.status, "pass")
+
+    def test_contract_dependency_closure_uses_declared_path_precedence_issue_146(self) -> None:
+        """Issue #146: a reverse edge must follow the path a $ref points at, not a claimant.
+
+        ``CONTRACT-CLAIMANT`` declares an ``$id`` that is textually identical to the
+        referrer's ``$ref`` base, and that same base resolves to ``CONTRACT-TARGET``'s
+        declared path.  The comparator resolves such a base through the ``$id`` first (the
+        sibling shadowing defect); the closure must not copy that ordering, so the
+        dependent is re-verified when the contract it really references changes and is not
+        dragged in when only the claimant changes.
+        """
+        shadowed_path = "engineering/contracts/dir/target.json"
+        reference_text = "dir/target.json"
+        for changed_contract, expected_dependent in (
+            ("CONTRACT-TARGET", True),
+            ("CONTRACT-CLAIMANT", False),
+        ):
+            with self.subTest(changed_contract=changed_contract):
+                system = _system()
+                system["contracts"] = [
+                    {
+                        "id": "CONTRACT-REFERRER",
+                        "kind": "event",
+                        "path": "engineering/contracts/referrer.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-TARGET",
+                        "kind": "json_schema",
+                        "path": shadowed_path,
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-CLAIMANT",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/claimant.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                ]
+                system["nodes"][0]["public_contracts"] = [
+                    item["id"] for item in system["contracts"]
+                ]
+                rules = _rules()
+                rules["contract_policies"] = [
+                    {
+                        "id": "FIT-CONTRACT",
+                        "contract_kinds": ["event", "json_schema"],
+                        "compatibility": "consumer_accepts_old",
+                        "severity": "error",
+                    }
+                ]
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_json(
+                    "engineering/contracts/referrer.json", {"$ref": reference_text}
+                )
+                repo.write_json(shadowed_path, {"type": "string", "minLength": 1})
+                repo.write_json(
+                    "engineering/contracts/claimant.json",
+                    {"$id": reference_text, "type": "string", "minLength": 1},
+                )
+                base = repo.commit("path shadowed by claimant id baseline")
+                if changed_contract == "CONTRACT-TARGET":
+                    repo.write_json(shadowed_path, {"type": "string", "minLength": 9})
+                else:
+                    repo.write_json(
+                        "engineering/contracts/claimant.json",
+                        {"$id": reference_text, "type": "string", "minLength": 9},
+                    )
+                head = repo.commit("narrowed constraint")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                dependent_in_scope = "CONTRACT-REFERRER" in result.applicability.scanned_scope
+                self.assertEqual(dependent_in_scope, expected_dependent)
+                self.assertIn(changed_contract, result.applicability.scanned_scope)
+
+    def test_contract_dependency_closure_shares_the_comparator_reference_grammar(self) -> None:
+        """Issue #146 guard: the closure interprets ``$ref`` through the comparator's function.
+
+        The two symbols are asserted to be one implementation, then a spy proves an
+        ``$id`` reference actually travelled through it with declared-path precedence.  A
+        closure that grows its own grammar again, or one that is "simplified" into the
+        comparator's ``resolve()`` ordering, fails here even while its edges still look
+        plausible.
+        """
+        self.assertIs(
+            FIT.schema_reference_target_path, ARCHITECTURE.schema_reference_target_path
+        )
+        self.assertIs(FIT.schema_reference_parts, ARCHITECTURE.schema_reference_parts)
+        declared_id = "urn:adaptive-grok.test:common"
+        repo, base, head = self._reference_grammar_repo(
+            f"{declared_id}#/$defs/money",
+            {"$id": declared_id, "$defs": {"money": {"type": "integer"}}},
+            {"$id": declared_id, "$defs": {"money": {"type": "string"}}},
+        )
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        seen: list[tuple[str, str, str]] = []
+        real = ARCHITECTURE.schema_reference_target_path
+
+        def spy(referrer_path, reference_base, *arguments, **keywords):
+            seen.append((referrer_path, reference_base, keywords.get("precedence", "")))
+            return real(referrer_path, reference_base, *arguments, **keywords)
+
+        with patch.object(FIT, "schema_reference_target_path", side_effect=spy):
+            result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertIn(
+            (
+                "engineering/contracts/event.json",
+                declared_id,
+                ARCHITECTURE.SCHEMA_REFERENCE_PATH_FIRST,
+            ),
+            seen,
+        )
+        self.assertIn("CONTRACT-EVENT", result.applicability.scanned_scope)
+
+    def test_contract_compatibility_fails_closed_on_duplicate_declared_schema_id(self) -> None:
+        for colliding in (False, True):
+            with self.subTest(colliding=colliding):
+                system = _system()
+                system["contracts"] = [
+                    {
+                        "id": "CONTRACT-COLLIDER-A",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/a.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-COLLIDER-B",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/b.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-DEPENDENT",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/dependent.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                ]
+                system["nodes"][0]["public_contracts"] = [
+                    item["id"] for item in system["contracts"]
+                ]
+                rules = _rules()
+                rules["contract_policies"] = [
+                    {
+                        "id": "FIT-CONTRACT",
+                        "contract_kinds": ["json_schema"],
+                        "compatibility": "consumer_accepts_old",
+                        "severity": "error",
+                    }
+                ]
+                referenced_id = "urn:adaptive-grok.test:money"
+                collider_id = "urn:adaptive-grok.test:other"
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_json(
+                    "engineering/contracts/a.json",
+                    {
+                        "$id": referenced_id if colliding else collider_id,
+                        "type": "integer",
+                        "description": "a base",
+                    },
+                )
+                repo.write_json(
+                    "engineering/contracts/b.json",
+                    {
+                        "$id": referenced_id,
+                        "type": "integer",
+                        "description": "b base",
+                    },
+                )
+                repo.write_json(
+                    "engineering/contracts/dependent.json",
+                    {"$ref": referenced_id, "description": "dependent base"},
+                )
+                base = repo.commit("schema id baseline")
+                repo.write_json(
+                    "engineering/contracts/b.json",
+                    {
+                        "$id": referenced_id,
+                        "type": "integer",
+                        "description": "b head",
+                    },
+                )
+                head = repo.commit("one referenced contract changed")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                if colliding:
+                    with self.assertRaises(FIT.ArchitectureError) as captured:
+                        FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                    self.assertEqual(captured.exception.code, "contract")
+                    self.assertIn("ambiguous declared schema id", str(captured.exception))
+                else:
+                    result = FIT._contract_compatibility(
+                        diff._head_state.snapshot, diff
+                    )
+                    self.assertIn("CONTRACT-DEPENDENT", result.applicability.scanned_scope)
+
     def test_contract_compatibility_has_one_aggregate_comparison_budget(self) -> None:
         system = _system()
         system["contracts"] = [
