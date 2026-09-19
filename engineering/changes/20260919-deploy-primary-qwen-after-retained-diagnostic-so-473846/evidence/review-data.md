@@ -33,3 +33,23 @@ Only this report was written. No credentials, provider calls, live database read
 ## Representation-only archive acceptance
 
 Confirmed all four current script mappings in `script-archive-index.json` (SHA-256 `5888decf45eb1b12473a05b891afa2ef9a298aa9b1ad36a61eaba6ced62c5e74`): each original `.py` path maps to its `.py.txt` archive, whose actual bytes retain the reviewed SHA-256 above; the original executable paths are absent. PASS-for-prepared-scripts remains bound to those unchanged bodies. The architecture records separately granted external Claw execution and excludes archived semantics from repository fitness claims. No tests, semantic reanalysis or runtime operations were repeated; activation remains pending.
+
+## Final recorded data outcome — PASS
+
+Reviewed the completed-operation evidence, `l5-primary-continuation-2026-09-19.md` and `PROJECT_STATE.json.latest_runtime_operation`. This supersedes the earlier pending-runtime status. All bind primary `f12807c2b75750072ba768fc95ed492362ae6489` and job `runtime-qwen-f12807c2b757-473846`; the current product tree has no diff from `origin/main` at that SHA.
+
+The fresh three-file, 234033-byte snapshot is bound to `/var/lib/adaptive-l5/backups/pre-qwen-f12807c2b757-473846`, manifest `e68888961396b019cae2e1c715c50407262fd02b3d7fba02c62b2d3b6d91a43e`, and schema-1 baseline `{artifact_ready:1, needs_human:4, provider_unavailable:1}`. Disabled client evidence records HTTP409 and zero POSTs. Final schema-2 counts are exactly that baseline plus one `artifact_ready`; final evidence records preserved earlier rejected roots and unchanged other service identities/PIDs.
+
+Acceptance records one POST, `artifact_ready`, 4991 ms and reported usage 766/195. The separate observation records zero POSTs and an identical complete retained receipt, including source, artifact, observation and digests; artifact `eb03ca2bb5683daed42cd9f20c5cce2d146450cde1a7f8bb05120ef748d5de6e` and null live URL agree throughout. Installed provenance binds the same target, unchanged dependencies and the reviewed data implementation. No continuation rollback was executed or newly qualified. The bounded text event does not establish public publication, full-media/failover qualification, external maintainer acceptance or M8/M9 activation.
+
+| Final evidence file | SHA-256 |
+| --- | --- |
+| `snapshot-binding.json` | `7af6f680d440d2afeb321fc1490ab3f960c9a26bec38d4876f0953328b8bd836` |
+| `client-offline.json` | `fd817a7fc4d1d13f8a4e80044d29a11036ffc24d1780aed3392e7534a2f52044` |
+| `client-accept.json` | `51da67e69761deedb98316bd03c218eecf33f83681907f14ac6112182ab992ec` |
+| `client-observe.json` | `57c9d368d6013cda7c8252a948d65d982c71a590c3fe9d9236095bbf4e002bb0` |
+| `final-runtime.json` | `fa29d93699ea351f3e9661f217f9fcf355860ba92c2440b2a944fdd7701305d4` |
+| `acceptance-summary.json` | `bdbf96ff0cc91e5b5e86ce938665d99e9e5f0e17c6f0f449928734f3f8fcb725` |
+| `installed-provenance.json` | `91d375954337a44ac4590f6a8661ea6b02b2a98d4b7d1cc716500d52aa615b87` |
+
+This final pass checks recorded evidence consistency only. No test suite, provider request, runtime/database operation or recovery was repeated. `next-outcome.md` was excluded as a separate prospective handoff. Only this review report was changed.
