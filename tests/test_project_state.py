@@ -729,10 +729,16 @@ class ProjectStateTests(unittest.TestCase):
             _section((ROOT / "START_HERE.md").read_text(encoding="utf-8"), "Current project state"),
         )
         for section in current_sections:
-            self.assertIn(CURRENT_CHECK, section)
             self.assertIn(str(CURRENT_APP_ID), section)
             self.assertIn(self.state["observed_main_sha"], section)
             self.assertNotIn("adaptive-trust-ci/verified@6737355947c2", section)
+
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("adaptive-trust-ci/verified@<policy-sha12>", readme)
+        self.assertIn(
+            "trust-ci/README.md#verify-the-policy-epoch-and-exact-review-target",
+            readme,
+        )
 
         start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
         self.assertIn("PR #19", start_here)
