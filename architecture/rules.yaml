@@ -704,6 +704,8 @@
       "source_prefixes": [
         "factory/src/adaptive_factory/landing_backend_api.py",
         "factory/src/adaptive_factory/landing_host.py",
+        "factory/src/adaptive_factory/landing_activation_probe.py",
+        "factory/src/adaptive_factory/landing_probe_api.py",
         "factory/src/adaptive_factory/landing_server.py"
       ]
     },

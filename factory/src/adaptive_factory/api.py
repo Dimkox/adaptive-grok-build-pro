@@ -270,6 +270,7 @@ def create_app(
     execution_enabled: bool = True,
     landing_service: LandingApplicationService | None = None,
     landing_only: bool = False,
+    landing_probe_service=None,
 ) -> FastAPI:
     if landing_only and (service is not None or landing_service is None or execution_enabled):
         raise ValueError("landing-only composition requires only a landing service")
@@ -625,8 +626,10 @@ def create_app(
         )
 
     if landing_only:
+        from .landing_probe_api import install_landing_probe_api
         from .landing_backend_api import install_backend_api
 
+        install_landing_probe_api(app, landing_probe_service, authenticator)
         install_backend_api(app, landing_service, authenticator)
         return app
 

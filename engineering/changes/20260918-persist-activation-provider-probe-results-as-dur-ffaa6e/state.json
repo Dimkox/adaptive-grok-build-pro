@@ -1,0 +1,29 @@
+{
+  "change_id": "20260918-persist-activation-provider-probe-results-as-dur-ffaa6e",
+  "created_at": "2026-09-18T07:45:20+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T07:45:20+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T07:51:03+00:00",
+      "from": "draft",
+      "reason": "Analysis complete; user selected durable future probes and exact server-owned SQLite/operator API design is recorded for scope approval.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T09:16:42+00:00",
+      "from": "scoped",
+      "reason": "User approved landing-only operator Unix-socket POST/GET, pre-call SQLite reservation, one server-side provider attempt, append-only schema v3, idempotent retries without replay, ambiguous pending after crash, backup/restore preservation, and historical 769/191 attestation only.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "ffaa6e006773",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Persist activation provider probe results as durable landing-job observation rows, retaining job ID, profile digest, normalized state, usage and provider request count for re-derivation.",
+  "updated_at": "2026-09-18T09:16:42+00:00"
+}
