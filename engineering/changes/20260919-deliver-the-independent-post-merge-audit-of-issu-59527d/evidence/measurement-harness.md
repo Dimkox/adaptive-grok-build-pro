@@ -822,6 +822,78 @@ while its title and brief named one. The last two lines are the CAR-5 reachabili
 values, none equal to a declared path, and 0 of the 86 cross-file `$ref` bases name both, so the `$id` shadowing
 defect is latent, not live.
 
+## Block H — `prefixItems` trigger test and reference census for the two M7 records
+
+Separates "a construct is present" from "this construct is what blocks analysis", and counts what each record
+actually references. Run `python3 block_h_prefix_items_census.py <repo>` with this script:
+
+```python
+import json, sys, copy
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / ".grok-stack"))
+import adaptive_grok.architecture as ARCH
+root = Path(sys.argv[1])
+inv = tuple(ARCH.contract_inventory(root, ARCH.load_architecture(root)))
+
+def refs(node):
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str):
+            yield ref
+        for value in node.values():
+            yield from refs(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from refs(value)
+
+declared_ids = {r.document.get("$id"): r.path for r in inv
+                if isinstance(r.document, dict) and isinstance(r.document.get("$id"), str)}
+declared_paths = {r.path for r in inv}
+
+def identity(rec, doc):
+    head = ARCH.ContractRecord(id=rec.id, kind=rec.kind, path=rec.path, version=rec.version,
+                              role=rec.role, compatibility=rec.compatibility,
+                              digest=ARCH._sha256(doc), document=doc)
+    inventory = tuple(head if x is rec else x for x in inv)
+    return ARCH.compare_contracts(head, head, rec.compatibility,
+                                  base_inventory=inventory, head_inventory=inventory).status
+
+original_whitelist = frozenset(ARCH._SUPPORTED_SCHEMA_KEYS)
+for pid in ("CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1", "CONTRACT-FACTORY-M7-READY-BUNDLE-V1"):
+    record = next(r for r in inv if r.id == pid)
+    raw = json.dumps(record.document)
+    print(f"{pid}: own prefixItems={raw.count(chr(34) + 'prefixItems' + chr(34))} "
+          f"refs={len(list(refs(record.document)))}")
+    for ref in refs(record.document):
+        if ref.startswith("#"):
+            continue
+        base = ref.partition("#")[0]
+        print(f"   {ref[:58]:58s} resolves_by_id={base in declared_ids} resolves_by_path={base in declared_paths}")
+    ARCH._SUPPORTED_SCHEMA_KEYS = original_whitelist | {"prefixItems"}
+    print(f"   whitelist + prefixItems -> identity={identity(record, copy.deepcopy(record.document))}")
+    ARCH._SUPPORTED_SCHEMA_KEYS = original_whitelist
+    print(f"   unchanged whitelist     -> identity={identity(record, copy.deepcopy(record.document))}")
+```
+
+Recorded output at `d871ea6`:
+
+```
+CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1: own prefixItems=1 refs=0
+   whitelist + prefixItems -> identity=unsupported
+   unchanged whitelist     -> identity=unsupported
+CONTRACT-FACTORY-M7-READY-BUNDLE-V1: own prefixItems=0 refs=2
+   urn:adaptive-factory:m7:shadow-task-evidence:v1                  resolves_by_id=True resolves_by_path=False
+   urn:adaptive-factory:m7:operator-handoff-proposal:v1             resolves_by_id=True resolves_by_path=False
+   whitelist + prefixItems -> identity=unsupported
+   unchanged whitelist     -> identity=unsupported
+```
+
+Conclusion the cells above are limited to: `prefixItems` is a trigger, not the blocking carrier, for both records —
+and neither record's blocking construct is identified by this package. Both `urn:` references in READY-BUNDLE do
+resolve, through declared `$id`s, so they are not dangling.
+
+---
+
 ## Block G — OpenAPI guard instrumentation and single-removal ablation
 
 Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,

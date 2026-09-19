@@ -33,7 +33,7 @@ reports, and one of them was never selected here.
 | `evidence/analysis-integration_architect.md` | propagation of `unsupported` to a failed run, digest/freeze exposure, the locally failed PostgreSQL tier |
 | `evidence/analysis-ai_architect.md` | measured end-state on the real landing/AI closure at the merged head; its `R1 … R5` are its own rejection-branch mechanisms, not this package's residual list |
 | `evidence/controller-declared-inventory-table.md` | the authoritative before/after tables, computed on the declared 50-record inventory from a pristine tree, each table citing the harness block that recomputes it; CAR-1…CAR-5 defined and mapped against the agent's `R-n` list |
-| `evidence/measurement-harness.md` | blocks A–F: the stdlib-only scripts, the exact invocations, and the printed result lines for every number committed here, including the one-process-per-tree rule |
+| `evidence/measurement-harness.md` | blocks A–H: the stdlib-only scripts, the exact invocations, and the printed result lines for every number committed here, including the one-process-per-tree rule |
 
 No comparator, contract, rules or policy file is in this change's boundary.
 

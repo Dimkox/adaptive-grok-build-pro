@@ -109,7 +109,7 @@ bounded `anyOf` subset is incomplete — see follow-up (composition-proof residu
 
 > [ANNOTATION added by the controller] In this section "the package", `brief.md`, `requirements.md` AC-005 and
 > `review-test.md` refer to route `4c524b83df59`'s change package (`engineering/changes/20260918-…-4c524b/`), the
-> #104 delivery this lane audited — not to the audit package this file was carried forward from that lane and rewritten (205 lines differ from the 4c524b original).
+> #104 delivery this lane audited — not to the audit package this file was carried forward from that lane and rewritten (`git diff --numstat --no-index` between the lane's original and this copy: 163 added / 21 deleted).
 
 Nothing in the package overclaims past that: `brief.md` Outcome says "producing directionally sound results for
 supported `anyOf` unions instead of stopping at a false unsupported verdict", which Table B/C show is only

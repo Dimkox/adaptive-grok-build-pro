@@ -167,3 +167,75 @@ Your question — remaining descriptive cells with no measurement or block behin
   neither a comparator fail-closed disclosure — and it now collides with the new annotation assigning AC-005 to
   `4c524b`'s `requirements.md`.
 * Same annotation's "copied into": both lane files differ from `4c524b`'s by 205 and 209 lines — rewritten.
+
+## Final delta check on fed04cb
+RE-REVIEW VERDICT: FAIL
+
+Scope: `fed04cb` (5 files, 107+/9−) and the five flagged cells only. `chmod 700` clone, worktrees `2f66ba6`/`d871ea6`,
+one process per tree; the instrumentation and whitelist patches are my code, never the package's.
+
+**(a) `LANDING-OPENAPI-V1` guard cell — CLOSED.** Head tree: identity verdict `unsupported
+('unsupported_openapi_construct',)`; the only predicate returning **False** is `_has_only_keys` at
+`architecture.py:2430` (inside `_security_schemes`) on the components map whose first key is
+`securitySchemes: {bearerAuth: {type: http, scheme: bearer}}` — repr matches block G's `first False` record. All single
+removals stay `unsupported` (securitySchemes, parameters, headers, responses, each of the 3 schemas, `paths->{}`,
+`components->schemas only`), as does dropping parameters+headers+responses together. "Guard that fires, not an
+exhaustive carrier" is exactly the measured limit; the unnamed cause is now named as unnamed.
+
+**(b) `prefixItems` cells — NOT CLOSED (blocking).** Trigger half true and re-measured: whitelisting `prefixItems` alone
+leaves both records `unsupported_schema_keyword`; OPERATOR-HANDOFF has 1 literal `prefixItems`, READY-BUNDLE 0. But
+three added claims fail:
+- "OPERATOR-HANDOFF … also carries `urn:`-form `$ref`s that name no declared contract" — that document carries **no
+  `$ref` at all** (`grep -c '\$ref'` → 0; my recursive walk → 0). It is a self-contained inline schema.
+- "READY-BUNDLE: two `urn:adaptive-factory:m7:` `$ref`s resolving to nothing declared" — both targets **are**
+  declared: `urn:...:shadow-task-evidence:v1` (M7-TASK-EVIDENCE-V1) and `urn:...:operator-handoff-proposal:v1`
+  (OPERATOR-HANDOFF-V1). The truth is a cascade into a declared, still-blocked record (round 3's reading).
+- Both rows cite block G for this, and block G holds no `prefixItems` experiment (0 hits in its section) and no code
+  at all: the harness still has exactly 7 ```python fences, so `python3 block_g_openapi_guard.py <repo>` names a file
+  existing nowhere (`find <pkg> -name '*.py'` → 0) — against the harness's own "every block … lives inside this
+  `.md`" / "each committed table names the block below that reproduces it" and test-plan P1.
+Fix: drop the two `$ref` clauses (or say "cascade"), cite block B/E's whitelist method.
+
+**(c) necessity 4 of 25 — CLOSED.** Base 21/50, head 46/50, unlocked **25**, regressions 0 (my two sweeps, `comm`).
+Removing `anyOf` from the 27-key head whitelist flips exactly **4**, all inside the unlocked 25: the three
+literal-`anyOf` landing schemas plus `LANDING-FAILOVER-OPENAPI-V1`, which has no `anyOf` of its own and reaches one via
+`../jsonschema/landing-attempt-status.v1.schema.json`. "Exactly 3 literal" ✓; "the other 22" is sufficiency, no clash.
+
+**(d) AC-005 referent — CLOSED.** `4c524b83df59` AC-005 = "an unrelated unsupported keyword such as `prefixItems` … remains
+`unsupported`" ✓; this package's AC-005 is the path-scrub criterion ✓, AC-002/AC-003 the honest-recording and
+superseded-tables criteria ✓. Table C's "two of the three … no `LANDING-FAILOVER-OPENAPI-V1` section" is true (hits 2/3/0
+for ATTEMPT-STATUS/FAILOVER-RESULT/FAILOVER-OPENAPI); the universal negative is gone.
+
+**(e) "carried forward and rewritten" — NOT CLOSED (blocking, one number).** Semantics right: route `59527d5a28f8`
+`required_evidence = ["verification","code_review"]` ✓, this package holds one reviewer report (`review-code.md`) ✓,
+`4c524b`'s holds the three quoted same-name files ✓ → "distinct artifacts, not copies" is true. The inserted count is
+not: at `fed04cb`, `git diff --numstat` for `analysis-ai_architect.md` vs `4c524b`'s copy is **163 / 21** and plain
+`diff` says **206**; 205 was the `0b6299b` value, and the line stating it is the line that changed it. "209" appears
+nowhere in the package (integration: 155/57, plain 210) — that figure is my round-3 text, not theirs.
+
+**Invariants — held except the index.** `git diff --numstat d871ea6 fed04cb` = 2661 added / **0 deleted** over all
+20 files; `mistakes.md` 78/0 in range and untouched by `fed04cb`; my two earlier reports byte-unchanged above; 0 `.py`
+in the package and block imports stdlib + `adaptive_grok` only; `grok_spec.py validate --gate` → `"ok": true`,
+`"errors": []`, 6 ACs. Block G is at `measurement-harness.md:825` but **not** indexed: `evidence/README.md:17`,
+`architecture.md:36`, `test-plan.md:11` still read "blocks A–F".
+
+## Residual (non-blocking)
+1. Cell lists 11 removals, block G prints 9; `requestBodies`, `examples`, root `security`, root `servers` are keys this
+   document lacks — four vacuous no-ops inside the enumeration.
+2. Block G sits between E and F with bare ``` fences where A–F use ```console, so `^```console` scrapers skip it; it
+   also takes the name I reserved in round 3 for `analysis-architect.md` §1.
+3. "verified here and in the primary checkout" is one object DB (linked worktree of `adaptive-grok-build-pro/.git`);
+   my fresh-store `--local` clone rejects both probe ids too — cite that instead.
+4. Block G's "wrong for these two records" reads back onto the `prefixItems` rows though G is one openapi record; the
+   rewritten annotation is ungrammatical ("the audit package this file was carried forward from that lane and
+   rewritten") and integration's companion carries no count.
+5. Untouched, not re-argued: `analysis-architect.md` §1 needs an uncommitted `real.py`, and
+   `analysis-integration_architect.md:106` keeps a bolded stale 20/50 with no annotation.
+
+## What I measured
+Worktrees under `/tmp/fc-audit-delta`, both clean on `factory/contracts architecture .grok-stack` (0 lines). `myg.py`:
+5 predicate wrappers logging caller/lineno on every falsey return + 15 removal variants. `mybc.py`: `prefixItems`
+whitelist patch, `$ref` walk vs the declared-`$id` table, `anyOf` ablation over the head-compatible set. `names.py`
+once per tree + `comm` for the 25/0 split. Fence extraction (7 ```python; per-block name counts; block G grepped for
+`prefixItems`), `grep -c '\$ref'` on both M7 schemas, blob-to-blob `git diff --numstat`, `git cat-file -t` on both
+probe ids, the gate run.
