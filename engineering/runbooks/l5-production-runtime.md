@@ -69,6 +69,29 @@ The printed manifest SHA-256 must be retained separately with the snapshot recor
 
 For a binary rollback, keep the service stopped, retain the current release/config/state snapshot and select the previous generated unit only when its landing schema and retained source epochs are compatible. Do not downgrade unknown schemas. A default-off restart of the current release with the same durable roots is the bounded containment path when compatibility is unknown. Activation/rollback of the site itself uses the exact persisted predecessor through the publication CLI, with its separate grant.
 
+## Durable activation probes
+
+The landing-only Unix socket provides `POST /v1/landing-probes` and `GET /v1/landing-probes/{probe_id}`. Only an authenticated operator actor with `landing:probe` can use either route, and POST accepts only a profile enabled by the running server. The server executes one fixed synthetic request; callers cannot submit provider output. Consult the versioned [probe API contract](../../factory/contracts/openapi/landing-probe.v1.json).
+
+An operator must choose a fresh, stable idempotency key for each intentionally new probe, then retain the returned `probe_id`. For example, with a socket-aware curl build and an existing operator token:
+
+```sh
+curl --unix-socket "$LANDING_SOCKET" \
+  -H "Authorization: Bearer $LANDING_OPERATOR_TOKEN" \
+  -H "Idempotency-Key: activation-check-20260918-01" \
+  -H "Content-Type: application/json" \
+  --data '{"profile_id":"qwen-omni-intl"}' \
+  http://localhost/v1/landing-probes
+
+curl --unix-socket "$LANDING_SOCKET" \
+  -H "Authorization: Bearer $LANDING_OPERATOR_TOKEN" \
+  http://localhost/v1/landing-probes/PROBE_ID
+```
+
+A local `provider_attempts: 1` means this server reserved one request attempt before dispatch; it does not establish upstream receipt, billing, or completion. If the process restarts with a pending record, startup appends an `unknown` revision with `outcome_ambiguous`; GET returns that state. Repeating the same idempotency key returns the same probe and never invokes the provider again. Do not retry an ambiguous probe as a way to discover its outcome. If a new probe is separately intended, use a new idempotency key and treat it as a new possible charge. GET, restore, and recovery perform no provider request.
+
+The store migrates schema v1/v2 forward to v3, and backup/restore preserves all probe event rows. Keep a pre-change snapshot and a v3-capable reader during rollout; do not downgrade a database containing probe rows. The old 769/191 activation result has no recoverable durable source record and remains historical attestation only; no new request represents or repairs that event.
+
 ## Remaining operational work and evidence
 
 Current source tests cover bounded HTTP/media failures, retained v1/v2, host ownership, publication authority/ambiguity and inactive SQLite/artifact recovery using disposable resources. The G plan includes actual cooperative writer conflict, committed WAL content, populated publication state and pre-mutation restore-budget checks. Exact executed results belong to the immutable-source evidence ledger and selected independent reviews. Mock transports and synthetic grants do not establish live provider or publication acceptance.
