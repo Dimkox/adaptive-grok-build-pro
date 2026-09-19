@@ -1210,6 +1210,28 @@ class VerificationTests(unittest.TestCase):
 
 
 class TypedSpecVerificationTests(unittest.TestCase):
+    def test_gate_fails_unmapped_non_ac_criteria_and_keeps_coverage(self) -> None:
+        for category, criterion_id, finding in (
+            ('invariants', 'INV-001', 'unmapped invariants criteria: INV-001'),
+            ('forbidden_outcomes', 'FORBID-001', 'unmapped forbidden_outcomes criteria: FORBID-001'),
+        ):
+            with self.subTest(category=category), project_copy(git=True) as root:
+                route = build_route(root, 'Добавить функцию', 's1').to_dict()
+                set_active_route(root, route)
+                start_change(root)
+                active = get_active_change(root) or {}
+                rel = f"{active['path']}/change-spec.yaml"
+                spec = _valid_change_spec(active['change_id'])
+                spec[category] = [{'id': criterion_id, 'statement': 'criterion', 'evidence': []}]
+                (root / rel).write_text(dump_canonical_spec(spec), encoding='utf-8')
+
+                check, metadata = _change_specs(root, [], route, 'pr')
+                self.assertEqual(check.status, 'fail')
+                record = next(item for item in metadata['specs'] if item['path'] == rel)
+                self.assertFalse(record['valid'])
+                self.assertEqual(record['coverage']['categories'][category]['unmapped_ids'], [criterion_id])
+                self.assertTrue(any(finding in item['message'] for item in check.details))
+
     def test_pr_selects_active_and_every_changed_spec(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Добавить функцию', 's1').to_dict()

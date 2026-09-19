@@ -1,0 +1,84 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py::ChangeSpecTests.test_gate_requires_evidence_for_each_criterion_category"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Gate validation rejects an empty evidence array for AC, INV, and FORBID while draft mode remains descriptive."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py::ChangeSpecTests.test_coverage_includes_all_categories_and_keeps_ac_projection"
+        },
+        {
+          "test": "tests/test_change_spec.py::ChangeSpecTests.test_summary_exposes_category_aware_coverage_and_all_aggregate"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Coverage and summary expose per-category and aggregate criterion coverage while retaining an explicit AC-only projection."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::TypedSpecVerificationTests.test_gate_fails_unmapped_non_ac_criteria_and_keeps_coverage"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "The change-spec gate fails with actionable category and ID findings and retains coverage metadata for invalid specs."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260917-fix-change-spec-invariant-and-forbidden-outcome-32b077",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py::ChangeSpecTests.test_coverage_includes_all_categories_and_keeps_ac_projection"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Local criterion coverage or verification is represented as Trust CI authority or as proof that evidence references are authentic."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_signing.py"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "Existing Trust CI v1 signed criterion_coverage remains AC-only and old signatures preserve their original payload semantics."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "fix issue #125: change-spec coverage must validate INV and FORBID evidence/results, not only count acceptance criteria",
+    "success_metric": "Every declared AC, INV, and FORBID has at least one evidence reference; incomplete gate specs fail with category and stable ID.",
+    "target": "0 unmapped AC/INV/FORBID criteria in a valid gate spec; all three empty-evidence mutations fail."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
