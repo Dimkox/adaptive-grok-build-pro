@@ -28,4 +28,4 @@ No data mutation exists to recover. Two notes specific to a revert:
 2. `git diff --stat HEAD -- mistakes.md` is empty and the file still contains every pre-existing entry exactly once.
 3. `python3 scripts/grok_verify.py --mode pr` on the rolled-back head is green (it was green before this change, since
    no product file was ever touched).
-4. Issue #146 and residuals R1–R4 remain open and unaffected — this package documents them and owns none of their fixes.
+4. Issue #146 and residuals R1–R5 remain open and unaffected — this package documents them and owns none of their fixes.

@@ -54,8 +54,17 @@ Fail-closed on malformed/out-of-subset constructs (identical pair → `unsupport
 
 ## Conclusion so far
 
-No false-certification case was produced against the merged comparator: every direction that should break does
-break, and every case the subset cannot prove degrades to `unsupported`, which hard-fails the gate.
+Two claims here must be read as corrected. The first version of this file stated that no false-certification case
+existed against the merged comparator, and the synthetic sweep in `analysis-ai_architect.md` reported the same. Both
+were wrong, and the `architect` lane found the case: `_SchemaResolver.resolve` consults the declared-`$id` table
+before the declared-path table, so a record whose `$id` equals another contract's path **captures** references that
+name that path, and a real consumer-breaking narrowing (`minLength 1 -> 9`) in the captured target then reports
+`compatible ()` where the pre-#133 comparator reported `incompatible (narrowed_constraint)`. Reproduced independently
+with a control arm (remove the claimant -> both trees report `incompatible`), so the delta is caused by #133's `$id`
+lookup and not by `anyOf`. Measured reachability in the shipped inventory at `d871ea6`: 50 contracts, 41 distinct
+`$id` values, none equal to a declared path, 0 references where the two tables disagree -> **latent, not live**.
+Filed as issue #147. Everything else below stands: on the composition axis the comparator never reported `compatible`
+for a changed instance set in any case I could produce, and unprovable edits degrade to `unsupported`.
 
 Residual #104 incompleteness, all fail-closed rather than unsound, each still leaving a contract partly
 write-once:
@@ -71,6 +80,12 @@ write-once:
 
 Distinct and already tracked elsewhere, therefore deliberately NOT re-filed here: annotation-vs-`compatible`
 metadata behaviour (#120, PR #137) and the closure reverse-edge loss for `$id`/fragment refs (#146).
+
+5. **R5** *(soundness, latent — issue #147)* — declared-`$id` resolution takes precedence over the declared-path
+   table (`architecture.py:1239-1247`), so a path-like `$id` captures references naming another contract's path and a
+   real narrowing of that target reports `compatible`. Unlike R1–R4 this is **not** fail-closed: it is a false
+   certification, reachable the moment one contract declares a path-like `$id`, which nothing currently rejects.
+   Measured unreachable today (41 declared `$id` values, none equal to a declared path).
 
 ## Gate-path corroboration
 

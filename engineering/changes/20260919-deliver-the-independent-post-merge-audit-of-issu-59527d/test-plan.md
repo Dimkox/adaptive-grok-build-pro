@@ -23,5 +23,5 @@
 
 - Read the recovered six entries against the primary working tree's file to confirm they were copied verbatim.
 - Confirm the chronological placement and that no existing entry's text was reflowed.
-- Confirm each residual (R1–R4) is phrased as fail-closed incompleteness, not as a soundness defect, and that
+- Confirm each residual (R1–R5) is phrased as fail-closed incompleteness, not as a soundness defect, and that
   issue #146 is cited for the closure defect rather than re-litigated here.

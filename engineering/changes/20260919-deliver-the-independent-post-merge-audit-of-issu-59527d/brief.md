@@ -26,7 +26,7 @@ restored the file. The maintainer directed that they be preserved.
 ## Outcome
 
 A reader of `main` can see, without this session: what #133 actually changed in the comparator's coverage (measured
-before/after on the declared 50-record inventory), what it deliberately left unverified (residuals R1–R4, each
+before/after on the declared 50-record inventory), what it deliberately left unverified (residuals R1–R5, each
 reproducible by command), which of the wave's own intermediate conclusions were wrong and why, and the two new
 durable rules that came out of those errors — alongside the six recovered lessons, which now have a commit that
 protects them.
@@ -44,7 +44,7 @@ protects them.
 ### Out of scope
 
 - Any product, contract, rules, schema, governance or test change. The composition residuals and the closure defect
-  are tracked as issue #146 and R1–R4; fixing them belongs to their own routes.
+  are tracked as issue #146 and R1–R5; fixing them belongs to their own routes.
 - Reopening, re-scoping or re-closing issue #104, and any edit to another change package's records.
 - The other sessions' in-flight pull requests (#137, #138 and the rest), including their files and their claims.
 

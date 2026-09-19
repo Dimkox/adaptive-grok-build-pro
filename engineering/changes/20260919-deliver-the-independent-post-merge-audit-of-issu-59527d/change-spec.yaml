@@ -7,7 +7,7 @@
         }
       ],
       "id": "AC-001",
-      "statement": "The post-merge audit of the #104 composition analysis is durable repository content: five route-selected analysis reports plus the controller's re-measured tables exist under this package's evidence/ on the delivered head, and each numeric claim in them is reproducible by a command named in the file."
+      "statement": "The post-merge audit of the #104 composition analysis is durable repository content: six route-selected analysis reports plus the controller's re-measured tables exist under this package's evidence/ on the delivered head, and each numeric claim in them is reproducible by a command named in the file."
     },
     {
       "evidence": [
@@ -16,7 +16,7 @@
         }
       ],
       "id": "AC-002",
-      "statement": "The record states honestly what merged PR #133 did and did not fix: 36/38 declared json_schema contracts are identity-analyzable (was 14/38), no false-certification case is claimed or demonstrated, and residuals R1-R4 are named as fail-closed incompleteness rather than as soundness defects."
+      "statement": "The record states honestly what merged PR #133 did and did not fix: 36/38 declared json_schema contracts are identity-analyzable (was 14/38) and the unsupported_openapi_construct symptom is gone; residuals R1-R5 are named as fail-closed incompleteness; and one genuine latent false-certification path found by this audit - declared-$id precedence over the declared-path table - is reported as a soundness defect and filed as issue #147 with a control-flipped reproduction."
     },
     {
       "evidence": [
@@ -44,6 +44,15 @@
       ],
       "id": "AC-005",
       "statement": "Committed evidence carries no machine-local absolute paths, host names, key material or credential material: every worktree and scratch path is rendered as a placeholder."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "The delivered head passes python3 scripts/grok_verify.py --mode pr with the verification and code_review receipts bound to its tree fingerprint; this criterion is satisfied only by those receipts, never by ticking it in advance."
     }
   ],
   "approvals": {
@@ -113,6 +122,12 @@
       "statement": "Every verdict table in the committed evidence names the inventory it was computed against, because an under-declared inventory turns real verdicts into unsupported."
     }
   ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver the independent post-merge audit of issue #104 composition analysis as durable change-package evidence, plus the two agent-behavior lessons it produced: a duplicate implementation wave started from a stale route file, and comparator probes whose truncated contract inventory fabricated unsupported verdicts. Documentation only: no product, contract, rule or policy change.",
+    "success_metric": "Eight lesson entries and six audit artifacts are tracked in Git on the delivered head with zero deletions to the shared document, and the residual list R1-R5 plus issue #146 are the only open claims left from this wave.",
+    "target": "adaptive-grok-build-pro main: engineering/changes/20260919-deliver-the-independent-post-merge-audit-of-issu-59527d/evidence/ and mistakes.md"
+  },
   "observability": [
     {
       "id": "SIG-001",
@@ -122,12 +137,6 @@
       ]
     }
   ],
-  "objective": {
-    "id": "OBJ-001",
-    "statement": "Deliver the independent post-merge audit of issue #104 composition analysis as durable change-package evidence, plus the two agent-behavior lessons it produced: a duplicate implementation wave started from a stale route file, and comparator probes whose truncated contract inventory fabricated unsupported verdicts. Documentation only: no product, contract, rule or policy change.",
-    "success_metric": "Eight lesson entries and six audit artifacts are tracked in Git on the delivered head with zero deletions to the shared document, and the residual list R1-R4 plus issue #146 are the only open claims left from this wave.",
-    "target": "adaptive-grok-build-pro main: engineering/changes/20260919-deliver-the-independent-post-merge-audit-of-issu-59527d/evidence/ and mistakes.md"
-  },
   "risk": {
     "domains": [
       "api"

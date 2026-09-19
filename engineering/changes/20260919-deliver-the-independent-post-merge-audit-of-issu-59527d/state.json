@@ -19,11 +19,35 @@
       "from": "scoped",
       "reason": "documentation-only wave, no named human gate in route 59527d5a28f8",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-19T04:52:22+00:00",
+      "from": "approved",
+      "reason": "documentation wave: evidence collected and committed, spec canonical, AC-006 left unticked pending the verification and code_review receipts",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-19T04:52:22+00:00",
+      "from": "implementing",
+      "reason": "documentation wave: evidence collected and committed, spec canonical, AC-006 left unticked pending the verification and code_review receipts",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-19T04:52:22+00:00",
+      "from": "verifying",
+      "reason": "documentation wave: evidence collected and committed, spec canonical, AC-006 left unticked pending the verification and code_review receipts",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-19T04:52:22+00:00",
+      "from": "reviewing",
+      "reason": "documentation wave: evidence collected and committed, spec canonical, AC-006 left unticked pending the verification and code_review receipts",
+      "to": "ready"
     }
   ],
   "route_id": "59527d5a28f8",
   "schema_version": 1,
-  "status": "approved",
+  "status": "ready",
   "title": "Deliver the independent post-merge audit of issue #104 composition analysis as durable change-package evidence, plus the two agent-behavior lessons it produced: a duplicate implementation wave started from a stale route file, and comparator probes whose truncated contract inventory fabricated unsupported verdicts. Documentation only: no product, contract, rule or policy change.",
-  "updated_at": "2026-09-19T04:40:32+00:00"
+  "updated_at": "2026-09-19T04:52:22+00:00"
 }

@@ -11,7 +11,7 @@ exist only as an uncommitted tail of the primary working tree, reachable from no
 
 ## Proposed behavior
 
-The audit becomes repository content under this package: five route-selected analysis reports, the controller's
+The audit becomes repository content under this package: six route-selected analysis reports, the controller's
 re-measured verdict tables (with each superseded table marked superseded and its cause named), and eight
 `mistakes.md` entries placed without touching a single existing line.
 
@@ -45,7 +45,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 - Applicable rule IDs: `FIT-DECLARED-NETWORK-ONLY` (why no evidence script in this package imports a network family —
   reproduction commands are shell lines inside `.md`, not `.py` files under `engineering/changes/**`).
 - Applicable canonical example IDs/versions: none.
-- Open or overdue debt IDs: R1–R4 (comparator incompleteness, documented here, fixed elsewhere) and issue #146
+- Open or overdue debt IDs: R1–R5 (comparator incompleteness, documented here, fixed elsewhere) and issue #146
   (closure reverse edges), both out of this change's scope by design.
 - Expected governance handoff or receipt impact: none. No governance JSON, digest or policy file moves; the gate
   still requires the App-owned exact-SHA check for merge.
@@ -73,5 +73,5 @@ Canonical governance JSON under `governance/` remains separately reviewed author
   overlap rather than hide it.
 - **Audit content aging against the next comparator change.** Mitigated by binding every claim to a commit SHA
   (`2f66ba6`, `d871ea6`) plus a re-run command, so staleness is detectable rather than persuasive.
-- **Readers mistaking this package for the fix.** The brief, requirements and this file each name #146 and R1–R4 as
+- **Readers mistaking this package for the fix.** The brief, requirements and this file each name #146 and R1–R5 as
   the places where work actually happens.

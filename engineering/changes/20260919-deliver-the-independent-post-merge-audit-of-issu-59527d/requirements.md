@@ -4,8 +4,8 @@
 
 ## Acceptance criteria
 
-- [ ] AC-001 — The five route-selected analysis reports and the controller's re-measured tables are tracked under `evidence/`, and each numeric claim names a command that reproduces it.
-- [ ] AC-002 — The record says plainly what merged #133 fixed (36/38 identity-analyzable json_schema contracts, was 14/38; the `unsupported_openapi_construct` symptom is gone) and what it left: residuals R1–R4, all fail-closed.
+- [ ] AC-001 — The six route-selected analysis reports and the controller's re-measured tables are tracked under `evidence/`, and each numeric claim names a command that reproduces it.
+- [ ] AC-002 — The record says plainly what merged #133 fixed (36/38 identity-analyzable json_schema contracts, was 14/38; the `unsupported_openapi_construct` symptom is gone) and what it left: fail-closed residuals R1–R5 **plus one real latent false-certification path** — declared-`$id` resolution taking precedence over the declared-path table, filed as issue #147 with a control-flipped reproduction and measured unreachable in today's inventory (41 `$id` values, none path-like).
 - [ ] AC-003 — Superseded tables are marked superseded with their cause (truncated 38-record inventory; a working tree carrying a probe commit), so nobody re-quotes them.
 - [ ] AC-004 — `mistakes.md` gains 8 entries (6 recovered from an uncommitted tail at the maintainer's direction + 2 from this wave) with **zero deleted lines** and chronological order preserved.
 - [ ] AC-005 — No machine-local absolute path, host name, key material or credential survives in committed evidence (placeholders only).
@@ -29,7 +29,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
   imports a network family — evidence scripts stay inside `.md` files, per the recorded trap.
 - Canonical-example deviations and evidence: none.
 - Intentional debt created, repaid, or accepted: **repaid** — six lessons that existed only in a dirty working tree are
-  now in Git. **Accepted/created**: this wave documents but does not fix R1–R4; #146 carries the closure defect.
+  now in Git. **Accepted/created**: this wave documents but does not fix R1–R5; #146 carries the closure defect.
 
 ## Non-functional requirements
 
