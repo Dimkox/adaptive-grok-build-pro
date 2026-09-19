@@ -822,6 +822,82 @@ while its title and brief named one. The last two lines are the CAR-5 reachabili
 values, none equal to a declared path, and 0 of the 86 cross-file `$ref` bases name both, so the `$id` shadowing
 defect is latent, not live.
 
+## Block F — shared-document append-only and chronology check (reproduces the AC-004 / INV-001 wording)
+
+```python
+"""Block F - shared-document chronology check (append-only + out-of-order date pairs).
+
+Usage: python3 chronology_check.py <worktree> <base-rev> <head-rev> [doc]
+"""
+import re
+import subprocess
+import sys
+
+WT, BASE, HEAD = sys.argv[1], sys.argv[2], sys.argv[3]
+DOC = sys.argv[4] if len(sys.argv) > 4 else "mistakes.md"
+DATE = re.compile(r"^## (\d{4}-\d{2}-\d{2}) — ")
+
+def show(rev):
+    return subprocess.run(["git", "-C", WT, "show", f"{rev}:{DOC}"],
+                          capture_output=True, text=True, check=True).stdout
+
+def entries(text):
+    """Dated entry headings, in file order."""
+    return [line for line in text.splitlines() if DATE.match(line)]
+
+numstat = subprocess.run(["git", "-C", WT, "diff", "--numstat", f"{BASE}...{HEAD}", "--", DOC],
+                         capture_output=True, text=True, check=True).stdout.strip()
+print(f"{DOC} numstat {BASE}...{HEAD} (added deleted) = {numstat}")
+for rev in (BASE, HEAD):
+    dates = [DATE.match(h).group(1) for h in entries(show(rev))]
+    back = [(dates[i - 1], dates[i]) for i in range(1, len(dates)) if dates[i] < dates[i - 1]]
+    print(f"{rev}: dated entries={len(dates)}  out-of-order adjacent date pairs={len(back)}")
+base_headings = set(entries(show(BASE)))
+added = [h for h in entries(show(HEAD)) if h not in base_headings]
+print(f"dated entry headings added={len(added)}")
+for h in added:
+    print(f"   + {h[3:]}")
+```
+
+```console
+$ python3 chronology_check.py <worktree> d871ea6 HEAD
+mistakes.md numstat d871ea6...HEAD (added deleted) = 78	0	mistakes.md
+d871ea6: dated entries=211  out-of-order adjacent date pairs=12
+HEAD: dated entries=219  out-of-order adjacent date pairs=12
+dated entry headings added=8
+   + 2026-09-17 — Asked another CLI model "what is going on" while handing it the answer, and read its echo as corroboration
+   + 2026-09-17 — Tore down a shared worktree on the assumption that its author was dead
+   + 2026-09-17 — Edited a file a machine had started reading, and reported my reruns by overwriting the raw rows
+   + 2026-09-18 — Edited the tree while my own verification run was watching it, then explained a failure I caused
+   + 2026-09-18 — Chased "binary file not supported" through cosmetics for six probes while six throwaway gists piled up
+   + 2026-09-18 — Wrote "RESULT: PASS" from a gate whose verdict I never read, because the pipeline returned tail's status
+   + 2026-09-19 — Re-implemented a task that was already delivered, because the route file was read as current state
+   + 2026-09-19 — Published "this construct is unanalyzable" from a probe whose inventory could not resolve its own $refs
+```
+
+The eight listed headings are the six recovered entries (dated 2026-09-17 and 2026-09-18, present in the primary
+working tree's uncommitted file) plus this wave's two 2026-09-19 entries.
+**12 out-of-order adjacent date pairs already existed at the base** and the count is still 12, so this change adds
+none — which is why `AC-004` says "ordered locally among the entries this change adds", not "the file stays
+chronologically ordered". The stricter wording was false at base and unverifiable as a gate.
+
+## Index: which block reproduces which committed claim
+
+| claim | block |
+| --- | --- |
+| identity analyzability, both units, both trees (`12/38 → 36/38`, `21/50 → 46/50`, unlocked 24 / 25) | A |
+| the two blocked json_schema contracts at head, and the four blocked records of 50 | A |
+| `CONTRACT-ADAPTIVE-DEMO-OPENAPI` blocked by policy mode, not by a construct | A (with `architecture.py:3105-3107`) |
+| whitelist ablation `$defs` 24/23, `format` 10/9, `anyOf` 4/3, with each unit's denominator | B |
+| #133 admitted three keys (`$defs`, `format`, `anyOf`), 24 → 27 | E |
+| the edit-class table, including every inserted branch shape | C |
+| the failover-result "tighten" cell is a no-op, not a verdict | C (second block) |
+| CAR-3's sibling half: `title` beside `anyOf` is a non-verdict in all three modes on all three contracts | C-2 |
+| the synthetic soundness table (widening/narrowing/swap/dedup/out-of-subset/numeric) | D |
+| glob-vs-declared provenance and the two different 38s | E |
+| `$id` census: 41 values, 0 path collisions, 0 of 86 `$ref` bases ambiguous | E |
+| `mistakes.md`: 78 added / 0 deleted lines, 8 added entries, 12 out-of-order pairs at base and head | F |
+
 ## Block G — OpenAPI guard instrumentation and single-removal ablation
 
 Reproduces the `CONTRACT-FACTORY-LANDING-OPENAPI-V1` cell above: wraps `_has_only_keys`, `_security_schemes`,
@@ -930,79 +1006,3 @@ and neither record's blocking construct is identified by this package. Both `urn
 resolve, through declared `$id`s, so they are not dangling.
 
 ---
-
-## Block F — shared-document append-only and chronology check (reproduces the AC-004 / INV-001 wording)
-
-```python
-"""Block F - shared-document chronology check (append-only + out-of-order date pairs).
-
-Usage: python3 chronology_check.py <worktree> <base-rev> <head-rev> [doc]
-"""
-import re
-import subprocess
-import sys
-
-WT, BASE, HEAD = sys.argv[1], sys.argv[2], sys.argv[3]
-DOC = sys.argv[4] if len(sys.argv) > 4 else "mistakes.md"
-DATE = re.compile(r"^## (\d{4}-\d{2}-\d{2}) — ")
-
-def show(rev):
-    return subprocess.run(["git", "-C", WT, "show", f"{rev}:{DOC}"],
-                          capture_output=True, text=True, check=True).stdout
-
-def entries(text):
-    """Dated entry headings, in file order."""
-    return [line for line in text.splitlines() if DATE.match(line)]
-
-numstat = subprocess.run(["git", "-C", WT, "diff", "--numstat", f"{BASE}...{HEAD}", "--", DOC],
-                         capture_output=True, text=True, check=True).stdout.strip()
-print(f"{DOC} numstat {BASE}...{HEAD} (added deleted) = {numstat}")
-for rev in (BASE, HEAD):
-    dates = [DATE.match(h).group(1) for h in entries(show(rev))]
-    back = [(dates[i - 1], dates[i]) for i in range(1, len(dates)) if dates[i] < dates[i - 1]]
-    print(f"{rev}: dated entries={len(dates)}  out-of-order adjacent date pairs={len(back)}")
-base_headings = set(entries(show(BASE)))
-added = [h for h in entries(show(HEAD)) if h not in base_headings]
-print(f"dated entry headings added={len(added)}")
-for h in added:
-    print(f"   + {h[3:]}")
-```
-
-```console
-$ python3 chronology_check.py <worktree> d871ea6 HEAD
-mistakes.md numstat d871ea6...HEAD (added deleted) = 78	0	mistakes.md
-d871ea6: dated entries=211  out-of-order adjacent date pairs=12
-HEAD: dated entries=219  out-of-order adjacent date pairs=12
-dated entry headings added=8
-   + 2026-09-17 — Asked another CLI model "what is going on" while handing it the answer, and read its echo as corroboration
-   + 2026-09-17 — Tore down a shared worktree on the assumption that its author was dead
-   + 2026-09-17 — Edited a file a machine had started reading, and reported my reruns by overwriting the raw rows
-   + 2026-09-18 — Edited the tree while my own verification run was watching it, then explained a failure I caused
-   + 2026-09-18 — Chased "binary file not supported" through cosmetics for six probes while six throwaway gists piled up
-   + 2026-09-18 — Wrote "RESULT: PASS" from a gate whose verdict I never read, because the pipeline returned tail's status
-   + 2026-09-19 — Re-implemented a task that was already delivered, because the route file was read as current state
-   + 2026-09-19 — Published "this construct is unanalyzable" from a probe whose inventory could not resolve its own $refs
-```
-
-The eight listed headings are the six recovered entries (dated 2026-09-17 and 2026-09-18, present in the primary
-working tree's uncommitted file) plus this wave's two 2026-09-19 entries.
-**12 out-of-order adjacent date pairs already existed at the base** and the count is still 12, so this change adds
-none — which is why `AC-004` says "ordered locally among the entries this change adds", not "the file stays
-chronologically ordered". The stricter wording was false at base and unverifiable as a gate.
-
-## Index: which block reproduces which committed claim
-
-| claim | block |
-| --- | --- |
-| identity analyzability, both units, both trees (`12/38 → 36/38`, `21/50 → 46/50`, unlocked 24 / 25) | A |
-| the two blocked json_schema contracts at head, and the four blocked records of 50 | A |
-| `CONTRACT-ADAPTIVE-DEMO-OPENAPI` blocked by policy mode, not by a construct | A (with `architecture.py:3105-3107`) |
-| whitelist ablation `$defs` 24/23, `format` 10/9, `anyOf` 4/3, with each unit's denominator | B |
-| #133 admitted three keys (`$defs`, `format`, `anyOf`), 24 → 27 | E |
-| the edit-class table, including every inserted branch shape | C |
-| the failover-result "tighten" cell is a no-op, not a verdict | C (second block) |
-| CAR-3's sibling half: `title` beside `anyOf` is a non-verdict in all three modes on all three contracts | C-2 |
-| the synthetic soundness table (widening/narrowing/swap/dedup/out-of-subset/numeric) | D |
-| glob-vs-declared provenance and the two different 38s | E |
-| `$id` census: 41 values, 0 path collisions, 0 of 86 `$ref` bases ambiguous | E |
-| `mistakes.md`: 78 added / 0 deleted lines, 8 added entries, 12 out-of-order pairs at base and head | F |
