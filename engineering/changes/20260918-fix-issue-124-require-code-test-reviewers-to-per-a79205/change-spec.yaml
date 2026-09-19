@@ -1,0 +1,42 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Code and test reviewer instructions prohibit source mutation in the reviewed worktree and require a private scratch snapshot for mutation tests.","evidence":[{"test":"tests/test_structure.py"}]},
+    {"id":"AC-002","statement":"Reviewer briefs and report template require candidate HEAD and tree fingerprint, scratch path, executed claims with commands/results, unexecuted claims, and reviewed tree modified: no.","evidence":[{"test":"tests/test_structure.py"}]},
+    {"id":"AC-003","statement":"Reviewer TOMLs retain read-only sandbox configuration; documentation does not claim local instructions enforce OS-level isolation.","evidence":[{"test":"tests/test_structure.py"}]},
+    {"id":"AC-004","statement":"Reviewers return complete reports out-of-band and do not mutate the candidate; coordinator persists reports after all reviews and reruns final verification for the report-containing tree.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-fix-issue-124-require-code-test-reviewers-to-per-a79205",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Reviewers must not mutate the reviewed candidate worktree, and the contract must not overstate read-only prompts as technical filesystem enforcement.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Every clean code/test review binds to an unchanged candidate fingerprint before and after the review.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #124: require code/test reviewers to perform mutation testing in a private scratch copy outside the reviewed worktree, preserve the reviewed tree as read-only, and report which claims were executed with commands/output plus reviewed-tree-modified:no and scratch path. Update reviewer briefs/templates and tests.",
+    "success_metric": "Focused structural tests and full PR verification pass; reviewer contract requires scratch evidence and an unchanged reviewed-tree fingerprint.",
+    "target": "Both code/test reviewer roles and their report template require candidate-bound scratch-only mutation evidence and no-change attestation."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "frontend"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

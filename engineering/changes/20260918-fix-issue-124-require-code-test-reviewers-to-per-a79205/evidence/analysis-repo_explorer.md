@@ -1,0 +1,36 @@
+# Repository analysis — issue #124
+
+Issue: [#124](https://github.com/Dimkox/adaptive-grok-build-pro/issues/124), about mutation testing inside the reviewed worktree. Analysis used route `a792059ec553` in `/tmp/adaptive-fix-issue-124`; no product files were edited.
+
+## Current reviewer instructions and report template
+
+- `.grok/agents/code_reviewer.md:7-13` says to independently review the diff, load `/adaptive-delivery`, read the change package, avoid secrets, and avoid push/merge/deploy. It does not say the reviewed tree must stay read-only, where mutation probes go, or that the report must record mutation status and scratch path.
+- `.grok/agents/test_reviewer.md:7-13` says to assess test adequacy, characterization, and verification, with the same generic route/package/secrets/external-operation constraints. It contains no scratch mutation procedure or explicit no-write rule.
+- The corresponding `.grok/agents/code_reviewer.toml` and `test_reviewer.toml` each set `sandbox_mode = "read-only"` and tell the agent to be read-only, inspect the final diff, and write a report. This is a useful runtime restriction, but it does not define how executable mutation testing is to be done, does not specify a private scratch location, and conflicts operationally with both “read-only” and the requirement to write a report. No test in `tests/` asserts these TOML settings or proves that every review execution environment enforces them.
+- There is no dedicated review-report template. `.grok-stack/templates/change/evidence/README.md:1-3` only says that human-readable reviews belong there and machine receipts are fingerprint-bound. Existing reports use varied formats; nothing requires `reviewed tree modified: no`, a scratch path, or a list of commands/outputs run against the scratch copy.
+- `scripts/grok_review.py:14-23` checks only that the report file exists before recording a receipt; it does not validate required report fields or prove the execution tree used by a reviewer.
+
+## Coordination and the reviewed-tree integrity gap
+
+- `.grok/skills/adaptive-delivery/SKILL.md:94-105` explicitly dispatches all route reviewers **in parallel**; each reviews the same final tree and writes a report. It says code changes after review invalidate receipts, but supplies no mutex, exclusive review lease, or coordination protocol for an in-tree mutation battery. It therefore does not answer who may write while reviewers are active.
+- `.grok-stack/config/routing.json:4-11,50-65` establishes parallel review and the code/test review floors, but does not establish mutation isolation.
+- `.grok/hooks/subagent_start.py:9-21` records an agent start and labels it `analysis-or-review` unless it is a write role; it does not create a read-only filesystem view. `.grok/hooks/pre_tool_use.py:221-263,304-312` evaluates local policy but emits allow on policy/import errors. These hooks do not prove that an agent cannot write the reviewed files through all execution paths.
+- `.grok-stack/adaptive_grok/receipts.py:502-564` fingerprints before and after writing a review receipt, then `.grok-stack/adaptive_grok/receipts.py:664-703` later compares the stored fingerprint to the current tree. This detects a source change that remains present at receipt/validation time. It cannot detect an edit-run-restore sequence completed before fingerprinting. `.grok-stack/adaptive_grok/util.py:129-142,183-199` also intentionally excludes runtime receipts, `__pycache__`, `.pytest_cache`, `node_modules`, `vendor`, bytecode, and coverage output from the fingerprint. Thus byte-for-byte source restoration can leave no evidence that tests ran against mutations in the live checkout; incidental ignored cache writes are not a substitute for source integrity.
+- Consequence: if mutation probes are run in the shared checkout, they occupy the same files a writer/coordinator needs, and multiple route reviewers can overlap. An imperfect restoration can alter the eventual commit; a perfectly restored mutation can remain invisible to fingerprint-bound receipts. The report’s voluntary restore hash is useful evidence but does not provide exclusion or prevent an incorrect commit.
+
+## Scratch-parent nuance
+
+The issue acceptance sketch says never use `/tmp` because `scripts/package_stack.py:133` refuses it as an untrusted rename parent. The checked-in source is more specific: `scripts/package_stack.py:103-133` rejects writable **non-sticky** ancestors, and permits a private child below a root-owned sticky ancestor when the child is owned by the current user. `tests/test_manifest_package.py:990-1002` explicitly verifies a private output directory under `/tmp` succeeds. This package-output rule is unrelated to reviewer scratch clones. So requiring private, mode-0700 scratch below a trusted non-sticky `$HOME/.cache` parent is a sensible explicit review policy, but should not be justified as an existing blanket `/tmp` prohibition.
+
+## Test coverage and useful regression checks
+
+- `tests/test_structure.py:177-215` checks for core files and scripts, but it does not pin reviewer brief content, a review report template, scratch-path requirements, or `sandbox_mode`.
+- `tests/test_repo_router.py` tests selection of code/test reviewers for routes, not reviewer write isolation or scratch instructions.
+- `tests/test_manifest_package.py:973-1002` tests package output-parent authority only. It cannot demonstrate reviewer scratch safety; the `/tmp` test in fact confirms that a private child is permitted for that separate package operation.
+- `tests/test_change_receipts.py:630-660` confirms that receipts become stale after a persistent contract/route/head change. It has no temporary edit-and-restore case and no report-content assertion. Receipt fingerprint tests should not be misrepresented as proving no intermediate mutation.
+
+Recommended regression coverage: assert both Markdown reviewer briefs require (1) the reviewed checkout remains untouched, (2) mutation/red-before-green probes run in a private owned mode-0700 scratch copy under the named trusted parent, and (3) the report names the scratch location and exact commands/output-backed claims. Add a canonical review-report template with required `reviewed tree modified: no` and `scratch path` fields. Add a test that enforces the durable template and brief contract; if the project wants mechanical assurance beyond instructions, add a reviewer-specific policy/runner check rather than relying on current fingerprints, since before/after hashes cannot detect restored transient changes. Preserve the existing role TOML read-only setting and clarify that the report is the only allowed write in the reviewed checkout (or write reports through a separate authorized evidence path).
+
+## Scope boundary
+
+Issue #124 is about where mutation tests execute and what reviewers must attest. The claim that specific mutations are killed, the quality of any mutation battery, and whether reviewers actually followed previous instructions require examining individual review reports; they do not substitute for the missing mandatory scratch/read-only/report contract. Any correction to the `/tmp` rationale above does not weaken the core integrity finding.

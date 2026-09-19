@@ -1,0 +1,5 @@
+# Review isolation incident noted during issue #125 review
+
+On 2026-09-18, a route-selected test reviewer intended to mutate the private #125 scratch snapshot but used the absolute `spec.py` path in the primary checkout. The reviewer then copied the #125 candidate file back to that path. The primary checkout had been observed clean for this tracked file before the incident, so the coordinator restored only that path from its `HEAD` version. A subsequent read-only status showed only the pre-existing `mistakes.md` and `.qwen/` changes; no other primary-checkout files were touched.
+
+The reviewer stopped immediately when notified. This demonstrates that a scratch-only instruction alone can be defeated by a wrong absolute path. Review execution must verify the source checkout's fingerprint before and after each mutation probe, use paths rooted from the verified scratch directory, and report any mismatch as an isolation failure. This incident is evidence for the scope of #124, not a claim that the current workflow technically enforces process filesystem isolation.

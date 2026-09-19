@@ -1,0 +1,29 @@
+{
+  "change_id": "20260918-fix-issue-124-require-code-test-reviewers-to-per-a79205",
+  "created_at": "2026-09-18T17:30:28+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T17:30:28+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T17:37:44+00:00",
+      "from": "draft",
+      "reason": "Analysis complete; acceptance criteria, invariant, forbidden outcome, typed evidence, and change design are recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T17:37:44+00:00",
+      "from": "scoped",
+      "reason": "Bounded implementation approved by explicit issue scope; no human gates.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "a792059ec553",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Fix issue #124: require code/test reviewers to perform mutation testing in a private scratch copy outside the reviewed worktree, preserve the reviewed tree as read-only, and report which claims were executed with commands/output plus reviewed-tree-modified:no and scratch path. Update reviewer briefs/templates and tests.",
+  "updated_at": "2026-09-18T17:37:44+00:00"
+}
