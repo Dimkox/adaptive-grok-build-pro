@@ -9,6 +9,17 @@ modules see the same documents. Inventory for every measurement = the **declared
 only for the edited record, passed as both `base_inventory` and `head_inventory`. All rows are measured runs,
 not reasoning. Harnesses: `<private-scratch>/{real.py,d2.py,d5.py,d6.py,d8.py,d9.py,c3.py}`.
 
+> **[ANNOTATION added by the controller at `cbc65ac`+, 2026-09-19 — the paragraph above is the agent's own text and is
+> unchanged.]** The parenthesised command in it is quoted without the pathspec its sentence implies, and the literal
+> form is **not** empty: `git diff --stat 2f66ba6 d871ea6` reports `25 files changed, 1737 insertions(+),
+> 39 deletions(-)`. The checked claim is the restricted one — `git diff --stat 2f66ba6 d871ea6 -- factory/contracts
+> architecture` prints nothing (0 files) — which is what the sentence means; a reader who copies the quoted form would
+> think the report contradicted itself. Two further readings of that header are confirmed rather than corrected: loading
+> the merged `architecture.py` into a *separate* module namespace in the same process (the harness `real.py` does it
+> with `exec(compile(...))` into a fresh `ModuleType`) is a genuine second tree and is not the `sys.modules` trap that
+> `measurement-harness.md` ground rule 1 warns about; and the byte-identical contracts plus architecture model is why
+> this file's base/head pairs compare documents rather than trees.
+
 ## 1. One measured false `compatible` — from the new `$id` lookup, not from `anyOf`
 
 Same pair under both modules; only `c/y.json` narrows (`minLength 1 → 9`); the referrer's own bytes are unchanged.

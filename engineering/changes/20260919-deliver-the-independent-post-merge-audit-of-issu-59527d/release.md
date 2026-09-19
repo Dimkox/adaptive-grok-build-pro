@@ -15,8 +15,12 @@ Not applicable — no runtime surface, no flag, no default changes.
 
 ## Metrics and alerts
 
-No production signal. The observable success check is repository-local and deterministic (`SIG-001`): `mistakes.md`
-diff shows additions with zero deletions, and this package's `evidence/` holds one file per completed analysis lane.
+No production signal. The observable success checks are repository-local and deterministic (`SIG-001`):
+`git diff --numstat <base>...<delivered-head> -- mistakes.md` shows additions with a zero deleted column (78 0 at the
+head this package was built on), and `ls engineering/changes/<this package>/evidence/analysis-*.md | wc -l` prints 5 —
+four lanes from route `59527d5a28f8` plus the `ai_architect` lane owned by route `4c524b83df59` — alongside
+`controller-declared-inventory-table.md` and `measurement-harness.md`. Both numbers are printed by blocks A and F of
+that harness.
 
 ## Go/no-go criteria
 

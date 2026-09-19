@@ -3,6 +3,10 @@
 ## Trigger conditions
 
 - Review shows a committed claim that is not reproducible at the SHA it cites (a false certification in prose).
+- A block in `evidence/measurement-harness.md` prints something different from the table that cites it. Since the
+  block is the measurement and the table is the transcription, the table is corrected and the wrong cell keeps a
+  supersession note; this is exactly how the `14 / 38` base row, the mixed-unit ablation line and the
+  "novel branch → `unsupported_schema_comparison`" cell were caught.
 - Evidence turns out to expose machine-local paths, host names or operator detail that should not be public.
 - The diff is found to have modified or reordered existing `mistakes.md` content (violates INV-001 / FORBID-003).
 - A concurrent owner's in-flight work on the same documents conflicts with the recovered entries.
@@ -28,4 +32,8 @@ No data mutation exists to recover. Two notes specific to a revert:
 2. `git diff --stat HEAD -- mistakes.md` is empty and the file still contains every pre-existing entry exactly once.
 3. `python3 scripts/grok_verify.py --mode pr` on the rolled-back head is green (it was green before this change, since
    no product file was ever touched).
-4. Issue #146 and residuals R1–R5 remain open and unaffected — this package documents them and owns none of their fixes.
+4. Issue #146, issue #147 and residuals CAR-1 … CAR-5 remain open and unaffected — this package documents them and
+   owns none of their fixes. Reverting the documentation does not revert the comparator: CAR-5's false `compatible`
+   stays reachable in the merged code until #147 is fixed, which is why the record labels it a soundness defect
+   instead of a coverage gap.
+5. `python3 scripts/grok_spec.py validate --gate` still reports `ok: true` for whatever package remains.

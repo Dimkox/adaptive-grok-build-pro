@@ -84,8 +84,24 @@ metadata and profile-fact probes now yield verdicts on all 6 rows, 25 of 50 decl
 un-analyzable to analyzable, and the capability-edit scenario now lands as an explicit
 `widened_producer_output` finding rather than a non-verdict. It is **not** accurate as "the AI/failover
 contract closure is fully analyzable". Recommended wording: *"#104 closed for the reported blocker; the
-bounded `anyOf` subset is incomplete — see follow-up (composition-proof residuals R1-R5)."* Nothing in the
-package overclaims past that: `brief.md` Outcome says "producing directionally sound results for
+bounded `anyOf` subset is incomplete — see follow-up (composition-proof residuals R1-R5)."*
+
+> **[SUPERSEDED — annotation added by the controller at `cbc65ac`+ (the correction sits on top of that commit); the
+> agent's own sentences below are quoted unchanged and were not rewritten.]** The clause "my 13 synthetic union probes
+> found **no** false `compatible` … so the residual is *incompleteness*, not *unsoundness*" is refuted by a
+> measurement this package itself carries: `analysis-architect.md` §1 reports a real consumer-breaking narrowing
+> (`minLength 1 → 9`) in an `$id`-captured target as `compatible ()` at `d871ea6`, where the pre-#133 module reports
+> `incompatible (narrowed_constraint)`, with the control arm (remove the `$id` claimant → both trees report
+> `incompatible`) showing the delta comes from #133's `$id` lookup and not from `anyOf`. That case is filed as
+> **issue #147** and recorded as residual **CAR-5** in `controller-declared-inventory-table.md`, and its reachability
+> census is reproduced by block E of `measurement-harness.md` (41 declared `$id` values, none equal to a declared
+> path, 0 of 86 `$ref` bases ambiguous → latent, not live). The 13 synthetic probes stand on their own terms — none of
+> them exercises resolution order, which is a different mechanism from union inclusion — but the package's conclusion
+> is now "incompleteness **plus one latent false certification**", not "incompleteness only". One cross-reference in
+> the annotated passage has also drifted: this package's `requirements.md` AC-005 is the path-scrub criterion, and the
+> fail-closed disclosure the agent meant is now AC-002/AC-003.
+
+Nothing in the package overclaims past that: `brief.md` Outcome says "producing directionally sound results for
 supported `anyOf` unions instead of stopping at a false unsupported verdict", which Table B/C show is only
 partly true; `requirements.md` AC-005 and `review-test.md` do disclose fail-closed residue, and my 13
 synthetic union probes found **no** false `compatible` (reorder/duplicate = compatible; split coverage and
