@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from .models import utc_now
+from .reap import reap_adopted_children
 from .store import Store
 
 
@@ -41,6 +42,14 @@ class LeaseKeeper:
         return self
 
     def check(self) -> None:
+        """Main-thread lease boundary: reap adopted children, then surface heartbeat failure.
+
+        This is the mid-job reaping point.  The renewal loop in ``__enter__`` runs
+        on its own thread and is deliberately *not* a reaping point: draining there
+        would race a ``Popen.wait()`` issued by the main thread for a tracked child.
+        Reaping never raises and never changes the error classification below.
+        """
+        reap_adopted_children()
         if self._error is not None:
             raise RuntimeError(f"job lease heartbeat failed: {self._error}") from self._error
 

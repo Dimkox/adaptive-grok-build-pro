@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .models import CommandResult
 from .policy import CommandSpec, SandboxSpec
+from .reap import guarded_spawn
 
 
 @dataclass
@@ -103,6 +104,7 @@ class ContainerExecutor:
         argv.extend(command)
         return argv
 
+    @guarded_spawn
     def run(
         self,
         spec: CommandSpec,
@@ -226,6 +228,7 @@ def _runtime_environment() -> dict[str, str]:
     return {name: os.environ[name] for name in allowed if name in os.environ}
 
 
+@guarded_spawn
 def _remove_container(runtime: str, name: str) -> None:
     try:
         subprocess.run(

@@ -9,6 +9,7 @@ from .github import GitHubClient
 from .github_app import GitHubAppAuth
 from .models import utc_now
 from .policy import Policy, PolicyCatalog, PolicyError
+from .reap import reap_adopted_children
 from .runner import JobRunner
 from .settings import SettingsError, WorkerSettings
 from .signing import Signer
@@ -82,6 +83,10 @@ class Worker:
     def run(self, *, once: bool = False) -> int:
         self.store.ping()
         while not self.stop_event.is_set():
+            # This worker is PID 1 of its container, so it is the reaper for every
+            # orphan that namespace produces.  Reap at the loop boundary, where no
+            # other code in this process is waiting for a specific child status.
+            reap_adopted_children()
             if self.settings.common.stopped:
                 if once:
                     return 0
@@ -135,6 +140,10 @@ class Worker:
                 except Exception:
                     # Lease expiry and the PostgreSQL claim function provide reconciliation.
                     pass
+            # A finished job is what leaves adopted children behind (one leaked git
+            # helper per check run in issue #158), so reap right here rather than
+            # only at the top of the next pass.
+            reap_adopted_children()
             if once:
                 return 0
         return 0

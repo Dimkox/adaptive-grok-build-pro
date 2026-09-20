@@ -1,0 +1,32 @@
+{
+  "acceptance_criteria": [],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260920-fix-issue-158-the-long-lived-adaptive-trust-ci-w-9f3462",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #158: the long-lived adaptive-trust-ci worker accumulates unreaped [git] defunct children (measured 4 over ~24h, NRestarts=0), so every subprocess path must reap on all outcomes including the accepted 'zombie_only' classification; locate the real leak empirically rather than assuming a missing wait, add a test whose control fails on current code, and keep exit-status classification and all attestation/policy semantics untouched.",
+    "success_metric": "UNKNOWN",
+    "target": "UNKNOWN"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

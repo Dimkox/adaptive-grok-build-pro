@@ -13,6 +13,7 @@ from typing import Callable, Iterator
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 from .models import canonical_json, parse_datetime, utc_now
+from .reap import guarded_spawn
 
 
 class BackupError(RuntimeError):
@@ -328,6 +329,7 @@ def _service_value(value: str) -> str:
     return value.replace('\\', '\\\\')
 
 
+@guarded_spawn
 def _run(argv: list[str], env: dict[str, str]):
     try:
         return subprocess.run(

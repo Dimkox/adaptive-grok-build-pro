@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "base_fingerprint": "d1e3e9b4d80654457ee3ea96f7c977dae0d40d8c85a182d2842e89163ae5c6af",
+  "complexity": "standard",
+  "created_at": "2026-09-20T01:18:49+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "9f34625eebf5",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix issue #158: the long-lived adaptive-trust-ci worker accumulates unreaped [git] defunct children (measured 4 over ~24h, NRestarts=0), so every subprocess path must reap on all outcomes including the accepted 'zombie_only' classification; locate the real leak empirically rather than assuming a missing wait, add a test whose control fails on current code, and keep exit-status classification and all attestation/policy semantics untouched.",
+  "task_domains": [
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

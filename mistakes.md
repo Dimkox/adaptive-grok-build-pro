@@ -1351,3 +1351,20 @@ The operational clone retained origin/HEAD from its former local remote, so its 
 ### 2026-09-19 — Keep orchestration helpers outside the source checkout
 
 An ignored Python helper under .grok-stack/runtime was still discovered by the architecture source inventory and correctly rejected as unowned source. Move task-only orchestration scripts to an external temporary path rather than adding an architecture exception; repository evidence can stay in its intended package.
+
+## 2026-09-20 — Measured the running service and drew a conclusion about the source at HEAD
+
+**Symptom:** diagnosing the Trust CI worker's `git` zombies, I published a correction on issue #158 arguing from
+`pgid == sid == worker` that the spawner could not be `workspace._git`, because every spawn at `HEAD` uses
+`start_new_session=True`. The measurement was right and the inference was invalid: the deployed image is
+`adaptive-trust-ci-worker:pr7-c4d1ce7` (built 2026-08-25), and at that revision `workspace.py` spawned `git` with a
+plain `subprocess.run` and no new session. The writer then disproved my conclusion by reading the deployed SHA, and the
+actual mechanism was simpler: the worker is PID 1 of its own PID namespace, so adopted orphans are its children and no
+`SubagentStop`-shaped cleanup can ever remove them.
+**Root cause:** runtime evidence (a live PID's `/proc`, `ps`, container image) was combined with repository evidence
+taken at `HEAD` as if they described the same code. A long-lived service can be running a revision months behind the
+branch being edited, and then every "the code cannot do X" argument is about the wrong tree.
+**Durable rule:** before any claim of the form "the code cannot produce this", resolve the revision actually running
+(`docker image inspect` created date, the deployed `Git SHA` the Trust CI check name embeds, or the service's own
+version output) and read that SHA with `git show <sha>:<path>`. Keep runtime facts and source facts in separate
+sentences, and label a conclusion "observed, mechanism unconfirmed" when only the runtime half is measured.

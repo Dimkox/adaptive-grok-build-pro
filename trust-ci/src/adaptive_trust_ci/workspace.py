@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Callable, Sequence
 
 from .models import Checkout, Job
+from .reap import guarded_spawn
 
 _MAX_GIT_PATH_BYTES = 4096
 _MAX_GIT_PATHS = 100_000
@@ -213,6 +214,7 @@ def _terminate_process(process: subprocess.Popen[bytes], process_group_id: int) 
             raise WorkspaceError('bounded process leader was not reaped') from exc
 
 
+@guarded_spawn
 def _run_bounded_process(
     argv: Sequence[str],
     *,
