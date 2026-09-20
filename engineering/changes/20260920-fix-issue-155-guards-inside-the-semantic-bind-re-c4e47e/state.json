@@ -1,0 +1,29 @@
+{
+  "change_id": "20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e",
+  "created_at": "2026-09-20T00:59:05+00:00",
+  "history": [
+    {
+      "at": "2026-09-20T00:59:05+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-20T04:43:14+00:00",
+      "from": "draft",
+      "reason": "scope, typed spec (AC/INV/FORBID), architecture, test plan and bounded scope ruling recorded; issue #155 boundary corrected to 9 guard paths and the second blocker #164 named explicitly",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-20T04:43:14+00:00",
+      "from": "scoped",
+      "reason": "route human gate scope_and_design_approval satisfied by the owner's standing continuation directive for the crashed contour (resume and finish #155); implementation owner is single-writer on this branch",
+      "to": "approved"
+    }
+  ],
+  "route_id": "c4e47ea3ced7",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Fix issue #155: guards inside the semantic_bind_repair_child PostgreSQL function return a bare NULL, so bind_repair_child cannot distinguish a deadline or precondition rejection from a malformed payload and surfaces a misleading invalid_object ContractError; the mandatory disposable-exit PostgreSQL evidence run consequently flakes about one run in three under host load. Give each guard a machine-readable rejection reason or a distinct SQLSTATE, map it to typed StoreError reason codes while keeping invalid_object for genuinely malformed payloads, keep shipped migration history immutable by replacing the function in a new versioned resource, and make the affected integration fixture independent of wall-clock scheduling. Do not weaken the contract schema, the evidence gate, or the disposable-exit run.",
+  "updated_at": "2026-09-20T04:43:14+00:00"
+}

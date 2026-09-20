@@ -1,0 +1,212 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "test": "factory/tests/test_postgres_integration.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Every NULL-returning guard path of semantic_bind_repair_child returns a machine-readable reason object, and bind_repair_child names that reason in its StoreError instead of reporting a shape error for a SQL NULL."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "invalid_object stays reserved for genuinely malformed payloads: a one-key rejection envelope is recognised only when the payload is exactly that envelope, so any other non-binding document still reaches from_dict."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Shipped migration history stays immutable: resource 018 is byte-untouched, the redefinition ships as 021_semantic_repair_child_rejection_reasons.sql, and a cluster that already applied 001-020 upgrades without a drift error."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_postgres_integration.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "The affected integration tests no longer depend on module-import wall clock: a repair-child binding survives a scheduling delay inside its intake window, and an HTTP intake authority is stamped at request time."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/run_disposable_exit.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "The mandatory disposable-exit evidence tier reaches four consecutive passes on the delivered tree, with every attempt's duration and host load recorded."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "Every reviewer-visible claim in the change package is a measurement from this host: guard enumeration, the reproduction control that flips, and the post-fix run."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "No contract, schema or architecture declaration is edited to make the diagnostic pass; factory/contracts, schemas and architecture stay untouched."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_postgres_integration.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "The 300 second authority window and the disposable-exit harness are not widened, skipped or weakened to obtain green evidence; an expired proof is still refused with stale_m0."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "Re-grouping the 49 rejection clauses never changes which rows are accepted: the guard condition text stays equivalent to 018."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "FORBID-004",
+      "statement": "No shipped migration resource is rewritten in place, because the runner compares the recorded digest prefix and would fail every existing database with migration drift."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "A rejection document can never be mistaken for a binding: the envelope is exactly one key, the binding payload guard requires exactly four keys, and the Python side closes extra keys."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The reason vocabulary is one closed set shared by SQL and Python; an unknown reason folds to a fixed local code instead of leaking provider text."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_postgres_integration.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "Function signature, privilege matrix and grant set are unchanged: the replacement keeps (char,text)->jsonb so pg_proc assertions and 018 grants stay valid."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #155: guards inside the semantic_bind_repair_child PostgreSQL function return a bare NULL, so bind_repair_child cannot distinguish a deadline or precondition rejection from a malformed payload and surfaces a misleading invalid_object ContractError; the mandatory disposable-exit PostgreSQL evidence run consequently flakes about one run in three under host load. Give each guard a machine-readable rejection reason or a distinct SQLSTATE, map it to typed StoreError reason codes while keeping invalid_object for genuinely malformed payloads, keep shipped migration history immutable by replacing the function in a new versioned resource, and make the affected integration fixture independent of wall-clock scheduling. Do not weaken the contract schema, the evidence gate, or the disposable-exit run.",
+    "success_metric": "Four consecutive mandatory disposable-exit PostgreSQL tier runs, every bind rejection carrying one of the twelve named reasons, and no rejection path reachable only as invalid_object",
+    "target": "adaptive-grok-build-pro main: factory/src/adaptive_factory/resources/021_semantic_repair_child_rejection_reasons.sql, the bind_repair_child mapping in factory/src/adaptive_factory/store.py plus its reason allowlist in semantic_repair.py, and the PostgreSQL-tier fixtures that stamp authority and child deadlines"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "StoreError text for a refused repair-child bind names one of the twelve reasons; the invalid_object frame appears only for malformed payloads",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "per-attempt duration and loadavg of the mandatory disposable-exit tier, with the product-tree fingerprint stamped before and after the streak",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "frontend",
+      "integration"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

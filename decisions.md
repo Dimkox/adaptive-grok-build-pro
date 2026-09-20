@@ -740,3 +740,11 @@ Static consumer analysis found reason_code already persisted and sealed with no 
 ### 2026-09-19 — Independently preserve wire hashes and historical receipts in regression tests
 
 Hash the exact mocked HTTP envelope independently and freeze a historical receipt before editing the normalizer. These fixtures caught both the lost upstream digest and generic rejection reason, while preventing current serializers from silently regenerating the expected historical evidence.
+
+### 2026-09-20 — Treat an unpassable success criterion as in-scope, and say so
+
+When the mandatory PostgreSQL tier turned out to be deterministically red for a reason unrelated to #155 (fixture authority clock vs the product's 300 s window), the winning move was to fix it inside this branch and record it as a named *bounded scope ruling* in `brief.md`, not to ship an criterion that no host could satisfy. The alternative — filing it and stopping — would have delivered evidence that cannot be produced; a blocker discovered while producing mandatory proof is in scope by definition.
+
+### 2026-09-20 — Prove every review fix with a mutation before taking receipts
+
+For each finding fixed in the delivered tree (false `malformed payload` diagnosis, `_guard_lines` blindness, missing `authority_not_fresh` assertion), the fix was accepted only after reproducing the defect it claims to prevent in a scratch copy and watching the new test turn red — inverted `CASE`, deleted guard-group boundary, clause removed from `018` and `021` together: baseline green, all three caught. A review fix that has not flipped a control is a claim about code, not evidence, and the delta costs minutes while the reviewer is still warm.
