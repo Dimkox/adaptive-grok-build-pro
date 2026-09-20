@@ -1,0 +1,103 @@
+{
+  "claims": [
+    {
+      "citations": [
+        {
+          "end_line": 234,
+          "path": "tests/test_review_evidence.py",
+          "span_sha256": "9697e076226bc108af592177894b6264b47e3e9923c5d2b73a41ed979ed402d2",
+          "start_line": 184
+        },
+        {
+          "end_line": 277,
+          "path": "tests/test_review_evidence.py",
+          "span_sha256": "563bf052c7ebe0d89a2499b84cd077f31ac1cfa166a97eabf40c10d565d44b00",
+          "start_line": 264
+        }
+      ],
+      "id": "SRC-001",
+      "statement": "Regression tests reject an unlisted statement change, removal, status change without fresh changed claims, and status change that omits the changed_report_fields declaration.",
+      "type": "source_citation"
+    },
+    {
+      "citations": [
+        {
+          "end_line": 262,
+          "path": "tests/test_review_evidence.py",
+          "span_sha256": "24680e8dd9d295e5ce06eacf03541c9bdda3f87109444fab0dbada9c5973be2f",
+          "start_line": 236
+        },
+        {
+          "end_line": 346,
+          "path": ".grok-stack/adaptive_grok/review_evidence.py",
+          "span_sha256": "4b612bb1111987c52782537f89b27bd5e27b118766843620812a57733e68ca9b",
+          "start_line": 321
+        }
+      ],
+      "id": "SRC-002",
+      "statement": "Regression tests reject an added claim omitted from both change ID arrays, and the validator derives changed claim IDs and status fields from predecessor comparison.",
+      "type": "source_citation"
+    },
+    {
+      "citations": [
+        {
+          "end_line": 231,
+          "path": ".grok-stack/adaptive_grok/review_evidence.py",
+          "span_sha256": "df5d78a8471789c7761b96a8d04e2c184a53bb4b1dda8155923cf95194c2616b",
+          "start_line": 216
+        },
+        {
+          "end_line": 135,
+          "path": "tests/test_review_evidence.py",
+          "span_sha256": "f5d63e79fa26759427d658a9ed480910e6b6f8fc5e9b7dfd6acc72161aab9b93",
+          "start_line": 114
+        }
+      ],
+      "id": "SRC-003",
+      "statement": "Probe validation is closed to the named unsupported-schema v1 contract; tests accept the object form and reject a string-shaped schema input and unknown schema ID.",
+      "type": "source_citation"
+    },
+    {
+      "command": {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "tests.test_review_evidence",
+          "tests.test_change_receipts",
+          "tests.test_hooks"
+        ],
+        "cwd": ".",
+        "exit_code": 0,
+        "provenance": "self_reported_unverified",
+        "stderr_excerpt": "",
+        "stdout_excerpt": "Ran 10 tests in 1.686s; OK. Ran 58 tests in 53.898s; OK."
+      },
+      "id": "EXEC-001",
+      "statement": "Focused review and receipt/hook test commands were run; these records are self-reported and are not authenticated execution proof.",
+      "type": "execution"
+    },
+    {
+      "basis_claim_ids": [
+        "SRC-001",
+        "SRC-002",
+        "SRC-003",
+        "EXEC-001"
+      ],
+      "id": "INF-001",
+      "statement": "The added negative regressions and closed probe-schema cases cover the reviewed test-coverage gaps; no remaining test-review blocker was identified in this scope.",
+      "type": "inference"
+    }
+  ],
+  "review_kind": "test_review",
+  "revision": {
+    "changed_claim_ids": [],
+    "changed_report_fields": [],
+    "fresh_evidence_claim_ids": [],
+    "previous_digest": null,
+    "previous_report": null,
+    "revision_id": "test-review-r3"
+  },
+  "schema_version": 1,
+  "status": "pass"
+}

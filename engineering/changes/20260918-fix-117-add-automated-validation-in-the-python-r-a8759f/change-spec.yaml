@@ -1,0 +1,110 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "grok_review accepts only a regular report file confined beneath the repository root; absolute, traversal, symlink-escape, missing, and oversized reports are rejected.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Versioned structured reports validate repository source citations against the current repository tree and exact line spans; execution probes are limited to the named architecture unsupported-schema v1 object contract, and malformed paths, spans, probe inputs, or execution records are rejected.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Accepted review receipts bind the report content digest and validated evidence summary; evidence validation detects report deletion or content changes. Legacy prose reports are rejected for durable pass receipts.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Command/output records are labeled self-reported and unverified; repository-local records do not claim proof of execution, reviewer identity, semantic truth, clean-clone provenance, or Trust CI authority.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Linked revisions derive the exact changed/added claim ID set and status fields from predecessor comparison; changed claims require a different evidence payload, removals are rejected unless represented by an explicit same-ID inference retirement, and status transitions require fresh changed claims.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-fix-117-add-automated-validation-in-the-python-r-a8759f",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A local review receipt is described as proving reviewer identity, truthful execution, semantic support, fresh-clone status, or merge eligibility.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No report-supplied path or symlink can cause review validation to read outside the repository root.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "A local hash or self-authored command record is never represented as authenticated execution evidence.",
+      "evidence": [
+        {
+          "test": "tests/test_review_evidence.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Prevent durable local review receipts from accepting reports with unverifiable repository citations or malformed execution claims, and bind each receipt to the exact report bytes.",
+    "success_metric": "Malformed or escaping report evidence is rejected with regression coverage; self-reported commands remain explicitly unverified.",
+    "target": "All focused verifier tests and the route PR quality profile pass."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import shutil
 import subprocess
@@ -9,6 +10,34 @@ from pathlib import Path
 from typing import Iterator
 
 PROJECT = Path(__file__).resolve().parents[1]
+
+
+def write_review_report(root: Path, kind: str, relative: str | None = None) -> Path:
+    source_path = root / 'review-fixture.py'
+    source_path.write_text('fixture = True\n', encoding='utf-8')
+    source_line = source_path.read_bytes().splitlines(keepends=True)[0]
+    report_path = root / (relative or f'engineering/reviews/{kind}.json')
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        'schema_version': 1,
+        'review_kind': kind,
+        'status': 'pass',
+        'revision': {
+            'revision_id': 'rev-001', 'previous_report': None,
+            'previous_digest': None, 'changed_claim_ids': [],
+            'fresh_evidence_claim_ids': [], 'changed_report_fields': [],
+        },
+        'claims': [{
+            'id': 'SRC-001', 'type': 'source_citation',
+            'statement': 'The fixture declares a source value.',
+            'citations': [{
+                'path': 'review-fixture.py', 'start_line': 1, 'end_line': 1,
+                'span_sha256': hashlib.sha256(source_line).hexdigest(),
+            }],
+        }],
+    }
+    report_path.write_text(json.dumps(data, sort_keys=True, separators=(',', ':')) + '\n', encoding='utf-8')
+    return report_path
 
 
 @contextlib.contextmanager
