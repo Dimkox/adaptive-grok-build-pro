@@ -14,7 +14,7 @@ from .util import git_default_base, load_json, now_utc, tree_fingerprint, unique
 INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
     'incident': ('incident', 'outage', 'авар', 'прод упал', 'production down', 'срочно почин', 'hotfix'),
     'bugfix': ('bug', 'fix', 'repair', 'ошиб', 'баг', 'сломал', 'не работает', 'исправ', 'regression', 'exception', 'fatal'),
-    'review': ('review', 'ревью', 'проверь код', 'аудит кода', 'code review', 'pull request', ' pr '),
+    'review': ('review', 'ревью', 'проверь код', 'аудит кода', 'code review'),
     'release': ('release', 'релиз', 'deploy', 'деплой', 'publish', 'выкат', 'rollback', 'canary'),
     'test': ('test', 'тест', 'coverage', 'покрытие', 'phpunit', 'cypress', 'playwright'),
     'refactor': ('refactor', 'рефактор', 'legacy', 'легаси', 'модерниз', 'переписать', 'передел'),
@@ -195,7 +195,7 @@ def _best_intent(text: str) -> str:
     # Defect, release, review and architectural intent must not be masked by
     # secondary words such as "add a regression test". Generic implementation
     # verbs are deliberately lower priority than the concrete work type.
-    for intent in ('incident', 'bugfix', 'review', 'release', 'refactor', 'architecture', 'research', 'docs'):
+    for intent in ('incident', 'bugfix', 'release', 'review', 'refactor', 'architecture', 'research', 'docs'):
         if scores.get(intent):
             return intent
 
