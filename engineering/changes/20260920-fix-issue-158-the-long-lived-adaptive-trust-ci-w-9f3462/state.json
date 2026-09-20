@@ -7,11 +7,47 @@
       "from": null,
       "reason": "created",
       "to": "draft"
+    },
+    {
+      "at": "2026-09-20T02:35:45+00:00",
+      "from": "draft",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-20T02:35:45+00:00",
+      "from": "scoped",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-20T02:35:45+00:00",
+      "from": "approved",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-20T02:35:45+00:00",
+      "from": "implementing",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-20T02:35:46+00:00",
+      "from": "verifying",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-20T02:35:46+00:00",
+      "from": "reviewing",
+      "reason": "code, 14 arms, red-before-green and PID-1 pair measured; package typed spec canonical and gate-valid; local gate running next",
+      "to": "ready"
     }
   ],
   "route_id": "9f34625eebf5",
   "schema_version": 1,
-  "status": "draft",
+  "status": "ready",
   "title": "Fix issue #158: the long-lived adaptive-trust-ci worker accumulates unreaped [git] defunct children (measured 4 over ~24h, NRestarts=0), so every subprocess path must reap on all outcomes including the accepted 'zombie_only' classification; locate the real leak empirically rather than assuming a missing wait, add a test whose control fails on current code, and keep exit-status classification and all attestation/policy semantics untouched.",
-  "updated_at": "2026-09-20T01:18:49+00:00"
+  "updated_at": "2026-09-20T02:35:46+00:00"
 }

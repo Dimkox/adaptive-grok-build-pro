@@ -1,5 +1,96 @@
 {
-  "acceptance_criteria": [],
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::AdoptedChildReapingTests::test_lease_boundary_reaps_adopted_child"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::AdoptedChildReapingTests::test_control_without_a_reaping_boundary_keeps_the_zombie"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "An adopted orphan (a child that outlived its own parent) is reaped at the worker loop and lease boundaries, and the control arm proves a zombie survives without the boundary."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::TrackedChildStatusTests::test_drain_preserves_the_return_code_of_a_tracked_child"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::TrackedChildStatusTests::test_sweep_declines_entirely_while_any_spawn_is_in_progress"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::TrackedChildStatusTests::test_naive_unbounded_sweep_does_steal_the_status"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Reaping never steals a tracked child's exit status: the drain preserves it, declines entirely while any spawn is in flight, and a naive unbounded sweep is pinned to fail."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::CancellationClassificationTests::test_timeout_path_still_classifies_as_timeout_and_releases_its_guard"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::CancellationClassificationTests::test_heartbeat_failure_still_raises_after_reaping"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::CancellationClassificationTests::test_missing_runtime_classification_is_unchanged"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Exit-status classification is unchanged: a timeout still classifies as timeout and releases its guard, a heartbeat failure still raises after reaping, and a missing runtime is classified exactly as before."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::SpawnGuardCoverageTests::test_every_spawn_call_site_is_inside_a_guarded_region"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::SpawnGuardCoverageTests::test_guarded_sites_are_exactly_the_worker_spawn_helpers"
+        },
+        {
+          "test": "trust-ci/tests/test_reaping.py::GuardedSandboxSpawnTests::test_run_is_really_wrapped_by_the_spawn_guard"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Every spawn site is inside a guard and the guarded set is exactly the worker's spawn helpers, verified by AST sweep and by the real decorator being applied to subprocess.run."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::AdoptedChildReapingTests::test_sigchld_disposition_is_never_taken_over"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "No SIGCHLD disposition is taken over anywhere in the process."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::GuardedSandboxSpawnTests::test_real_spawn_through_the_decorated_helper_reaps_its_child_and_releases_the_guard"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "A real child spawned through the decorated helper is reaped and the guard is released."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "AC-007",
+      "statement": "grok_verify --mode pr passes on the delivered head with verification, code_review and test_review receipts bound to its fingerprint."
+    }
+  ],
   "approvals": {
     "required_scopes": []
   },
@@ -9,15 +100,79 @@
     "json_schema": [],
     "openapi": []
   },
-  "forbidden_outcomes": [],
-  "invariants": [],
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::AdoptedChildReapingTests::test_sigchld_disposition_is_never_taken_over"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "No SIGCHLD handler and no signal-based reaping is introduced."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "The worker is not restarted and no live service, container or runtime state is touched to clear existing zombies; that is the operator's action."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "No change to Trust CI policy epoch, holdout bundle, signing keys, approvals or branch protection."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::TrackedChildStatusTests::test_sweep_declines_entirely_while_any_spawn_is_in_progress"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "The drain only ever runs with zero in-flight spawns, so no waitpid can consume a status a tracked Popen still needs."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "Reaping is additive: no attestation, check name, job-status transition or lease semantic changes."
+    },
+    {
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_reaping.py::SpawnGuardCoverageTests::test_guarded_sites_are_exactly_the_worker_spawn_helpers"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "Diff is insertions only over the five touched files plus the new module and tests."
+    }
+  ],
   "objective": {
     "id": "OBJ-001",
     "statement": "Fix issue #158: the long-lived adaptive-trust-ci worker accumulates unreaped [git] defunct children (measured 4 over ~24h, NRestarts=0), so every subprocess path must reap on all outcomes including the accepted 'zombie_only' classification; locate the real leak empirically rather than assuming a missing wait, add a test whose control fails on current code, and keep exit-status classification and all attestation/policy semantics untouched.",
-    "success_metric": "UNKNOWN",
-    "target": "UNKNOWN"
+    "success_metric": "Ran 257 tests OK (skipped=10) versus a 243-test baseline, additions-only diff (0 deleted lines in all five files); a real PID-1 pair shows after_lease_boundary [8] on the old code and [] with the drain; the naive unbounded sweep that steals a tracked child's status is itself pinned as failing.",
+    "target": "adaptive-grok-build-pro main: trust-ci worker/lease/sandbox/workspace process handling in trust-ci/src/adaptive_trust_ci/"
   },
-  "observability": [],
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "zombie children of the worker pid (ps -eo ppid,stat | awk -v p=$W '$1==p && $2 ~ /^Z/' | wc -l): grows by one per job before the change, stays 0 for new jobs after it; existing pre-deploy zombies clear only on restart",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
   "risk": {
     "domains": [
       "api"
