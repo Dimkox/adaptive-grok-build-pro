@@ -67,6 +67,7 @@ from .semantic_repair import (
     RepairChildTaskBindingV1,
     RepairLifecycleResult,
     SemanticRepairRequestV1,
+    repair_child_rejection_reason,
 )
 from .state import (
     TransitionCommand,
@@ -742,10 +743,18 @@ class PostgresSemanticCoordinatorStore:
             response = cursor.fetchone()[0]
         if isinstance(response, str):
             response = json.loads(response)
+        rejection = repair_child_rejection_reason(response)
+        if rejection is not None:
+            # The guard in factory.semantic_bind_repair_child that refused this bind is
+            # named by resource 021, so a deadline, freshness or precondition refusal is
+            # no longer reported as a data-shape failure.
+            raise StoreError(f"semantic repair child binding rejected: {rejection}")
         try:
             persisted = RepairChildTaskBindingV1.from_dict(response)
         except (TypeError, ValueError) as exc:
-            raise StoreError("semantic repair child binding rejected") from exc
+            raise StoreError(
+                "semantic repair child binding payload is malformed"
+            ) from exc
         if persisted != binding or persisted.digest != binding.digest:
             raise StoreError("semantic repair child binding mismatch")
         return persisted

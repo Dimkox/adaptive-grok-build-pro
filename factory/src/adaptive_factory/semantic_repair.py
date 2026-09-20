@@ -41,6 +41,43 @@ ESCALATION_REASONS = {
     "verdict_not_repair",
     "workspace_result_changed",
 }
+# `factory.semantic_bind_repair_child` (resource 021) refuses a bind with this
+# single-key envelope instead of an unexplained SQL NULL, so a deadline, freshness or
+# precondition refusal can never be parsed as a malformed payload. The envelope is
+# unambiguous: a binding body always carries exactly the four contract keys and the SQL
+# guard enforces that key count, so the two channels cannot collide. The code set is
+# closed and mirrors the guard names in the resource; an unrecognised reason folds to
+# UNKNOWN_REPAIR_CHILD_REJECTION so nothing the function did not explicitly name can
+# reach the caller. `invalid_object` stays reserved for genuinely malformed payloads.
+REPAIR_CHILD_REJECTION_CHANNEL = "repair_child_rejection"
+UNKNOWN_REPAIR_CHILD_REJECTION = "binding_rejected"
+REPAIR_CHILD_REJECTIONS = frozenset(
+    {
+        UNKNOWN_REPAIR_CHILD_REJECTION,
+        "authority_not_fresh",
+        "binding_conflict",
+        "binding_payload_invalid",
+        "child_already_bound",
+        "child_limits_exceeded",
+        "child_task_unavailable",
+        "command_input_invalid",
+        "deadline_exceeded",
+        "lineage_mismatch",
+        "parent_task_missing",
+        "proposal_not_pending",
+        "store_write_rejected",
+    }
+)
+
+
+def repair_child_rejection_reason(data: Any) -> str | None:
+    """Return the allowlisted rejection reason, or None if data is not a rejection."""
+    if not isinstance(data, Mapping) or set(data) != {REPAIR_CHILD_REJECTION_CHANNEL}:
+        return None
+    reason = data[REPAIR_CHILD_REJECTION_CHANNEL]
+    if not isinstance(reason, str) or reason not in REPAIR_CHILD_REJECTIONS:
+        return UNKNOWN_REPAIR_CHILD_REJECTION
+    return reason
 
 
 @dataclass(frozen=True)

@@ -22,8 +22,10 @@ from adaptive_factory.semantic_contracts import (
     ValidatorIdentityV1,
 )
 from adaptive_factory.semantic_repair import (
+    REPAIR_CHILD_REJECTIONS,
     RepairChildTaskBindingV1,
     SemanticRepairRequestV1,
+    repair_child_rejection_reason,
 )
 from adaptive_factory.service import (
     REPAIR_CHILD_BROKER_ACTOR_ID,
@@ -51,6 +53,14 @@ from factory.tests.test_execution_service import trusted_registry
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
+# A child task's deadline_at is assigned by PostgreSQL as now() + wall_seconds at its own
+# INSERT, so the inherited child budget must end strictly inside the parent horizon.  The
+# margin has to exceed the worst-case latency of the remaining fixture round trips, each
+# of which is capped by the store's 5s lock_timeout/statement_timeout; 120s is orders of
+# magnitude above that bound and still leaves hours of usable child budget, so host
+# scheduling cannot cross a deadline mid-test while a genuinely over-wide child request
+# is still refused.
+CHILD_DEADLINE_SAFETY_SECONDS = 120
 OPERATOR = Actor(
     "operator",
     "operator",
@@ -4037,7 +4047,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20],
+                        [13, 14, 15, 16, 17, 18, 19, 20, 21],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4328,7 +4338,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], "ready", 20, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], "ready", 21, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5023,7 +5033,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 20)
+        self.assertEqual(result["schema_version"], 21)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login
@@ -5293,6 +5303,7 @@ class PostgresFactoryTests(unittest.TestCase):
         child_source_digest_override=None,
         direct_store_intake=False,
         before_execution=None,
+        intake_now=None,
     ):
         def command_key(operation):
             return canonical_digest(
@@ -5305,7 +5316,18 @@ class PostgresFactoryTests(unittest.TestCase):
                 if child_source_digest is not None
                 else OPERATOR
             )
-        intake_now = datetime.now(timezone.utc)
+        import psycopg
+
+        if intake_now is None:
+            # tasks.deadline_at is computed by PostgreSQL as now() + wall_seconds at its
+            # own INSERT, while the child budget inherited below is measured against
+            # this clock.  Reading a *client* clock here left only
+            # CHILD_DEADLINE_SAFETY_SECONDS of margin between two different clocks, so
+            # host scheduling latency alone could place the child task past its
+            # proposal deadline and make the bind refusal non-reproducible.  Pinning the
+            # fixture to one injected server-clock reading removes that divergence.
+            with psycopg.connect(DATABASE_URL) as connection:
+                intake_now = connection.execute("SELECT now()").fetchone()[0]
         intake_payload = self.payload(repository=repository_id, source=source_id)
         intake_payload["request_id"] = f"semantic-repair-{namespace}"
         intake_payload["m0_authority"]["observed_at"] = intake_now.isoformat()
@@ -5339,11 +5361,15 @@ class PostgresFactoryTests(unittest.TestCase):
                         ),
                     }
                 )
-                remaining_wall = int(
-                    (
-                        parent_repair.child_proposal.deadline_at - intake_now
-                    ).total_seconds()
-                ) - 1
+                remaining_wall = (
+                    int(
+                        (
+                            parent_repair.child_proposal.deadline_at - intake_now
+                        ).total_seconds()
+                    )
+                    - 1
+                    - CHILD_DEADLINE_SAFETY_SECONDS
+                )
                 self.assertGreater(remaining_wall, 0)
                 intake_payload["limits"]["wall_seconds"] = min(
                     intake_payload["limits"]["wall_seconds"], remaining_wall
@@ -5357,8 +5383,6 @@ class PostgresFactoryTests(unittest.TestCase):
             intake_payload["source_digest"] = source_id
         if limit_overrides:
             intake_payload["limits"].update(limit_overrides)
-        import psycopg
-
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """INSERT INTO factory.m0_authority_observations
@@ -6330,7 +6354,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: child_limits_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, expanded_candidate)
             )
@@ -6362,7 +6388,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 "wall_seconds": recurrence_root["intake"].limits.wall_seconds
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: deadline_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, deadline_reset_candidate)
             )
@@ -6379,7 +6407,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: child_limits_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, budget_reset_candidate)
             )
@@ -6545,7 +6575,9 @@ class PostgresFactoryTests(unittest.TestCase):
             stale_response = cursor.fetchone()[0]
             connection.rollback()
         with self.subTest(case="superseded-child-bind-fails-before-consuming-proposal"):
-            self.assertIsNone(stale_response)
+            stale_reason = repair_child_rejection_reason(stale_response)
+            self.assertIn(stale_reason, REPAIR_CHILD_REJECTIONS)
+            self.assertEqual(stale_reason, "child_task_unavailable")
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT count(*) FROM factory.semantic_child_task_bindings

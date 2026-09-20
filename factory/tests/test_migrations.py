@@ -1,9 +1,14 @@
+import re
 import unittest
 from unittest.mock import patch
 import subprocess
 from urllib.parse import urlsplit
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
+from adaptive_factory.semantic_repair import (
+    REPAIR_CHILD_REJECTIONS,
+    UNKNOWN_REPAIR_CHILD_REJECTION,
+)
 from factory.tests import postgres_restart_probe, run_disposable_exit
 
 
@@ -357,8 +362,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 21)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 20)
+        self.assertEqual([item.version for item in migrations], list(range(1, 22)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 21)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -367,6 +372,102 @@ class MigrationTests(unittest.TestCase):
         migrations = discover_migrations()
         applied = [AppliedMigration(item.version, item.name, item.sha256) for item in migrations[:2]]
         self.assertEqual(plan_migrations(migrations, applied), migrations[2:])
+
+    @staticmethod
+    def _function_text(sql, signature):
+        marker = f"FUNCTION factory.{signature}("
+        start = sql.index(marker)
+        start = sql.rindex("CREATE", 0, start)
+        return sql[start : sql.index("\n$$;", start) + len("\n$$;")]
+
+    @staticmethod
+    def _guard_lines(function_sql):
+        """Guard-logic lines only, normalised so block headers compare equal."""
+        lines = []
+        for line in function_sql.splitlines():
+            stripped = line.strip()
+            if (
+                not stripped
+                or stripped.startswith(("--", "CREATE "))
+                or "repair_child_rejection" in stripped
+                or "RETURN NULL" in stripped
+                or "ELSE NULL" in stripped
+            ):
+                continue
+            lines.append(re.sub(r"^(?:IF|OR) ", "", stripped))
+        return lines
+
+    def test_repair_child_rejection_resource_is_additive_and_typed(self):
+        migrations = {item.version: item for item in discover_migrations()}
+        original = migrations[18].sql
+        upgrade = next(
+            item.sql
+            for item in migrations.values()
+            if item.name
+            == "021_semantic_repair_child_rejection_reasons.sql"
+        )
+        self.assertEqual(migrations[18].name, "018_semantic_validation_bridge.sql")
+        self.assertIn(
+            "CREATE FUNCTION factory.semantic_bind_repair_child(", original
+        )
+        self.assertIn(
+            "CREATE OR REPLACE FUNCTION factory.semantic_bind_repair_child(",
+            upgrade,
+        )
+        # The shipped resource stays byte-identical; only the newest resource may
+        # redefine the function, so an existing database replans instead of drifting.
+        # Destructive statements are judged on the resource itself, outside any function
+        # body: the redefined function keeps its own legitimate binding INSERT.
+        outside = re.sub(r"(?s)\$\$.*?\$\$;", "", upgrade)
+        lowered = outside.lower()
+        for forbidden in (
+            "drop table",
+            "drop index",
+            "drop function",
+            "drop constraint",
+            "delete from",
+            "truncate",
+            "alter table",
+            "insert into",
+            "update factory.",
+            "create index",
+            "vacuum",
+            "lock table",
+        ):
+            self.assertNotIn(forbidden, lowered, forbidden)
+        function_sql = self._function_text(
+            upgrade, "semantic_bind_repair_child"
+        )
+        self.assertNotIn("RETURN NULL", function_sql)
+        self.assertIn("SECURITY DEFINER SET search_path=pg_catalog,factory", function_sql)
+        self.assertIn(
+            "GRANT EXECUTE ON FUNCTION factory.semantic_bind_repair_child(char,text)\n"
+            "  TO factory_semantic_coordinator;",
+            upgrade,
+        )
+        # Guard conditions are carried over verbatim: only the refusal channel changed.
+        self.assertEqual(
+            self._guard_lines(
+                self._function_text(original, "semantic_bind_repair_child")
+            ),
+            self._guard_lines(function_sql),
+        )
+
+    def test_repair_child_rejection_reasons_match_the_python_allowlist(self):
+        upgrade = next(
+            item.sql
+            for item in discover_migrations()
+            if item.name
+            == "021_semantic_repair_child_rejection_reasons.sql"
+        )
+        emitted = set(
+            re.findall(r"'repair_child_rejection','([a-z_]+)'", upgrade)
+        )
+        self.assertEqual(
+            emitted,
+            set(REPAIR_CHILD_REJECTIONS) - {UNKNOWN_REPAIR_CHILD_REJECTION},
+        )
+        self.assertEqual(len(emitted), 12)
 
     def test_missing_renamed_or_checksum_changed_applied_migration_fails(self):
         migrations = discover_migrations()

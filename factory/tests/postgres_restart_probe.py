@@ -27,7 +27,7 @@ from adaptive_factory.admin import (
     provision_runtime_login,
 )
 from adaptive_factory.execution_contracts import ExecutionSelectionV1
-from adaptive_factory.migrations import PostgresMigrator
+from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.models import (
     Actor,
     ExecutionStage,
@@ -316,7 +316,7 @@ def _assert_capability_roles(
             "status": "ready",
             "session_user": runtime_login,
             "database_role": "factory_runtime",
-            "schema_version": 20,
+            "schema_version": len(discover_migrations()),
             "capacity_consistent": True,
             "accounting_consistent": True,
         },
@@ -1178,7 +1178,8 @@ def main() -> int:
     identity_before = _database_identity(owner_url)
     _require(
         (identity_before[1] >= 170_000,
-         tuple(row[0] for row in identity_before[2]) == tuple(range(1, 21))) == (True, True),
+         tuple(row[0] for row in identity_before[2])
+         == tuple(range(1, len(discover_migrations()) + 1))) == (True, True),
         "restart probe requires the complete PostgreSQL 17 schema",
     )
 
