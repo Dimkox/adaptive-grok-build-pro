@@ -1,0 +1,90 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A new static project exists at side-projects/seo-landings/winston-wolfe-pulp-fiction-v2/ with index.html and every locally referenced asset as a real file",
+      "evidence": [
+        {"test": "engineering/changes/20260920-winston-wolfe-pulp-fiction-landing-v2-e0c9a6/evidence/test_winston_wolfe_seo_landing_v2.py::WinstonWolfeLandingV2Tests.test_project_tree_and_local_assets_exist"}
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The page is a Russian unofficial fan tribute with lang ru-RU, dir ltr, one H1, and no invented origin or form",
+      "evidence": [
+        {"test": "engineering/changes/20260920-winston-wolfe-pulp-fiction-landing-v2-e0c9a6/evidence/test_winston_wolfe_seo_landing_v2.py::WinstonWolfeLandingV2Tests.test_language_landmarks_noindex_and_no_form"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "First-load resources are first-party only; still-lifes have no actor-likeness claims in ASSETS.md",
+      "evidence": [
+        {"test": "engineering/changes/20260920-winston-wolfe-pulp-fiction-landing-v2-e0c9a6/evidence/test_winston_wolfe_seo_landing_v2.py::WinstonWolfeLandingV2Tests.test_no_external_runtime_urls_or_likeness_claims"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Selected repository verification and independent reviews pass for the final tree",
+      "evidence": [
+        {"receipt": "verification"},
+        {"receipt": "code_review"},
+        {"receipt": "test_review"}
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260920-winston-wolfe-pulp-fiction-landing-v2-e0c9a6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Invented production origin, lead form, actor likeness, film still, skill or showcase mutation, GitHub Actions, or Trust CI change",
+      "evidence": [
+        {"receipt": "code_review"}
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "SEO landing skill inventory and showcase six-file contract remain unchanged",
+      "evidence": [
+        {"test": "tests/test_seo_landing_side_project.py::SeoLandingSkillTests.test_exact_package_inventory_and_codex_metadata"}
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Existing OpenAPI and event contracts stay empty on this change and byte-identical in the repository",
+      "evidence": [
+        {"receipt": "verification"}
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver a local non-indexable unofficial Russian static fan page about Winston Wolfe from Pulp Fiction 1994",
+    "success_metric": "focused_landing_contract_and_repository_verification_pass",
+    "target": "all_selected_checks_exit_zero"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "focused_landing_contract_and_repository_verification_pass",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": ["frontend"],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

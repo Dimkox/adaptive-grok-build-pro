@@ -1,0 +1,32 @@
+{
+  "acceptance_criteria": [],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260920-push-wolfe-landing-branch-and-namecheap-publish-064fa6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "гит пуш и выкладка на namecheap",
+    "success_metric": "UNKNOWN",
+    "target": "UNKNOWN"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

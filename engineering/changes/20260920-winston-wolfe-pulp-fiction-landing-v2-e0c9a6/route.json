@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "base_fingerprint": "9e391b28652ba0734636aab66c9ab10cdf11dd32d249b33bad4148f13b433aff",
+  "complexity": "standard",
+  "created_at": "2026-09-20T04:04:32+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "e0c9a65c0d53",
+  "schema_version": 1,
+  "session_id": "01a0bcfb-f263-7a82-bad6-a4cfec0b0765",
+  "status": "routed",
+  "task": "создай второую версию посадочнйо страницы под Винстона Вульфа из Криминального чтива",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}
