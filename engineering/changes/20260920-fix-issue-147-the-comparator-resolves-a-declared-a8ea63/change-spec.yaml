@@ -1,0 +1,169 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_path_naming_reference_resolves_to_the_declared_path_not_a_shadowing_id"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "The recorded repro returns incompatible (narrowed_constraint,) for the shadowed reference at the delivered head, and incompatible for the no-claimant control."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_model_rejects_a_declared_schema_id_that_is_another_contract_path"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "A declared $id equal to another contract's path is rejected when the inventory is built, naming the $id and both carrying paths; a self-$id naming its own path is not a collision."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_declared_inventory_carries_no_schema_id_path_collision"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "The shipped declared inventory is asserted collision-free, so the new guard cannot fail an unrelated pull request."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Comparator behaviour is unchanged on the shipped inventory: 25,328 rows, zero differing, with the grid stated; and a 9-claimant control changes 1,178 rows so the harness cannot be vacuously green."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_contract_dependency_closure_uses_declared_path_precedence_issue_146"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "#146's closure union stays load-bearing and its arm is updated only in the half that asserted the #147 defect (scope and status assertions intact)."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "Reverting the precedence reddens AC-001 (mutation m1), removing the guard reddens AC-002 (m4), and an over-strict guard that rejects a self-$id errors it (m5)."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "AC-007",
+      "statement": "python3 scripts/grok_verify.py --mode pr passes on the delivered head with verification, code_review and test_review receipts bound to its fingerprint."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260920-fix-issue-147-the-comparator-resolves-a-declared-a8ea63",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "No pre-existing assertion is weakened to reach green; the one arm that changed did so because it asserted the #147 defect itself, and its scope and status assertions are untouched."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "No contract document, architecture/system.yaml, architecture/rules.yaml, governance JSON, compatibility mode or producer-output policy is edited."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_declared_inventory_carries_no_schema_id_path_collision"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "The shipped inventory changes no verdict: a base move in behaviour is permitted only for the capture case, never for a clean inventory."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_path_naming_reference_resolves_to_the_declared_path_not_a_shadowing_id"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "A reference base that folds onto a declared contract path resolves to that path; the declared-$id table is consulted only when it does not."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_path_naming_reference_with_a_colliding_declared_id_still_fails_closed"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "Path-first never hides a genuine ambiguity: a base owned by two declared contracts still refuses with the comparator's own ambiguity error."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py::ArchitectureModelTests::test_reference_that_names_no_declared_path_still_resolves_through_the_id_table"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "IRI/$id-only references (76 shipped bases, none naming a declared path) keep resolving through the $id table."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #147: the comparator resolves a declared $id before the declared-path table, so a contract declaring an $id equal to another contract's path captures that referrer's references and a real consumer-breaking narrowing of the captured target reports compatible instead of incompatible (narrowed_constraint). Reference identity must resolve through the declared-path table whenever the reference names a declared path, and the architecture model must reject a declared $id that equals another contract's path with a named error. Issue-only scope: do not change comparator verdict semantics for correctly-declared inventories, do not touch compatibility policy or contracts, and keep #148 (signal volume) for its own wave.",
+    "success_metric": "Measured on the shipped declared inventory: 25,328 comparator rows identical before vs after (0 differing), zero declared-contract verdicts change; the #147 repro flips from compatible () to incompatible (narrowed_constraint,) at the capture case while the no-claimant control stays incompatible; the contradictory control with 9 injected capture claimants changes 1,178 rows in both directions, proving the harness is alive rather than vacuous.",
+    "target": "adaptive-grok-build-pro main: reference resolution and model validation in .grok-stack/adaptive_grok/architecture.py"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "the repro's printed comparator status for the capture case (compatible before, incompatible (narrowed_constraint,) after) and the zero-differing-row count of the 25,328-row shipped differential",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

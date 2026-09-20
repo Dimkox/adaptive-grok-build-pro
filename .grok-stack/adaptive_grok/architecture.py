@@ -652,6 +652,43 @@ def validate_architecture(
     return tuple(sorted(findings, key=lambda item: (item.code, item.path, item.message)))
 
 
+def _require_no_schema_id_path_capture(records: Iterable[ContractRecord]) -> None:
+    """Reject a declared ``$id`` that is textually another contract's declared path.
+
+    Such an ``$id`` is not an identity, it is a capture: any reference whose base folds to
+    that text can be re-pointed at the claimant, which is how issue #147's comparator resolved
+    a narrowing of the real target as ``compatible``.  Resolution precedence closes the silent
+    path; this rejects the authoring so the ambiguity is a loud model error instead, following
+    the precedent of the comparator's own ``ambiguous declared schema id`` refusal by naming
+    the offending text and the declared paths that carry it.
+
+    A contract whose ``$id`` names its *own* path is legitimate self-identification and is not
+    a collision; the reference grammar is not consulted here, because the hazard is the
+    declaration itself, not any one reference to it.
+    """
+    items = list(records)
+    owner_by_path = {record.path: record.id for record in items}
+    carriers_by_schema_id: dict[str, list[str]] = {}
+    for record in items:
+        schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
+        if isinstance(schema_id, str):
+            carriers_by_schema_id.setdefault(schema_id, []).append(record.path)
+    for schema_id in sorted(carriers_by_schema_id):
+        if schema_id not in owner_by_path:
+            continue
+        #: The declared text is itself a declared path, so a reference that folds to it is
+        #: ambiguous between the contract owning that path and this carrier.
+        for carrier_path in sorted(set(carriers_by_schema_id[schema_id])):
+            if carrier_path == schema_id:
+                continue
+            raise ArchitectureError(
+                f"contract {owner_by_path[carrier_path]}: {SCHEMA_REFERENCE_AMBIGUOUS} "
+                f"'{schema_id}' declared by {carrier_path} shadows the declared path of "
+                f"contract {owner_by_path[schema_id]}",
+                code="contract",
+            )
+
+
 def contract_inventory(
     root: Path | str,
     snapshot: ArchitectureSnapshot,
@@ -676,6 +713,7 @@ def contract_inventory(
                 document=document,
             )
         )
+    _require_no_schema_id_path_capture(records)
     return tuple(sorted(records, key=lambda item: item.id))
 
 
@@ -1141,12 +1179,22 @@ SCHEMA_REFERENCE_NOT_A_PATH = "schema reference is not a repository path"
 SCHEMA_REFERENCE_UNRESOLVED = frozenset(
     {SCHEMA_REFERENCE_NOT_A_PATH, SCHEMA_REFERENCE_ESCAPE, SCHEMA_REFERENCE_UNDECLARED}
 )
-#: A reference base that is both another contract's declared path and some contract's
-#: declared ``$id`` is resolved by ``$id`` (the comparator's long-standing precedence, see
-#: the sibling issue for the shadowing defect it allows) or by path (one of the two tables
-#: the fitness gate's dependency closure consults; it never substitutes one for the other).
+#: How ``schema_reference_target_path`` orders the two identity tables for a base that is
+#: simultaneously another contract's declared path and some contract's declared ``$id``.
+#: The comparator resolves path-first (issue #147: a base that names a declared contract must
+#: not be re-pointed at a record that merely claims that text, which certified a narrowing of
+#: the real target as ``compatible``), while the fitness gate's dependency closure asks both
+#: tables in turn and unions the answers, so it never substitutes one for the other (issue
+#: #146).  ``SCHEMA_REFERENCE_ID_FIRST`` remains exported because the closure names it.
 SCHEMA_REFERENCE_ID_FIRST = "declared_id_first"
 SCHEMA_REFERENCE_PATH_FIRST = "declared_path_first"
+#: The comparator's ordering.  Identical to ``SCHEMA_REFERENCE_PATH_FIRST`` except that a base
+#: two or more contracts collide over is refused as ``SCHEMA_REFERENCE_AMBIGUOUS`` instead of
+#: being resolved through the path table: the path-first precedence that fixed issue #147 must
+#: not become a way to *hide* an ``$id`` collision, which issue #146 fails closed on.  Measured
+#: against ``SCHEMA_REFERENCE_ID_FIRST`` the only other case that differs is a base with one
+#: claimant that also names a declared path -- the capture itself.
+SCHEMA_REFERENCE_PATH_FIRST_CLASH_IS_FATAL = "declared_path_first_clash_is_fatal"
 
 
 def schema_reference_parts(reference: str) -> tuple[str, str | None]:
@@ -1281,12 +1329,18 @@ def schema_reference_target_path(
     references cannot invent a third interpretation of a ``$ref``.
 
     ``precedence`` is the one part that is caller policy, because the comparator and the
-    fitness dependency closure deliberately disagree about a base that is simultaneously
-    another contract's declared path and some contract's declared ``$id``: the comparator
-    keeps its long-standing SCHEMA_REFERENCE_ID_FIRST ordering (shadowing is a separate
-    defect), while the closure calls this function once per table and unions the two
-    answers, so a dependent is re-verified against the contract whose path the reference
-    names *and* against a claimant that shadows that path with an ``$id``.
+    fitness dependency closure deliberately read a base that is simultaneously another
+    contract's declared path and some contract's declared ``$id`` differently: the comparator
+    resolves it SCHEMA_REFERENCE_PATH_FIRST_CLASH_IS_FATAL -- the declared contract the path
+    names wins, and the ``$id`` table is consulted only when the base names no declared path
+    (issue #147 removed the older ``$id``-first ordering, which let a claimant capture the
+    reference and certified a narrowing of the real target as compatible) -- while the closure
+    calls this function once per table and unions the two answers, so a dependent is
+    re-verified against the contract whose path the reference names *and* against a claimant
+    that shadows that path with an ``$id`` (issue #146).  The asymmetry is safe in the only
+    direction that matters: the closure's union can only widen what is re-verified, and the
+    comparator never resolves a colliding base silently, because path-first-with-fatal-clash
+    refuses an ``$id`` ambiguity exactly as ``$id``-first did.
 
     This function reports a miss instead of raising for any reference, so each caller
     chooses its own policy for a reason; only an unknown ``precedence`` raises, because
@@ -1303,6 +1357,14 @@ def schema_reference_target_path(
     )
     by_schema_id = _schema_reference_by_declared_id(paths_by_schema_id.get(reference_base))
     if precedence == SCHEMA_REFERENCE_PATH_FIRST:
+        first, second = by_path, by_schema_id
+    elif precedence == SCHEMA_REFERENCE_PATH_FIRST_CLASH_IS_FATAL:
+        if by_schema_id[1] == SCHEMA_REFERENCE_AMBIGUOUS:
+            #: Two declared contracts carry this base as their ``$id``.  Resolving it through
+            #: the path table would answer the question the collision makes unanswerable, so
+            #: the refusal wins over the hit -- issue #146's collision policy is not something
+            #: the issue #147 precedence is allowed to relax.
+            return by_schema_id
         first, second = by_path, by_schema_id
     elif precedence == SCHEMA_REFERENCE_ID_FIRST:
         first, second = by_schema_id, by_path
@@ -1401,12 +1463,17 @@ class _SchemaResolver:
         reference_base, fragment = schema_reference_parts(reference)
         target_record = current
         if reference_base:
+            #: Path first (issue #147).  A base whose fold names a declared contract resolves
+            #: to *that* contract, so no other record can capture the reference just by
+            #: declaring the same text as its ``$id``; the ``$id`` table is reached only when
+            #: the base names no declared path, which is how every ``urn:``/IRI reference in
+            #: the shipped inventory (measured: 76 bases) keeps resolving as before.
             declared_path, failure = schema_reference_target_path(
                 current.path,
                 reference_base,
                 self.paths_by_schema_id,
                 self.records,
-                precedence=SCHEMA_REFERENCE_ID_FIRST,
+                precedence=SCHEMA_REFERENCE_PATH_FIRST_CLASH_IS_FATAL,
             )
             if declared_path is None:
                 raise ArchitectureError(failure, code="contract")

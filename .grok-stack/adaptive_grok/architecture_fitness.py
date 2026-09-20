@@ -1047,9 +1047,12 @@ def _reference_identity_candidates(
 
     Both look-ups go through the comparator's shared grammar, so no third interpretation of
     a ``$ref`` can appear here.  The result is a union rather than a choice: dependency
-    identity must not lose an edge because two tables disagree, and the comparator resolves
-    such a base through the declared ``$id`` first (issue #147), so a contract that merely
-    *claims* the base really can break this referrer.
+    identity must not lose an edge because two tables disagree.  Issue #147 moved the
+    comparator to path-first for a base that names a declared path, so the ``$id`` candidate
+    no longer decides a referrer's verdict in that case -- it is still attached because a
+    contract that claims the base is a contract whose collision has to surface (the signal
+    below), because the certified scope reports every contract a ``$ref`` can name, and
+    because substituting one table for the other is what loses edges (issue #146 finding C2).
 
     A reference that two declared contracts collide over is never *silent*: the detail lands
     in ``signals`` for the referrer, and the comparator fails the same reference closed as an
@@ -1138,8 +1141,12 @@ def _external_contract_reference_paths(
     re-verify every contract a ``$ref`` can name, which can only ever widen the re-verified
     set.  Substituting one table for the other is what leaves a hole: a path-first closure
     that drops the ``$id`` claimant stops re-verifying a referrer whose verdict the
-    comparator computes from that claimant's document.  The comparator itself is untouched
-    and stays ``$id``-first (FORBID-003; issue #147 owns that decision).
+    comparator computes from that claimant's document whenever the base names no declared
+    path, and stops reporting the collision where the two tables do disagree.  Issue #147
+    moved the comparator itself to path-first for a base that names a declared contract, so
+    the union is the closure's own policy, never an inherited precedence, and it stays wider
+    than either table alone (FORBID-003 of that change, which forbade inheriting it in either
+    direction).
     A reference that does not name a declared contract yields no edge; a reference two
     declared contracts collide over is reported through ``signals`` and aborts the run only
     where ``fail_closed`` says the colliding state is the one being certified.  An edge is

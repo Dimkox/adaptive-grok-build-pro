@@ -3842,6 +3842,328 @@ class ArchitectureModelTests(unittest.TestCase):
             nodes["NODE-FACTORY-EXECUTION-CORE"]["repository_paths"],
         )
 
+    def _reference_record(self, identity: str, path: str, document: dict):
+        """A declared ``json_schema`` record, for the issue #147 resolution-precedence arms."""
+        return ARCH.ContractRecord(
+            identity,
+            "json_schema",
+            path,
+            "1",
+            "consumer",
+            "bidirectional",
+            ARCH._sha256(document),
+            document,
+        )
+
+    def test_path_naming_reference_resolves_to_the_declared_path_not_a_shadowing_id(
+        self,
+    ) -> None:
+        """Issue #147: a declared ``$id`` must not capture another contract's references.
+
+        ``CONTRACT-REFERRER`` points at ``dir/target.json`` by relative path and its own bytes
+        do not move; the real target is narrowed ``minLength 1 -> 9``.  A second record at an
+        unrelated path declares ``$id`` equal to that same base text and already carries the
+        narrowed constraint, which is the authoring that let the comparator read the claimant on
+        both sides and certify a genuine consumer break as ``compatible``.  Resolution precedence
+        is the repair: a base whose fold names a declared contract resolves to *that* contract.
+        """
+        referrer = self._reference_record(
+            "CONTRACT-REFERRER",
+            "referrer.json",
+            {"type": "object", "properties": {"x": {"$ref": "dir/target.json"}}},
+        )
+        target = self._reference_record(
+            "CONTRACT-TARGET",
+            "dir/target.json",
+            {"type": "string", "minLength": 1, "maxLength": 20},
+        )
+        narrowed = self._reference_record(
+            "CONTRACT-TARGET",
+            "dir/target.json",
+            {"type": "string", "minLength": 9, "maxLength": 20},
+        )
+        claimant = self._reference_record(
+            "CONTRACT-CLAIMANT",
+            "other/claimant.json",
+            {"$id": "dir/target.json", "type": "string", "minLength": 9, "maxLength": 20},
+        )
+
+        shadowed = ARCH.compare_contracts(
+            referrer,
+            referrer,
+            "bidirectional",
+            base_inventory=(referrer, target, claimant),
+            head_inventory=(referrer, narrowed, claimant),
+        )
+        self.assertEqual(shadowed.status, "incompatible")
+        self.assertEqual(shadowed.reasons, ("narrowed_constraint",))
+
+        # The issue's control: the same pair with the claimant dropped from both inventories.
+        control = ARCH.compare_contracts(
+            referrer,
+            referrer,
+            "bidirectional",
+            base_inventory=(referrer, target),
+            head_inventory=(referrer, narrowed),
+        )
+        self.assertEqual(control.status, "incompatible")
+        self.assertEqual(control.reasons, ("narrowed_constraint",))
+
+        # The consequence in the other direction, which is the whole point of path-first: a
+        # record that merely claims the text is not this referrer's dependency at all, so it
+        # can move freely without moving the referrer's verdict.
+        moved_claimant = self._reference_record(
+            "CONTRACT-CLAIMANT",
+            "other/claimant.json",
+            {"$id": "dir/target.json", "type": "string", "minLength": 1, "maxLength": 5},
+        )
+        independent = ARCH.compare_contracts(
+            referrer,
+            referrer,
+            "bidirectional",
+            base_inventory=(referrer, target, claimant),
+            head_inventory=(referrer, target, moved_claimant),
+        )
+        self.assertEqual(independent.status, "compatible")
+        self.assertEqual(independent.reasons, ())
+
+        # Done-when 3: where both tables resolve and name the same contract -- the target
+        # self-identifies with the text the reference names -- the verdict is the same one.
+        self_identified = self._reference_record(
+            "CONTRACT-TARGET",
+            "dir/target.json",
+            {"$id": "dir/target.json", "type": "string", "minLength": 1, "maxLength": 20},
+        )
+        self_identified_narrowed = self._reference_record(
+            "CONTRACT-TARGET",
+            "dir/target.json",
+            {"$id": "dir/target.json", "type": "string", "minLength": 9, "maxLength": 20},
+        )
+        agreed = ARCH.compare_contracts(
+            referrer,
+            referrer,
+            "bidirectional",
+            base_inventory=(referrer, self_identified),
+            head_inventory=(referrer, self_identified_narrowed),
+        )
+        self.assertEqual(agreed.status, "incompatible")
+        self.assertEqual(agreed.reasons, ("narrowed_constraint",))
+
+    def test_path_naming_reference_with_a_colliding_declared_id_still_fails_closed(
+        self,
+    ) -> None:
+        """Issue #146's collision policy survives the issue #147 precedence unchanged.
+
+        Two contracts collide over the ``$id`` that also names ``dir/target.json``.  Before the
+        precedence changed, the comparator refused this reference as an ``ambiguous declared
+        schema id``; path-first must not turn that refusal into a silent resolution through the
+        path table, because a base two contracts disagree over is exactly a base whose target
+        identity is unanswerable.  The pinned reason tuple is the measured pre-fix one, so this
+        arm also fails if path-first is implemented without the clash refusal.
+        """
+        referrer = self._reference_record(
+            "CONTRACT-REFERRER",
+            "referrer.json",
+            {"$ref": "dir/target.json"},
+        )
+        target = self._reference_record(
+            "CONTRACT-TARGET", "dir/target.json", {"type": "string", "minLength": 1}
+        )
+        claimant_a = self._reference_record(
+            "CONTRACT-CLAIMANT-A",
+            "other/a.json",
+            {"$id": "dir/target.json", "type": "string", "minLength": 9},
+        )
+        claimant_b = self._reference_record(
+            "CONTRACT-CLAIMANT-B",
+            "other/b.json",
+            {"$id": "dir/target.json", "type": "integer"},
+        )
+        inventory = (referrer, target, claimant_a, claimant_b)
+        collided = ARCH.compare_contracts(
+            referrer, referrer, "bidirectional", base_inventory=inventory, head_inventory=inventory
+        )
+        self.assertEqual(collided.status, "unsupported")
+        self.assertEqual(collided.reasons, ("unsupported_schema_keyword",))
+        # The collision is invisible to no one: an untouched pair over the same inventory is
+        # still refused, while the same referrer resolves cleanly once the collision is gone.
+        resolved = ARCH.compare_contracts(
+            referrer,
+            referrer,
+            "bidirectional",
+            base_inventory=(referrer, target),
+            head_inventory=(referrer, target),
+        )
+        self.assertEqual(resolved.status, "compatible")
+
+    def test_reference_that_names_no_declared_path_still_resolves_through_the_id_table(
+        self,
+    ) -> None:
+        """The ``$id`` route PR #133 added is preserved for every base that names no path.
+
+        Measured on the shipped declared inventory, 76 of 86 non-local ``$ref`` occurrences
+        resolve through the declared ``$id`` table and not one of them names a declared contract
+        path, so path-first cannot reach them.  The third shape is the one that distinguishes
+        the implemented rule from a tempting simplification: a *relative-looking* ``$id`` whose
+        base folds onto no declared path still has to reach the ``$id`` table, so the test for
+        "names a declared path" is a look-up, not the base's grammar.
+        """
+        for label, identity, reference in (
+            ("urn iri", "urn:adaptive-test:target", "urn:adaptive-test:target#/$defs/value"),
+            (
+                "https iri",
+                "https://example.test/schema.json",
+                "https://example.test/schema.json#/$defs/value",
+            ),
+            ("relative-looking id", "sibling/thing.json", "sibling/thing.json#/$defs/value"),
+        ):
+            with self.subTest(label=label):
+                target = self._reference_record(
+                    "CONTRACT-TARGET",
+                    "elsewhere/target.json",
+                    {"$id": identity, "$defs": {"value": {"type": "string", "minLength": 1}}},
+                )
+                narrowed = self._reference_record(
+                    "CONTRACT-TARGET",
+                    "elsewhere/target.json",
+                    {"$id": identity, "$defs": {"value": {"type": "string", "minLength": 9}}},
+                )
+                referrer = self._reference_record(
+                    "CONTRACT-REFERRER", "dir/referrer.json", {"$ref": reference}
+                )
+                result = ARCH.compare_contracts(
+                    referrer,
+                    referrer,
+                    "bidirectional",
+                    base_inventory=(referrer, target),
+                    head_inventory=(referrer, narrowed),
+                )
+                self.assertEqual(result.status, "incompatible", result.reasons)
+                self.assertEqual(result.reasons, ("narrowed_constraint",))
+
+    def test_model_rejects_a_declared_schema_id_that_is_another_contract_path(self) -> None:
+        """Issue #147 point 2: the capture is a loud authoring error, not a silent preference.
+
+        Resolution precedence closes the silent path; this stops the ambiguity being created at
+        all.  The message follows the comparator's own ``ambiguous declared schema id`` precedent
+        and names the offending text plus both carrying paths, and a contract that identifies
+        itself by its own path is not a collision.
+        """
+        shadow_path = "engineering/contracts/dir/target.json"
+        carrier_path = "engineering/contracts/other/claimant.json"
+
+        def declared_inventory(carrier_document: dict, shadow_document: dict):
+            system = _system()
+            system["contracts"] = [
+                {
+                    "id": "CONTRACT-TARGET",
+                    "kind": "json_schema",
+                    "path": shadow_path,
+                    "version": "1",
+                    "role": "consumer",
+                    "compatibility": "consumer_accepts_old",
+                },
+                {
+                    "id": "CONTRACT-CLAIMANT",
+                    "kind": "json_schema",
+                    "path": carrier_path,
+                    "version": "1",
+                    "role": "consumer",
+                    "compatibility": "consumer_accepts_old",
+                },
+            ]
+            system["nodes"][0]["public_contracts"] = ["CONTRACT-TARGET", "CONTRACT-CLAIMANT"]
+            root = self._repo(system, _rules())
+            for path, document in ((shadow_path, shadow_document), (carrier_path, carrier_document)):
+                target = root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                self._write(target, document)
+            return root, ARCH.load_architecture(root)
+
+        root, snapshot = declared_inventory({"$id": shadow_path, "type": "object"}, {"type": "string"})
+        with self.assertRaises(ARCH.ArchitectureError) as captured:
+            ARCH.contract_inventory(root, snapshot)
+        self.assertEqual(captured.exception.code, "contract")
+        message = str(captured.exception)
+        self.assertIn("ambiguous declared schema id", message)
+        self.assertIn(shadow_path, message)
+        self.assertIn(carrier_path, message)
+        self.assertIn("CONTRACT-CLAIMANT", message)
+
+        # An ``$id`` that names the declaring contract's own path is self-identification.
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": "CONTRACT-TARGET",
+                "kind": "json_schema",
+                "path": shadow_path,
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            }
+        ]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TARGET"]
+        root = self._repo(system, _rules())
+        target = root / shadow_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        self._write(target, {"$id": shadow_path, "type": "string"})
+        records = ARCH.contract_inventory(root, ARCH.load_architecture(root))
+        self.assertEqual([record.id for record in records], ["CONTRACT-TARGET"])
+
+    def test_declared_inventory_carries_no_schema_id_path_collision(self) -> None:
+        """The new model guard cannot be the reason a real pull request fails: measured here.
+
+        Pinned on ``architecture/system.yaml`` so a future authoring change that makes a declared
+        ``$id`` equal another contract's path is caught as a failing test *and* a refused
+        inventory, and so the 76/10 resolution split the precedence change had to leave alone is
+        the number a reviewer can re-derive.
+        """
+        snapshot = ARCH.load_architecture(ROOT)
+        records = ARCH.contract_inventory(ROOT, snapshot)
+        paths = {record.path: record.id for record in records}
+        carriers: dict[str, list[str]] = {}
+        for record in records:
+            schema_id = record.document.get("$id") if isinstance(record.document, dict) else None
+            if isinstance(schema_id, str):
+                carriers.setdefault(schema_id, []).append(record.path)
+        self.assertEqual(len(records), 50)
+        self.assertEqual(len(carriers), 41)
+        self.assertEqual(sorted(key for key, items in carriers.items() if len(items) > 1), [])
+        self.assertEqual(
+            sorted(key for key, items in carriers.items() if key in paths and paths[key] not in items),
+            [],
+            "a declared $id shadows another contract's declared path",
+        )
+
+        occurrences: list[tuple[str, str]] = []
+        pending = [(record, record.document) for record in records]
+        while pending:
+            record, value = pending.pop()
+            if isinstance(value, dict):
+                reference = value.get("$ref")
+                if isinstance(reference, str) and not reference.startswith("#"):
+                    base, _fragment = ARCH.schema_reference_parts(reference)
+                    if base:
+                        occurrences.append((record.path, base))
+                pending.extend((record, child) for child in value.values())
+            elif isinstance(value, list):
+                pending.extend((record, child) for child in value)
+        self.assertEqual(len(occurrences), 86)
+        path_naming = 0
+        id_only = 0
+        both = 0
+        for referrer_path, base in occurrences:
+            folded, _reason = ARCH.schema_reference_identity_path(referrer_path, base)
+            names_path = folded in paths
+            claims_id = base in carriers
+            if names_path and claims_id:
+                both += 1
+            elif names_path:
+                path_naming += 1
+            elif claims_id:
+                id_only += 1
+        self.assertEqual((path_naming, id_only, both), (10, 76, 0))
+
 
 if __name__ == "__main__":
     unittest.main()

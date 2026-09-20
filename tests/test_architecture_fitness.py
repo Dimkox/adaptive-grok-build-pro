@@ -4317,13 +4317,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
         ``CONTRACT-CLAIMANT`` declares an ``$id`` that is textually identical to the
         referrer's ``$ref`` base, and that same base resolves to ``CONTRACT-TARGET``'s
-        declared path.  The comparator resolves such a base through the ``$id`` first (the
-        sibling shadowing defect), so the referrer's verdict is a function of the
-        *claimant's* document; a closure that resolved path-first by *substitution* would
-        attach the referrer only to ``CONTRACT-TARGET`` and never re-verify it when the
-        claimant narrows.  Reverse identity is therefore the union of both tables: the path
-        candidate is kept (issue #146 proper) and the ``$id`` candidate is added, never
-        swapped for it.
+        declared path.  Issue #147 fixed the comparator so a base that folds onto a declared
+        path resolves to that path first, which means the referrer's verdict is no longer a
+        function of the claimant's document -- that coupling was the defect, not the
+        requirement.  The claimant still has dependents, so reverse identity stays the union
+        of both tables: the path candidate is kept (issue #146 proper) and the ``$id``
+        candidate is added, never swapped for it.  The two assertions below pin both halves:
+        scope from the union, attribution from #147.
         """
         shadowed_path = "engineering/contracts/dir/target.json"
         reference_text = "dir/target.json"
@@ -4405,15 +4405,14 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     result.findings,
                 )
                 if changed_contract == "CONTRACT-CLAIMANT":
-                    # The measured consequence of the union: the comparator resolves the
-                    # referrer's $ref through the claimant's $id, so re-verifying the
-                    # referrer reports the claimant's narrowing instead of passing it.
-                    self.assertTrue(
-                        any(
-                            finding.startswith("CONTRACT-REFERRER:")
-                            for finding in result.findings
-                        ),
-                        result.findings,
+                    # Issue #147, measured: the referrer stays inside the certified scope
+                    # (the union still attaches it) but its verdict is no longer formed from
+                    # the claimant's document, because a base that folds onto a declared path
+                    # now resolves to that path first.  So the claimant's own row carries the
+                    # break and the referrer contributes none -- asserting a
+                    # ``CONTRACT-REFERRER:`` finding here would be asserting the defect.
+                    self.assertEqual(
+                        result.findings, (f"{changed_contract}: narrowed_constraint",)
                     )
                 else:
                     self.assertIn("narrowed_constraint", " ".join(result.findings))
