@@ -49,11 +49,17 @@
       "from": "implementing",
       "reason": "Same selected writer supplied measured security alias RED46fail and focused GREEN3/adjacent61PASS; two-file correction documented, other17candidate paths unchanged; fresh full and renewed five reviews pending",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T10:39:08+00:00",
+      "from": "verifying",
+      "reason": "Corrected-source complete PR verifier PASS at28514bf0 after measured security alias RED/GREEN; renew all five selected independent reviews before final receipts and external delivery",
+      "to": "reviewing"
     }
   ],
   "route_id": "bcc1d645c438",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "reviewing",
   "title": "Fix the combined delivery of already reviewed issue repairs #156 router word matching, #162 evidence receipt schema, #153 and #161 consumer installer documents, #168 safe fingerprint scratch exclusions, #147 and #148 schema reference resolution, and #166 PostgreSQL incremental migration tests. Integrate their exact reviewed commits on main839d3aa2 in one isolated pull request, preserve all security and authority boundaries and unchanged SQL resources, resolve shared handoff files, and run combined verification with independent code, test, security and data reviews. No new behavior beyond those existing bounded fixes, no Trust CI source changes or deployment.",
-  "updated_at": "2026-09-21T10:21:04+00:00"
+  "updated_at": "2026-09-21T10:39:08+00:00"
 }

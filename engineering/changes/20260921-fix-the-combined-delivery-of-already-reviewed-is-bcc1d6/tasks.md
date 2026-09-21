@@ -7,5 +7,6 @@
 - [x] Full combined verifier PASS on4bbbad34; original metadata-only failures and their corrections preserved.
 - [x] First five independent reviews completed; code/test/security findings preserved and returned to the same writer.
 - [x] Security alias repair: measured RED, three focused regressions and61 adjacent tests pass;17 remaining product files unchanged.
-- [ ] Repeat full verification on corrected tree, renew all five independent reviews, freeze final current evidence.
+- [x] Corrected-source full PR verification PASS at28514bf0, completed2026-09-21T10:37:44Z.
+- [ ] Renew all five independent reviews and freeze final current evidence.
 - [ ] Exact delegated PR operations, external CI, merge and evidenced issue/obsolete-PR closure.

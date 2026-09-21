@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "tested_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
+  "tested_fingerprint": "3937be09e0f83ba702cd3f50675e6ce01a850620497e02e57d0035b49e0e26ad",
+  "started_at": "2026-09-21T10:29:00.108421+00:00",
+  "finished_at": "2026-09-21T10:37:44.736961+00:00",
+  "report_sha256": "cb43ed9a06b748693414e4a55e5fa279e759a321454a7868f46b47971271ed4c",
+  "scope": "Actual full corrected-source run, including security aliases; independent renewed reviews and final current receipts remain required; local preflight not merge authority."
+}
