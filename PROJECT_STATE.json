@@ -1910,7 +1910,8 @@
     "change_package": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7",
     "base_pull_request": 170,
     "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
-    "status": "focused_tests_passed_full_verification_pending",
-    "next_action": "Run mandatory PR verifier, then independent code/test reviews and final evidence handoff. Preserve release-intent work in existing PR140."
+    "status": "product_verified_independent_reviews_passed_final_binding_pending",
+    "next_action": "Validate final candidate fingerprint, record current verification/code/test receipts, and prepare separately authorized PR delivery. Exact-head external Trust CI remains mandatory.",
+    "tested_product_commit": "c58ddb7aaaaa594a3ad00d8667e4da09f750f3ca"
   }
 }

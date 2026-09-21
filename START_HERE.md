@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Active issue branch — #156
 
-This isolated successor to PR #170 fixes short keyword routing and records keyword evidence. Read [the change package](engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/brief.md) and `PROJECT_STATE.json.active_issue_work`. Focused and adjacent tests passed; full PR verification and independent reviews remain pending.
+This isolated successor to [PR #170](https://github.com/Dimkox/adaptive-grok-build-pro/pull/170) fixes short router keyword boundaries and preserves diagnostic evidence. Read [the change package](engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/brief.md) and `PROJECT_STATE.json.active_issue_work`. The 58 focused and 39 adjacent tests, full verifier and both independent reviews passed for the recorded product commit. Check final fingerprint-bound local receipts before delivery; external Trust CI is still required.
 
 ## Current project state
 

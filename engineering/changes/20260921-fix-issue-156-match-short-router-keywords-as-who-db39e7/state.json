@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "58 focused and39 adjacent tests passed; original AI phrase weighting preserved; mandatory gate pending",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:01:47+00:00",
+      "from": "verifying",
+      "reason": "Mandatory full PR verifier passed on c58ddb7a; independent reviews starting",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T07:12:07+00:00",
+      "from": "reviewing",
+      "reason": "Product full gate and independent code/test reviews passed; final documentation candidate frozen next and requires current fingerprint-bound receipts",
+      "to": "ready"
     }
   ],
   "route_id": "db39e73f3dee",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Fix issue #156: match short router keywords as whole words, persist keyword evidence, and select the appropriate write owner from supported task domains.",
-  "updated_at": "2026-09-21T06:49:06+00:00"
+  "updated_at": "2026-09-21T07:12:07+00:00"
 }
