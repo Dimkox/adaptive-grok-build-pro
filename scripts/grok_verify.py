@@ -20,7 +20,7 @@ parser.add_argument('--json', action='store_true')
 args = parser.parse_args()
 report = verify(find_root(), args.mode, args.profiles, record=not args.no_record)
 if args.json:
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    print(json.dumps(report, ensure_ascii=True, indent=2))
 else:
     for item in report['checks']:
         print(f"{item['status'].upper():4} {item['name']}: {item['summary']}")

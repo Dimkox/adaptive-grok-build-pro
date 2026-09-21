@@ -1,0 +1,43 @@
+{
+  "observed_at": "2026-09-21T10:06:44.789266+00:00",
+  "overall": "FAIL",
+  "reviews": [
+    {
+      "role": "code",
+      "verdict": "FAIL",
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/code-review.md",
+      "sha256": "2bc0e40327827b2a25ece3f11be20c48ec01120532e07ba28a5efad8e073e7e7",
+      "reviewed_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c"
+    },
+    {
+      "role": "test",
+      "verdict": "FAIL",
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/test-review.md",
+      "sha256": "c67a2a84d8a84e401be8c218c387875e705ca15dfed206c3e09d9b545e1a77aa",
+      "reviewed_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c"
+    },
+    {
+      "role": "security",
+      "verdict": "FAIL",
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/security-review.md",
+      "sha256": "510283bf838f2a9fa437ea61cb3c78fbbc5de380cb35e5739a4752abea8dc577",
+      "reviewed_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c"
+    },
+    {
+      "role": "data",
+      "verdict": "PASS",
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/data-review.md",
+      "sha256": "33ff5adecddf3f2da6735c2f02d7aafbe35835e827bab54621fe3e238865da86",
+      "reviewed_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c"
+    },
+    {
+      "role": "release",
+      "verdict": "PASS",
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/release-review.md",
+      "sha256": "8b9c31d11787c9ab564b62bab4597940d55a9b725bcb6039641dadb008871cd3",
+      "reviewed_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c"
+    }
+  ],
+  "blocker": "Short-word auth matching loses legitimate security vocabulary and mandatory high-risk local reviews/gates; same writer repair pending.",
+  "authority": "No passing current receipts or external merge conclusion."
+}

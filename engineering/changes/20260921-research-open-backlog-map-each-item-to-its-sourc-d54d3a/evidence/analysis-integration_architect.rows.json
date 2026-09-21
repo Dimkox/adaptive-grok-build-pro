@@ -1,0 +1,74 @@
+{
+  "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+  "route_id": "d54d3afd1c92",
+  "rows": [
+    {
+      "issue": 148,
+      "status": "current",
+      "priority": "small-independent",
+      "evidence": "1000 repeated refs -> 2000 diagnostics, 1 unique, 228000 detail bytes",
+      "next_action": "deduplicate/cap emitted per-referrer findings; preserve scope and head/base failure policy",
+      "dependencies": [
+        "coordinate #147/#137 schema tests"
+      ],
+      "risk": "low"
+    },
+    {
+      "issue": 147,
+      "status": "current",
+      "priority": "current-certification-defect",
+      "evidence": "claimant compatible; control incompatible narrowed_constraint",
+      "next_action": "path-first declared-path resolution and regression tests; decide collision validation scope",
+      "dependencies": [
+        "merged #133/#149",
+        "open #137 nearby comparator edits"
+      ],
+      "risk": "high"
+    },
+    {
+      "issue": 163,
+      "status": "current",
+      "priority": "stack-after-170",
+      "evidence": "13 RETURN NULL + 2 ELSE NULL; store parses as corruption",
+      "next_action": "additive migration after 021, closed plan rejection channel and preserved bindings",
+      "dependencies": [
+        "PR #170 migration021",
+        "#166 migration prefix tests"
+      ],
+      "risk": "medium-high"
+    },
+    {
+      "issue": 61,
+      "status": "already-fixed",
+      "priority": "closure-evidence",
+      "evidence": "#77 production denylist/epoch/import guard; artifact tests pass",
+      "next_action": "prepare closure with current evidence",
+      "dependencies": [],
+      "risk": "low"
+    },
+    {
+      "issue": 56,
+      "status": "already-fixed-historical-regression",
+      "priority": "closure-evidence",
+      "evidence": "all nine named test modules included in passing 237-test focused run",
+      "next_action": "close historical regression, retain gate gap under #51/#63",
+      "dependencies": [
+        "#51/#63 gate omission separate"
+      ],
+      "risk": "low"
+    },
+    {
+      "issue": 63,
+      "status": "current-residual-partly-fixed",
+      "priority": "verification-project",
+      "evidence": "all six test modules exist/pass; five real PDF cases skipped; no factory coverage floor, four-module factory-unit remains",
+      "next_action": "measure pinned per-module/worker coverage, fill actual gaps, integrate local lane; external Trust CI adoption separate",
+      "dependencies": [
+        "#51",
+        "pinned pypdf 6.18.1",
+        "external Trust CI rollout"
+      ],
+      "risk": "medium-high"
+    }
+  ]
+}

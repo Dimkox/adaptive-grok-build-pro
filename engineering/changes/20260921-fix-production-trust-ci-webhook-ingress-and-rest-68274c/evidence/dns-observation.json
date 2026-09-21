@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-21T08:33:06.245105+00:00",
+  "command": "getent ahostsv4 claw.taild9f611.ts.net",
+  "exit_code": 0,
+  "stdout": "176.58.88.108   STREAM claw.taild9f611.ts.net\n176.58.88.108   DGRAM  \n176.58.88.108   RAW    \n176.58.92.199   STREAM \n176.58.92.199   DGRAM  \n176.58.92.199   RAW    \n176.58.88.82    STREAM \n176.58.88.82    DGRAM  \n176.58.88.82    RAW    \n",
+  "stderr": "",
+  "elapsed_s": 0.090143
+}

@@ -1,0 +1,27 @@
+{
+  "plan_sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
+  "artifact_manifest_sha256": "b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d",
+  "reviews": {
+    "code": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/code-review.md",
+      "sha256": "4557969cd666b336bf72cf6979bc6636da5dcb36019f5b0488c364d3408c368d"
+    },
+    "test": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/test-review.md",
+      "sha256": "1bf14270cc44f89422c58faf9bc9abf393de29b3b0f58985c1bb718e60aac103"
+    },
+    "security": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/security-review.md",
+      "sha256": "780f0433e8cd62d09d391448ff8a6539a7ffca99eab1475eb4258ee3cb7fa695"
+    },
+    "release": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-review.md",
+      "sha256": "b6fb6af7f27d9d39ef79ca38c24b8320666e1364be04437a188c0c90e199e83f"
+    }
+  },
+  "operation_state": "bridge running, disabled for boot; peer/public HTTP and measured counter controls pass; stop/reactivation pending",
+  "counter_evidence": "evidence/acceptance-measured-counters.json",
+  "dns_limit": "Two host resolver timeouts retained; fresh resolved public address controls preserve Host/SNI/TLS and do not establish resolver health.",
+  "product_source_changed": false,
+  "next_operation": "Fresh exact grant then reviewed block7 guard-stop/disable, stopped observations, block3 gate, block8 reactivation and repeated acceptance."
+}

@@ -31,6 +31,9 @@ MAX_AGENT_LENGTH = 128
 MAX_TITLE_LENGTH = 256
 MAX_PATH_LENGTH = 512
 MAX_INTERFACE_LENGTH = 512
+MAX_MATCHED_DOMAINS = 16
+MAX_MATCHED_KEYWORDS = 32
+MAX_KEYWORD_LENGTH = 64
 # Keep byte-identical to receipts.RECEIPT_KINDS (parity-tested; this module
 # stays standalone-importable, so the set cannot be a shared import here).
 RECEIPT_KINDS = frozenset(
@@ -56,6 +59,7 @@ RUNTIME_ROUTE_KEYS = {
     "domains",
     "human_gates",
     "intent",
+    "matched_keywords",
     "primary_skill",
     "quality_profiles",
     "rationale",
@@ -461,6 +465,20 @@ def load_runtime_authority(root: Path, kind: str) -> dict[str, Any]:
         if not isinstance(data.get("route_id"), str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", data["route_id"]):
             raise WorkflowArtifactError("active route id is invalid", code="route")
         _validate_route(data)
+        if "matched_keywords" in data:
+            matches = data["matched_keywords"]
+            if not isinstance(matches, dict) or len(matches) > MAX_MATCHED_DOMAINS:
+                raise WorkflowArtifactError("active route keyword evidence is not a bounded map", code="route")
+            for domain, keywords in matches.items():
+                if not re.fullmatch(r"[a-z][a-z0-9_]{0,31}", domain):
+                    raise WorkflowArtifactError("active route keyword domain is invalid", code="route")
+                _string_list(
+                    keywords,
+                    "matched_keywords",
+                    allow_empty=False,
+                    maximum_items=MAX_MATCHED_KEYWORDS,
+                    maximum_length=MAX_KEYWORD_LENGTH,
+                )
     elif (
         set(data) != {"change_id", "path"}
         or not isinstance(data.get("change_id"), str)

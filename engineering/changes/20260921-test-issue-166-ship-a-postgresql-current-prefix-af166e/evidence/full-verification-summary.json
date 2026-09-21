@@ -1,0 +1,95 @@
+{
+  "tested_product_commit": "0558da4a4047ddf12114be33fb163b4e9124fdbf",
+  "initial_full_verification": {
+    "head": "0558da4a4047ddf12114be33fb163b4e9124fdbf",
+    "started_at": "2026-09-21T06:42:52Z",
+    "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+    "exit_code": 0,
+    "finished_at": "2026-09-21T06:51:14Z"
+  },
+  "tree_fingerprint": "32a5f001feb1e320c0308ccad89a16d06b9d9c7ddeeef328c23b47e6e825e6cc",
+  "raw_report_sha256": "aa3cb7e38e61939b06623ea32e3d37d9871267a0e6dc2a30603543a2778e899e",
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:90078959ff816068af374ad42f4bb80fdbaec866,pr-target:90078959ff816068af374ad42f4bb80fdbaec866"
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "2 specs checked; exempt=False"
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass"
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current"
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured"
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets"
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "0 contracts checked"
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings"
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=106.480"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=1.656"
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable"
+    }
+  ],
+  "scope": "Actual initial full verification before review documents. Only documentation/evidence changes follow; final machine-local receipts must match final checkout. No external merge authority claimed."
+}

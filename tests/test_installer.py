@@ -6,6 +6,7 @@ import json
 import importlib.util
 import io
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -13,6 +14,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("install_into", ROOT / "scripts/install_into.py")
@@ -63,7 +65,138 @@ def _stage_names(parent: Path) -> list[str]:
     return sorted(path.name for path in parent.glob(".adaptive-install-*"))
 
 
+def _broken_local_links(document: Path, root: Path) -> list[str]:
+    broken = []
+    for destination in re.findall(r"\[[^\]]*\]\(([^\s)]+)\)", document.read_text()):
+        link = urlsplit(destination)
+        if link.scheme or link.netloc or not link.path:
+            continue
+        target = (document.parent / unquote(link.path)).resolve()
+        if not target.is_relative_to(root.resolve()) or not target.exists():
+            broken.append(destination)
+    return broken
+
+
 class InstallerTests(unittest.TestCase):
+    def test_installed_link_audit_detects_missing_and_escaping_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "consumer"
+            root.mkdir()
+            (root / "present.md").write_text("present\n")
+            (root.parent / "outside.md").write_text("outside\n")
+            document = root / "README.md"
+            document.write_text(
+                "[valid](present.md#section) [missing](missing.md) "
+                "[escape](../outside.md) [upstream](https://example.com/docs)\n"
+            )
+            self.assertEqual(_broken_local_links(document, root),
+                             ["missing.md", "../outside.md"])
+
+    def test_materialized_consumer_documentation_is_portable(self) -> None:
+        for profile in ("generic", "bitrix"):
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as tmp:
+                target = Path(tmp) / "consumer"
+                # The public absent-target installer defaults to generic; exercise
+                # its real writer with each explicitly constructed profile payload.
+                payload = MODULE.build_payload(ROOT, profile_kind=profile)
+                with patch.object(MODULE, "build_payload", return_value=payload):
+                    MODULE.materialize_new(ROOT, target)
+                readme = target / "factory/README.md"
+                self.assertEqual(_broken_local_links(readme, target), [])
+                self.assertIn("Upstream-only", readme.read_text())
+                self.assertIn("https://github.com/Dimkox/adaptive-grok-build-pro/",
+                              readme.read_text())
+                agents = target / "AGENTS.md"
+                self.assertEqual(_broken_local_links(agents, target), [])
+                text = agents.read_text()
+                self.assertIn("## Required installed entrypoints", text)
+                self.assertIn("## Optional consumer-owned files", text)
+                optional = text.split("## Optional consumer-owned files", 1)[1].split("\n## ", 1)[0]
+                for path in ("START_HERE.md", "PROJECT_STATE.json", "VERSION",
+                             "decisions.md", "mistakes.md", "architecture/system.yaml"):
+                    self.assertIn(path, optional)
+                    self.assertFalse((target / path).exists(), path)
+                for safeguard in ("one write agent", "independent review", "pull request",
+                                  "exact head SHA", "not merge authority",
+                                  "explicit consent", "human approval private key"):
+                    self.assertIn(safeguard, text)
+                for factory_identity in ("4694114", "06ecf1c875bc", "claw", "trust-ci/"):
+                    self.assertNotIn(factory_identity, text)
+                self.assertIn("Never fabricate", text)
+                self.assertEqual(agents.read_bytes(), MODULE.managed_agents_text(ROOT).encode())
+
+    def test_consumer_documentation_is_deterministic_and_manifest_bound(self) -> None:
+        for profile in ("generic", "bitrix"):
+            with self.subTest(profile=profile):
+                payload = MODULE.build_payload(ROOT, profile_kind=profile)
+                self.assertEqual(payload, MODULE.build_payload(ROOT, profile_kind=profile))
+                by_path = {entry.path: entry for entry in payload}
+                for destination, template in (
+                    ("AGENTS.md", MODULE.CONSUMER_AGENTS_TEMPLATE),
+                    ("factory/README.md", MODULE.CONSUMER_FACTORY_README_TEMPLATE),
+                ):
+                    template_bytes = (ROOT / template).read_bytes()
+                    expected = template_bytes if destination != "AGENTS.md" else (
+                        MODULE.MANAGED_START + "\n" + template_bytes.decode().rstrip() +
+                        "\n" + MODULE.MANAGED_END + "\n"
+                    ).encode()
+                    entry = by_path[destination]
+                    self.assertEqual(entry.content, expected)
+                    self.assertEqual(entry.manifest()["sha256"], hashlib.sha256(expected).hexdigest())
+                    self.assertNotEqual(entry.content, (ROOT / destination).read_bytes())
+
+    def test_installed_template_artifacts_are_explicit_reusable_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "consumer"
+            payload = MODULE.build_payload(ROOT)
+            MODULE.materialize_new(ROOT, target)
+            templates = target / ".grok-stack/templates"
+            template_paths = {path.name for path in templates.glob("consumer-*")}
+            self.assertEqual(template_paths, {
+                "consumer-AGENTS.md.tmpl", "consumer-factory-README.md.tmpl",
+            })
+            for source, destination in (
+                ("consumer-AGENTS.md.tmpl", "AGENTS.md"),
+                ("consumer-factory-README.md.tmpl", "factory/README.md"),
+            ):
+                template = templates / source
+                self.assertTrue(template.read_text().startswith(
+                    f"<!-- Template source for {destination}; links are relative to its output directory. -->\n"
+                ))
+                self.assertEqual(_broken_local_links(target / destination, target), [])
+            # Required rendering inputs stay in the installed inventory: a
+            # consumer remains a complete source for the generic payload.
+            self.assertEqual(MODULE.build_payload(target), payload)
+            self.assertEqual(MODULE.managed_agents_text(target),
+                             (target / "AGENTS.md").read_text())
+
+    def test_existing_consumer_documentation_plans_preserve_user_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = self._consumer_with_record(Path(tmp) / "consumer", [])
+            agents = target / "AGENTS.md"
+            original = (b"User prefix\r\n\xff\r\n" + MODULE.MANAGED_START.encode() +
+                        b"\r\nOld managed instructions\r\n" + MODULE.MANAGED_END.encode() +
+                        b"\r\nUser suffix\t\r\n")
+            agents.write_bytes(original)
+            readme = target / "factory/README.md"
+            readme.parent.mkdir()
+            readme.write_bytes((ROOT / "factory/README.md").read_bytes())
+            before = _snapshot(target)
+            plan = MODULE.plan_install(ROOT, target)
+            self.assertIn("factory/README.md", {entry["path"] for entry in plan["entries"]})
+            self.assertEqual(_snapshot(target), before)
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.materialize_new(ROOT, target)
+            self.assertEqual(_snapshot(target), before)
+            (target / ".grok-stack/AGBP_SYNC.json").write_text(
+                json.dumps({"schema_version": 1, "kept_local": ["factory/README.md"]})
+            )
+            before_conflict = _snapshot(target)
+            with self.assertRaisesRegex(MODULE.UnsafeInstallTarget, "factory/README.md"):
+                MODULE.plan_install(ROOT, target)
+            self.assertEqual(_snapshot(target), before_conflict)
+            self.assertEqual(agents.read_bytes(), original)
+
     def _consumer_with_record(self, root: Path, kept: list[str] | object) -> Path:
         record = root / ".grok-stack"
         record.mkdir(parents=True)
@@ -194,7 +327,7 @@ class InstallerTests(unittest.TestCase):
     def test_target_without_record_delivers_every_source_managed_path_intact(self) -> None:
         # No-record parity is an in-tree property, not a snapshot: the checkout feeding
         # the plan differs by branch, so the test recomputes the source inventory and
-        # verifies every delivered entry (except the synthesized AGENTS.md block)
+        # verifies every delivered entry (except synthesized consumer documents)
         # byte-matches its source file - dropping any payload path breaks it anywhere.
         with tempfile.TemporaryDirectory() as tmp:
             plan = MODULE.plan_install(ROOT, Path(tmp) / "t")
@@ -204,7 +337,7 @@ class InstallerTests(unittest.TestCase):
             delivered = {entry["path"] for entry in plan["entries"]}
             self.assertEqual(delivered - {"AGENTS.md"}, expected)
             for entry in plan["entries"]:
-                if entry["path"] == "AGENTS.md":
+                if entry["path"] in {"AGENTS.md", "factory/README.md"}:
                     continue
                 source = (ROOT / entry["path"]).read_bytes()
                 self.assertEqual(entry["sha256"], hashlib.sha256(source).hexdigest(), entry["path"] if False else entry["path"])
@@ -627,7 +760,9 @@ class InstallerTests(unittest.TestCase):
                 source = root / "source"
                 managed = source / ".grok"
                 managed.mkdir(parents=True)
-                (source / "AGENTS.md").write_text("managed agents\n", encoding="utf-8")
+                template = source / MODULE.CONSUMER_AGENTS_TEMPLATE
+                template.parent.mkdir(parents=True)
+                template.write_text("managed agents\n", encoding="utf-8")
                 (managed / "required.md").write_text("required\n", encoding="utf-8")
                 target = root / "target"
                 relocated = root / "relocated"
@@ -652,29 +787,48 @@ class InstallerTests(unittest.TestCase):
 
                 with (
                     patch.object(MODULE, "MANAGED_DIRS", (".grok",)),
-                    patch.object(MODULE, "MANAGED_FILES", ()),
-                    patch.object(MODULE._SourceTree, "__init__", bind_then_relocate),
+                    patch.object(MODULE, "MANAGED_FILES", (MODULE.CONSUMER_AGENTS_TEMPLATE,)),
                 ):
-                    with self.assertRaises(MODULE.UnsafeInstallTarget):
-                        MODULE._materialize_new(
-                            source,
-                            target,
-                            include_dependencies=False,
-                            include_optional=False,
-                        )
+                    positive = root / "unrelocated"
+                    MODULE._materialize_new(
+                        source, positive, include_dependencies=False,
+                        include_optional=False,
+                    )
+                    self.assertEqual((positive / ".grok/required.md").read_text(), "required\n")
+                    self.assertEqual((positive / "AGENTS.md").read_text(),
+                                     MODULE.managed_agents_text(source))
+                    with patch.object(MODULE._SourceTree, "__init__", bind_then_relocate):
+                        component = "source" if boundary == "source root" else ".grok"
+                        with self.assertRaisesRegex(
+                            MODULE.UnsafeInstallTarget,
+                            rf"^directory component is unsafe: {re.escape(component)}$",
+                        ):
+                            MODULE._materialize_new(
+                                source,
+                                target,
+                                include_dependencies=False,
+                                include_optional=False,
+                            )
                 self.assertTrue(swapped)
                 self.assertFalse(os.path.lexists(target))
                 self.assertEqual(_stage_names(root), [])
                 self.assertEqual(outside.read_bytes(), b"outside unchanged\n")
 
     def test_source_reads_are_nofollow_and_bounded_at_the_descriptor(self) -> None:
-        cases = ("managed", "agents", "bitrix", "toolchain")
+        cases = ("managed", "agents", "agents helper", "factory readme", "bitrix", "toolchain")
         for family in cases:
             with self.subTest(family=family), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 source = root / "source"
                 source.mkdir()
-                (source / "AGENTS.md").write_text("managed agents\n", encoding="utf-8")
+                agents = source / MODULE.CONSUMER_AGENTS_TEMPLATE
+                agents.parent.mkdir(parents=True)
+                agents.write_text("managed agents\n", encoding="utf-8")
+                readme = source / MODULE.CONSUMER_FACTORY_README_TEMPLATE
+                readme.write_text("consumer factory docs\n", encoding="utf-8")
+                factory_readme = source / "factory/README.md"
+                factory_readme.parent.mkdir()
+                factory_readme.write_text("upstream factory docs\n", encoding="utf-8")
                 guidance = source / "docs/bitrix-local-AGENTS.md"
                 guidance.parent.mkdir(parents=True)
                 guidance.write_text("bitrix guidance\n", encoding="utf-8")
@@ -685,7 +839,9 @@ class InstallerTests(unittest.TestCase):
                 toolchain.write_text('{"tools": []}\n', encoding="utf-8")
                 victim = {
                     "managed": payload,
-                    "agents": source / "AGENTS.md",
+                    "agents": agents,
+                    "agents helper": agents,
+                    "factory readme": readme,
                     "bitrix": guidance,
                     "toolchain": toolchain,
                 }[family]
@@ -736,11 +892,20 @@ class InstallerTests(unittest.TestCase):
                         return text
                     return real_read_text(path, *args, **kwargs)
 
-                managed_files = ("payload.bin",) if family == "managed" else ()
+                managed_files = (MODULE.CONSUMER_AGENTS_TEMPLATE,)
+                if family == "managed":
+                    managed_files += ("payload.bin",)
+                if family == "factory readme":
+                    managed_files += ("factory/README.md", MODULE.CONSUMER_FACTORY_README_TEMPLATE)
                 if family == "toolchain":
 
                     def invocation() -> object:
                         return MODULE.plan_install(source, root / "target")
+
+                elif family == "agents helper":
+
+                    def invocation() -> object:
+                        return MODULE.managed_agents_text(source)
 
                 else:
 

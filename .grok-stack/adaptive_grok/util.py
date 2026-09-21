@@ -70,7 +70,8 @@ def atomic_write_text(path: Path, text: str) -> None:
 
 
 def dump_json(path: Path, data: Any) -> None:
-    atomic_write_text(path, json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + '\n')
+    # Escapes preserve filesystem surrogate code points in valid UTF-8 JSON.
+    atomic_write_text(path, json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n')
 
 
 def run(
@@ -127,46 +128,70 @@ def git_default_base(root: Path) -> str | None:
 
 
 def _fingerprint_noise(rel: str) -> bool:
-    normalized = rel.replace('\\', '/')
-    while normalized.startswith('./'):
-        normalized = normalized[2:]
-    parts = normalized.split('/')
-    if normalized.startswith('.grok-stack/runtime/'):
+    # Git -z and relative_to(...).as_posix() already use directory slashes.
+    # Backslashes in these paths are literal filename data on POSIX.
+    parts = rel.split('/')
+    if rel.startswith('.grok-stack/runtime/'):
         return True
     if '__pycache__' in parts or '.pytest_cache' in parts or 'node_modules' in parts or 'vendor' in parts:
         return True
-    if normalized.endswith(('.pyc', '.pyo')):
+    if rel.endswith(('.pyc', '.pyo')):
         return True
-    if normalized in {'.coverage'} or normalized.startswith('coverage/'):
+    if rel in {'.coverage'} or rel.startswith('coverage/'):
         return True
     return False
 
 
+def _git_paths(root: Path, *args: str) -> set[str] | None:
+    try:
+        # -z emits filesystem bytes, not quoted text. Binary mode also avoids
+        # newline translation changing legal carriage returns in filenames.
+        proc = subprocess.run(
+            ['git', *args], cwd=root, capture_output=True, timeout=60, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    # An unsuccessful or malformed inventory cannot establish untracked ownership.
+    if proc.returncode != 0 or (proc.stdout and not proc.stdout.endswith(b'\0')):
+        return None
+    return {os.fsdecode(path) for path in proc.stdout.split(b'\0') if path}
+
+
 def changed_files(root: Path, base: str | None = None) -> list[str]:
     paths: set[str] = set()
+    indexed = _git_paths(root, 'ls-files', '--cached', '-z')
     if git_head(root):
-        commands: list[list[str]] = [
-            ['git', 'diff', '--name-only', '--cached'],
-            ['git', 'diff', '--name-only'],
-            ['git', 'ls-files', '--others', '--exclude-standard'],
+        commands = [
+            ['diff', '--name-only', '--no-renames', '-z', '--cached'],
+            ['diff', '--name-only', '--no-renames', '-z'],
         ]
         if base:
-            commands.insert(0, ['git', 'diff', '--name-only', f'{base}...HEAD'])
+            commands.insert(0, ['diff', '--name-only', '--no-renames', '-z', f'{base}...HEAD'])
+        tracking_known = indexed is not None
         for command in commands:
-            proc = run(command, cwd=root, timeout=60)
-            if proc.returncode == 0:
-                for line in proc.stdout.splitlines():
-                    line = line.strip().replace('\\', '/')
-                    if line and not _fingerprint_noise(line):
-                        paths.add(line)
+            changed = _git_paths(root, *command)
+            if changed is None:
+                tracking_known = False
+            else:
+                # Diff provenance also protects staged deletions, absent from the index.
+                paths.update(changed)
+        for rel in _git_paths(root, 'ls-files', '--others', '--exclude-standard', '-z') or ():
+            if (rel in paths or rel in (indexed or ()) or not tracking_known
+                    or not (_fingerprint_noise(rel) or rel.startswith('.qwen/tmp/'))):
+                paths.add(rel)
         return sorted(paths)
 
-    ignored = {'.git', '.grok-stack/runtime', 'vendor', 'node_modules', '.venv', '__pycache__'}
+    # No HEAD is not proof of untracked ownership: retain scratch and every index
+    # entry, including staged files subsequently removed from the worktree.
+    paths.update(indexed or ())
     for path in root.rglob('*'):
         if not path.is_file():
             continue
         rel = path.relative_to(root).as_posix()
-        if any(rel == item or rel.startswith(item + '/') for item in ignored) or _fingerprint_noise(rel):
+        if rel == '.git' or rel.startswith('.git/'):
+            continue
+        if (indexed is not None and rel not in indexed
+                and (_fingerprint_noise(rel) or rel.startswith('.venv/'))):
             continue
         paths.add(rel)
     return sorted(paths)
@@ -185,11 +210,11 @@ def tree_fingerprint(root: Path) -> str:
     head = git_head(root) or 'NO_HEAD'
     digest.update(head.encode())
     for rel in changed_files(root):
-        digest.update(rel.encode())
+        digest.update(os.fsencode(rel))
         path = root / rel
         try:
             if path.is_symlink():
-                digest.update(os.readlink(path).encode())
+                digest.update(os.fsencode(os.readlink(path)))
             elif path.is_file():
                 digest.update(file_sha256(path).encode())
             else:

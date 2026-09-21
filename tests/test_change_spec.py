@@ -95,6 +95,31 @@ class ChangeSpecTests(unittest.TestCase):
         mapped = SPEC.map_evidence(VALID_SPEC)
         self.assertTrue(mapped["AC-001"][0].endswith("test_valid_spec_passes"))
 
+    def test_receipt_evidence_enum_matches_both_runtime_registries(self) -> None:
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        from adaptive_grok import receipts, workflow_artifacts
+
+        schema = SPEC.load_schema()
+        schema_kinds = set(schema["$defs"]["evidence"]["properties"]["receipt"]["enum"])
+        self.assertEqual(schema_kinds, set(receipts.RECEIPT_KINDS))
+        self.assertEqual(schema_kinds, set(workflow_artifacts.RECEIPT_KINDS))
+
+    def test_every_runtime_receipt_kind_validates_in_change_spec(self) -> None:
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        from adaptive_grok import receipts
+
+        for kind in sorted(receipts.RECEIPT_KINDS):
+            with self.subTest(kind=kind):
+                spec = json.loads(json.dumps(VALID_SPEC))
+                spec["acceptance_criteria"][0]["evidence"] = [{"receipt": kind}]
+                self.assertTrue(SPEC.validate_spec(spec)["ok"])
+
+    def test_unknown_receipt_kind_is_rejected_by_change_spec(self) -> None:
+        spec = json.loads(json.dumps(VALID_SPEC))
+        spec["acceptance_criteria"][0]["evidence"] = [{"receipt": "unknown_review"}]
+        with self.assertRaisesRegex(SPEC.SpecError, "not in enum"):
+            SPEC.validate_spec(spec)
+
     def test_canonical_json_parser_rejects_ambiguous_or_unbounded_input(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "change-spec.yaml"

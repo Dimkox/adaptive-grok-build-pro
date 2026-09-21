@@ -1,0 +1,71 @@
+{
+  "change_id": "20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39",
+  "created_at": "2026-09-21T06:30:49+00:00",
+  "history": [
+    {
+      "at": "2026-09-21T06:30:49+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T06:46:26+00:00",
+      "from": "draft",
+      "reason": "User requested all issue fixes; selected analyses and bounded tracked-file-safe design complete; no named human gate",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-21T06:46:26+00:00",
+      "from": "scoped",
+      "reason": "User requested all issue fixes; selected analyses and bounded tracked-file-safe design complete; no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-21T06:46:26+00:00",
+      "from": "approved",
+      "reason": "User requested all issue fixes; selected analyses and bounded tracked-file-safe design complete; no named human gate",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T07:11:10+00:00",
+      "from": "implementing",
+      "reason": "Sole writer finished regression-first implementation and focused checks; durable handoff recorded; mandatory full gate next",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:45:45+00:00",
+      "from": "verifying",
+      "reason": "Mandatory full PR verifier passed on5adc4f85; independent code/test/security review next",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T08:04:43+00:00",
+      "from": "reviewing",
+      "reason": "Independent code/security review found raw-path identity and decoding gaps; sole writer repaired the approved bounded scope with regression RED then 19 focused GREEN tests.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T08:04:43+00:00",
+      "from": "implementing",
+      "reason": "Correction focused suite19/19 PASS, diff-check PASS; final full verifier remains after renewed review and handoff freeze.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T08:04:43+00:00",
+      "from": "verifying",
+      "reason": "Renew selected independent review after focused correction verification; historical full PASS is not reused as corrected-tree completion.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T08:14:07+00:00",
+      "from": "reviewing",
+      "reason": "Corrected focused checks and renewed selected independent reviews pass; final documentation candidate frozen for mandatory full verification and current receipts, not an external completion claim.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "582c39d6afb6",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix issue #168: exclude untracked agent scratch files from local evidence fingerprints while keeping tracked files and agent configuration included.",
+  "updated_at": "2026-09-21T08:14:07+00:00"
+}

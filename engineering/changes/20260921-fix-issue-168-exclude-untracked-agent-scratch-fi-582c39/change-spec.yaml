@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "change_id": "20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Exclude only proven-untracked generated .qwen/tmp files from local evidence fingerprints while preserving all tracked changes and meaningful agent configuration.",
+    "success_metric": "Fingerprint equality under untracked scratch churn and inequality under tracked, configuration and ordinary source changes; conservative inclusion under Git uncertainty.",
+    "target": "Scratch-only create/edit/remove leaves fingerprints stable; every meaningful control change invalidates them; uncertain tracking never enables exclusion."
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "integration",
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Creating, editing and removing proven-untracked files below exactly .qwen/tmp/ leaves changed_files and tree_fingerprint stable in a committed temporary Git repository.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Tracked scratch/cache files, staged additions, staged/unstaged edits, deletions, renames and base-relative changes remain visible; tracked diff provenance overrides filtering even when staged deletion removes index membership.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Tracked and untracked meaningful .qwen/.codex/.agents configuration, ordinary untracked source and prefix lookalikes such as .qwen/tmpfile remain bound. Literal POSIX backslashes never become scratch subtree separators; filename and symlink target bytes remain lossless, including non-UTF-8 bytes.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Failure, timeout or inability to establish tracked status retains scratch paths conservatively; no-HEAD/non-Git fallback cannot infer untracked status from absent HEAD.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Representative local receipt remains fresh after scratch-only churn and becomes stale after a genuine product change; final verification still detects product mutation. Receipt and verifier JSON output round-trip ordinary Unicode and filesystem-byte names through valid escaping, without changing JSON values, schemas or evidence authority.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "HEAD and meaningful file content remain bound for every shared fingerprint consumer.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Only the fixed top-level .qwen/tmp/ generated subtree gains an untracked exemption; tracked membership or diff provenance overrides all noise filtering.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Existing untracked runtime/cache noise remains excluded; uncertain tracking hashes more rather than less.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Ignore whole .qwen/.codex/.agents/.claude directories or expose user-configurable exclusions that can hide source.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Treat a failed tracking query as an empty trustworthy set, or hide a tracked staged deletion.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Relabel old receipt hashes as current or modify external merge authority.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Fingerprint equality under untracked scratch churn and inequality under tracked, configuration and ordinary source changes; conservative inclusion under Git uncertainty.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

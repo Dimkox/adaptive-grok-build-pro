@@ -1,0 +1,71 @@
+{
+  "change_id": "20260921-fix-consumer-installer-documentation-issue-153-v-148c66",
+  "created_at": "2026-09-21T06:30:47+00:00",
+  "history": [
+    {
+      "at": "2026-09-21T06:30:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T06:45:25+00:00",
+      "from": "draft",
+      "reason": "User requested all issue fixes; all selected analyses and bounded consumer-doc design complete; no named human gate",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-21T06:45:25+00:00",
+      "from": "scoped",
+      "reason": "User requested all issue fixes; all selected analyses and bounded consumer-doc design complete; no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-21T06:45:26+00:00",
+      "from": "approved",
+      "reason": "User requested all issue fixes; all selected analyses and bounded consumer-doc design complete; no named human gate",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T07:11:10+00:00",
+      "from": "implementing",
+      "reason": "Sole writer finished regression-first implementation and focused checks; durable handoff recorded; mandatory full gate next",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:35:39+00:00",
+      "from": "verifying",
+      "reason": "Mandatory full PR verifier passed on03fbaa91895b; selected independent code/test reviews next",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T07:52:09+00:00",
+      "from": "reviewing",
+      "reason": "Both independent review blockers returned to sole writer and corrected",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T07:52:09+00:00",
+      "from": "implementing",
+      "reason": "New focused RED captured both findings; corrected33installer tests passed and all4producthashes independentlymatch",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:52:09+00:00",
+      "from": "verifying",
+      "reason": "Renew independent review of repaired artifacts and positive-control fixture; final full verification remains mandatory",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T08:14:07+00:00",
+      "from": "reviewing",
+      "reason": "Corrected focused checks and renewed selected independent reviews pass; final documentation candidate frozen for mandatory full verification and current receipts, not an external completion claim.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "148c66d20768",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix consumer installer documentation: issue #153 vendored README link portability and issue #161 managed instructions must name files shipped to consumer repositories.",
+  "updated_at": "2026-09-21T08:14:07+00:00"
+}

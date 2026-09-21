@@ -1,0 +1,70 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Every captured open issue has source evidence, status and concrete next action; existing PR and external ownership boundaries are retained.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No issue is marked closed or code-complete from a plan or stale PR check.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Research creates no product or external merge/operation authority.",
+      "evidence": [
+        {
+          "production_signal": "SIG-001"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Research open backlog: map each item to its source subsystem, existing branch, dependencies, reproducibility evidence, and bounded next step.",
+    "success_metric": "65 unique issue rows, 17 open PR observations, five complete independent analysis reports",
+    "target": "issue-queue.json and linked concrete execution packets"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "evidence/inventory-validation.json records 65 unique rows, five reports, 17 PR rows and zero missing linked evidence at the dated snapshot.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

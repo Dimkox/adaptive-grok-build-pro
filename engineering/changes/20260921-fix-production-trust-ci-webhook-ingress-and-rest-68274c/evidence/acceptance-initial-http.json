@@ -1,0 +1,38 @@
+[
+  {
+    "at": "2026-09-21T08:30:27.541890+00:00",
+    "probe": "peer_ready",
+    "exit_code": 0,
+    "http_status": "200",
+    "expected_status": "200",
+    "elapsed_s": 0.235986,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:30:27.572078+00:00",
+    "probe": "peer_webhook",
+    "exit_code": 0,
+    "http_status": "405",
+    "expected_status": "405",
+    "elapsed_s": 0.029714,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:30:28.255002+00:00",
+    "probe": "public/webhooks/github",
+    "exit_code": 0,
+    "http_status": "405",
+    "expected_status": "405",
+    "elapsed_s": 0.682514,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:30:31.268313+00:00",
+    "probe": "public/health/ready",
+    "exit_code": 28,
+    "http_status": "000",
+    "expected_status": "404",
+    "elapsed_s": 3.012502,
+    "stderr": "curl: (28) Resolving timed out after 3001 milliseconds\n"
+  }
+]

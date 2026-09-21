@@ -1,0 +1,66 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "base_fingerprint": "aeba779e0545516d524faa4025c8342408727bab4a9236baa5662681abef8e5f",
+  "complexity": "standard",
+  "created_at": "2026-09-21T06:19:53+00:00",
+  "delivery_expected": false,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "research",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=research",
+    "domains=api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [],
+  "review_agents": [],
+  "risk": "medium",
+  "route_id": "d54d3afd1c92",
+  "schema_version": 1,
+  "session_id": "remaining-issues-20260921",
+  "status": "routed",
+  "task": "Research open backlog: map each item to its source subsystem, existing branch, dependencies, reproducibility evidence, and bounded next step.",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change"
+  ],
+  "write_agent": null
+}

@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "route_id": "bcc1d645c438",
+  "observed_at": "2026-09-21T10:18:08.117675+00:00",
+  "observation_head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+  "main_base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "reviewed_pre_repair_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c",
+  "scope": "Current working-tree product identity after a measured integration correction; pending coordinator staging/commit, full verification, renewed independent reviews and final receipts.",
+  "historical_import_identity": {
+    "path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/integration-source-identity.json",
+    "sha256": "25359b37630956d3f2da85c9e06663cd3dc95a36f47aa6e33c8ee9fdc9c40275",
+    "preserved_unmodified": true,
+    "meaning": "Exact initial import proof remains historical; it is not a byte-identity claim for the two corrected paths."
+  },
+  "separate_documentation_format_record": {
+    "path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/import-format-adjustment.json",
+    "sha256": "a537b49529ff4bb0804f89bf9176b36a5df9e7007faffd4064e45613fe581a09"
+  },
+  "candidate_manifest_sha256": "58744738b7f88716861882c1ae646526b21588c8b408e3ef3a1ef1eb82d9b214",
+  "product_paths": [
+    {
+      "path": ".grok-stack/adaptive_grok/router.py",
+      "candidate_label": "router",
+      "candidate_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "candidate": {
+        "blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+        "mode": "100644",
+        "sha256": "de3ca13766fea0691cd45c29f321cab044af4b30459623888fa94f3b33993f82"
+      },
+      "working_tree": {
+        "blob": "031663a2b3ed492b68af9c55cfb031c5b3c65474",
+        "mode": "100644",
+        "sha256": "cc8a7e973657ad1d1664dc250c4bc09cda04e3c077e296171db99ac3f779e4ac"
+      },
+      "index_at_observation": {
+        "blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": false,
+      "disposition": "measured_router_security_integration_correction"
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/workflow_artifacts.py",
+      "candidate_label": "router",
+      "candidate_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "candidate": {
+        "blob": "b31073ecbee38899d53b626bcf69e2e977b50129",
+        "mode": "100644",
+        "sha256": "27c20c6da4cc863cd653a0f736da0d4aa5e556432b366aad58561e1e84acdcfe"
+      },
+      "working_tree": {
+        "blob": "b31073ecbee38899d53b626bcf69e2e977b50129",
+        "mode": "100644",
+        "sha256": "27c20c6da4cc863cd653a0f736da0d4aa5e556432b366aad58561e1e84acdcfe"
+      },
+      "index_at_observation": {
+        "blob": "b31073ecbee38899d53b626bcf69e2e977b50129",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_repo_router.py",
+      "candidate_label": "router",
+      "candidate_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "candidate": {
+        "blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+        "mode": "100644",
+        "sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d"
+      },
+      "working_tree": {
+        "blob": "e924de556b71fee7b8e8fd54212757c063b27458",
+        "mode": "100644",
+        "sha256": "fba5d5d6b78cf00bef25bfa0ca20a113e66eb112da1e622e455081a8887e7a3d"
+      },
+      "index_at_observation": {
+        "blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": false,
+      "disposition": "measured_router_security_integration_correction"
+    },
+    {
+      "path": "tests/test_workflow_artifacts.py",
+      "candidate_label": "router",
+      "candidate_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "candidate": {
+        "blob": "19b00aa38826475400104ca5f63ca875fadf85b7",
+        "mode": "100644",
+        "sha256": "c078ff949801cc42bc67511482a3bc742d322c602b793be584b9642b64b4c010"
+      },
+      "working_tree": {
+        "blob": "19b00aa38826475400104ca5f63ca875fadf85b7",
+        "mode": "100644",
+        "sha256": "c078ff949801cc42bc67511482a3bc742d322c602b793be584b9642b64b4c010"
+      },
+      "index_at_observation": {
+        "blob": "19b00aa38826475400104ca5f63ca875fadf85b7",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "schemas/change-spec.schema.json",
+      "candidate_label": "receipt_schema",
+      "candidate_commit": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "candidate": {
+        "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b",
+        "mode": "100644",
+        "sha256": "9f957d62dcdc7c9935d79d0baff5c39071f6caf1fa45e3121919cfb3d490ff6e"
+      },
+      "working_tree": {
+        "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b",
+        "mode": "100644",
+        "sha256": "9f957d62dcdc7c9935d79d0baff5c39071f6caf1fa45e3121919cfb3d490ff6e"
+      },
+      "index_at_observation": {
+        "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_change_spec.py",
+      "candidate_label": "receipt_schema",
+      "candidate_commit": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "candidate": {
+        "blob": "3916320d82c4b881620dbd9c87952972c08a9098",
+        "mode": "100644",
+        "sha256": "b08c1f68de5b2983719697d93dc7895d252e12e23e8b780a82c0aff3ab66d5c6"
+      },
+      "working_tree": {
+        "blob": "3916320d82c4b881620dbd9c87952972c08a9098",
+        "mode": "100644",
+        "sha256": "b08c1f68de5b2983719697d93dc7895d252e12e23e8b780a82c0aff3ab66d5c6"
+      },
+      "index_at_observation": {
+        "blob": "3916320d82c4b881620dbd9c87952972c08a9098",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": ".grok-stack/templates/consumer-AGENTS.md.tmpl",
+      "candidate_label": "consumer_docs",
+      "candidate_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "candidate": {
+        "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a",
+        "mode": "100644",
+        "sha256": "5b36af586bc7593021ad4c18b568d0e77c952467a1ee22a1b66a69d9365452b0"
+      },
+      "working_tree": {
+        "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a",
+        "mode": "100644",
+        "sha256": "5b36af586bc7593021ad4c18b568d0e77c952467a1ee22a1b66a69d9365452b0"
+      },
+      "index_at_observation": {
+        "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": ".grok-stack/templates/consumer-factory-README.md.tmpl",
+      "candidate_label": "consumer_docs",
+      "candidate_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "candidate": {
+        "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272",
+        "mode": "100644",
+        "sha256": "9f4bbcd60b6f4ed1f5b41e880af9983a2f89594866624a25de4539bffa6b87dc"
+      },
+      "working_tree": {
+        "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272",
+        "mode": "100644",
+        "sha256": "9f4bbcd60b6f4ed1f5b41e880af9983a2f89594866624a25de4539bffa6b87dc"
+      },
+      "index_at_observation": {
+        "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "scripts/install_into.py",
+      "candidate_label": "consumer_docs",
+      "candidate_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "candidate": {
+        "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50",
+        "mode": "100644",
+        "sha256": "3262984eb74233afb926f6656f9ca11312f0479e3d8a11a2985c0cb5ac63ac49"
+      },
+      "working_tree": {
+        "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50",
+        "mode": "100644",
+        "sha256": "3262984eb74233afb926f6656f9ca11312f0479e3d8a11a2985c0cb5ac63ac49"
+      },
+      "index_at_observation": {
+        "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_installer.py",
+      "candidate_label": "consumer_docs",
+      "candidate_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "candidate": {
+        "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227",
+        "mode": "100644",
+        "sha256": "cffe0aa66f99648516f00583bcbbb68d5813e72ac51b33c2e156c62ff85cd1e5"
+      },
+      "working_tree": {
+        "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227",
+        "mode": "100644",
+        "sha256": "cffe0aa66f99648516f00583bcbbb68d5813e72ac51b33c2e156c62ff85cd1e5"
+      },
+      "index_at_observation": {
+        "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/util.py",
+      "candidate_label": "fingerprint",
+      "candidate_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "candidate": {
+        "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c",
+        "mode": "100644",
+        "sha256": "3b99030bf8c238315202f623e5969414f858f47280e31f602080ca371a85affd"
+      },
+      "working_tree": {
+        "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c",
+        "mode": "100644",
+        "sha256": "3b99030bf8c238315202f623e5969414f858f47280e31f602080ca371a85affd"
+      },
+      "index_at_observation": {
+        "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "scripts/grok_verify.py",
+      "candidate_label": "fingerprint",
+      "candidate_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "candidate": {
+        "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6",
+        "mode": "100644",
+        "sha256": "1485a73945adf32c6ebd711640efe8c8918112a37649889601b5c2e33a0474ca"
+      },
+      "working_tree": {
+        "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6",
+        "mode": "100644",
+        "sha256": "1485a73945adf32c6ebd711640efe8c8918112a37649889601b5c2e33a0474ca"
+      },
+      "index_at_observation": {
+        "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_change_receipts.py",
+      "candidate_label": "fingerprint",
+      "candidate_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "candidate": {
+        "blob": "53f91e614610ffef1350c8bd2ea118e639218faa",
+        "mode": "100644",
+        "sha256": "da874e190549f6d821ae55f2946ffca30577c8024a13e4ce3137e5baa3425496"
+      },
+      "working_tree": {
+        "blob": "53f91e614610ffef1350c8bd2ea118e639218faa",
+        "mode": "100644",
+        "sha256": "da874e190549f6d821ae55f2946ffca30577c8024a13e4ce3137e5baa3425496"
+      },
+      "index_at_observation": {
+        "blob": "53f91e614610ffef1350c8bd2ea118e639218faa",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_util_fingerprint.py",
+      "candidate_label": "fingerprint",
+      "candidate_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "candidate": {
+        "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943",
+        "mode": "100644",
+        "sha256": "664a52083882942aecd0db4cb9ab1d688a1a958b82672d9525bc6601dd70323f"
+      },
+      "working_tree": {
+        "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943",
+        "mode": "100644",
+        "sha256": "664a52083882942aecd0db4cb9ab1d688a1a958b82672d9525bc6601dd70323f"
+      },
+      "index_at_observation": {
+        "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/architecture.py",
+      "candidate_label": "schema_refs",
+      "candidate_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "candidate": {
+        "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d",
+        "mode": "100644",
+        "sha256": "4186daa2eb4ccb373835be62c4096e6f70d6be7ec5d913e07bafbc87641c44f1"
+      },
+      "working_tree": {
+        "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d",
+        "mode": "100644",
+        "sha256": "4186daa2eb4ccb373835be62c4096e6f70d6be7ec5d913e07bafbc87641c44f1"
+      },
+      "index_at_observation": {
+        "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/architecture_fitness.py",
+      "candidate_label": "schema_refs",
+      "candidate_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "candidate": {
+        "blob": "42381556db1b752f1e102f69dc1598e09efcee27",
+        "mode": "100644",
+        "sha256": "fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7"
+      },
+      "working_tree": {
+        "blob": "42381556db1b752f1e102f69dc1598e09efcee27",
+        "mode": "100644",
+        "sha256": "fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7"
+      },
+      "index_at_observation": {
+        "blob": "42381556db1b752f1e102f69dc1598e09efcee27",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_architecture_fitness.py",
+      "candidate_label": "schema_refs",
+      "candidate_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "candidate": {
+        "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7",
+        "mode": "100644",
+        "sha256": "244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6"
+      },
+      "working_tree": {
+        "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7",
+        "mode": "100644",
+        "sha256": "244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6"
+      },
+      "index_at_observation": {
+        "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "tests/test_architecture_model.py",
+      "candidate_label": "schema_refs",
+      "candidate_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "candidate": {
+        "blob": "14960608c5ef85aba595260c610335b8420a2137",
+        "mode": "100644",
+        "sha256": "80ed127857c33f69336315b98fab26e4e87e7108df8d80127c5f7d76e145e1c1"
+      },
+      "working_tree": {
+        "blob": "14960608c5ef85aba595260c610335b8420a2137",
+        "mode": "100644",
+        "sha256": "80ed127857c33f69336315b98fab26e4e87e7108df8d80127c5f7d76e145e1c1"
+      },
+      "index_at_observation": {
+        "blob": "14960608c5ef85aba595260c610335b8420a2137",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    },
+    {
+      "path": "factory/tests/test_execution_persistence_postgres.py",
+      "candidate_label": "migration_prefix",
+      "candidate_commit": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
+      "candidate": {
+        "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61",
+        "mode": "100644",
+        "sha256": "4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236"
+      },
+      "working_tree": {
+        "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61",
+        "mode": "100644",
+        "sha256": "4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236"
+      },
+      "index_at_observation": {
+        "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61",
+        "mode": "100644"
+      },
+      "candidate_identity_preserved": true,
+      "disposition": "exact_reviewed_candidate"
+    }
+  ],
+  "exact_candidate_path_count": 17,
+  "corrected_path_count": 2,
+  "correction": {
+    "finding": "Whole-word auth/\u0440\u043e\u043b\u044c matching dropped previously supported isolated security meanings and their review/gate obligations.",
+    "implementation": "Finite explicit whole-word security aliases; matched_keywords reports canonical configured rules; risk, owner, reviewer and human-gate selection code stays unchanged.",
+    "lossless_evidence_directory": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair",
+    "artifact_index_sha256": "5f2bad510d40ff9cc7476bd58d4ac04eeec331d34e51bbefc5967bddfbd2c369",
+    "red": {
+      "path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/red.json",
+      "head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+      "exit_code": 1,
+      "duration_seconds": 0.3175117150094593,
+      "tests": 3,
+      "assertion_failures": 46,
+      "errors": 0,
+      "unchanged_router_blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd"
+    },
+    "green": {
+      "path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/green.json",
+      "head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+      "exit_code": 0,
+      "duration_seconds": 0.22177113800717052,
+      "tests": 3,
+      "fingerprint": "1ebd91541ec555718c3140b496b726a34a3fb68344c223ccab448a6115af80db",
+      "tree_stable": true
+    },
+    "adjacent": {
+      "path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/adjacent.json",
+      "head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+      "exit_code": 0,
+      "duration_seconds": 4.222786882004584,
+      "tests": 61,
+      "fingerprint": "1ebd91541ec555718c3140b496b726a34a3fb68344c223ccab448a6115af80db",
+      "tree_stable": true
+    }
+  },
+  "protected_source": {
+    "pathspecs": [
+      "trust-ci/",
+      ":(glob)**/*.sql",
+      ".github/workflows/",
+      "factory/src/adaptive_factory/",
+      "factory/tests/run_disposable_exit.py",
+      "factory/tests/postgres_restart_probe.py",
+      "architecture/",
+      "VERSION",
+      "AGENTS.md",
+      ".grok-stack/config/",
+      ".grok/hooks.json"
+    ],
+    "index_and_tracked_worktree_diffs_against_main_empty": true
+  },
+  "evidence_limit": "Adding these durable files changes the repository fingerprint after the focused runs. Their results certify the recorded unchanged product bytes during those runs, not final current-tree completion or merge authority."
+}

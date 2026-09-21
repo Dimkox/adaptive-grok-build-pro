@@ -1,0 +1,142 @@
+{
+  "schema_version": 2,
+  "change_id": "20260921-fix-schema-comparison-issues-147-and-148-prefer-211805",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Resolve concrete declared paths before competing schema IDs, then deduplicate and cap unattributed-reference presentation without altering closure traversal or refusal semantics.",
+    "success_metric": "Exact comparator verdict/reasons for the claimant reproducer; unique unattributed detail count and overflow summary per in-scope referrer; unchanged head-abort/base-recovery behavior.",
+    "target": "Target narrowing reports incompatible/narrowed_constraint with or without claimant; at most five detail lines plus an exact omitted-unique summary per referrer; all refusal controls remain intact."
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The minLength 1-to-9 three-record reproducer is incompatible with narrowed_constraint despite an unchanged claimant ID; the no-claimant control agrees and matching path/ID identity remains legal.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Concrete nested paths/fragments resolve to their named contract; URN/HTTPS ID fallback, duplicate ID-only refusal, unsupported grammar and existing work budgets retain behavior.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Dependency closure retains real target, transitive and base/head edges and conservative path/ID candidate union; claimant bytes cannot redirect the comparator after path-first selection.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "After full traversal, each in-scope referrer emits sorted unique unattributed detail strings up to a named limit of five, followed only when needed by one exact omitted-unique-count summary; duplicates across both inventories collapse.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Out-of-scope referrers stay silent; base-only ambiguity remains nonfatal, head ID-only ambiguity still aborts naming ID/carriers even after many preceding signals; other refusal findings remain visible.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No producer compatibility policy, contract bytes, pointer handling or reference work budget changes.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Both inventory traversals and existing asymmetric head/base refusal policies complete before diagnostic presentation is capped.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Presentation bounding is not claimed to bound temporary collection memory.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A competing schema ID captures an existing concrete declared path or certifies its narrowing as compatible.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Early traversal/collection truncation hides a late head-side ambiguity or drops another refusal signal.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Narrow closure scope, change shipped schemas to pass tests, or duplicate PR137 metadata semantics.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact comparator verdict/reasons for the claimant reproducer; unique unattributed detail count and overflow summary per in-scope referrer; unchanged head-abort/base-recovery behavior.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-09-21T10:18:07.821212+00:00",
+  "artifacts": [
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/plan.md",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/design-before-red.md",
+      "sha256": "ae878f5dd7725bc6aa7057147211bc83c7f9a8e7c95c7e38848aef5fa7675d0d",
+      "bytes": 8033,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/proposal.json",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/proposal-before-red.json",
+      "sha256": "7fb584f53bdafc5eb5ef90308ce5ac1c8fe63cc36f307cddc893852b0c526117",
+      "bytes": 1418,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-red.json",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/red.json",
+      "sha256": "3eb24f855418a9ab3dd782a29642bf8067cfed85aed3eee452b25ba20d035460",
+      "bytes": 105089,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-implementation.json",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/implementation-before-green.json",
+      "sha256": "7715f722a4f0da0b5a21037412c88bd17149890ba13ea58aca79f03274994602",
+      "bytes": 1975,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-green.json",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/green.json",
+      "sha256": "cb117031f43fb42a8c7f300089ffb8bb3f758717d3b91eb0b69b00d1bf959fa7",
+      "bytes": 3138,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-adjacent.json",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/adjacent.json",
+      "sha256": "c2af1d9557b50aaae7d011f9495240d02aeeee79074aa4e060e1f7e71876ff79",
+      "bytes": 23947,
+      "encoding": "original_bytes"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-tests.patch",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/test-patch.json",
+      "original_sha256": "adef4213bdd01d9ecd21843a8d8ef61f8de3828cbc08784527f0fc80217130e1",
+      "original_bytes": 5124,
+      "archive_sha256": "1bd75c91b21fe249b2207fd7e10eda43ccaef23a1544f0f74accdc4a8e09e406",
+      "encoding": "base64"
+    },
+    {
+      "cache_file": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-repair.patch",
+      "durable_path": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/router-security-repair/repair-patch.json",
+      "original_sha256": "065654f43321b786d07deb16e24c8baf40bef22c8363d4d09794f55f1ca7da44",
+      "original_bytes": 8133,
+      "archive_sha256": "ff26f9df472dcafd04cee8858aec94d4bacae3750b7a69a02583b733aad519f1",
+      "encoding": "base64"
+    }
+  ]
+}

@@ -897,16 +897,23 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
                     findings.append(f"{identity}: {','.join(result.reasons)}")
     #: An unattributed reference is reported only where it can have cost a re-verification,
     #: which is where the referrer is itself inside the certified scope: that is the case in
-    #: which the comparator's own pair verdict is degraded and the outcome would otherwise be
-    #: lost.  A pull request that touches nothing related must not have somebody else's
-    #: collision charged to it, and must certainly not abort -- that was the non-self-healing
+    #: which the unattributed candidate could otherwise be lost even if a concrete path
+    #: resolves in the comparator. A pull request that touches nothing related must not have
+    #: somebody else's collision charged to it, and must certainly not abort -- that was the non-self-healing
     #: wedge: the pull request repairing the collision inherits the poisoned base it must fix.
-    unsupported.extend(
-        f"{identity}: unattributed reference: {detail}"
-        for identity in sorted(unattributed_references)
-        if identity in changed_ids
-        for detail in sorted(unattributed_references[identity])
-    )
+    # Bound presentation only, after both inventory traversals and their refusal checks.
+    for identity in sorted(changed_ids & unattributed_references.keys()):
+        details = sorted(set(unattributed_references[identity]))
+        unsupported.extend(
+            f"{identity}: unattributed reference: {detail}"
+            for detail in details[:_UNATTRIBUTED_REFERENCE_LIMIT]
+        )
+        hidden = len(details) - _UNATTRIBUTED_REFERENCE_LIMIT
+        if hidden > 0:
+            # The plural prefix sorts after the detail lines in the shared _result helper.
+            unsupported.append(
+                f"{identity}: unattributed references: (+{hidden} more unattributed references)"
+            )
     if unsupported:
         status = "unsupported"
     elif findings:
@@ -926,6 +933,8 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
 
 #: Declared contracts named in one ``$id`` ambiguity message before the list is elided.
 _AMBIGUITY_OWNER_LIMIT = 5
+#: Unique unattributed reference details displayed per in-scope referrer, before a summary.
+_UNATTRIBUTED_REFERENCE_LIMIT = 5
 
 
 def _reverse_contract_dependencies(
@@ -1047,13 +1056,12 @@ def _reference_identity_candidates(
 
     Both look-ups go through the comparator's shared grammar, so no third interpretation of
     a ``$ref`` can appear here.  The result is a union rather than a choice: dependency
-    identity must not lose an edge because two tables disagree, and the comparator resolves
-    such a base through the declared ``$id`` first (issue #147), so a contract that merely
-    *claims* the base really can break this referrer.
+    identity conservatively retains both candidates when two tables disagree, even though
+    the comparator chooses an existing concrete path before a competing ``$id``.
 
     A reference that two declared contracts collide over is never *silent*: the detail lands
-    in ``signals`` for the referrer, and the comparator fails the same reference closed as an
-    ``unsupported`` pair verdict as soon as that referrer is re-verified.  ``fail_closed`` then
+    in ``signals`` for the referrer and makes its in-scope fitness row unsupported even if
+    the comparator can resolve a concrete path. ``fail_closed`` then
     decides only the extra step of whether the whole run aborts.  In the certified (head)
     state a look-up that misses for a reason outside ``SCHEMA_REFERENCE_UNRESOLVED`` (an
     ``$id`` shared by two declared contracts, for example) with no path candidate aborts,
@@ -1136,10 +1144,8 @@ def _external_contract_reference_paths(
     Reverse edges take the **union** of the declared-path and declared-``$id`` candidates
     rather than one table's precedence: for dependency identity the safe answer is to
     re-verify every contract a ``$ref`` can name, which can only ever widen the re-verified
-    set.  Substituting one table for the other is what leaves a hole: a path-first closure
-    that drops the ``$id`` claimant stops re-verifying a referrer whose verdict the
-    comparator computes from that claimant's document.  The comparator itself is untouched
-    and stays ``$id``-first (FORBID-003; issue #147 owns that decision).
+    set. The comparator chooses the concrete path first; retaining the competing ID edge
+    here preserves conservative scope without letting claimant bytes redirect that verdict.
     A reference that does not name a declared contract yields no edge; a reference two
     declared contracts collide over is reported through ``signals`` and aborts the run only
     where ``fail_closed`` says the colliding state is the one being certified.  An edge is

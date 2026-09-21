@@ -1,0 +1,31 @@
+{
+  "plan_sha256": "7b97645e9852ad772d60cf009b0636fcc6f9b7fc7c6f9558281b1b848bc281a3",
+  "artifact_manifest_sha256": "b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d",
+  "reviews": {
+    "code": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/code-review.md",
+      "sha256": "9b923a43ae7a7f1a117183541ea34c4cccfa414cb966ffc39988efa4c1803b57"
+    },
+    "test": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/test-review.md",
+      "sha256": "85792b79d530ea5bd5cf44865ce75fb1b83194412690e946277e20e3f02d3911"
+    },
+    "security": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/security-review.md",
+      "sha256": "c4a0b59b3ed934f6390518fd8c59a319ce4c283113dd9a476581f1e7801dc491"
+    },
+    "release": {
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-review.md",
+      "sha256": "05a139cb28a540e48146ff129793d984c28e82a7399980b04ee5b3eedc57b130"
+    }
+  },
+  "completed_host_steps": [
+    "exclusive four-file installation",
+    "static syntax checks",
+    "daemon reload"
+  ],
+  "first_effective_gate": "refused before any start; historical results01\u201303 retained",
+  "corrected_gate_diagnostic": "read-only PASS; repeat after this review and fresh grant",
+  "runtime_acceptance": "not_executed",
+  "product_verification": "not_applicable_AGENTS_no_product_change_rule"
+}

@@ -15,6 +15,8 @@ from adaptive_factory.contracts import canonical_digest
 from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.brokers import BrokerError, ProposalBroker, proposal_idempotency_key
 from adaptive_factory.migrations import (
+    ADVISORY_LOCK_KEY,
+    MigrationError,
     PostgresMigrator,
     RoleSafetyError,
     discover_migrations,
@@ -372,7 +374,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         self.store = self.runtime_store()
         self.service = FactoryService(self.store)
 
-    def create_schema14_database(self, suffix: str) -> tuple[str, str]:
+    def create_schema14_database(
+        self, suffix: str, *, register_cleanup: bool = False
+    ) -> tuple[str, str]:
         import psycopg
         from psycopg import sql
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
@@ -380,11 +384,13 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         database = f"factory_slice03_{suffix}_{uuid.uuid4().hex[:8]}"
         connection_values = conninfo_to_dict(DATABASE_URL)
         admin_url = make_conninfo(**{**connection_values, "dbname": "postgres"})
+        database_url = make_conninfo(**{**connection_values, "dbname": database})
         with psycopg.connect(admin_url, autocommit=True) as connection:
             connection.execute(
                 sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database))
             )
-        database_url = make_conninfo(**{**connection_values, "dbname": database})
+        if register_cleanup:
+            self.addCleanup(self.drop_disposable_database, database_url, admin_url)
         from adaptive_factory.migrations import discover_migrations
 
         migrations = tuple(PostgresMigrator(DATABASE_URL).status())
@@ -1839,6 +1845,225 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
                 )
             self.drop_disposable_database(database_url, admin_url)
+
+    def create_populated_current_prefix(self):
+        import psycopg
+
+        packaged = discover_migrations()
+        self.assertGreater(len(packaged), 18)
+        database_url, _admin_url = self.create_schema14_database(
+            "current_prefix", register_cleanup=True
+        )
+        self.populate_schema14_execution(database_url, proposal_kind="note")
+        with psycopg.connect(database_url) as connection:
+            for migration in packaged[14:-1]:
+                connection.execute(migration.sql)
+                connection.execute(
+                    "INSERT INTO factory.schema_migrations(version,name,sha256) "
+                    "VALUES (%s,%s,%s)",
+                    (migration.version, migration.name, migration.sha256),
+                )
+        before = self.current_prefix_snapshot(database_url)
+        self.assertEqual(
+            [row[:3] for row in before["ledger"]],
+            [(item.version, item.name, item.sha256) for item in packaged[:-1]],
+        )
+        self.assertEqual(before["privileges"], (True, False, False, False))
+        self.assertTrue(before["function"][3])  # SECURITY DEFINER
+        self.assertEqual(before["function"][4], ["search_path=pg_catalog, factory"])
+        for rows in before["rows"].values():
+            self.assertEqual(len(rows), 1)
+        if packaged[-1].name == "021_semantic_repair_child_rejection_reasons.sql":
+            with psycopg.connect(database_url) as connection:
+                connection.execute("SET LOCAL ROLE factory_semantic_coordinator")
+                self.assertIsNone(connection.execute(
+                    "SELECT factory.semantic_bind_repair_child(NULL,NULL)"
+                ).fetchone()[0])
+        return database_url, packaged, before
+
+    @staticmethod
+    def current_prefix_snapshot(database_url):
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(database_url) as connection:
+            ledger = connection.execute(
+                "SELECT version,name,sha256,applied_at "
+                "FROM factory.schema_migrations ORDER BY version"
+            ).fetchall()
+            function = connection.execute(
+                """SELECT oid,proowner,
+                ARRAY(SELECT acl::text FROM unnest(proacl) acl ORDER BY acl::text),
+                prosecdef,proconfig,pg_get_functiondef(oid)
+                FROM pg_proc WHERE oid =
+                'factory.semantic_bind_repair_child(character,text)'::regprocedure"""
+            ).fetchone()
+            privileges = connection.execute(
+                """SELECT
+                has_function_privilege('factory_semantic_coordinator',%s,'EXECUTE'),
+                has_function_privilege('factory_semantic_validator',%s,'EXECUTE'),
+                has_function_privilege('factory_semantic_adjudicator',%s,'EXECUTE'),
+                has_function_privilege('factory_runtime',%s,'EXECUTE')""",
+                (function[0],) * 4,
+            ).fetchone()
+            rows = {
+                table: connection.execute(sql.SQL(
+                    "SELECT to_jsonb(t) FROM factory.{} t ORDER BY to_jsonb(t)::text"
+                ).format(sql.Identifier(table))).fetchall()
+                for table in (
+                    "tasks", "accepted_intents", "runs", "execution_packets",
+                    "execution_manifests", "execution_proposals",
+                )
+            }
+        return {"ledger": ledger, "function": function,
+                "privileges": privileges, "rows": rows}
+
+    def assert_current_prefix_upgraded(self, database_url, packaged, before, applied):
+        self.assertEqual(applied, packaged[-1:])
+        after = self.current_prefix_snapshot(database_url)
+        self.assertEqual(
+            [row[:3] for row in after["ledger"]],
+            [(item.version, item.name, item.sha256) for item in packaged],
+        )
+        self.assertEqual(after["ledger"][:-1], before["ledger"])
+        self.assertEqual(after["rows"], before["rows"])
+        self.assertEqual(after["function"][:5], before["function"][:5])
+        self.assertEqual(after["privileges"], before["privileges"])
+        # On this checkout the current suffix is the 021 function replacement.
+        # Future suffixes still exercise the current-prefix contract; keep the
+        # historical replacement's behavior assertion tied to its own resource.
+        if packaged[-1].name == "021_semantic_repair_child_rejection_reasons.sql":
+            import psycopg
+
+            self.assertNotEqual(after["function"][5], before["function"][5])
+            with psycopg.connect(database_url) as connection:
+                connection.execute("SET LOCAL ROLE factory_semantic_coordinator")
+                self.assertEqual(connection.execute(
+                    "SELECT factory.semantic_bind_repair_child(NULL,NULL)"
+                ).fetchone()[0], {"repair_child_rejection": "command_input_invalid"})
+        self.assertEqual(self.migrate(database_url), ())
+        self.assertEqual(self.current_prefix_snapshot(database_url), after)
+
+    def test_populated_current_prefix_upgrade_rejects_real_ledger_drift(self):
+        import psycopg
+
+        database_url, packaged, before = self.create_populated_current_prefix()
+        previous = packaged[-2]
+        bad_digest = "0" * 64 if previous.sha256 != "0" * 64 else "1" * 64
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                (bad_digest, previous.version),
+            )
+        drifted = self.current_prefix_snapshot(database_url)
+        with self.assertRaisesRegex(MigrationError, f"migration drift at version {previous.version}"):
+            self.migrate(database_url)
+        self.assertEqual(self.current_prefix_snapshot(database_url), drifted)
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                (previous.sha256, previous.version),
+            )
+        self.assertEqual(self.current_prefix_snapshot(database_url), before)
+        self.assert_current_prefix_upgraded(
+            database_url, packaged, before, self.migrate(database_url)
+        )
+
+    def current_prefix_advisory_contention(self, *, release_after_observation):
+        import psycopg
+        from psycopg.conninfo import make_conninfo
+
+        database_url, packaged, before = self.create_populated_current_prefix()
+        application = f"current-prefix-{uuid.uuid4().hex}"
+        worker_url = make_conninfo(
+            database_url, application_name=application, connect_timeout=5
+        )
+        outcome = []
+
+        def migrate():
+            try:
+                outcome.append(self.migrate(worker_url))
+            except Exception as error:
+                outcome.append(error)
+
+        # These sessions contend on the migrator's actual advisory lock, not
+        # a supposed ACCESS EXCLUSIVE lock held by a function invocation.
+        with psycopg.connect(database_url) as blocker, psycopg.connect(
+            database_url, autocommit=True, options="-c statement_timeout=3000"
+        ) as observer:
+            blocker.execute("SELECT pg_advisory_xact_lock(%s)", (ADVISORY_LOCK_KEY,))
+            blocker_pid = blocker.info.backend_pid
+            worker = threading.Thread(target=migrate, daemon=True)
+            started = time.monotonic()
+            worker.start()
+            try:
+                deadline = started + 3
+                while True:
+                    waiting = observer.execute(
+                        """SELECT a.pid FROM pg_stat_activity a
+                        JOIN pg_locks l ON l.pid=a.pid
+                        WHERE a.datname=current_database() AND a.application_name=%s
+                          AND l.locktype='advisory' AND NOT l.granted
+                          AND a.wait_event_type='Lock'
+                          AND %s=ANY(pg_blocking_pids(a.pid))""",
+                        (application, blocker_pid),
+                    ).fetchone()
+                    if waiting is not None:
+                        break
+                    self.assertTrue(worker.is_alive(), "migrator never waited on holder")
+                    self.assertLess(time.monotonic(), deadline, "advisory wait not observed")
+                    time.sleep(0.02)
+                self.assertEqual(self.current_prefix_snapshot(database_url), before)
+                if release_after_observation:
+                    blocker.rollback()
+                worker.join(timeout=12)
+                self.assertFalse(worker.is_alive(), "migrator exceeded client watchdog")
+                elapsed = time.monotonic() - started
+                self.assertLess(elapsed, 15)
+                self.assertEqual(len(outcome), 1)
+                if release_after_observation:
+                    if isinstance(outcome[0], Exception):
+                        raise outcome[0]
+                    self.assert_current_prefix_upgraded(
+                        database_url, packaged, before, outcome[0]
+                    )
+                else:
+                    self.assertIsInstance(outcome[0], psycopg.Error)
+                    self.assertIn(outcome[0].sqlstate, {"57014", "55P03"})
+                    self.assertGreaterEqual(elapsed, 4)
+                    self.assertEqual(self.current_prefix_snapshot(database_url), before)
+            finally:
+                # Release before joining even on an assertion failure. Terminate
+                # only this uniquely named worker if the watchdog was exceeded.
+                blocker.rollback()
+                try:
+                    if worker.is_alive():
+                        observer.execute(
+                            """SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+                            WHERE datname=current_database() AND application_name=%s""",
+                            (application,),
+                        )
+                finally:
+                    worker.join(timeout=10)
+                    self.assertFalse(worker.is_alive(), "migration worker leaked")
+            deadline = time.monotonic() + 3
+            while observer.execute(
+                "SELECT count(*) FROM pg_stat_activity "
+                "WHERE datname=current_database() AND application_name=%s",
+                (application,),
+            ).fetchone()[0]:
+                self.assertLess(time.monotonic(), deadline, "migration session leaked")
+                time.sleep(0.02)
+        if not release_after_observation:
+            self.assert_current_prefix_upgraded(
+                database_url, packaged, before, self.migrate(database_url)
+            )
+
+    def test_populated_current_prefix_advisory_wait_release_succeeds(self):
+        self.current_prefix_advisory_contention(release_after_observation=True)
+
+    def test_populated_current_prefix_advisory_timeout_rolls_back_and_retries(self):
+        self.current_prefix_advisory_contention(release_after_observation=False)
 
     def test_populated_schema16_to_17_is_atomic_zero_epoch_and_forward_only(self):
         import psycopg

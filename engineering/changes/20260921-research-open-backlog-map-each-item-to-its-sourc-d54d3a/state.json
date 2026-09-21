@@ -1,0 +1,17 @@
+{
+  "change_id": "20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a",
+  "created_at": "2026-09-21T06:19:53+00:00",
+  "history": [
+    {
+      "at": "2026-09-21T06:19:53+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "route_id": "d54d3afd1c92",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "Research open backlog: map each item to its source subsystem, existing branch, dependencies, reproducibility evidence, and bounded next step.",
+  "updated_at": "2026-09-21T06:19:53+00:00"
+}

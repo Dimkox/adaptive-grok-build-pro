@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-21T08:42:17.555749+00:00",
+  "exit_code": 0,
+  "stdout": "{\"control\": \"bridge_allowed_peer\", \"exit_code\": 0, \"http_status\": \"200\", \"counter_before\": 19, \"counter_after\": 25, \"delta\": 6}\n{\"control\": \"bridge_wrong_interface\", \"exit_code\": 28, \"http_status\": \"000\", \"counter_before\": 0, \"counter_after\": 2, \"delta\": 2}\n{\"control\": \"bridge_wrong_source\", \"exit_code\": 28, \"http_status\": \"000\", \"counter_before\": 0, \"counter_after\": 2, \"delta\": 2}\n",
+  "stderr": ""
+}

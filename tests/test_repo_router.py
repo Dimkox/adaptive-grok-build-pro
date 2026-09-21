@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
+from adaptive_grok.change import start_change
 from adaptive_grok.repo import detect_repo
 from adaptive_grok.router import (
     build_route,
@@ -15,6 +17,8 @@ from adaptive_grok.router import (
     is_development_prompt,
     should_reuse_active_route,
 )
+from adaptive_grok.state import set_active_route
+from adaptive_grok.workflow_artifacts import load_runtime_authority
 from tests._support import project_copy
 
 
@@ -39,6 +43,182 @@ class RepoDetectionTests(unittest.TestCase):
 
 
 class RouterTests(unittest.TestCase):
+    def test_security_aliases_keep_high_risk_route_obligations(self) -> None:
+        # These prompts contain no second domain/risk signal that could mask a miss.
+        families = (
+            ('auth', ('auth', 'authn', 'authz', 'authentication', 'authenticate',
+                      'authenticated', 'authenticating', 'reauthentication',
+                      'unauthenticated', 'authorization', 'authorize', 'authorized',
+                      'authorizing', 'unauthorized', 'authorisation', 'authorise',
+                      'authorised', 'authorising', 'unauthorised')),
+            ('роль', ('роль', 'ролью')),
+        )
+        expected = {
+            'task_domains': ['security'],
+            'domains': ['security'],
+            'risk': 'high',
+            'complexity': 'high-risk',
+            'write_agent': 'general_implementer',
+            'workflow_skills': ['adaptive-delivery', 'bugfix-workflow',
+                                'security-sensitive-change'],
+            'review_agents': ['code_reviewer', 'test_reviewer',
+                              'security_reviewer', 'release_reviewer'],
+            'required_evidence': ['verification', 'code_review', 'test_review',
+                                  'security_review', 'release_review'],
+            'human_gates': ['scope_and_design_approval'],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.assertEqual(detect_repo(root).domains, [])
+            for canonical, words in families:
+                for word in words:
+                    for prompt in (f'Fix {word}', f'Fix /{word.upper()}/'):
+                        with self.subTest(prompt=prompt):
+                            route = build_route(
+                                root, prompt, 'security-alias',
+                                base_commit_override=None,
+                                base_fingerprint_override='0' * 64,
+                            )
+                            self.assertEqual(
+                                {key: getattr(route, key) for key in expected}, expected,
+                            )
+                            self.assertEqual(route.matched_keywords, {
+                                'security': [canonical],
+                            })
+
+    def test_security_aliases_are_development_signals_without_intent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = detect_repo(Path(tmp))
+            for prompt in ('authentication observations', 'authorization observations',
+                           'authorisation observations', 'AUTHN observations',
+                           'authz observations', 'authenticated observations',
+                           'unauthorised observations', 'Наблюдения с ролью'):
+                with self.subTest(prompt=prompt):
+                    self.assertTrue(is_development_prompt(prompt, repo))
+
+    def test_security_alias_boundaries_do_not_route_unrelated_words(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = detect_repo(root)
+            for word in ('author', 'authority', 'authoritative', 'authorship', 'authentic',
+                         'xauthn', 'authz_name', 'xauthentication', 'authorizationx',
+                         'authorisation_name', 'ролью_имя', 'xролью', 'гастролью'):
+                with self.subTest(word=word):
+                    route = build_route(
+                        root, f'Fix {word}', 'security-alias-boundary',
+                        base_commit_override=None,
+                        base_fingerprint_override='0' * 64,
+                    )
+                    self.assertEqual(route.task_domains, [])
+                    self.assertEqual(route.domains, ['generic'])
+                    self.assertEqual(route.risk, 'low')
+                    self.assertEqual(route.complexity, 'micro')
+                    self.assertEqual(route.write_agent, 'general_implementer')
+                    self.assertEqual(route.workflow_skills,
+                                     ['adaptive-delivery', 'bugfix-workflow'])
+                    self.assertEqual(route.review_agents, ['code_reviewer', 'test_reviewer'])
+                    self.assertEqual(route.required_evidence,
+                                     ['verification', 'code_review', 'test_review'])
+                    self.assertEqual(route.human_gates, [])
+                    self.assertEqual(route.matched_keywords, {})
+                    self.assertFalse(is_development_prompt(f'{word} observations', repo))
+
+    def test_issue_155_guard_task_does_not_select_frontend(self) -> None:
+        historical = ROOT / 'engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/route.json'
+        task = json.loads(historical.read_text(encoding='utf-8'))['task']
+        with project_copy() as root:
+            route = build_route(root, task, 'issue-155')
+            self.assertEqual(set(route.task_domains), {'data', 'integration'})
+            self.assertEqual(route.write_agent, 'integration_implementer')
+            self.assertNotIn('frontend', route.quality_profiles)
+            self.assertNotIn('frontend-change', route.workflow_skills)
+            self.assertEqual(route.to_dict().get('matched_keywords'), {
+                'data': ['postgres'], 'integration': ['integration'],
+            })
+
+    def test_embedded_short_keywords_leave_generic_work_generic(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for word in ('distinguish', 'build', 'fluid', 'guide', 'capillary', 'sqlstate',
+                         'ad7', 'd7x', 'x1c', '1система', 'fragment', 'restful',
+                         'ui_name', 'éui', 'uiя', 'sql2', 'api_'):
+                with self.subTest(word=word):
+                    route = build_route(root, f'Fix {word} handling', 'boundary')
+                    self.assertEqual(route.task_domains, [])
+                    self.assertEqual(route.write_agent, 'general_implementer')
+
+    def test_standalone_short_terms_keep_specialist_owners_and_checks(self) -> None:
+        cases = (
+            ('UI', 'frontend', 'frontend_implementer', 'frontend', None),
+            ('API', 'api', 'integration_implementer', 'contracts', None),
+            ('REST', 'api', 'integration_implementer', 'contracts', None),
+            ('SQL', 'data', 'data_implementer', 'data', 'data_review'),
+            ('D7', 'bitrix', 'bitrix_implementer', 'bitrix', 'bitrix_review'),
+            ('1C', 'integration', 'integration_implementer', 'integration', 'security_review'),
+            ('1С', 'integration', 'integration_implementer', 'integration', 'security_review'),
+            ('RAG', 'ai', 'ai_implementer', 'ai', 'security_review'),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for term, domain, owner, profile, evidence in cases:
+                for prompt in (f'Fix {term}', f'Fix ({term}) handling', f'Fix /{term}/ handling'):
+                    with self.subTest(prompt=prompt):
+                        route = build_route(root, prompt, 'standalone')
+                        self.assertEqual(route.task_domains, [domain])
+                        self.assertEqual(route.write_agent, owner)
+                        self.assertIn(profile, route.quality_profiles)
+                        self.assertIn('code_review', route.required_evidence)
+                        self.assertIn('test_review', route.required_evidence)
+                        if evidence:
+                            self.assertIn(evidence, route.required_evidence)
+
+    def test_domain_match_evidence_preserves_phrases_stems_and_punctuation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            route = build_route(Path(tmp), 'Fix UI/API D7/SQL React UI component, Cypress flow, '
+                                'миграцию и интеграцию, external system', 'evidence')
+            self.assertEqual(route.to_dict().get('matched_keywords'), {
+                'api': ['api'],
+                'bitrix': ['d7'],
+                'data': ['sql', 'миграц'],
+                'frontend': ['cypress', 'react', 'ui'],
+                'integration': ['external system', 'интеграц'],
+            })
+            self.assertEqual(route.task_domains, ['frontend', 'integration', 'data', 'api', 'bitrix'])
+            self.assertEqual(route.write_agent, 'bitrix_implementer')
+
+    def test_technical_prompt_detection_uses_short_word_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = detect_repo(Path(tmp))
+            for prompt in ('Please distinguish these', 'A capillary observation',
+                           'The fluid guide', 'A sqlstate observation', 'An éui observation'):
+                with self.subTest(prompt=prompt):
+                    self.assertFalse(is_development_prompt(prompt, repo))
+            for prompt in ('UI/API observations', 'D7/SQL observations', '1C/1С observations',
+                           'AI observations', 'миграционные наблюдения'):
+                with self.subTest(prompt=prompt):
+                    self.assertTrue(is_development_prompt(prompt, repo))
+
+    def test_keyword_evidence_survives_persistence_and_excludes_repo_domains(self) -> None:
+        with project_copy() as root:
+            (root / 'bitrix').mkdir()
+            generic = build_route(root, 'Fix distinguish handling', 'repo-fallback')
+            self.assertEqual(generic.task_domains, [])
+            self.assertEqual(generic.write_agent, 'bitrix_implementer')
+            self.assertIn('bitrix_review', generic.required_evidence)
+            route = build_route(root, 'Fix SQL handling', 'persist')
+            expected = {'data': ['sql']}
+            self.assertEqual(route.to_dict().get('matched_keywords'), expected)
+            self.assertIn('bitrix', route.domains)
+            self.assertIn('bitrix_review', route.required_evidence)
+            self.assertEqual(build_route(root, route.task, 'again').to_dict().get('matched_keywords'), expected)
+            set_active_route(root, route.to_dict())
+            self.assertEqual(load_runtime_authority(root, 'route')['matched_keywords'], expected)
+            archived = root / f'.grok-stack/runtime/routes/{route.route_id}.json'
+            self.assertEqual(json.loads(archived.read_text())['matched_keywords'], expected)
+            change = start_change(root)
+            copied = root / 'engineering/changes' / change['change_id'] / 'route.json'
+            self.assertEqual(json.loads(copied.read_text())['matched_keywords'], expected)
+
     def test_bitrix_bug_routes_specialists(self) -> None:
         with project_copy() as root:
             (root / 'bitrix').mkdir()

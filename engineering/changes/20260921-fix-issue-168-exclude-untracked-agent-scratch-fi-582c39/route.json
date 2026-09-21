@@ -1,0 +1,82 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "base_fingerprint": "a8f62eebba82d539948c0dad68165776e5ccdfce8950b6ead72b9a3dbc85d844",
+  "complexity": "standard",
+  "created_at": "2026-09-21T06:30:48+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "integration",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=integration,api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "582c39d6afb6",
+  "schema_version": 1,
+  "session_id": "issues-wave2-20260921",
+  "status": "routed",
+  "task": "Fix issue #168: exclude untracked agent scratch files from local evidence fingerprints while keeping tracked files and agent configuration included.",
+  "task_domains": [
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "enterprise-integration"
+  ],
+  "write_agent": "integration_implementer"
+}

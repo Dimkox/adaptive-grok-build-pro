@@ -1,0 +1,27 @@
+<!-- Template source for factory/README.md; links are relative to its output directory. -->
+# Factory source in a consumer repository
+
+This directory contains the factory package subset delivered by the Adaptive Grok Build consumer installer. Begin with the consumer's [engineering contract](../AGENTS.md) and [adaptive delivery workflow](../.agents/skills/adaptive-delivery/SKILL.md). Installation supplies source and local workflow tools; it does not start a service, provision a database, enable a provider or publish a site.
+
+## Installed files
+
+- [Python package](src/adaptive_factory/) and its [packaged migrations](src/adaptive_factory/resources/).
+- [API and event contracts](contracts/), including the [control API](contracts/openapi/factory-control.v1.json) and [execution API](contracts/openapi/factory-execution.v1.json).
+- [Package metadata](pyproject.toml), [dependency lock](uv.lock), [Compose definition](compose.yaml), and placeholder [actor configuration](actors.example.json).
+- [Selected package tests](tests/), including the [disposable database test runner](tests/run_disposable_exit.py). This is a selected test subset, not the full upstream test suite.
+- Repository-level [route](../scripts/grok_route.py), [status](../scripts/grok_status.py), [verification](../scripts/grok_verify.py) and [doctor](../scripts/grok_doctor.py) commands.
+
+Run consumer workflow commands from the repository root. Use the active route's verification profiles and preserve its exact evidence requirements. Local verification is workflow evidence; merging still requires the consumer's externally configured checks and approvals on the exact pull-request head.
+
+The installer retains this README as a managed file. Existing-target installation emits a read-only plan; it does not update this file or the managed AGENTS block. Applying an update requires a separately reviewed consumer change that preserves user-owned text outside the managed markers and honors declared `kept_local` ownership. New-target materialization requires an absent target.
+
+## Upstream-only reference documentation
+
+The following HTTPS links refer to the immutable upstream v2.0.18 release. They describe that upstream snapshot, not this consumer's current state or operational authority:
+
+- [Full factory documentation](https://github.com/Dimkox/adaptive-grok-build-pro/blob/v2.0.18/factory/README.md).
+- [Program roadmap](https://github.com/Dimkox/adaptive-grok-build-pro/blob/v2.0.18/DARK_FACTORY_ROADMAP.md).
+- [Runtime installation templates](https://github.com/Dimkox/adaptive-grok-build-pro/tree/v2.0.18/factory/runtime) and [runtime runbook](https://github.com/Dimkox/adaptive-grok-build-pro/blob/v2.0.18/engineering/runbooks/l5-production-runtime.md).
+- [Local control-plane recovery reference](https://github.com/Dimkox/adaptive-grok-build-pro/blob/v2.0.18/engineering/runbooks/m4-v2.0.13-local-control-plane.md).
+
+Runtime installation templates, factory project-state files, deployed Trust CI policy, credentials and production state are not shipped here. Choose runbooks matching the separately approved runtime source before operational use. Deployment, persistent database writes, live provider calls and publication each retain their own exact authorization and external approval requirements. Never use a shared, Trust CI or production database for disposable tests, or read an existing secret `.env` as part of source development.

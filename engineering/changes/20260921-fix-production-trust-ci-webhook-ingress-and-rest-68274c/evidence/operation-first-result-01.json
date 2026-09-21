@@ -1,0 +1,7 @@
+{
+  "recorded_at": "2026-09-21T08:10:45.229370+00:00",
+  "plan_block": 1,
+  "exit_code": 0,
+  "stdout": "{\"installed_only\": [\"/etc/systemd/system/adaptive-trust-ci-webhook-bridge-guard.service\", \"/etc/adaptive-trust-ci-webhook-bridge.nft\", \"/etc/systemd/system/adaptive-trust-ci-webhook-bridge.service\", \"/etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket\"], \"activated\": false}\n",
+  "stderr": ""
+}

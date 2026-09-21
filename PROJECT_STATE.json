@@ -764,6 +764,50 @@
       "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
       "evidence_index": "engineering/reviews/l5-delivery-stack.json",
       "record_scope": "September 13 source landing; subsequent runtime activation is in runtime_observations."
+    },
+    "issue155_repair_20260921": {
+      "historical_handoff": {
+        "observed_at": "2026-09-21T05:39:01.085697Z",
+        "route_id": "c4e47ea3ced7",
+        "branch": "fix/issue-155-repair-binding-rejections",
+        "issue": 155,
+        "pull_request": null,
+        "implementation_commit": "74a8079a706cc38017614566cd4de17e44317d1a",
+        "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+        "change_package": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e",
+        "status": "reviewed_local_candidate_pending_pr",
+        "plan": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/continuation.md",
+        "next_action": "Check grok_status on the clean delivery HEAD; refresh full verification and the four review receipts when absent or stale. Then obtain exact branch/PR publication delegation, publish this prepared candidate, and await the exact-head external Trust CI check. No PR exists at this observation.",
+        "initial_implementation_commit": "6b13806d454cada0c63520129baf09056db46408",
+        "product_sha256": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+        "verification_record": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/evidence/final-20260921/README.md",
+        "independent_review_kinds": [
+          "code_review",
+          "test_review",
+          "security_review",
+          "data_review"
+        ]
+      },
+      "delivery": {
+        "repository": "Dimkox/adaptive-grok-build-pro",
+        "pull_request": 170,
+        "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+        "base": "90078959ff816068af374ad42f4bb80fdbaec866",
+        "check_run_id": 106268338358,
+        "app_id": 4694114,
+        "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "check_conclusion": "success",
+        "completed_at": "2026-09-21T09:04:14Z",
+        "attestation": "9f3759ea-0bde-40d1-988e-d277b9c35c1e",
+        "signer": "0519cf1d47436f2e",
+        "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+        "merged_at": "2026-09-21T09:06:51Z",
+        "closed_issues": [
+          155,
+          164
+        ],
+        "closed_at": "2026-09-21T09:06:53Z"
+      }
     }
   },
   "local_candidate": {
@@ -1844,10 +1888,10 @@
     }
   },
   "latest_source_observation": {
-    "observed_at": "2026-09-21T04:36:30Z",
-    "main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
-    "source_pull_request": 151,
-    "source_role": "fetched main; immutable release and installed runtime observations remain separate"
+    "observed_at": "2026-09-21T09:25:49.745618+00:00",
+    "main_sha": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+    "source_pull_request": 170,
+    "source_role": "fetched main after exact-head App-owned verification and delivered155/164 repair"
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",
@@ -1862,26 +1906,38 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T05:39:01.085697Z",
-    "route_id": "c4e47ea3ced7",
-    "branch": "fix/issue-155-repair-binding-rejections",
-    "issue": 155,
+    "observed_at": "2026-09-21T10:47:15.815494+00:00",
+    "route_id": "bcc1d645c438",
+    "branch": "fix/reviewed-issues-batch-20260921",
+    "issues": [
+      156,
+      162,
+      153,
+      161,
+      168,
+      147,
+      148,
+      166
+    ],
     "pull_request": null,
-    "implementation_commit": "74a8079a706cc38017614566cd4de17e44317d1a",
-    "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
-    "change_package": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e",
-    "status": "reviewed_local_candidate_pending_pr",
-    "plan": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/continuation.md",
-    "next_action": "Check grok_status on the clean delivery HEAD; refresh full verification and the four review receipts when absent or stale. Then obtain exact branch/PR publication delegation, publish this prepared candidate, and await the exact-head external Trust CI check. No PR exists at this observation.",
-    "initial_implementation_commit": "6b13806d454cada0c63520129baf09056db46408",
-    "product_sha256": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
-    "verification_record": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/evidence/final-20260921/README.md",
-    "independent_review_kinds": [
-      "code_review",
-      "test_review",
-      "security_review",
-      "data_review"
-    ]
+    "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+    "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
+    "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
+    "status": "corrected_source_full_and_five_reviews_pass_final_receipts_external_delivery_required",
+    "next_action": "Run final frozen-tree verifier, record all five current review receipts and confirm zero gaps; push isolated branch and create PR with exact grants, then wait for App-owned exact-head check before merge/eight issue closures. Close171/172 as superseded only afterward.",
+    "excluded_successors": [
+      "active165 interruption-status source",
+      "active163 migration022 source",
+      "separate162 trusted-validator compatibility source",
+      "other retained PR source and external operations"
+    ],
+    "historical_pre_repair_full": {
+      "head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
+      "record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json",
+      "scope": "Passed before the security alias correction; does not certify the corrected product"
+    },
+    "verified_source_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
+    "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-security-repair-result.json"
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",
@@ -1902,5 +1958,63 @@
     "target_mutations": 0,
     "maintainer_acceptance": false,
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
+  },
+  "parallel_issue_work": {
+    "observed_at": "2026-09-21T09:25:49.745618+00:00",
+    "queue": "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/issue-queue.json",
+    "current_open_issues": 60,
+    "closed_issues": [
+      56,
+      60,
+      61,
+      155,
+      164
+    ],
+    "active_separate_work": [
+      {
+        "issue": 165,
+        "branch": "fix/issue-165-interruption-status",
+        "route_id": "2dfd5804553e",
+        "status": "raw-byte review defect repaired;28focused testsPASS, full and renewed reviews pending"
+      },
+      {
+        "issue": 163,
+        "branch": "fix/issue-163-repair-plan-rejections",
+        "route_id": "d2e7e68e7bd5",
+        "status": "46offlineGREEN,11PGcases plus corrected deadlinePASS; exact main-ancestor integration done, initial full and reviews pending"
+      }
+    ],
+    "superseded_candidate_prs_pending_delivery": [
+      171,
+      172
+    ],
+    "user_delegation": "делай всё и закрывай; fixes/delivery/verified closures, with exact operational grants and external trust gates retained",
+    "next_action": "Combined eight-issue delivery plus isolated165/163 continuation; follow dated queue for retained PRs and external dependencies.",
+    "closed_issues_scope": "current delivery wave",
+    "current_closed_issues_all_time": 14
+  },
+  "active_ci_ingress_operation": {
+    "branch": "fix/trust-ci-webhook-bridge",
+    "route_id": "68274cb876e4",
+    "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
+    "plan_sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
+    "status": "host_ingress_accepted_independent_release_pass_pr170_delivered",
+    "user_delegation": "2026-09-21: делай всё и закрывай, following the described missing CI ingress repair",
+    "product_source_changed": false,
+    "next_action": "Preserve accepted bridge; no new host operation is implied. PR170 external success/merge is documented separately from the earlier acceptance snapshot.",
+    "accepted_at": "2026-09-21T08:42:17+00:00",
+    "evidence": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md",
+    "external_check": {
+      "id": 106268338358,
+      "app_id": 4694114,
+      "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "job_id": "30b1f243-8dde-41cb-90ac-671af377fc8e",
+      "observed_status": "in_progress"
+    },
+    "independent_acceptance_review": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-acceptance-review.md",
+    "independent_acceptance_review_sha256": "2212829f44706783058b81e44704a3fa504b8871ec72d605d0afd5fd892fe864",
+    "observed_at": "2026-09-21T09:25:49.745618+00:00",
+    "later_pr170_delivery": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/pr170-delivery.json"
   }
 }

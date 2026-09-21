@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-21T08:36:55.955835+00:00",
+  "plan_sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
+  "exit_code": 0,
+  "stdout": "{\"control\": \"bridge_allowed_peer\", \"exit_code\": 0, \"http_status\": \"200\", \"counter_before\": 23, \"counter_after\": 29, \"delta\": 6}\n{\"control\": \"bridge_wrong_interface\", \"exit_code\": 28, \"http_status\": \"000\", \"counter_before\": 0, \"counter_after\": 2, \"delta\": 2}\n{\"control\": \"bridge_wrong_source\", \"exit_code\": 28, \"http_status\": \"000\", \"counter_before\": 0, \"counter_after\": 2, \"delta\": 2}\n",
+  "stderr": ""
+}

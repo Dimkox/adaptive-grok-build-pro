@@ -1,0 +1,7 @@
+{
+  "recorded_at": "2026-09-21T08:10:46.164945+00:00",
+  "plan_block": 3,
+  "exit_code": 1,
+  "stdout": "{\"Id\": \"adaptive-trust-ci-webhook-bridge.socket\", \"LoadState\": \"loaded\", \"ActiveState\": \"inactive\", \"FragmentPath\": \"/etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket\", \"DropInPaths\": \"\"}\n{\"Id\": \"adaptive-trust-ci-webhook-bridge.service\", \"LoadState\": \"loaded\", \"ActiveState\": \"inactive\", \"FragmentPath\": \"/etc/systemd/system/adaptive-trust-ci-webhook-bridge.service\", \"DropInPaths\": \"\"}\n{\"Id\": \"adaptive-trust-ci-webhook-bridge-guard.service\", \"LoadState\": \"loaded\", \"ActiveState\": \"inactive\", \"FragmentPath\": \"/etc/systemd/system/adaptive-trust-ci-webhook-bridge-guard.service\", \"DropInPaths\": \"\"}\n",
+  "stderr": "effective_unit_gate=REFUSED: adaptive-trust-ci-webhook-bridge.socket: missing effective property\n"
+}

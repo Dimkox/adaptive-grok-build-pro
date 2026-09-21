@@ -756,3 +756,52 @@ Recognize a legacy SQL NULL before calling the binding contract parser, so the c
 ## 2026-09-21 — Refresh the target before repeating a pilot
 
 Reading the live target and the closed attempt before spending another provider invocation exposed a 26-commit baseline drift and a version task that no longer fits the site. A separate AST inventory probe identified a current two-file browser-audit gap, so the next pilot now has a concrete issue draft and reproducible failure. Keep that successor separate from #155 and from the historical profile; a draft or local proof does not establish maintainer acceptance.
+
+
+## 2026-09-21 — Derive route scores and diagnostics from the same bounded token matches
+
+Use Unicode word boundaries for short domain terms and retain substring matching for longer stems, then derive scores and persisted keyword evidence from that same match set. The exact #155 regression removes `ui` from `distinguish` without demoting genuine UI/API/SQL/D7/1C specialists or Bitrix repository guarantees. Keeping the evidence field optional and validating its bounded shape preserves historical route loading and makes future routing mistakes diagnosable.
+
+
+### 2026-09-21 — Keep the change-spec receipt enum aligned with runtime registries
+
+For issue #162, compare the schema enum exactly against both runtime receipt sets and validate each kind in a complete spec; this exposed the two missing domain reviews before the additive repair and guards against future drift. Keep draft scaffold timing and receipt authority unchanged because neither caused the vocabulary mismatch.
+
+### 2026-09-21 — Align shipped Trust CI source validators without changing deployed trust
+
+Independent review found that the runner and example holdout still had the old five-kind allowlists. A source-only validator patch and tests proved the repair, but `FIT-TRUST-CI-SEPARATION` requires it in a separately routed successor based on the delivered schema fix; the #162 branch must remain schema-only. Deployed worker and holdout rollout still requires separate authority.
+
+
+## 2026-09-21 — #153 / #161 consumer installation documentation
+
+Audit generated consumer documentation in the materialized tree, rather than only the source repository: this exposed nine missing link targets. Rendering documents from descriptor-validated template bytes kept payload identity deterministic.
+
+## 2026-09-21 — Consumer rendering inputs and outputs
+
+Ship rendering inputs as explicit .md.tmpl artifacts with their output destination declared, and verify installed-source reuse. This keeps the reusable input contract intact while distinguishing it from navigable Markdown documents.
+
+
+## 2026-09-21 — #168 untracked agent scratch fingerprints
+
+Combine index ownership with changed-path provenance before ignoring agent scratch. A staged deletion disappears from the index, so diff provenance is necessary to keep a recreated path and both rename endpoints bound to evidence.
+
+## 2026-09-21 — Preserve literal filesystem paths in evidence
+Treat NUL-delimited Git paths as filesystem bytes and preserve their literal separators through filtering, hashing and JSON serialization. This binds POSIX backslash lookalikes and non-UTF-8 names without widening the untracked scratch exemption; 19 focused regressions pass.
+
+
+## 2026-09-21 — #147 / #148 schema resolution and bounded diagnostics
+
+Bound diagnostic presentation only after the complete base and head traversals. Testing raw expansion as well as final findings prevents existing final deduplication from hiding an unbounded intermediate result or an incorrect omitted count.
+
+## 2026-09-21 — Preserve conservative closure while fixing comparator fallback
+Keep the registered-ID fallback local to the comparator when raw path grammar refuses a spelling. The shared helper still exposes that refusal to dependency analysis, preserving both concrete and declared-ID edges; focused regression controls pass.
+
+
+## 2026-09-21 — Observe migration contention through the actual advisory lock
+
+The issue166 regression seeds the real populated packaged prefix, observes the migrator waiting on its advisory-lock holder, then separately checks release-success and server-timeout recovery. This worked on PostgreSQL17 and verifies preserved ledger, rows, function identity and privileges without assuming that an executing function call blocks CREATE OR REPLACE.
+
+## 2026-09-21: Integrate exact reviewed files on the delivered base
+The six reviewed candidates use a predecessor whose complete tree is identical to merged main, and their19 product paths are disjoint. Preserving exact blobs and separate issue evidence gives a concrete combined tree for fresh verification while shared handoff records are reconciled once.
+
+- When a short security keyword needs a word boundary, retain its legitimate expanded forms through an explicit finite alias set and check the entire resulting risk/reviewer/gate contract in an otherwise empty repository. This repaired the auth/роль compatibility regression while keeping unrelated author/authority and embedded lookalikes outside security routing.

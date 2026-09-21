@@ -1,0 +1,33 @@
+{
+  "reviewed_head": "af7fb4ad3436e9c98cb7f07e570b7ff7e649207e",
+  "full_tested_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
+  "reviews": {
+    "code": {
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/code-review.md",
+      "sha256": "83f1eb14052c7ce6f532e7f7d6a8009262dc7dd61f3a2e4bd87d2bc9681ccc4a",
+      "status": "pass"
+    },
+    "test": {
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/test-review.md",
+      "sha256": "39e9ee722c4c9ebc44f83b235b11f3d76e61f39a80c9c0f0f001f34e1fc4091b",
+      "status": "pass"
+    },
+    "security": {
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/security-review.md",
+      "sha256": "c7ef980eceb33e5df0d96e91ef8aab3ba157d3dfa0e2bd412ff2965e31c7a671",
+      "status": "pass"
+    },
+    "data": {
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/data-review.md",
+      "sha256": "a7d4c825fbf1e3f9e2060210cf4935f1a199c13d5e32fa0ca2ebb34eb97ce3c1",
+      "status": "pass"
+    },
+    "release": {
+      "report": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/release-review.md",
+      "sha256": "0e050d0bb3c147592d8d42bef040e38e3dadd5c5740ea5bde8f25a901424e0ad",
+      "status": "pass"
+    }
+  },
+  "post_review_delta": "Only reports, handoff wording, final workflow marker and this identity note. Product19paths remain identical to full-tested28514bf0; all old failures remain preserved. Fresh final verification and receipts follow this freeze.",
+  "external_authority": false
+}

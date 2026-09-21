@@ -2943,6 +2943,100 @@ class ArchitectureModelTests(unittest.TestCase):
             "unsupported",
         )
 
+    def test_schema_resolver_concrete_path_cannot_be_shadowed_by_declared_id(self) -> None:
+        def record(identity, path, document):
+            return ARCH.ContractRecord(
+                identity, "json_schema", path, "1", "consumer", "bidirectional",
+                "0" * 64, document,
+            )
+
+        for reference, root_path, target_path, fragment in (
+            ("dir/target.json", "root.json", "dir/target.json", False),
+            ("../dir/target.json#/$defs/value", "nested/root.json", "dir/target.json", True),
+        ):
+            root = record("CONTRACT-ROOT", root_path, {"$ref": reference})
+            reference_base = reference.split("#", 1)[0]
+            for claimant_count in (0, 1, 2):
+                for same_target_id in (False, True):
+                    with self.subTest(reference=reference, claimants=claimant_count,
+                                      same_target_id=same_target_id):
+                        def schema(minimum):
+                            document = {"type": "string", "minLength": minimum}
+                            return {"$defs": {"value": document}} if fragment else document
+
+                        def target(minimum):
+                            document = schema(minimum)
+                            if same_target_id:
+                                document["$id"] = reference_base
+                            return record("CONTRACT-TARGET", target_path, document)
+
+                        claimants = tuple(
+                            record(f"CONTRACT-CLAIMANT-{index}", f"claimant-{index}.json",
+                                   {"$id": reference_base, **schema(9)})
+                            for index in range(claimant_count)
+                        )
+                        result = ARCH.compare_contracts(
+                            root, root, "bidirectional",
+                            base_inventory=(root, target(1), *claimants),
+                            head_inventory=(root, target(9), *claimants),
+                        )
+                        self.assertEqual(result.status, "incompatible", result.reasons)
+                        self.assertEqual(result.reasons, ("narrowed_constraint",))
+
+    def test_schema_resolver_declared_id_fallback_detects_narrowing(self) -> None:
+        for reference in (
+            "urn:adaptive-test:target", "https://example.test/target", "alias.json",
+            "./alias.json", "alias+v1.json",
+        ):
+            with self.subTest(reference=reference):
+                root = ARCH.ContractRecord(
+                    "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "consumer",
+                    "bidirectional", "0" * 64, {"$ref": reference + "#/$defs/value"},
+                )
+                def target(minimum):
+                    return ARCH.ContractRecord(
+                        "CONTRACT-TARGET", "json_schema", "contracts/target.json", "1", "consumer",
+                        "bidirectional", "1" * 64,
+                        {"$id": reference, "$defs": {"value": {"type": "string", "minLength": minimum}}},
+                    )
+                result = ARCH.compare_contracts(
+                    root, root, "bidirectional",
+                    base_inventory=(root, target(1)), head_inventory=(root, target(9)),
+                )
+                self.assertEqual(result.status, "incompatible", result.reasons)
+                self.assertEqual(result.reasons, ("narrowed_constraint",))
+
+    def test_schema_resolver_unsafe_path_alias_fallback_preserves_refusals(self) -> None:
+        for reference in ("./alias.json", "alias+v1.json"):
+            root = ARCH.ContractRecord(
+                "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "consumer",
+                "bidirectional", "0" * 64, {"$ref": reference + "#/$defs/value"},
+            )
+            for claimants, expected_reason in (
+                (0, ARCH.SCHEMA_REFERENCE_UNSAFE),
+                (2, ARCH.SCHEMA_REFERENCE_AMBIGUOUS),
+            ):
+                with self.subTest(reference=reference, claimants=claimants):
+                    targets = tuple(
+                        ARCH.ContractRecord(
+                            f"CONTRACT-TARGET-{index}", "json_schema", f"contracts/target-{index}.json",
+                            "1", "consumer", "bidirectional", "1" * 64,
+                            {"$id": reference, "$defs": {"value": {"type": "string"}}},
+                        )
+                        for index in range(claimants)
+                    )
+                    inventory = (root, *targets)
+                    resolver = ARCH._SchemaResolver(root, inventory, [0])
+                    with self.assertRaises(ARCH.ArchitectureError) as captured:
+                        resolver.resolve(root.document["$ref"], root)
+                    self.assertEqual(str(captured.exception), expected_reason)
+                    self.assertEqual(captured.exception.code, "contract")
+                    result = ARCH.compare_contracts(
+                        root, root, "bidirectional",
+                        base_inventory=inventory, head_inventory=inventory,
+                    )
+                    self.assertEqual(result.status, "unsupported")
+
     def test_schema_resolver_supports_bounded_json_pointers(self) -> None:
         current = ARCH.ContractRecord(
             "CONTRACT-ROOT", "json_schema", "contracts/root.json", "1", "producer",

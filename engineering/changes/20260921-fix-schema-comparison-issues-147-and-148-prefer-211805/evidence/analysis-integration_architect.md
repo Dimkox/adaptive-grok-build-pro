@@ -1,0 +1,21 @@
+# Integration analysis: schema resolution and diagnostics (#147, #148)
+
+Status: ready for the selected single writer. Read-only analysis against the frozen `1f7aedb8` wave base; no full gate was run.
+
+## Resolution contract (#147)
+
+`.grok-stack/adaptive_grok/architecture.py:1268-1316` provides the shared `schema_reference_target_path()` with both `SCHEMA_REFERENCE_PATH_FIRST` and `SCHEMA_REFERENCE_ID_FIRST`. `_SchemaResolver.resolve()` at 1395-1412 is the comparator caller and selects ID first, allowing a claimant `$id` equal to another record's relative path to capture that reference. The helper already supports the intended path-first result when an actual declared path exists; keep fallback to the declared `$id` table for URN/HTTPS references and path misses. Preserve pointer parsing, target-kind checks, work budget, duplicate-ID refusal when the ID route is required, and graph identity. An optional model validation rule must not reject legitimate pure-ID references or force edits to shipped schema documents.
+
+`architecture_fitness.py:1074-1111` is the other caller. Its dependency closure intentionally evaluates both precedences and unions the two candidate paths to avoid missing a dependent under existing semantics. Do not mechanically replace that union with the comparator's new precedence: conservative extra edges cost work but cannot hide a dependency. Revisit comments/tests that currently assert a claimant narrowing affects the referrer (`tests/test_architecture_fitness.py:4321-4410`), because after the comparator repair the claimant's bytes no longer determine that referrer's verdict when a concrete path exists. The target narrowing must still pull the unchanged referrer into scope and yield `narrowed_constraint`.
+
+## Diagnostic contract (#148)
+
+`_reverse_contract_dependencies()` at fitness lines 934-971 accumulates one signal per repeated colliding reference for each inventory. `_contract_dependency_closure()` at 975-1009 visits base with `fail_closed=False` and head with `fail_closed=True`; `unsupported` expansion at 904-910 currently sorts without deduplication or cap. Bound the *presentation* by sorting unique detail strings per in-scope referrer, emitting a named maximum and one exact omitted-unique-count summary. This preserves base/head authority and the head-only refusal path because `ArchitectureError` is raised during the full walk before presentation. Do not truncate traversal or suppress a unique collision in the internal signal set unless equivalent fail-closed behavior and omitted counts are proven. `_AMBIGUITY_OWNER_LIMIT` caps carriers within a detail, not the number of details.
+
+The output bound does not bound transient collection memory; the inventory has `MAX_CONTRACTS=256`, document and node budgets, so this is bounded report size rather than a new computational-safety claim. Scope filtering (`identity in changed_ids`) must remain, and a base-only collision must remain nonfatal. Preserve comparator verdict/reason tuple, policies, schema documents, and the existing `ambiguous declared schema id` head abort when no path candidate exists.
+
+## Focused acceptance and coordination
+
+Use the issue #147 three-record reproduction: referrer unchanged, real path target narrowed `minLength 1→9`, claimant `$id` equal to target path; expect `incompatible ('narrowed_constraint',)` with and without claimant. Cover same-record path/ID agreement, nested relative path, URN and HTTPS fallback, pointer fragments, and ambiguous ID-only refusal. For #148, repeated same collision across base/head should emit one detail; more distinct collisions than the cap should emit cap plus one summary with deterministic unique omitted count; unrelated referrers remain out of scope. Preserve a head-only ambiguity abort and base-only nonfatal signal.
+
+Open PR #137 (`fix/schema-metadata-contract-compatibility`) modifies `architecture.py`, `architecture_fitness.py`, and `tests/test_architecture_fitness.py` nearby. Compare and reconcile those exact files at integration/rebase; do not copy its metadata semantics or silently resolve a conflict by dropping either change. The PR branch observed here is not the frozen wave base. No deployed policy or contract migration is implicated.

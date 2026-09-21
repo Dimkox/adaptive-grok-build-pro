@@ -1,0 +1,4260 @@
+{
+  "schema_version": 1,
+  "route_id": "bcc1d645c438",
+  "observed_at": "2026-09-21T09:26:22.290092+00:00",
+  "implementation_owner": "integration_implementer",
+  "worktree": "/home/pall/grok-projects/adaptive-grok-build-reviewed-batch",
+  "branch": "fix/reviewed-issues-batch-20260921",
+  "head_before_coordinator_commit": "1146cee355ab9dd9d1db9bbb357a11bd4e4cc8b5",
+  "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "base_tree": "e2a807845c77af0c6023c53fcd30972ede9fb8bd",
+  "candidate_predecessor": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+  "predecessor_tree": "e2a807845c77af0c6023c53fcd30972ede9fb8bd",
+  "manifest_sha256_at_observation": "58744738b7f88716861882c1ae646526b21588c8b408e3ef3a1ef1eb82d9b214",
+  "index_tree_at_import_observation": "0baf1ec7ee7cbf845cf5e21a4de03df2bedbbb39",
+  "identity_scope": "Exact imported source objects, staged entries, worktree bytes and Git modes at observation; not a final repository fingerprint, test result, review receipt, external check or merge authority. Coordinator may subsequently add explicitly scoped documentation.",
+  "import_method": "git restore --source <pinned full commit> --staged --worktree -- <explicit manifest paths>; no mutable-worktree copies or whole-branch cherry-picks",
+  "product_path_count": 19,
+  "historical_package_count": 7,
+  "historical_package_file_count": 188,
+  "total_imported_file_count": 207,
+  "product_candidates": [
+    {
+      "label": "router",
+      "issues": [
+        156
+      ],
+      "source_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "reviewed_product_commit": "c58ddb7aaaaa594a3ad00d8667e4da09f750f3ca",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": ".grok-stack/adaptive_grok/router.py",
+          "source": {
+            "mode": "100644",
+            "blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+            "sha256": "de3ca13766fea0691cd45c29f321cab044af4b30459623888fa94f3b33993f82",
+            "bytes": 22176
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+            "sha256": "de3ca13766fea0691cd45c29f321cab044af4b30459623888fa94f3b33993f82"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": ".grok-stack/adaptive_grok/workflow_artifacts.py",
+          "source": {
+            "mode": "100644",
+            "blob": "b31073ecbee38899d53b626bcf69e2e977b50129",
+            "sha256": "27c20c6da4cc863cd653a0f736da0d4aa5e556432b366aad58561e1e84acdcfe",
+            "bytes": 78653
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b31073ecbee38899d53b626bcf69e2e977b50129"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b31073ecbee38899d53b626bcf69e2e977b50129",
+            "sha256": "27c20c6da4cc863cd653a0f736da0d4aa5e556432b366aad58561e1e84acdcfe"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_repo_router.py",
+          "source": {
+            "mode": "100644",
+            "blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+            "sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d",
+            "bytes": 18884
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+            "sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_workflow_artifacts.py",
+          "source": {
+            "mode": "100644",
+            "blob": "19b00aa38826475400104ca5f63ca875fadf85b7",
+            "sha256": "c078ff949801cc42bc67511482a3bc742d322c602b793be584b9642b64b4c010",
+            "bytes": 39226
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "19b00aa38826475400104ca5f63ca875fadf85b7"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "19b00aa38826475400104ca5f63ca875fadf85b7",
+            "sha256": "c078ff949801cc42bc67511482a3bc742d322c602b793be584b9642b64b4c010"
+          },
+          "exact_identity": true
+        }
+      ]
+    },
+    {
+      "label": "receipt_schema",
+      "issues": [
+        162
+      ],
+      "source_commit": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "reviewed_product_commit": "31c6b4e11c4554dbaa67943ec6156ec32633b111",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": "schemas/change-spec.schema.json",
+          "source": {
+            "mode": "100644",
+            "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b",
+            "sha256": "9f957d62dcdc7c9935d79d0baff5c39071f6caf1fa45e3121919cfb3d490ff6e",
+            "bytes": 4818
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6d129a4312eb32bcd6349c92e5be1f341cdfcb9b",
+            "sha256": "9f957d62dcdc7c9935d79d0baff5c39071f6caf1fa45e3121919cfb3d490ff6e"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_change_spec.py",
+          "source": {
+            "mode": "100644",
+            "blob": "3916320d82c4b881620dbd9c87952972c08a9098",
+            "sha256": "b08c1f68de5b2983719697d93dc7895d252e12e23e8b780a82c0aff3ab66d5c6",
+            "bytes": 22144
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "3916320d82c4b881620dbd9c87952972c08a9098"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "3916320d82c4b881620dbd9c87952972c08a9098",
+            "sha256": "b08c1f68de5b2983719697d93dc7895d252e12e23e8b780a82c0aff3ab66d5c6"
+          },
+          "exact_identity": true
+        }
+      ]
+    },
+    {
+      "label": "consumer_docs",
+      "issues": [
+        153,
+        161
+      ],
+      "source_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "reviewed_product_commit": "8ef4625d5401556c7d2230c9f18cd0e0bc2c8852",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": ".grok-stack/templates/consumer-AGENTS.md.tmpl",
+          "source": {
+            "mode": "100644",
+            "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a",
+            "sha256": "5b36af586bc7593021ad4c18b568d0e77c952467a1ee22a1b66a69d9365452b0",
+            "bytes": 8283
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ae82d27c0f8b8a90a906e22ad27bd8cc42c0ba8a",
+            "sha256": "5b36af586bc7593021ad4c18b568d0e77c952467a1ee22a1b66a69d9365452b0"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": ".grok-stack/templates/consumer-factory-README.md.tmpl",
+          "source": {
+            "mode": "100644",
+            "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272",
+            "sha256": "9f4bbcd60b6f4ed1f5b41e880af9983a2f89594866624a25de4539bffa6b87dc",
+            "bytes": 3426
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5ecb71d06e354d5d5fcc6a9993a841e458205272",
+            "sha256": "9f4bbcd60b6f4ed1f5b41e880af9983a2f89594866624a25de4539bffa6b87dc"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "scripts/install_into.py",
+          "source": {
+            "mode": "100644",
+            "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50",
+            "sha256": "3262984eb74233afb926f6656f9ca11312f0479e3d8a11a2985c0cb5ac63ac49",
+            "bytes": 53257
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "fde313155a4aed031dda5a8d6bfc3e2e6d783f50",
+            "sha256": "3262984eb74233afb926f6656f9ca11312f0479e3d8a11a2985c0cb5ac63ac49"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_installer.py",
+          "source": {
+            "mode": "100644",
+            "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227",
+            "sha256": "cffe0aa66f99648516f00583bcbbb68d5813e72ac51b33c2e156c62ff85cd1e5",
+            "bytes": 57764
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5bf50c550a50ac22d4ffb93c4f852a5d469e1227",
+            "sha256": "cffe0aa66f99648516f00583bcbbb68d5813e72ac51b33c2e156c62ff85cd1e5"
+          },
+          "exact_identity": true
+        }
+      ]
+    },
+    {
+      "label": "fingerprint",
+      "issues": [
+        168
+      ],
+      "source_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "reviewed_product_commit": "8278b2dd9b3fff69b5e408087c2e3b49a68e470c",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": ".grok-stack/adaptive_grok/util.py",
+          "source": {
+            "mode": "100644",
+            "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c",
+            "sha256": "3b99030bf8c238315202f623e5969414f858f47280e31f602080ca371a85affd",
+            "bytes": 8356
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8f633fb46ac79f07bec9150e48c0cb8c9ff6522c",
+            "sha256": "3b99030bf8c238315202f623e5969414f858f47280e31f602080ca371a85affd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "scripts/grok_verify.py",
+          "source": {
+            "mode": "100644",
+            "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6",
+            "sha256": "1485a73945adf32c6ebd711640efe8c8918112a37649889601b5c2e33a0474ca",
+            "bytes": 1304
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c4de9e20a2e3ba23f1b2d59e6df803333fe408a6",
+            "sha256": "1485a73945adf32c6ebd711640efe8c8918112a37649889601b5c2e33a0474ca"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_change_receipts.py",
+          "source": {
+            "mode": "100644",
+            "blob": "53f91e614610ffef1350c8bd2ea118e639218faa",
+            "sha256": "da874e190549f6d821ae55f2946ffca30577c8024a13e4ce3137e5baa3425496",
+            "bytes": 39721
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "53f91e614610ffef1350c8bd2ea118e639218faa"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "53f91e614610ffef1350c8bd2ea118e639218faa",
+            "sha256": "da874e190549f6d821ae55f2946ffca30577c8024a13e4ce3137e5baa3425496"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_util_fingerprint.py",
+          "source": {
+            "mode": "100644",
+            "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943",
+            "sha256": "664a52083882942aecd0db4cb9ab1d688a1a958b82672d9525bc6601dd70323f",
+            "bytes": 12955
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f4204356f76ba9437a7bf99dd4201b5d8d5b0943",
+            "sha256": "664a52083882942aecd0db4cb9ab1d688a1a958b82672d9525bc6601dd70323f"
+          },
+          "exact_identity": true
+        }
+      ]
+    },
+    {
+      "label": "schema_refs",
+      "issues": [
+        147,
+        148
+      ],
+      "source_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "reviewed_product_commit": "d19b1b687f24d9181d92ac8317fa74a961071548",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": ".grok-stack/adaptive_grok/architecture.py",
+          "source": {
+            "mode": "100644",
+            "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d",
+            "sha256": "4186daa2eb4ccb373835be62c4096e6f70d6be7ec5d913e07bafbc87641c44f1",
+            "bytes": 137692
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "074e3950c56ecb5fff915147fb75ea15df33e23d",
+            "sha256": "4186daa2eb4ccb373835be62c4096e6f70d6be7ec5d913e07bafbc87641c44f1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": ".grok-stack/adaptive_grok/architecture_fitness.py",
+          "source": {
+            "mode": "100644",
+            "blob": "42381556db1b752f1e102f69dc1598e09efcee27",
+            "sha256": "fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7",
+            "bytes": 118768
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "42381556db1b752f1e102f69dc1598e09efcee27"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "42381556db1b752f1e102f69dc1598e09efcee27",
+            "sha256": "fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_architecture_fitness.py",
+          "source": {
+            "mode": "100644",
+            "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7",
+            "sha256": "244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6",
+            "bytes": 312561
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "715baf7a345b53f03ac9ceb5b702d3b74b6530f7",
+            "sha256": "244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "tests/test_architecture_model.py",
+          "source": {
+            "mode": "100644",
+            "blob": "14960608c5ef85aba595260c610335b8420a2137",
+            "sha256": "80ed127857c33f69336315b98fab26e4e87e7108df8d80127c5f7d76e145e1c1",
+            "bytes": 170810
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "14960608c5ef85aba595260c610335b8420a2137"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "14960608c5ef85aba595260c610335b8420a2137",
+            "sha256": "80ed127857c33f69336315b98fab26e4e87e7108df8d80127c5f7d76e145e1c1"
+          },
+          "exact_identity": true
+        }
+      ]
+    },
+    {
+      "label": "migration_prefix",
+      "issues": [
+        166
+      ],
+      "source_commit": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
+      "reviewed_product_commit": "0558da4a4047ddf12114be33fb163b4e9124fdbf",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "reviewed_product_diff_empty": true,
+      "paths": [
+        {
+          "path": "factory/tests/test_execution_persistence_postgres.py",
+          "source": {
+            "mode": "100644",
+            "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61",
+            "sha256": "4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236",
+            "bytes": 272737
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "501f5203d3eb97bba19c382b47a8d45f5526ac61",
+            "sha256": "4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236"
+          },
+          "exact_identity": true
+        }
+      ]
+    }
+  ],
+  "historical_packages": [
+    {
+      "label": "router",
+      "source_commit": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7",
+      "source_tree": "4d2a550aa562c714ede6ec69583885587e3815ed",
+      "index_tree": "4d2a550aa562c714ede6ec69583885587e3815ed",
+      "file_count": 21,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "134828f2645586855efbce5ff7686a094802289d",
+            "sha256": "7f44da6e1584fa8b4f67ecefa8a1e82988d2e4e4f78cdf44a53c82fc54ce0879",
+            "bytes": 862
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "134828f2645586855efbce5ff7686a094802289d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "134828f2645586855efbce5ff7686a094802289d",
+            "sha256": "7f44da6e1584fa8b4f67ecefa8a1e82988d2e4e4f78cdf44a53c82fc54ce0879"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "570d7684fac99e10a99a4ab38db523795dd0f50a",
+            "sha256": "6103a3e82fdac8e8c1e72eec3654bfcb7c851f0324f5cd808a197b97baa121fe",
+            "bytes": 1752
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "570d7684fac99e10a99a4ab38db523795dd0f50a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "570d7684fac99e10a99a4ab38db523795dd0f50a",
+            "sha256": "6103a3e82fdac8e8c1e72eec3654bfcb7c851f0324f5cd808a197b97baa121fe"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "50d185a83a9ec520451d7d7b3a2184bcf7cfb79d",
+            "sha256": "3155cec74dafed014aaf80c6b862974e2480ce7ad3e7e6f3271319aa35637e5f",
+            "bytes": 2833
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "50d185a83a9ec520451d7d7b3a2184bcf7cfb79d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "50d185a83a9ec520451d7d7b3a2184bcf7cfb79d",
+            "sha256": "3155cec74dafed014aaf80c6b862974e2480ce7ad3e7e6f3271319aa35637e5f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
+            "bytes": 167
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "3cf0629b5f9c88e405ea6adc23268080298ceebf",
+            "sha256": "fcfb466cc7e2888d8ffcb9196b0f0613bc9cffe446ef31a77aa029c8f776f2c6",
+            "bytes": 2671
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "3cf0629b5f9c88e405ea6adc23268080298ceebf"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "3cf0629b5f9c88e405ea6adc23268080298ceebf",
+            "sha256": "fcfb466cc7e2888d8ffcb9196b0f0613bc9cffe446ef31a77aa029c8f776f2c6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "887811d6345a59c5cfa55d63e56e23d7317f65f2",
+            "sha256": "59dd3ea8f7dc59f5549683c37f81615d7158bf477fc2c51c0933b9a818cbbabb",
+            "bytes": 2801
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "887811d6345a59c5cfa55d63e56e23d7317f65f2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "887811d6345a59c5cfa55d63e56e23d7317f65f2",
+            "sha256": "59dd3ea8f7dc59f5549683c37f81615d7158bf477fc2c51c0933b9a818cbbabb"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "46e7f0129cace802dcae3d8d306dc3c70f6ef8ec",
+            "sha256": "b59ad44fb132d2b02937efab18f330ce8cd7af490bd3e113bd0fab8f68ac3a4d",
+            "bytes": 3662
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "46e7f0129cace802dcae3d8d306dc3c70f6ef8ec"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "46e7f0129cace802dcae3d8d306dc3c70f6ef8ec",
+            "sha256": "b59ad44fb132d2b02937efab18f330ce8cd7af490bd3e113bd0fab8f68ac3a4d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "5ab7625fd87643f70088924b0af51ece68b57b03",
+            "sha256": "6c3cb16da5131002c317d6100aedd34507f05b93a2c6608f984ce3eabfeb677c",
+            "bytes": 3724
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5ab7625fd87643f70088924b0af51ece68b57b03"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5ab7625fd87643f70088924b0af51ece68b57b03",
+            "sha256": "6c3cb16da5131002c317d6100aedd34507f05b93a2c6608f984ce3eabfeb677c"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "c0f810f01af354146fc03e4bcd6e4bf2446750eb",
+            "sha256": "975d15cacba5486bf10f8765a01d90959bce7f36edd20fd8fff58dd738fe4693",
+            "bytes": 5443
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c0f810f01af354146fc03e4bcd6e4bf2446750eb"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c0f810f01af354146fc03e4bcd6e4bf2446750eb",
+            "sha256": "975d15cacba5486bf10f8765a01d90959bce7f36edd20fd8fff58dd738fe4693"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/full-verification-summary.json",
+          "source": {
+            "mode": "100644",
+            "blob": "407680a4b6193f6109257a9e92c9ddabaefbdcc2",
+            "sha256": "3f1d1e667ff8a90db2fdf771ed67d27ddc16dc4fc08ce339f6b67cfff64a7cf0",
+            "bytes": 2658
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "407680a4b6193f6109257a9e92c9ddabaefbdcc2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "407680a4b6193f6109257a9e92c9ddabaefbdcc2",
+            "sha256": "3f1d1e667ff8a90db2fdf771ed67d27ddc16dc4fc08ce339f6b67cfff64a7cf0"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/implementation-general_implementer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "ab3c67739fd3c85419d268c83db0c014566a6444",
+            "sha256": "9961255c38f9552b8fe9dff337918984da8ae97d77e49343a543e3a70cf360bc",
+            "bytes": 4036
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ab3c67739fd3c85419d268c83db0c014566a6444"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ab3c67739fd3c85419d268c83db0c014566a6444",
+            "sha256": "9961255c38f9552b8fe9dff337918984da8ae97d77e49343a543e3a70cf360bc"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/implementation-snapshot.json",
+          "source": {
+            "mode": "100644",
+            "blob": "2d4d022e78f649bf42fcd7f6a335cf053f799dfc",
+            "sha256": "b95ea7f15607e415e8e368a79c566558f7570c2fb0f6a0617b0dbb1f73bed540",
+            "bytes": 1116
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2d4d022e78f649bf42fcd7f6a335cf053f799dfc"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2d4d022e78f649bf42fcd7f6a335cf053f799dfc",
+            "sha256": "b95ea7f15607e415e8e368a79c566558f7570c2fb0f6a0617b0dbb1f73bed540"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/source-issue.json",
+          "source": {
+            "mode": "100644",
+            "blob": "0c2e093d365415d27f72ddcc787592de7ce79cd5",
+            "sha256": "ec0f4752fdeaa509ed464ca3a5fda2a96879e428aa56e1e22ebc6147d76ef7ce",
+            "bytes": 4384
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0c2e093d365415d27f72ddcc787592de7ce79cd5"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0c2e093d365415d27f72ddcc787592de7ce79cd5",
+            "sha256": "ec0f4752fdeaa509ed464ca3a5fda2a96879e428aa56e1e22ebc6147d76ef7ce"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "94ca22e6cfcef3fcbade89d79ba0d92c4db6362f",
+            "sha256": "d943b8a1af5a66f2f1f82ba66a2daabd086a9f7da46eaebc9757744200da5e36",
+            "bytes": 4914
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "94ca22e6cfcef3fcbade89d79ba0d92c4db6362f"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "94ca22e6cfcef3fcbade89d79ba0d92c4db6362f",
+            "sha256": "d943b8a1af5a66f2f1f82ba66a2daabd086a9f7da46eaebc9757744200da5e36"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c",
+            "sha256": "d5eae67e32804aaeca9552c96e42c45fdbf18f459d6ff247f5087a77508bd18b",
+            "bytes": 243
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c",
+            "sha256": "d5eae67e32804aaeca9552c96e42c45fdbf18f459d6ff247f5087a77508bd18b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "0c34d4b56f29eeff0dd279db663c7f13fc4709b9",
+            "sha256": "f635de892a51d974ea9f8f14cee48166f550375cf839eb2d87302750871122ba",
+            "bytes": 581
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0c34d4b56f29eeff0dd279db663c7f13fc4709b9"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0c34d4b56f29eeff0dd279db663c7f13fc4709b9",
+            "sha256": "f635de892a51d974ea9f8f14cee48166f550375cf839eb2d87302750871122ba"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "fd5fde9425e95d2bc54d8122d3bdba091980735e",
+            "sha256": "fd1e0903400b4341bfef6c62a487b842d01926e13c6ac2c248e99a347da1cb7c",
+            "bytes": 173
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "fd5fde9425e95d2bc54d8122d3bdba091980735e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "fd5fde9425e95d2bc54d8122d3bdba091980735e",
+            "sha256": "fd1e0903400b4341bfef6c62a487b842d01926e13c6ac2c248e99a347da1cb7c"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "0dc6dd04dfe4e0da510f41b93673b2bd2b9ab7a8",
+            "sha256": "d6c2f4b5ab805720dd9f1539a2a71301459fd144127412ed22958aacc58ba4fd",
+            "bytes": 1795
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0dc6dd04dfe4e0da510f41b93673b2bd2b9ab7a8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0dc6dd04dfe4e0da510f41b93673b2bd2b9ab7a8",
+            "sha256": "d6c2f4b5ab805720dd9f1539a2a71301459fd144127412ed22958aacc58ba4fd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "20ebf216336aa7d4ddb4517721c60b1b10dd6205",
+            "sha256": "821837d9c1e9238cb09a5308fa39c683fb85a01341de29406ec90a3a1f65d80b",
+            "bytes": 2008
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "20ebf216336aa7d4ddb4517721c60b1b10dd6205"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "20ebf216336aa7d4ddb4517721c60b1b10dd6205",
+            "sha256": "821837d9c1e9238cb09a5308fa39c683fb85a01341de29406ec90a3a1f65d80b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "3e8fda929d5768e2e8b8799afa1c9648e789547d",
+            "sha256": "767d2fb3fe4581950d40ee605a778fec823ae82d18020c353624d72170855591",
+            "bytes": 509
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "3e8fda929d5768e2e8b8799afa1c9648e789547d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "3e8fda929d5768e2e8b8799afa1c9648e789547d",
+            "sha256": "767d2fb3fe4581950d40ee605a778fec823ae82d18020c353624d72170855591"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "eef1b630ccb2d5335a02fca897efcdbc98a3c397",
+            "sha256": "63d39f08775a7a3d9cb43c62ec04de65191ffda44eb2ac33b8ad22e21b32fd2d",
+            "bytes": 273
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "eef1b630ccb2d5335a02fca897efcdbc98a3c397"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "eef1b630ccb2d5335a02fca897efcdbc98a3c397",
+            "sha256": "63d39f08775a7a3d9cb43c62ec04de65191ffda44eb2ac33b8ad22e21b32fd2d"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "receipt_schema",
+      "source_commit": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
+      "source_tree": "f5a3e11639845ff808e483b151492d4b9eddebcd",
+      "index_tree": "f5a3e11639845ff808e483b151492d4b9eddebcd",
+      "file_count": 24,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "189d877cfcc2b60b3d5795a63335f00b84e9fc29",
+            "sha256": "2bb57661f3bcf8a213d730d5342d826e43a55bcf8cd9894a768592519f985c65",
+            "bytes": 617
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "189d877cfcc2b60b3d5795a63335f00b84e9fc29"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "189d877cfcc2b60b3d5795a63335f00b84e9fc29",
+            "sha256": "2bb57661f3bcf8a213d730d5342d826e43a55bcf8cd9894a768592519f985c65"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "92cb7107e3256e2800b721d9d7634389ba3412c9",
+            "sha256": "81d1fe58dd8b3f7e36b8e0177c101ac7ebfff4645e20213fe35ecd61836c30ed",
+            "bytes": 2639
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "92cb7107e3256e2800b721d9d7634389ba3412c9"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "92cb7107e3256e2800b721d9d7634389ba3412c9",
+            "sha256": "81d1fe58dd8b3f7e36b8e0177c101ac7ebfff4645e20213fe35ecd61836c30ed"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "71a9173e2f9f8193469bbd8b5adb6d2aeadc7be0",
+            "sha256": "263b4658706a990e84cb03f2b4c4fcc3c5acea392eeb30f09a5110cd1f7e37ec",
+            "bytes": 2019
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "71a9173e2f9f8193469bbd8b5adb6d2aeadc7be0"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "71a9173e2f9f8193469bbd8b5adb6d2aeadc7be0",
+            "sha256": "263b4658706a990e84cb03f2b4c4fcc3c5acea392eeb30f09a5110cd1f7e37ec"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
+            "bytes": 167
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/analysis-architect-validator-followup.md",
+          "source": {
+            "mode": "100644",
+            "blob": "701ba24ac162942190c12d4c5bdbf8172a868fc2",
+            "sha256": "daa8d22504cf525de1ea396a3e1d2f402c424ddeeb43836527566f4c2868d467",
+            "bytes": 2191
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "701ba24ac162942190c12d4c5bdbf8172a868fc2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "701ba24ac162942190c12d4c5bdbf8172a868fc2",
+            "sha256": "daa8d22504cf525de1ea396a3e1d2f402c424ddeeb43836527566f4c2868d467"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f2b1b3e87537ca5fe03145d7e75c449df3456349",
+            "sha256": "57f9990c09b65bdfc531bb8860e97cab6a66de79e004ef4a8d55f3c54cbb62c8",
+            "bytes": 1858
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f2b1b3e87537ca5fe03145d7e75c449df3456349"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f2b1b3e87537ca5fe03145d7e75c449df3456349",
+            "sha256": "57f9990c09b65bdfc531bb8860e97cab6a66de79e004ef4a8d55f3c54cbb62c8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "2137daab2e74c854f50bb9a3d126af01732da7b6",
+            "sha256": "0686e47589069ff9b97ca63bcf37c4624c94de728fcb8f9944464b5469be966a",
+            "bytes": 2067
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2137daab2e74c854f50bb9a3d126af01732da7b6"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2137daab2e74c854f50bb9a3d126af01732da7b6",
+            "sha256": "0686e47589069ff9b97ca63bcf37c4624c94de728fcb8f9944464b5469be966a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "40b0a530e3bdab20275bb6f934b63f4495f5b347",
+            "sha256": "7f6b780efe65205516b685f4b0bbebe4ab43437a5e43026b0b8211929455eae0",
+            "bytes": 2344
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "40b0a530e3bdab20275bb6f934b63f4495f5b347"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "40b0a530e3bdab20275bb6f934b63f4495f5b347",
+            "sha256": "7f6b780efe65205516b685f4b0bbebe4ab43437a5e43026b0b8211929455eae0"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7f88a0d1d2c63e87634e943e63b91f8897b28fea",
+            "sha256": "34b76b1de89cdb6e9d68eacf115978a1729600bb44024b86c6b234b963ae454c",
+            "bytes": 2278
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7f88a0d1d2c63e87634e943e63b91f8897b28fea"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7f88a0d1d2c63e87634e943e63b91f8897b28fea",
+            "sha256": "34b76b1de89cdb6e9d68eacf115978a1729600bb44024b86c6b234b963ae454c"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/code-review-schema-only.md",
+          "source": {
+            "mode": "100644",
+            "blob": "781d154bc6588f982fee26849756c73e644354b8",
+            "sha256": "d7678bbb10ecbdc7e4548d55103c4abacd85f4d8ea37531a09f75d2cc638184a",
+            "bytes": 3098
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "781d154bc6588f982fee26849756c73e644354b8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "781d154bc6588f982fee26849756c73e644354b8",
+            "sha256": "d7678bbb10ecbdc7e4548d55103c4abacd85f4d8ea37531a09f75d2cc638184a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "6d200e90e8b70f98e41cf3a8409a79c36b8c1bee",
+            "sha256": "433ece884b287b4f76e7bee51a9df17aa7a6c957db6cd8585f09e8e1c0b48f48",
+            "bytes": 3850
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6d200e90e8b70f98e41cf3a8409a79c36b8c1bee"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6d200e90e8b70f98e41cf3a8409a79c36b8c1bee",
+            "sha256": "433ece884b287b4f76e7bee51a9df17aa7a6c957db6cd8585f09e8e1c0b48f48"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/full-verification-summary.json",
+          "source": {
+            "mode": "100644",
+            "blob": "55bc5a07e9242f607979eaab18cc779258309833",
+            "sha256": "a3c14a46fd2480c27a093de8d4342cb3a51c1e078087d893b212ef26a9927de5",
+            "bytes": 1315
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "55bc5a07e9242f607979eaab18cc779258309833"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "55bc5a07e9242f607979eaab18cc779258309833",
+            "sha256": "a3c14a46fd2480c27a093de8d4342cb3a51c1e078087d893b212ef26a9927de5"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/implementation.md",
+          "source": {
+            "mode": "100644",
+            "blob": "ed8f6275967d9cbeba559b4dfed02aadb76cae07",
+            "sha256": "9bf8c040a7e47b802069b8f5c067ad8143f4c8c83600cdd171b5ba4ce2695e1f",
+            "bytes": 4796
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ed8f6275967d9cbeba559b4dfed02aadb76cae07"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ed8f6275967d9cbeba559b4dfed02aadb76cae07",
+            "sha256": "9bf8c040a7e47b802069b8f5c067ad8143f4c8c83600cdd171b5ba4ce2695e1f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/product-equivalence-after-split.json",
+          "source": {
+            "mode": "100644",
+            "blob": "a205e8f31f909595046aa9acd18e0f036124e17d",
+            "sha256": "722f9f44265ddd95ecb16be4fd2378b0286c4dc96f0b735ebfea3efde666b061",
+            "bytes": 557
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a205e8f31f909595046aa9acd18e0f036124e17d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a205e8f31f909595046aa9acd18e0f036124e17d",
+            "sha256": "722f9f44265ddd95ecb16be4fd2378b0286c4dc96f0b735ebfea3efde666b061"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/source-issue.json",
+          "source": {
+            "mode": "100644",
+            "blob": "5d11e6001f359a420794371f33961ee3613b3c47",
+            "sha256": "3fd20a05b4b364e29bef8d4e719dbd7c5346adf32e03dfc451676653d4acfef6",
+            "bytes": 3957
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5d11e6001f359a420794371f33961ee3613b3c47"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5d11e6001f359a420794371f33961ee3613b3c47",
+            "sha256": "3fd20a05b4b364e29bef8d4e719dbd7c5346adf32e03dfc451676653d4acfef6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/test-review-schema-only.md",
+          "source": {
+            "mode": "100644",
+            "blob": "5724dfc796302486e6a6ed948fcf8a05a1b34a30",
+            "sha256": "f5d887e9e5a59810943efc8a3bb24f0c9068f05a3cadd6497c16d1fd5aa97f59",
+            "bytes": 2650
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5724dfc796302486e6a6ed948fcf8a05a1b34a30"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5724dfc796302486e6a6ed948fcf8a05a1b34a30",
+            "sha256": "f5d887e9e5a59810943efc8a3bb24f0c9068f05a3cadd6497c16d1fd5aa97f59"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "fcedfffbdcbad3dd6a0d97c9f8ab0996ee8fab42",
+            "sha256": "4b0d65b0d39d84def5d011923852b90391ad02827e338c0614cc52d3cc1ca6e2",
+            "bytes": 3916
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "fcedfffbdcbad3dd6a0d97c9f8ab0996ee8fab42"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "fcedfffbdcbad3dd6a0d97c9f8ab0996ee8fab42",
+            "sha256": "4b0d65b0d39d84def5d011923852b90391ad02827e338c0614cc52d3cc1ca6e2"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "11a263dfe8ba058e8dff96dd29032dd54ff253f0",
+            "sha256": "d4d6ae5d95bf291dd2520d28927884da494a5c9a1aef90674e706b163aba60fd",
+            "bytes": 240
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "11a263dfe8ba058e8dff96dd29032dd54ff253f0"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "11a263dfe8ba058e8dff96dd29032dd54ff253f0",
+            "sha256": "d4d6ae5d95bf291dd2520d28927884da494a5c9a1aef90674e706b163aba60fd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "a0e0c1044806a776114f98f205b1289b1950ca08",
+            "sha256": "dee330e52f770184e27deaf107a9492a3a0042ce77007aead4478b25723aed79",
+            "bytes": 308
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a0e0c1044806a776114f98f205b1289b1950ca08"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a0e0c1044806a776114f98f205b1289b1950ca08",
+            "sha256": "dee330e52f770184e27deaf107a9492a3a0042ce77007aead4478b25723aed79"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "9ad8df64e56349d4d51513f7bba01c3a69b8e484",
+            "sha256": "c07df2b6f50ac98c3073165ed56c2a6174bd80471c3b0bd781208bc2cd4864a3",
+            "bytes": 248
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "9ad8df64e56349d4d51513f7bba01c3a69b8e484"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "9ad8df64e56349d4d51513f7bba01c3a69b8e484",
+            "sha256": "c07df2b6f50ac98c3073165ed56c2a6174bd80471c3b0bd781208bc2cd4864a3"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "8f0a7b267363b873aa7ba32d72641db5347a9b78",
+            "sha256": "c31a0b7cb91954e5d7c85157f98aa94cb25e429c619beab50ef4329ba6cdf69d",
+            "bytes": 1781
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8f0a7b267363b873aa7ba32d72641db5347a9b78"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8f0a7b267363b873aa7ba32d72641db5347a9b78",
+            "sha256": "c31a0b7cb91954e5d7c85157f98aa94cb25e429c619beab50ef4329ba6cdf69d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "1a8293cc578805188bc09d74cedb5ad2bbc90248",
+            "sha256": "9ee3c3a37538c7e7799488b469f4d2447a557b41d5cb72ed83ccaae74322a039",
+            "bytes": 3262
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "1a8293cc578805188bc09d74cedb5ad2bbc90248"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "1a8293cc578805188bc09d74cedb5ad2bbc90248",
+            "sha256": "9ee3c3a37538c7e7799488b469f4d2447a557b41d5cb72ed83ccaae74322a039"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "37c8de0217430e08b4fad18f3bf69b49105f8094",
+            "sha256": "4406b506c3bd8cdf698545d0b38536e93278b275603484f00268a8f038c82b15",
+            "bytes": 695
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "37c8de0217430e08b4fad18f3bf69b49105f8094"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "37c8de0217430e08b4fad18f3bf69b49105f8094",
+            "sha256": "4406b506c3bd8cdf698545d0b38536e93278b275603484f00268a8f038c82b15"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "05ed2a86c2f6726b6ed765ce7f304abbbabede4a",
+            "sha256": "a51a1ec9ab9011d9f6a81102c37af16053947448a4fbe5c73a96e6f1a204175a",
+            "bytes": 1023
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "05ed2a86c2f6726b6ed765ce7f304abbbabede4a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "05ed2a86c2f6726b6ed765ce7f304abbbabede4a",
+            "sha256": "a51a1ec9ab9011d9f6a81102c37af16053947448a4fbe5c73a96e6f1a204175a"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "consumer_docs",
+      "source_commit": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66",
+      "source_tree": "5a929c4c8d3106aabd3aee660636dbb6c1e4e89b",
+      "index_tree": "5a929c4c8d3106aabd3aee660636dbb6c1e4e89b",
+      "file_count": 22,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "71ad8dec88eda885ed9246ce04b0df91c2fa7a44",
+            "sha256": "0ea148b37f7ba4ad4749802d5410bfc750a17dda50d63b1add7163a8d543dbac",
+            "bytes": 1883
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "71ad8dec88eda885ed9246ce04b0df91c2fa7a44"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "71ad8dec88eda885ed9246ce04b0df91c2fa7a44",
+            "sha256": "0ea148b37f7ba4ad4749802d5410bfc750a17dda50d63b1add7163a8d543dbac"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "6e731e75c0a9c7ae59f9e6133a860149e78afff0",
+            "sha256": "a8bbdd8299af036cddf0715352920d82215d67765e1187f5f7c1731533996724",
+            "bytes": 1377
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6e731e75c0a9c7ae59f9e6133a860149e78afff0"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6e731e75c0a9c7ae59f9e6133a860149e78afff0",
+            "sha256": "a8bbdd8299af036cddf0715352920d82215d67765e1187f5f7c1731533996724"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "4e0ca035d091bc34ceadfc1a98e7704971f18bc1",
+            "sha256": "bfca04cc2cdf998cc05c968944fa1085de84551e880cc6491a03995d34e3a9d4",
+            "bytes": 3800
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4e0ca035d091bc34ceadfc1a98e7704971f18bc1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4e0ca035d091bc34ceadfc1a98e7704971f18bc1",
+            "sha256": "bfca04cc2cdf998cc05c968944fa1085de84551e880cc6491a03995d34e3a9d4"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "c5c0be41cb9a9943ebaaea738a297250f5be675c",
+            "sha256": "1b836966c4f65a43cc762fe05082a5361ca6f3ce4ebd2153dcf214c3900b5df5",
+            "bytes": 736
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c5c0be41cb9a9943ebaaea738a297250f5be675c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c5c0be41cb9a9943ebaaea738a297250f5be675c",
+            "sha256": "1b836966c4f65a43cc762fe05082a5361ca6f3ce4ebd2153dcf214c3900b5df5"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "bbfdfdec46e5e6f85c431e3834457107d59637a8",
+            "sha256": "2c90c7837c068a3b742cd492d161584ff793b632b9384c1ebb0e4599ddd39e04",
+            "bytes": 6194
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "bbfdfdec46e5e6f85c431e3834457107d59637a8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "bbfdfdec46e5e6f85c431e3834457107d59637a8",
+            "sha256": "2c90c7837c068a3b742cd492d161584ff793b632b9384c1ebb0e4599ddd39e04"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "2fc5b729f629f20ad801ddb31dac28d67b9a20e5",
+            "sha256": "492249119237cb92befa0852a2a987e1bc5cce6ba13e31ca47a1329051db4a7b",
+            "bytes": 4055
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2fc5b729f629f20ad801ddb31dac28d67b9a20e5"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2fc5b729f629f20ad801ddb31dac28d67b9a20e5",
+            "sha256": "492249119237cb92befa0852a2a987e1bc5cce6ba13e31ca47a1329051db4a7b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "6b798d13b9bc9b1ece79f1866b83636acd9e78e3",
+            "sha256": "ae363d124393f9c0f1dd95a6c08adae48785749b7ea64e56b32a97083fa4def2",
+            "bytes": 3768
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6b798d13b9bc9b1ece79f1866b83636acd9e78e3"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6b798d13b9bc9b1ece79f1866b83636acd9e78e3",
+            "sha256": "ae363d124393f9c0f1dd95a6c08adae48785749b7ea64e56b32a97083fa4def2"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7c9363658ce406aed3906338727aad5b3e78070a",
+            "sha256": "0a36a9416390b95442e2d5be2511bb22935ae762e28891c4ed1818e2ac4afecf",
+            "bytes": 4597
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7c9363658ce406aed3906338727aad5b3e78070a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7c9363658ce406aed3906338727aad5b3e78070a",
+            "sha256": "0a36a9416390b95442e2d5be2511bb22935ae762e28891c4ed1818e2ac4afecf"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/candidate-verification-history.json",
+          "source": {
+            "mode": "100644",
+            "blob": "5dc5622497890fcfde038e1d2e2f542d3a170b73",
+            "sha256": "8e1d6a3802daf816ab61ff258ca72549d20aac82f752a9b39e0cc8f1d3fb9d56",
+            "bytes": 2756
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5dc5622497890fcfde038e1d2e2f542d3a170b73"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5dc5622497890fcfde038e1d2e2f542d3a170b73",
+            "sha256": "8e1d6a3802daf816ab61ff258ca72549d20aac82f752a9b39e0cc8f1d3fb9d56"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/code-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "b4671b3e18b96bf8ba61d433e19d845b5e73b149",
+            "sha256": "cf8fa41dd55aa7553773fda1e310268ce127abcceb51b70e41610b6a2cd4d57d",
+            "bytes": 7342
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b4671b3e18b96bf8ba61d433e19d845b5e73b149"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b4671b3e18b96bf8ba61d433e19d845b5e73b149",
+            "sha256": "cf8fa41dd55aa7553773fda1e310268ce127abcceb51b70e41610b6a2cd4d57d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "a95ff34a8958b7f57d5f914797036e02ed116fd9",
+            "sha256": "9a25ed29015eeefe73951292d9e7c9e1214497ef11e10bbb7afaeb60fda77061",
+            "bytes": 6513
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a95ff34a8958b7f57d5f914797036e02ed116fd9"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a95ff34a8958b7f57d5f914797036e02ed116fd9",
+            "sha256": "9a25ed29015eeefe73951292d9e7c9e1214497ef11e10bbb7afaeb60fda77061"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/implementation-general_implementer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "65e7f0e47b78be46a016f588b8902641e7d1ac7a",
+            "sha256": "5c1e574efb91987e7c64ed982bfb62c9b523fccedb0ddffaac3735a2964d7132",
+            "bytes": 10158
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "65e7f0e47b78be46a016f588b8902641e7d1ac7a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "65e7f0e47b78be46a016f588b8902641e7d1ac7a",
+            "sha256": "5c1e574efb91987e7c64ed982bfb62c9b523fccedb0ddffaac3735a2964d7132"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/source-issues.json",
+          "source": {
+            "mode": "100644",
+            "blob": "12eeb7cb1ad57a1867edbafd18da9d0a545e8574",
+            "sha256": "45c0ecdeebc33e8c58f1a2b0ce0f6dc26c76a52b6606356280e6473fe0b401aa",
+            "bytes": 9115
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "12eeb7cb1ad57a1867edbafd18da9d0a545e8574"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "12eeb7cb1ad57a1867edbafd18da9d0a545e8574",
+            "sha256": "45c0ecdeebc33e8c58f1a2b0ce0f6dc26c76a52b6606356280e6473fe0b401aa"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/test-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "2210f88c8c68c6fcc7e93430633fd10e2c2893fd",
+            "sha256": "83159e84ab5d70d6da6e1a939e0b3528e1ea9a661a08acef447c53321284e02a",
+            "bytes": 5895
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2210f88c8c68c6fcc7e93430633fd10e2c2893fd"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2210f88c8c68c6fcc7e93430633fd10e2c2893fd",
+            "sha256": "83159e84ab5d70d6da6e1a939e0b3528e1ea9a661a08acef447c53321284e02a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "c937692b116f68591d5d200e5b51c9e2d09bf02b",
+            "sha256": "7cd1a22117d5673f7a06c02a50f87f620dd0c11b8e9f472373bf9c6c9b732cf7",
+            "bytes": 6260
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c937692b116f68591d5d200e5b51c9e2d09bf02b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c937692b116f68591d5d200e5b51c9e2d09bf02b",
+            "sha256": "7cd1a22117d5673f7a06c02a50f87f620dd0c11b8e9f472373bf9c6c9b732cf7"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "d0eea888b0c5e956b9b5cccd3bfb32f88a1b519b",
+            "sha256": "634eff2336a78b4fccefbb485dbc37a1492052ff4d2fb510de6a715554be898f",
+            "bytes": 1120
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "d0eea888b0c5e956b9b5cccd3bfb32f88a1b519b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "d0eea888b0c5e956b9b5cccd3bfb32f88a1b519b",
+            "sha256": "634eff2336a78b4fccefbb485dbc37a1492052ff4d2fb510de6a715554be898f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "118f6659c7156e31325b2a04f13a2e32ed8fd22b",
+            "sha256": "87115b4045e4db46cd8eaa10db644f52e8cfe9142afaa097a343c188b841a91c",
+            "bytes": 1501
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "118f6659c7156e31325b2a04f13a2e32ed8fd22b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "118f6659c7156e31325b2a04f13a2e32ed8fd22b",
+            "sha256": "87115b4045e4db46cd8eaa10db644f52e8cfe9142afaa097a343c188b841a91c"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "21093823760ada7abfcd9b768b4fc4d0591cc722",
+            "sha256": "ac62ad55d4c8e834e6ae8d0b0a0b4c59c68a2a84d201a0da6f2127f49736ea10",
+            "bytes": 641
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "21093823760ada7abfcd9b768b4fc4d0591cc722"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "21093823760ada7abfcd9b768b4fc4d0591cc722",
+            "sha256": "ac62ad55d4c8e834e6ae8d0b0a0b4c59c68a2a84d201a0da6f2127f49736ea10"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "454e013a7943f671ab9f9960650b20dffd420106",
+            "sha256": "def812c5d72381dd6dfdd6b88cdb43b7068f364e80e195d26b73a93ead115cd6",
+            "bytes": 1806
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "454e013a7943f671ab9f9960650b20dffd420106"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "454e013a7943f671ab9f9960650b20dffd420106",
+            "sha256": "def812c5d72381dd6dfdd6b88cdb43b7068f364e80e195d26b73a93ead115cd6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "b6948f507a424ceec74ac5b19cf3f94f7402a6e6",
+            "sha256": "a3bc1697f0824fb8a49fa1684d7af55e23e115edea9e35dfcb402bb841b6ec58",
+            "bytes": 2752
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b6948f507a424ceec74ac5b19cf3f94f7402a6e6"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b6948f507a424ceec74ac5b19cf3f94f7402a6e6",
+            "sha256": "a3bc1697f0824fb8a49fa1684d7af55e23e115edea9e35dfcb402bb841b6ec58"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1",
+            "sha256": "1da385e4abc4273f9c07ef4f531da12b41e84b741517f217af89d571faea8325",
+            "bytes": 524
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1",
+            "sha256": "1da385e4abc4273f9c07ef4f531da12b41e84b741517f217af89d571faea8325"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "eebf2de0970751d7271a8d82f0abe40b9c023407",
+            "sha256": "2f8f5937fe4b833cc5138b93bf01e2cdcb26f925b8bf7850ce7274703d4d3da8",
+            "bytes": 1696
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "eebf2de0970751d7271a8d82f0abe40b9c023407"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "eebf2de0970751d7271a8d82f0abe40b9c023407",
+            "sha256": "2f8f5937fe4b833cc5138b93bf01e2cdcb26f925b8bf7850ce7274703d4d3da8"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "fingerprint",
+      "source_commit": "3ff6ed291243373871957b62929d40a264522e00",
+      "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39",
+      "source_tree": "17055c0d350b422a98c0e4312520f23005252fac",
+      "index_tree": "17055c0d350b422a98c0e4312520f23005252fac",
+      "file_count": 25,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "08cf7b726b524de95ed9b5fe2c0126faee384363",
+            "sha256": "58b81bcc0d5d3b68d3f52bde8f0318f7fa89df040d4ffab1b7e92c0d12e8c064",
+            "bytes": 1653
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "08cf7b726b524de95ed9b5fe2c0126faee384363"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "08cf7b726b524de95ed9b5fe2c0126faee384363",
+            "sha256": "58b81bcc0d5d3b68d3f52bde8f0318f7fa89df040d4ffab1b7e92c0d12e8c064"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "5eb554f4a15af6513b4c59bd0c745b95cda46839",
+            "sha256": "0ae781bb3ce92ff35a56882ff14dd352bf2c9f9eb9ed31917c9e0e4f8a93c282",
+            "bytes": 1913
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5eb554f4a15af6513b4c59bd0c745b95cda46839"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5eb554f4a15af6513b4c59bd0c745b95cda46839",
+            "sha256": "0ae781bb3ce92ff35a56882ff14dd352bf2c9f9eb9ed31917c9e0e4f8a93c282"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "d321e9f679b6439baa8f2d42afe5668691e130a8",
+            "sha256": "d8412f7a05eec58da5caab12c10378aabcd921279c729836a2334b27de0e2091",
+            "bytes": 4766
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "d321e9f679b6439baa8f2d42afe5668691e130a8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "d321e9f679b6439baa8f2d42afe5668691e130a8",
+            "sha256": "d8412f7a05eec58da5caab12c10378aabcd921279c729836a2334b27de0e2091"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "0ab2a89a98631c1b43cc78ba751877914264f09e",
+            "sha256": "3340587fbb24b4bfd3cc250d9b2fec6bafb3979df8f113eebb6bb85ddd75d9c3",
+            "bytes": 750
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0ab2a89a98631c1b43cc78ba751877914264f09e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0ab2a89a98631c1b43cc78ba751877914264f09e",
+            "sha256": "3340587fbb24b4bfd3cc250d9b2fec6bafb3979df8f113eebb6bb85ddd75d9c3"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "9a3f8de95de1ec13c81d63d6ebe81d844e558cb9",
+            "sha256": "2cc205ded14b9583c39ce3d11e6bf62046876f735e1574ea6526a268add86530",
+            "bytes": 5246
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "9a3f8de95de1ec13c81d63d6ebe81d844e558cb9"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "9a3f8de95de1ec13c81d63d6ebe81d844e558cb9",
+            "sha256": "2cc205ded14b9583c39ce3d11e6bf62046876f735e1574ea6526a268add86530"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "02eea44363372fec8ab6beeb5bfc2a52da846263",
+            "sha256": "ac8ab913b83449d7f98b5ef049121f40a9174d318075714034ab0444ea386498",
+            "bytes": 3540
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "02eea44363372fec8ab6beeb5bfc2a52da846263"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "02eea44363372fec8ab6beeb5bfc2a52da846263",
+            "sha256": "ac8ab913b83449d7f98b5ef049121f40a9174d318075714034ab0444ea386498"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "680b10bfdbb3de179c4d483420aa63b68c397ecf",
+            "sha256": "e2d5a92b1ffe7f077b47e0f3c7ce7fcd58c3d1fa9ee0d8e4c28fd88ff107fc92",
+            "bytes": 3176
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "680b10bfdbb3de179c4d483420aa63b68c397ecf"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "680b10bfdbb3de179c4d483420aa63b68c397ecf",
+            "sha256": "e2d5a92b1ffe7f077b47e0f3c7ce7fcd58c3d1fa9ee0d8e4c28fd88ff107fc92"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "55ffd315b60c02ac1b6e9d5322aa4e51893c2900",
+            "sha256": "cc2cfec49723b1258335a9fca2322b5a65a09fadcf82cbfcb6249feaee29703d",
+            "bytes": 3216
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "55ffd315b60c02ac1b6e9d5322aa4e51893c2900"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "55ffd315b60c02ac1b6e9d5322aa4e51893c2900",
+            "sha256": "cc2cfec49723b1258335a9fca2322b5a65a09fadcf82cbfcb6249feaee29703d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/candidate-verification-history.json",
+          "source": {
+            "mode": "100644",
+            "blob": "42b1c170a2996513528e44b6afc322ea8949ddcc",
+            "sha256": "8048f1e555d2e75e5e0c8553245c8e2163c04e990a5cd0cca31ab3f47fd202a4",
+            "bytes": 2891
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "42b1c170a2996513528e44b6afc322ea8949ddcc"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "42b1c170a2996513528e44b6afc322ea8949ddcc",
+            "sha256": "8048f1e555d2e75e5e0c8553245c8e2163c04e990a5cd0cca31ab3f47fd202a4"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/code-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "c218248d8ab04916e03c6b33d3c17265590fa328",
+            "sha256": "f1e3015ae18d37b6cc9d544d5e4e15de353a1a3dbf2d352011d49049fa7b32f5",
+            "bytes": 5129
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c218248d8ab04916e03c6b33d3c17265590fa328"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c218248d8ab04916e03c6b33d3c17265590fa328",
+            "sha256": "f1e3015ae18d37b6cc9d544d5e4e15de353a1a3dbf2d352011d49049fa7b32f5"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "bec45eccd1d16eb1efd3cdc47e35e910f8a8f588",
+            "sha256": "2a03b9f8897808ab9c69f1ea789a8a4af1f95cc9f407d95cd28495065b079098",
+            "bytes": 5214
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "bec45eccd1d16eb1efd3cdc47e35e910f8a8f588"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "bec45eccd1d16eb1efd3cdc47e35e910f8a8f588",
+            "sha256": "2a03b9f8897808ab9c69f1ea789a8a4af1f95cc9f407d95cd28495065b079098"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/implementation.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7b6718ad3eceb7133e08d223bc4eaf5e9d1d61da",
+            "sha256": "20b9979a57cd95acde74543c79bcfb226c3a2e353532f1c7c0d199849d0de8dd",
+            "bytes": 3513
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7b6718ad3eceb7133e08d223bc4eaf5e9d1d61da"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7b6718ad3eceb7133e08d223bc4eaf5e9d1d61da",
+            "sha256": "20b9979a57cd95acde74543c79bcfb226c3a2e353532f1c7c0d199849d0de8dd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/review-repair.md",
+          "source": {
+            "mode": "100644",
+            "blob": "03badc70b68d0aeafe4e9f5b0275615459d1fb7d",
+            "sha256": "7884a91b7edb8c5724a20611e20dbdf275e203f3842808b18c20c2f6ec8b24d5",
+            "bytes": 3574
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "03badc70b68d0aeafe4e9f5b0275615459d1fb7d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "03badc70b68d0aeafe4e9f5b0275615459d1fb7d",
+            "sha256": "7884a91b7edb8c5724a20611e20dbdf275e203f3842808b18c20c2f6ec8b24d5"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/security-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "382d075878fd6800cd1d7f22f06c7d9c5105f719",
+            "sha256": "51218a6f8c1599cee29c4cf8aea464c2c412bb9e1a71c4f9da1cb995f97c064b",
+            "bytes": 5488
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "382d075878fd6800cd1d7f22f06c7d9c5105f719"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "382d075878fd6800cd1d7f22f06c7d9c5105f719",
+            "sha256": "51218a6f8c1599cee29c4cf8aea464c2c412bb9e1a71c4f9da1cb995f97c064b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/security-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "95fe1277dbc17a1711ec80b57661130f29997f7a",
+            "sha256": "6667fe8aa3c0a4093b4f5b8d47687099a204d31f4399d54d67f4f9e63f8b9162",
+            "bytes": 6842
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "95fe1277dbc17a1711ec80b57661130f29997f7a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "95fe1277dbc17a1711ec80b57661130f29997f7a",
+            "sha256": "6667fe8aa3c0a4093b4f5b8d47687099a204d31f4399d54d67f4f9e63f8b9162"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/source-issues.json",
+          "source": {
+            "mode": "100644",
+            "blob": "1ca8c56d22ccfbff217d0937548e35b7a33e956c",
+            "sha256": "9e2d783c9bdbe08c7c664c935dcad06360197cce8a611bf3b932bacdcb3a0b4c",
+            "bytes": 3660
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "1ca8c56d22ccfbff217d0937548e35b7a33e956c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "1ca8c56d22ccfbff217d0937548e35b7a33e956c",
+            "sha256": "9e2d783c9bdbe08c7c664c935dcad06360197cce8a611bf3b932bacdcb3a0b4c"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/test-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "74675745ae3130b7f494010cd4fbd19538642ca5",
+            "sha256": "f2afc969236d513e7009fa6183fc2c1fc90ee0fe031e3952c6e7949a1b9815f8",
+            "bytes": 7442
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "74675745ae3130b7f494010cd4fbd19538642ca5"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "74675745ae3130b7f494010cd4fbd19538642ca5",
+            "sha256": "f2afc969236d513e7009fa6183fc2c1fc90ee0fe031e3952c6e7949a1b9815f8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "61ae537926ffaa7e35644a8685377772096a2488",
+            "sha256": "9d148e98ad7877c49bdd7cb884c4aa413210d56389d4dcce4dfd8e818ce52765",
+            "bytes": 8770
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "61ae537926ffaa7e35644a8685377772096a2488"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "61ae537926ffaa7e35644a8685377772096a2488",
+            "sha256": "9d148e98ad7877c49bdd7cb884c4aa413210d56389d4dcce4dfd8e818ce52765"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "bdcb6bd5b358b4c54f35321b90f61b322179c9b3",
+            "sha256": "c39a3e323155a4d570e2f10fb4b65ee469e263d2b34160efc3c0f6ce89857a92",
+            "bytes": 1263
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "bdcb6bd5b358b4c54f35321b90f61b322179c9b3"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "bdcb6bd5b358b4c54f35321b90f61b322179c9b3",
+            "sha256": "c39a3e323155a4d570e2f10fb4b65ee469e263d2b34160efc3c0f6ce89857a92"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "8cf39c57fb842971d97adb2541da3804791a61ff",
+            "sha256": "17cced3840236b3b050c05c002a6ca660fc5ae8c59a76d28466f53b501dadc87",
+            "bytes": 1745
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8cf39c57fb842971d97adb2541da3804791a61ff"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8cf39c57fb842971d97adb2541da3804791a61ff",
+            "sha256": "17cced3840236b3b050c05c002a6ca660fc5ae8c59a76d28466f53b501dadc87"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "ec044a402247084e013ce775960bb544a349885e",
+            "sha256": "30c9e2ccb42c2e7cd41241bb2a085ecd57407625d09e32c3155daafe5dc6b745",
+            "bytes": 778
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ec044a402247084e013ce775960bb544a349885e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ec044a402247084e013ce775960bb544a349885e",
+            "sha256": "30c9e2ccb42c2e7cd41241bb2a085ecd57407625d09e32c3155daafe5dc6b745"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "a2a77fef53e1b072199424a8647958eab6f24d47",
+            "sha256": "08310c4441f5c75173631dd89b5df515dbee98120e80f0d1c730fc4256fd191e",
+            "bytes": 1973
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a2a77fef53e1b072199424a8647958eab6f24d47"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a2a77fef53e1b072199424a8647958eab6f24d47",
+            "sha256": "08310c4441f5c75173631dd89b5df515dbee98120e80f0d1c730fc4256fd191e"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "6cbe891b0985b0df6409067380e18350ce3c9473",
+            "sha256": "14bdf3fd8e5f7b736f614e313b426723a98d77755eeb809fda648aa36fa12626",
+            "bytes": 2859
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6cbe891b0985b0df6409067380e18350ce3c9473"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6cbe891b0985b0df6409067380e18350ce3c9473",
+            "sha256": "14bdf3fd8e5f7b736f614e313b426723a98d77755eeb809fda648aa36fa12626"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1",
+            "sha256": "1da385e4abc4273f9c07ef4f531da12b41e84b741517f217af89d571faea8325",
+            "bytes": 524
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "715018b9e4cd4945936ce0b9951b8ac80a43f3f1",
+            "sha256": "1da385e4abc4273f9c07ef4f531da12b41e84b741517f217af89d571faea8325"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "9c763c47a76c466849799600c332ca7465136115",
+            "sha256": "fe97a30576a18b68f997affeeb4cf12d34ab059c6f3b7be6f15a19d3f4031dc7",
+            "bytes": 2272
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "9c763c47a76c466849799600c332ca7465136115"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "9c763c47a76c466849799600c332ca7465136115",
+            "sha256": "fe97a30576a18b68f997affeeb4cf12d34ab059c6f3b7be6f15a19d3f4031dc7"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "schema_refs",
+      "source_commit": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805",
+      "source_tree": "f2c8eb519477fef48e94587dcccde2548bd72f4a",
+      "index_tree": "f2c8eb519477fef48e94587dcccde2548bd72f4a",
+      "file_count": 23,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "4c482d64d3872f1c069780479d5c616eda43bef2",
+            "sha256": "a44ee59aa8931e6f168a7acd6b4d1f27021efff81969ce0ea2560befa5f51151",
+            "bytes": 1648
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4c482d64d3872f1c069780479d5c616eda43bef2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4c482d64d3872f1c069780479d5c616eda43bef2",
+            "sha256": "a44ee59aa8931e6f168a7acd6b4d1f27021efff81969ce0ea2560befa5f51151"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "896ebd31302509ff8ae820bfa6d1ca3b19b92c02",
+            "sha256": "ff71266e3e19badddf802a65191b6afa66946bddb83777e9aad9f46cd32f0bf6",
+            "bytes": 1199
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "896ebd31302509ff8ae820bfa6d1ca3b19b92c02"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "896ebd31302509ff8ae820bfa6d1ca3b19b92c02",
+            "sha256": "ff71266e3e19badddf802a65191b6afa66946bddb83777e9aad9f46cd32f0bf6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "50f2c6d2e44d690738abccdf13791acfb2a48165",
+            "sha256": "ee41b510f9514ad3c5d79f32e6a12c4c10fec18cbdecdfd913891bc50bb090b1",
+            "bytes": 4616
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "50f2c6d2e44d690738abccdf13791acfb2a48165"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "50f2c6d2e44d690738abccdf13791acfb2a48165",
+            "sha256": "ee41b510f9514ad3c5d79f32e6a12c4c10fec18cbdecdfd913891bc50bb090b1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "cfa251930f0b5500027ec6116743fcdaa135c80b",
+            "sha256": "f6f160eecb1882b2de7d43909ed8f91c87fb29f86f50bf203bb0da9c4da9afcf",
+            "bytes": 797
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "cfa251930f0b5500027ec6116743fcdaa135c80b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "cfa251930f0b5500027ec6116743fcdaa135c80b",
+            "sha256": "f6f160eecb1882b2de7d43909ed8f91c87fb29f86f50bf203bb0da9c4da9afcf"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "51477126558e4440daf641fb180223771803aaa8",
+            "sha256": "671a83530c0b35b12039d912ef394da244457c9b39e86e492d4f9f41eafb9bed",
+            "bytes": 7368
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "51477126558e4440daf641fb180223771803aaa8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "51477126558e4440daf641fb180223771803aaa8",
+            "sha256": "671a83530c0b35b12039d912ef394da244457c9b39e86e492d4f9f41eafb9bed"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "b7d9c2e3cda40b98ba0eb68f9c32159a34963597",
+            "sha256": "9991d69411d0ce4f4e07b4882775bd587e190f386fe63401da78b47d042a1832",
+            "bytes": 4655
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b7d9c2e3cda40b98ba0eb68f9c32159a34963597"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b7d9c2e3cda40b98ba0eb68f9c32159a34963597",
+            "sha256": "9991d69411d0ce4f4e07b4882775bd587e190f386fe63401da78b47d042a1832"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f377cbd94a51a6f0d1af3b843d023f283ed005d7",
+            "sha256": "4f02499ac6576b0dab8a8217d2e1d481aee9271e7df8edf1ca9016523c3f2ae0",
+            "bytes": 4247
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f377cbd94a51a6f0d1af3b843d023f283ed005d7"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f377cbd94a51a6f0d1af3b843d023f283ed005d7",
+            "sha256": "4f02499ac6576b0dab8a8217d2e1d481aee9271e7df8edf1ca9016523c3f2ae0"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "4bddb1066d4faa32cf6b74ae97f2829bffc43a8f",
+            "sha256": "437e4fe381139b4ee035ff364babf14801b1a5f1b4834c5b9424f2e65744ff73",
+            "bytes": 4482
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4bddb1066d4faa32cf6b74ae97f2829bffc43a8f"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4bddb1066d4faa32cf6b74ae97f2829bffc43a8f",
+            "sha256": "437e4fe381139b4ee035ff364babf14801b1a5f1b4834c5b9424f2e65744ff73"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/candidate-verification-history.json",
+          "source": {
+            "mode": "100644",
+            "blob": "39e9616ec91194199f97783f6b240172fb12b0df",
+            "sha256": "559ed37a3e8647f6ec9fbaedad5e9f3645e1adf0d79c3f9e60182131e765e5c1",
+            "bytes": 2500
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "39e9616ec91194199f97783f6b240172fb12b0df"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "39e9616ec91194199f97783f6b240172fb12b0df",
+            "sha256": "559ed37a3e8647f6ec9fbaedad5e9f3645e1adf0d79c3f9e60182131e765e5c1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/code-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "b751c1b70807bddf8cd40b11bd1ceed2fe6fb6eb",
+            "sha256": "fb777fc32ff3ff1b0217daab67f2c646d75d1dd18e955e6c0f3ebba3b47f50f6",
+            "bytes": 6916
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b751c1b70807bddf8cd40b11bd1ceed2fe6fb6eb"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b751c1b70807bddf8cd40b11bd1ceed2fe6fb6eb",
+            "sha256": "fb777fc32ff3ff1b0217daab67f2c646d75d1dd18e955e6c0f3ebba3b47f50f6"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "e15713c91bea6bfe37c4c9adbe7456dd9b1fb0d4",
+            "sha256": "7d0fc09b6231d50a25eaeefd239d063a30d60847cb7f1d7d5b2142b5625de8f8",
+            "bytes": 5585
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "e15713c91bea6bfe37c4c9adbe7456dd9b1fb0d4"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "e15713c91bea6bfe37c4c9adbe7456dd9b1fb0d4",
+            "sha256": "7d0fc09b6231d50a25eaeefd239d063a30d60847cb7f1d7d5b2142b5625de8f8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/implementation-general_implementer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "0ed7a057b7b2c919eb728dfaa33e701c298b4c79",
+            "sha256": "8cb615e190ac99fd81ee741ac823e245dbb6e7019fb866b5231c787853e9ab28",
+            "bytes": 6217
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0ed7a057b7b2c919eb728dfaa33e701c298b4c79"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0ed7a057b7b2c919eb728dfaa33e701c298b4c79",
+            "sha256": "8cb615e190ac99fd81ee741ac823e245dbb6e7019fb866b5231c787853e9ab28"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/review-repair.md",
+          "source": {
+            "mode": "100644",
+            "blob": "b0c4dcbd4678f1da70a6e5a64432243d02cf1508",
+            "sha256": "58a0a9fd3355ef7f0f40e7e1c4b12fc52334365bce925f1ba3e3c4e1f097b67e",
+            "bytes": 1841
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "b0c4dcbd4678f1da70a6e5a64432243d02cf1508"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "b0c4dcbd4678f1da70a6e5a64432243d02cf1508",
+            "sha256": "58a0a9fd3355ef7f0f40e7e1c4b12fc52334365bce925f1ba3e3c4e1f097b67e"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/source-issues.json",
+          "source": {
+            "mode": "100644",
+            "blob": "4c2e45ac75dba5c8ae88ec13a432b535edd91369",
+            "sha256": "b3b5c2a0d9c6da980d9704d11380138db5bd9d8da4f0122c22e82ce92bbfca65",
+            "bytes": 11902
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4c2e45ac75dba5c8ae88ec13a432b535edd91369"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4c2e45ac75dba5c8ae88ec13a432b535edd91369",
+            "sha256": "b3b5c2a0d9c6da980d9704d11380138db5bd9d8da4f0122c22e82ce92bbfca65"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/test-review-first.md",
+          "source": {
+            "mode": "100644",
+            "blob": "8d3d241a43f2362b93bd19f5d81733faf4d53cfa",
+            "sha256": "d8124de5d83571f015bb72e05d713ffa0c8aa02b25a16136c4baab4e152558b5",
+            "bytes": 11631
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8d3d241a43f2362b93bd19f5d81733faf4d53cfa"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8d3d241a43f2362b93bd19f5d81733faf4d53cfa",
+            "sha256": "d8124de5d83571f015bb72e05d713ffa0c8aa02b25a16136c4baab4e152558b5"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7599d5fed95315f6cdab131353a2826802e91c0c",
+            "sha256": "e02c8d336ca041f6e241f0c848eb38f4b40f88587e23dd042494a9ed47cae327",
+            "bytes": 7697
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7599d5fed95315f6cdab131353a2826802e91c0c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7599d5fed95315f6cdab131353a2826802e91c0c",
+            "sha256": "e02c8d336ca041f6e241f0c848eb38f4b40f88587e23dd042494a9ed47cae327"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "8c4353628f741b9a1516704c0c046150f1de077a",
+            "sha256": "5fc8cacd1a4afd642fb53fba77a862d49f8b070789aa8d0b6222b96a8e4a7586",
+            "bytes": 1298
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8c4353628f741b9a1516704c0c046150f1de077a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8c4353628f741b9a1516704c0c046150f1de077a",
+            "sha256": "5fc8cacd1a4afd642fb53fba77a862d49f8b070789aa8d0b6222b96a8e4a7586"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f1d8451f5f4709b4bc1fee694d11df3037fc4a1b",
+            "sha256": "7a657d6a90b949e1ebb6355fb09bbb62962f0321b70c705981eefdecae249086",
+            "bytes": 1846
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f1d8451f5f4709b4bc1fee694d11df3037fc4a1b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f1d8451f5f4709b4bc1fee694d11df3037fc4a1b",
+            "sha256": "7a657d6a90b949e1ebb6355fb09bbb62962f0321b70c705981eefdecae249086"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "1be8c03aae386a932fc58e3af8744fdbd9d304bd",
+            "sha256": "1e2107069e219059f3295d6e84c6c4e02db4b13508d766fb099992c0a2e9544b",
+            "bytes": 799
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "1be8c03aae386a932fc58e3af8744fdbd9d304bd"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "1be8c03aae386a932fc58e3af8744fdbd9d304bd",
+            "sha256": "1e2107069e219059f3295d6e84c6c4e02db4b13508d766fb099992c0a2e9544b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "f78facb7c8a98d2e92b1e9fc040c174c4ae6e4db",
+            "sha256": "685517d407b8747f158f6a429c225a739f74939af60289f251ff7fdf51ef9d93",
+            "bytes": 1805
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f78facb7c8a98d2e92b1e9fc040c174c4ae6e4db"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f78facb7c8a98d2e92b1e9fc040c174c4ae6e4db",
+            "sha256": "685517d407b8747f158f6a429c225a739f74939af60289f251ff7fdf51ef9d93"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "1c06a4933ad89e6ef4f6e67cb21d427f79655d8b",
+            "sha256": "1f68ba8c5b93bd2eb6e4f174774092ed3e0882bceaf4c2f35ab47a2539025180",
+            "bytes": 2826
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "1c06a4933ad89e6ef4f6e67cb21d427f79655d8b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "1c06a4933ad89e6ef4f6e67cb21d427f79655d8b",
+            "sha256": "1f68ba8c5b93bd2eb6e4f174774092ed3e0882bceaf4c2f35ab47a2539025180"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f205f1cf96b1878614bf4dfe7a68547fc0d7eaaa",
+            "sha256": "6561e55b6a04095892e22166d7294fe90ced79b988de62c4e569558ed4cf990d",
+            "bytes": 493
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f205f1cf96b1878614bf4dfe7a68547fc0d7eaaa"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f205f1cf96b1878614bf4dfe7a68547fc0d7eaaa",
+            "sha256": "6561e55b6a04095892e22166d7294fe90ced79b988de62c4e569558ed4cf990d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "0a8e769c9f5c32395b25546b81cbfd8b945c503f",
+            "sha256": "481cc313e8284d7c6164d658f7df6f25387f5612ffbbc55b614f355b550c6521",
+            "bytes": 1501
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0a8e769c9f5c32395b25546b81cbfd8b945c503f"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0a8e769c9f5c32395b25546b81cbfd8b945c503f",
+            "sha256": "481cc313e8284d7c6164d658f7df6f25387f5612ffbbc55b614f355b550c6521"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "migration_prefix",
+      "source_commit": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
+      "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e",
+      "source_tree": "e0575484cac566d36ba9d30c3058a7c7065c2256",
+      "index_tree": "e0575484cac566d36ba9d30c3058a7c7065c2256",
+      "file_count": 23,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "19c5e3249c672983bb98a9fa7249ea71becbb48f",
+            "sha256": "0108a9411063c27f1c42c9a0549114c1b0d4d961c2e26ba7d7d823a06388ef42",
+            "bytes": 958
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "19c5e3249c672983bb98a9fa7249ea71becbb48f"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "19c5e3249c672983bb98a9fa7249ea71becbb48f",
+            "sha256": "0108a9411063c27f1c42c9a0549114c1b0d4d961c2e26ba7d7d823a06388ef42"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "81107e6357bdd04acfb55bcb2a360d8dc740dcbe",
+            "sha256": "4256a160c2c8979bed23774b43ac41c45da07416ef7d647d754d14c83906c55a",
+            "bytes": 1846
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "81107e6357bdd04acfb55bcb2a360d8dc740dcbe"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "81107e6357bdd04acfb55bcb2a360d8dc740dcbe",
+            "sha256": "4256a160c2c8979bed23774b43ac41c45da07416ef7d647d754d14c83906c55a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "400a0b068754ae70df5708e134fac39c65189379",
+            "sha256": "b0f7fbe462b01a8b6e21cbb65c1ea5ba3710d3b0b0ded2af980e10c924a9c55d",
+            "bytes": 3043
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "400a0b068754ae70df5708e134fac39c65189379"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "400a0b068754ae70df5708e134fac39c65189379",
+            "sha256": "b0f7fbe462b01a8b6e21cbb65c1ea5ba3710d3b0b0ded2af980e10c924a9c55d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "acd264769bc636f9704e05a981f15173e4d08897",
+            "sha256": "70895a207a9f7942a6d298c63f9406ba1b81bb08507964538dbcae06c4944722",
+            "bytes": 851
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "acd264769bc636f9704e05a981f15173e4d08897"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "acd264769bc636f9704e05a981f15173e4d08897",
+            "sha256": "70895a207a9f7942a6d298c63f9406ba1b81bb08507964538dbcae06c4944722"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7b9a8af611fcab4144a5e41083e8d54b16fd2fc4",
+            "sha256": "fb4023d3c3a92b95fe0f5250245b491897d806b8a96acdb60bfdacd566f7b0a9",
+            "bytes": 3271
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7b9a8af611fcab4144a5e41083e8d54b16fd2fc4"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7b9a8af611fcab4144a5e41083e8d54b16fd2fc4",
+            "sha256": "fb4023d3c3a92b95fe0f5250245b491897d806b8a96acdb60bfdacd566f7b0a9"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/analysis-data_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "75f8a8927cfa5eb9f30449e3dd6ce35dbc0c1d88",
+            "sha256": "e4edce0ac8f24ed2d1d57c7c24664259c4a8ff84b1b17e49a6f06094735ef7ea",
+            "bytes": 8872
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "75f8a8927cfa5eb9f30449e3dd6ce35dbc0c1d88"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "75f8a8927cfa5eb9f30449e3dd6ce35dbc0c1d88",
+            "sha256": "e4edce0ac8f24ed2d1d57c7c24664259c4a8ff84b1b17e49a6f06094735ef7ea"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "618622b6989a64ceda57cde31a7c82be271af749",
+            "sha256": "7af686ae96db4be822e6f50a5521b0f59c141174b17f05267558ca243479bde1",
+            "bytes": 4292
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "618622b6989a64ceda57cde31a7c82be271af749"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "618622b6989a64ceda57cde31a7c82be271af749",
+            "sha256": "7af686ae96db4be822e6f50a5521b0f59c141174b17f05267558ca243479bde1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "c6e407927ea4a96e3b85da33f89a65ad1d08c9b1",
+            "sha256": "2f5e8a8fcfca6ab4dc36a615b0d80398ae92f3b563650e2902cb09928dcda66f",
+            "bytes": 4409
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c6e407927ea4a96e3b85da33f89a65ad1d08c9b1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c6e407927ea4a96e3b85da33f89a65ad1d08c9b1",
+            "sha256": "2f5e8a8fcfca6ab4dc36a615b0d80398ae92f3b563650e2902cb09928dcda66f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "949f8e514b8946e4064c738513352931e3df052e",
+            "sha256": "6a2068942c1a529852f795810946d452a30f3286f48c74b68ca87881638914db",
+            "bytes": 3999
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "949f8e514b8946e4064c738513352931e3df052e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "949f8e514b8946e4064c738513352931e3df052e",
+            "sha256": "6a2068942c1a529852f795810946d452a30f3286f48c74b68ca87881638914db"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "08e7cce6e7432d071a99162e622cfa7f1db38b4a",
+            "sha256": "8467d4a1fd4117c7d176942afca22edd2110e9b2c11f21e93e7121effa6fe11f",
+            "bytes": 4794
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "08e7cce6e7432d071a99162e622cfa7f1db38b4a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "08e7cce6e7432d071a99162e622cfa7f1db38b4a",
+            "sha256": "8467d4a1fd4117c7d176942afca22edd2110e9b2c11f21e93e7121effa6fe11f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/data-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "bfe28c2e4804ef0f52a29262cfeff4ddd137be98",
+            "sha256": "72aa367d8561610092fc8c264a9ff1e8a15395f8c041cb703d1a5233b511f215",
+            "bytes": 6637
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "bfe28c2e4804ef0f52a29262cfeff4ddd137be98"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "bfe28c2e4804ef0f52a29262cfeff4ddd137be98",
+            "sha256": "72aa367d8561610092fc8c264a9ff1e8a15395f8c041cb703d1a5233b511f215"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/focused-postgres.json",
+          "source": {
+            "mode": "100644",
+            "blob": "d6c32fcf872aedadd22d08d9e83a9b65af0e1179",
+            "sha256": "48d4463d616aea61dcdedc55962e6a2f1e33439cc42bcb732b2174df7ed737ee",
+            "bytes": 1435
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "d6c32fcf872aedadd22d08d9e83a9b65af0e1179"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "d6c32fcf872aedadd22d08d9e83a9b65af0e1179",
+            "sha256": "48d4463d616aea61dcdedc55962e6a2f1e33439cc42bcb732b2174df7ed737ee"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/full-verification-summary.json",
+          "source": {
+            "mode": "100644",
+            "blob": "f45862bf07c2b8a651ca32b1d9f6395e44dffdad",
+            "sha256": "ca4b234958f961213a4932b31140b05a57c16f05e63cab416032d26d1fd2bd00",
+            "bytes": 2654
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f45862bf07c2b8a651ca32b1d9f6395e44dffdad"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f45862bf07c2b8a651ca32b1d9f6395e44dffdad",
+            "sha256": "ca4b234958f961213a4932b31140b05a57c16f05e63cab416032d26d1fd2bd00"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/implementation.md",
+          "source": {
+            "mode": "100644",
+            "blob": "688c4418eeea61a33db614df11788d6a7c8994a1",
+            "sha256": "6d629504ec279fc84bfc96fadc1107cfaa57455834be0dd16d5294f628a8e2d7",
+            "bytes": 3913
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "688c4418eeea61a33db614df11788d6a7c8994a1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "688c4418eeea61a33db614df11788d6a7c8994a1",
+            "sha256": "6d629504ec279fc84bfc96fadc1107cfaa57455834be0dd16d5294f628a8e2d7"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/source-issue.json",
+          "source": {
+            "mode": "100644",
+            "blob": "eafe11dbb688a04a55d1958be159b620edde917b",
+            "sha256": "f68184c51b74e912130e3f567dca8b45b30e8fc2124ef273dbed3d12ccef5c5f",
+            "bytes": 4743
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "eafe11dbb688a04a55d1958be159b620edde917b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "eafe11dbb688a04a55d1958be159b620edde917b",
+            "sha256": "f68184c51b74e912130e3f567dca8b45b30e8fc2124ef273dbed3d12ccef5c5f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "6a20e3aaf4f58de2d65dac50429fd48865584318",
+            "sha256": "4deb2ac1b94ead94403a1d3b8ec8c32a4c250da3530bdc91d783ac79b7524533",
+            "bytes": 7279
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6a20e3aaf4f58de2d65dac50429fd48865584318"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6a20e3aaf4f58de2d65dac50429fd48865584318",
+            "sha256": "4deb2ac1b94ead94403a1d3b8ec8c32a4c250da3530bdc91d783ac79b7524533"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c",
+            "sha256": "d5eae67e32804aaeca9552c96e42c45fdbf18f459d6ff247f5087a77508bd18b",
+            "bytes": 243
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "92f1bc7c4486f596735db9da1a1dd8e535dae95c",
+            "sha256": "d5eae67e32804aaeca9552c96e42c45fdbf18f459d6ff247f5087a77508bd18b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f73164d4d5eb367c6b48ade5c43e31828e8f5e9b",
+            "sha256": "a268c6e9059bfd799a35275b44df0379a9247d634fd8801dd6abf5ee8b218034",
+            "bytes": 615
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f73164d4d5eb367c6b48ade5c43e31828e8f5e9b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f73164d4d5eb367c6b48ade5c43e31828e8f5e9b",
+            "sha256": "a268c6e9059bfd799a35275b44df0379a9247d634fd8801dd6abf5ee8b218034"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "cf9792676e9eed9e207317ab74e3a6c94b245183",
+            "sha256": "0c83c3629306f2549dc53a3eefa832b59ae6fc67b2ae00f493848aba138f8f95",
+            "bytes": 304
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "cf9792676e9eed9e207317ab74e3a6c94b245183"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "cf9792676e9eed9e207317ab74e3a6c94b245183",
+            "sha256": "0c83c3629306f2549dc53a3eefa832b59ae6fc67b2ae00f493848aba138f8f95"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "3738b02fcc8bbbce46a781da63e97f6ad4767250",
+            "sha256": "b034e70f71bfa0998ca16dee5986cd91c11d16b30b6bec6cd85147b70bc69a24",
+            "bytes": 2000
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "3738b02fcc8bbbce46a781da63e97f6ad4767250"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "3738b02fcc8bbbce46a781da63e97f6ad4767250",
+            "sha256": "b034e70f71bfa0998ca16dee5986cd91c11d16b30b6bec6cd85147b70bc69a24"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "a66a9de7332847a7592b437ff4f1dd22a530f05e",
+            "sha256": "d518e2a0fd167c62bb40a947a7000a259a93bee7c216b5bd2c029f27e8693d3a",
+            "bytes": 2065
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a66a9de7332847a7592b437ff4f1dd22a530f05e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a66a9de7332847a7592b437ff4f1dd22a530f05e",
+            "sha256": "d518e2a0fd167c62bb40a947a7000a259a93bee7c216b5bd2c029f27e8693d3a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "54aeeecc8f4358ba7ea96403036bf1278cdfa8fa",
+            "sha256": "556dbd8f25028bdb400563882af76846826bd77b841378895946b0f206fde5fd",
+            "bytes": 585
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "54aeeecc8f4358ba7ea96403036bf1278cdfa8fa"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "54aeeecc8f4358ba7ea96403036bf1278cdfa8fa",
+            "sha256": "556dbd8f25028bdb400563882af76846826bd77b841378895946b0f206fde5fd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "aa76d7f82efcdc04900f49466da397ed89670fc3",
+            "sha256": "129c6235c877551918de3fb5420becd0ab1abbac6beeca24f5be1183dd5c6e13",
+            "bytes": 352
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "aa76d7f82efcdc04900f49466da397ed89670fc3"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "aa76d7f82efcdc04900f49466da397ed89670fc3",
+            "sha256": "129c6235c877551918de3fb5420becd0ab1abbac6beeca24f5be1183dd5c6e13"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    },
+    {
+      "label": "accepted_ingress_operation",
+      "source_commit": "07b2dd2f103abc3235f38a523a558b60a40d4034",
+      "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
+      "source_tree": "abcf9d59a2d2bd9465036b92a211e54ee826b7bb",
+      "index_tree": "abcf9d59a2d2bd9465036b92a211e54ee826b7bb",
+      "file_count": 50,
+      "paths": [
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/architecture.md",
+          "source": {
+            "mode": "100644",
+            "blob": "55ea963964f175f97c3e02f2431a153eec9a7ce3",
+            "sha256": "813926d8c00a3c63b88bbb97191f295dd1cde5c06e85d4fb896333b172f797ac",
+            "bytes": 1209
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "55ea963964f175f97c3e02f2431a153eec9a7ce3"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "55ea963964f175f97c3e02f2431a153eec9a7ce3",
+            "sha256": "813926d8c00a3c63b88bbb97191f295dd1cde5c06e85d4fb896333b172f797ac"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/brief.md",
+          "source": {
+            "mode": "100644",
+            "blob": "0e1ba72f8a4d3ac90809447605e37841ac44978d",
+            "sha256": "df2c694c3ca5e146ac2232de7bf40e919521440351a718c6afd686863e3aba52",
+            "bytes": 3182
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "0e1ba72f8a4d3ac90809447605e37841ac44978d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "0e1ba72f8a4d3ac90809447605e37841ac44978d",
+            "sha256": "df2c694c3ca5e146ac2232de7bf40e919521440351a718c6afd686863e3aba52"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/change-spec.yaml",
+          "source": {
+            "mode": "100644",
+            "blob": "4a9bc5e1ea9d634efffe7b4204f41f3f3182d3f4",
+            "sha256": "4ed28eacd2d73a19c077acb86f03e79f01e1faee908e8dd5b13d7502171baa5e",
+            "bytes": 2871
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4a9bc5e1ea9d634efffe7b4204f41f3f3182d3f4"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4a9bc5e1ea9d634efffe7b4204f41f3f3182d3f4",
+            "sha256": "4ed28eacd2d73a19c077acb86f03e79f01e1faee908e8dd5b13d7502171baa5e"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/README.md",
+          "source": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
+            "bytes": 167
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "652aa7b5023e8b31c5d3796adf1abd99b64cc16e",
+            "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/acceptance-initial-counters.json",
+          "source": {
+            "mode": "100644",
+            "blob": "fc157bb1def8d6cb4760d2c0fd2ce8c220c8f453",
+            "sha256": "86c20e84bc28ae2fea5305e173e7d2b7c5ab25af569f647d634fbd081cd6e377",
+            "bytes": 265
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "fc157bb1def8d6cb4760d2c0fd2ce8c220c8f453"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "fc157bb1def8d6cb4760d2c0fd2ce8c220c8f453",
+            "sha256": "86c20e84bc28ae2fea5305e173e7d2b7c5ab25af569f647d634fbd081cd6e377"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/acceptance-initial-http.json",
+          "source": {
+            "mode": "100644",
+            "blob": "2007ce8efbd87c719806c09435708e091ba25c3e",
+            "sha256": "1efeeafd0abd54eb7a20af838fa20cef6f45b5c45d630e22be84c36a64e51443",
+            "bytes": 891
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2007ce8efbd87c719806c09435708e091ba25c3e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2007ce8efbd87c719806c09435708e091ba25c3e",
+            "sha256": "1efeeafd0abd54eb7a20af838fa20cef6f45b5c45d630e22be84c36a64e51443"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/acceptance-measured-counters.json",
+          "source": {
+            "mode": "100644",
+            "blob": "8bd6b0e75c567cc75d2d681e32d71f7dac4a1cdb",
+            "sha256": "cc41424015f19829e067843f4a16590c1e6f2b3a23fdd4a37f335203d0e14b59",
+            "bytes": 618
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8bd6b0e75c567cc75d2d681e32d71f7dac4a1cdb"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8bd6b0e75c567cc75d2d681e32d71f7dac4a1cdb",
+            "sha256": "cc41424015f19829e067843f4a16590c1e6f2b3a23fdd4a37f335203d0e14b59"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/acceptance-private-http-retry.json",
+          "source": {
+            "mode": "100644",
+            "blob": "014754336eef8f9b757564091f9c36937805c44c",
+            "sha256": "6439a92d104bb2129f2f07106ac219c794de8c136fd7d7ba96fb40bae524ba1b",
+            "bytes": 271
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "014754336eef8f9b757564091f9c36937805c44c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "014754336eef8f9b757564091f9c36937805c44c",
+            "sha256": "6439a92d104bb2129f2f07106ac219c794de8c136fd7d7ba96fb40bae524ba1b"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/acceptance-public-http-resolved.json",
+          "source": {
+            "mode": "100644",
+            "blob": "ec1be884ef98b5959f0c5303173bd66e0dc752c7",
+            "sha256": "7fdee9213045b51573968d213295db6e9d09443ca595ef583a7e03ecfd382a8a",
+            "bytes": 2591
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ec1be884ef98b5959f0c5303173bd66e0dc752c7"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ec1be884ef98b5959f0c5303173bd66e0dc752c7",
+            "sha256": "7fdee9213045b51573968d213295db6e9d09443ca595ef583a7e03ecfd382a8a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/accepted-runtime-snapshot.json",
+          "source": {
+            "mode": "100644",
+            "blob": "8d8a1f6ff085aa98c6ef72c290de71c68af57dc0",
+            "sha256": "38543eb6081ebfce6596f6f5b64040a0d59c16e7b1eaf75f213cf6106dbc77c9",
+            "bytes": 4711
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8d8a1f6ff085aa98c6ef72c290de71c68af57dc0"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8d8a1f6ff085aa98c6ef72c290de71c68af57dc0",
+            "sha256": "38543eb6081ebfce6596f6f5b64040a0d59c16e7b1eaf75f213cf6106dbc77c9"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/analysis-architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "04ea2d947407da4e42dabd8e2897c9383113a196",
+            "sha256": "9663ccd94b3ff9a92efca4b5b1f5c84e19dd5b99485b94ebf858f4050b77eb62",
+            "bytes": 4284
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "04ea2d947407da4e42dabd8e2897c9383113a196"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "04ea2d947407da4e42dabd8e2897c9383113a196",
+            "sha256": "9663ccd94b3ff9a92efca4b5b1f5c84e19dd5b99485b94ebf858f4050b77eb62"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/analysis-docs_researcher.md",
+          "source": {
+            "mode": "100644",
+            "blob": "d172340465ad8dda26d747e6ba6fa10f0b73a0ad",
+            "sha256": "456d1885d0dafb0888a27b4552f7aab72af5ce8f8b14d110fb549cbd6deb78d8",
+            "bytes": 5612
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "d172340465ad8dda26d747e6ba6fa10f0b73a0ad"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "d172340465ad8dda26d747e6ba6fa10f0b73a0ad",
+            "sha256": "456d1885d0dafb0888a27b4552f7aab72af5ce8f8b14d110fb549cbd6deb78d8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/analysis-integration_architect.md",
+          "source": {
+            "mode": "100644",
+            "blob": "59fad56c9c06303d2c36fc63fc0e03037dacc105",
+            "sha256": "8ab1576bd652e8974a8c4b7a8db7f92ca5368d2fee530091f8048e168c5ed4ea",
+            "bytes": 6194
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "59fad56c9c06303d2c36fc63fc0e03037dacc105"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "59fad56c9c06303d2c36fc63fc0e03037dacc105",
+            "sha256": "8ab1576bd652e8974a8c4b7a8db7f92ca5368d2fee530091f8048e168c5ed4ea"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/analysis-repo_explorer.md",
+          "source": {
+            "mode": "100644",
+            "blob": "6021c05addc25816506dce1c97f8a95117a1cde2",
+            "sha256": "2db224a0008abd863d161fca4828b1fee5e38249871237db19b70b4ad171597d",
+            "bytes": 4726
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "6021c05addc25816506dce1c97f8a95117a1cde2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "6021c05addc25816506dce1c97f8a95117a1cde2",
+            "sha256": "2db224a0008abd863d161fca4828b1fee5e38249871237db19b70b4ad171597d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/artifact-manifest.json",
+          "source": {
+            "mode": "100644",
+            "blob": "a16d18bd79296e976998ffe51200584c952e226b",
+            "sha256": "b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d",
+            "bytes": 2460
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a16d18bd79296e976998ffe51200584c952e226b"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a16d18bd79296e976998ffe51200584c952e226b",
+            "sha256": "b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/artifacts.sha256",
+          "source": {
+            "mode": "100644",
+            "blob": "4ca48025236926fc51249d3cad7fdab1b53399e4",
+            "sha256": "a846bf66692282d1e2a85a085683c27fbd41559663dc8b45ef7f6e84fb5e87f2",
+            "bytes": 558
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4ca48025236926fc51249d3cad7fdab1b53399e4"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4ca48025236926fc51249d3cad7fdab1b53399e4",
+            "sha256": "a846bf66692282d1e2a85a085683c27fbd41559663dc8b45ef7f6e84fb5e87f2"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/code-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "416b45a02d7aa6cee255596d66d4999066e22d2c",
+            "sha256": "4557969cd666b336bf72cf6979bc6636da5dcb36019f5b0488c364d3408c368d",
+            "bytes": 13632
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "416b45a02d7aa6cee255596d66d4999066e22d2c"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "416b45a02d7aa6cee255596d66d4999066e22d2c",
+            "sha256": "4557969cd666b336bf72cf6979bc6636da5dcb36019f5b0488c364d3408c368d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/continuation-result-03.json",
+          "source": {
+            "mode": "100644",
+            "blob": "c6a60da67b6a3124d26b8fb30a4a0b696671f418",
+            "sha256": "4f10f1de2ab354378c2bba9a129b895389e043c8dcefe667a1967b1048c2fda8",
+            "bytes": 4481
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "c6a60da67b6a3124d26b8fb30a4a0b696671f418"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "c6a60da67b6a3124d26b8fb30a4a0b696671f418",
+            "sha256": "4f10f1de2ab354378c2bba9a129b895389e043c8dcefe667a1967b1048c2fda8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/continuation-result-04.json",
+          "source": {
+            "mode": "100644",
+            "blob": "dc88d3501d4c2d9de6e1b32fe42ae7871280dcc1",
+            "sha256": "fee746406db67aa9b17c7c5af88707232f4e447c78a5ba91063715a31bb78885",
+            "bytes": 681
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "dc88d3501d4c2d9de6e1b32fe42ae7871280dcc1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "dc88d3501d4c2d9de6e1b32fe42ae7871280dcc1",
+            "sha256": "fee746406db67aa9b17c7c5af88707232f4e447c78a5ba91063715a31bb78885"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/dns-observation.json",
+          "source": {
+            "mode": "100644",
+            "blob": "89a35556292b025860e9ca02ec60206fdd4993b7",
+            "sha256": "42dbeb18cb22e3f47bf8df95dd98c9838eac8bff0346941667bd8c44a1e1d6ab",
+            "bytes": 424
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "89a35556292b025860e9ca02ec60206fdd4993b7"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "89a35556292b025860e9ca02ec60206fdd4993b7",
+            "sha256": "42dbeb18cb22e3f47bf8df95dd98c9838eac8bff0346941667bd8c44a1e1d6ab"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/implementation-report.md",
+          "source": {
+            "mode": "100644",
+            "blob": "175d929ec6d57da88c115d7f952534b7da5a47fa",
+            "sha256": "c968f956de490d72835c5c4df2fc18a19831ab317e7dbfc55ac315411de1eb81",
+            "bytes": 9710
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "175d929ec6d57da88c115d7f952534b7da5a47fa"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "175d929ec6d57da88c115d7f952534b7da5a47fa",
+            "sha256": "c968f956de490d72835c5c4df2fc18a19831ab317e7dbfc55ac315411de1eb81"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operation-first-result-01.json",
+          "source": {
+            "mode": "100644",
+            "blob": "751b7bcb815e8fcc8d70f540e3d087795c7df8b3",
+            "sha256": "beb36a4f7bf7380160a16650b674cb5baecff1d39266a9b67457e09b9fffcdcd",
+            "bytes": 421
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "751b7bcb815e8fcc8d70f540e3d087795c7df8b3"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "751b7bcb815e8fcc8d70f540e3d087795c7df8b3",
+            "sha256": "beb36a4f7bf7380160a16650b674cb5baecff1d39266a9b67457e09b9fffcdcd"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operation-first-result-02.json",
+          "source": {
+            "mode": "100644",
+            "blob": "514b492cfd65a754e4fa99afbe1ac66b9c7bb860",
+            "sha256": "57a35cba7a9ddc25c565c51ca2fbf439fa87372b9581843772eb68a095807294",
+            "bytes": 125
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "514b492cfd65a754e4fa99afbe1ac66b9c7bb860"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "514b492cfd65a754e4fa99afbe1ac66b9c7bb860",
+            "sha256": "57a35cba7a9ddc25c565c51ca2fbf439fa87372b9581843772eb68a095807294"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operation-first-result-03.json",
+          "source": {
+            "mode": "100644",
+            "blob": "60e23a93df952ede1fb56bb9bd970148681c37bb",
+            "sha256": "089408e8e4710908c1f5a8a675b62295717e05615e54f62e968b279ad102a05a",
+            "bytes": 896
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "60e23a93df952ede1fb56bb9bd970148681c37bb"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "60e23a93df952ede1fb56bb9bd970148681c37bb",
+            "sha256": "089408e8e4710908c1f5a8a675b62295717e05615e54f62e968b279ad102a05a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operation-plan.sha256",
+          "source": {
+            "mode": "100644",
+            "blob": "bcdbb6e407060bb80a238c7715bb5d2680771b15",
+            "sha256": "695fa21a1f51a4c90ce698c5e055b1a4f4c7d18c7a17eb4827a91d7062c33e91",
+            "bytes": 84
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "bcdbb6e407060bb80a238c7715bb5d2680771b15"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "bcdbb6e407060bb80a238c7715bb5d2680771b15",
+            "sha256": "695fa21a1f51a4c90ce698c5e055b1a4f4c7d18c7a17eb4827a91d7062c33e91"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md",
+          "source": {
+            "mode": "100644",
+            "blob": "11063fdf4effd6c4be0b5657195e285616309810",
+            "sha256": "1e4bc4cc644dcf241d2440e3d9f65a39cc19eaea084971fbb2fbc0de3043fbac",
+            "bytes": 3149
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "11063fdf4effd6c4be0b5657195e285616309810"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "11063fdf4effd6c4be0b5657195e285616309810",
+            "sha256": "1e4bc4cc644dcf241d2440e3d9f65a39cc19eaea084971fbb2fbc0de3043fbac"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/pr170-external-check.json",
+          "source": {
+            "mode": "100644",
+            "blob": "df4cc334f113c6bd36dd651caec6653e8170b12e",
+            "sha256": "58bda2969c802c5b9f20ec503d2c4827d5190b5c70c5a54304d350aea674b9aa",
+            "bytes": 966
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "df4cc334f113c6bd36dd651caec6653e8170b12e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "df4cc334f113c6bd36dd651caec6653e8170b12e",
+            "sha256": "58bda2969c802c5b9f20ec503d2c4827d5190b5c70c5a54304d350aea674b9aa"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/pre-operation-first-freeze.json",
+          "source": {
+            "mode": "100644",
+            "blob": "ab6a17514b02c2a19c4f7a985256c7bb15aef113",
+            "sha256": "76e6ecbb1f298bbcb28b95c6ff986e86c5bd0d5d28a29e7763133dff49e1fe77",
+            "bytes": 1436
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "ab6a17514b02c2a19c4f7a985256c7bb15aef113"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "ab6a17514b02c2a19c4f7a985256c7bb15aef113",
+            "sha256": "76e6ecbb1f298bbcb28b95c6ff986e86c5bd0d5d28a29e7763133dff49e1fe77"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/pre-operation-freeze.json",
+          "source": {
+            "mode": "100644",
+            "blob": "eaf0d7979ddb73bc70366c38f8e09a494bf3fca4",
+            "sha256": "99f4360d603c63be14a5a54fc4d60a7af0a17a080b2c68b00779f2565c9df7cb",
+            "bytes": 1696
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "eaf0d7979ddb73bc70366c38f8e09a494bf3fca4"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "eaf0d7979ddb73bc70366c38f8e09a494bf3fca4",
+            "sha256": "99f4360d603c63be14a5a54fc4d60a7af0a17a080b2c68b00779f2565c9df7cb"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/pre-operation-typed-freeze.json",
+          "source": {
+            "mode": "100644",
+            "blob": "221a11d0d9c1de1e51bbaad387d8bd3512c23570",
+            "sha256": "8e24d8c9a4a1bbdb5dca752d8c84bebd981241c53e714cc3e9d1216a76e57007",
+            "bytes": 1558
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "221a11d0d9c1de1e51bbaad387d8bd3512c23570"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "221a11d0d9c1de1e51bbaad387d8bd3512c23570",
+            "sha256": "8e24d8c9a4a1bbdb5dca752d8c84bebd981241c53e714cc3e9d1216a76e57007"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/preparation-verification.json",
+          "source": {
+            "mode": "100644",
+            "blob": "5399e9f78ed51eec16ff6cbe2f2ec98d1b7bab8a",
+            "sha256": "ac0e6f8e20654ad070a52d41ba5d97304406132e3b08d528138ef428d39eec0d",
+            "bytes": 4169
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "5399e9f78ed51eec16ff6cbe2f2ec98d1b7bab8a"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "5399e9f78ed51eec16ff6cbe2f2ec98d1b7bab8a",
+            "sha256": "ac0e6f8e20654ad070a52d41ba5d97304406132e3b08d528138ef428d39eec0d"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-counter-acceptance.json",
+          "source": {
+            "mode": "100644",
+            "blob": "54b769ed796c50a21000c1f7f7ee271baba1707e",
+            "sha256": "7bed14b9686af3ddbe229a5e1bb00abcdbf274566a420f5bdc512d7657f935fb",
+            "bytes": 533
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "54b769ed796c50a21000c1f7f7ee271baba1707e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "54b769ed796c50a21000c1f7f7ee271baba1707e",
+            "sha256": "7bed14b9686af3ddbe229a5e1bb00abcdbf274566a420f5bdc512d7657f935fb"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-http-acceptance.json",
+          "source": {
+            "mode": "100644",
+            "blob": "27f92f8bcd3ca99aad24db3d1b12e55fba266038",
+            "sha256": "cc0e1e787920e376bba1c0ee6bdb119fef47442c1b505baeb34864b672b343c1",
+            "bytes": 2578
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "27f92f8bcd3ca99aad24db3d1b12e55fba266038"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "27f92f8bcd3ca99aad24db3d1b12e55fba266038",
+            "sha256": "cc0e1e787920e376bba1c0ee6bdb119fef47442c1b505baeb34864b672b343c1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-restart-block-03.json",
+          "source": {
+            "mode": "100644",
+            "blob": "07c949ea1262f30ef74d659d41a5a332b7384fb6",
+            "sha256": "93114bb7f737fb41ff6dd9dd30149fe6f16bea0d24335b6e8396dcc34e785b4a",
+            "bytes": 4467
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "07c949ea1262f30ef74d659d41a5a332b7384fb6"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "07c949ea1262f30ef74d659d41a5a332b7384fb6",
+            "sha256": "93114bb7f737fb41ff6dd9dd30149fe6f16bea0d24335b6e8396dcc34e785b4a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-restart-block-08.json",
+          "source": {
+            "mode": "100644",
+            "blob": "472f373b0e503a9c9a0f7d95527ad227a9133912",
+            "sha256": "bcb3640e231e9db7d4b85a54c3b9f0fca41bdb843a9bbef33352228188bbfc57",
+            "bytes": 289
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "472f373b0e503a9c9a0f7d95527ad227a9133912"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "472f373b0e503a9c9a0f7d95527ad227a9133912",
+            "sha256": "bcb3640e231e9db7d4b85a54c3b9f0fca41bdb843a9bbef33352228188bbfc57"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-stop-result.json",
+          "source": {
+            "mode": "100644",
+            "blob": "16a39e4e6850b3d86c559fda1df79121d0753d80",
+            "sha256": "b9ef6b6f1ee8e941054cad17358f76672119d330f3f89dcf73bdd506242051e1",
+            "bytes": 1228
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "16a39e4e6850b3d86c559fda1df79121d0753d80"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "16a39e4e6850b3d86c559fda1df79121d0753d80",
+            "sha256": "b9ef6b6f1ee8e941054cad17358f76672119d330f3f89dcf73bdd506242051e1"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/recovery-stopped-http.json",
+          "source": {
+            "mode": "100644",
+            "blob": "46eda0e8a2fc11f30710b5a1dccdb7b4cf47f91d",
+            "sha256": "e74756101044cd8f4a2b0a3c0ad8f4da64a3b1fbb4f5df102fa12205129e38c9",
+            "bytes": 887
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "46eda0e8a2fc11f30710b5a1dccdb7b4cf47f91d"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "46eda0e8a2fc11f30710b5a1dccdb7b4cf47f91d",
+            "sha256": "e74756101044cd8f4a2b0a3c0ad8f4da64a3b1fbb4f5df102fa12205129e38c9"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-acceptance-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "2463bbbe178a8fde0bef1f8485020401df6e6256",
+            "sha256": "2212829f44706783058b81e44704a3fa504b8871ec72d605d0afd5fd892fe864",
+            "bytes": 8509
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2463bbbe178a8fde0bef1f8485020401df6e6256"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2463bbbe178a8fde0bef1f8485020401df6e6256",
+            "sha256": "2212829f44706783058b81e44704a3fa504b8871ec72d605d0afd5fd892fe864"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "81e21cd280600dca512a32d1085b0c0106773157",
+            "sha256": "b6fb6af7f27d9d39ef79ca38c24b8320666e1364be04437a188c0c90e199e83f",
+            "bytes": 16386
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "81e21cd280600dca512a32d1085b0c0106773157"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "81e21cd280600dca512a32d1085b0c0106773157",
+            "sha256": "b6fb6af7f27d9d39ef79ca38c24b8320666e1364be04437a188c0c90e199e83f"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/security-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "4f2bc60600ca632f28c6219c831007c09bc11716",
+            "sha256": "780f0433e8cd62d09d391448ff8a6539a7ffca99eab1475eb4258ee3cb7fa695",
+            "bytes": 13826
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "4f2bc60600ca632f28c6219c831007c09bc11716"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "4f2bc60600ca632f28c6219c831007c09bc11716",
+            "sha256": "780f0433e8cd62d09d391448ff8a6539a7ffca99eab1475eb4258ee3cb7fa695"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/shared-memory-facts.md",
+          "source": {
+            "mode": "100644",
+            "blob": "7602e82fa7fe6cb61b82e5eb38cc1bdfc5518031",
+            "sha256": "2ecefaa3765c733e0f4f007c4f9277012400cd52631e3610e6fa7b548cabb7a8",
+            "bytes": 1276
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "7602e82fa7fe6cb61b82e5eb38cc1bdfc5518031"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "7602e82fa7fe6cb61b82e5eb38cc1bdfc5518031",
+            "sha256": "2ecefaa3765c733e0f4f007c4f9277012400cd52631e3610e6fa7b548cabb7a8"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/test-review.md",
+          "source": {
+            "mode": "100644",
+            "blob": "aa8c889bb503e10d11d9698875742a533c7e46d1",
+            "sha256": "1bf14270cc44f89422c58faf9bc9abf393de29b3b0f58985c1bb718e60aac103",
+            "bytes": 15771
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "aa8c889bb503e10d11d9698875742a533c7e46d1"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "aa8c889bb503e10d11d9698875742a533c7e46d1",
+            "sha256": "1bf14270cc44f89422c58faf9bc9abf393de29b3b0f58985c1bb718e60aac103"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/operation-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "625809dfdcd92254b27ebf766c9aaebd02859952",
+            "sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
+            "bytes": 31942
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "625809dfdcd92254b27ebf766c9aaebd02859952"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "625809dfdcd92254b27ebf766c9aaebd02859952",
+            "sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/release.md",
+          "source": {
+            "mode": "100644",
+            "blob": "a2e6c7b8eaec5c852be8d5eda97b76106565ce83",
+            "sha256": "eed3a2d87aa45c0cd9eada2e846010d0177c923b69ac01c8ff0e491d98dbcf7a",
+            "bytes": 707
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "a2e6c7b8eaec5c852be8d5eda97b76106565ce83"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "a2e6c7b8eaec5c852be8d5eda97b76106565ce83",
+            "sha256": "eed3a2d87aa45c0cd9eada2e846010d0177c923b69ac01c8ff0e491d98dbcf7a"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/requirements.md",
+          "source": {
+            "mode": "100644",
+            "blob": "f941a06c71ce3aa9c861bac0b6b017c630adefc8",
+            "sha256": "bed8e9b9d34b48998cbff3cd4c6490ec20fdbbada79bc7240e961024c207cea2",
+            "bytes": 1004
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "f941a06c71ce3aa9c861bac0b6b017c630adefc8"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "f941a06c71ce3aa9c861bac0b6b017c630adefc8",
+            "sha256": "bed8e9b9d34b48998cbff3cd4c6490ec20fdbbada79bc7240e961024c207cea2"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/rollback.md",
+          "source": {
+            "mode": "100644",
+            "blob": "8c5aa7de380572b5f67c51860853a2b5dddd7869",
+            "sha256": "55a05784431e00e2b169a999c06b13d2796dc21b0940056fd7ea2aa2d28359f7",
+            "bytes": 549
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "8c5aa7de380572b5f67c51860853a2b5dddd7869"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "8c5aa7de380572b5f67c51860853a2b5dddd7869",
+            "sha256": "55a05784431e00e2b169a999c06b13d2796dc21b0940056fd7ea2aa2d28359f7"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/route.json",
+          "source": {
+            "mode": "100644",
+            "blob": "9ffd90373b165605dd82776636f3c9d86cb9672e",
+            "sha256": "94eb87ca80be328da5ba3d3d148f91b5b3863ed98082295f61770273e6fe15e0",
+            "bytes": 2205
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "9ffd90373b165605dd82776636f3c9d86cb9672e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "9ffd90373b165605dd82776636f3c9d86cb9672e",
+            "sha256": "94eb87ca80be328da5ba3d3d148f91b5b3863ed98082295f61770273e6fe15e0"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/state.json",
+          "source": {
+            "mode": "100644",
+            "blob": "2ff83603772a5d07edff2ed253d909ab59df1765",
+            "sha256": "effc0beb90ed2bff5eadf2095bc120c45d4cf819b5c0cdb7434c7be757cab6a9",
+            "bytes": 2548
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "2ff83603772a5d07edff2ed253d909ab59df1765"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "2ff83603772a5d07edff2ed253d909ab59df1765",
+            "sha256": "effc0beb90ed2bff5eadf2095bc120c45d4cf819b5c0cdb7434c7be757cab6a9"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/tasks.md",
+          "source": {
+            "mode": "100644",
+            "blob": "230b61a9a8a5fc578879df6263acae61a29c74b2",
+            "sha256": "2c4eeae8259f7635c08d75a283d40cd5ecfa42411d542c841bb22feca98f7670",
+            "bytes": 867
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "230b61a9a8a5fc578879df6263acae61a29c74b2"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "230b61a9a8a5fc578879df6263acae61a29c74b2",
+            "sha256": "2c4eeae8259f7635c08d75a283d40cd5ecfa42411d542c841bb22feca98f7670"
+          },
+          "exact_identity": true
+        },
+        {
+          "path": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/test-plan.md",
+          "source": {
+            "mode": "100644",
+            "blob": "032731984860668fed8d8b5a7cae6bc5b47bbe8e",
+            "sha256": "dd4cc4e827abcb1b0f7fdc6d800ed07c0f8cf48c3eb16b4ffafca9dba9412084",
+            "bytes": 1447
+          },
+          "index": {
+            "mode": "100644",
+            "blob": "032731984860668fed8d8b5a7cae6bc5b47bbe8e"
+          },
+          "worktree": {
+            "mode": "100644",
+            "blob": "032731984860668fed8d8b5a7cae6bc5b47bbe8e",
+            "sha256": "dd4cc4e827abcb1b0f7fdc6d800ed07c0f8cf48c3eb16b4ffafca9dba9412084"
+          },
+          "exact_identity": true
+        }
+      ],
+      "exact_identity": true
+    }
+  ],
+  "protected_source": {
+    "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+    "pathspecs": [
+      "trust-ci/",
+      ":(glob)**/*.sql",
+      ".github/workflows/",
+      "factory/src/adaptive_factory/",
+      "factory/tests/run_disposable_exit.py",
+      "factory/tests/postgres_restart_probe.py",
+      "architecture/",
+      "VERSION",
+      "AGENTS.md",
+      ".grok-stack/config/",
+      ".grok/hooks.json"
+    ],
+    "index_and_tracked_worktree_diffs_empty": true,
+    "object_identities": [
+      {
+        "path": "trust-ci",
+        "base_object": "3776b2df790b8330c8c660509b28df4729b4a5b3",
+        "index_object": "3776b2df790b8330c8c660509b28df4729b4a5b3",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources",
+        "base_object": "7c95e0de1536b0cc5e790a9bb25992209bff8d3f",
+        "index_object": "7c95e0de1536b0cc5e790a9bb25992209bff8d3f",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "factory/src/adaptive_factory/migrations.py",
+        "base_object": "c09472cd15255c503ab6f8e728b8aa3be4eeecbb",
+        "index_object": "c09472cd15255c503ab6f8e728b8aa3be4eeecbb",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "factory/tests/run_disposable_exit.py",
+        "base_object": "6ac851840c45381476e25aa5ef7d5955433c6b7b",
+        "index_object": "6ac851840c45381476e25aa5ef7d5955433c6b7b",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "factory/tests/postgres_restart_probe.py",
+        "base_object": "2a5187c21bd09ab04a2902803e438e0279fbefce",
+        "index_object": "2a5187c21bd09ab04a2902803e438e0279fbefce",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "architecture",
+        "base_object": "e5baefb869011e16d49d05cffdd36511176ff8f5",
+        "index_object": "e5baefb869011e16d49d05cffdd36511176ff8f5",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "VERSION",
+        "base_object": "c945ef1446c8ffe4a0a746dfdbc0cc316d3b432e",
+        "index_object": "c945ef1446c8ffe4a0a746dfdbc0cc316d3b432e",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": "AGENTS.md",
+        "base_object": "72a70882fb45f2477444bc95269043cc0721cc92",
+        "index_object": "72a70882fb45f2477444bc95269043cc0721cc92",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": ".grok-stack/config",
+        "base_object": "42a17fa04f7ae3446e268737477b511876c13c0e",
+        "index_object": "42a17fa04f7ae3446e268737477b511876c13c0e",
+        "tracked_worktree_diff_empty": true
+      },
+      {
+        "path": ".grok/hooks.json",
+        "base_object": "cdc100534f5dd240fe879eeda329c8c1bed0f9fd",
+        "index_object": "cdc100534f5dd240fe879eeda329c8c1bed0f9fd",
+        "tracked_worktree_diff_empty": true
+      }
+    ],
+    "all_sql_path_count": 28,
+    "all_sql_entries_equal": true,
+    "github_workflow_source_absent_in_base_and_index": true
+  },
+  "shared_handoff_paths_not_written_by_implementation_owner": [
+    "README.md",
+    "START_HERE.md",
+    "PROJECT_STATE.json",
+    "decisions.md",
+    "mistakes.md"
+  ],
+  "other_staged_coordinator_documentation_at_observation": [
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/architecture.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/brief.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/change-spec.yaml",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/design-157-swift-routing.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/design-50-57-54-doctor-preflight.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/design-53-promotion-path-safety.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/design-55-artifact-policy.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/README.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/active-pr-status.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-architect.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-docs_researcher.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-integration_architect.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-integration_architect.rows.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-repo_explorer.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/analysis-task_analyst.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/check170-observation.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-consumer-coverage-157-169.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-external-ci-capacity-159.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-interruption-handoff-165.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-push-58.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-review-97-96.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-verifier-local-selection-62-167.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-verifier-lock-and-discovery-59-51.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-writer-ownership-160.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/external-blockers.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/inventory-validation.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/issue-closures-20260921.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/pr170-delivery.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/wave-progress-20260921.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/issue-queue.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/plans/design-163-semantic-plan-rejections.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/plans/design-56-61-closure-recommendations.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/plans/design-63-landing-coverage-residual.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/release.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/requirements.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/rollback.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/route.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/state.json",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/tasks.md",
+    "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/test-plan.md"
+  ],
+  "mutations_excluded": [
+    "product corrections beyond exact candidate imports",
+    "runtime receipts and grants",
+    "host configuration and service operations",
+    "commits and ref changes",
+    "remote writes"
+  ],
+  "metadata_collection_correction": {
+    "first_attempt": "git ls-tree rejected :(glob)**/*.sql with exit128; report was not written",
+    "root_cause": "Assumed git diff pathspec magic was accepted by git ls-tree",
+    "correction": "Filter the complete NUL-delimited ls-tree metadata inventory for literal .sql suffixes; source imports were untouched"
+  },
+  "verification_status": {
+    "source_identity": "pass",
+    "tests": "not_run_shared_cpu_lane_reserved",
+    "product_imports_compile_lint_docker": "not_run",
+    "fresh_combined_full_gate": "pending_coordinator",
+    "independent_reviews": "pending_after_combined_verification",
+    "local_receipts": "not_created"
+  }
+}

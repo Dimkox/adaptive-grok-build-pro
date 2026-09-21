@@ -37,6 +37,25 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     'security': ('security', 'безопасност', 'auth', 'oauth', 'permission', 'права', 'роль', 'pii', 'персональн', 'secret', 'prompt injection', 'tenant isolation', 'изоляц'),
 }
 
+# These explicit word aliases retain security meanings previously found through
+# short stems, without matching unrelated words such as author or authority.
+# matched_keywords records the canonical configured term, even for an alias.
+SECURITY_KEYWORD_ALIASES: dict[str, tuple[str, ...]] = {
+    'auth': (
+        'authn', 'authz',
+        'authenticate', 'authenticates', 'authenticated', 'authenticating',
+        'authentication', 'authentications', 'authenticator', 'authenticators',
+        'authorize', 'authorizes', 'authorized', 'authorizing',
+        'authorization', 'authorizations',
+        'authorise', 'authorises', 'authorised', 'authorising',
+        'authorisation', 'authorisations',
+        'reauthenticate', 'reauthenticates', 'reauthenticated', 'reauthenticating',
+        'reauthentication', 'reauthentications',
+        'unauthenticated', 'unauthorized', 'unauthorised',
+    ),
+    'роль': ('ролью',),
+}
+
 HIGH_RISK = (
     'production', 'прод', 'deploy', 'деплой', 'delete', 'удалить данные', 'drop table', 'truncate',
     'auth', 'oauth', 'permission', 'права доступа', 'billing', 'платеж', 'payment', 'pii', 'персональн',
@@ -172,6 +191,7 @@ class Route:
     delivery_expected: bool
     status: str = 'routed'
     rationale: list[str] = field(default_factory=list)
+    matched_keywords: dict[str, list[str]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -218,15 +238,35 @@ def _best_intent(text: str) -> str:
     return next(iter(scores))
 
 
-def _task_domains(text: str) -> list[str]:
-    scores = _score(text, DOMAIN_KEYWORDS)
-    return [label for label, score in sorted(scores.items(), key=lambda item: (-item[1], item[0])) if score > 0]
+def _matched_domain_keywords(text: str) -> dict[str, list[str]]:
+    """Bound short tokens and explicit security aliases; report canonical terms.
+
+    Longer stems and phrases retain their existing substring matching.
+    """
+    lowered = f' {text.lower()} '
+    matches: dict[str, list[str]] = {}
+    for domain, keywords in sorted(DOMAIN_KEYWORDS.items()):
+        found = []
+        for keyword in keywords:
+            term = keyword.strip()
+            if re.fullmatch(r'\w{1,4}', term):
+                aliases = SECURITY_KEYWORD_ALIASES.get(term, ()) if domain == 'security' else ()
+                matched = any(_has_term(lowered, word) for word in (term, *aliases))
+            else:
+                matched = keyword in lowered
+            if matched:
+                found.append(term)
+        if found:
+            matches[domain] = sorted(set(found))
+    return matches
 
 
-def _domains(text: str, repo: RepoProfile) -> tuple[list[str], list[str]]:
-    task_domains = _task_domains(text)
+def _domains(text: str, repo: RepoProfile) -> tuple[list[str], list[str], dict[str, list[str]]]:
+    matches = _matched_domain_keywords(text)
+    scores = {domain: sum(2 if ' ' in word else 1 for word in words) for domain, words in matches.items()}
+    task_domains = sorted(scores, key=lambda domain: (-scores[domain], domain))
     combined = unique_ordered([*task_domains, *repo.domains]) or ['generic']
-    return combined, task_domains
+    return combined, task_domains, matches
 
 
 def _has_term(text: str, term: str) -> bool:
@@ -285,8 +325,7 @@ def is_development_prompt(prompt: str, repo: RepoProfile) -> bool:
     scores = _score(prompt, INTENT_KEYWORDS)
     if scores:
         return True
-    lowered = prompt.lower()
-    technical = any(word in lowered for words in DOMAIN_KEYWORDS.values() for word in words)
+    technical = bool(_matched_domain_keywords(prompt))
     return technical and len(prompt.strip()) > 12
 
 
@@ -300,7 +339,7 @@ def build_route(
 ) -> Route:
     repo = detect_repo(root)
     intent = _best_intent(prompt)
-    domains, task_domains = _domains(prompt, repo)
+    domains, task_domains, matched_keywords = _domains(prompt, repo)
     risk, rationale = _risk(prompt, intent, domains)
     complexity = _complexity(intent, risk, domains, prompt)
 
@@ -456,6 +495,7 @@ def build_route(
         intent=intent,
         domains=domains,
         task_domains=task_domains,
+        matched_keywords=matched_keywords,
         risk=risk,
         complexity=complexity,
         repo=repo.to_dict(),

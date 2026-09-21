@@ -1,0 +1,93 @@
+{
+  "initial_full": {
+    "status": "pass",
+    "fingerprint": "bc0e485f97f9199f59664f3032b7ef8fb2ec543515c904b28e8f89b169794e2c",
+    "created_at": "2026-09-21T07:55:16+00:00",
+    "checks": [
+      {
+        "name": "git-diff-check",
+        "status": "pass"
+      },
+      {
+        "name": "change-spec",
+        "status": "pass"
+      },
+      {
+        "name": "architecture",
+        "status": "pass"
+      },
+      {
+        "name": "governance",
+        "status": "pass"
+      },
+      {
+        "name": "workflow-artifacts",
+        "status": "skip"
+      },
+      {
+        "name": "secret-scan",
+        "status": "pass"
+      },
+      {
+        "name": "contract-structure",
+        "status": "pass"
+      },
+      {
+        "name": "sql-safety",
+        "status": "pass"
+      },
+      {
+        "name": "ruff",
+        "status": "pass"
+      },
+      {
+        "name": "bandit",
+        "status": "pass"
+      },
+      {
+        "name": "pilot-unittest",
+        "status": "pass"
+      },
+      {
+        "name": "python-unittest",
+        "status": "pass"
+      },
+      {
+        "name": "coverage",
+        "status": "pass"
+      },
+      {
+        "name": "factory-unit",
+        "status": "pass"
+      },
+      {
+        "name": "factory-postgres-exit",
+        "status": "pass"
+      },
+      {
+        "name": "source-stability",
+        "status": "pass"
+      }
+    ]
+  },
+  "initial_limit": "Historical before registered-ID fallback correction",
+  "reviewed_product_commit": "d19b1b687f24d9181d92ac8317fa74a961071548",
+  "product_hashes": {
+    ".grok-stack/adaptive_grok/architecture.py": "4186daa2eb4ccb373835be62c4096e6f70d6be7ec5d913e07bafbc87641c44f1",
+    ".grok-stack/adaptive_grok/architecture_fitness.py": "fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7",
+    "tests/test_architecture_model.py": "80ed127857c33f69336315b98fab26e4e87e7108df8d80127c5f7d76e145e1c1",
+    "tests/test_architecture_fitness.py": "244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6"
+  },
+  "renewed_reviews": {
+    "code": {
+      "path": "evidence/code-review.md",
+      "sha256": "7d0fc09b6231d50a25eaeefd239d063a30d60847cb7f1d7d5b2142b5625de8f8"
+    },
+    "test": {
+      "path": "evidence/test-review.md",
+      "sha256": "e02c8d336ca041f6e241f0c848eb38f4b40f88587e23dd042494a9ed47cae327"
+    }
+  },
+  "final_full_verification": "pending on frozen candidate",
+  "external_gate": "exact-head/base App check plus required signed scopes remain mandatory"
+}
