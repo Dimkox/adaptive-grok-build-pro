@@ -1367,3 +1367,7 @@ The #155 compatibility branch renamed a NULL refusal only after `from_dict(None)
 ### 2026-09-21 — Source reversion is not migration recovery
 
 The #155 recovery document called a whole-commit revert a forward fix, although removing packaged migration 021 makes the migrator reject an already-upgraded database and never replays 018. The root cause was reasoning from the old function body remaining in Git instead of the migrator's immutable applied-prefix semantics. Recovery must retain all applied resources and use a separately tested additive correction with compatible application handling.
+
+### 2026-09-21 — Check newly staged evidence, not only the tracked worktree diff
+
+I checked whitespace before staging new raw evidence files, so the check omitted an untracked failing-test log and patch whose exact bytes contained trailing spaces. The resulting commit would fail the PR-target whitespace gate; I cancelled that verifier through its owned cleanup path, preserved both files as lossless base64 JSON envelopes, and checked the staged and committed diffs. Run the staged check after adding every new evidence artifact, and encode exact-byte logs when their whitespace is part of the evidence.
