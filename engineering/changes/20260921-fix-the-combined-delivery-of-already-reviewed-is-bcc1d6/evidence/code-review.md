@@ -1,58 +1,56 @@
-# Independent code review
+# Independent code review — renewed after the routing repair
 
-**Result: FAIL — one blocking routing regression.** One additional documentation finding is nonblocking. This report is local review evidence, not merge authority.
+**Result: PASS for the reviewed product tree.** Prior blocking finding C1 is addressed; no further blocking code finding was identified. C2 remains a nonblocking final-handoff wording update. This is local review evidence, not merge authority.
 
-- Reviewer: selected `code_reviewer`, independent of implementation.
+- Reviewer: selected `code_reviewer`, independent of the implementation owner.
 - Route: `bcc1d645c438`.
 - Reviewed base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
-- Reviewed head: `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`.
+- Reviewed head: `af7fb4ad3436e9c98cb7f07e570b7ff7e649207e`.
+- Reviewed Git tree: `f54cada5dd368c0afb8314f6ad381d2708c07aa8`.
 - Worktree: `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`.
-- Scope: the actual base-to-head diff, `brief.md`, `change-spec.yaml`, `candidates.json`, all 19 imported product/test paths, and relevant callers. Source review performed on September 21, 2026.
+- Date: September 21, 2026.
+- Historical failed assessment: `code-review-first.md`, covering `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`; it remains preserved.
 
-## Findings
+## Finding disposition
 
-### C1 — P1 / blocking: preserve authentication and authorization security routing
+**C1 — P1, addressed.** `.grok-stack/adaptive_grok/router.py:43` defines a finite security alias vocabulary, and lines 252–258 match those aliases through the same Unicode whole-word helper as their canonical short keyword. The previously broken `authentication` and `authorization` prompts now contribute the `security` domain. British spellings, explicit common inflections, `authn`, `authz`, and `ролью` receive the same treatment. Existing risk selection at line 290 therefore restores high risk; complexity, security/release reviewers, required receipts, the security skill and the scope/design gate follow through the unchanged downstream selection logic.
 
-Location: `.grok-stack/adaptive_grok/router.py:230` (new matching branch), with the security keyword table at line 37 and risk selection at lines 264–275.
+The repair remains local to short keywords in the security domain. It does not restore substring matches for `author`, `authority`, `authentic`, `xauthentication`, `authorizationx`, underscore continuations or `гастролью`. Multiple synonyms for one configured keyword contribute that keyword once, so neither the domain score nor `matched_keywords` grows with repeated aliases. The canonical metadata interpretation (`auth` / `роль`) is documented beside the table and remains accepted by the existing bounded runtime reader.
 
-The new `re.fullmatch(r'\w{1,4}', term)` branch treats `auth` as a standalone word. `_has_term` then rejects both `authentication` and `authorization` because a word character follows `auth`. Neither full form has another entry in `DOMAIN_KEYWORDS['security']`. The old domain scorer matched the `auth` stem in both words. `HIGH_RISK` does not compensate: it also contains only `auth` for these cases and has already used the same whole-word helper.
+`tests/test_repo_router.py:46` adds independent literal expectations for the actual route builder in empty repositories. The tests assert the complete obligations for 42 concrete prompts, neutral development detection for eight inputs, and thirteen negative controls. They do not derive expected routing from the new alias table. The recorded failing and passing runs establish the missing case and correction; I inspected those records without executing them.
 
-For a generic repository and the concrete prompt `Fix authentication`, the code therefore changes the route from security / high risk / high-risk complexity to generic / low risk / micro. The resulting route loses `security_reviewer`, `release_reviewer`, `security-sensitive-change`, and `scope_and_design_approval` (review selection at lines 373–382, skill selection at lines 397–409, gate selection at lines 436–440). `Fix authorization` has the same regression. A repository background domain such as API can still retain contract checks, but does not restore the lost security classification.
+**C2 — P3, nonblocking handoff cleanup remains.** `README.md:16` now accurately acknowledges the original combined PASS and the review-discovered regression, but still says that its correction and fresh verification are pending. At this reviewed head the correction is present and the corrected full verifier has passed. Refresh this sentence, and the corresponding pending-full wording at the end of `brief.md`, during the final evidence handoff. Keep the exact tested source, renewed reviews, final receipts and external check distinct. This wording issue does not change the product-code recommendation.
 
-This is a local workflow and review-gate regression; it does not by itself replace or bypass external Trust CI authority. It nevertheless contradicts preservation of meaningful specialist routing for genuine security work. Existing added router tests exercise false-positive substrings and several standalone technical keywords, but do not cover these common authentication/authorization prompts.
+## Current source and integration assessment
 
-Repair through the selected write owner: retain the intended boundary for short standalone tokens while explicitly preserving genuine authentication/authorization terms, then add regression coverage for both prompts and their resulting risk, security reviewer, skill and human gate. The security reviewer raised this concern during the review; I independently confirmed the old/new behavior by tracing the actual source. No execution was performed for this finding.
+The review covers the complete 19-path product/test diff and its surrounding implementation, using the original independent inspection plus renewed inspection of the current base-to-head diff and repair delta. I independently compared exact Git blobs and modes again, rather than accepting the source-identity summary:
 
-### C2 — P3 / nonblocking: refresh the README verification state during the final handoff
+- Seventeen paths still match their six candidate commits exactly. Only `.grok-stack/adaptive_grok/router.py` and `tests/test_repo_router.py` intentionally differ for the documented security repair. Their modes remain `100644`.
+- Current router blob: `031663a2b3ed492b68af9c55cfb031c5b3c65474`; SHA-256: `cc8a7e973657ad1d1664dc250c4bc09cda04e3c077e296171db99ac3f779e4ac`.
+- Current router-test blob: `e924de556b71fee7b8e8fd54212757c063b27458`; SHA-256: `fba5d5d6b78cf00bef25bfa0ca20a113e66eb112da1e622e455081a8887e7a3d`.
+- The original `integration-source-identity.json` is byte-identical to its pre-repair version, SHA-256 `25359b37630956d3f2da85c9e06663cd3dc95a36f47aa6e33c8ee9fdc9c40275`. The separate corrected identity record truthfully records 2 corrected / 17 preserved paths.
+- Among 308 changed paths, everything outside the 19 product/test paths is in the declared shared handoffs or `engineering/changes/`. SQL 001–021, factory production source, Trust CI source, architecture policy/model, and workflow configuration have no net change; no GitHub Actions or migration 022 is introduced.
+- The eight paths changed after full-tested `28514bf0e3d7aa1812aa7d459136f0ca60989885` are handoff/state documents and the corrected full-run evidence. None changes product or tests.
 
-Location: `README.md:16`.
+I found no new interaction problem in the retained repairs. Receipt-schema kinds still match the runtime registries and reject unknown kinds. Installer output still uses descriptor-validated template inventory bytes, preserves consumer ownership and leaves existing-target application unchanged. Fingerprinting keeps tracked provenance, literal path bytes and raw-name JSON handling while excluding only the intended proven untracked scratch. Concrete-path schema resolution, declared-ID fallback and conservative dependency closure remain aligned; diagnostic truncation still occurs after complete traversal and refusal checks. The populated-prefix tests still exercise actual packaged resources, ledger/data/function/ACL preservation, drift rejection, replay, observed advisory contention and bounded cleanup without modifying migration source.
 
-The paragraph still states that combined verification is pending. The preserved result and `START_HERE.md` / `PROJECT_STATE.json` record its PASS at `4bbbad340fee79e2d2e9d2598a6f58daa6c5b541`. Update this sentence when recording the next verified/reviewed state, keeping that historical run distinct from final-head receipts and external checks.
+## Execution evidence inspected
 
-## Scope and interaction checks performed
+No tests, lint, compilation, Docker, database commands, product imports or behavioral probes were run by this reviewer. My commands were read-only Git/source/JSON/hash inspection. This report is my only write; no source, index, HEAD, receipt or external state was changed.
 
-I used read-only Git inspection, source/test/document reading, and standard-library JSON/hash inspection. I did not run tests, lint, compilation, Docker, product imports, database commands or behavioral probes. I did not modify source, the index, HEAD or receipts; this report is my only write.
+- `router-security-repair/red.json`: the three new tests ran with the old router, exit 1, 46 assertion failures, no timeout.
+- `router-security-repair/green.json`: the same three selectors passed, exit 0, with a stable recorded source tree.
+- `router-security-repair/adjacent.json`: 61 router/workflow-artifact tests passed, exit 0, with the same corrected router/test hashes and stable tree.
+- `combined-full-security-repair-meta.json` records the actual command `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json`, tested head `28514bf0e3d7aa1812aa7d459136f0ca60989885`, exit 0, finished `2026-09-21T10:37:44.736961+00:00`.
+- The corrected full report has status `pass`, fingerprint `3937be09e0f83ba702cd3f50675e6ce01a850620497e02e57d0035b49e0e26ad`, and independently recomputed SHA-256 `cb43ed9a06b748693414e4a55e5fa279e759a321454a7868f46b47971271ed4c`, matching the recorded result. Its output records 831 root tests / 1331 subtests and 782 PostgreSQL/factory tests with two conditional skips. Required check rows pass; workflow artifacts are explicitly unconfigured.
 
-- Compared Git tree entries for every manifest product/test path between its exact candidate commit and the reviewed head. All 19 blobs and modes match: router 4, receipt schema 2, consumer docs 4, fingerprint 4, schema references 4, migration-prefix tests 1. Candidate identity does not resolve finding C1.
-- Inspected all 283 changed-path names. Apart from those 19 paths, changes are confined to `engineering/changes/` and the declared shared handoffs (`PROJECT_STATE.json`, `README.md`, `START_HERE.md`, `decisions.md`, `mistakes.md`). No net SQL resource, factory production source, Trust CI source, GitHub Actions, or architecture policy/model change appears in this diff.
-- Reviewed bounded optional route metadata and its closed-shape loader; receipt-kind schema parity with both runtime registries; and propagation through existing route persistence and change-package copying.
-- Reviewed installer inventory/rendering and descriptor-bound source reads. Both consumer documents use inventoried template bytes; factory README mode is retained; the existing absent-target writer and read-only existing-target plan remain unchanged. Added tests cover manifest identity, installed links, consumer ownership, reusable templates and source-race refusal.
-- Reviewed fingerprint inventory provenance and receipt/verifier callers. Tracked diff entries remain included even under noise paths, staged deletion/recreation is retained, scratch exclusions require successful tracking inventories, and Git NUL-delimited filesystem bytes remain distinct through fingerprinting and JSON serialization. The new tests cover raw names, literal backslashes, symlink-target bytes, failed inventories, tracked noise and receipt staleness.
-- Reviewed schema resolution and dependency closure together. Valid concrete paths take precedence; declared-ID fallback remains available, including the explicitly handled unsafe-path aliases; closure still unions candidate identities. Diagnostic deduplication/capping occurs after traversal and refusal checks, with exact hidden counts per in-scope referrer. Added tests retain late fatal ambiguities, inherited signals and unaffected out-of-scope behavior.
-- Reviewed the populated-prefix fixture, real packaged SQL application, migrator transaction/timeout path and worker cleanup. The tests seed actual 001–020 resources, check preserved ledger timestamps/data/function identity/ACL, exercise 021 behavior and idempotent replay, corrupt and restore a real ledger row, observe actual advisory-lock contention, and test release plus timeout/retry. No migration implementation is changed.
+These are inspected execution artifacts, not fresh executions or a final-head verification receipt produced by this reviewer. The original metadata failure, original full PASS, first failed reviews and repair RED evidence remain historical facts.
 
-## Existing execution evidence and limits
+## Limits and declined judgments
 
-I inspected `combined-full-report.json`, `combined-full-meta.json`, `combined-full-result.json`, and the preserved initial failed result. The successful report records `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json`, exit 0, at `4bbbad340fee79e2d2e9d2598a6f58daa6c5b541`, with fingerprint `cf3e65364833e9a5c3efba1e3ebb7f788e9921c493b66aa083dc64b5eb91a5ae`. All required recorded checks pass; workflow artifacts are explicitly unconfigured. The summary records 828 root tests and 782 PostgreSQL/factory tests with two conditional skips. These are inspected prior-run results, not executions by this reviewer.
-
-I independently recomputed the full report SHA-256 as `2e1141e2280d24d2ea373fb8c6565c0a22e1529c6efdc27bf6ae437ac1dc6e9c`, matching the recorded digest. The seven paths changed from that verified commit to the reviewed head are handoff/state documents and the three combined-result artifacts; no product/test bytes changed. The source finding above demonstrates a missing case despite that passing suite.
-
-Declined judgments:
-
-- Fresh runtime correctness, timing repeatability, and platform-specific filesystem behavior: execution was explicitly excluded from this review to preserve the shared verification lane. Static test inspection and prior evidence do not establish a new run.
-- Final-head verification receipts, complete route evidence, or PR merge eligibility: the observed run predates the reviewed head, review artifacts change the repository, and this report is FAIL. The corrected tree needs the coordinator's required verification and independent reviews.
-- The separate #162 trusted-validator successor: it is explicitly excluded and no Trust CI source was changed; local enum parity proves no external validator upgrade.
-- Live Trust CI policy/holdout, human approval scopes, branch protection, ingress availability, deployment and production data: none was contacted or mutated, and repository evidence cannot certify those boundaries.
-- Future migration suffixes: the added current-prefix tests adapt to the packaged last migration, but this review assesses only the present 001–021 tree.
-
-Return C1 to the single implementation owner before recording a passing code-review receipt or declaring combined local completion.
+- No independent runtime timing, platform portability or repeated PostgreSQL contention claim: this renewal was explicitly static while another task occupied the execution lane.
+- No exhaustive natural-language security-classification claim beyond the documented finite vocabulary. This repair restores the identified compatibility cases; the router remains a keyword heuristic.
+- No final fingerprint-receipt or all-role completion claim: these review documents change the repository, and the coordinator still owns the final evidence freeze and current receipts.
+- No judgment that the separate #162 trusted-validator successor is delivered. It is explicitly excluded, and no Trust CI source upgrade is present.
+- No judgment on deployed policy/holdout, human approval scopes, branch protection, current ingress, production data or merge eligibility: those external systems were neither accessed nor mutated. The exact-head App-owned check and required external approvals remain authoritative.
+- No qualification of future migration suffixes: the current-prefix assessment covers the present 001–021 tree.

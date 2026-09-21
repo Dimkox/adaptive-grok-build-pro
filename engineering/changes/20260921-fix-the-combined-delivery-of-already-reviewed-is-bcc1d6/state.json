@@ -55,11 +55,17 @@
       "from": "verifying",
       "reason": "Corrected-source complete PR verifier PASS at28514bf0 after measured security alias RED/GREEN; renew all five selected independent reviews before final receipts and external delivery",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T10:47:16+00:00",
+      "from": "reviewing",
+      "reason": "Corrected full source verifier and all five independent reviews PASS; freeze final workflow marker and handoff before mandatory final current fingerprint verification/receipt refresh. External authority remains separate.",
+      "to": "ready"
     }
   ],
   "route_id": "bcc1d645c438",
   "schema_version": 1,
-  "status": "reviewing",
+  "status": "ready",
   "title": "Fix the combined delivery of already reviewed issue repairs #156 router word matching, #162 evidence receipt schema, #153 and #161 consumer installer documents, #168 safe fingerprint scratch exclusions, #147 and #148 schema reference resolution, and #166 PostgreSQL incremental migration tests. Integrate their exact reviewed commits on main839d3aa2 in one isolated pull request, preserve all security and authority boundaries and unchanged SQL resources, resolve shared handoff files, and run combined verification with independent code, test, security and data reviews. No new behavior beyond those existing bounded fixes, no Trust CI source changes or deployment.",
-  "updated_at": "2026-09-21T10:39:08+00:00"
+  "updated_at": "2026-09-21T10:47:16+00:00"
 }

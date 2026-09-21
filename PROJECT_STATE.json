@@ -1906,7 +1906,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T10:39:08.675495+00:00",
+    "observed_at": "2026-09-21T10:47:15.815494+00:00",
     "route_id": "bcc1d645c438",
     "branch": "fix/reviewed-issues-batch-20260921",
     "issues": [
@@ -1923,8 +1923,8 @@
     "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
     "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "corrected_source_full_pass_renewed_five_reviews_pending",
-    "next_action": "Renew all five independent reviews of corrected source, freeze final handoff/reports and current receipts, then exact-granted PR delivery and external App check.",
+    "status": "corrected_source_full_and_five_reviews_pass_final_receipts_external_delivery_required",
+    "next_action": "Run final frozen-tree verifier, record all five current review receipts and confirm zero gaps; push isolated branch and create PR with exact grants, then wait for App-owned exact-head check before merge/eight issue closures. Close171/172 as superseded only afterward.",
     "excluded_successors": [
       "active165 interruption-status source",
       "active163 migration022 source",

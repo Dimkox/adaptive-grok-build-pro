@@ -8,5 +8,6 @@
 - [x] First five independent reviews completed; code/test/security findings preserved and returned to the same writer.
 - [x] Security alias repair: measured RED, three focused regressions and61 adjacent tests pass;17 remaining product files unchanged.
 - [x] Corrected-source full PR verification PASS at28514bf0, completed2026-09-21T10:37:44Z.
-- [ ] Renew all five independent reviews and freeze final current evidence.
+- [x] All five renewed independent reviews PASS; first reports remain preserved and final handoff wording is reconciled.
+- [ ] Final frozen-tree verification/receipts and exact-granted external delivery.
 - [ ] Exact delegated PR operations, external CI, merge and evidenced issue/obsolete-PR closure.
