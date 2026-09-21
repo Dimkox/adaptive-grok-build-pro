@@ -1,0 +1,42 @@
+# Issue #155 continuation — 2026-09-21
+
+Continue branch `fix/issue-155-repair-binding-rejections` from implementation commit
+`6b13806d454cada0c63520129baf09056db46408`, based on
+`90078959ff816068af374ad42f4bb80fdbaec866`. The existing approved route is
+`c4e47ea3ced7`; the implementation owner is `frontend_implementer` as selected by that
+route. The misleading role name is tracked separately in issue #156.
+
+## Recovered state
+
+- GitHub PR #151 merged on 2026-09-19 at 20:27:56 UTC as `90078959ff816068af374ad42f4bb80fdbaec866`.
+- The #155 implementation is local and has no pull request at this observation.
+- The last full verifier failed: a committed trailing blank line, unowned `.qwen/tmp`
+  helpers, and `python-unittest` exit 1. Its summary preserved no test traceback, and
+  failing architecture/governance prevented creation of a verification receipt.
+- On resumption the helpers are already outside the checkout and the EOF fix is staged.
+  Neither observation proves the remaining checks pass.
+- Historical four-pass PostgreSQL streaks cover the earlier trees described in
+  `evidence/postgres-evidence.md`; the final test-file refinement postdates them.
+  Do not label those streaks as four passes on the final product contents.
+
+## Remaining steps
+
+1. Recover the root-test diagnostic using the verifier's exact command, retaining full
+   stdout/stderr outside the source checkout. Make a minimal regression-proven repair
+   only if the failure persists.
+2. Freeze the product and test contents. Record a content manifest, and satisfy AC-005
+   with four consecutive disposable PostgreSQL tier passes on those contents, retaining
+   each command, exit status, duration and host load. Documentation-only changes do not
+   establish a new product test result; record full-tree and product identities separately.
+3. Run `python3 scripts/grok_verify.py --mode pr --json`, retain its detailed output,
+   and inspect every failure instead of inferring a cause from an exit status.
+4. Obtain independent `code_review`, `test_review`, `security_review` and `data_review`
+   reports for the final diff. Record receipts only after reports and delivery documents
+   have their final contents; recheck any subsequent product change.
+5. Commit the local handoff and prepare a concrete PR. Branch push/PR creation require
+   the named external operation's authority; merge additionally requires fresh
+   App-owned exact-head Trust CI and any deployed-policy approval scopes.
+
+The migration remains additive (`021`); resources `001`–`020`, contracts, deployed
+runtime and published artifacts remain outside this continuation's edits. Follow-up
+issues #162, #163, #166 and the broader queue are not part of this repair.

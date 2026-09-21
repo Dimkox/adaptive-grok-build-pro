@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "route human gate scope_and_design_approval satisfied by the owner's standing continuation directive for the crashed contour (resume and finish #155); implementation owner is single-writer on this branch",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-21T04:39:28+00:00",
+      "from": "approved",
+      "reason": "Resume the approved #155 implementation at 6b13806; recover failed verification and retain a fresh-clone continuation plan.",
+      "to": "implementing"
     }
   ],
   "route_id": "c4e47ea3ced7",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "Fix issue #155: guards inside the semantic_bind_repair_child PostgreSQL function return a bare NULL, so bind_repair_child cannot distinguish a deadline or precondition rejection from a malformed payload and surfaces a misleading invalid_object ContractError; the mandatory disposable-exit PostgreSQL evidence run consequently flakes about one run in three under host load. Give each guard a machine-readable rejection reason or a distinct SQLSTATE, map it to typed StoreError reason codes while keeping invalid_object for genuinely malformed payloads, keep shipped migration history immutable by replacing the function in a new versioned resource, and make the affected integration fixture independent of wall-clock scheduling. Do not weaken the contract schema, the evidence gate, or the disposable-exit run.",
-  "updated_at": "2026-09-20T04:43:14+00:00"
+  "updated_at": "2026-09-21T04:39:28+00:00"
 }

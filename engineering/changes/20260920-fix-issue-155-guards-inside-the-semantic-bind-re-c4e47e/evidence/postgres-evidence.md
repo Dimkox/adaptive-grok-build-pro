@@ -516,4 +516,3 @@ saying which tree each streak belongs to is the reason the fingerprint is record
 self-serving: #163 `semantic_plan_repair` (15 anonymous paths), #166 no shipped
 `001–020 → 021` incremental upgrade test, #162 `data_review`/`bitrix_review` uncitable in a
 typed spec, and `store_write_rejected` still collapsing six constraint classes into one reason.
-
