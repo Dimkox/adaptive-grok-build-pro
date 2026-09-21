@@ -1,0 +1,11 @@
+[
+  {
+    "at": "2026-09-21T08:31:46.820545+00:00",
+    "probe": "public/health/ready",
+    "exit_code": 28,
+    "http_status": "000",
+    "expected_status": "404",
+    "elapsed_s": 3.014024,
+    "stderr": "curl: (28) Resolving timed out after 3001 milliseconds\n"
+  }
+]

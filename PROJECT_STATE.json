@@ -1907,10 +1907,10 @@
     "branch": "fix/trust-ci-webhook-bridge",
     "route_id": "68274cb876e4",
     "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
-    "plan_sha256": "7b97645e9852ad772d60cf009b0636fcc6f9b7fc7c6f9558281b1b848bc281a3",
-    "status": "installed_inactive_typed_gate_reviewed_activation_pending",
+    "plan_sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
+    "status": "ingress_and_source_filter_measured_pass_recovery_pending",
     "user_delegation": "2026-09-21: делай всё и закрывай, following the described missing CI ingress repair",
     "product_source_changed": false,
-    "next_action": "Refresh exact local grant; execute corrected typed gate from continuation block3, then activate and measure source/path/recovery controls. Do not rerun exclusive installation or overwrite historical first gate results. Real PR170 event waits heavy lane release."
+    "next_action": "Use fresh exact grant for reviewed guard-stop/disable, stopped evidence and same-byte reactivation; repeat HTTP and counter acceptance before real PR170 ready event."
   }
 }

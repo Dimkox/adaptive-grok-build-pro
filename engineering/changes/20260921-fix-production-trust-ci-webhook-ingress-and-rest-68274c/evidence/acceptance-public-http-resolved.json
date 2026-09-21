@@ -1,0 +1,86 @@
+[
+  {
+    "at": "2026-09-21T08:35:13.038866+00:00",
+    "probe": "public/webhooks/github",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "405",
+    "expected_status": "405",
+    "elapsed_s": 0.658827,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:13.637876+00:00",
+    "probe": "public/health/ready",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.598387,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:14.289284+00:00",
+    "probe": "public/approvals",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.650779,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:14.876069+00:00",
+    "probe": "public/jobs/nonexistent",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.58614,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:15.487054+00:00",
+    "probe": "public/attestations/nonexistent",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.610346,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:16.068144+00:00",
+    "probe": "public/metrics",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.580446,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:35:16.669852+00:00",
+    "probe": "public/v1/jobs",
+    "dns_source": "fresh getent observation; resolver health not claimed",
+    "resolved_public_address": "176.58.88.108",
+    "tls_hostname_verified": true,
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.601059,
+    "stderr": ""
+  }
+]

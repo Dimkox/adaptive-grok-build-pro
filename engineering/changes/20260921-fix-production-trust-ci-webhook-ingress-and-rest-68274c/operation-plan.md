@@ -69,7 +69,7 @@ for name in files:
         assert not os.path.lexists(parent / name) and not os.path.lexists(parent / (name + '.d')), name
         for pattern in ('*.wants/' + name, '*.requires/' + name, '*.upholds/' + name):
             assert not list(parent.glob(pattern)), name
-rules = json.loads(subprocess.check_output(['nft', '-json', 'list', 'ruleset'], text=True))['nftables']
+rules = json.loads(subprocess.check_output(['nft', '--json', 'list', 'ruleset'], text=True))['nftables']
 assert not any(x.get('table', {}).get('name') == 'adaptive_trust_ci_webhook_bridge' for x in rules)
 assert not any(x.get('chain', {}).get('hook') == 'input' for x in rules), 'Input firewall topology changed'
 payloads = {}
@@ -165,7 +165,7 @@ for parent in map(Path, unit_paths):
     for unit in units:
         for pattern in ('*.wants/' + unit, '*.requires/' + unit, '*.upholds/' + unit):
             require(not list(parent.glob(pattern)), unit + ': unexpected enablement/dependency link')
-tables = json.loads(subprocess.check_output(['sudo', '-n', 'nft', '-json', 'list', 'tables'], text=True, timeout=10))['nftables']
+tables = json.loads(subprocess.check_output(['sudo', '-n', 'nft', '--json', 'list', 'tables'], text=True, timeout=10))['nftables']
 require(not any(item.get('table', {}).get('family') == 'inet' and item.get('table', {}).get('name') == 'adaptive_trust_ci_webhook_bridge' for item in tables), 'bridge guard table already exists; stop and review')
 tmp_identity = {name: typed('tmp.mount', 'Unit', name, signature) for name, signature in (('Id', 's'), ('LoadState', 's'), ('ActiveState', 's'), ('FragmentPath', 's'), ('DropInPaths', 'as'), ('Transient', 'b'), ('Requires', 'as'), ('Wants', 'as'), ('Upholds', 'as'), ('BindsTo', 'as'))}
 require(tmp_identity == {'Id': 'tmp.mount', 'LoadState': 'not-found', 'ActiveState': 'inactive', 'FragmentPath': '', 'DropInPaths': [], 'Transient': False, 'Requires': [], 'Wants': [], 'Upholds': [], 'BindsTo': []}, 'tmp.mount is no longer an absent/inactive dependency; return to review')
@@ -239,13 +239,15 @@ for ci_ingress_path in /health/ready /approvals /jobs/nonexistent /attestations/
 done
 ```
 
+If a failed public GET explicitly reports DNS resolution timeout, preserve its `28/000` result as inconclusive. The coordinator may run one fresh, bounded resolver lookup with `timeout 5s getent ahostsv4 claw.taild9f611.ts.net`, recording its time, exit status, and returned addresses. Only after that lookup succeeds, choose one public IPv4 address from that exact result and repeat the same public webhook and six private-path GETs with `--resolve 'claw.taild9f611.ts.net:443:<returned-public-ip>'` added to the unchanged curl options above. Preserve the original HTTPS hostname in each URL, SNI, certificate verification, no-proxy setting, time limits, and expected 405/404 statuses; do not add redirects or disable TLS checks. Stop on a failed lookup, non-public result, or mismatched HTTP outcome. This isolates DNS from the HTTP path check and does not prove host resolver health; it changes no DNS, Funnel, interface, route, firewall, or service configuration and sends no POST.
+
 Measure each filter rule, not merely a connection failure. The next block reuses the current namespace source `100.119.249.65`; it creates no address, route, namespace, or raw socket. It sends at most three GET attempts to the exact bridge address, each bounded to two seconds. The allowed source must get 200 and increment its counter. The host `lo` route and correct-veth/wrong-source route must each time out with 000 and increment their respective drop counter. A timeout with no matching counter increment leaves that enforcement unproven.
 
 ```bash
 python3 -B - <<'PY'
 import json, subprocess
 def counts():
-    body = json.loads(subprocess.check_output(['sudo', '-n', 'nft', '-json', 'list', 'table', 'inet', 'adaptive_trust_ci_webhook_bridge'], text=True))['nftables']
+    body = json.loads(subprocess.check_output(['sudo', '-n', 'nft', '--json', 'list', 'table', 'inet', 'adaptive_trust_ci_webhook_bridge'], text=True))['nftables']
     return {item['rule']['comment']: expr['counter']['packets'] for item in body if 'rule' in item for expr in item['rule']['expr'] if 'counter' in expr}
 addresses = json.loads(subprocess.check_output(['sudo', '-n', 'ip', '-n', 'vpn', '-json', 'address', 'show'], text=True))
 assert any(a.get('local') == '100.119.249.65' for interface in addresses for a in interface['addr_info'])
@@ -275,7 +277,7 @@ sudo -n systemctl enable adaptive-trust-ci-webhook-bridge.socket
 sudo -n systemctl stop adaptive-trust-ci-webhook-bridge-guard.service
 sudo -n systemctl disable adaptive-trust-ci-webhook-bridge.socket
 systemctl show adaptive-trust-ci-webhook-bridge.socket adaptive-trust-ci-webhook-bridge.service adaptive-trust-ci-webhook-bridge-guard.service --property=Id,ActiveState,SubState,UnitFileState
-sudo -n nft -json list tables
+sudo -n nft --json list tables
 ss -H -lnt sport = :18080
 ```
 

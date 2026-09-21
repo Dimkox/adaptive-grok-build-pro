@@ -1,0 +1,7 @@
+{
+  "recorded_at": "2026-09-21T08:29:55.249036+00:00",
+  "plan_block": 4,
+  "exit_code": 0,
+  "stdout": "table inet adaptive_trust_ci_webhook_bridge {\n\tchain input {\n\t\ttype filter hook input priority filter - 10; policy accept;\n\t\tip daddr 10.200.200.1 tcp dport 18080 iifname != \"veth-vpn-h\" counter packets 0 bytes 0 drop comment \"bridge_wrong_interface\"\n\t\tip daddr 10.200.200.1 tcp dport 18080 ip saddr != 10.200.200.2 counter packets 0 bytes 0 drop comment \"bridge_wrong_source\"\n\t\tip daddr 10.200.200.1 tcp dport 18080 iifname \"veth-vpn-h\" ip saddr 10.200.200.2 counter packets 0 bytes 0 accept comment \"bridge_allowed_peer\"\n\t}\n}\n",
+  "stderr": ""
+}

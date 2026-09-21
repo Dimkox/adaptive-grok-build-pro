@@ -1,14 +1,14 @@
-# Independent test review — pre-activation continuation
+# Independent test review — continuation and partial runtime evidence
 
 Reviewer: route-selected `test_reviewer`, independent of `integration_implementer`.
 Route: `68274cb876e4`. Initial review at `2026-09-21T07:52:58Z`; final plan re-review on `2026-09-21`.
 
-**Verdict: PASS for pre-activation continuation readiness; F-01 and the measured gate-formatting defect are resolved. Bridge activation and acceptance: NOT EXECUTED.** No blocking test-design finding remains in the final exact candidate below. Installed inactive resources and a successful read-only diagnostic do not establish runtime acceptance for AC-001, AC-002, or AC-003. This report does not authorize activation, prove queue intake, or supply merge authority.
+**Verdict: PASS for the corrected continuation plan. Runtime acceptance: PARTIAL.** No blocking test-design finding remains in the final exact candidate below. The bridge has been activated, positive HTTP probes passed, and the DNS-isolated private-path probes passed; counter-based enforcement and persistence/recovery are not yet established by the reviewed evidence. This report does not declare AC-001, AC-002, or AC-003 fully accepted, authorize new operations, prove queue intake, or supply merge authority.
 
 ## Exact review binding
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-ci-ingress`; continuation-review HEAD `4d3e1c059448fa3dc106602465335de6b3cbb07e` (initial review HEAD was `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`).
-- [Operation plan](../operation-plan.md) SHA-256: `7b97645e9852ad772d60cf009b0636fcc6f9b7fc7c6f9558281b1b848bc281a3`.
+- Worktree: `/home/pall/grok-projects/adaptive-grok-build-ci-ingress`; final continuation-review HEAD `de966c932fff54c25df3f16dd3ade903975b9787` (initial review HEAD was `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`).
+- [Operation plan](../operation-plan.md) SHA-256: `3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28`.
 - [Artifact manifest](artifact-manifest.json) SHA-256: `b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d`. The host-local manifest is byte-identical to this reviewed copy.
 - Independently read and hashed all four actual staged files under `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/`; each byte count and digest matches the manifest:
 
@@ -19,7 +19,7 @@ Route: `68274cb876e4`. Initial review at `2026-09-21T07:52:58Z`; final plan re-r
 | `adaptive-trust-ci-webhook-bridge.service` | 812 | `d2280ce0802191817da64061005d69b53a165d644b34987eee912d4a502fba6c` |
 | `adaptive-trust-ci-webhook-bridge.socket` | 581 | `3163be692b5319f13cb165abd46e2186d9ca6deeb7d7ab40a687ef35dd8249d0` |
 
-Also inspected the contract, active route, typed change specification, brief, test/recovery plans, implementation report, analysis reports, and preparation verification. Surrounding source inspection covered `trust-ci/src/adaptive_trust_ci/api.py` and `webhooks.py`. The initial review found only the untracked change package; continuation re-review found only the operation plan, its hash record, and implementation report changed from the new HEAD before this report update. This review ran no test suite, live probe, service operation, Docker command, credential read, or external mutation. Static systemd/nft success and the corrected gate diagnostic are attributed to the recorded implementation evidence, not to new executions by this reviewer.
+Also inspected the contract, active route, typed change specification, brief, test/recovery plans, implementation report, analysis reports, and preparation verification. Surrounding source inspection covered `trust-ci/src/adaptive_trust_ci/api.py` and `webhooks.py`. The final operation-plan diff contains exactly four read-only nft option corrections and the DNS-isolation paragraph; artifacts and mutation commands are unchanged. This review ran no test suite, live probe, service operation, Docker command, credential read, or external mutation. I read `nft --help` to confirm the JSON/stateless flags. Static checks, the corrected gate diagnostic, activation, and HTTP outcomes are attributed to the retained execution evidence rather than new executions by this reviewer.
 
 ## Resolved finding from effective-unit gate re-review
 
@@ -40,9 +40,23 @@ The corrected command removes the representation assumptions that caused that sa
 - The only service `Wants` exception is exactly `tmp.mount`, with a corresponding exact ordering edge. Before permitting it, the gate requires the target to be not-found/inactive, non-transient, without fragment, drop-ins, or any `Requires`, `Wants`, `Upholds`, or `BindsTo` entries. Both temporary paths must still resolve to `/`. A real or changed mount definition, another weak dependency, or any `Upholds` entry refuses before start. This is a bounded correction from measured configuration, not an unrestricted dependency allowance.
 - The continuation verifies the pinned manifest and every installed file's length/hash, regular-file identity, `root:root` ownership, and mode `0644` without following a final symlink. It requires disabled socket/static services, inactive identities, no incoming enablement/dependency links, and no dedicated nft table. It deliberately resumes at the corrected gate instead of repeating exclusive installation or the completed reload.
 
-The implementation report records the exact corrected read-only gate returning `effective_unit_gate=pass`, exit 0, in `0.471165461` seconds. I reviewed that record and the command rather than rerunning the gate. The original preparation JSON remains a historical pre-install snapshot; the later installation/refusal/diagnostic records describe the continuation state. The diagnostic verifies representation and current stopped configuration only; firewall enforcement, proxy startup, HTTP isolation, recovery, and real GitHub intake remain unexecuted.
+The implementation report records the exact corrected read-only gate returning `effective_unit_gate=pass`, exit 0, in `0.471165461` seconds. That earlier diagnostic is retained in the writer's tool result and implementation report, not a separate raw evidence file; I did not rerun it. The original preparation JSON remains a historical pre-install snapshot. The coordinator's separate `continuation-result-03.json`, recorded at `08:29:54Z`, now supplies raw typed output and an exit-0 pass before activation; `continuation-result-04.json` records the guarded start block returning 0 and the exact narrow table at `08:29:55Z`. Neither record proves the still-pending negative controls or recovery.
 
-For continuation, the coordinator must bind the new plan after the reviews and execute its corrected gate, not the preserved historical `operation-block-03.sh`. Refresh the plan's topology/readiness prerequisites, stop before activation on any refusal, preserve results `01`–`03`, and use fresh evidence names. A prior diagnostic pass does not replace the freshly bound pre-start check. The full-verification CPU lane remains a separate prerequisite before a real PR event.
+The stopped-installation continuation described above has now been executed; it is not an instruction to reinstall or restart an already active bridge. The current continuation is the corrected acceptance readback followed by separately bound persistence/stop/recovery. Repeat the inactive-unit gate only at its prescribed stopped recovery stage, using the latest reviewed command rather than the preserved historical `operation-block-03.sh`. Preserve original results and use fresh evidence names. A prior diagnostic pass does not replace a required fresh gate. The full-verification CPU lane remains a separate prerequisite before a real PR event.
+
+## Final nft readback and DNS-isolation correction
+
+The final plan changes four nft read-only queries from `-json` to `--json`. Installed help identifies `-j/--json` as JSON output and `-s/--stateless` as omission of stateful information; the single-dash `-json` cluster unintentionally includes `-s`. This explains why the counter parser received a null counter instead of packet/byte fields. `acceptance-initial-counters.json` preserves the original exit-1 `TypeError` with no completed case output; it establishes no allowed-peer or negative-control result. The corrected query keeps the existing strict per-rule counter-delta and curl-exit assertions, so an absent counter or wrong-cause timeout still cannot pass. Actual enforcement remains pending until that full block succeeds.
+
+I inspected the following retained HTTP records under the same host-local stage:
+
+| Evidence | Observed outcome | Accepted scope |
+| --- | --- | --- |
+| `acceptance-initial-http.json` | Peer readiness 200, peer webhook 405, public webhook 405; each curl exit 0. The first public ready-path probe exited 28/000 with `Resolving timed out after 3001 milliseconds`. | Positive connectivity only; the private-path attempt is inconclusive. |
+| `acceptance-private-http-retry.json` | A second public ready-path attempt exited 28/000 with the same explicit resolver timeout. | Preserved failure; no private-path result. |
+| `acceptance-public-http-resolved.json` | At `08:35:13Z`–`08:35:16Z`, public webhook 405 and all six private paths 404 through `176.58.88.108`; every curl exit is 0, elapsed times are 0.580–0.659 seconds, and the record identifies a fresh resolver observation and TLS hostname verification. | HTTP path reachability/isolation after DNS resolution is isolated; host resolver health remains unproven. |
+
+The new fallback is correctly bounded to one successful five-second resolver lookup and the same seven public GETs. The chosen address must be public and come from that fresh result. `--resolve` leaves the HTTPS URL hostname, SNI, and certificate verification intact; no redirects, insecure TLS switch, wider path, changed service configuration, or POST is authorized. The original no-proxy setting, connection/total deadlines, and 405/404 expectations remain. Lookup failure, a non-public result, or any unexpected HTTP outcome refuses. The successful isolated probes do not rewrite either DNS timeout as a pass or prove normal resolver reliability.
 
 ## Acceptance quality
 

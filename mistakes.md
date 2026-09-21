@@ -1384,3 +1384,6 @@ The host-only specification used acceptance IDs in observability.proves, whose e
 
 ## 2026-09-21 — Operational gates need typed runtime evidence
 The first bridge gate treated systemctl human output as a complete typed protocol and inferred PrivateTmp dependencies from current mount topology. It safely refused before activation because empty command arrays were omitted, device names were escaped and services carried an implicit tmp.mount edge; named typed D-Bus reads and a strictly absent-target check passed the corrected read-only diagnostic.
+
+## 2026-09-21 — CLI option spellings are not portable
+Copying ip-style -json to nft silently selected short flags including stateless output, so valid counters appeared as null and the observation failed before traffic. The four read-only queries now use nft --json; actual controlled requests show increasing accept/drop counters, while original failed evidence is preserved.
