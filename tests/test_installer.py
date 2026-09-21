@@ -249,6 +249,21 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(actions["bandit.yaml"], "identical")
             self.assertEqual(actions[".grok-stack/config/routing.json"], "absent")
 
+    def test_declared_divergence_digest_is_bound_to_kept_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "t"
+            self._consumer_with_record(root, {
+                "schema_version": 1,
+                "kept_local": [".coveragerc"],
+                "kept_local_sha256": {".coveragerc": hashlib.sha256(b"local\n").hexdigest()},
+            })
+            (root / ".coveragerc").write_bytes(b"local\n")
+            plan = MODULE.plan_install(ROOT, root)
+            self.assertEqual(plan["kept"][0]["state"], "divergent")
+            (root / ".coveragerc").write_bytes(b"tampered\n")
+            with self.assertRaisesRegex(MODULE.UnsafeInstallTarget, "digest"):
+                MODULE.plan_install(ROOT, root)
+
     def test_keep_record_validation_fails_closed(self) -> None:
         cases = (
             ("unknown key", {"schema_version": 1, "kept_local": [], "extra": 1}),
