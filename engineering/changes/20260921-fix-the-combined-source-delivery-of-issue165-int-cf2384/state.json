@@ -6,42 +6,44 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
         "receipt_kind": "verification",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T11:52:04.471060+00:00",
+        "reference": "evidence/combined-full-initial-report.json"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
+        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "code_review",
         "status": "not_run"
       },
       {
         "id": "test_review",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
+        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "test_review",
         "status": "not_run"
       },
       {
         "id": "security_review",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
+        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "security_review",
         "status": "not_run"
       },
       {
         "id": "data_review",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
+        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "data_review",
         "status": "not_run"
       },
       {
         "id": "release_review",
         "kind": "receipt",
-        "reason": "The sole data implementer imported all 19 exact candidate paths; coordinator independently verified their bytes and immutable SQL001\u2013021. Fresh integrated full verification and all five current-tree reviews remain pending.",
+        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "release_review",
         "status": "not_run"
       }
@@ -76,13 +78,13 @@
     {
       "at": "2026-09-21T11:42:04+00:00",
       "from": "implementing",
-      "reason": "Exact 19-path integration is complete; coordinator independently verified candidate bytes and immutable SQL001\u2013021. Freeze this tree for fresh complete verification and five independent reviews.",
+      "reason": "Exact 19-path integration is complete; coordinator independently verified candidate bytes and immutable SQL001–021. Freeze this tree for fresh complete verification and five independent reviews.",
       "to": "verifying"
     }
   ],
   "route_id": "cf23849faca6",
   "schema_version": 1,
   "status": "verifying",
-  "title": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001\u2013021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
+  "title": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001–021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
   "updated_at": "2026-09-21T11:42:04+00:00"
 }

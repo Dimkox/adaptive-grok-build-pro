@@ -1971,7 +1971,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T11:34:42.674199+00:00",
+    "observed_at": "2026-09-21T11:53:44.571027+00:00",
     "route_id": "cf23849faca6",
     "branch": "fix/factory-tooling-batch-20260921",
     "issues": [
@@ -1992,8 +1992,8 @@
     "base_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
     "change_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/candidates.json",
-    "status": "exact_candidate_integration_in_progress_fresh_full_and_reviews_pending",
-    "next_action": "Freeze the completed exact 19-path source import and truthful evidence accounting; run complete current-tree verification, all five selected independent reviews and current receipts before exact-granted PR/external delivery. Close retained PR135 only after the successor lands.",
+    "status": "initial_integrated_full_pass_five_reviews_and_final_receipts_pending",
+    "next_action": "Obtain all five selected independent reviews, freeze reports and handoff, then run final complete verification and record current receipts. Deliver the isolated successor through the exact-head external App check. Close only165/163/118;62and158remain open.",
     "scoping_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0",
     "source_adoption": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/current-main-adoption.json",
     "excluded_successors": [
@@ -2001,7 +2001,9 @@
       "Trusted-validator seven-kind compatibility",
       "Bounded App Check Run command output for issue62",
       "Other retained PR source and all live operations"
-    ]
+    ],
+    "verified_source_head": "4bc43cb7876d92b11efb289a121dcfef0a0355ac",
+    "verification_record": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/combined-full-initial-summary.json"
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",
@@ -2052,7 +2054,7 @@
         ],
         "branch": "fix/factory-tooling-batch-20260921",
         "route_id": "cf23849faca6",
-        "status": "19-path current-main integration; fresh full and five reviews pending;62onlypartial"
+        "status": "Initial combined full PASS:877root/1426subtests and804factory/PostgreSQL cases with2skips; all5reviews pending;62partial"
       },
       {
         "issue": 158,

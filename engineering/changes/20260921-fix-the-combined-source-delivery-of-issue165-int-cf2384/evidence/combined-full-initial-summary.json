@@ -1,0 +1,224 @@
+{
+  "command": [
+    "python3",
+    "scripts/grok_verify.py",
+    "--mode",
+    "pr",
+    "--json"
+  ],
+  "env": {
+    "GROK_TEST_WORKERS": "8"
+  },
+  "head": "4bc43cb7876d92b11efb289a121dcfef0a0355ac",
+  "started_at": "2026-09-21T11:42:40.161150+00:00",
+  "ended_at": "2026-09-21T11:52:04.471060+00:00",
+  "exit_code": 0,
+  "wall_seconds": 564.3085446000041,
+  "report_sha256": "d797b047c16090a7b4869a30d27edc3b5a2b2a5cf6936bcfd9b82164b779d32f",
+  "status": "pass",
+  "tree_fingerprint": "9e1ba0dfac35f1d09d6473a7b5bdcae1f0547cc32d0ec5f83c0df5c1d72c10c9",
+  "report": "evidence/combined-full-initial-report.json",
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:5674c369c4a427d42bde2a5fb3a3e2f73c853cd0,pr-target:5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+      "command": null
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "6 specs checked; exempt=False",
+      "command": null
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass",
+      "command": null
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current",
+      "command": null
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured",
+      "command": null
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets",
+      "command": null
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "0 contracts checked",
+      "command": null
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings",
+      "command": null
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "ruff",
+        "check",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        "tests",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ]
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "bandit",
+        "-c",
+        "bandit.yaml",
+        "-q",
+        "-r",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ]
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "pilot/tests",
+        "-t",
+        ".",
+        "-v"
+      ]
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=101.767",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-c",
+        "/dev/null",
+        "-p",
+        "xdist.plugin",
+        "-p",
+        "no:cacheprovider",
+        "--import-mode=prepend",
+        "--rootdir=.",
+        "-o",
+        "python_files=test*.py",
+        "-q",
+        "-n",
+        "8",
+        "--dist=worksteal",
+        "--max-worker-restart=0",
+        "--durations=20",
+        "-ra",
+        "-p",
+        "pytest_cov.plugin",
+        "--cov",
+        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-factory-tooling/.coveragerc",
+        "--cov-report=term",
+        "tests"
+      ]
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=1.556",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "coverage",
+        "report",
+        "--rcfile=/home/pall/grok-projects/adaptive-grok-build-factory-tooling/.coveragerc"
+      ]
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "factory.tests.test_contracts",
+        "factory.tests.test_state",
+        "factory.tests.test_migrations",
+        "factory.tests.test_service"
+      ]
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "factory/tests/run_disposable_exit.py"
+      ]
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable",
+      "command": null
+    }
+  ],
+  "counts": {
+    "root_passed": 877,
+    "root_subtests_passed": 1426,
+    "pilot_total": 44,
+    "pilot_skipped": 1,
+    "factory_unit_total": 60,
+    "factory_postgres_total": 804,
+    "factory_postgres_skipped": 2
+  },
+  "limitations": [
+    "workflow artifacts unconfigured and skipped",
+    "Native Windows and older Python not exercised",
+    "Source verification only; no live installation or SQL operation",
+    "Five independent current-tree reviews and final frozen-tree receipt refresh remain required"
+  ]
+}
