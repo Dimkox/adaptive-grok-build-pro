@@ -1,0 +1,98 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Real recorded migration prefix upgrades with exactly the current final packaged resource and matching on-disk digest; the full ledger and replay are verified.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The populated fixture and pre-existing function OID, owner, ACL and effective privileges survive replacement.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Real synchronized contention completes after release, and sustained migrator advisory contention cancels within a watchdog, leaves the prefix intact, and permits successful retry.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No fixed aggregate migration digest/count, mock apply success, disabled suite, production database operation or changed runtime timeout.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Packaged SQL resources 001\u2013021 and production migrator, timeout values, authority freshness and privilege definitions remain byte-identical.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Test issue #166: ship a PostgreSQL current-prefix incremental migration regression, preserving function OID and ACL, with bounded concurrent-session checks and checkout-derived migration expectations.",
+    "success_metric": "A shipped PostgreSQL regression proves real current-prefix upgrade identity, function preservation and bounded contention recovery.",
+    "target": "factory/tests/test_execution_persistence_postgres.py and only necessary checkout-derived expectation assertions in existing test/harness modules"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "A shipped PostgreSQL regression proves real current-prefix upgrade identity, function preservation and bounded contention recovery.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

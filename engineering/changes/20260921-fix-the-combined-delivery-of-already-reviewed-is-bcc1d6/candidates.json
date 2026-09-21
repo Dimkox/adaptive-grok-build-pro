@@ -161,5 +161,10 @@
     "issue163 active migration022 source",
     "separate162 Trust CI validator successor",
     "all other retained PR source changes"
-  ]
+  ],
+  "additional_research_documentation_source": {
+    "head": "e2a4eda8515a83749b36343a79b49a233112fe80",
+    "change_package": "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a",
+    "scope": "dated65-issue inventory, closure facts and future bounded design packets only"
+  }
 }

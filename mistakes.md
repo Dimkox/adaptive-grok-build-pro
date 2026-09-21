@@ -1375,3 +1375,41 @@ I checked whitespace before staging new raw evidence files, so the check omitted
 ## 2026-09-21 — Distinguish no-index differences from whitespace errors
 
 The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.
+
+
+### 2026-09-21 — Combined schema and Trust CI source repairs across a declared separation boundary
+
+I extended issue #162 with a valid Trust CI source validator repair and focused tests without first checking `FIT-TRUST-CI-SEPARATION` against the route base. The root cause was treating two vocabulary consumers as one delivery unit even though `architecture/rules.yaml` forbids mixing `schemas/**` implementation changes with `trust-ci/**` changes in a single diff; the full gate failed fitness and cascaded into governance. Preserve the historical patch, invert only its four source/test paths on #162, and route a dependent Trust CI successor from a base that already contains the schema fix.
+
+
+## 2026-09-21 — #153 / #161 consumer installation documentation
+
+An installer fixture assumed a public profile_kind argument without inspecting materialize_new. The existing explicit payload seam exercised both profiles without changing the public API.
+
+## 2026-09-21 — Installer review gaps
+
+The first repair audited rendered documentation but overlooked duplicate source artifacts in the managed inventory. A relocation fixture also lacked the newly required template and could fail for the wrong reason; valid positive controls and a specific refusal now guard that test.
+
+
+## 2026-09-21 — #168 untracked agent scratch fingerprints
+
+The first fingerprint regression matrix cleaned fixtures only after successful assertions, so expected RED failures caused cascading commit errors. Moving fixture cleanup into finally produced an interpretable RED run before the repair.
+
+## 2026-09-21 — Git path transport changed without its consumers
+The first scratch fix changed Git inventory to raw NUL records but retained separator normalization and strict text decoding, conflating legal POSIX filenames and crashing on byte-valued names. Dedicated binary enumeration, lossless filesystem conversion and JSON escaping now preserve identity; independent reviews found both gaps before delivery.
+
+
+## 2026-09-21 — #147 / #148 schema resolution and bounded diagnostics
+
+The frozen-baseline schema probe copied function globals and bypassed a live module monkeypatch, producing harness errors. Compiling the baseline functions into the live module namespace preserved the spy and yielded expected assertion failures with no errors.
+
+## 2026-09-21 — Keep declared-ID fallback separate from raw-path grammar
+The initial precedence-only schema fix conflated a raw-path grammar refusal with failure to resolve a valid declared ID. The shipped-contract census and simple aliases missed this boundary; registered unsafe-looking aliases now have comparator-local fallback and explicit no-ID/duplicate/closure controls.
+
+
+## 2026-09-21 — Match the complete disposable target-binding contract
+
+The issue166 focused wrapper reused nonce and exact-container binding but chose an issue-specific name without checking the repository preflight name contract; preflight rejected it before tests. The owned container was removed, and changing only the cache wrapper to `adaptive-factory-exit-<12hex>` made the unchanged preflight pass. Reuse the entire target identity contract, not only its nonce checks.
+
+## 2026-09-21: Use the actual Git inventory command grammar
+The batch identity collector initially reused diff-specific glob pathspec syntax with ls-tree, which does not support it. Reading a NUL-delimited tree inventory and filtering SQL suffixes preserved the intended complete source comparison without product edits.

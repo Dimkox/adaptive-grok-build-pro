@@ -1,0 +1,22 @@
+# Integration architect analysis — issue #166
+
+## Migration producer and test consumer
+
+`discover_migrations()` reads packaged SQL and computes each resource SHA-256. `PostgresMigrator.apply()` takes a transaction-scoped advisory lock, sets 5 s local lock and statement timeouts, reads the real `factory.schema_migrations` rows, calls `plan_migrations()` for exact prefix `(version, name, sha256)` parity, then executes pending resources and inserts their recorded digests in the same transaction. The current head resource, `021_semantic_repair_child_rejection_reasons.sql`, replaces `factory.semantic_bind_repair_child(char,text)` and reapplies its explicit PUBLIC revoke/coordinator grant. PostgreSQL 17 [CREATE FUNCTION documentation](https://www.postgresql.org/docs/17/sql-createfunction.html) supports preserving ownership and permissions for `OR REPLACE`; the test should measure OID and ACL directly as an additional invariant.
+
+`factory/tests/run_disposable_exit.py` creates a nonce-bound PostgreSQL 17 container and runs `unittest discover -s factory/tests`, so a test added under the existing `FACTORY_TEST_DATABASE_URL` suite is automatically exercised by the PR gate. The existing `PostgresFactoryTests.create_schema14_database()` and `drop_disposable_database()` helpers show isolated per-test database setup and cleanup. The separate `FRESH_CLUSTER_DATABASE_URL` class is skipped in the normal harness because that variable is not set; it also pins 21 explicitly and is unsuitable as the entrypoint for this regression. Existing populated cases reach 021 from much older prefixes, while none begins with the real 001–020 rows.
+
+## Bounded test design
+
+In a uniquely named disposable database, execute the packaged prefix `discover_migrations()[:-1]` and insert each corresponding row into `schema_migrations` within one committed setup transaction. Read back the exact prefix and the target function's `pg_proc.oid`, `proacl`, owner, and relevant `has_function_privilege` results before upgrade. Call the real migrator; assert only the final packaged resource was returned, the full ordered history equals the checkout-derived `(version, name, sha256)` list, and the target function retains OID and privilege matrix. A second `apply()` should return an empty tuple. A narrow post-upgrade call that takes an early rejection branch can establish that the new function body is visible, without constructing mutable business fixtures.
+
+For concurrency, synchronize two real sessions with events: keep one session's transaction open after invoking the old function while the migrator applies, release it within a bounded interval, and require the migration future to finish or fail inside a deadline with no partial migration row. Optionally hold the migrator's documented advisory lock in another test to prove the existing 5 s timeout and rollback path deterministically. The issue's assertion that `CREATE OR REPLACE FUNCTION` *necessarily* takes an `ACCESS EXCLUSIVE` lock against a running caller is not established by the repository or [PostgreSQL locking documentation](https://www.postgresql.org/docs/17/explicit-locking.html); do not encode that lock mode or an expected timeout from a plain function call into the test. Measure the supported behavior and preserve the production timeout values.
+
+## Acceptance checks and isolation
+
+1. Prefix setup records every checkout-derived SHA, including resource 020, and the migrator reports exactly the current final resource, including resource 021 on this checkout. No static full-set count or digest is used as the expected current head.
+2. Before/after catalog assertions cover function OID and ACL/privilege semantics; after upgrade, `schema_migrations` matches all discovered resources exactly and rerunning is idempotent.
+3. The concurrent session uses an explicit rendezvous and bounded future wait; it cannot sleep indefinitely or attach to a non-disposable database. Any timeout outcome leaves the prefix intact and allows retry after contention clears.
+4. Only tests or disposable harness wiring change. SQL resources 001–021, migrator behavior, and production timeout settings stay unchanged. The normal disposable exit run discovers the new test without a second container or a new service.
+
+Source and primary PostgreSQL documentation inspection only. No Docker, database, product code, or full gate was run for this analysis.

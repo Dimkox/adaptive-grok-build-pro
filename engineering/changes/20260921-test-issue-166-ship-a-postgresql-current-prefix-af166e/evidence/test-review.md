@@ -1,0 +1,36 @@
+# Independent test review — issue #166
+
+Recommendation: **PASS**. No blocking test-adequacy or verification finding in the reviewed delta.
+
+## Scope and identity
+
+- Role: route-selected `test_reviewer`, independent of implementation; route `af166ec812f3`.
+- Reviewed HEAD: `0558da4a4047ddf12114be33fb163b4e9124fdbf` against issue base `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`.
+- Reviewed test: `factory/tests/test_execution_persistence_postgres.py`, SHA-256 `4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236`.
+- Inspected actual diff, historical fixture setup/cleanup, real migrator, discovery/harness wiring, scoped acceptance criteria, all relevant analysis reports, focused raw runner/logs, and full verifier JSON/metadata. Production source and migration resources have no delta against the issue base.
+- Review is product-read-only. Only this requested report was written; no Docker, database, full gate, commit, external operation, or further agent was started.
+
+## Findings and acceptance assessment
+
+1. **Real current prefix, without a hidden skip:** `create_populated_current_prefix` (line 1849) runs real packaged SQL through `packaged[:-1]` over the historical populated schema14 fixture and inserts genuine migration identity rows. Its exact-prefix assertion prevents accidentally testing a fresh or shorter database. `assert_current_prefix_upgraded` (line 1921) requires the migrator to return exactly the checkout's final resource, compares all version/name/digest triples, retains every prior timestamp, and requires empty replay plus unchanged snapshots. These assertions are unconditional. The two filename conditions cover only the historical 021 old/new behavior characterization; appending a resource does not skip current-prefix migration coverage. The existing class-level disposable-database requirement is satisfied by both recorded PostgreSQL runs.
+2. **Preservation assertions are substantive:** the snapshots compare full JSON rows in six populated tables, function OID, owner, normalized explicit ACL, SECURITY DEFINER, search path and effective coordinator/validator/adjudicator/runtime execution privileges. On this checkout, old SQL NULL versus new `command_input_invalid` demonstrates the replacement body became visible while catalog identity remained intact. This would catch drop/recreate, privilege drift, altered prior ledger timestamps, missing final migration, or changes to the selected populated data.
+3. **Drift negative exercises the database:** the test at line 1947 alters the real penultimate ledger checksum to a different valid-format digest, requires the corresponding `MigrationError`, and compares the complete observed snapshot before restoring the original digest. Restoration must reproduce the original snapshot before successful migration and replay. It neither mocks the migrator nor treats a setup failure as expected evidence.
+4. **Contention is observed, not guessed:** line 1972 holds the imported production advisory-lock key in a distinct transaction and identifies the worker by a UUID application name. The observer must see an ungranted advisory lock, a Lock wait event, and the exact blocking backend PID. A worker that fails or completes without waiting cannot pass this rendezvous. Release-success and sustained-timeout paths are separately exercised.
+5. **Timeout and recovery assertions reject unrelated errors:** the sustained holder permits only a psycopg error with SQLSTATE `57014` or `55P03`, requires at least four seconds of elapsed time, unchanged prefix/catalog/data, worker completion inside its watchdog, and successful retry after release. A watchdog expiry fails; it is not accepted as proof of server cancellation. Production five-second timeout settings remain unchanged.
+6. **Cleanup is appropriate to the owned fixture:** database cleanup is registered immediately after creation and before fixture construction; existing callers keep their previous cleanup behavior. Contention cleanup releases the blocker before joining, targets only the uniquely named worker if termination is needed, bounds joins, and checks worker-session disappearance on the normal result path. Unittest cleanup runs on assertion/setup failures. The disposable container wrapper additionally uses the repository binding/preflight/removal helpers and tmpfs storage.
+
+## Verification examined and performed
+
+- Independently hash-checked the current test source and all three artifacts recorded by `evidence/focused-postgres.json`; every hash matched.
+- Examined `/home/pall/.cache/agbp-run/issues-wave-20260921/issue166/focused-postgres-run2.log`: preflight passed; all three named new PostgreSQL cases passed, zero skipped, 10.807 seconds. Exact bound container `b559ff87178e6dd181b11e4900e60c5e4bcd9c105c13ad8cdde4c841e9c2e94f` was recorded absent afterward.
+- Examined the first focused log: naming preflight failed before tests and bound container `ca1b329c9a475ec89860b0b36bd4ec520bd5d9fab3f53bc16f187434171fa504` was recorded removed. The corrected runner changes the disposable name to the required form; it does not relax repository safeguards.
+- Examined `verify-initial.json` and `verify-initial-meta.json` in the same cache directory: `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json` exited zero at `2026-09-21T06:51:14Z`, bound to reviewed HEAD and fingerprint `32a5f001feb1e320c0308ccad89a16d06b9d9c7ddeeef328c23b47e6e825e6cc`. All applicable checks passed; PostgreSQL exit tier reports 782 tests in 354.097 seconds, `OK (skipped=2)`, including successful restart/reconciliation. The verifier retains only the tail of long output, so the focused raw log supplies the direct per-test no-skip evidence for this change.
+- Independently ran `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src:. python3 -B -m unittest factory.tests.test_migrations -v`: 24 passed, zero skipped, 0.059 seconds, exit zero.
+- Independently parsed all seven added current-prefix helpers/tests with AST: no added skip call/decorator; confirmed source/resources unchanged against the issue base and `git diff --check 1f7aedb8` passed.
+
+## Residual scope and evidence limits
+
+- This is deterministic migration-advisory contention coverage. It does not claim a live function invocation blocks CREATE OR REPLACE or reproduce live production load; the bounded scope ruling states that distinction explicitly.
+- The three-second wait-observation deadline can fail on an extremely starved host. It fails closed rather than silently dropping concurrency coverage. The normal paths have observed green evidence; cleanup failure paths were inspected, not fault-injected in a second container during this review.
+- Future migrations still run through the checkout-current prefix. The specifically historical 020-to-021 behavior assertion intentionally applies only while 021 is the suffix; future migrations that intentionally transform the sampled data/function contract may need corresponding expectation changes rather than a skip.
+- No database rerun was warranted after the source/hash and raw-evidence checks. Stored local verification and this independent review remain preflight evidence, not external Trust CI merge authority. The coordinator must bind final receipts after all evidence edits.

@@ -1,0 +1,20 @@
+# Docs and acceptance analysis — issues #153 and #161
+
+Source: `evidence/source-issues.json` in this change. This is read-only analysis, not implementation or verification evidence.
+
+## Acceptance and meaningful regression checks
+
+- **#153 portable vendored README:** `scripts/install_into.py` explicitly includes `factory/README.md` in `MANAGED_FILES`, while that README currently links to factory-repository root material via `../README.md`, `../DARK_FACTORY_ROADMAP.md`, and `../engineering/runbooks/*.md`. Materialize a new consumer into a temporary directory and scan all local Markdown links in the installed `factory/README.md`. Every relative target must exist inside the installed tree; links intentionally pointing to upstream material should be absolute, stable source links. Include a control with one valid relative link and one deliberately broken link to prove the checker detects breakage. Assert unrelated factory files still appear in `build_payload()`.
+- **#161 consumer contract:** Inspect the *installed managed block*, not the factory root `AGENTS.md` alone. Every path described as mandatory for a fresh consumer task must be installed by the payload or created by a documented consumer bootstrap; external factory files must be identified as upstream-only or optional. Test both generic and Bitrix profiles and assert the surrounding user-owned `AGENTS.md` text survives an update/plan path. Test a missing mandatory path as a negative control for any new doctor check; optional paths should not fail it.
+- **Ownership/update control:** `MANAGED_FILES` currently owns `factory/README.md`; simply removing it from the manifest can strand old managed copies and leave the broken links. Exercise a previously installed consumer or record explicit migration/ownership behavior. Existing-target CLI defaults to a read-only plan, while `--materialize-new` actually writes, so the test must use the latter for a fresh consumer.
+
+## Current source and discrepancies
+
+- `scripts/install_into.py:17-91,550-604` constructs the managed payload. It reads root `AGENTS.md` verbatim into a marked block, so factory instructions about `START_HERE.md`, `PROJECT_STATE.json`, `VERSION`, `mistakes.md`, architecture files, and `trust-ci/` enter a consumer even though these files are not in `MANAGED_DIRS`/`MANAGED_FILES`. The consumer payload does include `.grok-stack`, `.agents`, `.grok`, the selected factory subtree, and selected scripts. `tests/test_installer.py:292-355` currently asserts the README is included, so that test must be updated if ownership changes.
+- `.grok-stack/config/policy.json` names several factory-only paths as protected/control-plane patterns. A protected pattern is not proof that the file must exist; #161's observed absence should be fixed in the consumer instructions before turning all protected-pattern absences into doctor failures. `.grok-stack/config/managed.json` is the inventory to consult for shipped hook/agent assets.
+- The issue's CLI hook-registration and role-spawn observations are consumer-environment evidence, not a demonstrated installer contract across every CLI. Do not claim those are repaired by a documentation-only change. The issue's `grok_verify` SKIP observation likewise does not prove the current gate enforces mandatory instruction paths.
+- The factory's `AGENTS.md` remains the authoritative contract for this repository. A consumer variant must keep user-owned text and the trust/consent boundary, while scoping factory release, deployment, external Trust CI, and architecture-model obligations to their actual presence. No source issue authorizes copying `PROJECT_STATE.json`, deployed policy, or factory state into a consumer.
+
+## Evidence boundary
+
+Local payload/link and managed-block tests can establish the installed bytes. They cannot establish that a particular consumer CLI registers every shipped hook or that external Trust CI will pass on a future exact PR head. No external documentation lookup is needed; the issue text and current source define this bounded task.

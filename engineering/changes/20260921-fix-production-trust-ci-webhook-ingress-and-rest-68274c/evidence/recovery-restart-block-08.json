@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-21T08:41:36.448833+00:00",
+  "block": 8,
+  "exit_code": 0,
+  "stdout": "enabled\n",
+  "stderr": "Created symlink /etc/systemd/system/multi-user.target.wants/adaptive-trust-ci-webhook-bridge.socket \u2192 /etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket.\n"
+}

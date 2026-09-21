@@ -1,0 +1,98 @@
+{
+  "initial_verification": {
+    "status": "pass",
+    "fingerprint": "f4ebf05ae78b2b60901341ecd21b7ac9ccfdbb820a1ccff72560318cf895b4cd",
+    "created_at": "2026-09-21T07:43:52+00:00",
+    "checks": [
+      {
+        "name": "git-diff-check",
+        "status": "pass"
+      },
+      {
+        "name": "change-spec",
+        "status": "pass"
+      },
+      {
+        "name": "architecture",
+        "status": "pass"
+      },
+      {
+        "name": "governance",
+        "status": "pass"
+      },
+      {
+        "name": "workflow-artifacts",
+        "status": "skip"
+      },
+      {
+        "name": "secret-scan",
+        "status": "pass"
+      },
+      {
+        "name": "contract-structure",
+        "status": "pass"
+      },
+      {
+        "name": "sql-safety",
+        "status": "pass"
+      },
+      {
+        "name": "ruff",
+        "status": "pass"
+      },
+      {
+        "name": "bandit",
+        "status": "pass"
+      },
+      {
+        "name": "pilot-unittest",
+        "status": "pass"
+      },
+      {
+        "name": "python-unittest",
+        "status": "pass"
+      },
+      {
+        "name": "coverage",
+        "status": "pass"
+      },
+      {
+        "name": "factory-unit",
+        "status": "pass"
+      },
+      {
+        "name": "factory-postgres-exit",
+        "status": "pass"
+      },
+      {
+        "name": "source-stability",
+        "status": "pass"
+      }
+    ],
+    "limit": "Historical initial candidate. Product corrections followed; final whole verification still required."
+  },
+  "reviewed_product_commit": "8278b2dd9b3fff69b5e408087c2e3b49a68e470c",
+  "product_hashes": {
+    ".grok-stack/adaptive_grok/util.py": "3b99030bf8c238315202f623e5969414f858f47280e31f602080ca371a85affd",
+    "scripts/grok_verify.py": "1485a73945adf32c6ebd711640efe8c8918112a37649889601b5c2e33a0474ca",
+    "tests/test_util_fingerprint.py": "664a52083882942aecd0db4cb9ab1d688a1a958b82672d9525bc6601dd70323f",
+    "tests/test_change_receipts.py": "da874e190549f6d821ae55f2946ffca30577c8024a13e4ce3137e5baa3425496"
+  },
+  "corrected_focused_evidence": "19 focused tests pass for literal filesystem identities, lossless JSON and receipt staleness; renewed code/test/security reviews pass.",
+  "independent_reviews": {
+    "code": {
+      "path": "evidence/code-review.md",
+      "sha256": "2a03b9f8897808ab9c69f1ea789a8a4af1f95cc9f407d95cd28495065b079098"
+    },
+    "test": {
+      "path": "evidence/test-review.md",
+      "sha256": "9d148e98ad7877c49bdd7cb884c4aa413210d56389d4dcce4dfd8e818ce52765"
+    },
+    "security": {
+      "path": "evidence/security-review.md",
+      "sha256": "6667fe8aa3c0a4093b4f5b8d47687099a204d31f4399d54d67f4f9e63f8b9162"
+    }
+  },
+  "final_verification": "pending on frozen final candidate; do not reuse initial result",
+  "external_trust": "Required App-owned exact-head/base policy check and applicable signed scopes remain mandatory."
+}

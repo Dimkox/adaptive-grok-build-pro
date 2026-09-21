@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import json
+import os
 import subprocess
 import shutil
 import tempfile
@@ -580,6 +581,42 @@ class ReceiptTests(unittest.TestCase):
             receipt = json.loads(path.read_text(encoding='utf-8'))
             self.assertNotIn('architecture_digest', receipt)
             self.assertEqual(validate_evidence(root, route), [])
+
+    def test_receipt_survives_scratch_churn_but_stales_on_product_edit(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            original_receipt = receipt_path.read_bytes()
+            scratch = root / '.qwen/tmp/probe'
+            scratch.parent.mkdir(parents=True)
+            for content in ('one', 'two'):
+                scratch.write_text(content, encoding='utf-8')
+                self.assertEqual(validate_evidence(root, route), [])
+            scratch.unlink()
+            self.assertEqual(validate_evidence(root, route), [])
+            scratch.write_text('mixed scratch and product edit', encoding='utf-8')
+            with (root / 'VERSION').open('a', encoding='utf-8') as handle:
+                handle.write('\nproduct changed\n')
+            gaps = validate_evidence(root, route)
+            self.assertIn('verification: stale after repository changes', gaps)
+            self.assertEqual(original_receipt, receipt_path.read_bytes())
+
+    @unittest.skipUnless(os.name == 'posix', 'POSIX filenames can contain non-UTF-8 bytes')
+    def test_receipt_roundtrips_non_utf8_changed_file_names(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            rel = os.fsdecode(b'source-\xff.py')
+            (root / rel).write_text('one', encoding='utf-8')
+            path = write_receipt(root, 'verification', 'pass', details={'changed_files': [rel]})
+            receipt = json.loads(path.read_bytes().decode('utf-8'))
+            self.assertEqual([rel], receipt['details']['changed_files'])
+            self.assertEqual(validate_evidence(root, route), [])
+            (root / rel).write_text('two', encoding='utf-8')
+            self.assertIn('verification: stale after repository changes', validate_evidence(root, route))
 
     def test_every_receipt_kind_selects_only_its_declared_criteria(self) -> None:
         kinds = ['verification', 'code_review', 'test_review', 'security_review', 'release_review']

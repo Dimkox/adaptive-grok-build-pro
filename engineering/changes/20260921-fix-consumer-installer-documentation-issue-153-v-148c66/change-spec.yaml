@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "change_id": "20260921-fix-consumer-installer-documentation-issue-153-v-148c66",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Install consumer-specific instruction and README templates while retaining managed README ownership and existing-target safety.",
+    "success_metric": "Broken installed README links, mandatory absent factory-only files, and existing-target byte differences.",
+    "target": "All three counts are zero in generic and Bitrix fixtures."
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Installed factory/README.md remains managed; every relative link resolves in the materialized consumer and upstream-only documentation uses explicit HTTPS links.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Installed managed instructions require only shipped files and mark consumer-owned bootstrap/state/version/architecture/shared-memory files conditional; no factory deployment identity is copied.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "managed_agents_text and build_payload render identical consumer content through the bounded reader; generic/Bitrix payloads are deterministic with correct rendered hashes.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Existing-target plans preserve user AGENTS prefix/suffix and old managed markers byte-for-byte; kept_local conflicts and materialize-new refusal for existing targets remain.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Consumer instructions retain one writer, independent review, PR-only delivery, exact action/resource consent, secret/private-key restrictions and external merge authority.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Descriptor-backed source safety and target ownership remain intact.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Factory-root AGENTS/README and Bitrix local/AGENTS behavior remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Copy factory PROJECT_STATE, deployed policy, private material or runtime observations into a consumer.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Silently delete a formerly managed README, overwrite user instructions or add an updater.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Claim hook registration, language coverage or live activation is fixed.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Broken installed README links, mandatory absent factory-only files, and existing-target byte differences.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

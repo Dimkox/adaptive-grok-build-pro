@@ -1,0 +1,40 @@
+# Active pull requests: live status and issue coverage
+
+Observed: 2026-09-21T06:25:38.001752+00:00. Fetched `origin/main` is `90078959ff816068af374ad42f4bb80fdbaec866`. Source: live GitHub PR, review/issue-closure, and exact-head check-run APIs; cached inventory was used only to seed the set. No external writes or full verification were performed.
+
+The authoritative result is `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App `4694114` on the exact PR head and current base. A successful historical run on a stale base is not current merge authority. GitGuardian is informational.
+
+All 17 open PRs have zero GitHub review submissions, zero review threads, and zero PR conversation comments at observation time; this does not audit local review files. #170 is a draft on current main with no required check reported yet. The other 16 PRs have old base `2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217`; 14 have green App checks for their heads, two failed, and five are conflicting.
+
+| PR | Issue closure | Head / base | GitHub merge | App check | Next action |
+|---|---|---|---|---|---|
+| [#170](https://github.com/Dimkox/adaptive-grok-build-pro/pull/170) | #155, #164 | `1f7aedb` / `9007895` (current) | draft; mergeable | absent | Keep published head frozen; wait for the App-owned check on 1f7aedb. If it succeeds for base 9007895, complete draft/readiness and applicable external approvals before any merge decision. Keep #166 separate. |
+| [#145](https://github.com/Dimkox/adaptive-grok-build-pro/pull/145) | #124 | `29382f4` / `2f66ba6` (stale) | mergeable | success on head; run 105848188095 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#144](https://github.com/Dimkox/adaptive-grok-build-pro/pull/144) | #129 | `349da6d` / `2f66ba6` (stale) | mergeable | success on head; run 105845731248 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#143](https://github.com/Dimkox/adaptive-grok-build-pro/pull/143) | #128 | `4b956c2` / `2f66ba6` (stale) | mergeable | failure on head; run 105887438390 | Inspect the failed repository-verification run artifact, fix the demonstrated failure, refresh onto current main, and obtain a successful new App-owned check. |
+| [#142](https://github.com/Dimkox/adaptive-grok-build-pro/pull/142) | #126 | `c5a7f22` / `2f66ba6` (stale) | conflicting | success on head; run 105841373322 | Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base. |
+| [#141](https://github.com/Dimkox/adaptive-grok-build-pro/pull/141) | #125 | `92648fa` / `2f66ba6` (stale) | mergeable | success on head; run 105838804549 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#140](https://github.com/Dimkox/adaptive-grok-build-pro/pull/140) | #123 | `e51a0d1` / `2f66ba6` (stale) | mergeable | success on head; run 105836181091 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#139](https://github.com/Dimkox/adaptive-grok-build-pro/pull/139) | #122 | `91be50a` / `2f66ba6` (stale) | mergeable | success on head; run 105833374563 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#138](https://github.com/Dimkox/adaptive-grok-build-pro/pull/138) | #121 | `67437c1` / `2f66ba6` (stale) | mergeable | success on head; run 105830390100 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#137](https://github.com/Dimkox/adaptive-grok-build-pro/pull/137) | #120 | `e424334` / `2f66ba6` (stale) | conflicting | success on head; run 105827354667 | Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base. |
+| [#136](https://github.com/Dimkox/adaptive-grok-build-pro/pull/136) | #119 | `2b611d4` / `2f66ba6` (stale) | mergeable | success on head; run 105824541826 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#135](https://github.com/Dimkox/adaptive-grok-build-pro/pull/135) | #118 | `7a7851a` / `2f66ba6` (stale) | mergeable | success on head; run 105821447933 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#134](https://github.com/Dimkox/adaptive-grok-build-pro/pull/134) | #117 | `25d7a2b` / `2f66ba6` (stale) | mergeable | success on head; run 105818533200 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#132](https://github.com/Dimkox/adaptive-grok-build-pro/pull/132) | #103 | `800802a` / `2f66ba6` (stale) | conflicting | success on head; run 105812155307 | Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base. |
+| [#131](https://github.com/Dimkox/adaptive-grok-build-pro/pull/131) | #95 | `801f309` / `2f66ba6` (stale) | conflicting | success on head; run 105808796930 | Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base. |
+| [#130](https://github.com/Dimkox/adaptive-grok-build-pro/pull/130) | #52 | `11c6268` / `2f66ba6` (stale) | mergeable | success on head; run 105804999583 | Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes. |
+| [#127](https://github.com/Dimkox/adaptive-grok-build-pro/pull/127) | #86 | `31cc330` / `2f66ba6` (stale) | conflicting | failure on head; run 105100747938 | Treat as historical #86 documentation: decide whether to retire or restack against current main. If retained, correct outdated #104 wording, resolve conflicts, inspect failed repository-verification artifact, rerun evidence and obtain a new App-owned check. #121 is covered separately by #138. |
+
+## Coverage and blockers
+
+- The 17 issues in the supplied active issue cache are covered by closing references in 16 PRs: #170 closes both #155 and #164; each of #145–#130 in the inventory closes one. Coverage means a proposed PR exists, not that the issue is resolved or merge-eligible.
+- #127 is additional historical work for already closed #86. Its body points to #121 as follow-up; #138, not #127, closes #121. The #127 statement that #104 remains open is outdated; #104 is closed.
+- #170 explicitly does not include the shipped migration 001–020→021 upgrade test. #166 remains OPEN and has no closing reference among these PRs. This is outside the cached 17-issue set and should remain separate in the broader backlog.
+- #143 and #127 have App-owned failures at `repository-verification` (exit 1). The public check output has no annotations or deeper failure cause, so the exact run artifact must be inspected before a repair is scoped.
+- GitHub reports conflicts for #142, #137, #132, #131, and #127. The remaining stale-base PRs are currently `MERGEABLE`, but all require a refreshed base and new exact-head/current-base Trust CI evidence before merge eligibility.
+- No public GitHub review finding is unresolved because no review threads or submitted reviews exist on these PRs. Local package claims and any separately required signed approval scopes were not validated in this read-only PR status pass.
+
+## Machine-readable evidence
+
+See [`active-pr-status.json`](active-pr-status.json) for every exact SHA, check-run ID and App ID, draft/mergeability state, closing versus mentioned issue references, review counts, and per-PR next action.

@@ -1142,9 +1142,8 @@ SCHEMA_REFERENCE_UNRESOLVED = frozenset(
     {SCHEMA_REFERENCE_NOT_A_PATH, SCHEMA_REFERENCE_ESCAPE, SCHEMA_REFERENCE_UNDECLARED}
 )
 #: A reference base that is both another contract's declared path and some contract's
-#: declared ``$id`` is resolved by ``$id`` (the comparator's long-standing precedence, see
-#: the sibling issue for the shadowing defect it allows) or by path (one of the two tables
-#: the fitness gate's dependency closure consults; it never substitutes one for the other).
+#: declared ``$id`` is resolved by path in the comparator. The fitness dependency closure
+#: conservatively consults both tables; it never substitutes one for the other.
 SCHEMA_REFERENCE_ID_FIRST = "declared_id_first"
 SCHEMA_REFERENCE_PATH_FIRST = "declared_path_first"
 
@@ -1281,12 +1280,10 @@ def schema_reference_target_path(
     references cannot invent a third interpretation of a ``$ref``.
 
     ``precedence`` is the one part that is caller policy, because the comparator and the
-    fitness dependency closure deliberately disagree about a base that is simultaneously
-    another contract's declared path and some contract's declared ``$id``: the comparator
-    keeps its long-standing SCHEMA_REFERENCE_ID_FIRST ordering (shadowing is a separate
-    defect), while the closure calls this function once per table and unions the two
-    answers, so a dependent is re-verified against the contract whose path the reference
-    names *and* against a claimant that shadows that path with an ``$id``.
+    fitness dependency closure use different scope policies. The comparator selects
+    SCHEMA_REFERENCE_PATH_FIRST so an existing declared path cannot be captured by another
+    contract's ``$id``, with ID fallback when no path resolves. The closure conservatively
+    unions both answers, retaining the real path dependency and any competing claimant.
 
     This function reports a miss instead of raising for any reference, so each caller
     chooses its own policy for a reason; only an unknown ``precedence`` raises, because
@@ -1406,8 +1403,18 @@ class _SchemaResolver:
                 reference_base,
                 self.paths_by_schema_id,
                 self.records,
-                precedence=SCHEMA_REFERENCE_ID_FIRST,
+                precedence=SCHEMA_REFERENCE_PATH_FIRST,
             )
+            if declared_path is None and failure == SCHEMA_REFERENCE_UNSAFE:
+                # A declared ID need not satisfy the relative-path grammar. Keep this
+                # fallback local: the closure uses UNSAFE to recover concrete path edges.
+                declared_path, failure = schema_reference_target_path(
+                    current.path,
+                    reference_base,
+                    self.paths_by_schema_id,
+                    self.records,
+                    precedence=SCHEMA_REFERENCE_ID_FIRST,
+                )
             if declared_path is None:
                 raise ArchitectureError(failure, code="contract")
             target_record = self.records[declared_path]

@@ -1,0 +1,28 @@
+{
+  "base_commit": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+  "source": "factory/tests/test_execution_persistence_postgres.py",
+  "source_sha256": "4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236",
+  "command": "python3 /home/pall/.cache/agbp-run/issues-wave-20260921/issue166/focused_postgres.py",
+  "focused_tests": 3,
+  "focused_skipped": 0,
+  "focused_elapsed_seconds": 10.807,
+  "exit_code": 0,
+  "postgres_image": "postgres:17-alpine",
+  "bound_container_id": "b559ff87178e6dd181b11e4900e60c5e4bcd9c105c13ad8cdde4c841e9c2e94f",
+  "cleanup": "exact nonce/name/image/id binding checked; container absent; tmpfs without persistent volume",
+  "logs": {
+    "focused-postgres.log": {
+      "path": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue166/focused-postgres.log",
+      "sha256": "5ab6d2f7475421733053984e9bbff954b1c4d8dcea6caaccc904aa2829bed660"
+    },
+    "focused-postgres-run2.log": {
+      "path": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue166/focused-postgres-run2.log",
+      "sha256": "4e6ed49504845da7946a66fea2e0fe5859632a0d53fe9d7c9fe97b0c1ecdc9ac"
+    },
+    "focused_postgres.py": {
+      "path": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue166/focused_postgres.py",
+      "sha256": "151ad31069cf0ef2354489350693d2b3ccb8cde03a9b337cc86ce4613d42e9bd"
+    }
+  },
+  "scope": "focused local preflight; full verifier and independent reviews remain coordinator-owned"
+}

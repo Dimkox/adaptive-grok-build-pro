@@ -1,0 +1,11 @@
+# Verification plan
+
+Status: initial implementation and review repair have focused passing evidence in evidence/implementation.md and evidence/review-repair.md. Final verification and refreshed independent reviews belong to the coordinator; initial passing tests do not cover later repaired source.
+
+Start with a real temporary-Git A/B that fails before repair. Cover untracked create/edit/remove, prefix lookalikes, tracked ignored-prefix files, force-added scratch, staged addition/edit/deletion, unstaged deletion, rename and base diff. Check configuration and ordinary-source controls; mock lookup failure and timeout, then exercise non-Git and unborn-HEAD paths. Test changed_files and fingerprint separately; add a synthetic receipt fresh/stale integration case.
+
+Focused: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack python3 -m unittest discover -s tests -p 'test_util_fingerprint.py'; run the actual edited receipt/doctor module as well. Store commands and red/green output under evidence. Use temporary repos and synthetic receipts only.
+
+Coordinator runs python3 scripts/grok_verify.py --mode pr on the final tree, then dispatches code_reviewer, test_reviewer and security_reviewer. Record actual reports and fingerprint-bound receipts under their existing exact kinds; do not relabel reviews. Schema-v2 references use verification/code_review/test_review only. Full local preflight never substitutes for the App-owned exact-PR-head Trust CI check.
+
+Review repair regression wave (coordinator-approved scope): reproduce literal-backslash lookalikes with create/edit/remove, non-UTF-8 untracked scratch and clean tracked filename inventories, included filename byte/content changes, carriage-return names without text newline translation, and distinct non-UTF-8 symlink targets. Confirm dump_json and verifier --json produce UTF-8 JSON whose decoded values preserve filesystem names and ordinary Unicode; exercise an actual synthetic receipt roundtrip and product-change staleness. Run RED before product repair and focused GREEN in the coordinator's next allocated CPU slot; broader modules and final verification require separate scheduling. Preserve initial failed code/security reports and document root causes, rather than rewriting their conclusions.

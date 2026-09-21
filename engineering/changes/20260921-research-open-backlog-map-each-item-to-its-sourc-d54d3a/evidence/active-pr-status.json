@@ -1,0 +1,640 @@
+{
+  "observed_at_utc": "2026-09-21T06:25:38.001752+00:00",
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "source": "live gh pr list, GraphQL pullRequest review/closing references, REST commit check-runs; git fetch origin/main",
+  "current_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "required_check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+  "required_check_app_id": 4694114,
+  "pr_count": 17,
+  "rows": [
+    {
+      "pr": 170,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/170",
+      "title": "fix(factory): explain repair-child binding rejections",
+      "head_ref": "fix/issue-155-repair-binding-rejections",
+      "head_sha": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "base_ref": "main",
+      "base_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": true,
+      "is_draft": true,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        155,
+        164
+      ],
+      "mentioned_issue_numbers": [
+        155,
+        164,
+        166
+      ],
+      "mentioned_but_not_closed": [
+        166
+      ],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": null,
+        "status": "absent",
+        "conclusion": null,
+        "head_sha_matches": false
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Keep published head frozen; wait for the App-owned check on 1f7aedb. If it succeeds for base 9007895, complete draft/readiness and applicable external approvals before any merge decision. Keep #166 separate.",
+      "coverage_note": "Closes open #155 and #164; mentions but explicitly excludes open #166."
+    },
+    {
+      "pr": 145,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/145",
+      "title": "Fix #124: isolate mutation testing scratch worktree",
+      "head_ref": "fix/issue-124-review-scratch",
+      "head_sha": "29382f482efde5c047b3f7f09d524af6db5ac8f1",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        124
+      ],
+      "mentioned_issue_numbers": [
+        124
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105848188095,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 144,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/144",
+      "title": "Fix #129: preserve non-UTF8 diff diagnostics",
+      "head_ref": "fix/issue-129-utf8-diff-check",
+      "head_sha": "349da6d7c7787f890c3f078ac9dd139f73705c4f",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        129
+      ],
+      "mentioned_issue_numbers": [
+        129
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105845731248,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 143,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/143",
+      "title": "Fix #128: bound disposable PostgreSQL cleanup after cancellation",
+      "head_ref": "fix/issue-128-disposable-cleanup",
+      "head_sha": "4b956c238699ad102a112b158b641723e02b7183",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        128
+      ],
+      "mentioned_issue_numbers": [
+        128
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105887438390,
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Inspect the failed repository-verification run artifact, fix the demonstrated failure, refresh onto current main, and obtain a successful new App-owned check.",
+      "failed_check_step": "repository-verification: fail (exit 1); check has no annotations or finer public failure detail"
+    },
+    {
+      "pr": 142,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/142",
+      "title": "Fix #126: enforce durable human approval gates",
+      "head_ref": "fix/route-human-gates",
+      "head_sha": "c5a7f2221862035c5ee0a0121b060c7239a2347f",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "CONFLICTING",
+      "closing_issue_numbers": [
+        126
+      ],
+      "mentioned_issue_numbers": [
+        126
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105841373322,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base."
+    },
+    {
+      "pr": 141,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/141",
+      "title": "Fix #125: enforce invariant and forbidden-outcome evidence",
+      "head_ref": "fix/spec-coverage-invariants",
+      "head_sha": "92648fa6bf0db9bb9a9ae2b23a6765e4470bd06c",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        125
+      ],
+      "mentioned_issue_numbers": [
+        125
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105838804549,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 140,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/140",
+      "title": "Fix #123: preserve release intent over pull-request wording",
+      "head_ref": "fix/release-routing-gates",
+      "head_sha": "e51a0d1549d1b58f3a637b88701efeb5a83a0ea1",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        123
+      ],
+      "mentioned_issue_numbers": [
+        123
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105836181091,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 139,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/139",
+      "title": "Fix #122: distinguish sample and deployed policy scopes",
+      "head_ref": "fix/issue-122-policy-example",
+      "head_sha": "91be50a0ba6dbe96f34212343bef8c131fa047fd",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        122
+      ],
+      "mentioned_issue_numbers": [
+        122
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105833374563,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 138,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/138",
+      "title": "Fix #121: persist activation probe observations durably",
+      "head_ref": "fix/issue-121-durable-activation-probe",
+      "head_sha": "67437c1599d28cfa5bfccc9375029f4dd6408657",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        121
+      ],
+      "mentioned_issue_numbers": [
+        121
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105830390100,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 137,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/137",
+      "title": "Fix #120: compare semantic schema metadata changes",
+      "head_ref": "fix/schema-metadata-contract-compatibility",
+      "head_sha": "e4243347d5521d14113231438b62dc01aac4e774",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "CONFLICTING",
+      "closing_issue_numbers": [
+        120
+      ],
+      "mentioned_issue_numbers": [
+        120
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105827354667,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base."
+    },
+    {
+      "pr": 136,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/136",
+      "title": "Fix #119: persist cancelled verification reports",
+      "head_ref": "fix/cancelled-verification-evidence",
+      "head_sha": "2b611d4a9dc7742498efcfdab6cb1e076580432e",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        119
+      ],
+      "mentioned_issue_numbers": [
+        119
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105824541826,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 135,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/135",
+      "title": "Fix #118: degrade test engine safely on Windows",
+      "head_ref": "fix/windows-test-engine-fallback",
+      "head_sha": "7a7851af5d11e8ce5c3af23ab46214ae7ae4cdc8",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        118
+      ],
+      "mentioned_issue_numbers": [
+        118
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105821447933,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 134,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/134",
+      "title": "Fix #117: reject fabricated review execution evidence",
+      "head_ref": "fix/agent-evidence-claims",
+      "head_sha": "25d7a2b958a1435bf794112e253bc3a6ab64dd73",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        117
+      ],
+      "mentioned_issue_numbers": [
+        117
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105818533200,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 132,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/132",
+      "title": "Fix #103: classify killed Trust CI commands as aborted",
+      "head_ref": "fix/trust-ci-killed-status",
+      "head_sha": "800802a091babf45d300527a3d41a824ebb8be0a",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "CONFLICTING",
+      "closing_issue_numbers": [
+        103
+      ],
+      "mentioned_issue_numbers": [
+        103
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105812155307,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base."
+    },
+    {
+      "pr": 131,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/131",
+      "title": "Fix #95: bind verifier to requested repository",
+      "head_ref": "fix/verifier-script-root-mismatch",
+      "head_sha": "801f309b852cd0ce65438bd71bd631960f9e60b2",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "CONFLICTING",
+      "closing_issue_numbers": [
+        95
+      ],
+      "mentioned_issue_numbers": [
+        95
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105808796930,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Resolve conflict against current main, rerun local evidence, and obtain a new App-owned check on the exact resolved head/base."
+    },
+    {
+      "pr": 130,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/130",
+      "title": "Fix #52: transliterate and sanitize change-package IDs",
+      "head_ref": "fix/issue-52-safe-change-slugs",
+      "head_sha": "11c62689a38ecce25cb5b0d575aab63d50dd5b00",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "MERGEABLE",
+      "closing_issue_numbers": [
+        52
+      ],
+      "mentioned_issue_numbers": [
+        52
+      ],
+      "mentioned_but_not_closed": [],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105804999583,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Refresh branch onto current main, rerun local evidence and obtain a new App-owned check for the resulting exact head/base; then assess signed scopes."
+    },
+    {
+      "pr": 127,
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/127",
+      "title": "docs(runtime): record the qwen-omni-intl executor activation as a runtime observation (#86)",
+      "head_ref": "feat/record-omni-activation",
+      "head_sha": "31cc330020ede6012a6a0aceede109aae13227c7",
+      "base_ref": "main",
+      "base_sha": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+      "observed_main_sha": "90078959ff816068af374ad42f4bb80fdbaec866",
+      "base_is_current_main": false,
+      "is_draft": false,
+      "mergeable": "CONFLICTING",
+      "closing_issue_numbers": [
+        86
+      ],
+      "mentioned_issue_numbers": [
+        76,
+        86,
+        93,
+        101,
+        102,
+        104,
+        105,
+        106,
+        107,
+        108,
+        112,
+        116,
+        121
+      ],
+      "mentioned_but_not_closed": [
+        76,
+        93,
+        101,
+        102,
+        104,
+        105,
+        106,
+        107,
+        108,
+        112,
+        116,
+        121
+      ],
+      "required_check": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "github_app_id": 4694114,
+        "run_id": 105100747938,
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha_matches": true
+      },
+      "github_reviews": {
+        "count": 0,
+        "review_decision": null,
+        "review_threads": 0,
+        "unresolved_threads": 0
+      },
+      "next_action": "Treat as historical #86 documentation: decide whether to retire or restack against current main. If retained, correct outdated #104 wording, resolve conflicts, inspect failed repository-verification artifact, rerun evidence and obtain a new App-owned check. #121 is covered separately by #138.",
+      "failed_check_step": "repository-verification: fail (exit 1); check has no annotations or finer public failure detail",
+      "coverage_note": "Closes already closed #86; mentions #121 only as follow-up; body says #104 remains open although #104 is now closed."
+    }
+  ]
+}

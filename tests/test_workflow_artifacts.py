@@ -33,6 +33,38 @@ class WorkflowSourceTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.artifacts = _load_module()
 
+    def test_runtime_route_accepts_optional_bounded_keyword_evidence(self) -> None:
+        route = {'route_id': 'keywords', 'write_agent': 'data_implementer',
+                 'review_agents': ['code_reviewer'], 'required_evidence': ['verification']}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / '.grok-stack/runtime/active-route.json'
+            path.parent.mkdir(parents=True)
+            for addition in ({}, {'matched_keywords': {}},
+                             {'matched_keywords': {'data': ['sql', 'миграц']}}):
+                with self.subTest(addition=addition):
+                    expected = {**route, **addition}
+                    path.write_text(json.dumps(expected), encoding='utf-8')
+                    self.assertEqual(self.artifacts.load_runtime_authority(root, 'route'), expected)
+
+    def test_runtime_route_rejects_malformed_keyword_evidence_and_unknown_fields(self) -> None:
+        route = {'route_id': 'keywords', 'write_agent': 'data_implementer',
+                 'review_agents': [], 'required_evidence': ['verification']}
+        invalid = (None, [], 'sql', {'data': 'sql'}, {'data': []}, {'data': [1]},
+                   {'data': ['sql', 'SQL']}, {'data': ['']}, {'data': ['sql\n']},
+                   {'data': ['x' * 65]}, {'data': ['e\u0301']}, {'x' * 33: ['sql']},
+                   {'bad domain': ['sql']}, {'data': [f'word{i}' for i in range(33)]},
+                   {f'domain{i}': ['sql'] for i in range(17)})
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / '.grok-stack/runtime/active-route.json'
+            path.parent.mkdir(parents=True)
+            for addition in [*({'matched_keywords': value} for value in invalid), {'unexpected': {}}]:
+                with self.subTest(addition=addition):
+                    path.write_text(json.dumps({**route, **addition}), encoding='utf-8')
+                    with self.assertRaises(self.artifacts.WorkflowArtifactError):
+                        self.artifacts.load_runtime_authority(root, 'route')
+
     def test_explicit_source_manifest_is_deterministic(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

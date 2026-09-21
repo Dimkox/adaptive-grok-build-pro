@@ -1,0 +1,293 @@
+[
+  {
+    "candidate": "issue156",
+    "run": {
+      "head": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "started_at": "2026-09-21T08:11:43.117346+00:00",
+      "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+      "exit_code": 0,
+      "finished_at": "2026-09-21T08:20:02.260422+00:00"
+    },
+    "status": "pass",
+    "fingerprint": "53a34b1b247794acfcaa9a7b18aa1c166a3ca0e3d673b199c85e6bb169863e9f",
+    "evidence_gaps_at_observation": [],
+    "report_sha256": "5e8911af257eb059814bbcc6a1aead880b5e3dc33476341690e1a96b490983e6",
+    "checks": [
+      {
+        "name": "git-diff-check",
+        "status": "pass",
+        "summary": "4/4 checks passed; bases=route:90078959ff816068af374ad42f4bb80fdbaec866,pr-target:90078959ff816068af374ad42f4bb80fdbaec866"
+      },
+      {
+        "name": "change-spec",
+        "status": "pass",
+        "summary": "2 specs checked; exempt=False"
+      },
+      {
+        "name": "architecture",
+        "status": "pass",
+        "summary": "drift=pass; fitness=pass; diagrams=pass"
+      },
+      {
+        "name": "governance",
+        "status": "pass",
+        "summary": "governance registries and evidence are current"
+      },
+      {
+        "name": "workflow-artifacts",
+        "status": "skip",
+        "summary": "workflow artifacts are not configured"
+      },
+      {
+        "name": "secret-scan",
+        "status": "pass",
+        "summary": "0 potential secrets"
+      },
+      {
+        "name": "contract-structure",
+        "status": "pass",
+        "summary": "0 contracts checked"
+      },
+      {
+        "name": "sql-safety",
+        "status": "pass",
+        "summary": "0 unsafe SQL findings"
+      },
+      {
+        "name": "ruff",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "bandit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "pilot-unittest",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "python-unittest",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=106.832"
+      },
+      {
+        "name": "coverage",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=1.505"
+      },
+      {
+        "name": "factory-unit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "factory-postgres-exit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "source-stability",
+        "status": "pass",
+        "summary": "repository fingerprint remained stable"
+      }
+    ],
+    "scope": "historical candidate only; no combined-tree receipt authority"
+  },
+  {
+    "candidate": "issue162",
+    "run": {
+      "head": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "started_at": "2026-09-21T08:22:28.482337+00:00",
+      "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+      "exit_code": 0,
+      "finished_at": "2026-09-21T08:30:40.375833+00:00"
+    },
+    "status": "pass",
+    "fingerprint": "18982de3b5a0f01bc22954c23b73c7ac4e52fcf1a3f1893a8c011fdd3a872bad",
+    "evidence_gaps_at_observation": [],
+    "report_sha256": "4d3b83d685a432afdc81f2cab495b391d5e6e5b82d4a1f493274f30ddc665914",
+    "checks": [
+      {
+        "name": "git-diff-check",
+        "status": "pass",
+        "summary": "4/4 checks passed; bases=route:90078959ff816068af374ad42f4bb80fdbaec866,pr-target:90078959ff816068af374ad42f4bb80fdbaec866"
+      },
+      {
+        "name": "change-spec",
+        "status": "pass",
+        "summary": "2 specs checked; exempt=False"
+      },
+      {
+        "name": "architecture",
+        "status": "pass",
+        "summary": "drift=pass; fitness=pass; diagrams=pass"
+      },
+      {
+        "name": "governance",
+        "status": "pass",
+        "summary": "governance registries and evidence are current"
+      },
+      {
+        "name": "workflow-artifacts",
+        "status": "skip",
+        "summary": "workflow artifacts are not configured"
+      },
+      {
+        "name": "secret-scan",
+        "status": "pass",
+        "summary": "0 potential secrets"
+      },
+      {
+        "name": "contract-structure",
+        "status": "pass",
+        "summary": "1 contracts checked"
+      },
+      {
+        "name": "sql-safety",
+        "status": "pass",
+        "summary": "0 unsafe SQL findings"
+      },
+      {
+        "name": "ruff",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "bandit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "pilot-unittest",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "python-unittest",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=102.230"
+      },
+      {
+        "name": "coverage",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=1.606"
+      },
+      {
+        "name": "factory-unit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "factory-postgres-exit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "source-stability",
+        "status": "pass",
+        "summary": "repository fingerprint remained stable"
+      }
+    ],
+    "scope": "historical candidate only; no combined-tree receipt authority"
+  },
+  {
+    "candidate": "issue166",
+    "run": {
+      "head": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
+      "started_at": "2026-09-21T07:02:36Z",
+      "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+      "exit_code": 0,
+      "finished_at": "2026-09-21T07:10:57Z"
+    },
+    "status": "pass",
+    "fingerprint": "83353a7e7ee6980eeda8e9cb3a344e0a2e357882f9d9461cb48631ab8bcfff18",
+    "evidence_gaps_at_observation": [],
+    "report_sha256": "0033b517571a61ac89f528888e178d64a7667def82666dd6d46d7ab1e401c920",
+    "checks": [
+      {
+        "name": "git-diff-check",
+        "status": "pass",
+        "summary": "4/4 checks passed; bases=route:90078959ff816068af374ad42f4bb80fdbaec866,pr-target:90078959ff816068af374ad42f4bb80fdbaec866"
+      },
+      {
+        "name": "change-spec",
+        "status": "pass",
+        "summary": "2 specs checked; exempt=False"
+      },
+      {
+        "name": "architecture",
+        "status": "pass",
+        "summary": "drift=pass; fitness=pass; diagrams=pass"
+      },
+      {
+        "name": "governance",
+        "status": "pass",
+        "summary": "governance registries and evidence are current"
+      },
+      {
+        "name": "workflow-artifacts",
+        "status": "skip",
+        "summary": "workflow artifacts are not configured"
+      },
+      {
+        "name": "secret-scan",
+        "status": "pass",
+        "summary": "0 potential secrets"
+      },
+      {
+        "name": "contract-structure",
+        "status": "pass",
+        "summary": "0 contracts checked"
+      },
+      {
+        "name": "sql-safety",
+        "status": "pass",
+        "summary": "0 unsafe SQL findings"
+      },
+      {
+        "name": "ruff",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "bandit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "pilot-unittest",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "python-unittest",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=104.723"
+      },
+      {
+        "name": "coverage",
+        "status": "pass",
+        "summary": "pytest-xdist workers=8 exit=0 seconds=1.657"
+      },
+      {
+        "name": "factory-unit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "factory-postgres-exit",
+        "status": "pass",
+        "summary": "exit=0"
+      },
+      {
+        "name": "source-stability",
+        "status": "pass",
+        "summary": "repository fingerprint remained stable"
+      }
+    ],
+    "scope": "historical candidate only; no combined-tree receipt authority"
+  }
+]

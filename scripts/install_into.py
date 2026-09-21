@@ -106,6 +106,8 @@ EMPTY_DIRECTORIES = (
 )
 MANAGED_START = "<!-- ADAPTIVE-GROK-PRO:START -->"
 MANAGED_END = "<!-- ADAPTIVE-GROK-PRO:END -->"
+CONSUMER_AGENTS_TEMPLATE = ".grok-stack/templates/consumer-AGENTS.md.tmpl"
+CONSUMER_FACTORY_README_TEMPLATE = ".grok-stack/templates/consumer-factory-README.md.tmpl"
 LEGACY_PLAN_NOTICE = (
     "NOTICE: legacy install mode now emits a read-only plan; "
     "use --materialize-new only for an absent target."
@@ -547,7 +549,11 @@ def iter_source_files(source: Path) -> list[tuple[str, Path]]:
 
 def managed_agents_text(source: Path) -> str:
     with _SourceTree(source) as tree:
-        content, _mode = tree.read("AGENTS.md", MAX_SOURCE_FILE_BYTES)
+        content, _mode = tree.read(CONSUMER_AGENTS_TEMPLATE, MAX_SOURCE_FILE_BYTES)
+    return _render_managed_agents(content)
+
+
+def _render_managed_agents(content: bytes) -> str:
     try:
         core = content.decode("utf-8").rstrip()
     except UnicodeError as exc:
@@ -581,18 +587,24 @@ def build_payload(
             _source_entry(relative, tree, expected_identity)
             for relative, expected_identity in tree.inventory()
         ]
-        agents_content, _agents_mode = tree.read(
-            "AGENTS.md",
-            MAX_SOURCE_FILE_BYTES,
-        )
+        # Render from the descriptor-validated inventory bytes, so the shipped
+        # templates and generated documents belong to the same source snapshot.
+        by_path = {entry.path: entry for entry in entries}
         try:
-            agents_core = agents_content.decode("utf-8").rstrip()
-        except UnicodeError as exc:
-            raise UnsafeInstallTarget("managed AGENTS.md is not UTF-8") from exc
+            agents_content = by_path[CONSUMER_AGENTS_TEMPLATE].content
+            if "factory/README.md" in by_path:
+                readme = by_path[CONSUMER_FACTORY_README_TEMPLATE]
+                entries = [
+                    InstallEntry(entry.path, readme.content, entry.mode)
+                    if entry.path == "factory/README.md" else entry
+                    for entry in entries
+                ]
+        except KeyError as exc:
+            raise UnsafeInstallTarget(f"missing consumer template: {exc.args[0]}") from exc
         entries.append(
             InstallEntry(
                 "AGENTS.md",
-                f"{MANAGED_START}\n{agents_core}\n{MANAGED_END}\n".encode("utf-8"),
+                _render_managed_agents(agents_content).encode("utf-8"),
                 0o644,
             )
         )

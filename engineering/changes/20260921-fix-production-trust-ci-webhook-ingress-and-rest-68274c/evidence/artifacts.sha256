@@ -1,0 +1,5 @@
+60596d1771aed4ee0a9431ead99e7636f98a38aaa1f3ce0a0ab68477e6d3f1a1  artifacts/adaptive-trust-ci-webhook-bridge-guard.service
+c68534932c19799421c4bd5c0a8fad57deeb3804fcbbd76e918f738f77aa989a  artifacts/adaptive-trust-ci-webhook-bridge.nft
+d2280ce0802191817da64061005d69b53a165d644b34987eee912d4a502fba6c  artifacts/adaptive-trust-ci-webhook-bridge.service
+3163be692b5319f13cb165abd46e2186d9ca6deeb7d7ab40a687ef35dd8249d0  artifacts/adaptive-trust-ci-webhook-bridge.socket
+b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d  artifact-manifest.json

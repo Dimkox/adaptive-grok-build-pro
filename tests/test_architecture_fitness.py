@@ -4317,13 +4317,9 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
         ``CONTRACT-CLAIMANT`` declares an ``$id`` that is textually identical to the
         referrer's ``$ref`` base, and that same base resolves to ``CONTRACT-TARGET``'s
-        declared path.  The comparator resolves such a base through the ``$id`` first (the
-        sibling shadowing defect), so the referrer's verdict is a function of the
-        *claimant's* document; a closure that resolved path-first by *substitution* would
-        attach the referrer only to ``CONTRACT-TARGET`` and never re-verify it when the
-        claimant narrows.  Reverse identity is therefore the union of both tables: the path
-        candidate is kept (issue #146 proper) and the ``$id`` candidate is added, never
-        swapped for it.
+        declared path.  Reverse identity conservatively retains the union of both tables,
+        while the comparator follows the concrete path.  Claimant edits can cause extra
+        re-verification, but cannot redirect the referrer's verdict to the claimant.
         """
         shadowed_path = "engineering/contracts/dir/target.json"
         reference_text = "dir/target.json"
@@ -4405,10 +4401,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     result.findings,
                 )
                 if changed_contract == "CONTRACT-CLAIMANT":
-                    # The measured consequence of the union: the comparator resolves the
-                    # referrer's $ref through the claimant's $id, so re-verifying the
-                    # referrer reports the claimant's narrowing instead of passing it.
-                    self.assertTrue(
+                    self.assertFalse(
                         any(
                             finding.startswith("CONTRACT-REFERRER:")
                             for finding in result.findings
@@ -4416,7 +4409,24 @@ class ArchitectureFitnessTests(unittest.TestCase):
                         result.findings,
                     )
                 else:
-                    self.assertIn("narrowed_constraint", " ".join(result.findings))
+                    self.assertIn("CONTRACT-REFERRER: narrowed_constraint", result.findings)
+
+    def test_unsafe_declared_id_alias_keeps_both_dependency_candidates(self) -> None:
+        for reference, concrete_path in (
+            ("./alias.json", "contracts/alias.json"),
+            ("alias+v1.json", "contracts/alias+v1.json"),
+        ):
+            for fail_closed in (False, True):
+                with self.subTest(reference=reference, fail_closed=fail_closed):
+                    signals = []
+                    candidates = FIT._reference_identity_candidates(
+                        "contracts/root.json", reference,
+                        {reference: ["contracts/target.json"]},
+                        frozenset((concrete_path, "contracts/target.json")),
+                        fail_closed=fail_closed, signals=signals,
+                    )
+                    self.assertEqual(candidates, {concrete_path, "contracts/target.json"})
+                    self.assertEqual(signals, [])
 
     def test_contract_dependency_closure_shares_the_comparator_reference_grammar(self) -> None:
         """Issue #146 guard: the closure interprets ``$ref`` through the comparator's function.
@@ -4829,8 +4839,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
         Two claimants share the ``$id`` that also shadows a declared path.  Attaching one of
         them would be guessing, so neither is attached and nothing raises: the path edge
-        stays, and the ambiguity still fails closed one step later through the comparator's
-        own verdict for the referrer.  Raising here instead would let a pre-existing ``$id``
+        stays, and the ambiguity still makes the referrer's fitness row unsupported through
+        its unattributed signal. Raising here instead would let a pre-existing ``$id``
         collision break every gate run, including runs that touch neither claimant nor
         referrer.
         """
@@ -4896,6 +4906,127 @@ class ArchitectureFitnessTests(unittest.TestCase):
             result.findings,
         )
         self.assertNotEqual(result.status, "pass")
+
+    def _unattributed_reference_fixture(self, unique_count: int):
+        """Real path targets with two ID claimants each; each signal repeats three times."""
+        documents = {}
+        references = {
+            f"signal-{index:02d}-{repeat}": {"$ref": f"target-{index:02d}.json"}
+            for index in range(unique_count) for repeat in range(3)
+        }
+        for identity in ("REFERRER-A", "REFERRER-B"):
+            documents[identity] = {"type": "object", "$defs": copy.deepcopy(references)}
+        for index in range(unique_count):
+            documents[f"TARGET-{index:02d}"] = {"type": "string", "minLength": 1}
+            for claimant in ("A", "B"):
+                documents[f"CLAIMANT-{index:02d}-{claimant}"] = {
+                    "$id": f"target-{index:02d}.json", "type": "string",
+                }
+        documents["OTHER"] = {"not": {"type": "string"}}
+        paths = {identity: f"engineering/contracts/{identity.lower()}.json" for identity in documents}
+        system = _system()
+        system["contracts"] = [
+            {"id": f"CONTRACT-{identity}", "kind": "json_schema", "path": paths[identity],
+             "version": "1", "role": "consumer", "compatibility": "consumer_accepts_old"}
+            for identity in documents
+        ]
+        system["nodes"][0]["public_contracts"] = [item["id"] for item in system["contracts"]]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {"id": "FIT-CONTRACT", "contract_kinds": ["json_schema"],
+             "compatibility": "consumer_accepts_old", "severity": "error"}
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        for identity, document in documents.items():
+            repo.write_json(paths[identity], document)
+        base = repo.commit("repeated ambiguous references")
+        return repo, base, documents, paths
+
+    def test_unattributed_reference_findings_are_unique_sorted_and_capped_per_referrer(self) -> None:
+        for unique_count in (0, 1, 5, 8):
+            with self.subTest(unique_count=unique_count):
+                repo, base, documents, paths = self._unattributed_reference_fixture(unique_count)
+                for identity in ("REFERRER-A", "REFERRER-B", "OTHER"):
+                    repo.write_json(paths[identity], {**documents[identity], "description": "changed"})
+                head = repo.commit("recheck referrers and separate unsupported contract")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                with patch.object(FIT, "_result", wraps=FIT._result) as emitted:
+                    result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+                self.assertEqual(result.status, "unsupported")
+                self.assertIn("CONTRACT-OTHER: unsupported compatibility semantics", result.findings)
+                for identity in ("REFERRER-A", "REFERRER-B"):
+                    prefix = f"CONTRACT-{identity}: unattributed reference: "
+                    group_prefix = f"CONTRACT-{identity}: unattributed reference"
+                    actual = [line for line in result.findings if line.startswith(group_prefix)]
+                    expected = [
+                        prefix + f"ambiguous declared schema id 'target-{index:02d}.json' declared by "
+                        + f"{paths[f'CLAIMANT-{index:02d}-A']}, {paths[f'CLAIMANT-{index:02d}-B']}"
+                        + f"; referenced by {paths[identity]}"
+                        for index in range(min(unique_count, 5))
+                    ]
+                    if unique_count > 5:
+                        expected.append(f"CONTRACT-{identity}: unattributed references: "
+                                        f"(+{unique_count - 5} more unattributed references)")
+                    self.assertEqual(actual, expected)
+                    # The final result helper also deduplicates; bound the expansion before it.
+                    raw = [line for line in emitted.call_args.kwargs["findings"]
+                           if line.startswith(group_prefix)]
+                    self.assertEqual(raw, expected)
+
+    def test_unattributed_reference_cap_keeps_out_of_scope_referrers_silent(self) -> None:
+        repo, base, documents, paths = self._unattributed_reference_fixture(8)
+        repo.write_json(paths["OTHER"], {**documents["OTHER"], "description": "changed"})
+        head = repo.commit("unrelated unsupported contract")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(result.applicability.scanned_scope, ("CONTRACT-OTHER",))
+        self.assertEqual(result.findings, ("CONTRACT-OTHER: unsupported compatibility semantics",))
+
+    def test_unattributed_reference_cap_retains_base_only_signals(self) -> None:
+        repo, base, documents, paths = self._unattributed_reference_fixture(8)
+        for identity, document in documents.items():
+            if identity.startswith("CLAIMANT-"):
+                repo.write_json(paths[identity], {"type": "string"})
+        repo.write_json(paths["REFERRER-A"], {**documents["REFERRER-A"], "description": "changed"})
+        head = repo.commit("repair inherited ambiguity")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        lines = [line for line in result.findings if "unattributed reference" in line]
+        self.assertEqual(result.status, "unsupported")
+        self.assertEqual(len(lines), 6)
+        self.assertEqual(lines[-1], "CONTRACT-REFERRER-A: unattributed references: (+3 more unattributed references)")
+        self.assertNotIn("CONTRACT-REFERRER-B", result.applicability.scanned_scope)
+
+    def test_unattributed_reference_cap_cannot_hide_late_head_only_ambiguity(self) -> None:
+        repo, base, documents, paths = self._unattributed_reference_fixture(8)
+        fatal_id = "urn:adaptive-test:late-head-ambiguity"
+        for identity in ("CLAIMANT-00-A", "CLAIMANT-00-B"):
+            repo.write_json(paths[identity], {"$id": fatal_id, "type": "string"})
+        # The walk uses a stack. Sorted JSON visits signal-* entries before a-late.
+        referrer = copy.deepcopy(documents["REFERRER-A"])
+        referrer["$defs"]["a-late"] = {"$ref": fatal_id}
+        repo.write_json(paths["REFERRER-A"], referrer)
+        head = repo.commit("late head-only id ambiguity")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        observed = []
+        real = FIT._reference_identity_candidates
+
+        def observe(*args, **kwargs):
+            observed.append((args[1], kwargs["fail_closed"]))
+            return real(*args, **kwargs)
+
+        with patch.object(FIT, "_reference_identity_candidates", side_effect=observe):
+            with self.assertRaises(FIT.ArchitectureError) as captured:
+                FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(captured.exception.code, "contract")
+        self.assertIn(fatal_id, str(captured.exception))
+        for identity in ("CLAIMANT-00-A", "CLAIMANT-00-B"):
+            self.assertIn(paths[identity], str(captured.exception))
+        self.assertEqual(observed[-1], (fatal_id, True))
+        preceding_head = {reference for reference, is_head in observed[:-1] if is_head}
+        self.assertGreater(len(preceding_head), 5)
+        self.assertTrue(any(not is_head for reference, is_head in observed))
 
     def test_contract_dependency_closure_terminates_on_self_reference(self) -> None:
         """Requirements edge case: a contract whose ``$ref`` names its own ``$id``.

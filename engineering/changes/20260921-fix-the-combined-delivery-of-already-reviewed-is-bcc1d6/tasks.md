@@ -2,7 +2,7 @@
 
 - [x] Start from delivered main839d3aa2; exact six candidate manifests and scope recorded.
 - [x] Complete five selected static integration analyses;19 disjoint reviewed paths and identical main/predecessor trees confirmed.
-- [ ] Sole integration_implementer imports exact disjoint product paths and retained packages; records blob parity.
-- [ ] Coordinator synthesizes current README/bootstrap and delivered/active issue handoff.
+- [x] Sole integration_implementer imported19 exact product paths and188 package files; all207 blob/mode/hash and7package-tree identities pass.
+- [x] Coordinator reconciled current README/bootstrap, delivered170 evidence, candidate final observations and preserved research queue.
 - [ ] Full combined gate, five independent reviews, frozen final current evidence.
 - [ ] Exact delegated PR operations, external CI, merge and evidenced issue/obsolete-PR closure.

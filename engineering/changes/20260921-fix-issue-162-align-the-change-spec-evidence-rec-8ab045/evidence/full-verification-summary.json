@@ -1,0 +1,23 @@
+{
+  "tested_product_commit": "31c6b4e11c4554dbaa67943ec6156ec32633b111",
+  "initial_full_verification": {
+    "head": "31c6b4e11c4554dbaa67943ec6156ec32633b111",
+    "started_at": "2026-09-21T06:29:39Z",
+    "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+    "exit_code": 0,
+    "finished_at": "2026-09-21T06:37:59Z"
+  },
+  "tree_fingerprint": "f5297089ba227ff33e2aac517d82be65270e66e618f206684a340f9b9f1e360c",
+  "raw_report_sha256": "789ec11a1ffba462d4ade3b3a6a6917aad2924fbbd6bdc313c62c43c232d8f36",
+  "current_product_equivalent_to_initial": true,
+  "current_reviewed_commit": "fe62fdabb8bd65b92f8875372cb289bf5cf9a705",
+  "failed_combined_attempt": {
+    "head": "4c683f7864a3bdfda1782b7e265fa9ea07b136a6",
+    "started_at": "2026-09-21T07:13:05+00:00",
+    "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+    "exit_code": 1,
+    "finished_at": "2026-09-21T07:21:16+00:00"
+  },
+  "failure_resolution": "Four Trust CI source/test paths inverted; schema-only fitness and33+24+41 tests passed; independent code/test reviews renewed. TrustCI successor remains separate.",
+  "scope": "Historical full product pass and current product equivalence are evidence, not a final candidate receipt. Final exact-tree full verification remains pending."
+}

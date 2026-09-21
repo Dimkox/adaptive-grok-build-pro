@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-09-21T08:43:37.680937+00:00",
+  "check": {
+    "id": 106268338358,
+    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "status": "in_progress",
+    "conclusion": null,
+    "head_sha": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+    "external_id": "30b1f243-8dde-41cb-90ac-671af377fc8e",
+    "details_url": "http://127.0.0.1:18080/jobs/30b1f243-8dde-41cb-90ac-671af377fc8e",
+    "started_at": "2026-09-21T08:42:53Z",
+    "completed_at": null,
+    "output": {
+      "title": null,
+      "summary": null,
+      "text": null,
+      "annotations_count": 0,
+      "annotations_url": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/check-runs/106268338358/annotations"
+    }
+  },
+  "app_id": 4694114,
+  "real_event": {
+    "event": "ready_for_review",
+    "created_at": "2026-09-21T08:42:50Z",
+    "github_timeline_event_id": 31514855119,
+    "webhook_delivery_id": "unobserved"
+  },
+  "cpu_lane": "reserved_for_external_job"
+}

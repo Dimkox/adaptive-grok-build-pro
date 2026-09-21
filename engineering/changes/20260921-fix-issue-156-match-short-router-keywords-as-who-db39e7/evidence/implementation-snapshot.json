@@ -1,0 +1,18 @@
+{
+  "scope": "Implementation snapshot only; no verification receipt or merge authority",
+  "route_id": "db39e73f3dee",
+  "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+  "files_sha256": {
+    ".grok-stack/adaptive_grok/router.py": "de3ca13766fea0691cd45c29f321cab044af4b30459623888fa94f3b33993f82",
+    ".grok-stack/adaptive_grok/workflow_artifacts.py": "27c20c6da4cc863cd653a0f736da0d4aa5e556432b366aad58561e1e84acdcfe",
+    "tests/test_repo_router.py": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d",
+    "tests/test_workflow_artifacts.py": "c078ff949801cc42bc67511482a3bc742d322c602b793be584b9642b64b4c010"
+  },
+  "logs_sha256": {
+    "focused-red.log": "e67f1c793e1cc16723609a232126836f2feeb9c9babde8dd9ecc9fb62594568b",
+    "focused-green.log": "37439dc052f3c234df32f6226f6fcc6d98b0fab24c1fb0daa6ea131d786fdfcd",
+    "adjacent-green.log": "dc97fe8f9122902ea1de93e5a51876041d3142055731b694a59e7a89a5f87851",
+    "lint.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
