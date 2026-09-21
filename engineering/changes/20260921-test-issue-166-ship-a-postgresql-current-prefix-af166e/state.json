@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "Focused current-prefix PostgreSQL cases and migration units passed; disposable cleanup verified; full gate pending",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T06:51:43+00:00",
+      "from": "verifying",
+      "reason": "Mandatory PR verifier passed on0558da4a; independent code/test/data reviews starting",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T06:56:39+00:00",
+      "from": "reviewing",
+      "reason": "Product verification and all three independent reviews pass; final candidate receipts will be rebound by fresh verification before delivery",
+      "to": "ready"
     }
   ],
   "route_id": "af166ec812f3",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Test issue #166: ship a PostgreSQL current-prefix incremental migration regression, preserving function OID and ACL, with bounded concurrent-session checks and checkout-derived migration expectations.",
-  "updated_at": "2026-09-21T06:42:52+00:00"
+  "updated_at": "2026-09-21T06:56:39+00:00"
 }

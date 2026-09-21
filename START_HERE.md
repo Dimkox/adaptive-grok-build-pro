@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Active issue branch — #166
 
-This isolated successor to PR #170 adds real current-prefix migration tests. Read [the change package](engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/brief.md) and `PROJECT_STATE.json.active_issue_work`. Three focused PostgreSQL tests passed with cleanup verified; full PR verification and code/test/data reviews remain pending.
+This isolated successor to PR #170 adds real current-prefix migration tests. Read [the change package](engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/brief.md) and `PROJECT_STATE.json.active_issue_work`. Three focused PostgreSQL tests, full PR verification and code/test/data reviews passed for the recorded product commit. Check fingerprint-bound local receipts for the final checkout before delivery; an external Trust CI check is still required.
 
 ## Current project state
 

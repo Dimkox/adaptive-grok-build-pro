@@ -1910,7 +1910,8 @@
     "change_package": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e",
     "base_pull_request": 170,
     "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
-    "status": "focused_postgres_passed_full_verification_pending",
-    "next_action": "Run mandatory PR verifier and independent code/test/data reviews; freeze final evidence and prepare a separate PR. Production migrations and deployed state remain unchanged."
+    "status": "product_verified_and_independently_reviewed",
+    "next_action": "Check current fingerprint-bound local receipts, rerun required verifier if absent/stale, then use a separately authorized PR successor of170. Code/test/data reports pass for unchanged test implementation; no external check or merge claimed.",
+    "tested_product_commit": "0558da4a4047ddf12114be33fb163b4e9124fdbf"
   }
 }
