@@ -1,0 +1,15 @@
+# Measured ingress acceptance — 2026-09-21
+
+The unchanged four manifest-bound artifacts are installed, the socket is enabled, and the proxy/guard are active. The loopback API remains healthy. This host operation restored the existing Funnel webhook path without changing Funnel, Docker services, deployed source/images/policy/holdout, keys, trust stores, database or branch protection.
+
+Initial activation passed the corrected typed gate. The peer readiness endpoint returned200 and peer/public webhook GET returned405. Two public private-path requests failed during host DNS resolution and are preserved as28/000, inconclusive. A fresh getent observation followed by the same public hostname/SNI/TLS against its returned address produced webhook405 and all six private-path404 controls. This proves tested endpoint behavior, not host resolver health.
+
+The corrected nft --json observation measured an allowed-peer200 with accept-counter delta6; the host wrong-interface and VPN wrong-source controls timed out with respective drop-counter delta2 each. The former -json counter read failed before probes and remains preserved; it is not successful enforcement evidence.
+
+The reviewed recovery enabled the socket, stopped only its guard, and automatically stopped both proxy/socket before the dedicated table disappeared. After disabling, all three units were inactive, only the original loopback listener remained, loopback readiness stayed200, peer access was refused, and public webhook returned502. The same-byte typed pre-start gate passed again, enable --now reactivated the bridge, and repeated HTTP/private-path/counter controls all passed. The final snapshot records enabled socket, active proxy/guard, exactly loopback plus the bound veth listener, original Funnel mapping, and unchanged root-owned0644 artifact hashes.
+
+A separately granted real PR170 ready_for_review action followed CPU-lane release; GitHub timeline event31514855119 records its time as08:42:50Z. API access logs observed a real webhook POST200 at08:42:52; GitHub App4694114 then created Check Run106268338358, adaptive-trust-ci/verified@06ecf1c875bc, on exact head1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48 at08:42:53. Its job/external ID is30b1f243-8dde-41cb-90ac-671af377fc8e. The check is in progress at the recorded observation; this is actual intake/check creation, not a passed merge gate.
+
+GitHub delivery ID and protected API job-body readback are unobserved; no credentials were accessed to obtain them. No synthetic/replayed webhook was submitted. Cold boot, device-loss recreation, global DNS reliability and general CI capacity are not established by the bounded stop/reactivation test. Merge and issue closure remain subject to the exact external check and required signed approval scopes.
+
+Evidence: [stopped observations](recovery-stopped-http.json), [repeated HTTP controls](recovery-http-acceptance.json), [repeated source controls](recovery-counter-acceptance.json), [final runtime](accepted-runtime-snapshot.json), and [real external check](pr170-external-check.json). Earlier failed gate/HTTP/counter observations remain separate in this directory.

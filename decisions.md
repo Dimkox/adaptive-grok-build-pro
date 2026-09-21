@@ -765,3 +765,6 @@ The measured failure is a missing bridge between the VPN namespace and a healthy
 
 ## 2026-09-21 — Preserve failed preflight and resume from measured state
 Keep successful exclusive installation and the failed pre-start gate as separate evidence, then resume only after rechecking installed bytes and reviewing the corrected gate. This avoided overwriting owned files or treating a formatter failure as permission to bypass validation; all four reviewers accepted the typed continuation.
+
+## 2026-09-21: Accept ingress from measured recovery and real intake
+Bind command review to exact artifact hashes, then record source-filter counters, guard-stop propagation and same-byte reactivation before triggering a real PR event. This separated transport acceptance from merge authority and produced an actual exact-head App check without changing candidate source.

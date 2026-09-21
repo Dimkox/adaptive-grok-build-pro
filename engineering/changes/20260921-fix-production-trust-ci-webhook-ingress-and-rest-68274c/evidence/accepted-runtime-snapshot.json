@@ -1,0 +1,47 @@
+{
+  "observed_at": "2026-09-21T08:44:41.961427+00:00",
+  "commands": {
+    "units": {
+      "exit_code": 0,
+      "stdout": "Id=adaptive-trust-ci-webhook-bridge.socket\nLoadState=loaded\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket\nDropInPaths=\nUnitFileState=enabled\n\nId=adaptive-trust-ci-webhook-bridge.service\nLoadState=loaded\nActiveState=active\nSubState=running\nFragmentPath=/etc/systemd/system/adaptive-trust-ci-webhook-bridge.service\nDropInPaths=\nUnitFileState=static\n\nId=adaptive-trust-ci-webhook-bridge-guard.service\nLoadState=loaded\nActiveState=active\nSubState=exited\nFragmentPath=/etc/systemd/system/adaptive-trust-ci-webhook-bridge-guard.service\nDropInPaths=\nUnitFileState=static\n",
+      "stderr": ""
+    },
+    "listeners": {
+      "exit_code": 0,
+      "stdout": "LISTEN 0      4096   10.200.200.1%veth-vpn-h:18080 0.0.0.0:*\nLISTEN 0      4096                 127.0.0.1:18080 0.0.0.0:*\n",
+      "stderr": ""
+    },
+    "guard": {
+      "exit_code": 0,
+      "stdout": "{\"nftables\": [{\"metainfo\": {\"version\": \"1.0.9\", \"release_name\": \"Old Doc Yak #3\", \"json_schema_version\": 1}}, {\"table\": {\"family\": \"inet\", \"name\": \"adaptive_trust_ci_webhook_bridge\", \"handle\": 9}}, {\"chain\": {\"family\": \"inet\", \"table\": \"adaptive_trust_ci_webhook_bridge\", \"name\": \"input\", \"handle\": 1, \"type\": \"filter\", \"hook\": \"input\", \"prio\": -10, \"policy\": \"accept\"}}, {\"rule\": {\"family\": \"inet\", \"table\": \"adaptive_trust_ci_webhook_bridge\", \"chain\": \"input\", \"handle\": 2, \"comment\": \"bridge_wrong_interface\", \"expr\": [{\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"ip\", \"field\": \"daddr\"}}, \"right\": \"10.200.200.1\"}}, {\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"tcp\", \"field\": \"dport\"}}, \"right\": 18080}}, {\"match\": {\"op\": \"!=\", \"left\": {\"meta\": {\"key\": \"iifname\"}}, \"right\": \"veth-vpn-h\"}}, {\"counter\": {\"packets\": 2, \"bytes\": 120}}, {\"drop\": null}]}}, {\"rule\": {\"family\": \"inet\", \"table\": \"adaptive_trust_ci_webhook_bridge\", \"chain\": \"input\", \"handle\": 3, \"comment\": \"bridge_wrong_source\", \"expr\": [{\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"ip\", \"field\": \"daddr\"}}, \"right\": \"10.200.200.1\"}}, {\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"tcp\", \"field\": \"dport\"}}, \"right\": 18080}}, {\"match\": {\"op\": \"!=\", \"left\": {\"payload\": {\"protocol\": \"ip\", \"field\": \"saddr\"}}, \"right\": \"10.200.200.2\"}}, {\"counter\": {\"packets\": 2, \"bytes\": 120}}, {\"drop\": null}]}}, {\"rule\": {\"family\": \"inet\", \"table\": \"adaptive_trust_ci_webhook_bridge\", \"chain\": \"input\", \"handle\": 4, \"comment\": \"bridge_allowed_peer\", \"expr\": [{\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"ip\", \"field\": \"daddr\"}}, \"right\": \"10.200.200.1\"}}, {\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"tcp\", \"field\": \"dport\"}}, \"right\": 18080}}, {\"match\": {\"op\": \"==\", \"left\": {\"meta\": {\"key\": \"iifname\"}}, \"right\": \"veth-vpn-h\"}}, {\"match\": {\"op\": \"==\", \"left\": {\"payload\": {\"protocol\": \"ip\", \"field\": \"saddr\"}}, \"right\": \"10.200.200.2\"}}, {\"counter\": {\"packets\": 45, \"bytes\": 43404}}, {\"accept\": null}]}}]}\n",
+      "stderr": ""
+    },
+    "funnel": {
+      "exit_code": 0,
+      "stdout": "{\n  \"TCP\": {\n    \"443\": {\n      \"HTTPS\": true\n    }\n  },\n  \"Web\": {\n    \"claw.taild9f611.ts.net:443\": {\n      \"Handlers\": {\n        \"/webhooks/github\": {\n          \"Proxy\": \"http://10.200.200.1:18080/webhooks/github\"\n        }\n      }\n    }\n  },\n  \"AllowFunnel\": {\n    \"claw.taild9f611.ts.net:443\": true\n  }\n}\n",
+      "stderr": ""
+    }
+  },
+  "installed_artifacts": {
+    "adaptive-trust-ci-webhook-bridge-guard.service": {
+      "sha256": "60596d1771aed4ee0a9431ead99e7636f98a38aaa1f3ce0a0ab68477e6d3f1a1",
+      "owner": "root:root",
+      "mode": "0644"
+    },
+    "adaptive-trust-ci-webhook-bridge.nft": {
+      "sha256": "c68534932c19799421c4bd5c0a8fad57deeb3804fcbbd76e918f738f77aa989a",
+      "owner": "root:root",
+      "mode": "0644"
+    },
+    "adaptive-trust-ci-webhook-bridge.service": {
+      "sha256": "d2280ce0802191817da64061005d69b53a165d644b34987eee912d4a502fba6c",
+      "owner": "root:root",
+      "mode": "0644"
+    },
+    "adaptive-trust-ci-webhook-bridge.socket": {
+      "sha256": "3163be692b5319f13cb165abd46e2186d9ca6deeb7d7ab40a687ef35dd8249d0",
+      "owner": "root:root",
+      "mode": "0644"
+    }
+  }
+}

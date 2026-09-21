@@ -1,0 +1,7 @@
+{
+  "at": "2026-09-21T08:40:54.628969+00:00",
+  "block": 7,
+  "exit_code": 0,
+  "stdout": "Id=adaptive-trust-ci-webhook-bridge.socket\nActiveState=inactive\nSubState=dead\nUnitFileState=disabled\n\nId=adaptive-trust-ci-webhook-bridge.service\nActiveState=inactive\nSubState=dead\nUnitFileState=static\n\nId=adaptive-trust-ci-webhook-bridge-guard.service\nActiveState=inactive\nSubState=dead\nUnitFileState=static\n{\"nftables\": [{\"metainfo\": {\"version\": \"1.0.9\", \"release_name\": \"Old Doc Yak #3\", \"json_schema_version\": 1}}, {\"table\": {\"family\": \"ip\", \"name\": \"nat\", \"handle\": 1}}, {\"table\": {\"family\": \"ip\", \"name\": \"filter\", \"handle\": 2}}, {\"table\": {\"family\": \"ip6\", \"name\": \"nat\", \"handle\": 3}}, {\"table\": {\"family\": \"ip6\", \"name\": \"filter\", \"handle\": 4}}, {\"table\": {\"family\": \"ip\", \"name\": \"raw\", \"handle\": 5}}]}\nLISTEN 0      4096   127.0.0.1:18080 0.0.0.0:*\n",
+  "stderr": "Created symlink /etc/systemd/system/multi-user.target.wants/adaptive-trust-ci-webhook-bridge.socket \u2192 /etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket.\nRemoved \"/etc/systemd/system/multi-user.target.wants/adaptive-trust-ci-webhook-bridge.socket\".\n"
+}

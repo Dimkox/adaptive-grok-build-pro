@@ -1,0 +1,102 @@
+[
+  {
+    "at": "2026-09-21T08:42:08.939380+00:00",
+    "probe": "peer_ready",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "200",
+    "expected_status": "200",
+    "elapsed_s": 0.219352,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:08.965397+00:00",
+    "probe": "peer_webhook",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "405",
+    "expected_status": "405",
+    "elapsed_s": 0.025489,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:08.995054+00:00",
+    "probe": "loopback_ready",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "200",
+    "expected_status": "200",
+    "elapsed_s": 0.029125,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:09.674864+00:00",
+    "probe": "public/webhooks/github",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "405",
+    "expected_status": "405",
+    "elapsed_s": 0.679304,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:10.286270+00:00",
+    "probe": "public/health/ready",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.610775,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:10.862419+00:00",
+    "probe": "public/approvals",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.575611,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:11.488932+00:00",
+    "probe": "public/jobs/nonexistent",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.625929,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:12.064887+00:00",
+    "probe": "public/attestations/nonexistent",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.575261,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:12.672381+00:00",
+    "probe": "public/metrics",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.606634,
+    "stderr": ""
+  },
+  {
+    "at": "2026-09-21T08:42:13.263561+00:00",
+    "probe": "public/v1/jobs",
+    "resolved_public_address": "176.58.88.108",
+    "exit_code": 0,
+    "http_status": "404",
+    "expected_status": "404",
+    "elapsed_s": 0.590552,
+    "stderr": ""
+  }
+]

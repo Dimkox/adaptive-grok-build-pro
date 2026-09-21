@@ -2,9 +2,9 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
-## Active host operation — Trust CI ingress
+## Accepted host operation — Trust CI ingress
 
-Continue branch `fix/trust-ci-webhook-bridge`, route `68274cb876e4`, from [the reviewed operation plan](engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/operation-plan.md). GitHub webhook ingress currently fails because the VPN namespace reaches a host veth address with no bridge listener. Four independent preparation reviews accept the exact staged bridge/guard artifacts; fresh delegated grants and measured activation, filtering and guard-stop recovery are next. Product code and deployed Trust CI trust material are unchanged. The AGENTS no-product-change rule skips the product test gate; actual operational evidence remains mandatory. PR #170 is already published at frozen head `1f7aedb8`.
+The bridge on `fix/trust-ci-webhook-bridge`, route `68274cb876e4`, passed measured HTTP, source-filter and guard-stop/reactivation controls. [Actual acceptance and limits](engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md). A real PR #170 ready event created required App check `106268338358` on frozen head `1f7aedb8`; its result is pending. The [independent acceptance review](engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-acceptance-review.md) passed. Preserve the running bridge, publish this operational record, and observe the external check. Product source, deployed trust material and the loopback API remain unchanged.
 
 ## Current project state
 

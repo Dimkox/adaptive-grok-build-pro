@@ -1908,9 +1908,21 @@
     "route_id": "68274cb876e4",
     "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
     "plan_sha256": "3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28",
-    "status": "ingress_and_source_filter_measured_pass_recovery_pending",
+    "status": "host_ingress_accepted_independent_release_pass_external_check_in_progress",
     "user_delegation": "2026-09-21: делай всё и закрывай, following the described missing CI ingress repair",
     "product_source_changed": false,
-    "next_action": "Use fresh exact grant for reviewed guard-stop/disable, stopped evidence and same-byte reactivation; repeat HTTP and counter acceptance before real PR170 ready event."
+    "next_action": "Preserve running accepted bridge; observe exact-head PR170 external result without source changes or concurrent heavy local tests. Publish the reviewed operational record through its isolated branch and pull request under exact delegated grants.",
+    "accepted_at": "2026-09-21T08:42:17+00:00",
+    "evidence": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md",
+    "external_check": {
+      "id": 106268338358,
+      "app_id": 4694114,
+      "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "job_id": "30b1f243-8dde-41cb-90ac-671af377fc8e",
+      "observed_status": "in_progress"
+    },
+    "independent_acceptance_review": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/release-acceptance-review.md",
+    "independent_acceptance_review_sha256": "2212829f44706783058b81e44704a3fa504b8871ec72d605d0afd5fd892fe864"
   }
 }

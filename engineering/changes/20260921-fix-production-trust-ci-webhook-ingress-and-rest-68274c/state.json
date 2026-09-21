@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "Host-only artifacts prepared and static syntax verified; four independent reviews accept frozen plan23c6bd21. No product change: AGENTS no-op product-gate exemption; real operational acceptance pending.",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T08:56:24+00:00",
+      "from": "verifying",
+      "reason": "No product change: AGENTS product-verifier exception. Measured HTTP, counter enforcement, guard-stop and same-byte reactivation accepted; exact-head external intake observed.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T08:56:25+00:00",
+      "from": "reviewing",
+      "reason": "Independent release acceptance PASS on the measured host operation; four command reviews bind unchanged plan and artifacts. External check completion and merge remain separate.",
+      "to": "ready"
     }
   ],
   "route_id": "68274cb876e4",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Fix production Trust CI webhook ingress and restore connectivity from the Tailscale VPN namespace to the existing host-loopback API; add a scoped systemd socket proxy with security review, preserving deployed policy, credentials and Docker containers.",
-  "updated_at": "2026-09-21T08:06:07+00:00"
+  "updated_at": "2026-09-21T08:56:25+00:00"
 }
