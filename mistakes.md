@@ -1375,3 +1375,7 @@ I checked whitespace before staging new raw evidence files, so the check omitted
 ## 2026-09-21 — Distinguish no-index differences from whitespace errors
 
 The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.
+
+### 2026-09-21 — Combined schema and Trust CI source repairs across a declared separation boundary
+
+I extended issue #162 with a valid Trust CI source validator repair and focused tests without first checking `FIT-TRUST-CI-SEPARATION` against the route base. The root cause was treating two vocabulary consumers as one delivery unit even though `architecture/rules.yaml` forbids mixing `schemas/**` implementation changes with `trust-ci/**` changes in a single diff; the full gate failed fitness and cascaded into governance. Preserve the historical patch, invert only its four source/test paths on #162, and route a dependent Trust CI successor from a base that already contains the schema fix.

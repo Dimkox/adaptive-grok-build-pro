@@ -49,11 +49,29 @@
       "from": "implementing",
       "reason": "Review-discovered source vocabulary drift repaired by same sole writer; four new regressions and 45 adjacent tests passed; full revalidation required",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:32:36+00:00",
+      "from": "verifying",
+      "reason": "Combined-source full gate rejected intentional trust separation; same writer inverted only four Trust CI paths and preserved successor",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T07:32:36+00:00",
+      "from": "implementing",
+      "reason": "Restored product equals initially fully verified31c6b4e1; fresh targeted fitness and57 schema/workflow tests passed",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T07:32:36+00:00",
+      "from": "verifying",
+      "reason": "Renew independent schema-only review of actual restored diff and split evidence; final exact-tree verifier remains pending",
+      "to": "reviewing"
     }
   ],
   "route_id": "8ab045fd89e1",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "reviewing",
   "title": "Fix issue #162: align the change-spec evidence receipt enum with all seven runtime receipt kinds and add parity and validation regressions.",
-  "updated_at": "2026-09-21T07:12:07+00:00"
+  "updated_at": "2026-09-21T07:32:36+00:00"
 }

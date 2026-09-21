@@ -11,18 +11,6 @@
           "receipt": "test_review"
         }
       ]
-    },
-    {
-      "id": "AC-002",
-      "statement": "Both checked-in Trust CI source metadata validators accept all seven runtime receipt names, reject unknown names, and retain independent closed vocabularies guarded by parity tests.",
-      "evidence": [
-        {
-          "receipt": "test_review"
-        },
-        {
-          "receipt": "code_review"
-        }
-      ]
     }
   ],
   "approvals": {

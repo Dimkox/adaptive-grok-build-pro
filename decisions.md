@@ -763,4 +763,4 @@ For issue #162, compare the schema enum exactly against both runtime receipt set
 
 ### 2026-09-21 — Align shipped Trust CI source validators without changing deployed trust
 
-Independent review found that the runner and example holdout still had the old five-kind allowlists, so both now accept the two existing domain review names and retain independent closed sets guarded by parity tests. This keeps source vocabulary consistent while leaving deployed worker and holdout rollout to a separately authorized operation.
+Independent review found that the runner and example holdout still had the old five-kind allowlists. A source-only validator patch and tests proved the repair, but `FIT-TRUST-CI-SEPARATION` requires it in a separately routed successor based on the delivered schema fix; the #162 branch must remain schema-only. Deployed worker and holdout rollout still requires separate authority.

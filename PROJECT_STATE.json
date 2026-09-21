@@ -1910,7 +1910,7 @@
     "change_package": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
     "base_pull_request": 170,
     "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
-    "status": "shipped_validator_followup_focused_tests_passed",
-    "next_action": "Run a new full verifier for the seven-kind schema and checked-in runner/example-holdout vocabulary, then renew both independent reviews. Deployed Trust CI remains unchanged and requires separately authorized rollout."
+    "status": "schema_only_product_restored_targeted_checks_passed",
+    "next_action": "Renew schema-only code/test reviews after preserved Trust CI follow-up was split out; final full verifier and receipts next. Preserve successor patch at historical commit4c683f78 for a separately routed actual base containing this schema fix."
   }
 }
