@@ -6,6 +6,7 @@ import os
 import threading
 import time
 import unittest
+from unittest import mock
 import uuid
 
 from fastapi.testclient import TestClient
@@ -33,6 +34,7 @@ from adaptive_factory.store import (
     IntegrityError,
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
+    PostgresSemanticCoordinatorStore,
     StoreError,
     StoreUnavailable,
 )
@@ -1663,6 +1665,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (19, "019_usage_token_components.sql"),
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
+                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1680,7 +1683,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (21, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (22, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -1835,7 +1838,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18, 19, 20, 21],
+                [15, 16, 17, 18, 19, 20, 21, 22],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -1846,15 +1849,68 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 )
             self.drop_disposable_database(database_url, admin_url)
 
-    def create_populated_current_prefix(self):
+    def populate_prefix_semantic_lifecycle(self, database_url):
+        import psycopg
+        from psycopg import sql
+        from psycopg.conninfo import make_conninfo
+        from adaptive_factory.admin import (
+            provision_semantic_adjudicator_login,
+            provision_semantic_coordinator_login,
+            provision_semantic_validator_login,
+        )
+        from factory.tests.test_postgres_integration import PostgresFactoryTests
+
+        # Reuse the real execution/semantic fixture without running its all-version
+        # setUpClass migrator or changing its global database. Every login is a
+        # disposable capability-specific identity in this prefix database.
+        fixture_owner = PostgresFactoryTests(methodName="runTest")
+        fixture_owner.store = self.runtime_store(database_url)
+        fixture_owner.service = FactoryService(fixture_owner.store)
+
+        def drop_login(login):
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(login)))
+
+        for capability, provision in (
+            ("coordinator", provision_semantic_coordinator_login),
+            ("validator", provision_semantic_validator_login),
+            ("adjudicator", provision_semantic_adjudicator_login),
+        ):
+            nonce = uuid.uuid4().hex[:12]
+            login = f"factory_prefix_{capability}_{nonce}"
+            password = f"local-prefix-test-{nonce}"
+            provision(database_url, login, password)
+            self.addCleanup(drop_login, login)
+            setattr(fixture_owner, f"semantic_{capability}_url",
+                    make_conninfo(database_url, user=login, password=password))
+        fixture = fixture_owner.semantic_repair_fixture(
+            namespace="prefix-semantic", source_id="prefix-semantic", result_head_sha="4" * 40,
+            database_url=database_url,
+        )
+        coordinator = PostgresSemanticCoordinatorStore(fixture_owner.semantic_coordinator_url)
+        repair_request = fixture_owner.semantic_repair_request(fixture)
+        repaired = coordinator.request_repair(
+            fixture["task"].task_id, repair_request, idempotency_key="a" * 64
+        )
+        self.assertEqual(repaired.decision, "repair")
+        escalated = coordinator.request_repair(
+            fixture["task"].task_id,
+            replace(repair_request, expected_fence=repair_request.expected_fence+1),
+            idempotency_key="b" * 64,
+        )
+        self.assertEqual((escalated.decision, escalated.reason), ("needs_human", "stale_fence"))
+
+    def create_populated_current_prefix(self, *, packaged=None):
         import psycopg
 
-        packaged = discover_migrations()
+        packaged = discover_migrations() if packaged is None else packaged
         self.assertGreater(len(packaged), 18)
         database_url, _admin_url = self.create_schema14_database(
             "current_prefix", register_cleanup=True
         )
-        self.populate_schema14_execution(database_url, proposal_kind="note")
+        _task, execution, _note, store = self.populate_schema14_execution(
+            database_url, proposal_kind="note"
+        )
         with psycopg.connect(database_url) as connection:
             for migration in packaged[14:-1]:
                 connection.execute(migration.sql)
@@ -1863,22 +1919,34 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     "VALUES (%s,%s,%s)",
                     (migration.version, migration.name, migration.sha256),
                 )
+        # Release the historical running execution through the existing terminal
+        # flow before admitting the semantic fixture; retain its real note rows.
+        FactoryService(store).commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=2,
+            event_type="run.needs_human", payload={"reason": "upgrade", "diagnostic": "prefix fixture"},
+            actor=WORKER,
+        )
+        FactoryService(store, snapshot_broker=TrustedSnapshotBroker()).finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+        )
+        self.populate_prefix_semantic_lifecycle(database_url)
         before = self.current_prefix_snapshot(database_url)
         self.assertEqual(
             [row[:3] for row in before["ledger"]],
             [(item.version, item.name, item.sha256) for item in packaged[:-1]],
         )
-        self.assertEqual(before["privileges"], (True, False, False, False))
-        self.assertTrue(before["function"][3])  # SECURITY DEFINER
-        self.assertEqual(before["function"][4], ["search_path=pg_catalog, factory"])
+        for name, function in before["functions"].items():
+            self.assertEqual(before["privileges"][name], (True, False, False, False))
+            self.assertTrue(function[3])  # SECURITY DEFINER
+            self.assertEqual(function[4], ["search_path=pg_catalog, factory"])
         for rows in before["rows"].values():
-            self.assertEqual(len(rows), 1)
-        if packaged[-1].name == "021_semantic_repair_child_rejection_reasons.sql":
+            self.assertGreaterEqual(len(rows), 1)
+        if packaged[-1].version in (21, 22):
+            probe = ("semantic_bind_repair_child(NULL,NULL)" if packaged[-1].version == 21
+                     else "semantic_plan_repair(NULL,NULL,NULL,NULL)")
             with psycopg.connect(database_url) as connection:
                 connection.execute("SET LOCAL ROLE factory_semantic_coordinator")
-                self.assertIsNone(connection.execute(
-                    "SELECT factory.semantic_bind_repair_child(NULL,NULL)"
-                ).fetchone()[0])
+                self.assertIsNone(connection.execute(f"SELECT factory.{probe}").fetchone()[0])
         return database_url, packaged, before
 
     @staticmethod
@@ -1891,21 +1959,29 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 "SELECT version,name,sha256,applied_at "
                 "FROM factory.schema_migrations ORDER BY version"
             ).fetchall()
-            function = connection.execute(
-                """SELECT oid,proowner,
+            functions = {
+                name: connection.execute(
+                    """SELECT oid,proowner,
                 ARRAY(SELECT acl::text FROM unnest(proacl) acl ORDER BY acl::text),
                 prosecdef,proconfig,pg_get_functiondef(oid)
-                FROM pg_proc WHERE oid =
-                'factory.semantic_bind_repair_child(character,text)'::regprocedure"""
-            ).fetchone()
-            privileges = connection.execute(
-                """SELECT
+                FROM pg_proc WHERE oid=%s::regprocedure""", (signature,),
+                ).fetchone()
+                for name, signature in (
+                    ("child", "factory.semantic_bind_repair_child(character,text)"),
+                    ("plan", "factory.semantic_plan_repair(character,character,text,uuid)"),
+                )
+            }
+            privileges = {
+                name: connection.execute(
+                    """SELECT
                 has_function_privilege('factory_semantic_coordinator',%s,'EXECUTE'),
                 has_function_privilege('factory_semantic_validator',%s,'EXECUTE'),
                 has_function_privilege('factory_semantic_adjudicator',%s,'EXECUTE'),
                 has_function_privilege('factory_runtime',%s,'EXECUTE')""",
-                (function[0],) * 4,
-            ).fetchone()
+                    (function[0],) * 4,
+                ).fetchone()
+                for name, function in functions.items()
+            }
             rows = {
                 table: connection.execute(sql.SQL(
                     "SELECT to_jsonb(t) FROM factory.{} t ORDER BY to_jsonb(t)::text"
@@ -1913,9 +1989,13 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 for table in (
                     "tasks", "accepted_intents", "runs", "execution_packets",
                     "execution_manifests", "execution_proposals",
+                    "workspace_results", "semantic_subjects", "semantic_assignments",
+                    "semantic_findings", "semantic_coverage", "semantic_verdicts",
+                    "semantic_directives", "semantic_child_proposals", "semantic_escalations",
+                    "semantic_command_results",
                 )
             }
-        return {"ledger": ledger, "function": function,
+        return {"ledger": ledger, "functions": functions,
                 "privileges": privileges, "rows": rows}
 
     def assert_current_prefix_upgraded(self, database_url, packaged, before, applied):
@@ -1927,22 +2007,39 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         )
         self.assertEqual(after["ledger"][:-1], before["ledger"])
         self.assertEqual(after["rows"], before["rows"])
-        self.assertEqual(after["function"][:5], before["function"][:5])
+        for name in before["functions"]:
+            self.assertEqual(after["functions"][name][:5], before["functions"][name][:5])
         self.assertEqual(after["privileges"], before["privileges"])
-        # On this checkout the current suffix is the 021 function replacement.
-        # Future suffixes still exercise the current-prefix contract; keep the
-        # historical replacement's behavior assertion tied to its own resource.
-        if packaged[-1].name == "021_semantic_repair_child_rejection_reasons.sql":
+        replacements = {
+            "021_semantic_repair_child_rejection_reasons.sql":
+                ("child", "semantic_bind_repair_child(NULL,NULL)", "repair_child_rejection"),
+            "022_semantic_repair_plan_rejection_reasons.sql":
+                ("plan", "semantic_plan_repair(NULL,NULL,NULL,NULL)", "repair_plan_rejection"),
+        }
+        if packaged[-1].name in replacements:
             import psycopg
 
-            self.assertNotEqual(after["function"][5], before["function"][5])
+            target, probe, channel = replacements[packaged[-1].name]
+            self.assertNotEqual(after["functions"][target][5], before["functions"][target][5])
+            for name in set(before["functions"]) - {target}:
+                self.assertEqual(after["functions"][name], before["functions"][name])
             with psycopg.connect(database_url) as connection:
                 connection.execute("SET LOCAL ROLE factory_semantic_coordinator")
                 self.assertEqual(connection.execute(
-                    "SELECT factory.semantic_bind_repair_child(NULL,NULL)"
-                ).fetchone()[0], {"repair_child_rejection": "command_input_invalid"})
+                    f"SELECT factory.{probe}"
+                ).fetchone()[0], {channel: "command_input_invalid"})
         self.assertEqual(self.migrate(database_url), ())
         self.assertEqual(self.current_prefix_snapshot(database_url), after)
+
+    def test_populated_historical_prefix20_to21_preserves_child_upgrade_proof(self):
+        historical = discover_migrations()[:21]
+        database_url, packaged, before = self.create_populated_current_prefix(packaged=historical)
+        # The historical migrator receives the actual immutable packaged001–021
+        # resources, so it applies and records real021 without accidentally022.
+        with mock.patch("adaptive_factory.migrations.discover_migrations", return_value=historical):
+            self.assert_current_prefix_upgraded(
+                database_url, packaged, before, self.migrate(database_url)
+            )
 
     def test_populated_current_prefix_upgrade_rejects_real_ledger_drift(self):
         import psycopg
@@ -2113,6 +2210,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (19, "019_usage_token_components.sql"),
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
+                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2127,7 +2225,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (21, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (22, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2223,6 +2321,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (19, "019_usage_token_components.sql"),
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
+                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                 ],
             )
             result = FactoryService(
@@ -2247,7 +2346,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (21, 1, True))
+                self.assertEqual(cursor.fetchone(), (22, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -5944,8 +6043,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 21:
-            raise AssertionError("fresh-cluster test requires migrations 001..021")
+        if len(migrations) != 22:
+            raise AssertionError("fresh-cluster test requires migrations 001..022")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -6016,6 +6115,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (19, "019_usage_token_components.sql"),
                 (20, "020_execution_v2_priced_usage.sql"),
                 (21, "021_semantic_repair_child_rejection_reasons.sql"),
+                (22, "022_semantic_repair_plan_rejection_reasons.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())
@@ -6076,7 +6176,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 21)
+                self.assertEqual(cursor.fetchone()[0], 22)
 
 if __name__ == "__main__":
     unittest.main()

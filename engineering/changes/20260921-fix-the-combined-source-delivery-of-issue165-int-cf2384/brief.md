@@ -1,0 +1,9 @@
+# Prepared factory and tooling delivery — current main continuation
+
+The user explicitly delegated the remaining repairs, parallel work, repository delivery and verified closure: «делай всё и закрывай». This bounded design imports19existing prepared source/test/guide files for165/163/62/118. It introduces no new service, dependency, database operation, deployment or provider call. Auto-close scope is165/163/118;62remains open for its separate bounded App Check Run output task.
+
+PR173actually merged at2026-09-21T11:27:32Z as `5674c369c4a427d42bde2a5fb3a3e2f73c853cd0` after App-owned check106308434581succeeded. Fetched main tree `e5a5cb6b563e92fd234126acca9fc6c2eb1beb5f` exactly equals tested parent23984e55, and actual main is an ancestor of this branch. Superseded drafts171/172are closed. This legitimate router-created routecf23849faca6uses actual delivered main; original8b2ee0scoping, budget projection, manifest omission and all five analyses remain historical evidence.
+
+Adopt the five unchanged static analyses through evidence/current-main-adoption.json. There has been no source delta since they inspected the exact19candidateblobs and parent tree. Do not dispatch a duplicate no-op analysis wave or treat these reports as verification/review receipts. One selected data_implementer owns every source/test/guide import and any newly reproduced integration repair. Root owns shared handoff, durable provenance and lifecycle accounting.
+
+Required completion is fresh combined full verification, code/test/security/data/release reviews and current zero-gap receipts, followed by the exact-head/base external App check and named delegated delivery operations. No human-signed approval or deployed authority is synthesized by this package. Original failures, actual skips and interpreter/platform limits remain intact.

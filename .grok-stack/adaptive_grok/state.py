@@ -91,7 +91,7 @@ def runtime_lock(root: Path, name: str = 'state', timeout: float = 5.0) -> Itera
 
 
 def active_route_path(root: Path) -> Path:
-    return runtime_dir(root) / 'active-route.json'
+    return root / '.grok-stack/runtime/active-route.json'
 
 
 def get_active_route(root: Path) -> dict[str, Any] | None:
@@ -120,7 +120,7 @@ def update_route(root: Path, **updates: Any) -> dict[str, Any] | None:
 
 
 def agent_state_path(root: Path) -> Path:
-    return runtime_dir(root) / 'agent-state.json'
+    return root / '.grok-stack/runtime/agent-state.json'
 
 
 def get_agent_state(root: Path) -> dict[str, Any]:
@@ -307,7 +307,7 @@ def has_valid_approval(
 
 
 def active_change_path(root: Path) -> Path:
-    return runtime_dir(root) / 'active-change.json'
+    return root / '.grok-stack/runtime/active-change.json'
 
 
 def set_active_change(root: Path, data: dict[str, Any]) -> None:
