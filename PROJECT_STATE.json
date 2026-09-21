@@ -1971,7 +1971,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T11:53:44.571027+00:00",
+    "observed_at": "2026-09-21T12:05:39.938899+00:00",
     "route_id": "cf23849faca6",
     "branch": "fix/factory-tooling-batch-20260921",
     "issues": [
@@ -1992,8 +1992,8 @@
     "base_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
     "change_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/candidates.json",
-    "status": "initial_integrated_full_pass_five_reviews_and_final_receipts_pending",
-    "next_action": "Obtain all five selected independent reviews, freeze reports and handoff, then run final complete verification and record current receipts. Deliver the isolated successor through the exact-head external App check. Close only165/163/118;62and158remain open.",
+    "status": "initial_full_and_five_independent_reviews_pass_final_frozen_receipts_external_delivery_pending",
+    "next_action": "Run complete final frozen-tree verification, record all five current review receipts and confirm zero gaps. Push the isolated branch and open the successor PR with exact delegated grants; require the exact App-owned external check before protected merge. Close165/163/118and retainedPR135 only after actual delivery; keep62open.",
     "scoping_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0",
     "source_adoption": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/current-main-adoption.json",
     "excluded_successors": [
@@ -2003,7 +2003,9 @@
       "Other retained PR source and all live operations"
     ],
     "verified_source_head": "4bc43cb7876d92b11efb289a121dcfef0a0355ac",
-    "verification_record": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/combined-full-initial-summary.json"
+    "verification_record": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/combined-full-initial-summary.json",
+    "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5",
+    "review_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/final-review-wave.json"
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",
@@ -2026,7 +2028,7 @@
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
   },
   "parallel_issue_work": {
-    "observed_at": "2026-09-21T11:34:42.674199+00:00",
+    "observed_at": "2026-09-21T12:05:39.938899+00:00",
     "queue": "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/issue-queue.json",
     "current_open_issues": 52,
     "closed_issues": [
@@ -2054,13 +2056,24 @@
         ],
         "branch": "fix/factory-tooling-batch-20260921",
         "route_id": "cf23849faca6",
-        "status": "Initial combined full PASS:877root/1426subtests and804factory/PostgreSQL cases with2skips; all5reviews pending;62partial"
+        "status": "Initial full and all five independent reviews PASS; final frozen verification/current receipts and external delivery pending;62partial"
       },
       {
         "issue": 158,
         "branch": "fix/trust-ci-child-reaping",
         "route_id": "2723ac23689b",
-        "status": "93focusedPASS plus270TrustCIsuite cases with10skips; actual-main refresh/full/reviews and later live acceptance pending"
+        "status": "Exact10TrustCI files preserved while merging actualPR173 atd5fe0c39; current-main delivery route/full/reviews and separately authorized live acceptance pending"
+      },
+      {
+        "issues": [
+          59,
+          95,
+          119,
+          128
+        ],
+        "branch": "fix/verifier-lifecycle-batch-20260921",
+        "route_id": "cf340a89c6f4",
+        "status": "Five static analyses complete; one data writer preparing meaningful RED controls. Retained128lost tests/cancellation gaps identified; no new tests or completed repairs claimed."
       }
     ],
     "superseded_candidate_prs_pending_delivery": [],

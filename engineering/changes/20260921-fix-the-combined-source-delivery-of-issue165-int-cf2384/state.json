@@ -15,37 +15,47 @@
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/code-review.md"
       },
       {
         "id": "test_review",
         "kind": "receipt",
-        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "test_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/test-review.md"
       },
       {
         "id": "security_review",
         "kind": "receipt",
-        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "security_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/security-review.md"
       },
       {
         "id": "data_review",
         "kind": "receipt",
-        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "data_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/data-review.md"
       },
       {
         "id": "release_review",
         "kind": "receipt",
-        "reason": "Initial full integrated verification passed at 4bc43cb7876d92b11efb289a121dcfef0a0355ac. Independent review has not yet completed; final current-tree receipts remain required.",
         "receipt_kind": "release_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/release-review.md"
       }
     ],
     "schema_version": 1
