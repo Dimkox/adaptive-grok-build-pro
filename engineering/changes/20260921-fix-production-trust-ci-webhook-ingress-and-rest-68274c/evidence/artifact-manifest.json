@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "route_id": "68274cb876e4",
+  "prepared_at": "2026-09-21T07:42:42.573954+00:00",
+  "status": "prepared_not_installed_or_activated",
+  "installed_files": {
+    "adaptive-trust-ci-webhook-bridge-guard.service": {
+      "source": "/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/adaptive-trust-ci-webhook-bridge-guard.service",
+      "destination": "/etc/systemd/system/adaptive-trust-ci-webhook-bridge-guard.service",
+      "bytes": 871,
+      "sha256": "60596d1771aed4ee0a9431ead99e7636f98a38aaa1f3ce0a0ab68477e6d3f1a1",
+      "mode": "0644",
+      "owner": "root:root"
+    },
+    "adaptive-trust-ci-webhook-bridge.nft": {
+      "source": "/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/adaptive-trust-ci-webhook-bridge.nft",
+      "destination": "/etc/adaptive-trust-ci-webhook-bridge.nft",
+      "bytes": 747,
+      "sha256": "c68534932c19799421c4bd5c0a8fad57deeb3804fcbbd76e918f738f77aa989a",
+      "mode": "0644",
+      "owner": "root:root"
+    },
+    "adaptive-trust-ci-webhook-bridge.service": {
+      "source": "/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/adaptive-trust-ci-webhook-bridge.service",
+      "destination": "/etc/systemd/system/adaptive-trust-ci-webhook-bridge.service",
+      "bytes": 812,
+      "sha256": "d2280ce0802191817da64061005d69b53a165d644b34987eee912d4a502fba6c",
+      "mode": "0644",
+      "owner": "root:root"
+    },
+    "adaptive-trust-ci-webhook-bridge.socket": {
+      "source": "/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/adaptive-trust-ci-webhook-bridge.socket",
+      "destination": "/etc/systemd/system/adaptive-trust-ci-webhook-bridge.socket",
+      "bytes": 581,
+      "sha256": "3163be692b5319f13cb165abd46e2186d9ca6deeb7d7ab40a687ef35dd8249d0",
+      "mode": "0644",
+      "owner": "root:root"
+    }
+  },
+  "runtime_resources": [
+    "adaptive-trust-ci-webhook-bridge.socket",
+    "adaptive-trust-ci-webhook-bridge.service",
+    "adaptive-trust-ci-webhook-bridge-guard.service",
+    "nft:inet:adaptive_trust_ci_webhook_bridge",
+    "/etc/systemd/system/multi-user.target.wants/adaptive-trust-ci-webhook-bridge.socket"
+  ],
+  "boundaries": {
+    "namespace": "host",
+    "listen": "10.200.200.1:18080",
+    "interface": "veth-vpn-h",
+    "permitted_source": "10.200.200.2",
+    "proxy_target": "127.0.0.1:18080",
+    "public_path": "/webhooks/github",
+    "existing_resources_modified": []
+  }
+}

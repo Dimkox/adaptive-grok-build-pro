@@ -1902,5 +1902,15 @@
     "target_mutations": 0,
     "maintainer_acceptance": false,
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
+  },
+  "active_ci_ingress_operation": {
+    "branch": "fix/trust-ci-webhook-bridge",
+    "route_id": "68274cb876e4",
+    "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
+    "plan_sha256": "23c6bd21137951d96a41510dfdb34bed8baef1ee95d4f3e073026ccdc183cb5e",
+    "status": "preparation_reviewed_runtime_pending",
+    "user_delegation": "2026-09-21: делай всё и закрывай, following the described missing CI ingress repair",
+    "product_source_changed": false,
+    "next_action": "Grant exact reviewed host resources, refresh preflight, activate and measure public/path/source/stop-recovery controls, then separately ready PR170 and observe external App check."
   }
 }

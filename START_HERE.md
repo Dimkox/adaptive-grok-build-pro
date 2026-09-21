@@ -2,6 +2,10 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
+## Active host operation — Trust CI ingress
+
+Continue branch `fix/trust-ci-webhook-bridge`, route `68274cb876e4`, from [the reviewed operation plan](engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/operation-plan.md). GitHub webhook ingress currently fails because the VPN namespace reaches a host veth address with no bridge listener. Four independent preparation reviews accept the exact staged bridge/guard artifacts; fresh delegated grants and measured activation, filtering and guard-stop recovery are next. Product code and deployed Trust CI trust material are unchanged. The AGENTS no-product-change rule skips the product test gate; actual operational evidence remains mandatory. PR #170 is already published at frozen head `1f7aedb8`.
+
 ## Current project state
 
 Snapshot: **2026-09-21**. Repository `main` was observed at `90078959ff816068af374ad42f4bb80fdbaec866` (PR #151); fetch refs before assuming it is still the tip.

@@ -1375,3 +1375,6 @@ I checked whitespace before staging new raw evidence files, so the check omitted
 ## 2026-09-21 — Distinguish no-index differences from whitespace errors
 
 The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.
+
+## 2026-09-21 — Property selection belongs before systemctl operand terminators
+A read-only mount query placed the property option after --, so systemctl treated it as an operand and printed broad default metadata. Explicit selectors now precede unit names and the terminator; no credential values or host writes occurred, and the final plan requires narrow identity checks before command properties.

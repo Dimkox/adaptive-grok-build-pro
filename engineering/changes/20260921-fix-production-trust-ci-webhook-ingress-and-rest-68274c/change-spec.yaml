@@ -1,0 +1,102 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Only the verified VPN peer can reach the exact host veth listener and unchanged loopback backend.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Public webhook GET returns405 and private API paths remain unavailable through Funnel; real GitHub event intake is observed separately.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Activation and stop/disable recovery touch only the enumerated bridge resources and preserve existing API readiness.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No read or modification of credentials, private keys, deployed policy, holdout, images, database, GitHub App configuration or branch protection.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No wildcard listener, unenforced source ACL, fake webhook POST or unrelated firewall/service changes.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Webhook bytes, HMAC checks, App ownership, exact-head merge gate and human approval boundaries remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix production Trust CI webhook ingress and restore connectivity from the Tailscale VPN namespace to the existing host-loopback API; add a scoped systemd socket proxy with security review, preserving deployed policy, credentials and Docker containers.",
+    "success_metric": "Public webhook connectivity and real exact-head CI intake recover while private paths remain unexposed",
+    "target": "Public GET405, private paths404, real GitHub event accepted and required App check present"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact listener, guard counters, HTTP status, real GitHub delivery and required Check Run identity",
+      "proves": [
+        "OBJ-001",
+        "AC-001",
+        "AC-002",
+        "AC-003"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "infra",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "strategy": "restore",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}
