@@ -811,3 +811,7 @@ The six reviewed candidates use a predecessor whose complete tree is identical t
 Comparing every candidate path against the source manifest exposed the missing Stop adapter before integration, while exact blob checks preserved the existing repair rather than inventing new behavior. Retain failed runs, revised reviews and candidate handoffs as historical evidence, then qualify the actual merged-base composition with fresh checks; this keeps provenance separate from current authority.
 
 - Preserve both historical and current populated migration-prefix tests when a new function replacement lands. Exact reversal of the refusal-only SQL edits, together with post-transaction classification and both upgrade proofs, let all five independent reviewers confirm unchanged guard, privilege and persistence behavior.
+
+### 2026-09-21 — Retake stale local-control PRs through path-scoped diffs
+
+Applying only the selected source, test and documentation diffs onto delivered main isolated three real textual conflicts without carrying historical approvals or receipts. Keep main's checkpoint and status behavior during conflict resolution, and qualify the new composition independently instead of promoting old App successes to current authority.

@@ -1,0 +1,122 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Gate validation covers AC INV and FORBID while preserving draft behavior and AC-only attestation projection.",
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py"
+        },
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Declared local workflow gates enforce durable scope/action/resource decisions independently of delegated grants and Trust CI.",
+      "evidence": [
+        {
+          "test": "tests/test_human_gates.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Non-UTF-8 diff diagnostics remain serializable failures without changing strict decode defaults.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Code and test reviewer mutation probes use private scratch and report unchanged candidate identity and executed/unexecuted claims.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "security-review"
+    ]
+  },
+  "change_id": "20260921-fix-successor-batch-for-issues-124-125-126-129-i-c6741e",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Local gate labels, stale approvals or historical checks are represented as external merge authority.",
+      "evidence": [
+        {
+          "test": "tests/test_human_gates.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Reviewer mutation probes change the reviewed candidate or unexecuted probes are reported as passing.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Delivered package checkpoints, bounded nonmutating status, raw path identity and ASCII JSON remain intact.",
+      "evidence": [
+        {
+          "test": "tests/test_package_status.py"
+        },
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Existing signed v1 AC-only projection semantics remain unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py"
+        },
+        {
+          "test": "trust-ci/tests/test_signing.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix successor batch for issues #124 #125 #126 #129: isolated reviewer scratch evidence, complete change-spec AC INV FORBID coverage, durable local human permission gates, and byte-safe verifier diagnostics. Port only source tests docs from PR141 PR142 PR144 PR145 onto current main; no Trust CI deployment, old approvals or receipts, pushes, merges, or heavy verification.",
+    "success_metric": "Four mapped issues have compatible source and tests on the delivered base with zero unresolved integration failures.",
+    "target": "All selected focused cases and the final exact-tree gate pass; independent reviews confirm the bounded changes."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
