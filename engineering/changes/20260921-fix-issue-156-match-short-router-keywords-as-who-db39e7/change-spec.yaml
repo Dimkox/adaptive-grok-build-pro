@@ -1,0 +1,97 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The exact #155 task excludes frontend while retaining genuine data/integration domains and a suitable existing specialist owner.",
+      "evidence": [
+        {
+          "test": "tests/test_repo_router.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Genuine standalone and punctuation-separated UI/API/SQL/D7/1c/1\u0441 terms retain their domains, profiles and reviewers; embedded substrings do not create unsupported domains.",
+      "evidence": [
+        {
+          "test": "tests/test_repo_router.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "New route records preserve deterministic matched_keywords and load through the closed reader; old records without it remain accepted.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No arbitrary route fields, receipt weakening, or generic-owner substitution for a genuine specialist task.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Existing intent priority, legitimate quality profiles, review requirements and Bitrix repository ownership remain intact.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #156: match short router keywords as whole words, persist keyword evidence, and select the appropriate write owner from supported task domains.",
+    "success_metric": "Short word-shaped domain keywords match standalone words; every task-derived domain is explained by a persisted keyword map.",
+    "target": ".grok-stack/adaptive_grok/router.py, .grok-stack/adaptive_grok/workflow_artifacts.py, tests/test_repo_router.py, tests/test_workflow_artifacts.py"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Short word-shaped domain keywords match standalone words; every task-derived domain is explained by a persisted keyword map.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -2,6 +2,10 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
+## Active issue branch — #156
+
+This isolated successor to PR #170 fixes short keyword routing and records keyword evidence. Read [the change package](engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7/brief.md) and `PROJECT_STATE.json.active_issue_work`. Focused and adjacent tests passed; full PR verification and independent reviews remain pending.
+
 ## Current project state
 
 Snapshot: **2026-09-21**. Repository `main` was observed at `90078959ff816068af374ad42f4bb80fdbaec866` (PR #151); fetch refs before assuming it is still the tip.
