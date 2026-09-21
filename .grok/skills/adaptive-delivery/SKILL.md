@@ -93,7 +93,11 @@ A failing check returns to the write owner. Do not record review receipts agains
 
 ## 6. Independent review
 
-Dispatch all route `review_agents` in parallel. Each reviews the same final tree from its own perspective and writes a concrete report.
+Dispatch all route `review_agents` in parallel. Each reviews the same final tree from its own perspective and returns the complete report to the coordinator out-of-band; reviewers must not write into the candidate worktree.
+
+Code and test reviewers perform bounded, change-relevant mutation probes in a reviewer-owned private scratch copy outside the reviewed worktree. The candidate stays read-only: do not edit or restore it, or generate artifacts there. Scratch must be below a trusted non-sticky parent with mode `0700` and reproduce the exact candidate snapshot, including relevant staged, unstaged, and untracked changes. Record HEAD and candidate tree fingerprint before and after review; unsafe scratch, mismatched snapshot, or changed candidate makes the review inconclusive/stale. Read-only reviewer configuration and prompts are workflow requirements, not OS-enforced filesystem isolation.
+
+Reports list source identity, scratch path, literal `reviewed-tree-modified: no`, each claim probed, exact commands and concise observed output, and each mutant as killed/survived/inconclusive. List unexecuted claims and why; static claims without executable probes are unexecuted. Survivors are findings or explicit limitations; do not apply an unstated blanket mutation-score threshold. After all reviews finish, the coordinator persists the returned reports under the change evidence directory. Because this changes the candidate tree, the coordinator then reruns final verification and records fresh fingerprint-bound receipts; those receipts bind the persisted reports and final tree.
 
 For every passing report, record the exact evidence kind:
 

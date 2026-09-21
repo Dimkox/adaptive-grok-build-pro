@@ -537,35 +537,72 @@ def _evidence_value(evidence: dict[str, Any]) -> str:
 
 
 def criterion_coverage(spec: dict[str, Any]) -> dict[str, Any]:
-    criteria = spec.get("acceptance_criteria") if isinstance(spec.get("acceptance_criteria"), list) else []
-    mapped: list[str] = []
-    unmapped: list[str] = []
+    category_fields = ("acceptance_criteria", "invariants", "forbidden_outcomes")
+    categories: dict[str, dict[str, Any]] = {}
+    mapped_all: list[str] = []
+    unmapped_all: list[str] = []
     counts = {key: 0 for key in ("test", "receipt", "production_signal", "attestation")}
-    for item in criteria:
-        criterion_id = str(item.get("id", "")) if isinstance(item, dict) else ""
-        evidence = item.get("evidence") if isinstance(item, dict) else None
-        valid = isinstance(evidence, list) and bool(evidence)
-        if valid:
-            mapped.append(criterion_id)
-            for ref in evidence:
-                if isinstance(ref, dict) and set(ref) == {"kind", "ref"}:
-                    legacy_kind = str(ref.get("kind"))
-                    if legacy_kind in counts:
-                        counts[legacy_kind] += 1
-                elif isinstance(ref, dict) and len(ref) == 1:
-                    key = next(iter(ref))
-                    if key in counts:
-                        counts[key] += 1
-        else:
-            unmapped.append(criterion_id)
+    for collection in category_fields:
+        items = spec.get(collection) if isinstance(spec.get(collection), list) else []
+        mapped: list[str] = []
+        unmapped: list[str] = []
+        for item in items:
+            criterion_id = str(item.get("id", "")) if isinstance(item, dict) else ""
+            evidence = item.get("evidence") if isinstance(item, dict) else None
+            if isinstance(evidence, list) and evidence:
+                mapped.append(criterion_id)
+                if collection == "acceptance_criteria":
+                    for ref in evidence:
+                        if isinstance(ref, dict) and set(ref) == {"kind", "ref"}:
+                            legacy_kind = str(ref.get("kind"))
+                            if legacy_kind in counts:
+                                counts[legacy_kind] += 1
+                        elif isinstance(ref, dict) and len(ref) == 1:
+                            key = next(iter(ref))
+                            if key in counts:
+                                counts[key] += 1
+            else:
+                unmapped.append(criterion_id)
+        categories[collection] = {
+            "criterion_total": len(items),
+            "criterion_mapped": len(mapped),
+            "mapped_ids": sorted(mapped),
+            "unmapped_ids": sorted(unmapped),
+        }
+        mapped_all.extend(mapped)
+        unmapped_all.extend(unmapped)
+    ac_coverage = categories["acceptance_criteria"]
+    ac_projection = {
+        "spec_count": 1,
+        "criterion_total": ac_coverage["criterion_total"],
+        "criterion_mapped": ac_coverage["criterion_mapped"],
+        "unmapped_ids": ac_coverage["unmapped_ids"],
+    }
     return {
         "spec_count": 1,
-        "criterion_total": len(criteria),
-        "criterion_mapped": len(mapped),
-        "mapped_ids": sorted(mapped),
-        "unmapped_ids": sorted(unmapped),
+        # These four fields remain the AC-only projection used by existing UI
+        # and Trust CI v1 compatibility adapters.
+        "criterion_total": ac_coverage["criterion_total"],
+        "criterion_mapped": ac_coverage["criterion_mapped"],
+        "mapped_ids": ac_coverage["mapped_ids"],
+        "unmapped_ids": ac_coverage["unmapped_ids"],
         "evidence_counts": counts,
+        "attestation_ac": ac_projection,
+        "categories": categories,
+        "all_criterion_total": sum(item["criterion_total"] for item in categories.values()),
+        "all_criterion_mapped": sum(item["criterion_mapped"] for item in categories.values()),
+        "all_mapped_ids": sorted(mapped_all),
+        "all_unmapped_ids": sorted(unmapped_all),
     }
+
+
+def attestation_criterion_coverage(spec: dict[str, Any]) -> dict[str, Any]:
+    """Return the exact AC-only criterion_coverage shape used by Trust CI v1.
+
+    Callers preparing signed v1 attestation payloads must use this adapter,
+    never the category-aware local ``criterion_coverage`` result.
+    """
+    return dict(criterion_coverage(spec)["attestation_ac"])
 
 
 def _unsafe_path_character(value: str) -> bool:
@@ -695,7 +732,7 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
             if not isinstance(item, dict):
                 continue
             evidence = item.get("evidence") or []
-            if gate and collection == "acceptance_criteria" and not evidence:
+            if gate and not evidence:
                 errors.append(f"{label} {item.get('id')} has no evidence")
             for ref in evidence:
                 if not isinstance(ref, dict) or len(ref) != 1:
@@ -788,7 +825,7 @@ def validate_spec(
             validate_schema(spec, path_or_schema, path_or_schema)
             if schema_only:
                 return {"ok": True, "digest": canonical_spec_digest(spec), "change_id": spec.get("change_id")}
-        return _validate_document(spec, gate=not schema_only)
+        return _validate_document(spec, gate=gate and not schema_only)
     root = Path(root_or_spec)
     if not isinstance(path_or_schema, Path):
         raise TypeError("path must be a Path")
@@ -826,7 +863,24 @@ def generate_spec(route: dict[str, Any]) -> dict[str, Any]:
 
 def summarize_spec(spec: dict[str, Any]) -> dict[str, Any]:
     coverage = criterion_coverage(spec)
-    return {"change_id": spec.get("change_id"), "objective": spec.get("objective"), "risk": spec.get("risk"), "digest": canonical_spec_digest(spec), "acceptance_criteria": coverage["criterion_total"], "invariants": len(spec.get("invariants") or []), "forbidden_outcomes": len(spec.get("forbidden_outcomes") or []), "unmapped": coverage["unmapped_ids"]}
+    return {
+        "change_id": spec.get("change_id"),
+        "objective": spec.get("objective"),
+        "risk": spec.get("risk"),
+        "digest": canonical_spec_digest(spec),
+        # Preserve the historical count fields; coverage_by_category is the
+        # authoritative category-aware coverage view for new consumers.
+        "acceptance_criteria": coverage["criterion_total"],
+        "invariants": coverage["categories"]["invariants"]["criterion_total"],
+        "forbidden_outcomes": coverage["categories"]["forbidden_outcomes"]["criterion_total"],
+        "unmapped": coverage["unmapped_ids"],
+        "coverage_by_category": coverage["categories"],
+        "coverage_all": {
+            "criterion_total": coverage["all_criterion_total"],
+            "criterion_mapped": coverage["all_criterion_mapped"],
+            "unmapped_ids": coverage["all_unmapped_ids"],
+        },
+    }
 
 
 def map_evidence(spec: dict[str, Any]) -> dict[str, list[str]]:
