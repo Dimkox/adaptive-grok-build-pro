@@ -1910,7 +1910,8 @@
     "change_package": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
     "base_pull_request": 170,
     "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
-    "status": "schema_only_product_restored_targeted_checks_passed",
-    "next_action": "Renew schema-only code/test reviews after preserved Trust CI follow-up was split out; final full verifier and receipts next. Preserve successor patch at historical commit4c683f78 for a separately routed actual base containing this schema fix."
+    "status": "schema_only_reviewed_final_binding_pending",
+    "next_action": "Run final exact-tree full verification, bind current code/test receipts, publish the schema-only PR, and preserve the separately routed trusted-validator successor after this actual base is delivered.",
+    "tested_product_commit": "31c6b4e11c4554dbaa67943ec6156ec32633b111"
   }
 }

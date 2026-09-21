@@ -67,11 +67,17 @@
       "from": "verifying",
       "reason": "Renew independent schema-only review of actual restored diff and split evidence; final exact-tree verifier remains pending",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T07:38:42+00:00",
+      "from": "reviewing",
+      "reason": "Schema-only product equals initial full-pass tree, architecture separation restored and both independent reviews renewed; frozen final candidate requires exact-tree verification receipt before publication",
+      "to": "ready"
     }
   ],
   "route_id": "8ab045fd89e1",
   "schema_version": 1,
-  "status": "reviewing",
+  "status": "ready",
   "title": "Fix issue #162: align the change-spec evidence receipt enum with all seven runtime receipt kinds and add parity and validation regressions.",
-  "updated_at": "2026-09-21T07:32:36+00:00"
+  "updated_at": "2026-09-21T07:38:42+00:00"
 }
