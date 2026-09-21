@@ -1,0 +1,73 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The schema enum matches runtime receipt kinds exactly and validates every known kind while rejecting unknown kinds.",
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "The receipt schema must not accept arbitrary strings or aliases.",
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Receipt authority and route-required evidence semantics remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #162: align the change-spec evidence receipt enum with all seven runtime receipt kinds and add parity and validation regressions.",
+    "success_metric": "All current receipt kinds validate and unknown kinds reject",
+    "target": "Exact seven-kind parity with both runtime registries"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Existing spec validator reports unknown receipt enum violations.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

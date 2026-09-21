@@ -1902,5 +1902,15 @@
     "target_mutations": 0,
     "maintainer_acceptance": false,
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
+  },
+  "active_issue_work": {
+    "issue": 162,
+    "route_id": "8ab045fd89e1",
+    "branch": "fix/issue-162-receipt-schema",
+    "change_package": "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
+    "base_pull_request": 170,
+    "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+    "status": "focused_tests_passed_full_verification_pending",
+    "next_action": "Run mandatory full PR verification, then independent code/test reviews, freeze final evidence and prepare separate PR. No new merge or operational authority is recorded."
   }
 }

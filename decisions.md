@@ -756,3 +756,7 @@ Recognize a legacy SQL NULL before calling the binding contract parser, so the c
 ## 2026-09-21 — Refresh the target before repeating a pilot
 
 Reading the live target and the closed attempt before spending another provider invocation exposed a 26-commit baseline drift and a version task that no longer fits the site. A separate AST inventory probe identified a current two-file browser-audit gap, so the next pilot now has a concrete issue draft and reproducible failure. Keep that successor separate from #155 and from the historical profile; a draft or local proof does not establish maintainer acceptance.
+
+### 2026-09-21 — Keep the change-spec receipt enum aligned with runtime registries
+
+For issue #162, compare the schema enum exactly against both runtime receipt sets and validate each kind in a complete spec; this exposed the two missing domain reviews before the additive repair and guards against future drift. Keep draft scaffold timing and receipt authority unchanged because neither caused the vocabulary mismatch.

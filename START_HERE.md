@@ -2,6 +2,10 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
+## Active issue branch — #162
+
+This isolated successor to PR #170 corrects the typed receipt vocabulary. Read [the change package](engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/brief.md) and `PROJECT_STATE.json.active_issue_work`. Focused tests passed; full PR verification and independent reviews are pending. The inherited #155 publication/evidence record below is historical context.
+
 ## Current project state
 
 Snapshot: **2026-09-21**. Repository `main` was observed at `90078959ff816068af374ad42f4bb80fdbaec866` (PR #151); fetch refs before assuming it is still the tip.

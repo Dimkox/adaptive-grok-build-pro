@@ -1,0 +1,41 @@
+{
+  "change_id": "20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045",
+  "created_at": "2026-09-21T06:18:18+00:00",
+  "history": [
+    {
+      "at": "2026-09-21T06:18:18+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T06:23:56+00:00",
+      "from": "draft",
+      "reason": "User requested parallel issue fixes; bounded schema parity repair recorded; route has no named human gate",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-21T06:23:56+00:00",
+      "from": "scoped",
+      "reason": "User requested parallel issue fixes; bounded schema parity repair recorded; route has no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-21T06:23:56+00:00",
+      "from": "approved",
+      "reason": "User requested parallel issue fixes; bounded schema parity repair recorded; route has no named human gate",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T06:29:23+00:00",
+      "from": "implementing",
+      "reason": "Minimal receipt enum repair and focused RED/GREEN complete; full verification pending",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "8ab045fd89e1",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Fix issue #162: align the change-spec evidence receipt enum with all seven runtime receipt kinds and add parity and validation regressions.",
+  "updated_at": "2026-09-21T06:29:23+00:00"
+}

@@ -14,7 +14,7 @@
       "type": "object", "additionalProperties": false, "minProperties": 1, "maxProperties": 1,
       "properties": {
         "test": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_./:-]+$"},
-        "receipt": {"type": "string", "enum": ["verification", "code_review", "test_review", "security_review", "release_review"]},
+        "receipt": {"type": "string", "enum": ["verification", "code_review", "test_review", "bitrix_review", "security_review", "data_review", "release_review"]},
         "production_signal": {"$ref": "#/$defs/sig_id"},
         "attestation": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.:@/-]+$"}
       }
