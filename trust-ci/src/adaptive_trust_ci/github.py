@@ -219,8 +219,17 @@ class GitHubClient:
         required_reviews: int = 0,
     ) -> dict[str, Any] | str:
         encoded_branch = urllib.parse.quote(branch, safe='')
-        return self._request(
-            'PUT',
-            f'/repos/{repository}/branches/{encoded_branch}/protection',
-            branch_protection_payload(check_name, app_id=app_id, required_reviews=required_reviews),
-        )
+        path = f'/repos/{repository}/branches/{encoded_branch}/protection'
+        expected = branch_protection_payload(check_name, app_id=app_id, required_reviews=required_reviews)
+        self._request('PUT', path, expected)
+        observed = self._request('GET', path)
+        if not isinstance(observed, dict):
+            raise GitHubError('branch protection response is not an object')
+        checks = observed.get('required_status_checks')
+        if not isinstance(checks, dict) or checks.get('strict') is not True:
+            raise GitHubError('branch protection has no strict required checks')
+        actual = checks.get('checks')
+        required = {'context': check_name.strip(), 'app_id': app_id}
+        if not isinstance(actual, list) or required not in actual:
+            raise GitHubError('branch protection does not bind the requested App-owned check')
+        return observed

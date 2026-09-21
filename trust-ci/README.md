@@ -201,7 +201,7 @@ adaptive-trust-ci branch-protect \
   --required-reviews 0
 ```
 
-The configurator uses `required_status_checks.checks` with both the exact policy-epoch check name and the GitHub App ID. A status or check with the same text from another actor does not satisfy the requirement. Protection also requires a pull request, strict up-to-date checks, conversation resolution and linear history, enforces administrators, and blocks force pushes and branch deletion.
+The configurator uses `required_status_checks.checks` with both the exact policy-epoch check name and the GitHub App ID. It reads the effective protection back after the PUT and fails closed unless that exact binding is reachable; a successful API write alone is not evidence that the merge gate is installed. A status or check with the same text from another actor does not satisfy the requirement. Protection also requires a pull request, strict up-to-date checks, conversation resolution and linear history, enforces administrators, and blocks force pushes and branch deletion.
 
 ## Human security approvals
 

@@ -6,6 +6,7 @@ import errno
 import hashlib
 import json
 import os
+import re
 import stat
 import uuid
 from dataclasses import dataclass
@@ -737,7 +738,7 @@ def _kept_local(target: Path) -> frozenset[str]:
         record = json.loads(raw.decode("utf-8"))
     except (UnicodeError, json.JSONDecodeError) as exc:
         raise UnsafeInstallTarget("stack sync record is not valid UTF-8 JSON") from exc
-    if not isinstance(record, dict) or set(record) - {"schema_version", "kept_local"}:
+    if not isinstance(record, dict) or set(record) - {"schema_version", "kept_local", "kept_local_sha256"}:
         raise UnsafeInstallTarget("stack sync record has unknown shape or keys")
     if record.get("schema_version", 1) != 1:
         raise UnsafeInstallTarget("stack sync record schema_version must be 1")
@@ -752,7 +753,25 @@ def _kept_local(target: Path) -> frozenset[str]:
         kept.append(item)
     if len(set(kept)) != len(kept):
         raise UnsafeInstallTarget("stack sync record kept_local has duplicates")
+    digests = record.get("kept_local_sha256", {})
+    if not isinstance(digests, dict) or set(digests) - set(kept):
+        raise UnsafeInstallTarget("stack sync record kept_local_sha256 must map declared paths only")
+    for path, digest in digests.items():
+        if not isinstance(path, str) or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise UnsafeInstallTarget("stack sync record kept_local_sha256 has invalid digest")
     return frozenset(kept)
+
+
+def _kept_local_digests(target: Path) -> dict[str, str]:
+    raw = _read_target_relative(target, STACK_SYNC_RECORD, limit=MAX_SYNC_RECORD_BYTES)
+    if raw is None:
+        return {}
+    try:
+        record = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise UnsafeInstallTarget("stack sync record is not valid UTF-8 JSON") from exc
+    value = record.get("kept_local_sha256", {}) if isinstance(record, dict) else {}
+    return dict(value) if isinstance(value, dict) else {}
 
 
 def _target_state(target: Path) -> str:
@@ -792,6 +811,7 @@ def _make_plan(
     selected_payload = payload if payload is not None else build_payload(source)
     state = _target_state(target)
     kept = _kept_local(target) if state == "directory" else frozenset()
+    kept_digests = _kept_local_digests(target) if state == "directory" else {}
     payload_by_path = {entry.path: entry for entry in selected_payload}
     keep_reports: list[dict[str, str]] = []
     for path in sorted(kept):
@@ -812,6 +832,10 @@ def _make_plan(
             keep_state = "absent"
         elif existing == entry.content:
             keep_state = "identical"
+        elif path in kept_digests and hashlib.sha256(existing).hexdigest() != kept_digests[path]:
+            raise UnsafeInstallTarget(f"kept path digest no longer matches its declared divergence: {path}")
+        elif path in kept_digests:
+            keep_state = "divergent"
         else:
             raise UnsafeInstallTarget(
                 f"kept path conflicts with the stack update, which would change it: {path}"

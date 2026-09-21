@@ -187,7 +187,12 @@ class GitHubTests(unittest.TestCase):
         self.assertFalse(payload['allow_deletions'])
 
     def test_branch_protection_update_uses_encoded_branch_epoch_and_app_id(self) -> None:
-        transport = FakeTransport([(200, {})])
+        transport = FakeTransport([(200, {}), (200, {
+            'required_status_checks': {
+                'strict': True,
+                'checks': [{'context': 'adaptive-trust-ci/verified@abc123def456', 'app_id': 12345}],
+            },
+        })])
         client = GitHubClient(token='admin-token', transport=transport, api_url='https://example.test')
         check_name = 'adaptive-trust-ci/verified@abc123def456'
         client.configure_branch_protection(
@@ -200,6 +205,15 @@ class GitHubTests(unittest.TestCase):
         self.assertEqual(method, 'PUT')
         self.assertIn('release%2F2.1/protection', url)
         self.assertEqual(body['required_status_checks']['checks'][0], {'context': check_name, 'app_id': 12345})
+
+    def test_branch_protection_fails_closed_when_app_check_is_not_reachable(self) -> None:
+        transport = FakeTransport([(200, {}), (200, {'required_status_checks': {'strict': True, 'checks': []}})])
+        client = GitHubClient(token='admin-token', transport=transport, api_url='https://example.test')
+        with self.assertRaisesRegex(GitHubError, 'does not bind'):
+            client.configure_branch_protection(
+                'Dimkox/adaptive-grok-build-pro', 'main',
+                check_name='adaptive-trust-ci/verified@abc123', app_id=12345,
+            )
 
 
 if __name__ == '__main__':
