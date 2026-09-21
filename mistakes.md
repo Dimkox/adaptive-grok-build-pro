@@ -1371,3 +1371,7 @@ The #155 recovery document called a whole-commit revert a forward fix, although 
 ### 2026-09-21 — Check newly staged evidence, not only the tracked worktree diff
 
 I checked whitespace before staging new raw evidence files, so the check omitted an untracked failing-test log and patch whose exact bytes contained trailing spaces. The resulting commit would fail the PR-target whitespace gate; I cancelled that verifier through its owned cleanup path, preserved both files as lossless base64 JSON envelopes, and checked the staged and committed diffs. Run the staged check after adding every new evidence artifact, and encode exact-byte logs when their whitespace is part of the evidence.
+
+## 2026-09-21 — Distinguish no-index differences from whitespace errors
+
+The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.

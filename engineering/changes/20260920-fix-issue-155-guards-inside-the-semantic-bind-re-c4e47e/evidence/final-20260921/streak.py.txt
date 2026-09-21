@@ -1,0 +1,65 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+from datetime import datetime, timezone
+
+root = Path("/home/pall/grok-projects/adaptive-grok-build-repair")
+out = Path(__file__).resolve().parent
+change = "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/"
+documents = {"START_HERE.md", "PROJECT_STATE.json", "README.md", "decisions.md", "mistakes.md"}
+
+def utc():
+    return datetime.now(timezone.utc).isoformat()
+
+def manifest():
+    names = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root).split(b"\0")
+    items = {}
+    for raw in sorted(set(names)):
+        if not raw:
+            continue
+        name = os.fsdecode(raw)
+        if name in documents or name.startswith(change) or name.startswith(".grok-stack/runtime/"):
+            continue
+        path = root / name
+        if path.is_symlink():
+            body = os.fsencode(os.readlink(path))
+            kind = "symlink"
+        elif path.is_file():
+            body = path.read_bytes()
+            kind = "file"
+        else:
+            body = b"MISSING"
+            kind = "missing"
+        items[name] = {"sha256": hashlib.sha256(body).hexdigest(), "kind": kind, "mode": path.lstat().st_mode if path.exists() else None}
+    encoded = json.dumps(items, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest(), items
+
+fingerprint, items = manifest()
+(out / "product-manifest.json").write_text(json.dumps({"sha256": fingerprint, "exclusions": sorted(documents) + [change, ".grok-stack/runtime/"], "files": items}, indent=2) + "\n")
+report = {"started_at": utc(), "product_sha256": fingerprint, "required_consecutive": 4, "command": ["python3", "-u", "factory/tests/run_disposable_exit.py"], "attempts": []}
+print("START product=" + fingerprint + " files=" + str(len(items)), flush=True)
+for number in range(1, 5):
+    before, _ = manifest()
+    if before != fingerprint:
+        raise SystemExit("Product changed before attempt " + str(number))
+    row = {"attempt": number, "started_at": utc(), "load_before": os.getloadavg(), "product_before": before, "head_before": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()}
+    started = time.monotonic()
+    log_path = out / ("postgres-" + str(number) + ".log")
+    with log_path.open("w") as log:
+        result = subprocess.run(report["command"], cwd=root, stdout=log, stderr=subprocess.STDOUT, timeout=650)
+    after, _ = manifest()
+    row.update({"finished_at": utc(), "seconds": round(time.monotonic()-started, 3), "exit_code": result.returncode, "load_after": os.getloadavg(), "product_after": after, "log_sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(), "log": log_path.name})
+    report["attempts"].append(row)
+    report["status"] = "running"
+    if result.returncode != 0 or after != fingerprint:
+        report["status"] = "failed"
+    (out / "postgres-streak.json").write_text(json.dumps(report, indent=2) + "\n")
+    print(json.dumps(row), flush=True)
+    if report["status"] == "failed":
+        raise SystemExit(1)
+report.update({"status": "pass", "finished_at": utc()})
+(out / "postgres-streak.json").write_text(json.dumps(report, indent=2) + "\n")
+print("PASS four consecutive attempts on " + fingerprint, flush=True)

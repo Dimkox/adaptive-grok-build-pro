@@ -1862,16 +1862,45 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T04:36:30Z",
+    "observed_at": "2026-09-21T05:39:01.085697Z",
     "route_id": "c4e47ea3ced7",
     "branch": "fix/issue-155-repair-binding-rejections",
     "issue": 155,
     "pull_request": null,
-    "implementation_commit": "6b13806d454cada0c63520129baf09056db46408",
+    "implementation_commit": "74a8079a706cc38017614566cd4de17e44317d1a",
     "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
     "change_package": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e",
-    "status": "local_verification_in_progress",
+    "status": "reviewed_local_candidate_pending_pr",
     "plan": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/continuation.md",
-    "next_action": "Finish root-test diagnosis, final-product PostgreSQL evidence and route-selected verification/reviews; then deliver a separately authorized branch/PR and await exact-head external Trust CI."
+    "next_action": "Check grok_status on the clean delivery HEAD; refresh full verification and the four review receipts when absent or stale. Then obtain exact branch/PR publication delegation, publish this prepared candidate, and await the exact-head external Trust CI check. No PR exists at this observation.",
+    "initial_implementation_commit": "6b13806d454cada0c63520129baf09056db46408",
+    "product_sha256": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+    "verification_record": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/evidence/final-20260921/README.md",
+    "independent_review_kinds": [
+      "code_review",
+      "test_review",
+      "security_review",
+      "data_review"
+    ]
+  },
+  "next_external_pilot": {
+    "observed_at": "2026-09-21T05:31:11.851184Z",
+    "status": "local_investigation_and_unposted_issue_draft",
+    "repository": "Dimkox/ai-dark-factory-landing",
+    "base_commit": "6226aa0b86e1fe08c63724cc3761b3f788146b91",
+    "base_tree": "788a40489683d627457e3780503d6127e44bdabf",
+    "task": "Include Russian landing and roadmap in the browser audit with locale-completeness regression",
+    "target_paths": [
+      "tests/site_browser_contract.py",
+      "tests/test_site_browser_contract.py"
+    ],
+    "preparation": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/next-pilot/README.md",
+    "issue_draft": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/next-pilot/issue-draft.md",
+    "reproduction": "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/next-pilot/reproduction.json",
+    "successor_issue": null,
+    "provider_attempts": 0,
+    "target_mutations": 0,
+    "maintainer_acceptance": false,
+    "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
   }
 }

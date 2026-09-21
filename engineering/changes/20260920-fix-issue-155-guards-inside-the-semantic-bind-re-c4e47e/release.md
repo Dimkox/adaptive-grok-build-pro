@@ -12,11 +12,11 @@ Merge eligibility is unchanged by anything in this package: the App-owned policy
 
 ## Feature flags / staged rollout
 
-None, deliberately. The behaviour is a diagnostic channel: the guard set is identical, so a deployment either has `021` applied (reasons present) or does not (bare `NULL`, the pre-fix shape). Both states accept and reject exactly the same rows, which is what makes a flag unnecessary and a rollback cheap.
+None, deliberately. The behaviour is a diagnostic channel: the guard set is identical, so a deployment either has `021` applied (reasons present) or does not (bare `NULL`, the pre-fix shape). Both states accept and reject exactly the same rows, so no diagnostic feature flag is needed. Once `021` is applied, recovery preserves the migration prefix and uses the reviewed corrective-release procedure in [rollback.md](rollback.md).
 
 ## Metrics and alerts
 
-- `SIG-001` — every `bind_repair_child` refusal names a reason: one of the twelve codes emitted by SQL once `021` is applied, or `store_returned_null` on a schema that has not applied it yet; `invalid_object`/`unknown_fields` stay reserved for malformed payloads. Alert-worthy signal is the *absence* of a named reason in a rejection log line, which would mean a guard returned `NULL` again.
+- `SIG-001` — every `bind_repair_child` refusal names a reason: one of the twelve codes emitted by SQL once `021` is applied, or `store_returned_null` on a schema that has not applied it yet; `invalid_object`/`unknown_fields` stay reserved for malformed payloads. On an upgraded schema, `store_returned_null` would expose an unexpected anonymous SQL refusal; a missing reason would expose a store-diagnostic regression. The compatibility fallback remains a named reason and must not be mistaken for proof that the upgraded SQL emitted one.
 - `SIG-002` — mandatory tier per-attempt duration and host load, with the product-tree fingerprint stamped around the streak; a streak that resets is a defect report, not an environment note.
 - Existing store error accounting is untouched: no new error class, `StoreError` keeps its type and its message prefix, only the suffix grows.
 
@@ -28,7 +28,7 @@ The guard set went from one anonymous refusal to twelve named reasons, so a prin
 
 Go requires all of:
 
-1. Four consecutive mandatory disposable-exit tier passes recorded in `evidence/postgres-evidence.md` §10 against the delivered tree.
+1. Four consecutive mandatory disposable-exit tier passes on the corrected product, recorded in the September 21 continuation evidence. Earlier streaks in `evidence/postgres-evidence.md` and `evidence/continuation-20260921/` are historical and cannot qualify later product bytes.
 2. `python3 scripts/grok_verify.py --mode pr` `RESULT: PASS` on the clean committed tree, with `source-stability` stable.
 3. Passing `code_review`, `test_review`, `security_review` and `data_review` receipts bound to that same fingerprint (the route's `required_evidence`).
 4. Zero diff under `factory/contracts/`, `schemas/`, `architecture/`, `governance/`, and zero diff in `resources/018_semantic_validation_bridge.sql`.

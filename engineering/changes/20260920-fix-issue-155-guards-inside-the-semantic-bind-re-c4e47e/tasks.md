@@ -1,15 +1,41 @@
-# Tasks — Fix issue #155: semantic_bind_repair_child guard rejections and PostgreSQL tier determinism
+# Tasks — issue #155 repair-child rejection diagnostics
 
-Owner: one write contour (this branch, `fix/issue-155-repair-binding-rejections`). Reviewers are read-only and must not edit this tree.
+One application-code owner: route-selected `frontend_implementer` on
+`fix/issue-155-repair-binding-rejections`. Independent reviewers inspect product
+files read-only and own only their respective evidence reports.
 
-- [x] Freeze contracts and expected behavior. — No declared contract is in the diff; the closed reason vocabulary and the two-shapes rule are pinned in `architecture.md` and asserted by `test_migrations.py`.
-- [x] Correct the brief before designing against it. — 9 NULL-returning guard paths, 70 clauses in ten `IF` blocks, one of them a 49-clause `OR` predicate, not "~15 guards"; `DraftRejection`/`WorkerRejection` do not exist in this tree; the runner module is `migrations.py`, not `migrations/__init__.py`; `CHILD_DEADLINE` divergence is client↔server clock, not host slowness.
-- [x] Add failing test or characterization test. — Delay-injection probe with a control that flips (`evidence` §3) reproduced the misleading `invalid_object` chain on demand before any fix.
-- [x] Implement the smallest vertical change. — `021` replaces the function with reason-bearing guards; `semantic_repair.py` allowlist + strict reader; `store.py` classifies before `from_dict`.
-- [x] Make the affected fixtures clock-independent. — repair-child budget from one server-clock reading (`intake_now=` seam, `CHILD_DEADLINE_SAFETY_SECONDS`); HTTP intake authority stamped at request time, with an expired proof still refused (`FORBID-002`).
-- [x] Unblock the mandatory evidence tier. — Recorded bounded ruling: the tier exceeds the 300 s authority window by construction (the predecessor's red attempt ran `Ran 776 tests in 418.887s`, `422 != 201`), so no attempt could pass while the fixture clock was taken at import; fixed in fixtures only, no window widened (#164, `evidence` §13).
-- [x] Run selected quality profile. — Offline: `test_migrations.py` (Docker-free, `Ran 21 tests OK`), `tests.test_architecture_fitness` + `tests.test_structure` (`Ran 144 tests OK` in 75 s), `git diff --check` clean, and `ruff check` over `factory/src/adaptive_factory/ factory/tests/ tests/` = 6 `F401` findings, every one in a file outside this change set (`test_autonomy.py`, `test_landing_failover_backend.py`, `test_landing_failover_recovery.py`, `test_semantic_persistence.py`) — attributed to the baseline by file identity, not by stashing the tree under a running evidence tier. The 54-module Docker-free factory sweep and its one pre-existing failure are recorded in `evidence/postgres-evidence.md` §9.
-- [ ] Produce final-product mandatory disposable-exit PostgreSQL evidence. — The historical four-pass streaks are retained in `evidence/postgres-evidence.md` §§10/14; their identities and the later test refinement are disclosed there. The September 21 continuation collects four passes with a byte-sensitive product manifest on the delivered product and tests.
-- [x] File the neighbours this route deliberately left alone. — #163 (`semantic_plan_repair`, 15 anonymous paths, not fixed here), #164 (the `stale_m0` import-clock coupling, fixed here), #162 (route evidence kinds `data_review`/`bitrix_review` are not citable in a typed spec), #165 (crash-orphaned contour is invisible to the repository — the condition this task was resumed from).
-- [ ] Complete independent reviews. — `code_review`, `test_review`, `security_review`, `data_review` on the final tree; reports land under `evidence/`.
-- [ ] Bind evidence to the final tree fingerprint. — Commit, then `python3 scripts/grok_verify.py --mode pr`, then `grok_review.py` receipts. AC-005 stays open until final-product evidence exists; transition to `ready` only after verification and every selected review pass. Documentation-only closure still requires current fingerprint-bound receipts.
+- [x] Freeze contracts and the exact guard enumeration. Nine former NULL paths map
+  to twelve allowlisted reasons; the acceptance predicates, locks, function
+  signature, roles and migration resources 001–020 remain unchanged.
+- [x] Reproduce the original diagnosis and fix the smallest vertical path. Add
+  resource 021, the strict rejection reader and classification before binding
+  parsing. Keep malformed payloads diagnostically distinct.
+- [x] Remove the two affected fixtures' import-time clock coupling. Sample request
+  or server time; preserve expired-proof and excessive-budget rejection controls.
+  The mandatory tier blocker #164 is included under the recorded bounded ruling.
+- [x] Recover the prior full-verifier failure. Preserve its limitations and the
+  unowned-scratch negative control; the unexplained historical unit-test exit is
+  not relabelled as a proven cause. See the archived root-suite diagnosis.
+- [x] Resolve independent-review defects with evidence. A red/green cause/context/
+  traceback regression now distinguishes legacy NULL, a named refusal and malformed
+  data; the recovery procedure retains applied 021 and requires an additive fix.
+- [x] Verify the corrected product. Full `grok_verify --mode pr` passed on d659558:
+  785 root tests, 80% coverage, selected factory/pilot checks and the PostgreSQL tier.
+  Earlier targeted-check failures remain historical in `evidence/postgres-evidence.md`.
+- [x] Complete AC-005 on the corrected bytes. Four consecutive mandatory PostgreSQL
+  passes, each 779 tests with two conditional skips and actual restart/reconciliation,
+  share product digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`.
+  Exact durations, host load and raw log hashes are in `evidence/final-20260921/`.
+- [x] Complete independent code, test, security and data reviews. Current PASS
+  verdicts and the resolved original findings are in `evidence/continuation-*-review.md`.
+- [x] Prepare the immutable local handoff and receipt procedure. The final source
+  commit includes this package, review reports and the PR description. Fresh full
+  verification and four current review receipts must bind that clean commit before
+  publication; machine-local `grok_status` is the current-state check, not this checkbox.
+- [x] Preserve bounded follow-ups. #162/#163/#165/#166 remain separate. The next
+  external pilot has a current-target investigation, reproduced gap and unposted
+  two-file issue draft in `next-pilot/`; no target or provider effect occurred.
+
+External delivery remains pending: obtain the named branch-push/PR delegation,
+materialize an exact current grant, publish the branch/PR and await exact-head
+App-owned Trust CI. This task list does not grant merge or deployment authority.

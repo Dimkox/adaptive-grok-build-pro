@@ -1,6 +1,8 @@
 # Independent code review — issue #155 continuation
 
-**Result: FAIL / changes requested.** Two P2 findings remain on the reviewed snapshot. This report is local review evidence, not merge authority.
+**Current product review result: PASS** for corrected HEAD `d6595584649827baff78c2be46f978473d4b0465`, product `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. Both findings are resolved by the delta reviewed below; no unresolved code-review finding remains. This report is local review evidence, not merge authority or a claim that final route closure is complete.
+
+**Initial result: FAIL / changes requested** for `4a47c76b3fb37fbac430fd209771a695832610d2`. The initial findings and evidence are preserved below, followed by the corrective review.
 
 ## Identity and scope
 
@@ -71,4 +73,29 @@ These commands were run by the controller, not this reviewer:
 
 No product/test/config edits, database suite runs, credentials, external writes, receipts or operational approvals were performed by this reviewer. Only this report was written. No exhaustive live database exercise of all twelve named reasons was added; the live evidence, focused tests, predicate comparison and independent probes have the limits stated above.
 
-The controller acknowledged both findings and assigned the NULL repair to the existing write owner and recovery-document correction to documentation closure. This report remains **FAIL for `4a47c76…`** until the resulting diff and new verification evidence are reviewed. Product changes invalidate this snapshot's review and require fresh product evidence; final documentation closure also requires the controller's fingerprint-bound receipt process.
+The controller acknowledged both findings and assigned the NULL repair to the existing write owner and recovery-document correction to documentation closure. The initial verdict remains **FAIL for `4a47c76…`** as historical evidence; the resulting correction is reviewed separately below. Product changes invalidate a snapshot's review and require fresh product evidence; final documentation closure also requires the controller's fingerprint-bound receipt process.
+
+## Corrected delta review — 2026-09-21
+
+**Result: PASS for the corrected product.** Reviewed `4a47c76b3fb37fbac430fd209771a695832610d2..d6595584649827baff78c2be46f978473d4b0465`, including the corrected recovery plan. Independently compared the initial and corrected product manifests: the only changed product entries are `factory/src/adaptive_factory/store.py` and `factory/tests/test_migrations.py`. Recomputed all 3,283 current digest/kind/mode entries and obtained `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`, with zero differences from the corrected manifest. SQL resources, guards, grants, fixtures and harness remain exactly as reviewed initially.
+
+### Finding resolution
+
+- **CR-155-01 resolved.** The legacy NULL check is now before `try` / `RepairChildTaskBindingV1.from_dict`. It raises `store_returned_null` without generating a contract exception. The malformed-payload path still raises its store error from the actual parser failure. The existing regression now inspects cause, context and formatted traceback for legacy NULL and the exact deadline envelope, and preserves a `ContractError` cause for the malformed mapping. An independent mocked-store probe also verified serialized JSON `null` and successful binding responses.
+- **CR-155-02 resolved.** The recovery plan explicitly retains byte-identical resources 001–021, explains why older source cannot restore the SQL function, and uses the next unused additive migration when the body must change. It retains compatible Python handling, requires an already-migrated 001–021 recovery test, and stops on an unapplied/failed 021. It no longer claims that replaying 018 or deploying the shorter package performs recovery. No future migration or production recovery execution is claimed.
+
+### Corrected evidence checked
+
+Executed by this reviewer:
+
+1. `PYTHONPATH=factory/src python3 -B -m unittest factory.tests.test_migrations -v` — **PASS**, 24 tests, 0.051 s, exit 0.
+2. `git diff --check 4a47c76b3fb37fbac430fd209771a695832610d2..HEAD` — **PASS**, exit 0, no output, at `d659558…`.
+3. Read-only mocked-store probe — **PASS**: legacy NULL, serialized `null`, and an exact refusal envelope have no exception cause/context and no `invalid_object` traceback frame; a malformed list retains `ContractError.code == 'invalid_object'`; a valid binding is returned unchanged.
+4. Read-only archive verification — **PASS**, all nine entries of `null-cause-review-fix/index.json` match their recorded bytes and hashes. Both base64 wrappers decode to their recorded original lengths and SHA256 values. The decoded RED log reproduces the NULL-specific contract-cause assertion failure, and the decoded `change.patch` exactly matches the current two-file product delta. The archived GREEN log reports the targeted test passing. These RED/GREEN commands were executed by the write owner, not rerun as a mutation by this reviewer.
+5. Manifest comparison/recomputation — **PASS**, exactly the two expected product entries changed since the initial review and all corrected current entries match, as described above.
+
+Inspected the controller's corrected `/home/pall/.cache/agbp-run/p155-final-20260921/verify-initial.json`: full verification reports **pass**, created `2026-09-21T05:22:11+00:00`, full-tree fingerprint `b77fcdb933fc0b74524929a3c25e49de3f3df09c121d2a3a7029ea957785fa4c`. Root tests, coverage, factory unit tests, mandatory PostgreSQL exit evidence and source stability all pass; unconfigured workflow artifacts remain explicitly skipped. This is supplied execution evidence, not a reviewer-run full suite.
+
+At this delta review's evidence read, the fresh `postgres-streak.json` still reports `running` with **two of four** recorded attempts, both exit 0 on the corrected product identity before and after execution (358.330 s and 375.076 s). The initial four-pass streak is historical and is not reused for this product. Completion of AC-005 and final whole-tree receipts remains with the controller; this code-review PASS does not assert that those outstanding steps have already completed.
+
+Only this report was updated. No product/test/config edits, full database or verifier reruns, credentials, operational actions or local receipts were performed during the corrective review.

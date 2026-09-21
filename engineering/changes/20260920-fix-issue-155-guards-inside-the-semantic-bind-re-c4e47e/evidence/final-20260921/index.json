@@ -1,0 +1,38 @@
+{
+  "postgres-streak.json": {
+    "sha256": "70c7317b90098b744a1b319d725aee99a5e938c5bfbbbc1e7c00a2e231a33a12",
+    "bytes": 3354
+  },
+  "product-manifest.json": {
+    "sha256": "8ea2372cf74f291dece311028bf3b1f5494007612f090454fb12a5a7616cc7a1",
+    "bytes": 795506
+  },
+  "verify-initial.json": {
+    "sha256": "33843fead2d7eba556bd9c06ecf1767fe4ef20a4103b6e5f904ff8b9b9198df2",
+    "bytes": 70200
+  },
+  "verification-cancelled.json": {
+    "sha256": "ed7587cfadaf99fcb81bfc39bd708a234017f5a89cab9160fe856612adeb39b8",
+    "bytes": 307
+  },
+  "streak.py.txt": {
+    "sha256": "378a34beba0e2869002228b6b1bb228d12bee898ebf270bac301d94ca36fdd43",
+    "bytes": 3368
+  },
+  "postgres-1.log": {
+    "sha256": "299f760d2cbfc3a919888e03f44c5714b8091853bf91288c56015761a0a4ae0f",
+    "bytes": 149890
+  },
+  "postgres-2.log": {
+    "sha256": "33db3b30cd82da38bb438478bad53bfca855a947e15eda34ea5c4eee87003737",
+    "bytes": 149890
+  },
+  "postgres-3.log": {
+    "sha256": "801591ebe329f9bcd999f4b74079a7e6da813ab135e1f83cde5a10df77fc04fe",
+    "bytes": 149890
+  },
+  "postgres-4.log": {
+    "sha256": "2c225a5e485386b2f7761930957c7705d14c92a21ca888a629b6ac95bbc944f5",
+    "bytes": 149890
+  }
+}

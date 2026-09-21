@@ -516,3 +516,11 @@ saying which tree each streak belongs to is the reason the fingerprint is record
 self-serving: #163 `semantic_plan_repair` (15 anonymous paths), #166 no shipped
 `001–020 → 021` incremental upgrade test, #162 `data_review`/`bitrix_review` uncitable in a
 typed spec, and `store_write_rejected` still collapsing six constraint classes into one reason.
+
+## 15. September 21 corrected-product completion
+
+Sections 1–14 describe historical evidence. The continuation first recovered a passing full verifier and a fresh four-pass streak, then independent review found that a legacy SQL NULL still retained the parser exception as its cause. That production correction required a new final-product streak; the previous streaks do not prove AC-005 for the delivered bytes. Any historical wording about an authoritative local gate refers only to preflight workflow evidence, never the App-owned merge authority.
+
+The corrected product manifest is `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. All four sequential attempts ended successfully with identical before/after content digests, 779 tests with two conditional skips, effective role checks, and two actual PostgreSQL restarts plus reconciliation per attempt. Wall durations were 358.330s, 375.076s, 378.336s, 366.498s. Per-attempt timestamps, host load, exact log hashes and the complete manifest are in [the final archive](final-20260921/README.md).
+
+The corrected full verifier passed on `d6595584649827baff78c2be46f978473d4b0465`. It is a product checkpoint; final whole-tree receipts are refreshed after committing the review reports and handoff. The raw archive preserves the conditional-skip limits, cancellation record and difference between product identity and the whole-tree receipt. No deployment, runtime upgrade, external acceptance or merge is inferred.

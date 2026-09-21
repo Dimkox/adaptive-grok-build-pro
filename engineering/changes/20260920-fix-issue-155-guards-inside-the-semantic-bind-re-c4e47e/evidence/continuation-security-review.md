@@ -3,14 +3,23 @@
 Reviewer: route-selected `security_reviewer`, independent of the implementation owner.
 Route: `c4e47ea3ced7`. Review date: 2026-09-21.
 
-**Result: FAIL for the inspected delivery snapshot.** The recovery instructions below
+**Current result: PASS for the bounded delta at `d6595584649827baff78c2be46f978473d4b0465`,
+product `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`.** Both P2
+findings are resolved as recorded below. No security finding remains open. This is a
+security-review result, not completion of AC-005: the final-product streak was still
+running with two recorded successful attempts at the evidence observation used here.
+
+**Historical result: FAIL for the initially inspected delivery snapshot.** The recovery instructions below
 would break an upgraded deployment. The remaining NULL traceback defect also needs the
 announced implementation correction and a delta review. No new authorization bypass,
 cross-repository binding, privilege expansion, injection, or HTTP disclosure was found in
 the inspected SQL/Python change. This report is local review evidence, never merge or
 deployment authority.
 
-## Inspected identity
+The original findings and evidence are retained for traceability. The final section
+records their resolution and the current delta's identity and verification.
+
+## Initially inspected identity
 
 - Worktree: `/home/pall/grok-projects/adaptive-grok-build-repair`.
 - Base: `90078959ff816068af374ad42f4bb80fdbaec866`.
@@ -31,7 +40,7 @@ full-tree or exact-head attestation.
 
 ## Findings
 
-### P2 — recovery instructions would make the installed schema incompatible with the package
+### P2 — recovery instructions would make the installed schema incompatible with the package — resolved
 
 Location at inspected HEAD: `rollback.md`, Application rollback and Data recovery /
 forward-fix paragraphs (lines 15–24), under this change package; relevant implementation:
@@ -51,7 +60,16 @@ remove the applied migration row, edit shipped SQL, or claim a source-only rever
 the old function. Reported to the controller; the controller confirmed the correction is
 being made. Final document confirmation remains outstanding for this snapshot.
 
-### P2 — legacy NULL still creates the misleading contract-error traceback
+**Resolution at `d659558`:** read the complete replacement `rollback.md` and its exact
+diff from the initially reviewed HEAD. It now requires immutable 001–021, the next unused
+additive correction if SQL changes, compatible Python handling, normal bounded migrator
+execution and separate operational authorization. It expressly prohibits source-only
+rollback, deleting row 21, editing shipped resources or pretending 018 replays. It also
+requires an already-upgraded disposable database to qualify future recovery and does not
+claim that hypothetical recovery was executed. This resolves the availability defect in
+the instructions.
+
+### P2 — legacy NULL still creates the misleading contract-error traceback — resolved
 
 Location: `factory/src/adaptive_factory/store.py:752–761` at inspected HEAD.
 
@@ -66,6 +84,13 @@ The controller separately received this finding from code review and assigned th
 the sole implementation owner. Classify NULL before contract parsing and retain malformed
 payload contract errors for genuinely malformed non-NULL responses. A fresh product
 identity, regression evidence, and delta review are required after that edit.
+
+**Resolution at `d659558`:** `store.py:752–759` now raises the fixed SQL-NULL StoreError
+before entering `from_dict`. Exact reason envelopes also leave before parsing; malformed
+non-NULL payloads retain the existing contract cause. The strengthened regression and
+this reviewer's independent parser/cause/context/HTTP probe pass. NULL and envelopes
+never call the parser and do not contain `invalid_object` in their tracebacks. The
+malformed control still calls the parser once and preserves its ContractError cause.
 
 ## Security boundary assessment
 
@@ -179,6 +204,73 @@ Actual database execution is supported by the controller's inspected logs, not a
 live run by this reviewer. Deployed policy, approval scopes, branch protection and
 exact-head App-owned Trust CI still independently govern merge eligibility.
 
-Final security receipt must wait for the corrected recovery document, the NULL-path
-delta and its new verification evidence. Do not reuse this snapshot result as a pass for
-changed product contents.
+At the initial review, the security receipt was withheld pending the corrected recovery
+document, NULL-path delta and fresh verification. Those security-review requirements
+are now satisfied by the bounded delta below. The original snapshot alone was not used
+to approve changed product contents.
+
+## Bounded delta review after the initial FAIL
+
+Reviewed exact range `4a47c76b3fb37fbac430fd209771a695832610d2..d6595584649827baff78c2be46f978473d4b0465`.
+Only `store.py` and `test_migrations.py` changed under `factory/`; SQL, the allowlist,
+authorization callers, HTTP handlers and database grants are unchanged. Read the full
+recovery-document delta as well. No new security issue was found.
+
+Current identity:
+
+- Product manifest: `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`.
+- `store.py`: `802cee57ab296935f52433e2c53e822735bec3ff75cc97cc40b2cc286b5845cc`.
+- `test_migrations.py`: `91313992381cfe19cff1fa360fbd8ce34ee2dd8f492ab7b45342af4701354fd7`.
+- Recovery document: `82c217b1565e7c3519b09f48f479c1301b97811b18007800b061557e16edfecd`.
+- Rehashed all eight base-to-HEAD changed `factory/` files against the new manifest:
+  every hash matched; `git diff HEAD -- factory` was empty.
+
+Executed by this reviewer, exit 0, **3 tests passed in 0.018 seconds**:
+
+```bash
+python3 -m unittest -v \
+  factory.tests.test_migrations.MigrationTests.test_bind_repair_child_separates_an_unexplained_store_refusal \
+  factory.tests.test_migrations.MigrationTests.test_repair_child_rejection_channel_stays_disjoint_from_bindings \
+  factory.tests.test_migrations.MigrationTests.test_repair_child_rejection_resource_is_additive_and_typed
+```
+
+Reran the independent in-process probe with the previous 18 exact-envelope values plus
+bare SQL NULL and a malformed mapping, **20 cases total**, exit 0. Wrapped
+`RepairChildTaskBindingV1.from_dict` to measure calls: zero for NULL/envelopes, one for
+the malformed control. NULL/envelopes had no cause or context and no `invalid_object`
+traceback; the malformed control retained its ContractError cause. Every error produced
+the same generic HTTP 409 body already recorded above. This uses mocked store connections
+and the existing TestClient; no database or external HTTP connection was opened.
+
+Inspected the implementation owner's `null-cause-review-fix/` evidence. Validated wrapper
+file hashes and sizes against its index; decoded `red.log.json` and `change.patch.json`
+in memory using their declared base64 `data` field, then verified decoded hashes and byte
+lengths. The first reader attempt assumed a base64-named payload key and exited before
+decoding; the corrected reader completed all checks without modifying the evidence.
+The decoded patch exactly equals the reviewed two-file Git delta. The red test fails on
+the unwanted `ContractError('invalid_object: repair_child_task_binding')` cause; the green
+log passes that same regression, and the migration-module log records 24 passing tests.
+
+Inspected corrected full verification at
+`/home/pall/.cache/agbp-run/p155-final-20260921/verify-initial.json`, SHA-256
+`33843fead2d7eba556bd9c06ecf1767fe4ef20a4103b6e5f904ff8b9b9198df2`, created
+`2026-09-21T05:22:11+00:00`. It reports PASS at HEAD `d659558...`, full-tree fingerprint
+`b77fcdb933fc0b74524929a3c25e49de3f3df09c121d2a3a7029ea957785fa4c`, and passing source
+stability. The verifier-selected root pytest-xdist command used eight workers and passed
+785 tests plus 1,098 subtests with 80% coverage; the factory unit stage passed 56 tests;
+the disposable PostgreSQL stage passed 779 tests with the same two disclosed skips and
+confirmed effective roles and two actual restarts. These full-suite results are inspected
+controller evidence, not suites rerun by this reviewer.
+
+At the delta evidence read, the final-product streak JSON was `running` and recorded two
+completed exit-0 attempts, 358.330 and 375.076 seconds, the latter ending
+`2026-09-21T05:22:17.103089+00:00`. Both recorded unchanged `7bc117...` product identities.
+The old `e33e5e...` four-run streak remains historical and is not substituted for the
+remaining new-product attempts. AC-005 closure and final fingerprint-bound receipt
+materialization remain the controller's responsibility.
+
+**Delta decision: PASS.** Both findings are resolved, product security boundaries are
+unchanged, and the reviewed NULL fix preserves malformed-input diagnostics and external
+error redaction. No product, tests, configuration, runtime or deployed trust state was
+modified during this review; only this assigned report was updated. No receipt or local
+review can replace exact-head external Trust CI and separately required approvals.

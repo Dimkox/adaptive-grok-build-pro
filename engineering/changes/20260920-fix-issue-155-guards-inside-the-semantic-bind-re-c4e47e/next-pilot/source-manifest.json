@@ -1,0 +1,32 @@
+{
+  "observed_on": "2026-09-21",
+  "files": [
+    {
+      "repository": "Dimkox/ai-dark-factory-landing",
+      "commit": "6226aa0b86e1fe08c63724cc3761b3f788146b91",
+      "path": "tests/site_browser_contract.py",
+      "git_blob_sha": "adaf99be473c61e90ec078ad1e37e90bef20d693",
+      "sha256": "45beed3a509c91d390298f0c38cfa0ecdb934e23f769a9cc29092f48d0f42cf4",
+      "source_url": "https://github.com/Dimkox/ai-dark-factory-landing/blob/6226aa0b86e1fe08c63724cc3761b3f788146b91/tests/site_browser_contract.py",
+      "cache_path": "/home/pall/.cache/agbp-run/p155-final-20260921/landing-6226aa0/tests/site_browser_contract.py"
+    },
+    {
+      "repository": "Dimkox/ai-dark-factory-landing",
+      "commit": "6226aa0b86e1fe08c63724cc3761b3f788146b91",
+      "path": "tests/test_site_browser_contract.py",
+      "git_blob_sha": "14653e1f3c068e12b0a8a03b3be4a921b5afc57e",
+      "sha256": "8f68861e168722e465ceb51b4f611b388758ee9aec830cf4d9f7e8db1f7f3d0b",
+      "source_url": "https://github.com/Dimkox/ai-dark-factory-landing/blob/6226aa0b86e1fe08c63724cc3761b3f788146b91/tests/test_site_browser_contract.py",
+      "cache_path": "/home/pall/.cache/agbp-run/p155-final-20260921/landing-6226aa0/tests/test_site_browser_contract.py"
+    },
+    {
+      "repository": "Dimkox/ai-dark-factory-landing",
+      "commit": "6226aa0b86e1fe08c63724cc3761b3f788146b91",
+      "path": "build-pages.py",
+      "git_blob_sha": "c075b6f77aad00b9bd3d4bcc35dc8bc30463bcf5",
+      "sha256": "e1a757fe6951f4e4e77dc35d73c6aae57493119494fdf75514ae3192e7408e4f",
+      "source_url": "https://github.com/Dimkox/ai-dark-factory-landing/blob/6226aa0b86e1fe08c63724cc3761b3f788146b91/build-pages.py",
+      "cache_path": "/home/pall/.cache/agbp-run/p155-final-20260921/landing-6226aa0/build-pages.py"
+    }
+  ]
+}

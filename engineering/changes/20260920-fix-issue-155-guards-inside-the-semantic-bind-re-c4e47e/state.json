@@ -49,11 +49,23 @@
       "from": "implementing",
       "reason": "NULL-before-parser correction has a failing-then-passing exception-chain regression; 24 migration tests and ruff pass, recovery plan corrected, final product digest 7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25 frozen for fresh verification.",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T05:23:29+00:00",
+      "from": "verifying",
+      "reason": "Corrected refusal cause/context regression and forward recovery; full verifier passes on d659558, independent delta review resumes while final product PostgreSQL streak completes.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T05:39:26+00:00",
+      "from": "reviewing",
+      "reason": "Corrected product7bc117 passed full verification and four consecutive disposable PostgreSQL runs; all four independent reviews pass. Freeze the reviewed handoff, then refresh whole-tree verification and receipts on the clean delivery commit before any publication.",
+      "to": "ready"
     }
   ],
   "route_id": "c4e47ea3ced7",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Fix issue #155: guards inside the semantic_bind_repair_child PostgreSQL function return a bare NULL, so bind_repair_child cannot distinguish a deadline or precondition rejection from a malformed payload and surfaces a misleading invalid_object ContractError; the mandatory disposable-exit PostgreSQL evidence run consequently flakes about one run in three under host load. Give each guard a machine-readable rejection reason or a distinct SQLSTATE, map it to typed StoreError reason codes while keeping invalid_object for genuinely malformed payloads, keep shipped migration history immutable by replacing the function in a new versioned resource, and make the affected integration fixture independent of wall-clock scheduling. Do not weaken the contract schema, the evidence gate, or the disposable-exit run.",
-  "updated_at": "2026-09-21T05:11:30+00:00"
+  "updated_at": "2026-09-21T05:39:26+00:00"
 }

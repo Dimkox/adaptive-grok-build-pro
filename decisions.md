@@ -752,3 +752,7 @@ For each finding fixed in the delivered tree (false `malformed payload` diagnosi
 ### 2026-09-21 — Classify store refusals before parsing bindings
 
 Recognize a legacy SQL NULL before calling the binding contract parser, so the caller receives a store refusal without a fabricated shape-error cause. A red/green regression now inspects the exception cause, context and formatted traceback while preserving the real cause for malformed documents. This closes the diagnostic boundary that message-only assertions missed.
+
+## 2026-09-21 — Refresh the target before repeating a pilot
+
+Reading the live target and the closed attempt before spending another provider invocation exposed a 26-commit baseline drift and a version task that no longer fits the site. A separate AST inventory probe identified a current two-file browser-audit gap, so the next pilot now has a concrete issue draft and reproducible failure. Keep that successor separate from #155 and from the historical profile; a draft or local proof does not establish maintainer acceptance.

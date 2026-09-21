@@ -2,9 +2,13 @@
 
 Reviewer: route-selected `data_reviewer`, read-only except this report. Route: `c4e47ea3ced7`.
 
+## Current disposition
+
+**PASS for data review** on head `d6595584649827baff78c2be46f978473d4b0465`, product digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. D1 is resolved by the revised recovery procedure. The exact reviewed delta and replacement verification are recorded below; the original finding remains as history. This is not a claim that final AC-005, delivery, or operational recovery is complete: the replacement four-pass streak had two completed passes at the delta review.
+
 ## Initial disposition and identity
 
-**FAIL pending recovery-documentation correction and final product re-review.** No blocking SQL, migration-history, locking, or data-integrity defect was found in migration 021. The recovery instructions at the initially reviewed head are not executable against an upgraded database.
+**Initial disposition: FAIL, superseded by the resolved delta review below.** No blocking SQL, migration-history, locking, or data-integrity defect was found in migration 021. The recovery instructions at the initially reviewed head are not executable against an upgraded database.
 
 - Base: `90078959ff816068af374ad42f4bb80fdbaec866`.
 - Initially reviewed head: `4a47c76b3fb37fbac430fd209771a695832610d2`.
@@ -55,3 +59,17 @@ Required correction: retain byte-identical 001–021 and use a separately review
 `evidence/postgres-evidence.md:199` records a manually observed 001–020 → 021 upgrade without drift. That is a historical, non-shipped scratch observation; I did not repeat it, and it is not a shipped incremental-upgrade regression. Issue #166 tracks that gap. Fresh full application and older-version upgrade tests do not substitute for the exact incremental path. There is no exhaustive truth-table or production-volume measurement. The fixed 120-second fixture margin is ample for the measured runs but cannot prove immunity to unbounded host suspension.
 
 This report authorizes no database operation, rollout, merge, or external write. I read no credentials or `.env`, called no database/runtime endpoint, and changed only this report. Final disposition requires D1 correction confirmation and review of the announced product delta with refreshed evidence.
+
+## Delta review — D1 resolved
+
+Compared the exact range `4a47c76b3fb37fbac430fd209771a695832610d2..d6595584649827baff78c2be46f978473d4b0465` and the current recovery document. The only `factory/` changes are `store.py` and its `test_migrations.py` regression. Independently compared all 21 SQL resources against the initially reviewed head: **001–021 are byte-identical**, preserving the initial SQL, query, lock, privilege, and migration-history conclusions.
+
+**D1 resolution:** `rollback.md:14` now requires the unchanged 001–021 inventory, explains that earlier 018 never reruns, and rejects the shorter-package revert procedure. Lines 27–41 require one corrective release with the next unused additive resource when SQL must change, preserving signature, `SECURITY DEFINER`, search path, coordinator grant, and compatible Python handling. Lines 43–45 require stopping and checking the unchanged prefix after a failed 021 transaction. Lines 49–59 require future recovery evidence starting from a database already recording 001–021, with prefix hashes, expected appended migration, accepted binding, exact replay, refusals, role isolation, and normal verification. They explicitly do not claim that a future corrective migration has been exercised. This addresses the demonstrated planner failure without changing history or authorizing an operation. **No remaining blocking data finding.**
+
+The Python delta at `store.py:752` rejects legacy SQL NULL before `RepairChildTaskBindingV1.from_dict`; no database statement, transaction, or data-write behavior changes. Its regression now asserts that both NULL and named refusals have no parsing exception cause/context and no `invalid_object` in formatted traceback, while malformed documents retain a `ContractError` cause. I executed that database-free test plus the four migration tests listed above: **5 tests passed in 0.026 s**.
+
+Independently checked all **3,283** entries of `/home/pall/.cache/agbp-run/p155-final-20260921/product-manifest.json` against current file contents and modes, then recomputed its canonical manifest digest: **zero mismatches**, digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25` matches the recorded identity.
+
+Inspected `/home/pall/.cache/agbp-run/p155-final-20260921/verify-initial.json`: **PASS**, created `2026-09-21T05:22:11+00:00`, head `d6595584649827baff78c2be46f978473d4b0465`, tree fingerprint `b77fcdb933fc0b74524929a3c25e49de3f3df09c121d2a3a7029ea957785fa4c`, source stability pass. Its PostgreSQL tier reports **779 tests / 356.009 s / two skips**, with disposable identity, effective-role, actual two-restart and reconciliation proof. I did not rerun the verifier or connect to a database. The same skipped-branch and exact incremental-upgrade limitations from the initial review remain.
+
+At this delta review, the replacement `postgres-streak.json` remains `running`, with two completed exit-0 attempts (**358.330 / 375.076 s**) carrying the corrected product digest before/after each. The controller must retain and inspect the completed replacement streak for AC-005; the initial four-pass streak is historical. Later documentation-only changes need final receipt binding, and any product change requires renewed affected verification/review.

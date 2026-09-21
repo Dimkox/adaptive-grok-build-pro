@@ -19,7 +19,7 @@ route. The misleading role name is tracked separately in issue #156.
   `evidence/postgres-evidence.md`; the final test-file refinement postdates them.
   Do not label those streaks as four passes on the final product contents.
 
-## Remaining steps
+## Continuation procedure
 
 1. Recover the root-test diagnostic using the verifier's exact command, retaining full
    stdout/stderr outside the source checkout. Make a minimal regression-proven repair
@@ -53,4 +53,30 @@ requires a reviewed forward correction. The first streak is historical after thi
 production-code correction; final verification and four-pass evidence must cover the
 corrected product bytes before delivery.
 
-The correction is frozen at product digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. Its focused red/green logs and report are in `evidence/null-cause-review-fix/`; SQL resources are unchanged. Fresh four-pass PostgreSQL evidence and full verification are running on this corrected product.
+The correction is frozen at product digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. Its focused red/green logs and report are in `evidence/null-cause-review-fix/`; SQL resources are unchanged. The corrected full verifier passed, and four new PostgreSQL attempts passed on these exact product bytes. The independently checked raw results are in [the final archive](evidence/final-20260921/README.md).
+
+## Reviewed local handoff
+
+All four selected independent reviews now pass: [code](evidence/continuation-code-review.md),
+[test/evidence](evidence/continuation-test-review.md), [security](evidence/continuation-security-review.md)
+and [data](evidence/continuation-data-review.md). The reports retain the initial failures
+and their resolutions. The final test review independently checked the four new logs,
+manifest and hashes; review completion does not substitute for the current local receipts.
+
+Commit the frozen handoff, run the full verifier on that clean HEAD, then record the
+four review receipts with the report paths above and require zero `grok_status` gaps.
+The archive's d659558 full-verifier checkpoint predates the final documentation commit;
+a fresh clone must not reuse it as a current whole-tree receipt. No product change is
+needed for closure, and no repeat analysis/review wave is needed for this paperwork.
+
+The [PR description](pull-request.md) is prepared. Branch push and PR creation remain
+pending their exact operational delegation; merge still requires the App-owned check
+on the resulting current head and any separately required signed approval scopes.
+Main was re-observed at `90078959ff816068af374ad42f4bb80fdbaec866` on September 21;
+no PR exists for this branch at the local handoff observation.
+
+The user's request to advance more factory work also produced a [concrete next-pilot
+investigation and unposted issue draft](next-pilot/README.md). Its missing Russian-page
+audit coverage was independently reproduced against the current target. Route that
+successor separately; neither this investigation nor the old closed PR is a real
+provider run, maintainer acceptance, or M8 qualification.
