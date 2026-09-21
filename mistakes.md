@@ -1378,3 +1378,6 @@ The external evidence-archive helper stopped on clean files because it treated e
 
 ## 2026-09-21 — Property selection belongs before systemctl operand terminators
 A read-only mount query placed the property option after --, so systemctl treated it as an operand and printed broad default metadata. Explicit selectors now precede unit names and the terminator; no credential values or host writes occurred, and the final plan requires narrow identity checks before command properties.
+
+## 2026-09-21 — Validate operational specification metadata before receipts
+The host-only specification used acceptance IDs in observability.proves, whose existing schema accepts objective IDs only. Receipt creation correctly refused it; the field now names OBJ-001 and the typed spec is validated separately from the inapplicable product test gate. An initial grant attempt also used production scope with external-write; the supported matching external-write scope is required for these exact host resources.

@@ -79,10 +79,7 @@
       "id": "SIG-001",
       "metric": "Exact listener, guard counters, HTTP status, real GitHub delivery and required Check Run identity",
       "proves": [
-        "OBJ-001",
-        "AC-001",
-        "AC-002",
-        "AC-003"
+        "OBJ-001"
       ]
     }
   ],
