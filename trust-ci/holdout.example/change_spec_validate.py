@@ -24,7 +24,7 @@ ID_PATTERNS = {
     "observability": re.compile(r"^SIG-[0-9]{3,6}$"),
 }
 EVIDENCE_KEYS = {"test", "receipt", "production_signal", "attestation"}
-RECEIPT_KINDS = {"verification", "code_review", "test_review", "security_review", "release_review"}
+RECEIPT_KINDS = {"verification", "code_review", "test_review", "bitrix_review", "security_review", "data_review", "release_review"}
 TEST_RE = re.compile(r"^[A-Za-z0-9_./:-]+$")
 ATTESTATION_RE = re.compile(r"^[A-Za-z0-9_.:@/-]+$")
 SCOPE_RE = re.compile(r"^[a-z][a-z0-9_-]{0,127}$")

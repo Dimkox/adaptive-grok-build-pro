@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import types
 import unittest
@@ -74,6 +75,26 @@ class HoldoutChangeSpecTests(unittest.TestCase):
         head, _ = self._commit_spec(json.dumps(_valid("20260826-holdout"), sort_keys=True).encode())
         self.module.validate(self.root, base_sha=self.base, head_sha=head)
         self.assertNotIn("adaptive_grok.spec", MODULE_PATH.read_text(encoding="utf-8"))
+
+    def test_receipt_kinds_match_schema_and_runtime(self) -> None:
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        from adaptive_grok import receipts, workflow_artifacts
+
+        schema = json.loads((ROOT / "schemas/change-spec.schema.json").read_text(encoding="utf-8"))
+        schema_kinds = set(schema["$defs"]["evidence"]["properties"]["receipt"]["enum"])
+        self.assertEqual(self.module.RECEIPT_KINDS, schema_kinds)
+        self.assertEqual(self.module.RECEIPT_KINDS, set(receipts.RECEIPT_KINDS))
+        self.assertEqual(self.module.RECEIPT_KINDS, set(workflow_artifacts.RECEIPT_KINDS))
+
+    def test_domain_review_receipts_validate_and_unknown_rejects(self) -> None:
+        for kind in ("bitrix_review", "data_review"):
+            with self.subTest(kind=kind):
+                document = _valid("20260826-holdout")
+                document["acceptance_criteria"][0]["evidence"] = [{"receipt": kind}]
+                self.module._validate_document("engineering/changes/x/change-spec.yaml", document)
+        document["acceptance_criteria"][0]["evidence"] = [{"receipt": "unknown_review"}]
+        with self.assertRaisesRegex(SystemExit, "invalid receipt evidence"):
+            self.module._validate_document("engineering/changes/x/change-spec.yaml", document)
 
     def test_missing_sha_and_malformed_json_fail_closed(self) -> None:
         with self.assertRaises(SystemExit):

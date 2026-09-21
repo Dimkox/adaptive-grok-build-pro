@@ -31,11 +31,29 @@
       "from": "implementing",
       "reason": "Minimal receipt enum repair and focused RED/GREEN complete; full verification pending",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T06:38:55+00:00",
+      "from": "verifying",
+      "reason": "Mandatory PR verifier passed at31c6b4e1; independent code and test reviews starting",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T06:50:16+00:00",
+      "from": "reviewing",
+      "reason": "Independent review reproduced two shipped metadata vocabulary consumers; extend source-only parity without changing deployed authority",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T07:12:07+00:00",
+      "from": "implementing",
+      "reason": "Review-discovered source vocabulary drift repaired by same sole writer; four new regressions and 45 adjacent tests passed; full revalidation required",
+      "to": "verifying"
     }
   ],
   "route_id": "8ab045fd89e1",
   "schema_version": 1,
   "status": "verifying",
   "title": "Fix issue #162: align the change-spec evidence receipt enum with all seven runtime receipt kinds and add parity and validation regressions.",
-  "updated_at": "2026-09-21T06:29:23+00:00"
+  "updated_at": "2026-09-21T07:12:07+00:00"
 }

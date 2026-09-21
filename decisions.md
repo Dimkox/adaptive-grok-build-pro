@@ -760,3 +760,7 @@ Reading the live target and the closed attempt before spending another provider 
 ### 2026-09-21 — Keep the change-spec receipt enum aligned with runtime registries
 
 For issue #162, compare the schema enum exactly against both runtime receipt sets and validate each kind in a complete spec; this exposed the two missing domain reviews before the additive repair and guards against future drift. Keep draft scaffold timing and receipt authority unchanged because neither caused the vocabulary mismatch.
+
+### 2026-09-21 — Align shipped Trust CI source validators without changing deployed trust
+
+Independent review found that the runner and example holdout still had the old five-kind allowlists, so both now accept the two existing domain review names and retain independent closed sets guarded by parity tests. This keeps source vocabulary consistent while leaving deployed worker and holdout rollout to a separately authorized operation.

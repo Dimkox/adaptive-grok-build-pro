@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from dataclasses import replace
@@ -14,10 +15,13 @@ from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
 from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, AttestationPayload, Checkout, CommandResult, JobRequest
 from adaptive_trust_ci.policy import Policy, PolicyCatalog
+from adaptive_trust_ci import runner as runner_module
 from adaptive_trust_ci.runner import JobRunner, SpecMetadataError, extract_spec_metadata
 from adaptive_trust_ci.signing import Signer, sign_approval, sign_attestation, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
 from adaptive_trust_ci.workspace import GitWorkspace, WorkspaceMutationError
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class FakeGitHub:
@@ -184,6 +188,35 @@ class RunnerTests(unittest.TestCase):
             coverage['unmapped_ids'],
             ['engineering/changes/20260826-a/change-spec.yaml#AC-002'],
         )
+
+    def test_spec_metadata_receipt_kinds_match_schema_and_runtime(self) -> None:
+        sys.path.insert(0, str(ROOT / '.grok-stack'))
+        from adaptive_grok import receipts, workflow_artifacts
+
+        schema = json.loads((ROOT / 'schemas/change-spec.schema.json').read_text(encoding='utf-8'))
+        schema_kinds = set(schema['$defs']['evidence']['properties']['receipt']['enum'])
+        self.assertEqual(runner_module._RECEIPT_KINDS, schema_kinds)
+        self.assertEqual(runner_module._RECEIPT_KINDS, set(receipts.RECEIPT_KINDS))
+        self.assertEqual(runner_module._RECEIPT_KINDS, set(workflow_artifacts.RECEIPT_KINDS))
+
+    def test_spec_metadata_accepts_domain_review_receipts_and_rejects_unknown(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-receipts'
+        path = checkout / 'engineering/changes/20260826-a/change-spec.yaml'
+        path.parent.mkdir(parents=True)
+        rel = path.relative_to(checkout).as_posix()
+        for kind in ('bitrix_review', 'data_review'):
+            with self.subTest(kind=kind):
+                document = {'schema_version': 2, 'acceptance_criteria': [
+                    {'id': 'AC-001', 'statement': 'domain review', 'evidence': [{'receipt': kind}]},
+                ]}
+                path.write_text(json.dumps(document), encoding='utf-8')
+                digest_value, coverage = extract_spec_metadata(checkout, (rel,))
+                self.assertEqual(len(digest_value or ''), 64)
+                self.assertEqual(coverage, {'spec_count': 1, 'criterion_total': 1, 'criterion_mapped': 1, 'unmapped_ids': []})
+        document['acceptance_criteria'][0]['evidence'] = [{'receipt': 'unknown_review'}]
+        path.write_text(json.dumps(document), encoding='utf-8')
+        with self.assertRaisesRegex(SpecMetadataError, 'invalid receipt evidence value'):
+            extract_spec_metadata(checkout, (rel,))
 
     def test_spec_metadata_rejects_malformed_evidence_and_json(self) -> None:
         checkout = Path(self.temp.name) / 'metadata-invalid'

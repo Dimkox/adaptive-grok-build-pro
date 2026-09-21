@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Active issue branch — #162
 
-This isolated successor to PR #170 corrects the typed receipt vocabulary. Read [the change package](engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/brief.md) and `PROJECT_STATE.json.active_issue_work`. Focused tests passed; full PR verification and independent reviews are pending. The inherited #155 publication/evidence record below is historical context.
+This isolated successor to [PR #170](https://github.com/Dimkox/adaptive-grok-build-pro/pull/170) aligns all checked-in change-spec receipt vocabularies. Read [the change package](engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045/brief.md) and `PROJECT_STATE.json.active_issue_work`. Initial schema checks passed; review identified two further source validators, now repaired with 45 affected Trust CI tests passing. The earlier schema-only reviews are retained as historical reports. Full verification and renewed code/test review of the combined change are next; no deployed worker or holdout was changed.
 
 ## Current project state
 

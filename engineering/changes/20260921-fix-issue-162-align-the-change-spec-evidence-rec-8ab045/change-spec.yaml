@@ -11,6 +11,18 @@
           "receipt": "test_review"
         }
       ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Both checked-in Trust CI source metadata validators accept all seven runtime receipt names, reject unknown names, and retain independent closed vocabularies guarded by parity tests.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
     }
   ],
   "approvals": {
@@ -29,6 +41,15 @@
       "evidence": [
         {
           "test": "tests/test_change_spec.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No deployed Trust CI material, signing/approval authority, external service or policy scope changes.",
+      "evidence": [
+        {
+          "receipt": "code_review"
         }
       ]
     }
