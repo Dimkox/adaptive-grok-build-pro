@@ -7,3 +7,5 @@
 ## Metrics and alerts
 
 ## Go/no-go criteria
+
+The red-risk typed specification names `external-write` as its required local operational delegation scope. The explicit user instruction already supplies the bounded operation consent; grok_approve must bind it to the current plan/tree and exact resources. This field neither asserts nor creates a human-signed external Trust CI approval.

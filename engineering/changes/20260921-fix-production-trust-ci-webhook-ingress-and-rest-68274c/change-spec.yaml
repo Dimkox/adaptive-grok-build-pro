@@ -29,7 +29,9 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": [
+      "external-write"
+    ]
   },
   "change_id": "20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
   "contracts": {
