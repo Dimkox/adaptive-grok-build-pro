@@ -1,0 +1,20 @@
+{
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "pull_request": 170,
+  "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+  "base": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "check_run_id": 106268338358,
+  "app_id": 4694114,
+  "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+  "check_conclusion": "success",
+  "completed_at": "2026-09-21T09:04:14Z",
+  "attestation": "9f3759ea-0bde-40d1-988e-d277b9c35c1e",
+  "signer": "0519cf1d47436f2e",
+  "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "merged_at": "2026-09-21T09:06:51Z",
+  "closed_issues": [
+    155,
+    164
+  ],
+  "closed_at": "2026-09-21T09:06:53Z"
+}

@@ -1,0 +1,165 @@
+{
+  "main_base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "candidates": [
+    {
+      "label": "router",
+      "issues": [
+        156
+      ],
+      "head": "08a16f8c5278109c03762082be1d11775ead04b8",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-156",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        ".grok-stack/adaptive_grok/router.py",
+        ".grok-stack/adaptive_grok/workflow_artifacts.py",
+        "tests/test_repo_router.py",
+        "tests/test_workflow_artifacts.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "START_HERE.md",
+        "decisions.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-fix-issue-156-match-short-router-keywords-as-who-db39e7"
+      ],
+      "existing_evidence": "final full PASS and current code/test receipts"
+    },
+    {
+      "label": "receipt_schema",
+      "issues": [
+        162
+      ],
+      "head": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-162",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        "schemas/change-spec.schema.json",
+        "tests/test_change_spec.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-fix-issue-162-align-the-change-spec-evidence-rec-8ab045"
+      ],
+      "existing_evidence": "schema-only final full PASS; separate Trust CI validator successor excluded"
+    },
+    {
+      "label": "consumer_docs",
+      "issues": [
+        153,
+        161
+      ],
+      "head": "ac7c4ff14981ae462de804bd250520a1013cfd68",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-installer",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        ".grok-stack/templates/consumer-AGENTS.md.tmpl",
+        ".grok-stack/templates/consumer-factory-README.md.tmpl",
+        "scripts/install_into.py",
+        "tests/test_installer.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-fix-consumer-installer-documentation-issue-153-v-148c66"
+      ],
+      "existing_evidence": "initial full PASS; review repairs33focused GREEN; renewed code/test PASS; final combined gate pending"
+    },
+    {
+      "label": "fingerprint",
+      "issues": [
+        168
+      ],
+      "head": "3ff6ed291243373871957b62929d40a264522e00",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-fingerprint",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        ".grok-stack/adaptive_grok/util.py",
+        "scripts/grok_verify.py",
+        "tests/test_change_receipts.py",
+        "tests/test_util_fingerprint.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-fix-issue-168-exclude-untracked-agent-scratch-fi-582c39"
+      ],
+      "existing_evidence": "initial full PASS; review repairs19focused GREEN; renewed code/test/security PASS; final combined gate pending"
+    },
+    {
+      "label": "schema_refs",
+      "issues": [
+        147,
+        148
+      ],
+      "head": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-schema",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        ".grok-stack/adaptive_grok/architecture.py",
+        ".grok-stack/adaptive_grok/architecture_fitness.py",
+        "tests/test_architecture_fitness.py",
+        "tests/test_architecture_model.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-fix-schema-comparison-issues-147-and-148-prefer-211805"
+      ],
+      "existing_evidence": "initial full PASS; comparator repair4focused GREEN; renewed code/test PASS; final combined gate pending"
+    },
+    {
+      "label": "migration_prefix",
+      "issues": [
+        166
+      ],
+      "head": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-166",
+      "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+      "product_paths": [
+        "factory/tests/test_execution_persistence_postgres.py"
+      ],
+      "shared_handoff_paths": [
+        "PROJECT_STATE.json",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md"
+      ],
+      "change_packages": [
+        "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e"
+      ],
+      "existing_evidence": "final full PASS; code/test/data receipts current"
+    }
+  ],
+  "additional_documentation_source": {
+    "head": "07b2dd2f103abc3235f38a523a558b60a40d4034",
+    "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
+    "scope": "accepted ingress operation record only, no new host mutation"
+  },
+  "excluded_work": [
+    "issue165 active diagnostic source",
+    "issue163 active migration022 source",
+    "separate162 Trust CI validator successor",
+    "all other retained PR source changes"
+  ]
+}

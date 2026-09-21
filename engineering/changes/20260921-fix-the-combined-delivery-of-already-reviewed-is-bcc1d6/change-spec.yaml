@@ -1,0 +1,154 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Short router keywords use whole Unicode words and bounded optional matched-keyword metadata retains compatibility.",
+      "evidence": [
+        {
+          "test": "tests/test_repo_router.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The change-spec receipt enum matches all runtime evidence kinds and rejects unknown kinds; separate Trust CI validator work is excluded.",
+      "evidence": [
+        {
+          "test": "tests/test_change_spec.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Installed consumer AGENTS and factory README describe actual installed files and resolve links while preserving consumer ownership.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Only proven untracked top-level scratch directories are excluded; tracked, literal-backslash and non-UTF8 paths retain stable fingerprint/JSON behavior.",
+      "evidence": [
+        {
+          "test": "tests/test_util_fingerprint.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Schema comparison prefers concrete paths while closure remains conservative; bounded unique diagnostics retain full traversal, exact overflow and valid declared-ID fallback.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "The shipped PostgreSQL current-prefix upgrade preserves actual001-020 ledger/data/function identity and ACL, applies021, replays idempotently and proves bounded contention recovery.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "All imported product paths match their reviewed blobs unless a separately documented integration correction is required; combined full verification and five selected independent reviews pass before PR delivery.",
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No migration022, active165 feature, extra retained PR fixes, Trust CI validator source patch, deployment, GitHub Actions, manufactured approval or skipped required combined gate.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "SQL001-021, production behavior outside the eight repairs, all Trust CI source/deployed trust material, existing schema success/authority boundaries and immutable released artifacts remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix the combined delivery of already reviewed issue repairs #156 router word matching, #162 evidence receipt schema, #153 and #161 consumer installer documents, #168 safe fingerprint scratch exclusions, #147 and #148 schema reference resolution, and #166 PostgreSQL incremental migration tests. Integrate their exact reviewed commits on main839d3aa2 in one isolated pull request, preserve all security and authority boundaries and unchanged SQL resources, resolve shared handoff files, and run combined verification with independent code, test, security and data reviews. No new behavior beyond those existing bounded fixes, no Trust CI source changes or deployment.",
+    "success_metric": "All eight bounded issue repairs are present byte-for-byte from reviewed candidates and pass together on delivered main, with preserved authority and current exact-head external CI before closure.",
+    "target": "Six reviewed source candidate path sets, retained individual evidence packages and truthful combined delivery handoff."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Candidate blob parity, combined test results and exact-head external App check with issue closure links",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "integration",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}
