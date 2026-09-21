@@ -1,0 +1,143 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "All fifteen existing SQL refusal sites emit exactly the closed plan-specific envelope, with fourteen synchronized SQL/Python reasons and fixed unknown fallback.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_semantic_repair_lifecycle.py"
+        },
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Legacy SQL/JSON null is a bounded refusal; known refusals bypass lifecycle parsing without parser cause, while malformed JSON/documents and mixed envelopes retain corruption classification.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_semantic_repair_lifecycle.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Frozen 018 body hash and reversible byte-exact equality prove that 022 changes only fifteen refusal expressions and CREATE OR REPLACE; all existing resources001-021 remain identical.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Real PostgreSQL early/refused/success/replay/deadline and synchronized two-lookup cases preserve existing transaction semantics, subject/verdict bindings, role boundaries and exception rollback.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_postgres_integration.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Actual recorded001-021 prefix upgrades with exactly022; populated data, target function OID/owner/ACL/effective privileges, migration replay and bounded advisory contention/retry remain verified.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Independent code/test/data reviews and current-tree full verification pass; source rollout documentation explains strict readiness version matching and forward recovery.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No historical migration rewrite, new security authority, provider execution, production SQL, changed timeout/readiness policy, new HTTP route or deadline escalation converted to rejection.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "test": "factory/tests/test_migrations.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "All001-021 bytes, function predicates/locks/ACL, transaction boundary, authority freshness, subject/verdict binding and successful RepairLifecycleResult schema stay unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "test": "factory/tests/test_migrations.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #163: name PostgreSQL semantic_plan_repair precondition rejection reasons in a closed envelope via additive migration022 and a strict Python reader. Keep every predicate, lock, privilege and subject/verdict check unchanged. Add tests for the closed reason set and unchanged SQL clause text. Source code only.",
+    "success_metric": "Every existing plan refusal has a bounded named classification; genuine malformed results remain corruption, and success/persistence/authority semantics are unchanged.",
+    "target": "Additive migration022, semantic_repair.py plan reader, store.request_repair classification and focused offline/PostgreSQL regressions"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Closed StoreError refusal reason versus genuine stored-result corruption, plus real PostgreSQL parity/current-prefix regressions",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "schema_version": 2
+}

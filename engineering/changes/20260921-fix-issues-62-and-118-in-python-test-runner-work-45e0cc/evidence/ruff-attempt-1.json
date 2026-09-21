@@ -1,0 +1,19 @@
+{
+  "command": [
+    "ruff",
+    "check",
+    ".grok-stack/adaptive_grok/_cpu_capacity.py",
+    ".grok-stack/adaptive_grok/python_test_runner.py",
+    "tests/test_python_test_runner.py"
+  ],
+  "head": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "sha256": {
+    ".grok-stack/adaptive_grok/_cpu_capacity.py": "30a5997a93cffa1e54496806402df4e8989467699ea2a58c11184086af42f453",
+    ".grok-stack/adaptive_grok/python_test_runner.py": "5efcc71bc50d447e60ba2626886cb8895ec2808882139cecaef375faf53fbcc0",
+    "tests/test_python_test_runner.py": "c8154aaeef74fcac8985dd476f2d16197ed4a6a8366a39abef5a55fa4f2890f5"
+  },
+  "exit_code": 0,
+  "seconds": 0.02366029300901573,
+  "stdout_base64": "QWxsIGNoZWNrcyBwYXNzZWQhCg==",
+  "stderr_base64": ""
+}

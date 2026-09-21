@@ -1,0 +1,24 @@
+{
+  "status": "focused_PASS_full_and_renewed_reviews_pending",
+  "red": "review-repair-red.log.json",
+  "green": "review-repair-green-1.log.json",
+  "green_exit": 0,
+  "green_elapsed_seconds": 15.900929602008546,
+  "green_tests": 28,
+  "green_raw_sha256": "80b85b264eb01353f528d19a8d7224139beb63f1b4c1b12bb30f94e8f5b10c21",
+  "product_repair_paths": [
+    ".grok-stack/adaptive_grok/package_status.py"
+  ],
+  "regression_paths": [
+    "tests/test_package_status.py"
+  ],
+  "unchanged_boundaries": [
+    "canonical parser",
+    "shared serializer",
+    "receipt and merge authority"
+  ],
+  "original_failed_reports": [
+    "code-review-first.md",
+    "test-review-first.md"
+  ]
+}

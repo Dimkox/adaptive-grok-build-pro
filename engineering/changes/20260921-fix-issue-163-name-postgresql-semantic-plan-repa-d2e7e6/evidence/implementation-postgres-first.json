@@ -1,0 +1,16 @@
+{
+  "command": [
+    "env",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "python3",
+    "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/run-focused-postgres.py"
+  ],
+  "started_at": "2026-09-21T09:22:17.980597+00:00",
+  "completed_at": "2026-09-21T09:23:38.600829+00:00",
+  "exit_code": 1,
+  "duration_seconds": 80.620239,
+  "log": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/postgres-focused-first.log",
+  "durable_transcript": "implementation-postgres-first-transcript.json",
+  "raw_log_sha256": "78e7fb4a626e883934fbea43704bb9c75023e890ba50e7d21be10c53c63e94aa",
+  "classification": "11 passed; deadline fixture rejected its390-second execution plan against20-second task limit before planning SQL"
+}

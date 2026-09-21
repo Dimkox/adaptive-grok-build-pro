@@ -1,0 +1,84 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "base_fingerprint": "6f2cb0fe07bd5f00b3d1fe58df5b9f494fad948f57f7cd2cd5621dd4477448f0",
+  "complexity": "standard",
+  "created_at": "2026-09-21T10:17:23+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=data,api",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "806a83c58b91",
+  "schema_version": 1,
+  "session_id": "wave-163-main839-delivery-20260921",
+  "status": "routed",
+  "task": "Fix issue #163: name PostgreSQL semantic_plan_repair precondition rejection reasons in a closed envelope via additive migration022 and a strict Python reader. Keep every predicate, lock, privilege and subject/verdict check unchanged. Add tests for the closed reason set and unchanged SQL clause text. Source code only.",
+  "task_domains": [
+    "data"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "data-change"
+  ],
+  "write_agent": "data_implementer"
+}

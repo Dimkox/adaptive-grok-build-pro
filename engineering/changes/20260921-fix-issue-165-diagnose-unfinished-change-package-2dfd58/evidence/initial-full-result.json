@@ -1,0 +1,97 @@
+{
+  "run": {
+    "head": "738ea719d91cf439d3332ce621418dc994e7365b",
+    "started_at": "2026-09-21T09:11:56.780162+00:00",
+    "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+    "exit_code": 1,
+    "finished_at": "2026-09-21T09:20:25.174318+00:00"
+  },
+  "status": "fail",
+  "fingerprint": "1956e5af2f537679f257173bec09dbc66e502b7dfc0605c85e06af18a030b578",
+  "raw_report_sha256": "61773d18054a768f3e3b621ef0a8eb90d2fbabe6ad521bab84c99c2d998636c0",
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "fail",
+      "summary": "2/4 checks passed; bases=route:90078959ff816068af374ad42f4bb80fdbaec866,pr-target:839d3aa26bc90417424d814ee48d8b5cd3be367e"
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "2 specs checked; exempt=False"
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass"
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current"
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured"
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets"
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "0 contracts checked"
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings"
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=111.888"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=1.556"
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable"
+    }
+  ],
+  "only_failure": "git-diff-check: three trailing-whitespace lines in raw implementation-red.log; no product check failed",
+  "correction": "Lossless UTF-8 JSON log envelopes; raw byte hashes and content preserved; no product change",
+  "final_verification": "pending"
+}

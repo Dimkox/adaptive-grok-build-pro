@@ -1,0 +1,75 @@
+{
+  "observed_at": "2026-09-21T10:19:38.656065+00:00",
+  "route": "806a83c58b91",
+  "base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "previous_route": "d2e7e68e7bd5",
+  "previous_tested_head": "b4ff8e3e7a30ba8c85679c2763f209452be5d420",
+  "source_unchanged": [
+    {
+      "path": "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql",
+      "source_blob": "25a392da0b637931fcfc3cdef81b750ee963b9e7",
+      "sha256": "3bd08d907c538ab3964727fdca91eb35565821889d1999da8fcba1278613267d"
+    },
+    {
+      "path": "factory/src/adaptive_factory/semantic_repair.py",
+      "source_blob": "c09ac16d04ae7057532e8524cc1bc886636d0b70",
+      "sha256": "db14245c0d25198936e7b468e81fe013e344ce6bf47b4599eab299d41766754a"
+    },
+    {
+      "path": "factory/src/adaptive_factory/store.py",
+      "source_blob": "7f38ba68201f9b3d0377d9bfa36d34d9762c33a3",
+      "sha256": "5c61541fda124402d48fa81fc9550d610a3923263a2fd10e6fcbc0c5845f7411"
+    },
+    {
+      "path": "factory/tests/test_execution_persistence_postgres.py",
+      "source_blob": "069af430af09598fe70d81a17e64a20a0bd74369",
+      "sha256": "62ad6b546dc4e6c8f0a7f2b6d0023fe2178b254d97bf5282481474db797ca47b"
+    },
+    {
+      "path": "factory/tests/test_migrations.py",
+      "source_blob": "22e4dca172e002cb1fc294c00ff1a814aa302c14",
+      "sha256": "7e6cdf9fcb5f135021b6e3369f4f68165f9dd910ca958c3a25ca0d1974b4348c"
+    },
+    {
+      "path": "factory/tests/test_postgres_integration.py",
+      "source_blob": "40552c2aff91d582aee49d029a01aedd6a78b726",
+      "sha256": "fe27ab926491a2fb476bd0de938c4d4c4a4b87d8243ae89f5520c6757735f3f1"
+    },
+    {
+      "path": "factory/tests/test_semantic_repair_lifecycle.py",
+      "source_blob": "6d6d1eae77bfac65502e34eb41c48504579ce04c",
+      "sha256": "cfd15a6e173b38e196dcd522f14a9250ae6e48a2a06ecaaf0fdf9cf89955061e"
+    }
+  ],
+  "adopted_analyses": [
+    {
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-architect.md",
+      "sha256": "ef33fec56666f20de9a106b9bf1701a323604cf7c7ab94222d2cdb0d93d2810a"
+    },
+    {
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-data_architect.md",
+      "sha256": "5d2f66771b640cee08644c65ae67ca2c280f0a735376158129eec6d98b46bc4c"
+    },
+    {
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-docs_researcher.md",
+      "sha256": "e0e77997a58385966dec57b21b46a741226e4d5047a68a86e4a1c89d8411ec20"
+    },
+    {
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-integration_architect.md",
+      "sha256": "a72df3350b6061a752995941ebe9cd1d6cb346aa19fb590d02f1587de19251c1"
+    },
+    {
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-repo_explorer.md",
+      "sha256": "6057754d84a962c1cd7939ae1570dc214c0bb3e046adc30fc93ecfc44a782582"
+    }
+  ],
+  "policy_paths_unchanged": [
+    "architecture",
+    "trust-ci",
+    "governance",
+    "VERSION",
+    "packages"
+  ],
+  "analysis_noop_reason": "Administrative route continuation only; seven product paths byte-identical to previous implementation and full-run input. AGENTS.md skips duplicate analysis for no product change. Original full remains failed; fresh full/reviews mandatory.",
+  "prior_failure": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/full-initial-report.json"
+}

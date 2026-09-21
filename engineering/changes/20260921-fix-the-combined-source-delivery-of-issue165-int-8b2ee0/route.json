@@ -1,0 +1,109 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "base_fingerprint": "50481cc75b90915455901c7504f0c186c895f24dddd039e95b2d409130fe0454",
+  "complexity": "high-risk",
+  "created_at": "2026-09-21T11:11:16+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "bugfix",
+  "matched_keywords": {
+    "api": [
+      "api"
+    ],
+    "data": [
+      "database",
+      "postgres"
+    ],
+    "security": [
+      "security"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk intent/domain: bugfix",
+    "intent=bugfix",
+    "domains=data,api,security",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "8b2ee0533ba5",
+  "schema_version": 1,
+  "session_id": "factory-tooling-batch-20260921",
+  "status": "routed",
+  "task": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001\u2013021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
+  "task_domains": [
+    "data",
+    "api",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}

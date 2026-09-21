@@ -1,0 +1,136 @@
+{
+  "schema_version": 2,
+  "change_id": "20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Expose interrupted or incomplete local engineering work through cheap status and durable checkpoints.",
+    "success_metric": "Bounded fixtures expose incomplete packages and zero task commits without false crash/pass claims or mutation.",
+    "target": "All acceptance fixtures and existing status/change/review contracts pass; no authority changes."
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Bounded safe inspection distinguishes legitimate draft omissions from invalid or incomplete active packages, without following links or scanning arbitrary logs.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Status retains existing JSON fields and adds package and Git diagnostics without creating runtime directories, bytecode, index refreshes or repository changes.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Dirty product work at zero task commits is visible with exact named checkpoint or route baseline; missing or failed Git evidence remains unknown, including unusual filenames.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Explicit current template or mandatory-obligation omissions are visible, historical quoted examples are preserved, and not_run with reason accounts for work without supplying passing evidence.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Start and first implementing transition record durable immutable-start and WIP observations while repeated starts preserve history; no archive migration or automatic publication occurs.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Stop remains warning-only, failed reviews remain recordable, pass-review diagnostics have no circular receipt prerequisites, and existing receipt/external authority semantics remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Existing status keys, fail/pass receipt meaning, delegated grants and external Trust CI merge authority retain their semantics.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No remote writes, arbitrary worktree scans, secret reads, symlink escapes, invented baseline or crash certainty, archive rewrites, or pass claims from not_run accounting.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Typed completeness findings, explicit Git baseline source, durable checkpoint rows and focused regression outcomes.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

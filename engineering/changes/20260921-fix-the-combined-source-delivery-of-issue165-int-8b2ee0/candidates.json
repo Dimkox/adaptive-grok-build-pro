@@ -1,0 +1,86 @@
+{
+  "created_at": "2026-09-21T11:09:40.743699+00:00",
+  "base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+  "status": "Scoping only; one selected writer may import after PR173 actually delivers and all five analyses are adopted.",
+  "candidates": [
+    {
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-165",
+      "head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "paths": [
+        ".grok-stack/adaptive_grok/change.py",
+        ".grok-stack/adaptive_grok/package_status.py",
+        ".grok-stack/adaptive_grok/state.py",
+        ".grok-stack/templates/change/evidence/README.md",
+        "scripts/grok_review.py",
+        "scripts/grok_status.py",
+        "tests/test_package_status.py",
+        "docs/package-status.md",
+        ".grok/hooks/stop_gate.py"
+      ],
+      "sha256": {
+        ".grok-stack/adaptive_grok/change.py": "99586b99387285408f48dbb68b52e20a768c8551e872d3bb4b84d6c62befb886",
+        ".grok-stack/adaptive_grok/package_status.py": "b438510389762f4d62ea3dbb0f4d235580e6b1baa7c7fb7ee1d6f477ad912aa6",
+        ".grok-stack/adaptive_grok/state.py": "7dd3a2acd933f7b4240f44248b773715d30931385e62a2d8c9ca6db89a3058c9",
+        ".grok-stack/templates/change/evidence/README.md": "461b381c637dc0c5cf1ce7f82a2f4d4f1cc39f142f9f19fb473b737391f340dd",
+        "scripts/grok_review.py": "11b2bd54c307867d775b80b227fda3298722d3cddaa5819b6287458d6f4c46b1",
+        "scripts/grok_status.py": "7bd6e8fd4268dde34c88705a6ed7fcf12dbd9b4b3ff9200ef9191fda44ec4281",
+        "tests/test_package_status.py": "87394eaf15e708a06a8b42aa8b25f4b93352ab25ee6e3c31d833eb33fd67d1b0",
+        "docs/package-status.md": "8058a0d121293e822a37987d76e53bd108b44c6006f0a0a9da334399d48484fc",
+        ".grok/hooks/stop_gate.py": "7be3f2be3fb9ea1e581344388a40da84c3a092945e3fb1a51a024847ad0bf48b"
+      }
+    },
+    {
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-163",
+      "head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "paths": [
+        "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql",
+        "factory/src/adaptive_factory/semantic_repair.py",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_execution_persistence_postgres.py",
+        "factory/tests/test_migrations.py",
+        "factory/tests/test_postgres_integration.py",
+        "factory/tests/test_semantic_repair_lifecycle.py"
+      ],
+      "sha256": {
+        "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql": "3bd08d907c538ab3964727fdca91eb35565821889d1999da8fcba1278613267d",
+        "factory/src/adaptive_factory/semantic_repair.py": "db14245c0d25198936e7b468e81fe013e344ce6bf47b4599eab299d41766754a",
+        "factory/src/adaptive_factory/store.py": "5c61541fda124402d48fa81fc9550d610a3923263a2fd10e6fcbc0c5845f7411",
+        "factory/tests/test_execution_persistence_postgres.py": "62ad6b546dc4e6c8f0a7f2b6d0023fe2178b254d97bf5282481474db797ca47b",
+        "factory/tests/test_migrations.py": "7e6cdf9fcb5f135021b6e3369f4f68165f9dd910ca958c3a25ca0d1974b4348c",
+        "factory/tests/test_postgres_integration.py": "fe27ab926491a2fb476bd0de938c4d4c4a4b87d8243ae89f5520c6757735f3f1",
+        "factory/tests/test_semantic_repair_lifecycle.py": "cfd15a6e173b38e196dcd522f14a9250ae6e48a2a06ecaaf0fdf9cf89955061e"
+      }
+    },
+    {
+      "worktree": "/home/pall/grok-projects/adaptive-grok-build-runner-capacity",
+      "head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "issues": [
+        62,
+        118
+      ],
+      "paths": [
+        ".grok-stack/adaptive_grok/_cpu_capacity.py",
+        ".grok-stack/adaptive_grok/python_test_runner.py",
+        "tests/test_python_test_runner.py"
+      ],
+      "sha256": {
+        ".grok-stack/adaptive_grok/_cpu_capacity.py": "30a5997a93cffa1e54496806402df4e8989467699ea2a58c11184086af42f453",
+        ".grok-stack/adaptive_grok/python_test_runner.py": "5efcc71bc50d447e60ba2626886cb8895ec2808882139cecaef375faf53fbcc0",
+        "tests/test_python_test_runner.py": "c8154aaeef74fcac8985dd476f2d16197ed4a6a8366a39abef5a55fa4f2890f5"
+      }
+    }
+  ],
+  "exclusions": [
+    "Trust CI issue158 stays separate",
+    "No deployed image/policy/data/service operation",
+    "No authority reuse or issue closure before delivery"
+  ],
+  "new_route": "8b2ee0533ba5",
+  "source_branch_head": "23984e55560c6d559a46445061f10331ca05bcf9"
+}

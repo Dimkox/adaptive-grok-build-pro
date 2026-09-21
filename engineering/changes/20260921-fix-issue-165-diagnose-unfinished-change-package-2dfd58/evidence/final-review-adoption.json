@@ -1,0 +1,9 @@
+{
+  "reviewed_head": "a946f3e3ac92dfd60ece94437b20406e2edd3959",
+  "source_full_tested_head": "bca409d10d01663ee90dbd083089f41edad0b2bd",
+  "reviews": {
+    "code-review.md": "8168b586091267233caa145b8e1d1b95fb118e348ae0a933bfb35e5c79c2d7ae",
+    "test-review.md": "ee0891d7dfadc701ff50386e265c8ec15bf17c089bf8ceb30c97f39eaf41042f"
+  },
+  "post_review_delta": "Only guide clarity, evidence accounting and current handoff. Product implementation/tests unchanged; final current fingerprint validation remains mandatory."
+}

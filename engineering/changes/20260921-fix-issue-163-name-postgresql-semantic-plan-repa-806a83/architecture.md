@@ -1,0 +1,5 @@
+# Architecture and adopted design
+
+The PostgreSQL function remains the authority; migration022 changes only the fifteen refusal expressions and CREATE OR REPLACE while preserving the frozen018 function body after reversing those substitutions. Historical migrations001–021, roles, predicates, locks, verdict bindings and successful lifecycle results remain identical. A closed plan-specific one-key refusal envelope is classified after transaction completion in store.py.
+
+Adopt the [complete design](../20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/design.md) and its [data analysis](../20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-data_architect.md) without changing behavior. Source identity for all seven product/test paths and unchanged policy is recorded in [the adoption manifest](evidence/current-main-adoption.json). The same data_implementer owns any repair. Current-main routing changes no architecture model, threshold, policy or historical failure.

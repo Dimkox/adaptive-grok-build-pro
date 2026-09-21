@@ -1,0 +1,7 @@
+{
+  "head": "bca409d10d01663ee90dbd083089f41edad0b2bd",
+  "started_at": "2026-09-21T10:17:57.745883+00:00",
+  "command": "GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json",
+  "exit_code": 0,
+  "finished_at": "2026-09-21T10:26:15.065083+00:00"
+}

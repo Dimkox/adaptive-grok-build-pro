@@ -1,0 +1,19 @@
+{
+  "command": [
+    "env",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "python3",
+    "-m",
+    "unittest",
+    "factory.tests.test_semantic_repair_lifecycle",
+    "factory.tests.test_migrations",
+    "-v"
+  ],
+  "started_at": "2026-09-21T09:21:59.318004+00:00",
+  "completed_at": "2026-09-21T09:22:00.434932+00:00",
+  "exit_code": 0,
+  "duration_seconds": 1.116933,
+  "log": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/offline-green.log",
+  "durable_transcript": "implementation-offline-green-transcript.json",
+  "raw_log_sha256": "0052647ce78025189e2ca136cc0d0f36bc945b9f4728ac6d9c7c5f1931779527"
+}

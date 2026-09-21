@@ -1,0 +1,17 @@
+{
+  "command": [
+    "env",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "python3",
+    "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/run-focused-postgres.py",
+    "deadline-only"
+  ],
+  "started_at": "2026-09-21T09:24:46.116480+00:00",
+  "completed_at": "2026-09-21T09:25:22.883291+00:00",
+  "exit_code": 0,
+  "duration_seconds": 36.76683,
+  "log": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/postgres-deadline-green.log",
+  "durable_transcript": "implementation-postgres-deadline-green-transcript.json",
+  "raw_log_sha256": "fb36dacf49a852cf747390699c2beef1e5b56a08e195dea1c98d70b4e8faad0c",
+  "classification": "deadline scenario passed after matching the fixture stage plan to the task budget; preflight and two real restarts passed"
+}

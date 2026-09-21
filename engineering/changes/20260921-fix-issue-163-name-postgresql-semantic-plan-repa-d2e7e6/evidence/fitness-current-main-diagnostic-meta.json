@@ -1,0 +1,17 @@
+{
+  "command": [
+    "python3",
+    "scripts/grok_architecture.py",
+    "fitness",
+    "--base",
+    "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+    "--worktree",
+    "--pre-risk",
+    "yellow",
+    "--json"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 8.57597100600833,
+  "observed_at": "2026-09-21T10:10:12.526686+00:00",
+  "scope": "Diagnostic comparison only, not replacement route verification or receipt"
+}
