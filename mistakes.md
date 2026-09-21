@@ -1413,3 +1413,5 @@ The issue166 focused wrapper reused nonce and exact-container binding but chose 
 
 ## 2026-09-21: Use the actual Git inventory command grammar
 The batch identity collector initially reused diff-specific glob pathspec syntax with ls-tree, which does not support it. Reading a NUL-delimited tree inventory and filtering SQL suffixes preserved the intended complete source comparison without product edits.
+
+- 2026-09-21: Replacing the active-delivery bootstrap paragraph discarded the still-required historical PR19 fact, while a new red-risk spec retained the empty approval-scope scaffold. Existing handoff/spec checks caught both after an unnecessarily long full run; preserve historical facts and run those bounded checks immediately after metadata edits. Product and test source stayed unchanged.

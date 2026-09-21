@@ -1906,7 +1906,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T09:25:49.745618+00:00",
+    "observed_at": "2026-09-21T09:42:23.229677+00:00",
     "route_id": "bcc1d645c438",
     "branch": "fix/reviewed-issues-batch-20260921",
     "issues": [
@@ -1923,8 +1923,8 @@
     "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
     "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "exact_imports_complete_initial_combined_full_pending",
-    "next_action": "Finish exact imports and current handoff; run full combined PR verifier in coordinated CPU lane, obtain all five independent reviews, freeze final evidence and publish successor PR. Keep171/172 open until successor delivery.",
+    "status": "initial_full_failed_coordinator_docs_corrected_repeat_pending",
+    "next_action": "Repeat full gate after coordinator-only scope/handoff correction, then all five selected independent reviews and exact-head PR delivery.",
     "excluded_successors": [
       "active165 interruption-status source",
       "active163 migration022 source",
@@ -1982,7 +1982,9 @@
       172
     ],
     "user_delegation": "делай всё и закрывай; fixes/delivery/verified closures, with exact operational grants and external trust gates retained",
-    "next_action": "Combined eight-issue delivery plus isolated165/163 continuation; follow dated queue for retained PRs and external dependencies."
+    "next_action": "Combined eight-issue delivery plus isolated165/163 continuation; follow dated queue for retained PRs and external dependencies.",
+    "closed_issues_scope": "current delivery wave",
+    "current_closed_issues_all_time": 14
   },
   "active_ci_ingress_operation": {
     "branch": "fix/trust-ci-webhook-bridge",

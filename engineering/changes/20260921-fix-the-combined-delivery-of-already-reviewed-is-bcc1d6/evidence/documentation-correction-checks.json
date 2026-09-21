@@ -1,0 +1,39 @@
+[
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "tests.test_project_state",
+      "-v"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.2705839330010349,
+    "observed_at": "2026-09-21T09:42:23.680951+00:00",
+    "output": "test_adversarial_m2_m3_ancestry_is_rejected (tests.test_project_state.ProjectStateTests.test_adversarial_m2_m3_ancestry_is_rejected) ... ok\ntest_adversarial_m2_m3_commits_are_rejected (tests.test_project_state.ProjectStateTests.test_adversarial_m2_m3_commits_are_rejected) ... ok\ntest_adversarial_pr21_base_head_and_status_are_rejected (tests.test_project_state.ProjectStateTests.test_adversarial_pr21_base_head_and_status_are_rejected) ... ok\ntest_current_epoch_and_app_are_consistent_in_handoff_documents (tests.test_project_state.ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents) ... ok\ntest_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates (tests.test_project_state.ProjectStateTests.test_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates) ... ok\ntest_local_git_objects_corrobate_durable_stack_proof_when_available (tests.test_project_state.ProjectStateTests.test_local_git_objects_corrobate_durable_stack_proof_when_available) ... ok\ntest_m2_m3_stack_merge_parent_proof_is_self_contained (tests.test_project_state.ProjectStateTests.test_m2_m3_stack_merge_parent_proof_is_self_contained) ... ok\ntest_m4_handoff_does_not_make_an_unconditional_stale_package_claim (tests.test_project_state.ProjectStateTests.test_m4_handoff_does_not_make_an_unconditional_stale_package_claim) ... ok\ntest_m4_roadmap_matches_typed_state_machine_and_local_scope (tests.test_project_state.ProjectStateTests.test_m4_roadmap_matches_typed_state_machine_and_local_scope) ... ok\ntest_m4_source_implementation_is_distinct_from_verification_review_and_delivery (tests.test_project_state.ProjectStateTests.test_m4_source_implementation_is_distinct_from_verification_review_and_delivery) ... ok\ntest_post_publication_landing_and_archived_candidate_are_recorded (tests.test_project_state.ProjectStateTests.test_post_publication_landing_and_archived_candidate_are_recorded) ... ok\ntest_project_state_has_independent_milestone_axes_and_truthful_facts (tests.test_project_state.ProjectStateTests.test_project_state_has_independent_milestone_axes_and_truthful_facts) ... ok\ntest_retained_33_entry_records_the_delivered_retake (tests.test_project_state.ProjectStateTests.test_retained_33_entry_records_the_delivered_retake) ... ok\ntest_runtime_observations_are_source_bound_without_promoting_qualification (tests.test_project_state.ProjectStateTests.test_runtime_observations_are_source_bound_without_promoting_qualification) ... ok\ntest_work_inventory_preserves_open_and_unresolved_continuation_work (tests.test_project_state.ProjectStateTests.test_work_inventory_preserves_open_and_unresolved_continuation_work) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.178s\n\nOK\n"
+  },
+  {
+    "command": [
+      "python3",
+      "scripts/grok_spec.py",
+      "validate",
+      "--gate",
+      "--json"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.0856934320036089,
+    "observed_at": "2026-09-21T09:42:23.766710+00:00",
+    "output": "{\n  \"coverage\": {\n    \"criterion_mapped\": 7,\n    \"criterion_total\": 7,\n    \"evidence_counts\": {\n      \"attestation\": 0,\n      \"production_signal\": 0,\n      \"receipt\": 7,\n      \"test\": 7\n    },\n    \"mapped_ids\": [\n      \"AC-001\",\n      \"AC-002\",\n      \"AC-003\",\n      \"AC-004\",\n      \"AC-005\",\n      \"AC-006\",\n      \"AC-007\"\n    ],\n    \"spec_count\": 1,\n    \"unmapped_ids\": []\n  },\n  \"digest\": \"4adc49f7c8d60ab558f7c4b6fd2d72513645f559816d727e6892e5b831ce33ae\",\n  \"errors\": [],\n  \"fingerprint\": \"b1a22c5d2b92545201adf4ad108cca06ea07bfa0727b3ab4833025c405d2c5c2\",\n  \"ok\": true,\n  \"path\": \"engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/change-spec.yaml\",\n  \"profile\": \"gate\"\n}\n"
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 0.016444367996882647,
+    "observed_at": "2026-09-21T09:42:23.783196+00:00",
+    "output": ""
+  }
+]

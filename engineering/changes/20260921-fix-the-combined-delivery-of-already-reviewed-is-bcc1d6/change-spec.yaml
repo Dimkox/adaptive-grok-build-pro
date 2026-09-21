@@ -86,7 +86,9 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": [
+      "external-write"
+    ]
   },
   "change_id": "20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
   "contracts": {

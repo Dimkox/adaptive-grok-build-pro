@@ -1,0 +1,13 @@
+{
+  "command": [
+    "python3",
+    "scripts/grok_spec.py",
+    "validate",
+    "--gate",
+    "--json"
+  ],
+  "exit_code": 1,
+  "wall_seconds": 0.08059913200850133,
+  "observed_at": "2026-09-21T09:41:19.438358+00:00",
+  "output": "{\n  \"coverage\": {\n    \"criterion_mapped\": 7,\n    \"criterion_total\": 7,\n    \"evidence_counts\": {\n      \"attestation\": 0,\n      \"production_signal\": 0,\n      \"receipt\": 7,\n      \"test\": 7\n    },\n    \"mapped_ids\": [\n      \"AC-001\",\n      \"AC-002\",\n      \"AC-003\",\n      \"AC-004\",\n      \"AC-005\",\n      \"AC-006\",\n      \"AC-007\"\n    ],\n    \"spec_count\": 1,\n    \"unmapped_ids\": []\n  },\n  \"digest\": \"1ea86c3ee7767a91d9d848993c6a40c734487390e883f7c7cfb170e8dc5bc28f\",\n  \"errors\": [\n    \"/home/pall/grok-projects/adaptive-grok-build-reviewed-batch/engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/change-spec.yaml: red-risk requires approvals.required_scopes\"\n  ],\n  \"ok\": false,\n  \"path\": \"engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/change-spec.yaml\",\n  \"profile\": \"gate\"\n}\n"
+}

@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-09-21T09:42:23.226409+00:00",
+  "head": "6465c839d57a874d1e6a9af5acfc9cadb0cabba4",
+  "tree_fingerprint": "2764d718f8d58abb4f3436fabb2b52bf4b18ad5c30c4702b5687f18b6e2d8417",
+  "status": "FAIL",
+  "full_report_sha256": "1cc6506e6030ff320b42a2cfe418b8268c6ee9cd22456abdbd0aa06d7dfe0687",
+  "failures": [
+    "Typed red-risk spec omitted the required external-write scope. This does not downgrade the route or replace exact grants/external approvals.",
+    "START_HERE active-delivery paragraph replacement dropped the historical delivered PR19 note. Trust CI epoch/App and release facts remained correct.",
+    "Coverage was invalidated by the unsuccessful root suite; measured80.28percent alone is not a passing test run."
+  ],
+  "passed": {
+    "root_tests": 827,
+    "root_subtests": 1268,
+    "factory_postgres_tests": 782,
+    "factory_postgres_conditional_skips": 2
+  },
+  "repair_scope": "Coordinator docs only; original19 product/test paths remain exact reviewed source bytes. Full repeat and five reviews pending."
+}
