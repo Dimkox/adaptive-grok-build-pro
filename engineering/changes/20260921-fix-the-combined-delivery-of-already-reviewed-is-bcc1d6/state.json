@@ -37,11 +37,17 @@
       "from": "verifying",
       "reason": "Combined full verifier passed on4bbbad34 after docs-only corrections; dispatch all five route-selected independent reviews on unchanged19 product paths.",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-09-21T10:06:44+00:00",
+      "from": "reviewing",
+      "reason": "Independent code/test/security reviews confirm security-term regression in short-word auth matching; return to same integration writer for measured regression and bounded alias repair. Preserve full PASS and failed reviews as historical evidence.",
+      "to": "implementing"
     }
   ],
   "route_id": "bcc1d645c438",
   "schema_version": 1,
-  "status": "reviewing",
+  "status": "implementing",
   "title": "Fix the combined delivery of already reviewed issue repairs #156 router word matching, #162 evidence receipt schema, #153 and #161 consumer installer documents, #168 safe fingerprint scratch exclusions, #147 and #148 schema reference resolution, and #166 PostgreSQL incremental migration tests. Integrate their exact reviewed commits on main839d3aa2 in one isolated pull request, preserve all security and authority boundaries and unchanged SQL resources, resolve shared handoff files, and run combined verification with independent code, test, security and data reviews. No new behavior beyond those existing bounded fixes, no Trust CI source changes or deployment.",
-  "updated_at": "2026-09-21T09:54:36+00:00"
+  "updated_at": "2026-09-21T10:06:44+00:00"
 }

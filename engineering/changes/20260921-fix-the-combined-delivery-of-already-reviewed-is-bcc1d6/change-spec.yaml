@@ -2,7 +2,7 @@
   "acceptance_criteria": [
     {
       "id": "AC-001",
-      "statement": "Short router keywords use whole Unicode words and bounded optional matched-keyword metadata retains compatibility.",
+      "statement": "Short router abbreviations use whole Unicode words while legitimate security terminology retains required security domains, high risk, skills, reviews, evidence and gates; bounded optional matched-keyword metadata retains compatibility.",
       "evidence": [
         {
           "test": "tests/test_repo_router.py"

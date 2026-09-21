@@ -1,0 +1,73 @@
+# Independent test review — FAIL
+
+Reviewer: selected `test_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through head `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` in `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`. This reviewer did not implement the change. Review is local preflight evidence, not external merge authority.
+
+One blocking finding remains: the router regression matrix misses legitimate security terminology that loses its domain and required controls. The recorded combined suite passed, but does not establish compatibility for that input class. Return the repair and regression tests to the sole write owner, then repeat affected verification and independent review.
+
+## Finding T1 — P1: security longforms lose required routing controls without a failing test
+
+Sources: `.grok-stack/adaptive_grok/router.py:37`, `:229`, `:264`, `:373`, `:406`, `:429`, `:436`; `tests/test_repo_router.py:70` and `:182`.
+
+The new short-token branch applies word boundaries to `auth`, while the security vocabulary has no explicit `authentication`, `authorization` or `authorisation` entry. In a neutral repository with default routing, inspection of the old substring scorer and the new matcher establishes this change for isolated prompts such as `Fix authentication` and `Fix authorization`:
+
+| Property | Base behavior | Reviewed head behavior |
+| --- | --- | --- |
+| Task domain | `security`, through `auth` | No task domain |
+| Risk / complexity | `high` / `high-risk` | `low` / `micro` |
+| Security workflow skill | Required | Absent |
+| Security review agent and receipt | Required | Absent |
+| `scope_and_design_approval` | Required | Absent |
+
+The unchanged high-risk matcher already requires whole words, so it does not recover these longforms after the domain match disappears. This is a loss of legitimate review/gate behavior, contrary to the original #156 requirement that legitimate profiles and review requirements remain intact. `authn` and `authz` have the same newly uncovered boundary; the short Russian `роль` stem also stops recognizing `ролью`. `OAuth` and `permissions` remain controls because their configured terms are longer than four characters, and can mask the problem when added to an otherwise failing prompt.
+
+The new standalone positive matrix exercises UI/API/REST/SQL/D7/1C/RAG, but omits security terminology. The existing AI/security test contains several independent security signals, so it cannot detect this loss. Add isolated compatibility cases with no incidental security, integration or repository-domain signal. Assert task domain, high risk, workflow skill, security review agent, required receipt and scope gate, alongside explicit `auth`/`OAuth` controls and unrelated `author`/`authority` negatives. Preserve the intended embedded-short-token refusals while recognizing the supported security forms explicitly. These are static findings; this reviewer did not execute a reproduction or manufacture RED evidence.
+
+## Scope and read-only identity checks
+
+Read the actual 19 product/test-path diff, surrounding implementation, route, typed specification, candidate manifest, handoff and historical RED/GREEN/repair records. Six independent `git diff --exit-code <candidate> <reviewed-head> -- <manifest paths>` comparisons all returned zero, covering every candidate path. A further comparison of those paths against the working tree returned zero. The inherited candidate defects therefore remain relevant to this exact combined source, rather than being assumed fixed by integration.
+
+Read-only comparison of `4bbbad340fee79e2d2e9d2598a6f58daa6c5b541..4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` shows only `PROJECT_STATE.json`, `START_HERE.md` and active-package evidence/state/task documentation changed after the full run. Base-to-head comparisons returned zero for `trust-ci/`, `factory/src/adaptive_factory/`, `.github/workflows/` and architecture model/rules/generated views. No source, tests, receipt, grant or commit was changed by this reviewer. No tests, lint, compilation, Docker, database command, runtime probe or subagent was executed; the parent owns the shared verification lane. The only review write is this report.
+
+## What the existing assertions establish
+
+| Area | Inspected tests and evidence | Assessment |
+| --- | --- | --- |
+| #156 router and runtime reader | `tests/test_repo_router.py:46`, `:59`, `:70`, `:92`, `:106`, `:119`; `tests/test_workflow_artifacts.py:36`, `:50` | Archived #155 wording, embedded token negatives, punctuation/case/Unicode neighbors, phrase/stem ordering, repository-domain fallback, and route/archive/change persistence are substantive controls. Reader tests accept the absent/empty/new optional field and reject malformed/oversized/duplicate/non-NFC metadata and unknown top-level keys. T1 remains uncovered. |
+| #162 evidence enum | `tests/test_change_spec.py:98`, `:107`, `:117` | Exact parity with both runtime registries, real complete-spec validation for every registered kind and an unknown-kind rejection cover the additive schema change. They do not validate the separate Trust CI vocabulary consumers. |
+| #153/#161 consumer documentation | `tests/test_installer.py:81`, `:95`, `:128`, `:148`, `:173`, `:756`, `:817` | Materialized generic/Bitrix documents are checked against real installed destinations, with missing/escaping-link controls. Deterministic output bytes and manifest hashes, explicit template inputs, installed generic-source reuse, read-only planning, byte-preserved user text, kept-local conflict, descriptor safety and a valid unrelocated positive control cover the repaired boundaries. The relocation refusal now requires the intended diagnostic, rather than accepting a missing-template error. |
+| #168 fingerprint and receipts | `tests/test_util_fingerprint.py:48`, `:60`, `:68`, `:81`, `:93`, `:110`, `:120`, `:127`, `:141`, `:163`, `:176`, `:187`, `:201`, `:216`, `:225`, `:245`, `:263`; `tests/test_change_receipts.py:585`, `:607` | Real Git fixtures cover scratch churn, immediate staging, tracked noise edits/deletions, forced tracking, recreated staged deletion, both rename endpoints, base-relative deletion, configuration/lookalikes, unknown tracking/diff results and unborn/non-Git roots. Literal backslashes, non-UTF-8 and carriage-return filenames, symlink-target bytes and JSON/receipt roundtrips guard the earlier repairs. Actual receipt validation survives scratch churn but stales on a concurrent product edit. |
+| #147/#148 schema references | `tests/test_architecture_model.py:2946`, `:2986`, `:3009`, `:3040`, `:3069`; `tests/test_architecture_fitness.py:4315`, `:4414`, `:4946`, `:4977`, `:4986`, `:5001` | Tests distinguish real-target narrowing from claimant narrowing, with zero/one/two claimants, same-target IDs, nested paths/fragments and ID-only fallback. Unsafe-looking registered aliases have no-ID/duplicate refusals and separate conservative-closure controls. Zero/one/five/eight unique diagnostics and independent referrers check sorting, exact overflow and raw expansion before final deduplication. Base-only recovery, out-of-scope silence and a late head-only fatal ambiguity verify that presentation limiting does not stop traversal. |
+| #166 populated current prefix | `factory/tests/test_execution_persistence_postgres.py:1849`, `:1887`, `:1923`, `:1949`, `:1976`, `:2062`, `:2065`; unchanged migrator at `factory/src/adaptive_factory/migrations.py:189` | Uses actual packaged 001–020 SQL/ledger identities, six populated tables and actual 021 application. Checks prior ledger timestamps, rows, function OID/owner/ACL/SECURITY DEFINER/search path, effective privileges, old/new rejection behavior and idempotent replay. A corrupt real prefix digest must fail with no snapshot change before restoration succeeds. Two sessions contend on the real advisory key; the observer checks the ungranted lock, wait event and exact blocker PID before release-success or server-timeout/unchanged-snapshot/retry assertions. |
+
+The combined interactions are covered meaningfully in several places: router diagnostics pass through the strict artifact reader and persisted change package; escaped JSON is read back through receipt validation; installer tests exercise current managed module/schema bytes and reusable template inputs; schema precedence and diagnostic limits are tested with the same conservative dependency closure. Passing these interactions does not compensate for T1's missing security-language case.
+
+## RED/control evidence inspected
+
+Read retained reports and the available raw logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/`; these are historical defect/control evidence, not current final-head receipts.
+
+- `issue156/focused-red.log` records 58 tests with 26 failing subcases and two reader errors: false domains, missing keyword diagnostics and rejection of the new closed-shape field are visible. These controls substantiate the original defect but omit T1.
+- `issue162/red-test-change-spec.log` records one parity failure and two validation errors naming the missing `bitrix_review`/`data_review` values. The unknown-kind test is a separate refusal control.
+- `installer/installer-red.log` records nine missing destinations in each materialized profile and the absent kept-local conflict, plus missing-template errors. Its wrapper did not preserve the unittest exit independently; the failing unittest summary is retained. `installer-review-red.log` separately exposes raw `.md` template artifacts and invalid unrelocated fixture setup. `installer-review-green.log` records 33 tests passing after those corrections.
+- `fingerprint/review-red.log` records three literal-backslash assertion failures and eight byte-decoding/encoding errors; `review-green.log` records 19 tests passing after the repair. These include actual receipt integration as well as a synthetic-report CLI serialization test.
+- `schema/red-final-corrected.log` records 14 assertion failures across seven methods against the old functions with no harness errors, including raw expansion. The earlier copied-globals harness error is explicitly excluded from product failure evidence. `review-fix-red.log` records four alias-fallback failures; `review-fix-green.log` records the four focused methods passing after correction.
+- `issue166/focused-postgres-run2.log` names all three new PostgreSQL cases passing, zero skipped, in 10.807 seconds. The deliberate real-ledger corruption is the negative control; this test-only addition does not require inventing a production-code RED failure. The earlier disposable-name preflight rejection is separate harness evidence.
+
+The corrected installer, fingerprint and schema candidates were not assumed to have rerun their individual full gates. Their earlier full passes remain historical; the actual subsequent combined run supplies the shared full-suite evidence for the imported corrected source.
+
+## Combined verification record and its limits
+
+`evidence/combined-full-meta.json` records `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json`, exit 0, started `2026-09-21T09:44:48.847287+00:00`, finished `2026-09-21T09:53:19.260741+00:00`, at head `4bbbad340fee79e2d2e9d2598a6f58daa6c5b541`. The report records route `bcc1d645c438`, PR mode, profiles `base/contracts/data/integration`, both route/target bases at `839d3aa26bc90417424d814ee48d8b5cd3be367e`, and fingerprint `cf3e65364833e9a5c3efba1e3ebb7f788e9921c493b66aa083dc64b5eb91a5ae`.
+
+The independently read file SHA-256 is `2e1141e2280d24d2ea373fb8c6565c0a22e1529c6efdc27bf6ae437ac1dc6e9c`, matching `combined-full-result.json`. Recorded results are 828 root tests plus 1268 subtests, 80.28% coverage, and 782 factory-wide tests under disposable PostgreSQL with two conditional skips. The factory count is not 782 PostgreSQL-only integration cases. Source-stability passed. The separate workflow-artifacts profile check skipped because it is unconfigured; its changed runtime reader has unit coverage. The report's factory stderr is a tail, so it does not itself enumerate the three prefix tests; their direct focused log and the unchanged discovery command provide the additional evidence.
+
+`initial-full-result.json` remains FAIL: omitted typed external-write scope and a dropped historical handoff fact were corrected as documentation, with the original report and bounded correction checks retained. Its coverage result is not promoted to a passing test run. Neither that run nor the successful combined run is a current receipt for this new review document or for a later repair.
+
+Residual limits, with no separate blocker found beyond T1:
+
+- The migration observation deadline is three seconds, the worker join is twelve seconds and the elapsed assertion is under fifteen seconds, while the unchanged migrator sets five-second statement/lock timeouts. These are local scheduling assumptions; slow overloaded runners may fail before observing the wait. A watchdog failure remains a failure, with blocker release, bounded joining, exact named-worker termination and registered database cleanup. The tests establish advisory-lock contention and recovery on a small PostgreSQL 17 fixture, not production-scale duration, interruption at every SQL statement or function-call locking.
+- The installed-link helper checks the inline local links used by these templates. It does not check remote HTTPS availability, Markdown fragment existence or every Markdown syntax. The Bitrix fixture uses an explicit payload through the real writer; it does not establish a new public profile-selection API or live hook registration.
+- The fingerprint JSON CLI case supplies a synthetic verifier report; it validates serialization, while separate tests validate real fingerprints and receipt staleness. POSIX filename edge cases do not establish equivalent behavior on every filesystem.
+- The schema diagnostic cap bounds presentation only. It does not prove a new memory limit on temporary reference collection or expand the supported JSON Schema semantics.
+- #162's shipped/deployed Trust CI validator compatibility remains a separately routed successor, expressly excluded here. No claim is made that these local enum tests update deployed validation or establish merge eligibility.
+
+Recommendation: **FAIL** for this reviewed head until T1 is repaired and verified by the sole writer. Preserve this report as the first review if a successor is produced. After all repairs and evidence writes, the coordinator must obtain current verification/review receipts; the exact-head App-owned external check and applicable approvals remain independent requirements.

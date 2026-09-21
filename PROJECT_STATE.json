@@ -1906,7 +1906,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T09:54:36.797389+00:00",
+    "observed_at": "2026-09-21T10:06:44.791303+00:00",
     "route_id": "bcc1d645c438",
     "branch": "fix/reviewed-issues-batch-20260921",
     "issues": [
@@ -1923,8 +1923,8 @@
     "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
     "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "combined_full_pass_independent_reviews_pending",
-    "next_action": "All five selected independent reviews, final evidence freeze/current receipts, then exact-granted PR delivery and external Trust CI.",
+    "status": "independent_review_failed_security_term_compatibility_repair_pending",
+    "next_action": "Same selected writer adds isolated security-term regressions and repairs aliases after measured RED; rerun combined verification and renew all five reviews before final evidence/PR delivery.",
     "excluded_successors": [
       "active165 interruption-status source",
       "active163 migration022 source",

@@ -1415,3 +1415,5 @@ The issue166 focused wrapper reused nonce and exact-container binding but chose 
 The batch identity collector initially reused diff-specific glob pathspec syntax with ls-tree, which does not support it. Reading a NUL-delimited tree inventory and filtering SQL suffixes preserved the intended complete source comparison without product edits.
 
 - 2026-09-21: Replacing the active-delivery bootstrap paragraph discarded the still-required historical PR19 fact, while a new red-risk spec retained the empty approval-scope scaffold. Existing handoff/spec checks caught both after an unnecessarily long full run; preserve historical facts and run those bounded checks immediately after metadata edits. Product and test source stayed unchanged.
+
+- 2026-09-21 (combined #156 repair): Applying word boundaries to short domain terms removed the auth stem from legitimate authentication/authorization prompts and dropped their security gates. The positive matrix omitted isolated security vocabulary and another test masked it with multiple signals; preserve legitimate aliases and assert the complete security route using one signal at a time.
