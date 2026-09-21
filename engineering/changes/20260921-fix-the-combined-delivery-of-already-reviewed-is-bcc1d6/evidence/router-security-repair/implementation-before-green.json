@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "route_id": "bcc1d645c438",
+  "observed_at": "2026-09-21T10:09:35.607972+00:00",
+  "reviewed_source_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c",
+  "current_head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+  "paths": [
+    {
+      "path": ".grok-stack/adaptive_grok/router.py",
+      "before_sha256": "de3ca13766fea0691cd45c29f321cab044af4b30459623888fa94f3b33993f82",
+      "after_sha256": "cc8a7e973657ad1d1664dc250c4bc09cda04e3c077e296171db99ac3f779e4ac",
+      "before_blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+      "after_blob": "031663a2b3ed492b68af9c55cfb031c5b3c65474"
+    },
+    {
+      "path": "tests/test_repo_router.py",
+      "before_sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d",
+      "after_sha256": "fba5d5d6b78cf00bef25bfa0ca20a113e66eb112da1e622e455081a8887e7a3d",
+      "before_blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+      "after_blob": "e924de556b71fee7b8e8fd54212757c063b27458"
+    }
+  ],
+  "other_manifest_product_paths_unchanged": 17,
+  "implementation": "Finite Unicode-whole-word aliases for canonical auth and \u0440\u043e\u043b\u044c only; canonical matched_keywords and one score per configured term; risk/review/gate selection unchanged",
+  "repair_patch_sha256": "065654f43321b786d07deb16e24c8baf40bef22c8363d4d09794f55f1ca7da44",
+  "measured_red": {
+    "record": "router-security-red.json",
+    "record_sha256": "3eb24f855418a9ab3dd782a29642bf8067cfed85aed3eee452b25ba20d035460",
+    "exit_code": 1,
+    "duration_seconds": 0.3175117150094593,
+    "tests": 3,
+    "assertion_failures": 46,
+    "errors": 0,
+    "router_was_unchanged": "80f30711cfb2c3788c3850184c00d2148e8da4dd"
+  },
+  "green": "not_run_awaiting_cpu_allocation",
+  "full_verification": "pending_coordinator",
+  "independent_reviews": "renewal_required",
+  "original_source_identity": "Historical import proof remains unchanged; these two paths intentionally differ as documented repair."
+}

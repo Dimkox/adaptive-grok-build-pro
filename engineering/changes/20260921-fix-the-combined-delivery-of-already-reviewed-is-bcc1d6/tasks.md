@@ -5,5 +5,7 @@
 - [x] Sole integration_implementer imported19 exact product paths and188 package files; all207 blob/mode/hash and7package-tree identities pass.
 - [x] Coordinator reconciled current README/bootstrap, delivered170 evidence, candidate final observations and preserved research queue.
 - [x] Full combined verifier PASS on4bbbad34; original metadata-only failures and their corrections preserved.
-- [ ] Five independent reviews, frozen final current evidence.
+- [x] First five independent reviews completed; code/test/security findings preserved and returned to the same writer.
+- [x] Security alias repair: measured RED, three focused regressions and61 adjacent tests pass;17 remaining product files unchanged.
+- [ ] Repeat full verification on corrected tree, renew all five independent reviews, freeze final current evidence.
 - [ ] Exact delegated PR operations, external CI, merge and evidenced issue/obsolete-PR closure.

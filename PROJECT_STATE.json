@@ -1906,7 +1906,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T10:06:44.791303+00:00",
+    "observed_at": "2026-09-21T10:21:04.370295+00:00",
     "route_id": "bcc1d645c438",
     "branch": "fix/reviewed-issues-batch-20260921",
     "issues": [
@@ -1923,16 +1923,19 @@
     "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
     "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "independent_review_failed_security_term_compatibility_repair_pending",
-    "next_action": "Same selected writer adds isolated security-term regressions and repairs aliases after measured RED; rerun combined verification and renew all five reviews before final evidence/PR delivery.",
+    "status": "security_alias_review_repair_focused_pass_full_and_renewed_reviews_pending",
+    "next_action": "Run full corrected-tree verification in the coordinated CPU lane; renew all five independent reviews before final current receipts and exact-granted PR delivery.",
     "excluded_successors": [
       "active165 interruption-status source",
       "active163 migration022 source",
       "separate162 trusted-validator compatibility source",
       "other retained PR source and external operations"
     ],
-    "verified_source_head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
-    "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json"
+    "historical_pre_repair_full": {
+      "head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
+      "record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json",
+      "scope": "Passed before the security alias correction; does not certify the corrected product"
+    }
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",

@@ -1,0 +1,28 @@
+{
+  "baseline_head": "4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c",
+  "baseline_router_blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
+  "baseline_test_blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
+  "baseline_test_sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d",
+  "test_patch": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-tests.patch",
+  "test_patch_sha256": "adef4213bdd01d9ecd21843a8d8ef61f8de3828cbc08784527f0fc80217130e1",
+  "test_methods": 3,
+  "positive_route_cases": 42,
+  "neutral_technical_prompt_cases": 8,
+  "negative_route_and_technical_prompt_cases": 13,
+  "red_command": [
+    "python3",
+    "-m",
+    "unittest",
+    "tests.test_repo_router.RouterTests.test_security_aliases_keep_high_risk_route_obligations",
+    "tests.test_repo_router.RouterTests.test_security_aliases_are_development_signals_without_intent",
+    "tests.test_repo_router.RouterTests.test_security_alias_boundaries_do_not_route_unrelated_words",
+    "-v"
+  ],
+  "red_environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "estimated_red_wall_seconds": "1-5 (estimate only; allow a 15-second lane allocation)",
+  "execution_status": "not_run_waiting_for_coordinator_write_and_cpu_release",
+  "product_patch_status": "not_written_before_measured_red",
+  "writes": "Only this external proposal directory. No worktree files or Git index modified."
+}

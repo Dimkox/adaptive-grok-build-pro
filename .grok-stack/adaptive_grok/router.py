@@ -37,6 +37,25 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     'security': ('security', 'безопасност', 'auth', 'oauth', 'permission', 'права', 'роль', 'pii', 'персональн', 'secret', 'prompt injection', 'tenant isolation', 'изоляц'),
 }
 
+# These explicit word aliases retain security meanings previously found through
+# short stems, without matching unrelated words such as author or authority.
+# matched_keywords records the canonical configured term, even for an alias.
+SECURITY_KEYWORD_ALIASES: dict[str, tuple[str, ...]] = {
+    'auth': (
+        'authn', 'authz',
+        'authenticate', 'authenticates', 'authenticated', 'authenticating',
+        'authentication', 'authentications', 'authenticator', 'authenticators',
+        'authorize', 'authorizes', 'authorized', 'authorizing',
+        'authorization', 'authorizations',
+        'authorise', 'authorises', 'authorised', 'authorising',
+        'authorisation', 'authorisations',
+        'reauthenticate', 'reauthenticates', 'reauthenticated', 'reauthenticating',
+        'reauthentication', 'reauthentications',
+        'unauthenticated', 'unauthorized', 'unauthorised',
+    ),
+    'роль': ('ролью',),
+}
+
 HIGH_RISK = (
     'production', 'прод', 'deploy', 'деплой', 'delete', 'удалить данные', 'drop table', 'truncate',
     'auth', 'oauth', 'permission', 'права доступа', 'billing', 'платеж', 'payment', 'pii', 'персональн',
@@ -220,18 +239,21 @@ def _best_intent(text: str) -> str:
 
 
 def _matched_domain_keywords(text: str) -> dict[str, list[str]]:
-    """Bound short tokens without changing longer stems or phrase matching."""
+    """Bound short tokens and explicit security aliases; report canonical terms.
+
+    Longer stems and phrases retain their existing substring matching.
+    """
     lowered = f' {text.lower()} '
     matches: dict[str, list[str]] = {}
     for domain, keywords in sorted(DOMAIN_KEYWORDS.items()):
         found = []
         for keyword in keywords:
             term = keyword.strip()
-            matched = (
-                _has_term(lowered, term)
-                if re.fullmatch(r'\w{1,4}', term)
-                else keyword in lowered
-            )
+            if re.fullmatch(r'\w{1,4}', term):
+                aliases = SECURITY_KEYWORD_ALIASES.get(term, ()) if domain == 'security' else ()
+                matched = any(_has_term(lowered, word) for word in (term, *aliases))
+            else:
+                matched = keyword in lowered
             if matched:
                 found.append(term)
         if found:

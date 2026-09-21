@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "phase": "green",
+  "head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+  "head_after": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
+  "cwd": "/home/pall/grok-projects/adaptive-grok-build-reviewed-batch",
+  "argv": [
+    "python3",
+    "-m",
+    "unittest",
+    "tests.test_repo_router.RouterTests.test_security_aliases_keep_high_risk_route_obligations",
+    "tests.test_repo_router.RouterTests.test_security_aliases_are_development_signals_without_intent",
+    "tests.test_repo_router.RouterTests.test_security_alias_boundaries_do_not_route_unrelated_words",
+    "-v"
+  ],
+  "environment_overrides": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "started_at": "2026-09-21T10:15:54.541037+00:00",
+  "completed_at": "2026-09-21T10:15:54.762841+00:00",
+  "duration_seconds": 0.22177113800717052,
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout_base64": "",
+  "stderr_base64": "dGVzdF9zZWN1cml0eV9hbGlhc2VzX2tlZXBfaGlnaF9yaXNrX3JvdXRlX29ibGlnYXRpb25zICh0ZXN0cy50ZXN0X3JlcG9fcm91dGVyLlJvdXRlclRlc3RzLnRlc3Rfc2VjdXJpdHlfYWxpYXNlc19rZWVwX2hpZ2hfcmlza19yb3V0ZV9vYmxpZ2F0aW9ucykgLi4uIG9rCnRlc3Rfc2VjdXJpdHlfYWxpYXNlc19hcmVfZGV2ZWxvcG1lbnRfc2lnbmFsc193aXRob3V0X2ludGVudCAodGVzdHMudGVzdF9yZXBvX3JvdXRlci5Sb3V0ZXJUZXN0cy50ZXN0X3NlY3VyaXR5X2FsaWFzZXNfYXJlX2RldmVsb3BtZW50X3NpZ25hbHNfd2l0aG91dF9pbnRlbnQpIC4uLiBvawp0ZXN0X3NlY3VyaXR5X2FsaWFzX2JvdW5kYXJpZXNfZG9fbm90X3JvdXRlX3VucmVsYXRlZF93b3JkcyAodGVzdHMudGVzdF9yZXBvX3JvdXRlci5Sb3V0ZXJUZXN0cy50ZXN0X3NlY3VyaXR5X2FsaWFzX2JvdW5kYXJpZXNfZG9fbm90X3JvdXRlX3VucmVsYXRlZF93b3JkcykgLi4uIG9rCgotLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tClJhbiAzIHRlc3RzIGluIDAuMDkwcwoKT0sK",
+  "stdout_utf8": "",
+  "stderr_utf8": "test_security_aliases_keep_high_risk_route_obligations (tests.test_repo_router.RouterTests.test_security_aliases_keep_high_risk_route_obligations) ... ok\ntest_security_aliases_are_development_signals_without_intent (tests.test_repo_router.RouterTests.test_security_aliases_are_development_signals_without_intent) ... ok\ntest_security_alias_boundaries_do_not_route_unrelated_words (tests.test_repo_router.RouterTests.test_security_alias_boundaries_do_not_route_unrelated_words) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.090s\n\nOK\n",
+  "fingerprint_before": "1ebd91541ec555718c3140b496b726a34a3fb68344c223ccab448a6115af80db",
+  "fingerprint_after": "1ebd91541ec555718c3140b496b726a34a3fb68344c223ccab448a6115af80db",
+  "product_sha256_before": {
+    ".grok-stack/adaptive_grok/router.py": "cc8a7e973657ad1d1664dc250c4bc09cda04e3c077e296171db99ac3f779e4ac",
+    "tests/test_repo_router.py": "fba5d5d6b78cf00bef25bfa0ca20a113e66eb112da1e622e455081a8887e7a3d"
+  },
+  "product_sha256_after": {
+    ".grok-stack/adaptive_grok/router.py": "cc8a7e973657ad1d1664dc250c4bc09cda04e3c077e296171db99ac3f779e4ac",
+    "tests/test_repo_router.py": "fba5d5d6b78cf00bef25bfa0ca20a113e66eb112da1e622e455081a8887e7a3d"
+  },
+  "tree_stable": true,
+  "scope": "Focused router repair validation only; mandatory full combined gate and renewed independent reviews remain pending."
+}

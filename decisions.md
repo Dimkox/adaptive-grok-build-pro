@@ -803,3 +803,5 @@ The issue166 regression seeds the real populated packaged prefix, observes the m
 
 ## 2026-09-21: Integrate exact reviewed files on the delivered base
 The six reviewed candidates use a predecessor whose complete tree is identical to merged main, and their19 product paths are disjoint. Preserving exact blobs and separate issue evidence gives a concrete combined tree for fresh verification while shared handoff records are reconciled once.
+
+- When a short security keyword needs a word boundary, retain its legitimate expanded forms through an explicit finite alias set and check the entire resulting risk/reviewer/gate contract in an otherwise empty repository. This repaired the auth/роль compatibility regression while keeping unrelated author/authority and embedded lookalikes outside security routing.

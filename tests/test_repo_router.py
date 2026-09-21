@@ -43,6 +43,86 @@ class RepoDetectionTests(unittest.TestCase):
 
 
 class RouterTests(unittest.TestCase):
+    def test_security_aliases_keep_high_risk_route_obligations(self) -> None:
+        # These prompts contain no second domain/risk signal that could mask a miss.
+        families = (
+            ('auth', ('auth', 'authn', 'authz', 'authentication', 'authenticate',
+                      'authenticated', 'authenticating', 'reauthentication',
+                      'unauthenticated', 'authorization', 'authorize', 'authorized',
+                      'authorizing', 'unauthorized', 'authorisation', 'authorise',
+                      'authorised', 'authorising', 'unauthorised')),
+            ('роль', ('роль', 'ролью')),
+        )
+        expected = {
+            'task_domains': ['security'],
+            'domains': ['security'],
+            'risk': 'high',
+            'complexity': 'high-risk',
+            'write_agent': 'general_implementer',
+            'workflow_skills': ['adaptive-delivery', 'bugfix-workflow',
+                                'security-sensitive-change'],
+            'review_agents': ['code_reviewer', 'test_reviewer',
+                              'security_reviewer', 'release_reviewer'],
+            'required_evidence': ['verification', 'code_review', 'test_review',
+                                  'security_review', 'release_review'],
+            'human_gates': ['scope_and_design_approval'],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.assertEqual(detect_repo(root).domains, [])
+            for canonical, words in families:
+                for word in words:
+                    for prompt in (f'Fix {word}', f'Fix /{word.upper()}/'):
+                        with self.subTest(prompt=prompt):
+                            route = build_route(
+                                root, prompt, 'security-alias',
+                                base_commit_override=None,
+                                base_fingerprint_override='0' * 64,
+                            )
+                            self.assertEqual(
+                                {key: getattr(route, key) for key in expected}, expected,
+                            )
+                            self.assertEqual(route.matched_keywords, {
+                                'security': [canonical],
+                            })
+
+    def test_security_aliases_are_development_signals_without_intent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = detect_repo(Path(tmp))
+            for prompt in ('authentication observations', 'authorization observations',
+                           'authorisation observations', 'AUTHN observations',
+                           'authz observations', 'authenticated observations',
+                           'unauthorised observations', 'Наблюдения с ролью'):
+                with self.subTest(prompt=prompt):
+                    self.assertTrue(is_development_prompt(prompt, repo))
+
+    def test_security_alias_boundaries_do_not_route_unrelated_words(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = detect_repo(root)
+            for word in ('author', 'authority', 'authoritative', 'authorship', 'authentic',
+                         'xauthn', 'authz_name', 'xauthentication', 'authorizationx',
+                         'authorisation_name', 'ролью_имя', 'xролью', 'гастролью'):
+                with self.subTest(word=word):
+                    route = build_route(
+                        root, f'Fix {word}', 'security-alias-boundary',
+                        base_commit_override=None,
+                        base_fingerprint_override='0' * 64,
+                    )
+                    self.assertEqual(route.task_domains, [])
+                    self.assertEqual(route.domains, ['generic'])
+                    self.assertEqual(route.risk, 'low')
+                    self.assertEqual(route.complexity, 'micro')
+                    self.assertEqual(route.write_agent, 'general_implementer')
+                    self.assertEqual(route.workflow_skills,
+                                     ['adaptive-delivery', 'bugfix-workflow'])
+                    self.assertEqual(route.review_agents, ['code_reviewer', 'test_reviewer'])
+                    self.assertEqual(route.required_evidence,
+                                     ['verification', 'code_review', 'test_review'])
+                    self.assertEqual(route.human_gates, [])
+                    self.assertEqual(route.matched_keywords, {})
+                    self.assertFalse(is_development_prompt(f'{word} observations', repo))
+
     def test_issue_155_guard_task_does_not_select_frontend(self) -> None:
         historical = ROOT / 'engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/route.json'
         task = json.loads(historical.read_text(encoding='utf-8'))['task']
