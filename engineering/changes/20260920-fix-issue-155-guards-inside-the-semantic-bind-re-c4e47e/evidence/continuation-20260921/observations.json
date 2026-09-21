@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-09-21",
+  "route_id": "c4e47ea3ced7",
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "initial_verification_head": "4a47c76b3fb37fbac430fd209771a695832610d2",
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {
+        "app_id": 4694114,
+        "context": "adaptive-trust-ci/verified@06ecf1c875bc"
+      }
+    ]
+  },
+  "checks_observation_source": "gh api repos/Dimkox/adaptive-grok-build-pro/branches/main/protection/required_status_checks",
+  "quick_checks": {
+    "architecture_drift": {
+      "exit_code": 0,
+      "findings": []
+    },
+    "typed_spec_gate": {
+      "exit_code": 0,
+      "errors": [],
+      "mapped_acceptance_criteria": 6,
+      "total_acceptance_criteria": 6
+    },
+    "git_diff_check": {
+      "exit_code": 0,
+      "base": "90078959ff816068af374ad42f4bb80fdbaec866"
+    }
+  },
+  "final_verification_environment_plan": {
+    "GROK_TEST_WORKERS": "8",
+    "observed_installed_pins": {
+      "pytest": "9.1.1",
+      "pytest-xdist": "3.8.0",
+      "pytest-cov": "7.1.0",
+      "coverage": "7.15.4"
+    },
+    "scope": "existing supported local test runner only; unchanged tests and coverage threshold"
+  }
+}

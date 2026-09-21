@@ -1,0 +1,97 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "data_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+  "base_fingerprint": "d1e3e9b4d80654457ee3ea96f7c977dae0d40d8c85a182d2842e89163ae5c6af",
+  "complexity": "high-risk",
+  "created_at": "2026-09-20T00:59:05+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "frontend",
+    "integration",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts",
+    "data",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=data,frontend,integration,api",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "c4e47ea3ced7",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix issue #155: guards inside the semantic_bind_repair_child PostgreSQL function return a bare NULL, so bind_repair_child cannot distinguish a deadline or precondition rejection from a malformed payload and surfaces a misleading invalid_object ContractError; the mandatory disposable-exit PostgreSQL evidence run consequently flakes about one run in three under host load. Give each guard a machine-readable rejection reason or a distinct SQLSTATE, map it to typed StoreError reason codes while keeping invalid_object for genuinely malformed payloads, keep shipped migration history immutable by replacing the function in a new versioned resource, and make the affected integration fixture independent of wall-clock scheduling. Do not weaken the contract schema, the evidence gate, or the disposable-exit run.",
+  "task_domains": [
+    "data",
+    "frontend",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "data-change",
+    "enterprise-integration",
+    "frontend-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

@@ -1,0 +1,14 @@
+import ast, json, pathlib, sys
+root=pathlib.Path(sys.argv[1])
+def literal(path,name):
+    for node in ast.parse(path.read_bytes()).body:
+        if isinstance(node,ast.Assign) and any(isinstance(item,ast.Name) and item.id==name for item in node.targets):
+            return ast.literal_eval(node.value)
+    raise AssertionError("missing literal: "+name)
+locales=literal(root/"build-pages.py","LOCALES")
+pages=literal(root/"tests/site_browser_contract.py","PAGES")
+expected={"/"+locale[1]+suffix:locale[2] for locale in locales for suffix in ("","roadmap.html")}
+missing={path:lang for path,lang in expected.items() if path not in pages}
+mismatched={path:{"expected":lang,"actual":pages[path]} for path,lang in expected.items() if path in pages and pages[path]!=lang}
+print(json.dumps({"supported_locales":len(locales),"audit_urls":len(pages),"missing":missing,"mismatched":mismatched},sort_keys=True))
+assert not missing and not mismatched, "browser audit does not cover builder locales"

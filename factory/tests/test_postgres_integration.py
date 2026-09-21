@@ -22,8 +22,10 @@ from adaptive_factory.semantic_contracts import (
     ValidatorIdentityV1,
 )
 from adaptive_factory.semantic_repair import (
+    REPAIR_CHILD_REJECTIONS,
     RepairChildTaskBindingV1,
     SemanticRepairRequestV1,
+    repair_child_rejection_reason,
 )
 from adaptive_factory.service import (
     REPAIR_CHILD_BROKER_ACTOR_ID,
@@ -51,6 +53,14 @@ from factory.tests.test_execution_service import trusted_registry
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
+# A child task's deadline_at is assigned by PostgreSQL as now() + wall_seconds at its own
+# INSERT, so the inherited child budget must end strictly inside the parent horizon.  The
+# margin has to exceed the worst-case latency of the remaining fixture round trips, each
+# of which is capped by the store's 5s lock_timeout/statement_timeout; 120s is orders of
+# magnitude above that bound and still leaves hours of usable child budget, so host
+# scheduling cannot cross a deadline mid-test while a genuinely over-wide child request
+# is still refused.
+CHILD_DEADLINE_SAFETY_SECONDS = 120
 OPERATOR = Actor(
     "operator",
     "operator",
@@ -237,16 +247,18 @@ class PostgresFactoryTests(unittest.TestCase):
         self.store = self.runtime_store()
         self.service = FactoryService(self.store)
 
-    def payload(self, repository="owner/repository", source=None):
+    def payload(self, repository="owner/repository", source=None, authority_at=None):
         value = valid_intake()
         value["request_id"] = f"request-{uuid.uuid4()}"
         value["repository_id"] = repository
         value["source_id"] = source or str(uuid.uuid4())
-        value["m0_authority"]["observed_at"] = NOW.isoformat()
+        value["m0_authority"]["observed_at"] = (authority_at or NOW).isoformat()
         if repository != "owner/repository":
             import psycopg
 
-            observed_at = NOW - timedelta(microseconds=1 + sum(repository.encode("utf-8")))
+            observed_at = (authority_at or NOW) - timedelta(
+                microseconds=1 + sum(repository.encode("utf-8"))
+            )
             value["m0_authority"]["observed_at"] = observed_at.isoformat()
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute(
@@ -258,6 +270,29 @@ class PostgresFactoryTests(unittest.TestCase):
                         "external-trust-ci-api", uuid.uuid4().hex * 2, repository, value["policy_digest"],
                     ),
                 )
+        return value
+
+    def record_authority(self, value):
+        """Persist the observation row that a payload's authority stamp claims to have."""
+        import psycopg
+
+        authority = value["m0_authority"]
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.m0_authority_observations
+                (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                (
+                    uuid.uuid4(),
+                    datetime.fromisoformat(authority["observed_at"]),
+                    authority["check_name"],
+                    authority["exact_head_sha"],
+                    "external-trust-ci-api",
+                    uuid.uuid4().hex * 2,
+                    value["repository_id"],
+                    value["policy_digest"],
+                ),
+            )
         return value
 
     def submit(self, repository="owner/repository", source=None):
@@ -1854,7 +1889,13 @@ class PostgresFactoryTests(unittest.TestCase):
         token = "-".join(("semantic", "operator", "credential"))
         client = TestClient(create_app(self.service, Authenticator({token: OPERATOR})))
         source = "semantic-http-identity"
-        original = self.payload(source=source)
+        # The API judges the authority against its own request-time clock, so this fixture
+        # has to stamp the proof when the request is built.  An import-time stamp is valid
+        # only while the tier is shorter than the product's 300 s authority window.
+        proof_at = datetime.now(timezone.utc).replace(microsecond=0)
+        original = self.record_authority(
+            self.payload(source=source, authority_at=proof_at)
+        )
         original["request_id"] = "semantic-http-001"
 
         def headers(request_id: str, correlation_id: str):
@@ -1875,7 +1916,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         refreshed = self.payload(source=source)
         refreshed["request_id"] = "semantic-http-002"
-        refreshed_at = NOW - timedelta(seconds=2)
+        refreshed_at = proof_at - timedelta(seconds=2)
         refreshed["m0_authority"]["observed_at"] = refreshed_at.isoformat()
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -1971,6 +2012,33 @@ class PostgresFactoryTests(unittest.TestCase):
                     ("intake", "semantic-correlation-003"),
                 ],
             )
+
+        # The authority window itself must stay enforced: a proof that is genuinely old is
+        # refused with its own reason, so request-time stamping is not a way to get an
+        # expired authority accepted.
+        stale = self.record_authority(
+            self.payload(
+                source="semantic-http-stale-proof",
+                authority_at=proof_at - timedelta(seconds=400),
+            )
+        )
+        stale["request_id"] = "semantic-http-004"
+        rejected = client.post(
+            "/v1/tasks",
+            json=stale,
+            headers=headers(stale["request_id"], "semantic-correlation-004"),
+        )
+        self.assertEqual(
+            (rejected.status_code, rejected.json()),
+            (
+                422,
+                {
+                    "error": "invalid",
+                    "code": "stale_m0",
+                    "detail": "contract validation failed",
+                },
+            ),
+        )
 
     def test_changed_frozen_head_authority_and_limits_supersede_exact_replay(self):
         import psycopg
@@ -4037,7 +4105,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20],
+                        [13, 14, 15, 16, 17, 18, 19, 20, 21],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4328,7 +4396,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], "ready", 20, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], "ready", 21, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5023,7 +5091,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 20)
+        self.assertEqual(result["schema_version"], 21)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login
@@ -5293,6 +5361,7 @@ class PostgresFactoryTests(unittest.TestCase):
         child_source_digest_override=None,
         direct_store_intake=False,
         before_execution=None,
+        intake_now=None,
     ):
         def command_key(operation):
             return canonical_digest(
@@ -5305,7 +5374,18 @@ class PostgresFactoryTests(unittest.TestCase):
                 if child_source_digest is not None
                 else OPERATOR
             )
-        intake_now = datetime.now(timezone.utc)
+        import psycopg
+
+        if intake_now is None:
+            # tasks.deadline_at is computed by PostgreSQL as now() + wall_seconds at its
+            # own INSERT, while the child budget inherited below is measured against
+            # this clock.  Reading a *client* clock here left only
+            # CHILD_DEADLINE_SAFETY_SECONDS of margin between two different clocks, so
+            # host scheduling latency alone could place the child task past its
+            # proposal deadline and make the bind refusal non-reproducible.  Pinning the
+            # fixture to one injected server-clock reading removes that divergence.
+            with psycopg.connect(DATABASE_URL) as connection:
+                intake_now = connection.execute("SELECT now()").fetchone()[0]
         intake_payload = self.payload(repository=repository_id, source=source_id)
         intake_payload["request_id"] = f"semantic-repair-{namespace}"
         intake_payload["m0_authority"]["observed_at"] = intake_now.isoformat()
@@ -5339,11 +5419,15 @@ class PostgresFactoryTests(unittest.TestCase):
                         ),
                     }
                 )
-                remaining_wall = int(
-                    (
-                        parent_repair.child_proposal.deadline_at - intake_now
-                    ).total_seconds()
-                ) - 1
+                remaining_wall = (
+                    int(
+                        (
+                            parent_repair.child_proposal.deadline_at - intake_now
+                        ).total_seconds()
+                    )
+                    - 1
+                    - CHILD_DEADLINE_SAFETY_SECONDS
+                )
                 self.assertGreater(remaining_wall, 0)
                 intake_payload["limits"]["wall_seconds"] = min(
                     intake_payload["limits"]["wall_seconds"], remaining_wall
@@ -5357,8 +5441,6 @@ class PostgresFactoryTests(unittest.TestCase):
             intake_payload["source_digest"] = source_id
         if limit_overrides:
             intake_payload["limits"].update(limit_overrides)
-        import psycopg
-
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """INSERT INTO factory.m0_authority_observations
@@ -6330,7 +6412,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: child_limits_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, expanded_candidate)
             )
@@ -6362,9 +6446,30 @@ class PostgresFactoryTests(unittest.TestCase):
                 "wall_seconds": recurrence_root["intake"].limits.wall_seconds
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: deadline_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, deadline_reset_candidate)
+            )
+        # The freshness guard is the one that produced the original load flake, so it is
+        # asserted by name: a child whose authority proof is older than the product's 300 s
+        # window is refused as `authority_not_fresh`, not as a shape error and not as a
+        # deadline or limit breach (this block runs before those two groups in 021).
+        stale_authority_candidate = self.semantic_repair_fixture(
+            namespace="stale-authority-candidate",
+            source_id=recurrence_parent.child_proposal_digest,
+            child_source_digest=recurrence_parent.child_proposal_digest,
+            parent_repair=recurrence_parent,
+            result_head_sha="8" * 40,
+            intake_only=True,
+            intake_now=datetime.now(timezone.utc) - timedelta(seconds=400),
+        )
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: authority_not_fresh"
+        ):
+            semantic_store.bind_repair_child(
+                binding_for(recurrence_parent, stale_authority_candidate)
             )
         budget_reset_candidate = self.semantic_repair_fixture(
             namespace="budget-reset-candidate",
@@ -6379,7 +6484,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
             },
         )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
+        with self.assertRaisesRegex(
+            StoreError, "binding rejected: child_limits_exceeded"
+        ):
             semantic_store.bind_repair_child(
                 binding_for(recurrence_parent, budget_reset_candidate)
             )
@@ -6545,7 +6652,9 @@ class PostgresFactoryTests(unittest.TestCase):
             stale_response = cursor.fetchone()[0]
             connection.rollback()
         with self.subTest(case="superseded-child-bind-fails-before-consuming-proposal"):
-            self.assertIsNone(stale_response)
+            stale_reason = repair_child_rejection_reason(stale_response)
+            self.assertIn(stale_reason, REPAIR_CHILD_REJECTIONS)
+            self.assertEqual(stale_reason, "child_task_unavailable")
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT count(*) FROM factory.semantic_child_task_bindings

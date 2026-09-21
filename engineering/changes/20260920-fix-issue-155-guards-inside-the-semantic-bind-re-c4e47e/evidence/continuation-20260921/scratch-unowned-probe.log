@@ -1,0 +1,24 @@
+F
+======================================================================
+FAIL: test_seed_architecture_models_current_boundaries_and_real_contracts (tests.test_architecture_model.ArchitectureModelTests.test_seed_architecture_models_current_boundaries_and_real_contracts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/.cache/agbp-run/p155-arch-control-ybbd7v9n/checkout/tests/test_architecture_model.py", line 1319, in test_seed_architecture_models_current_boundaries_and_real_contracts
+    self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
+AssertionError: Tuples differ: (ArchitectureFinding(code='undeclared_sour[130 chars]r'),) != ()
+
+First tuple contains 1 additional elements.
+First extra element 0:
+ArchitectureFinding(code='undeclared_source', message='source artifact is not owned by an architecture node: .qwen/tmp/probe.py', path='.qwen/tmp/probe.py', severity='error')
+
++ ()
+- (ArchitectureFinding(code='undeclared_source',
+-                      message='source artifact is not owned by an architecture '
+-                              'node: .qwen/tmp/probe.py',
+-                      path='.qwen/tmp/probe.py',
+-                      severity='error'),)
+
+----------------------------------------------------------------------
+Ran 1 test in 0.201s
+
+FAILED (failures=1)

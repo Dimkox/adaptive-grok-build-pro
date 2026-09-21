@@ -1,0 +1,102 @@
+{
+  "started_at": "2026-09-21T05:10:02.706824+00:00",
+  "product_sha256": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+  "required_consecutive": 4,
+  "command": [
+    "python3",
+    "-u",
+    "factory/tests/run_disposable_exit.py"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "started_at": "2026-09-21T05:10:03.197945+00:00",
+      "load_before": [
+        0.740234375,
+        1.478515625,
+        1.96826171875
+      ],
+      "product_before": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "head_before": "4a47c76b3fb37fbac430fd209771a695832610d2",
+      "finished_at": "2026-09-21T05:16:01.533012+00:00",
+      "seconds": 358.33,
+      "exit_code": 0,
+      "load_after": [
+        7.537109375,
+        5.22314453125,
+        3.40576171875
+      ],
+      "product_after": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "log_sha256": "299f760d2cbfc3a919888e03f44c5714b8091853bf91288c56015761a0a4ae0f",
+      "log": "postgres-1.log"
+    },
+    {
+      "attempt": 2,
+      "started_at": "2026-09-21T05:16:02.022929+00:00",
+      "load_before": [
+        7.537109375,
+        5.22314453125,
+        3.40576171875
+      ],
+      "product_before": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "head_before": "d6595584649827baff78c2be46f978473d4b0465",
+      "finished_at": "2026-09-21T05:22:17.103089+00:00",
+      "seconds": 375.076,
+      "exit_code": 0,
+      "load_after": [
+        5.142578125,
+        4.9296875,
+        3.81689453125
+      ],
+      "product_after": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "log_sha256": "33db3b30cd82da38bb438478bad53bfca855a947e15eda34ea5c4eee87003737",
+      "log": "postgres-2.log"
+    },
+    {
+      "attempt": 3,
+      "started_at": "2026-09-21T05:22:17.629325+00:00",
+      "load_before": [
+        5.142578125,
+        4.9296875,
+        3.81689453125
+      ],
+      "product_before": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "head_before": "d6595584649827baff78c2be46f978473d4b0465",
+      "finished_at": "2026-09-21T05:28:35.969865+00:00",
+      "seconds": 378.336,
+      "exit_code": 0,
+      "load_after": [
+        2.90234375,
+        3.68115234375,
+        3.65478515625
+      ],
+      "product_after": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "log_sha256": "801591ebe329f9bcd999f4b74079a7e6da813ab135e1f83cde5a10df77fc04fe",
+      "log": "postgres-3.log"
+    },
+    {
+      "attempt": 4,
+      "started_at": "2026-09-21T05:28:36.457871+00:00",
+      "load_before": [
+        2.90234375,
+        3.68115234375,
+        3.65478515625
+      ],
+      "product_before": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "head_before": "d6595584649827baff78c2be46f978473d4b0465",
+      "finished_at": "2026-09-21T05:34:42.960534+00:00",
+      "seconds": 366.498,
+      "exit_code": 0,
+      "load_after": [
+        2.427734375,
+        3.24609375,
+        3.51953125
+      ],
+      "product_after": "7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25",
+      "log_sha256": "2c225a5e485386b2f7761930957c7705d14c92a21ca888a629b6ac95bbc944f5",
+      "log": "postgres-4.log"
+    }
+  ],
+  "status": "pass",
+  "finished_at": "2026-09-21T05:34:42.961409+00:00"
+}

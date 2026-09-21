@@ -1,0 +1,8 @@
+{
+  "head": "74a8079",
+  "exit_code": 143,
+  "reason": "Operator cancelled owned verifier after git diff --check discovered raw-evidence whitespace; no test failure inferred. PostgreSQL streak continued separately.",
+  "owned_pid": 4072331,
+  "test_process_group": 4073896,
+  "evidence_only_repair": true
+}

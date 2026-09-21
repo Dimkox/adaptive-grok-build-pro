@@ -1,9 +1,21 @@
+import hashlib
+import re
+import traceback
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import subprocess
 from urllib.parse import urlsplit
 
+from adaptive_factory.contracts import ContractError
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
+from adaptive_factory.semantic_repair import (
+    REPAIR_CHILD_REJECTION_CHANNEL,
+    REPAIR_CHILD_REJECTIONS,
+    RepairChildTaskBindingV1,
+    UNKNOWN_REPAIR_CHILD_REJECTION,
+    repair_child_rejection_reason,
+)
+from adaptive_factory.store import PostgresSemanticCoordinatorStore, StoreError
 from factory.tests import postgres_restart_probe, run_disposable_exit
 
 
@@ -357,8 +369,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 21)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 20)
+        self.assertEqual([item.version for item in migrations], list(range(1, 22)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 21)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -367,6 +379,247 @@ class MigrationTests(unittest.TestCase):
         migrations = discover_migrations()
         applied = [AppliedMigration(item.version, item.name, item.sha256) for item in migrations[:2]]
         self.assertEqual(plan_migrations(migrations, applied), migrations[2:])
+
+    @staticmethod
+    def _function_text(sql, signature):
+        marker = f"FUNCTION factory.{signature}("
+        start = sql.index(marker)
+        start = sql.rindex("CREATE", 0, start)
+        return sql[start : sql.index("\n$$;", start) + len("\n$$;")]
+
+    @staticmethod
+    def _guard_lines(function_sql):
+        """Guard-logic lines only, normalised so block headers compare equal."""
+        lines = []
+        for line in function_sql.splitlines():
+            stripped = line.strip()
+            if (
+                not stripped
+                or stripped.startswith(("--", "CREATE "))
+                or "repair_child_rejection" in stripped
+                or "RETURN NULL" in stripped
+                or "ELSE NULL" in stripped
+            ):
+                continue
+            lines.append(re.sub(r"^(?:IF|OR) ", "", stripped))
+        return lines
+
+    def test_repair_child_rejection_resource_is_additive_and_typed(self):
+        migrations = {item.version: item for item in discover_migrations()}
+        original = migrations[18].sql
+        upgrade = next(
+            item.sql
+            for item in migrations.values()
+            if item.name
+            == "021_semantic_repair_child_rejection_reasons.sql"
+        )
+        self.assertEqual(migrations[18].name, "018_semantic_validation_bridge.sql")
+        self.assertIn(
+            "CREATE FUNCTION factory.semantic_bind_repair_child(", original
+        )
+        self.assertIn(
+            "CREATE OR REPLACE FUNCTION factory.semantic_bind_repair_child(",
+            upgrade,
+        )
+        # The shipped resource stays byte-identical; only the newest resource may
+        # redefine the function, so an existing database replans instead of drifting.
+        # Destructive statements are judged on the resource itself, outside any function
+        # body: the redefined function keeps its own legitimate binding INSERT.
+        outside = re.sub(r"(?s)\$\$.*?\$\$;", "", upgrade)
+        lowered = outside.lower()
+        for forbidden in (
+            "drop table",
+            "drop index",
+            "drop function",
+            "drop constraint",
+            "delete from",
+            "truncate",
+            "alter table",
+            "insert into",
+            "update factory.",
+            "create index",
+            "vacuum",
+            "lock table",
+        ):
+            self.assertNotIn(forbidden, lowered, forbidden)
+        function_sql = self._function_text(
+            upgrade, "semantic_bind_repair_child"
+        )
+        self.assertNotIn("RETURN NULL", function_sql)
+        self.assertIn("SECURITY DEFINER SET search_path=pg_catalog,factory", function_sql)
+        self.assertIn(
+            "GRANT EXECUTE ON FUNCTION factory.semantic_bind_repair_child(char,text)\n"
+            "  TO factory_semantic_coordinator;",
+            upgrade,
+        )
+        # Guard conditions are carried over verbatim: only the refusal channel changed.
+        self.assertEqual(
+            self._guard_lines(
+                self._function_text(original, "semantic_bind_repair_child")
+            ),
+            self._guard_lines(function_sql),
+        )
+
+    def test_repair_child_rejection_reasons_match_the_python_allowlist(self):
+        upgrade = next(
+            item.sql
+            for item in discover_migrations()
+            if item.name
+            == "021_semantic_repair_child_rejection_reasons.sql"
+        )
+        emitted = set(
+            re.findall(r"'repair_child_rejection','([a-z_]+)'", upgrade)
+        )
+        self.assertEqual(
+            emitted,
+            set(REPAIR_CHILD_REJECTIONS) - {UNKNOWN_REPAIR_CHILD_REJECTION},
+        )
+        self.assertEqual(len(emitted), 12)
+
+    def test_repair_child_rejection_channel_stays_disjoint_from_bindings(self):
+        """INV-001 / AC-002: neither channel can be read as the other, in either direction."""
+        self.assertEqual(
+            repair_child_rejection_reason(
+                {REPAIR_CHILD_REJECTION_CHANNEL: "deadline_exceeded"}
+            ),
+            "deadline_exceeded",
+        )
+        for unfriendly in (
+            {REPAIR_CHILD_REJECTION_CHANNEL: {"reason": "deadline_exceeded"}},
+            {REPAIR_CHILD_REJECTION_CHANNEL: ["deadline_exceeded"]},
+            {REPAIR_CHILD_REJECTION_CHANNEL: 7},
+            {REPAIR_CHILD_REJECTION_CHANNEL: ""},
+            {REPAIR_CHILD_REJECTION_CHANNEL: "drop_table_please"},
+        ):
+            with self.subTest(unfriendly=unfriendly):
+                # A hostile or unknown payload never becomes a real reason and never
+                # becomes "not a rejection" either: it folds to the fixed local code.
+                self.assertEqual(
+                    repair_child_rejection_reason(unfriendly),
+                    UNKNOWN_REPAIR_CHILD_REJECTION,
+                )
+        for not_an_envelope in (None, "repair_child_rejection", 7, [7], {}, {"a": 1}):
+            with self.subTest(not_an_envelope=not_an_envelope):
+                self.assertIsNone(repair_child_rejection_reason(not_an_envelope))
+        # A document that is a well-formed binding *and* carries the rejection key is
+        # refused by both readers: the envelope check needs the exact single key, and the
+        # closed contract rejects the extra field. Neither path can report success.
+        smuggled = {
+            "schema_version": 1,
+            "child_proposal_digest": "a" * 64,
+            "child_task_id": "0f5f7c2e-3f3f-4a5b-9c1d-2e3f4a5b6c7d",
+            "child_intent_digest": "b" * 64,
+            REPAIR_CHILD_REJECTION_CHANNEL: "deadline_exceeded",
+        }
+        self.assertIsNone(repair_child_rejection_reason(smuggled))
+        with self.assertRaises(ContractError) as raised:
+            RepairChildTaskBindingV1.from_dict(smuggled)
+        self.assertEqual(raised.exception.code, "unknown_fields")
+        # The same four keys without the rejection field must parse, so the guard above is
+        # about the extra key and not about the fixture document being invalid anyway.
+        binding = dict(smuggled)
+        binding.pop(REPAIR_CHILD_REJECTION_CHANNEL)
+        self.assertEqual(RepairChildTaskBindingV1.from_dict(binding).child_task_id,
+                         "0f5f7c2e-3f3f-4a5b-9c1d-2e3f4a5b6c7d")
+
+    def test_bind_repair_child_separates_an_unexplained_store_refusal(self):
+        # A schema that never applied 021 still answers a refusal with a bare SQL NULL.
+        # That is a store refusal with no reason, not a malformed payload, and the two
+        # diagnoses must not be interchangeable.
+        store = PostgresSemanticCoordinatorStore(
+            "postgresql://unused.invalid:5432/unused"
+        )
+        binding = RepairChildTaskBindingV1(
+            1, "a" * 64, "0f5f7c2e-3f3f-4a5b-9c1d-2e3f4a5b6c7d", "b" * 64
+        )
+        for response, expected in (
+            ((None,), "rejected: store_returned_null"),
+            (({"unexpected": 1},), "payload is malformed"),
+            (
+                ({REPAIR_CHILD_REJECTION_CHANNEL: "deadline_exceeded"},),
+                "rejected: deadline_exceeded",
+            ),
+        ):
+            with self.subTest(response=response[0]):
+                cursor = MagicMock()
+                cursor.fetchone.return_value = response
+                connection = MagicMock()
+                connection.__enter__.return_value = connection
+                connection.cursor.return_value.__enter__.return_value = cursor
+                with patch.object(store, "_connect", return_value=connection):
+                    with self.assertRaises(StoreError) as raised:
+                        store.bind_repair_child(binding)
+                self.assertIn(expected, str(raised.exception))
+                # The NULL arm must never borrow the shape diagnosis, and vice versa.
+                self.assertEqual(
+                    "malformed" in str(raised.exception),
+                    expected == "payload is malformed",
+                )
+                if expected == "payload is malformed":
+                    self.assertIsInstance(raised.exception.__cause__, ContractError)
+                else:
+                    self.assertIsNone(raised.exception.__cause__)
+                    self.assertIsNone(raised.exception.__context__)
+                    self.assertNotIn(
+                        "invalid_object",
+                        "".join(traceback.format_exception(raised.exception)),
+                    )
+
+    def test_repair_child_guard_structure_maps_each_reason_to_one_clause_group(self):
+        # `_guard_lines` compares predicate text only: 021 legitimately adds three block
+        # boundaries, so boundary loss, a mislabelled group, and an inverted replay CASE
+        # are pinned structurally here instead.
+        migrations = {item.version: item for item in discover_migrations()}
+        upgrade = self._function_text(
+            migrations[21].sql, "semantic_bind_repair_child"
+        )
+        expected_clauses = {
+            "authority_not_fresh": 2,
+            "binding_payload_invalid": 8,
+            "child_already_bound": 2,
+            "child_limits_exceeded": 13,
+            "child_task_unavailable": 3,
+            "command_input_invalid": 5,
+            "deadline_exceeded": 2,
+            "lineage_mismatch": 32,
+            "parent_task_missing": 1,
+            "proposal_not_pending": 2,
+        }
+        measured = {
+            reason: len(re.findall(r"\bOR\b", predicate)) + 1
+            for predicate, reason in re.findall(
+                r"IF\s+(.*?)\s*THEN\s+RETURN\s+jsonb_build_object\("
+                r"'repair_child_rejection','([a-z_]+)'\);\s*END IF;",
+                upgrade,
+                re.S,
+            )
+        }
+        self.assertEqual(measured, expected_clauses)
+        for reason in set(REPAIR_CHILD_REJECTIONS) - {UNKNOWN_REPAIR_CHILD_REJECTION}:
+            self.assertEqual(
+                upgrade.count(f"'repair_child_rejection','{reason}'"),
+                1,
+                reason,
+            )
+        # The already-bound replay path returns the stored body and rejects only on a
+        # mismatch; swapping the arms would silently hand back NULL as a binding.
+        self.assertIn(
+            "THEN v_existing.body ELSE jsonb_build_object("
+            "'repair_child_rejection','binding_conflict') END;",
+            " ".join(upgrade.split()),
+        )
+        # The superseded body is frozen: `_guard_lines` only detects drift in 021, so a
+        # clause deleted from 018 and 021 together would satisfy both readers. Byte-exact on
+        # purpose — 018 is shipped, so any edit to it is `plan_migrations` checksum drift for
+        # every existing database and must fail here, not only at apply time.
+        self.assertEqual(
+            hashlib.sha256(
+                self._function_text(
+                    migrations[18].sql, "semantic_bind_repair_child"
+                ).encode("utf-8")
+            ).hexdigest(),
+            "49400d2fcf408aff60ae94d6d13491ba8d910b37a614b75f642270f5dfc0dbb5",
+        )
 
     def test_missing_renamed_or_checksum_changed_applied_migration_fails(self):
         migrations = discover_migrations()

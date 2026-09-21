@@ -1351,3 +1351,27 @@ The operational clone retained origin/HEAD from its former local remote, so its 
 ### 2026-09-19 — Keep orchestration helpers outside the source checkout
 
 An ignored Python helper under .grok-stack/runtime was still discovered by the architecture source inventory and correctly rejected as unowned source. Move task-only orchestration scripts to an external temporary path rather than adding an architecture exception; repository evidence can stay in its intended package.
+
+### 2026-09-20 — A "one tree" control that hashed the file list could not see the tree change
+
+The resumed #155 contour needed proof that its four-pass PostgreSQL evidence streak ran against one tree, so the driver recorded `git rev-parse HEAD` plus `git status --porcelain` over the product paths at start and end. Both streaks printed the identical value `8883279fa1bf6795`, and the code reviewer showed that value also stayed identical across a real content change (`test_migrations.py` gained a test at 03:56 between them) — `git status --porcelain` reports paths and staged state, never bytes. The root cause is writing a control to look like the property instead of testing it: nothing asked whether the instrument could distinguish a violation, even though the repository already owns the right primitive (`adaptive_grok.util.tree_fingerprint`, HEAD plus changed-file contents) and the verifier's own `source-stability` unit uses it. Before trusting a self-built control, run its negative case — mutate the exact thing it claims to detect and require the control to move — and state in the record which property it measures and what it therefore cannot prove.
+
+### 2026-09-20 — Read `nproc` as host capacity and reported 22 CPUs on a 28-CPU machine
+
+The session opened by reporting "host: 22 CPU" and planning fan-out from it; the owner corrected the number. Measured: Intel Xeon E5-2680 v4, 1 socket × 14 cores × 2 SMT = 28 logical CPUs, all of `0-27` online, `cpuset.cpus.effective = 0-27`, and the 22 was only the CLI process's inherited affinity mask `0,1,8-27` — `taskset -c 0-27` gives a child all 28. `decisions.md` had already recorded this distinction, so the failure was quoting the convenience signal instead of measuring: `nproc` answers "how many CPUs may this process use", which is not the question "how much machine is there". For capacity take `lscpu`, `os.sched_getaffinity(0)`, `cpuset.cpus.effective` and `taskset -pc $$` together, say which of them a quoted number came from, and size parallel work with the real mask or `xargs -P 28`.
+
+### 2026-09-21 — A corrected message retained the false diagnosis in its exception chain
+
+The #155 compatibility branch renamed a NULL refusal only after `from_dict(None)` had raised `invalid_object`, then chained that parser error into the new StoreError. The root cause was classifying a protocol refusal after contract parsing while testing only the outer message; independent review reproduced the misleading traceback. Classify refusals before parsing and test cause/context as well as displayed text.
+
+### 2026-09-21 — Source reversion is not migration recovery
+
+The #155 recovery document called a whole-commit revert a forward fix, although removing packaged migration 021 makes the migrator reject an already-upgraded database and never replays 018. The root cause was reasoning from the old function body remaining in Git instead of the migrator's immutable applied-prefix semantics. Recovery must retain all applied resources and use a separately tested additive correction with compatible application handling.
+
+### 2026-09-21 — Check newly staged evidence, not only the tracked worktree diff
+
+I checked whitespace before staging new raw evidence files, so the check omitted an untracked failing-test log and patch whose exact bytes contained trailing spaces. The resulting commit would fail the PR-target whitespace gate; I cancelled that verifier through its owned cleanup path, preserved both files as lossless base64 JSON envelopes, and checked the staged and committed diffs. Run the staged check after adding every new evidence artifact, and encode exact-byte logs when their whitespace is part of the evidence.
+
+## 2026-09-21 — Distinguish no-index differences from whitespace errors
+
+The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.

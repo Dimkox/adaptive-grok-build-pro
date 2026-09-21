@@ -1,0 +1,22 @@
+{
+  "analysis.md": {
+    "sha256": "b63372465bfc4df36e8edd0fa82a1cbd7d8b0be14dd3cede07a8ad7357f07378",
+    "bytes": 14034
+  },
+  "issue-draft.md": {
+    "sha256": "7cce76ce24e9cf0890fb35d21388bd50a2b7919cf50cd7cb645a191d083acf92",
+    "bytes": 4315
+  },
+  "source-manifest.json": {
+    "sha256": "79c89097d1bc6b33328cfe2f13d28fbffed78a07e7fa7f3233c4d52d1c674c68",
+    "bytes": 1791
+  },
+  "reproduction.json": {
+    "sha256": "98897880b79146e6e95b404a4bd9108b6f7455f0bfc4c0bfb3c1abff37865a02",
+    "bytes": 1949
+  },
+  "inventory-probe.py.txt": {
+    "sha256": "677c4de7a9b4f282cc730189148c8a726d727f01ee3969ec553c2601d35338f4",
+    "bytes": 988
+  }
+}

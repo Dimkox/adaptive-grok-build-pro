@@ -14,9 +14,15 @@ import uvicorn
 
 from adaptive_factory import admin as admin_module
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.migrations import discover_migrations
 from adaptive_factory.models import Actor
 from adaptive_factory.server import ServerError, build_app, load_actors, prepare_unix_socket
 from adaptive_factory.settings import FactorySettings, SettingsError
+
+# server._runtime_readiness() only accepts a readiness report whose schema_version equals
+# len(discover_migrations()); stubs that claim "ready" must track that or the fail-closed
+# assertions below would pass for the wrong reason.
+SCHEMA_VERSION = len(discover_migrations())
 
 
 class ServerTests(unittest.TestCase):
@@ -185,7 +191,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 20,
+                "schema_version": SCHEMA_VERSION,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }
@@ -242,7 +248,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 20,
+                    "schema_version": SCHEMA_VERSION,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -256,7 +262,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_artifact_attestor",
-                    "schema_version": 20,
+                    "schema_version": SCHEMA_VERSION,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -270,7 +276,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "same_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 20,
+                    "schema_version": SCHEMA_VERSION,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -435,7 +441,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 20,
+                "schema_version": SCHEMA_VERSION,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }

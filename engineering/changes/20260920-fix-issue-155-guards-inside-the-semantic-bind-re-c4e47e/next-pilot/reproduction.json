@@ -1,0 +1,45 @@
+{
+  "observed_at": "2026-09-21T05:25:34.249486+00:00",
+  "base_commit": "6226aa0b86e1fe08c63724cc3761b3f788146b91",
+  "scope": "external cached source; existing focused unit and independent AST inventory probe only; no candidate, provider or browser execution",
+  "checks": [
+    {
+      "name": "existing-unit",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_site_browser_contract.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "output": "test_page_passes_only_for_accessible_overflow_free_expected_language (test_site_browser_contract.SiteBrowserContractTests.test_page_passes_only_for_accessible_overflow_free_expected_language) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n"
+    },
+    {
+      "name": "inventory-probe",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "/home/pall/.cache/agbp-run/p155-final-20260921/next-pilot-inventory-probe.py",
+        "/home/pall/.cache/agbp-run/p155-final-20260921/landing-6226aa0"
+      ],
+      "exit_code": 1,
+      "output": "{\"audit_urls\": 16, \"mismatched\": {}, \"missing\": {\"/ru/\": \"ru-RU\", \"/ru/roadmap.html\": \"ru-RU\"}, \"supported_locales\": 7}\nTraceback (most recent call last):\n  File \"/home/pall/.cache/agbp-run/p155-final-20260921/next-pilot-inventory-probe.py\", line 14, in <module>\n    assert not missing and not mismatched, \"browser audit does not cover builder locales\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: browser audit does not cover builder locales\n"
+    }
+  ],
+  "finding": {
+    "audit_urls": 16,
+    "mismatched": {},
+    "missing": {
+      "/ru/": "ru-RU",
+      "/ru/roadmap.html": "ru-RU"
+    },
+    "supported_locales": 7
+  },
+  "probe_sha256": "677c4de7a9b4f282cc730189148c8a726d727f01ee3969ec553c2601d35338f4"
+}
