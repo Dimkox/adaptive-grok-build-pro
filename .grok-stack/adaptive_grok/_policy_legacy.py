@@ -589,11 +589,22 @@ def evaluate_pre_tool(
         if action:
             if action == 'workflow-dispatch':
                 return False, 'GitHub Actions workflow dispatch is forbidden for this repository.'
+            from .human_gates import gate_block_reason
+
+            gate_reason = gate_block_reason(root, 'production', action)
+            if gate_reason:
+                return False, gate_reason
             if not has_valid_approval(root, 'production', action=action):
                 return False, f'Production action {action} requires an exact delegated local grant bound to the current SHA.'
         http_resource = _http_write_resource(command)
-        if http_resource and not has_valid_approval(root, 'external-write', action='external-write', resource=http_resource):
-            return False, f'Direct external write requires an exact delegated grant for resource {http_resource}.'
+        if http_resource:
+            from .human_gates import gate_block_reason
+
+            gate_reason = gate_block_reason(root, 'external-write', 'external-write', http_resource)
+            if gate_reason:
+                return False, gate_reason
+            if not has_valid_approval(root, 'external-write', action='external-write', resource=http_resource):
+                return False, f'Direct external write requires an exact delegated grant for resource {http_resource}.'
 
     candidate_paths = _extract_paths(tool_input)
     if tool == 'apply_patch' and isinstance(tool_input, dict):
@@ -639,6 +650,11 @@ def evaluate_pre_tool(
                     return False, f'Another write agent is already active: {active}'
 
     if tool.startswith('mcp__') and SIDE_EFFECT_TOOL.search(tool):
+        from .human_gates import gate_block_reason
+
+        gate_reason = gate_block_reason(root, 'external-write', 'external-write', tool)
+        if gate_reason:
+            return False, gate_reason
         if not has_valid_approval(root, 'external-write', action='external-write', resource=tool):
             return False, f'MCP side-effect tool {tool} requires an exact delegated external-write grant.'
 

@@ -11,7 +11,9 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests"))
+sys.path.insert(0, str(ROOT / "trust-ci" / "src"))
 from _support import project_copy  # noqa: E402
+from adaptive_trust_ci.models import normalize_criterion_coverage  # noqa: E402
 
 
 def _load(name: str, relative: str):
@@ -264,6 +266,53 @@ class ChangeSpecTests(unittest.TestCase):
         self.assertEqual(coverage["criterion_total"], 1)
         self.assertEqual(coverage["criterion_mapped"], 1)
         self.assertEqual(coverage["evidence_counts"]["test"], 1)
+
+    def test_gate_requires_evidence_for_each_criterion_category(self) -> None:
+        for category, prefix in (("acceptance_criteria", "AC"), ("invariants", "INV"), ("forbidden_outcomes", "FORBID")):
+            with self.subTest(category=category):
+                missing = json.loads(json.dumps(VALID_SPEC))
+                missing[category][0]["evidence"] = []
+                with self.assertRaises(SPEC.SpecError) as gate_error:
+                    SPEC.validate_spec(missing)
+                self.assertIn(prefix + "-001", str(gate_error.exception))
+                self.assertIn("no evidence", str(gate_error.exception))
+
+                mapped = json.loads(json.dumps(VALID_SPEC))
+                mapped[category][0]["evidence"] = [{"test": "tests/test_change_spec.py"}]
+                SPEC.validate_spec(mapped)
+
+                draft = SPEC.validate_spec(missing, gate=False)
+                self.assertTrue(draft["ok"])
+
+    def test_coverage_includes_all_categories_and_keeps_ac_projection(self) -> None:
+        spec = json.loads(json.dumps(VALID_SPEC))
+        spec["acceptance_criteria"].append({"id": "AC-002", "statement": "Second AC", "evidence": []})
+        spec["invariants"][0]["evidence"] = []
+        spec["forbidden_outcomes"][0]["evidence"] = [{"receipt": "security_review"}]
+        coverage = SPEC.criterion_coverage(spec)
+        self.assertEqual(coverage["criterion_total"], 2)
+        self.assertEqual(coverage["criterion_mapped"], 1)
+        self.assertEqual(coverage["unmapped_ids"], ["AC-002"])
+        self.assertEqual(coverage["attestation_ac"], {"spec_count": 1, "criterion_total": 2, "criterion_mapped": 1, "unmapped_ids": ["AC-002"]})
+        self.assertEqual(coverage["all_criterion_total"], 4)
+        self.assertEqual(coverage["all_criterion_mapped"], 2)
+        self.assertEqual(coverage["all_unmapped_ids"], ["AC-002", "INV-001"])
+        self.assertEqual(coverage["categories"]["forbidden_outcomes"], {"criterion_total": 1, "criterion_mapped": 1, "mapped_ids": ["FORBID-001"], "unmapped_ids": []})
+        attestation_coverage = SPEC.attestation_criterion_coverage(spec)
+        self.assertEqual(set(attestation_coverage), {"spec_count", "criterion_total", "criterion_mapped", "unmapped_ids"})
+        self.assertEqual(attestation_coverage, {"spec_count": 1, "criterion_total": 2, "criterion_mapped": 1, "unmapped_ids": ["AC-002"]})
+        self.assertEqual(normalize_criterion_coverage(attestation_coverage), attestation_coverage)
+
+    def test_summary_exposes_category_aware_coverage_and_all_aggregate(self) -> None:
+        spec = json.loads(json.dumps(VALID_SPEC))
+        spec["invariants"].append({"id": "INV-002", "statement": "Second invariant", "evidence": []})
+        summary = SPEC.summarize_spec(spec)
+        self.assertEqual(summary["acceptance_criteria"], 1)
+        self.assertEqual(summary["invariants"], 2)
+        self.assertEqual(summary["forbidden_outcomes"], 1)
+        self.assertEqual(summary["coverage_by_category"]["invariants"]["criterion_mapped"], 1)
+        self.assertEqual(summary["coverage_by_category"]["invariants"]["unmapped_ids"], ["INV-002"])
+        self.assertEqual(summary["coverage_all"], {"criterion_total": 4, "criterion_mapped": 3, "unmapped_ids": ["INV-002"]})
 
     def test_extra_key_fails(self) -> None:
         spec = json.loads(json.dumps(VALID_SPEC))

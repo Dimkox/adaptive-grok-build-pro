@@ -263,6 +263,105 @@ class StructureTests(unittest.TestCase):
         self.assertIn("decisions.md", text)
         self.assertIn("mistakes.md", text)
 
+    def test_reviewer_mutation_probes_are_scratch_only_and_reported(self) -> None:
+        common_requirements = (
+            "private scratch",
+            "outside the reviewed worktree",
+            "reviewed-tree-modified: no",
+            "tree fingerprint",
+            "unexecuted",
+            "killed",
+            "survived",
+            "inconclusive",
+        )
+        for role in ("code_reviewer", "test_reviewer"):
+            with self.subTest(role=role):
+                brief = (ROOT / f".grok/agents/{role}.md").read_text(encoding="utf-8")
+                policy = (ROOT / f".grok/agents/{role}.toml").read_text(encoding="utf-8")
+                self.assertIn("mode = \"read-only\"", policy)
+                for content in (brief, policy):
+                    for requirement in common_requirements:
+                        self.assertIn(requirement, content.lower())
+                    self.assertIn("command", content.lower())
+                    self.assertIn("output", content.lower())
+                    self.assertIn("scratch path", content.lower())
+                    self.assertIn("non-sticky", content.lower())
+                    self.assertIn("0700", content)
+                    lowered = content.lower()
+                    for forbidden_action in ("edit", "restore", "generate artifacts"):
+                        self.assertIn(forbidden_action, lowered)
+                    self.assertIn("reviewed candidate", lowered)
+                    isolation_text = content.lower()
+                    self.assertIn("os-enforced", isolation_text)
+                    self.assertTrue(
+                        "not os-enforced" in isolation_text
+                        or "not an os-enforced" in isolation_text
+                        or "do not provide os-enforced" in isolation_text
+                    )
+
+        for relative in (
+            ".agents/skills/adaptive-delivery/SKILL.md",
+            ".grok/skills/adaptive-delivery/SKILL.md",
+            ".agents/skills/verification-evidence/SKILL.md",
+            ".grok/skills/verification-evidence/SKILL.md",
+            ".grok-stack/templates/change/evidence/README.md",
+            "AGENTS.md",
+        ):
+            with self.subTest(document=relative):
+                content = (ROOT / relative).read_text(encoding="utf-8").lower()
+                for requirement in common_requirements:
+                    self.assertIn(requirement, content)
+                self.assertIn("outside the reviewed worktree", content)
+                self.assertIn("os-enforced", content)
+                self.assertTrue(
+                    "not os-enforced" in content
+                    or "not an os-enforced" in content
+                    or "do not provide os-enforced" in content
+                )
+
+        for relative in (
+            ".agents/skills/verification-evidence/SKILL.md",
+            ".grok/skills/verification-evidence/SKILL.md",
+        ):
+            with self.subTest(review_report_workflow=relative):
+                content = (ROOT / relative).read_text(encoding="utf-8").lower()
+                self.assertIn("complete report to the coordinator", content)
+                self.assertIn("out-of-band", content)
+                self.assertIn("after all reviews finish", content)
+                self.assertIn("reruns final verification", content)
+                self.assertNotIn("write a report", content)
+                self.assertTrue(
+                    "fingerprint before/after" in content
+                    or "fingerprint before and after" in content
+                )
+
+        for relative in (
+            ".agents/skills/adaptive-delivery/SKILL.md",
+            ".grok/skills/adaptive-delivery/SKILL.md",
+            ".grok-stack/templates/change/evidence/README.md",
+        ):
+            with self.subTest(report_workflow=relative):
+                content = (ROOT / relative).read_text(encoding="utf-8").lower()
+                self.assertIn("complete report to the coordinator", content)
+                self.assertIn("out-of-band", content)
+                self.assertIn("after all reviews finish", content)
+                self.assertIn("reruns final verification", content)
+                self.assertTrue(
+                    "fingerprint before/after" in content
+                    or "fingerprint before and after" in content
+                )
+
+        report_template = (ROOT / ".grok-stack/templates/change/evidence/README.md").read_text(encoding="utf-8").lower()
+        for requirement in (
+            "head and tree fingerprint before/after",
+            "scratch path",
+            "exact command",
+            "observed output",
+            "mutant outcome",
+        ):
+            with self.subTest(evidence_template=requirement):
+                self.assertIn(requirement, report_template)
+
     def test_merge_trust_is_external_and_pr_only(self) -> None:
         text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         self.assertIn("adaptive-trust-ci/verified", text)

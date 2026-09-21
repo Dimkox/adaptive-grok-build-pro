@@ -624,7 +624,13 @@ def _git_diff_check(
     output: list[str] = []
     errors: list[str] = []
     for label, command in checks:
-        proc = run(command, cwd=root, timeout=60)
+        proc = run(
+            command,
+            cwd=root,
+            timeout=60,
+            encoding='utf-8',
+            errors='backslashreplace',
+        )
         if proc.stdout:
             output.append(f'[{label}]\n{proc.stdout.rstrip()}')
         if proc.stderr:
@@ -772,18 +778,30 @@ def _change_specs(root: Path, files: list[str], route: dict[str, object] | None,
             continue
         errors = validate_spec(root, path, gate=gate and not exempt, route=route)
         record: dict[str, object] = {'path': rel, 'profile': 'gate' if gate else 'draft', 'valid': not errors, 'errors': errors}
-        if not errors:
-            try:
-                spec = load_spec(path, allow_legacy=False)
+        try:
+            spec = load_spec(path, allow_legacy=False)
+            coverage = criterion_coverage(spec)
+            record['coverage'] = coverage
+            if gate and not exempt:
+                categories = coverage.get('categories', {})
+                for category, data in categories.items():
+                    if not isinstance(data, dict):
+                        continue
+                    unmapped = data.get('unmapped_ids')
+                    if isinstance(unmapped, list) and unmapped:
+                        ids = ', '.join(str(value) for value in unmapped)
+                        errors.append(f"unmapped {category} criteria: {ids}")
+            if not errors:
                 record.update({
                     'digest': canonical_spec_digest(spec),
                     'fingerprint': spec_fingerprint(root, path, spec, route),
-                    'coverage': criterion_coverage(spec),
                 })
-            except (OSError, ValueError) as exc:
+        except (OSError, ValueError) as exc:
+            if not errors:
                 errors = [str(exc)]
-                record['valid'] = False
-                record['errors'] = errors
+        if errors:
+            record['valid'] = False
+            record['errors'] = errors
         for error in errors:
             findings.append({'severity': 'error', 'code': 'change-spec-invalid', 'path': rel, 'message': error})
         records.append(record)

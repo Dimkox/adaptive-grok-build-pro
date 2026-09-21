@@ -1,0 +1,78 @@
+{
+  "change_id": "20260921-fix-successor-batch-for-issues-124-125-126-129-i-c6741e",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/stale-controls-batch-20260921",
+      "change_id": "20260921-fix-successor-batch-for-issues-124-125-126-129-i-c6741e",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-21T18:17:32+00:00",
+      "route_id": "c6741eae6dcd"
+    }
+  ],
+  "created_at": "2026-09-21T18:17:32+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "source port committed; coordinator-controlled validation and independent reviews not run",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "source port committed; coordinator-controlled validation and independent reviews not run",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "source port committed; coordinator-controlled validation and independent reviews not run",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "source port committed; coordinator-controlled validation and independent reviews not run",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "source port committed; coordinator-controlled validation and independent reviews not run",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-21T18:17:32+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "route_id": "c6741eae6dcd",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "Fix successor batch for issues #124 #125 #126 #129: isolated reviewer scratch evidence, complete change-spec AC INV FORBID coverage, durable local human permission gates, and byte-safe verifier diagnostics. Port only source tests docs from PR141 PR142 PR144 PR145 onto current main; no Trust CI deployment, old approvals or receipts, pushes, merges, or heavy verification.",
+  "updated_at": "2026-09-21T18:17:32+00:00",
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "human_gates_digest": "da2cf26db94f4a5a55af690ce4af279b28ab47f8a2d5c69c63e53b5cbf034269"
+}

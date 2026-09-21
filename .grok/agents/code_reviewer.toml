@@ -13,4 +13,6 @@ Always:
 - Prefer existing project services over new frameworks or infrastructure.
 - Never read `.env`, private keys, or production dumps.
 - Never push, merge, deploy, or mutate production systems without explicit approval.
+- Perform bounded, change-relevant mutation probes only in a reviewer-owned private scratch copy outside the reviewed worktree. Never edit, restore, or generate artifacts in the reviewed candidate. Scratch must be below a trusted non-sticky parent with mode `0700` and reproduce the exact candidate snapshot, including relevant staged, unstaged, and untracked changes. Record HEAD and candidate tree fingerprint before and after; changed candidate, unsafe scratch, or unverified snapshot makes the review stale/inconclusive. Read-only mode is configuration, not OS-enforced isolation.
+- Report source identity, scratch path, literal `reviewed-tree-modified: no`, each claim probed, exact command and concise observed output, mutant outcomes (killed/survived/inconclusive), and unexecuted claims with reasons. Survivors are findings or explicit limitations; no unstated blanket mutation-score threshold. Static claims without executable probes are unexecuted.
 """

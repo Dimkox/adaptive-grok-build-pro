@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import locale
 import os
 import re
 import shutil
@@ -80,11 +81,18 @@ def run(
     cwd: Path,
     timeout: int = 120,
     env: dict[str, str] | None = None,
+    encoding: str | None = None,
+    errors: str = 'strict',
 ) -> subprocess.CompletedProcess[str]:
     merged = os.environ.copy()
     if env:
         merged.update(env)
     try:
+        options: dict[str, str] = {}
+        if encoding is not None:
+            options['encoding'] = encoding
+        if errors != 'strict':
+            options['errors'] = errors
         return subprocess.run(
             args,
             cwd=cwd,
@@ -93,11 +101,20 @@ def run(
             timeout=timeout,
             env=merged,
             check=False,
+            **options,
         )
     except FileNotFoundError:
         return subprocess.CompletedProcess(args, 127, '', f'command not found: {args[0]}')
     except subprocess.TimeoutExpired as exc:
-        return subprocess.CompletedProcess(args, 124, exc.stdout or '', exc.stderr or 'timeout')
+        stdout = exc.stdout or ''
+        stderr = exc.stderr or 'timeout'
+        if encoding is not None or errors != 'strict':
+            output_encoding = encoding or locale.getpreferredencoding(False)
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode(output_encoding, errors)
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode(output_encoding, errors)
+        return subprocess.CompletedProcess(args, 124, stdout, stderr)
 
 
 def command_exists(name: str) -> bool:

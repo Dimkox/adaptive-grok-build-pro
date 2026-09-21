@@ -157,6 +157,14 @@ Use the exact local evidence kind requested by the route. A local receipt is sta
 
 For merge eligibility, open or update the pull request and require the App-owned check named by the deployed policy, currently shaped as `adaptive-trust-ci/verified@<policy-sha12>`, on the exact head SHA. Local receipts and delegated grants cannot create that check.
 
+Reviewers return complete reports to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists reports under the change evidence directory, then reruns final verification and records fresh fingerprint-bound receipts for the tree containing those reports.
+
+### Reviewer mutation evidence
+
+Code and test reviewers perform bounded, change-relevant mutation probes in a reviewer-owned private scratch copy outside the reviewed worktree. Never edit, restore, or generate artifacts in the reviewed candidate. Keep scratch under a trusted non-sticky parent with mode `0700`; include the exact candidate snapshot (HEAD plus relevant staged, unstaged, and untracked changes), and record the HEAD and candidate tree fingerprint before and after review. If the snapshot cannot be reproduced, scratch safety cannot be established, or the candidate fingerprint changes, report the review as inconclusive/stale rather than clean. These are workflow requirements; read-only reviewer configuration and prompts do not provide OS-enforced filesystem isolation.
+
+For each report, list the claims probed, exact commands and concise observed output, and each mutant's killed/survived/inconclusive result. Identify unexecuted claims and why, give the scratch path and source identity, and include the literal `reviewed-tree-modified: no`. A surviving mutant is a finding or explicit limitation; do not imply a blanket mutation-score threshold unless a scoped policy requires one. Static claims without an executable probe remain unexecuted.
+
 ## Local delegated grants
 
 - `scripts/grok_approve.py` does not originate authority. It materializes explicit or standing user consent already present in the working context.
