@@ -1,0 +1,94 @@
+{
+  "observed_at": "2026-09-21T09:54:36.797389+00:00",
+  "head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
+  "tree_fingerprint": "cf3e65364833e9a5c3efba1e3ebb7f788e9921c493b66aa083dc64b5eb91a5ae",
+  "full_report_sha256": "2e1141e2280d24d2ea373fb8c6565c0a22e1529c6efdc27bf6ae437ac1dc6e9c",
+  "status": "PASS",
+  "root_tests": 828,
+  "root_subtests": 1268,
+  "factory_postgres_tests": 782,
+  "factory_postgres_conditional_skips": 2,
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:839d3aa26bc90417424d814ee48d8b5cd3be367e,pr-target:839d3aa26bc90417424d814ee48d8b5cd3be367e"
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "9 specs checked; exempt=False"
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass"
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current"
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured"
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets"
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "5 contracts checked"
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings"
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=112.454"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=1.656"
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable"
+    }
+  ],
+  "scope": "Combined product verification, not final-head receipt or independent external merge authority. Source unchanged; selected reviews and final evidence freeze pending."
+}

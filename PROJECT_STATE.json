@@ -1906,7 +1906,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T09:42:23.229677+00:00",
+    "observed_at": "2026-09-21T09:54:36.797389+00:00",
     "route_id": "bcc1d645c438",
     "branch": "fix/reviewed-issues-batch-20260921",
     "issues": [
@@ -1923,14 +1923,16 @@
     "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
     "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
     "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "initial_full_failed_coordinator_docs_corrected_repeat_pending",
-    "next_action": "Repeat full gate after coordinator-only scope/handoff correction, then all five selected independent reviews and exact-head PR delivery.",
+    "status": "combined_full_pass_independent_reviews_pending",
+    "next_action": "All five selected independent reviews, final evidence freeze/current receipts, then exact-granted PR delivery and external Trust CI.",
     "excluded_successors": [
       "active165 interruption-status source",
       "active163 migration022 source",
       "separate162 trusted-validator compatibility source",
       "other retained PR source and external operations"
-    ]
+    ],
+    "verified_source_head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
+    "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json"
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",
@@ -1968,13 +1970,13 @@
         "issue": 165,
         "branch": "fix/issue-165-interruption-status",
         "route_id": "2dfd5804553e",
-        "status": "25focusedPASS; initial full productchecksPASS, logformat repaired; independent review confirmed raw-byte filename checkpoint persistence defect, sole-owner repair pending"
+        "status": "raw-byte review defect repaired;28focused testsPASS, full and renewed reviews pending"
       },
       {
         "issue": 163,
         "branch": "fix/issue-163-repair-plan-rejections",
         "route_id": "d2e7e68e7bd5",
-        "status": "14methodRED,46offlineGREEN;11focusedPGcasesPASS plus deadline rerunPASS after fixture-only budget correction; full verification and reviews pending"
+        "status": "46offlineGREEN,11PGcases plus corrected deadlinePASS; exact main-ancestor integration done, initial full and reviews pending"
       }
     ],
     "superseded_candidate_prs_pending_delivery": [
