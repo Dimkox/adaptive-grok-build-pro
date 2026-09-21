@@ -756,3 +756,7 @@ Recognize a legacy SQL NULL before calling the binding contract parser, so the c
 ## 2026-09-21 — Refresh the target before repeating a pilot
 
 Reading the live target and the closed attempt before spending another provider invocation exposed a 26-commit baseline drift and a version task that no longer fits the site. A separate AST inventory probe identified a current two-file browser-audit gap, so the next pilot now has a concrete issue draft and reproducible failure. Keep that successor separate from #155 and from the historical profile; a draft or local proof does not establish maintainer acceptance.
+
+## 2026-09-21 — Observe migration contention through the actual advisory lock
+
+The issue166 regression seeds the real populated packaged prefix, observes the migrator waiting on its advisory-lock holder, then separately checks release-success and server-timeout recovery. This worked on PostgreSQL17 and verifies preserved ledger, rows, function identity and privileges without assuming that an executing function call blocks CREATE OR REPLACE.

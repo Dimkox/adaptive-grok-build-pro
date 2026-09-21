@@ -1375,3 +1375,7 @@ I checked whitespace before staging new raw evidence files, so the check omitted
 ## 2026-09-21 — Distinguish no-index differences from whitespace errors
 
 The external evidence-archive helper stopped on clean files because it treated every nonzero `git diff --no-index --check` exit as a whitespace error. `--no-index` also reports ordinary content differences with exit 1; check diagnostics and the documented exit classes instead. The helper was corrected before any final evidence or completion claim, with raw bytes preserved.
+
+## 2026-09-21 — Match the complete disposable target-binding contract
+
+The issue166 focused wrapper reused nonce and exact-container binding but chose an issue-specific name without checking the repository preflight name contract; preflight rejected it before tests. The owned container was removed, and changing only the cache wrapper to `adaptive-factory-exit-<12hex>` made the unchanged preflight pass. Reuse the entire target identity contract, not only its nonce checks.

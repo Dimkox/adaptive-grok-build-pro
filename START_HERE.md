@@ -2,6 +2,10 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
+## Active issue branch — #166
+
+This isolated successor to PR #170 adds real current-prefix migration tests. Read [the change package](engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e/brief.md) and `PROJECT_STATE.json.active_issue_work`. Three focused PostgreSQL tests passed with cleanup verified; full PR verification and code/test/data reviews remain pending.
+
 ## Current project state
 
 Snapshot: **2026-09-21**. Repository `main` was observed at `90078959ff816068af374ad42f4bb80fdbaec866` (PR #151); fetch refs before assuming it is still the tip.

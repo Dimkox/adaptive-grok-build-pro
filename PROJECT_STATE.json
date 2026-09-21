@@ -1902,5 +1902,15 @@
     "target_mutations": 0,
     "maintainer_acceptance": false,
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
+  },
+  "active_issue_work": {
+    "issue": 166,
+    "route_id": "af166ec812f3",
+    "branch": "test/issue-166-incremental-migration",
+    "change_package": "engineering/changes/20260921-test-issue-166-ship-a-postgresql-current-prefix-af166e",
+    "base_pull_request": 170,
+    "base_head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+    "status": "focused_postgres_passed_full_verification_pending",
+    "next_action": "Run mandatory PR verifier and independent code/test/data reviews; freeze final evidence and prepare a separate PR. Production migrations and deployed state remain unchanged."
   }
 }
