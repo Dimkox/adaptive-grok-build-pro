@@ -748,3 +748,7 @@ When the mandatory PostgreSQL tier turned out to be deterministically red for a 
 ### 2026-09-20 — Prove every review fix with a mutation before taking receipts
 
 For each finding fixed in the delivered tree (false `malformed payload` diagnosis, `_guard_lines` blindness, missing `authority_not_fresh` assertion), the fix was accepted only after reproducing the defect it claims to prevent in a scratch copy and watching the new test turn red — inverted `CASE`, deleted guard-group boundary, clause removed from `018` and `021` together: baseline green, all three caught. A review fix that has not flipped a control is a claim about code, not evidence, and the delta costs minutes while the reviewer is still warm.
+
+### 2026-09-21 — Classify store refusals before parsing bindings
+
+Recognize a legacy SQL NULL before calling the binding contract parser, so the caller receives a store refusal without a fabricated shape-error cause. A red/green regression now inspects the exception cause, context and formatted traceback while preserving the real cause for malformed documents. This closes the diagnostic boundary that message-only assertions missed.

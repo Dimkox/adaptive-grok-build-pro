@@ -1359,3 +1359,11 @@ The resumed #155 contour needed proof that its four-pass PostgreSQL evidence str
 ### 2026-09-20 — Read `nproc` as host capacity and reported 22 CPUs on a 28-CPU machine
 
 The session opened by reporting "host: 22 CPU" and planning fan-out from it; the owner corrected the number. Measured: Intel Xeon E5-2680 v4, 1 socket × 14 cores × 2 SMT = 28 logical CPUs, all of `0-27` online, `cpuset.cpus.effective = 0-27`, and the 22 was only the CLI process's inherited affinity mask `0,1,8-27` — `taskset -c 0-27` gives a child all 28. `decisions.md` had already recorded this distinction, so the failure was quoting the convenience signal instead of measuring: `nproc` answers "how many CPUs may this process use", which is not the question "how much machine is there". For capacity take `lscpu`, `os.sched_getaffinity(0)`, `cpuset.cpus.effective` and `taskset -pc $$` together, say which of them a quoted number came from, and size parallel work with the real mask or `xargs -P 28`.
+
+### 2026-09-21 — A corrected message retained the false diagnosis in its exception chain
+
+The #155 compatibility branch renamed a NULL refusal only after `from_dict(None)` had raised `invalid_object`, then chained that parser error into the new StoreError. The root cause was classifying a protocol refusal after contract parsing while testing only the outer message; independent review reproduced the misleading traceback. Classify refusals before parsing and test cause/context as well as displayed text.
+
+### 2026-09-21 — Source reversion is not migration recovery
+
+The #155 recovery document called a whole-commit revert a forward fix, although removing packaged migration 021 makes the migrator reject an already-upgraded database and never replays 018. The root cause was reasoning from the old function body remaining in Git instead of the migrator's immutable applied-prefix semantics. Recovery must retain all applied resources and use a separately tested additive correction with compatible application handling.

@@ -40,3 +40,17 @@ route. The misleading role name is tracked separately in issue #156.
 The migration remains additive (`021`); resources `001`–`020`, contracts, deployed
 runtime and published artifacts remain outside this continuation's edits. Follow-up
 issues #162, #163, #166 and the broader queue are not part of this repair.
+
+## Independent review correction
+
+The first September 21 full verifier and four-pass product streak passed; their raw
+results are retained in `evidence/continuation-20260921/`. Independent review then found
+a legacy NULL refusal still chained the parser's `invalid_object` exception despite its
+correct outer message, and a source-revert recovery plan incompatible with applied
+migration `021`. The writer added a red/green regression for the exception chain and moved
+NULL classification before parsing; recovery now preserves the migration prefix and
+requires a reviewed forward correction. The first streak is historical after this
+production-code correction; final verification and four-pass evidence must cover the
+corrected product bytes before delivery.
+
+The correction is frozen at product digest `7bc1176912c7468329d825a1b5f1ef74b0025cc862505f04003050bca1aeac25`. Its focused red/green logs and report are in `evidence/null-cause-review-fix/`; SQL resources are unchanged. Fresh four-pass PostgreSQL evidence and full verification are running on this corrected product.

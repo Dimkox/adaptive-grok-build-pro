@@ -1,0 +1,6 @@
+test_bind_repair_child_separates_an_unexplained_store_refusal (factory.tests.test_migrations.MigrationTests.test_bind_repair_child_separates_an_unexplained_store_refusal) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.009s
+
+OK

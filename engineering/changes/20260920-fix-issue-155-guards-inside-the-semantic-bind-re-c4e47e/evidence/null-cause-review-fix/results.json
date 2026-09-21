@@ -1,0 +1,87 @@
+{
+  "head": "4a47c76b3fb37fbac430fd209771a695832610d2",
+  "started_at": "2026-09-21T05:08:17.778930+00:00",
+  "results": [
+    {
+      "name": "red",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "-v",
+        "factory.tests.test_migrations.MigrationTests.test_bind_repair_child_separates_an_unexplained_store_refusal"
+      ],
+      "exit": 1,
+      "seconds": 0.315,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/red.log"
+    },
+    {
+      "name": "ruff-before",
+      "command": [
+        "ruff",
+        "check",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_migrations.py"
+      ],
+      "exit": 0,
+      "seconds": 0.033,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-before.log"
+    },
+    {
+      "name": "green",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "-v",
+        "factory.tests.test_migrations.MigrationTests.test_bind_repair_child_separates_an_unexplained_store_refusal"
+      ],
+      "exit": 0,
+      "seconds": 0.365,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/green.log"
+    },
+    {
+      "name": "migrations",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "-v",
+        "factory.tests.test_migrations"
+      ],
+      "exit": 0,
+      "seconds": 0.365,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/migrations.log"
+    },
+    {
+      "name": "ruff-after",
+      "command": [
+        "ruff",
+        "check",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_migrations.py"
+      ],
+      "exit": 0,
+      "seconds": 0.065,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-after.log"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.017,
+      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/diff-check.log"
+    }
+  ],
+  "completed_at": "2026-09-21T05:09:01.165263+00:00",
+  "file_sha256": {
+    "factory/src/adaptive_factory/store.py": "802cee57ab296935f52433e2c53e822735bec3ff75cc97cc40b2cc286b5845cc",
+    "factory/tests/test_migrations.py": "91313992381cfe19cff1fa360fbd8ce34ee2dd8f492ab7b45342af4701354fd7",
+    "factory/src/adaptive_factory/resources/018_semantic_validation_bridge.sql": "33053563dce7c34edfa9301130272adb34651d44dd1f2bc305ba3eec01382c70",
+    "factory/src/adaptive_factory/resources/021_semantic_repair_child_rejection_reasons.sql": "868bc21f47351f92b79acb8bd8e9390c62b43803c0b5761400e32c7143d56d5e"
+  }
+}

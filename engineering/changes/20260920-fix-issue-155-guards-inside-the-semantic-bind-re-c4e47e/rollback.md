@@ -1,32 +1,59 @@
-# Rollback plan — Fix issue #155: semantic_bind_repair_child guard rejections and PostgreSQL tier determinism
+# Recovery plan — issue #155
 
-> Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown explains context and cannot override typed IDs, risk, acceptance criteria, forbidden outcomes, or approval scopes. Strategy: `forward_fix`, at most one step (typed in `change-spec.yaml`).
+> Typed authority: [`change-spec.yaml`](change-spec.yaml). Strategy: `forward_fix`,
+> at most one corrective release. This plan authorizes no production operation.
 
 ## Trigger conditions
 
-Roll forward (revert the commit) rather than roll back the database if any of these is observed after merge:
+Hold delivery and prepare a corrective release if a refusal is attributed to the wrong
+condition, accept/reject behavior differs from the preserved `018` function, an error
+message consumer breaks, or applying `021` fails.
 
-- A bind is refused with a reason that does not match the guard that should have fired — i.e. the re-grouped `OR` blocks disagree with `018`'s accept/reject set on real data. This is the only *behavioural* risk the change carries.
-- A consumer's code matches on the old message text `semantic repair child binding rejected` exactly and breaks on the appended `: <reason>` suffix.
-- `021` fails to apply on a cluster that already has `001-020` (drift or timeout), which would stop every migration for that database, not just this feature.
+## Preserve the applied history
 
-## Application rollback
+A database that recorded migration `021` must continue receiving a package containing
+byte-identical resources `001`–`021`. `plan_migrations()` rejects a package shorter than
+its applied history with `applied migration is missing from package`; already-applied
+`018` is never replayed. Reverting the source commit and deploying its shorter migration
+inventory therefore neither restores the function nor provides a working normal upgrade.
 
-`git revert` the merge commit and ship the result as an ordinary update. `018` still contains the complete pre-fix function body, so re-applying the older source restores the previous behaviour through the same migration mechanism — the rollback is a source operation, not a SQL operation.
+Do not remove row 21 from `schema_migrations`, edit a shipped resource, drop the function,
+or restore a database snapshot solely to undo this diagnostic change. The migration
+performs no row backfill and changes no table or index: recovery concerns the function
+body and compatible application handling.
 
-The Python allowlist and the strict envelope reader revert with the same commit; nothing outside the commit needs coordination, and no other component was taught to emit or expect the envelope.
+## One corrective release
 
-## Data recovery / forward-fix
+1. Retain all shipped migration bytes and the request/server-clock test corrections.
+2. If the SQL body must change, add the next unused versioned resource (expected `022`,
+   after checking the current inventory). Use `CREATE OR REPLACE FUNCTION` on the same
+   `(char,text) -> jsonb` signature, retain `SECURITY DEFINER`, the fixed search path and
+   coordinator-only grant, and restore either the exact intended pre-`021` guard/body
+   behavior or a reviewed corrected reason mapping. Never claim that replaying `018`
+   will perform this replacement.
+3. Ship compatible Python handling in the same release. It must refuse both fixed-code
+   rejection envelopes and legacy SQL NULL without treating a refusal as malformed
+   binding data. If only an application message needs correction, retain `021` and fix
+   that handling without changing database history or implying the SQL body was undone.
+4. Apply the corrective release through the ordinary migrator under its existing
+   transaction, advisory lock and bounded statement/lock timeouts, after the separate
+   operational authorization. No manual history edits or timeout widening are part of
+   this procedure.
 
-No data was written, rewritten, deleted, or re-encoded, and no index, constraint, table, view, type, or privilege was added. `021` changes only the body of one function plus its grants on an unchanged signature. Therefore:
+If `021` itself fails, verify its transaction left the migration prefix unchanged and
+stop the upgrade. Diagnose the concrete failure before a bounded retry; do not mark it
+applied or attempt to skip directly over it to a corrective resource.
 
-- **There is no destructive step to undo, and there must not be one.** Deleting `schema_migrations` row 21, `DROP FUNCTION`, or editing `018` in place are all forbidden here: rewriting a shipped resource makes the recorded `(version, name, sha256)` prefix diverge and fails every existing database with `migration drift at version N`.
-- Forward-fix instead: if a reason is wrong, a new resource `022_…` replaces the function again. History stays append-only, which is exactly the rule this change was written under.
-- A reverted deployment leaves `021` applied and harmless: the function keeps the same accept/reject decisions, and the pre-fix Python simply never reads the envelope key — it treats the returned document as it always did.
+## Required recovery evidence
 
-## Verification after rollback
+Before approving a corrective release, prepare a disposable database with `001`–`021`
+already recorded, apply the proposed correction, and prove the original prefix hashes
+are unchanged and only the expected new version is appended. A fresh empty-database
+run alone cannot prove this recovery path.
 
-1. `python3 -m unittest -q factory.tests.test_migrations` — the vocabulary/equality assertions revert with the tree, so this must be green on the reverted source, not on the fix.
-2. `python3 -u factory/tests/run_disposable_exit.py` — one pass on the reverted tree; the tier must not need the fix to be green, and this is also how the `stale_m0` fixture coupling is checked independently (a reverted tree reproduces `422 != 201` only in runs longer than 300 s).
-3. `python3 scripts/grok_verify.py --mode pr` on the clean reverted tree.
-4. Read one real rejection from the reverted cluster and confirm it is the pre-fix anonymous `semantic repair child binding rejected` — proof the rollback restored the known shape rather than a third state.
+Exercise accepted binding, exact replay, and refused binding on that upgraded database;
+check the expected reason (or the explicit `store_returned_null` compatibility result)
+and unchanged role isolation. Run the focused migration tests, the mandatory disposable
+PostgreSQL tier and `python3 scripts/grok_verify.py --mode pr` for the correction. Recovery
+is accepted only after these observations and its separately required delivery approval;
+this source change does not claim that the future corrective migration has been exercised.

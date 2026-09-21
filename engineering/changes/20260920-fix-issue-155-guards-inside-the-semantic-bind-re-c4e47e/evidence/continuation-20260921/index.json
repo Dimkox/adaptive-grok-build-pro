@@ -1,0 +1,74 @@
+{
+  "postgres-streak.json": {
+    "sha256": "e5e9b5eb6d7be88097991bcc2415efcd18a9baa7d5bdfec9201ccc86f58d02b8",
+    "bytes": 3350
+  },
+  "product-manifest.json": {
+    "sha256": "f78425535281ee765360a34ad77045c37c4689589be5833018cb6472bd0de4aa",
+    "bytes": 795506
+  },
+  "manifest-control.json": {
+    "sha256": "9d4b92ae663d643f2120f7d7fe946f1e03940890e4a4603d2c9122850c7fa4cd",
+    "bytes": 340
+  },
+  "observations.json": {
+    "sha256": "ff6166b68e37172146f21c6359637d8a8259e5d041162a1234510e7e8852f86e",
+    "bytes": 1196
+  },
+  "verify-initial.json": {
+    "sha256": "69b522b4a4e0d2a7bb37274589dc426318bb6ad88f5736610fa46ce99f722ecc",
+    "bytes": 48163
+  },
+  "streak.py.txt": {
+    "sha256": "378a34beba0e2869002228b6b1bb228d12bee898ebf270bac301d94ca36fdd43",
+    "bytes": 3368
+  },
+  "root-suite-diagnosis.md": {
+    "sha256": "6eabe3b1dd23aefaa3e54a866e70d9e8947ede12b3f62422b29ce6d2b616b160",
+    "bytes": 4613
+  },
+  "root-suite-results.json": {
+    "sha256": "c98e42802f3f57dbd4f3ef4ae92d56f3b60c76658e59256a1c232d4a060a4508",
+    "bytes": 859
+  },
+  "root-unittest.log": {
+    "sha256": "de755d7565cbb420e8a33ac3f55bc7b05e5441083a84b3fd6e190bcbeda679be",
+    "bytes": 1055
+  },
+  "root-coverage.log": {
+    "sha256": "1c2ee2641feeedc475bfaeaf579c187bffde6e274dcb42617f2ffe02cf425f9e",
+    "bytes": 13474
+  },
+  "scratch-control-results.json": {
+    "sha256": "51053eeb4dce1feeb63308482e65ec56392a491df669e4e97eebd56c919d80a4",
+    "bytes": 993
+  },
+  "postgres-1.log": {
+    "sha256": "c94f27120ad49a67ce169f0c4c2ee69ee2a7369acc8430ab1bcf720a62937fc5",
+    "bytes": 149890
+  },
+  "postgres-2.log": {
+    "sha256": "d9aa4fa498d5e3eadae3bd592a507e24e2542bdc61f3d2177de808cf5971e496",
+    "bytes": 149890
+  },
+  "postgres-3.log": {
+    "sha256": "0af11b2507db9851d72e6f088ed68d0e9c924e7b65002e082d10338bb48c0004",
+    "bytes": 149890
+  },
+  "postgres-4.log": {
+    "sha256": "c1f40eef842abcacaa1952ae7d437211a0b3e3e449b3c26933d00351ed98250d",
+    "bytes": 149890
+  },
+  "scratch-baseline.log": {
+    "sha256": "67fc8d26d127f742210aac8a5981621460114a06a3bcb08f32e992f28519b143",
+    "bytes": 98
+  },
+  "scratch-unowned-probe.log": {
+    "sha256": "6f8bb9b123f3f0a1d505fbdc41df191cfc9b99d87276bdd80e4728d31a51ea04",
+    "bytes": 1379
+  },
+  "scratch-probe-removed.log": {
+    "sha256": "7df3a1627b357a27e200bf5f19ca0fb2189b68f391e688b0fcd2185089c9a58b",
+    "bytes": 98
+  }
+}

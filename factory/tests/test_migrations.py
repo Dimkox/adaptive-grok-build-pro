@@ -1,5 +1,6 @@
 import hashlib
 import re
+import traceback
 import unittest
 from unittest.mock import MagicMock, patch
 import subprocess
@@ -534,6 +535,10 @@ class MigrationTests(unittest.TestCase):
         for response, expected in (
             ((None,), "rejected: store_returned_null"),
             (({"unexpected": 1},), "payload is malformed"),
+            (
+                ({REPAIR_CHILD_REJECTION_CHANNEL: "deadline_exceeded"},),
+                "rejected: deadline_exceeded",
+            ),
         ):
             with self.subTest(response=response[0]):
                 cursor = MagicMock()
@@ -550,6 +555,15 @@ class MigrationTests(unittest.TestCase):
                     "malformed" in str(raised.exception),
                     expected == "payload is malformed",
                 )
+                if expected == "payload is malformed":
+                    self.assertIsInstance(raised.exception.__cause__, ContractError)
+                else:
+                    self.assertIsNone(raised.exception.__cause__)
+                    self.assertIsNone(raised.exception.__context__)
+                    self.assertNotIn(
+                        "invalid_object",
+                        "".join(traceback.format_exception(raised.exception)),
+                    )
 
     def test_repair_child_guard_structure_maps_each_reason_to_one_clause_group(self):
         # `_guard_lines` compares predicate text only: 021 legitimately adds three block

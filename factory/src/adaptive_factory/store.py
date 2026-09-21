@@ -749,16 +749,16 @@ class PostgresSemanticCoordinatorStore:
             # named by resource 021, so a deadline, freshness or precondition refusal is
             # no longer reported as a data-shape failure.
             raise StoreError(f"semantic repair child binding rejected: {rejection}")
+        if response is None:
+            # Only a store whose schema predates resource 021 can still answer a
+            # refusal with a bare SQL NULL. The payload is not at fault there, and
+            # calling it malformed would repeat the misdiagnosis #155 removes.
+            raise StoreError(
+                "semantic repair child binding rejected: store_returned_null"
+            )
         try:
             persisted = RepairChildTaskBindingV1.from_dict(response)
         except (TypeError, ValueError) as exc:
-            if response is None:
-                # Only a store whose schema predates resource 021 can still answer a
-                # refusal with a bare SQL NULL. The payload is not at fault there, and
-                # calling it malformed would repeat the misdiagnosis #155 removes.
-                raise StoreError(
-                    "semantic repair child binding rejected: store_returned_null"
-                ) from exc
             raise StoreError(
                 "semantic repair child binding payload is malformed"
             ) from exc
