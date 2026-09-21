@@ -1907,10 +1907,10 @@
     "branch": "fix/trust-ci-webhook-bridge",
     "route_id": "68274cb876e4",
     "change_package": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c",
-    "plan_sha256": "23c6bd21137951d96a41510dfdb34bed8baef1ee95d4f3e073026ccdc183cb5e",
-    "status": "preparation_reviewed_runtime_pending",
+    "plan_sha256": "7b97645e9852ad772d60cf009b0636fcc6f9b7fc7c6f9558281b1b848bc281a3",
+    "status": "installed_inactive_typed_gate_reviewed_activation_pending",
     "user_delegation": "2026-09-21: делай всё и закрывай, following the described missing CI ingress repair",
     "product_source_changed": false,
-    "next_action": "Grant exact reviewed host resources, refresh preflight, activate and measure public/path/source/stop-recovery controls, then separately ready PR170 and observe external App check."
+    "next_action": "Refresh exact local grant; execute corrected typed gate from continuation block3, then activate and measure source/path/recovery controls. Do not rerun exclusive installation or overwrite historical first gate results. Real PR170 event waits heavy lane release."
   }
 }

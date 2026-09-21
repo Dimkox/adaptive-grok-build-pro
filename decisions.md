@@ -762,3 +762,6 @@ Checking exact unit files is insufficient because inherited drop-ins and outgoin
 
 ## 2026-09-21 — Separate host ingress repair from product verification
 The measured failure is a missing bridge between the VPN namespace and a healthy loopback API, so the repair uses four host-local artifacts and real enforcement/recovery evidence. Product code and deployed trust material stay unchanged, and the AGENTS no-op exception avoids a redundant full product test gate.
+
+## 2026-09-21 — Preserve failed preflight and resume from measured state
+Keep successful exclusive installation and the failed pre-start gate as separate evidence, then resume only after rechecking installed bytes and reviewing the corrected gate. This avoided overwriting owned files or treating a formatter failure as permission to bypass validation; all four reviewers accepted the typed continuation.

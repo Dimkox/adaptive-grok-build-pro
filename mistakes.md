@@ -1381,3 +1381,6 @@ A read-only mount query placed the property option after --, so systemctl treate
 
 ## 2026-09-21 — Validate operational specification metadata before receipts
 The host-only specification used acceptance IDs in observability.proves, whose existing schema accepts objective IDs only. Receipt creation correctly refused it; the field now names OBJ-001 and the typed spec is validated separately from the inapplicable product test gate. An initial grant attempt also used production scope with external-write; the supported matching external-write scope is required for these exact host resources.
+
+## 2026-09-21 — Operational gates need typed runtime evidence
+The first bridge gate treated systemctl human output as a complete typed protocol and inferred PrivateTmp dependencies from current mount topology. It safely refused before activation because empty command arrays were omitted, device names were escaped and services carried an implicit tmp.mount edge; named typed D-Bus reads and a strictly absent-target check passed the corrected read-only diagnostic.
