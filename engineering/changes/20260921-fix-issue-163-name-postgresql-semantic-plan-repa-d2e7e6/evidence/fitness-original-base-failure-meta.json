@@ -1,0 +1,16 @@
+{
+  "command": [
+    "python3",
+    "scripts/grok_architecture.py",
+    "fitness",
+    "--base",
+    "90078959ff816068af374ad42f4bb80fdbaec866",
+    "--worktree",
+    "--pre-risk",
+    "yellow",
+    "--json"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 9.968171114000143,
+  "observed_at": "2026-09-21T10:08:55.461369+00:00"
+}

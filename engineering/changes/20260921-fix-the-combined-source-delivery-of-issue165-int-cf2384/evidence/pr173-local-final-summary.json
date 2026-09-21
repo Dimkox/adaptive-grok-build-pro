@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-09-21T11:01:09+00:00",
+  "route_id": "bcc1d645c438",
+  "status": "pass",
+  "tree_fingerprint": "50481cc75b90915455901c7504f0c186c895f24dddd039e95b2d409130fe0454",
+  "profiles": [
+    "base",
+    "contracts",
+    "data",
+    "integration"
+  ],
+  "command": [
+    "python3",
+    "scripts/grok_verify.py",
+    "--mode",
+    "pr",
+    "--json"
+  ],
+  "env": {
+    "GROK_TEST_WORKERS": "8"
+  },
+  "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+  "started_at": "2026-09-21T10:52:34.101039+00:00",
+  "ended_at": "2026-09-21T11:01:10.774714+00:00",
+  "exit_code": 0,
+  "report_sha256": "27ed1c9a0fcb5dbc3f30d08585e4080a8d37e82d3c9e353c9275dbb18d864b4b",
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:839d3aa26bc90417424d814ee48d8b5cd3be367e,pr-target:839d3aa26bc90417424d814ee48d8b5cd3be367e"
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "9 specs checked; exempt=False"
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass"
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current"
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured"
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets"
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "5 contracts checked"
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings"
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "python-unittest",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=111.139"
+    },
+    {
+      "name": "coverage",
+      "status": "pass",
+      "summary": "pytest-xdist workers=8 exit=0 seconds=1.456"
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0"
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable"
+    }
+  ]
+}

@@ -1,0 +1,647 @@
+{
+  "scope": "Exact archived candidate change packages only. No application/test/guide import, no execution or current receipt adoption. Original failures, corrected results and skips remain historical.",
+  "files": [
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/architecture.md",
+      "blob": "3eb14ae1a4bf0155d552c4cf5dbcd11a8da3df2a",
+      "sha256": "bce955c47babf50482690bdc276c6b79aa36a3231bb688d76c9eccdbd2a4d5c6"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/brief.md",
+      "blob": "a21b8c3f1d73d4629953e387a720361eee53486e",
+      "sha256": "ac0b624ff13f606b69fed955648b3c9687f27fc21eb9774362ac4a1c7714cff2"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/change-spec.yaml",
+      "blob": "e5b3e24a5417ea9306b561f43bd12c629187f804",
+      "sha256": "f10a8d9c4acd47546599283ee56b5412ec32b31bc8d11d0359c89d31a20ae769"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/README.md",
+      "blob": "e883aae56da9d9b6d5f8e14eb3aa8a19c4fcf363",
+      "sha256": "b6a95e9efc8eaeaae57d28e02a8a2dbddc0302c3c3746a852684e84039c97698"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/analysis-architect.md",
+      "blob": "5b96b6aaafe45935c076f6713654a92297365f1b",
+      "sha256": "b13d5beefafeaeb8c18fa833aa8ab2035f89f540e6fd7125b09767ce68df7187"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/analysis-docs_researcher.md",
+      "blob": "fed1d98cc128813e87496fb198d68ff78d11136c",
+      "sha256": "eebf3f6dd9e1bca41b22b5ba1c4e3e7a9ff02df741c58ec83b5c3c645fb46cff"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/analysis-integration_architect.md",
+      "blob": "ec2cdefa74d5af5e9d96c85c7fbc75ae536ce09a",
+      "sha256": "4435ef3c686cc6e4fcc21e64390abb547ce4c0c84a97823aa0979c4b8b42668d"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/analysis-repo_explorer.md",
+      "blob": "bcc4cb690192801ab031dd8c32aadb5d96add0ce",
+      "sha256": "96b6250843fc402f9c6ac00b916955b8d11f26ac0bbac4317dc269ed1017dd28"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/code-review-first.md",
+      "blob": "2c58f52e4acce8735e1d1a63377a7a62da5ce3fe",
+      "sha256": "bfbf0daff42d4c39061a03aa083ced39b8942c3d16f47fbe97ed49e91c76e773"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/code-review.md",
+      "blob": "6de4a590d4f474143b65e2bf1e4cfe410d7b258f",
+      "sha256": "8168b586091267233caa145b8e1d1b95fb118e348ae0a933bfb35e5c79c2d7ae"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/final-review-adoption.json",
+      "blob": "96c1203bc07e8bf3f95319bb250edcbd99be1562",
+      "sha256": "4cc0f55c647c029eaad25b669270c2c8c840c140737bd4b09f214f4ad1dd7702"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/full-review-repair-meta.json",
+      "blob": "0fc38333239d95ffce7bacd7d69f839161a7fc8f",
+      "sha256": "8329549167157bf66511972bb79cab3254ae58783ae889a2ce00e6a94d2e0bd8"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/full-review-repair-report.json",
+      "blob": "c3d0c2b36175fdaed93ec01f7d5d1a765e842924",
+      "sha256": "cdebdb7105546cf5396e91491fea9c04c902b8eaf706e096d80f67046a3b3c7a"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/full-review-repair-result.json",
+      "blob": "e1509312972978c791be4242ee345743cd197e77",
+      "sha256": "405b94a9e4d24fc62213efa83191b2ebf6eb66c211b9f4fd34c4201c39d06926"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/implementation-evidence.md",
+      "blob": "7667f29c1faa02ce2ddca2062b064cd5d3bc9247",
+      "sha256": "403bc06c30b454b8e54d00a3feca14d81c64d1818d07ffccf1e2ade265da95e4"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/implementation-files.sha256",
+      "blob": "f605a60e7cffad00f72fee4c8ae17b935181ca34",
+      "sha256": "2c193b5a6e17e8594e7d9b7ceaf77d2311d6c8c9a2993993af0a07974eaa7c54"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/implementation-green-1.log.json",
+      "blob": "abd42575cc59da9b95e6d37c657f18504cbf6f94",
+      "sha256": "7e0b82174d0bf9261b04ad2790c23904f05a83f3dd9ca19e11d09b6b8ef67bc3"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/implementation-green-2.log.json",
+      "blob": "60034e94262f7f1c68cd961c0a1ec804cc478249",
+      "sha256": "4a8296a781b21c865e18bdc6d71ec33d09f173b718a68bcb109d2f9046b1685f"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/implementation-red.log.json",
+      "blob": "b1a1d090f7b1cbf2fc9c942af345d1310968fc49",
+      "sha256": "bcf00c9a047317c4fe3946beec14022d184b0a43d467bcc2b83d73053e4b8f9c"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/initial-full-result.json",
+      "blob": "a16c65eaacb9d9e766872750a752249119d25a31",
+      "sha256": "78d6c9b8ed3967161a0e7557265715e461238cfa091a8fb3bd11e65ebb23e0d3"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/pr170-delivery.json",
+      "blob": "af66a6740af424b78238896f7967238d60dcfaa0",
+      "sha256": "8675359cf4c0c4f2d19e915f1a6adc0ccf4f93bd9fb4bd633b8f413c1addc11c"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/review-repair-green-1.log.json",
+      "blob": "172c4fe0fd12ee21b4366468799e1b6caaadade6",
+      "sha256": "18286803909a3b937c0b4da6dda5b88a32401f4fe2229187e68b1ad726895b29"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/review-repair-plan.md",
+      "blob": "f9e55a47a8064df8efbadbf3648d7c208af1a9ac",
+      "sha256": "37558d2590d53cc8a36c04dc98be89c3b783ae1587056ff8e1158b8c78b6a3ce"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/review-repair-red.log.json",
+      "blob": "d0a6b88332eae7aa7fca3885c986e3fcd47ed60b",
+      "sha256": "41a50fb6fba50932b3af5738248cf70b87a279e93b457d5acbb10ae74d41936b"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/review-repair-result.json",
+      "blob": "d76c27246f459e4c777c81a1ef855ae95a5377cf",
+      "sha256": "f6487886cc117151a65fa5e835a1466949d47fc7295073fc77f3396c658201da"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/source-issue.json",
+      "blob": "199a6172417926da9997ad8c8191822fc838160d",
+      "sha256": "ed3b0a78694619af80e49026d7246d73c7e011286d2b95bebff76ad35e08a04d"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/test-review-first.md",
+      "blob": "6f49c4fd80302a204cbf5357c28277347dc094ce",
+      "sha256": "ac4d97d13712b1b8a1db2277eed720dc830ccd53a8174af421fa7d00e221cb42"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/evidence/test-review.md",
+      "blob": "6940184eba002dfc71fdb514e2b59b60a344c5fe",
+      "sha256": "ee0891d7dfadc701ff50386e265c8ec15bf17c089bf8ceb30c97f39eaf41042f"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/release.md",
+      "blob": "e4a63af4b676e276cdc5c0edda1ee40d31b66a20",
+      "sha256": "963ef85cae9cc311b1d87377a8ad2d725bdea1ac569b7a07862fa3b92521be5b"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/requirements.md",
+      "blob": "7721b659ed6994735166072df72265c142a36c92",
+      "sha256": "acb7ae5ea447aae605810243a3282ccb8722be24f5c274f70a37935cf38463fb"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/rollback.md",
+      "blob": "7fe52d44de0484268d0050c0527812030ffb0dd0",
+      "sha256": "55db3d61749665e7d362d121eea827e06706fd3020044622ce3127a2a1eb948a"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/route.json",
+      "blob": "7bb9a461c3597cda6526e67da42762782da3896f",
+      "sha256": "2e9e32374e529490d71802516288d13643ab5c8873787ec67dd71e968bc11c0c"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/state.json",
+      "blob": "4450d340c0ac60f33f1d2d05847829a293affb2f",
+      "sha256": "8276fc78f8269b1302e24645b3142774d1142bcea12ab6b5957cbc2fca254146"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/tasks.md",
+      "blob": "aea28b3ac517bf5ac07cc77260b63f032d77d3ed",
+      "sha256": "c5cfd22f622a7e8551b0015432f21e303fa6c45e86c9ef9ceef6951fedfaf3b3"
+    },
+    {
+      "source_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "path": "engineering/changes/20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58/test-plan.md",
+      "blob": "23be1bcfff26a626a09608f9dc194f8f84134438",
+      "sha256": "b9c1649c4e0f8fcccb62623869a560ccc0a2e2bc6c1d378f1fda6d08ef393a4c"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/architecture.md",
+      "blob": "26df224524c87f1d795af0aed7fece022585c185",
+      "sha256": "cbed2d1700f6e7e19a30809011ef46e68f63e01000b36e65f2d6a799b5dfa702"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/brief.md",
+      "blob": "77ebed0a20bb748615626bd7d5d061ba983cc79e",
+      "sha256": "8ccc8a72473e89dd07dfe2f0ec3e1be4096c20f3307803caddce7c2c0b09b85f"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/change-spec.yaml",
+      "blob": "401bf28fb298a4099b4b2d2f1689c3b0dbc92d35",
+      "sha256": "33417b0f1066dd77152d9986b2a711dd535bc579919ea74f8f5ab0d4e57bcef1"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/design.md",
+      "blob": "15c9ed520c50d8e62d455fbf72cdb9f8a2a3c2e0",
+      "sha256": "02e58d2db932addebdf323cf443d9388a9d65abb510fc72f89d2f5a37e017838"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/README.md",
+      "blob": "d14d2610ef5ca0455b87cf0e2040bd0f8811b801",
+      "sha256": "cd09e4e82d8bb196d1ddb55740b17b8e9707b5abd4d9ae5a90ba0914964f4083"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-architect.md",
+      "blob": "7b5c9f441e96a845baccd104cc9e47d0efc5deae",
+      "sha256": "ef33fec56666f20de9a106b9bf1701a323604cf7c7ab94222d2cdb0d93d2810a"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-data_architect.md",
+      "blob": "84c0b1d032118269546dfbd7079ffc894f48a4a2",
+      "sha256": "5d2f66771b640cee08644c65ae67ca2c280f0a735376158129eec6d98b46bc4c"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-docs_researcher.md",
+      "blob": "531b19d3363a9455516192596802048a7c8f1a1f",
+      "sha256": "e0e77997a58385966dec57b21b46a741226e4d5047a68a86e4a1c89d8411ec20"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-integration_architect.md",
+      "blob": "8e1647f9982a4d92bbc8500595e0d34b15bfa16b",
+      "sha256": "a72df3350b6061a752995941ebe9cd1d6cb346aa19fb590d02f1587de19251c1"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/analysis-repo_explorer.md",
+      "blob": "68212e6eabcf41b10ba64d87c70a9b4d466e28cc",
+      "sha256": "6057754d84a962c1cd7939ae1570dc214c0bb3e046adc30fc93ecfc44a782582"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/delivery-base-ruling.md",
+      "blob": "ce398822a1556632d85a7233f01be6c9510660fc",
+      "sha256": "c5d81023f3904b284e0034d26c22e94d5d0aeed1ff6514c8426375c860a7b9e6"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/fitness-current-main-diagnostic-meta.json",
+      "blob": "8b90c48d95e1bf2fc04fbfe62ff45f6674bff5ce",
+      "sha256": "e99bda6a7297b7fd6213592b7e333ebba69801d7cbeb42ef992984746693245d"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/fitness-current-main-diagnostic.json",
+      "blob": "68369ba031c0402c9e57692a434c3c637a94e535",
+      "sha256": "b043602145a7cee957f2460fa487eecbb7419c36242423ef540de1b7cb9679f6"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/fitness-original-base-failure-meta.json",
+      "blob": "53482472db10a0284349eb24f763f370414a7b7b",
+      "sha256": "b566ed1fb49cd0cbb5a665bc4f3195cbcbb090ea3210b311f47d5227a9587e4b"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/fitness-original-base-failure.json",
+      "blob": "ab1759888eb16879b407d6d8efa5ecc1960f908a",
+      "sha256": "c5500fdeedae525d13d2273235473090d2956b81873416a69cdfc498f49256dc"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/full-initial-meta.json",
+      "blob": "e274f565034686bdb45a7d40a2a3a7ae12c1286b",
+      "sha256": "8f75e4902ae9022cde45b3bbe20199c19ff3aac8b88fce34176787eacff43f03"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/full-initial-report.json",
+      "blob": "de4266df752ab3706500316174d7e4a1a53c6ab0",
+      "sha256": "ac1bfaffbb027691add018c5d544ac781cbc97fbf7dc4c972cbcd9e8d8644ced"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-candidate.json",
+      "blob": "71ed7ca25759dca4317fa373f6c3038021e5a164",
+      "sha256": "bc58506461249be98307dee16cbca194433cf4d4cdcf4cbcceb981cae0d41d50"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-offline-green-transcript.json",
+      "blob": "c1a0b87757bbb20d7f8243a2a4eca5bba4c25520",
+      "sha256": "51cdbb87c5587a7fda1cae7a809bea6370a13147b9899c487993d17a4152438c"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-offline-green.json",
+      "blob": "100e72c40b2ec886813bb7022df7454478e756a4",
+      "sha256": "d586c6cc6c7d1251d90d90a78dcfbf5da6a17aa81025b51c9ffad1d1401da4d2"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-postgres-deadline-green-transcript.json",
+      "blob": "53dd67b9f00b3b1417d367cfcba6bf146a231569",
+      "sha256": "1c2145637a6ad1c3fdd4c542e1dcdd979b14476946f3fef7b106db979c010bad"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-postgres-deadline-green.json",
+      "blob": "5467b664da5249d4fdf177697ffc17c578085d56",
+      "sha256": "82e57273a07c1b8837a6ca563410da0ba19d509b3c9d5e288cf31cab37da6ea9"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-postgres-first-transcript.json",
+      "blob": "e87cbbfbad15a29455303eed6117c41a30ebc075",
+      "sha256": "cd0a4752e9a94dd6aa77ac9dc38b3ad90d6d6be448b9e7152353bf0e1d794bab"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-postgres-first.json",
+      "blob": "82caf694c8e3986fe01c97329b05093d6b46df16",
+      "sha256": "4a538c05408f1851b6bc3d1d1598607874fcde7c69f77104e5e146f9ba5ccb43"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-postgres-preparation.md",
+      "blob": "89d1ee96b184b4ab164debc7be97433f8830e702",
+      "sha256": "fda4ae1707b6341f250a41443aa3058c2fea9443ae984890b1f5bbaffec4736c"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-red-plan.md",
+      "blob": "a5d8189f1c029a49ab7a077d52304a24ba606946",
+      "sha256": "cbaad69a5bf2dcbffc6ac25f9c7f934ec37596eb0cf9e35961a2d671c4ce2706"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-red-transcript.json",
+      "blob": "484d313577ec751c2a6b672461aa1c69674b6077",
+      "sha256": "257f62d58f8f18a4134954b18eac802c8c299c2bca4eeedecf54c8389fc90527"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-red.json",
+      "blob": "c106f7f99b6953d8927b1d9afe7c2cc8254320f3",
+      "sha256": "f2fcb4986dce254185264616ffe7843f50c17112e0b89190f59f217b6cd86dbd"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/implementation-status.md",
+      "blob": "7038e72d8057558c07dd71254b4efbc29f8edfd1",
+      "sha256": "46eae4eed1ee463ef08ddf6e6564ac5f861502b5eb149d1d71817b1a3151f557"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/main-integration.json",
+      "blob": "ea94e9b87ce18a5c322df1ca01df059a46613469",
+      "sha256": "0b8cdb95f65a84eae310cebc9d7ecbca1a3dfcf08f88ef4dc53f8d9b82bd600d"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/pr170-delivery.json",
+      "blob": "af66a6740af424b78238896f7967238d60dcfaa0",
+      "sha256": "8675359cf4c0c4f2d19e915f1a6adc0ccf4f93bd9fb4bd633b8f413c1addc11c"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/evidence/source-issue.json",
+      "blob": "92f2d3554f2ea195e7592a5a95a815ffc7fa982f",
+      "sha256": "8a846dacbecd9a5bb44f99158b25b4d52a6132c36ba6af9d36042afde5fd6208"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/release.md",
+      "blob": "71b4b8a9c982d4250744ab60ff244471cb7e9b9a",
+      "sha256": "0d2aa3a4aefe16961859773e34d69e9cfc3445d97f3fcd5073b52a4292a5e6a2"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/requirements.md",
+      "blob": "6e8ef901b286bba5282da54a929f923a5fcfbb2a",
+      "sha256": "322c58da06b833cda6c62dd12a691e3bf332490b87d73307b069a1b245abb59f"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/rollback.md",
+      "blob": "551d3843bd373eb35de32a17af2ab1b008d7615f",
+      "sha256": "9ef5f3198bee8178d385e28c164c665f270002aa0720321ccf8e0d217b4edfd2"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/route.json",
+      "blob": "f6c0573913ad796eaceea1c8e0ba4656027363de",
+      "sha256": "886ed0fa5a0c8993cc221a125cef6e9bcca91a33985ca54ab8259c002050867f"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/state.json",
+      "blob": "365bd3c233584172aedea250da437d4d970322a5",
+      "sha256": "a60d0a4d5f88edc07bdc524ddce585072ef359dd584513ba723418368d8be21f"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/tasks.md",
+      "blob": "6aeb6645f8e904269a3554ea42d312301de5fe88",
+      "sha256": "534cf11df4e44c3a6923faf8c710bfb18752126655a6738e16505b5907429def"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6/test-plan.md",
+      "blob": "3b5d8267f4d4c7752aafe503d450d8c2d32804de",
+      "sha256": "98c2b65f34ba63132f523973f4bfb8decca9309c09ebad6fbd6e1786fbdb7ea8"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/architecture.md",
+      "blob": "4974a9a5a13fde8e4c71694409ba0bfb5c61b232",
+      "sha256": "b78f8f197a917cce266f4e7e3ed02492fc58bc3ca2432d26b1877cf27dd5e4f7"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/brief.md",
+      "blob": "e351867c54bdeafd7b141f5da4a45a7b0cf23807",
+      "sha256": "b10a156e3375cb77cfbb37023cdda06a9f54dd2840f2560e4d66d28074be2cd6"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/change-spec.yaml",
+      "blob": "c38cccb257e00d67cc6fa2f1b78bb99477aebac6",
+      "sha256": "5ecbd5eb9da8a2e878f67aced6717af2a1282aa44d82b24ddfcd4454c74735fb"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/evidence/README.md",
+      "blob": "99f9264afdaa2c9d24d6378cc619c105437c21b6",
+      "sha256": "c68af716042e451aad60a13f47ec496c1fc37b57a3cfa7512329ec5a65ec89e7"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/evidence/current-main-adoption.json",
+      "blob": "56df3d2fc6d5b6370f331c1f0c12c441ff64b9b1",
+      "sha256": "4deab783369b25caefb8973d927133960e9f5f5e265952d5240447830b125940"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/release.md",
+      "blob": "d0c6378924491d24f85482c87a89f006e44670e2",
+      "sha256": "8c8bf67fbfe7d109d1cb951d5434672ed24d72b15162d154ff9fe0a039a7c481"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/requirements.md",
+      "blob": "6e8ef901b286bba5282da54a929f923a5fcfbb2a",
+      "sha256": "322c58da06b833cda6c62dd12a691e3bf332490b87d73307b069a1b245abb59f"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/rollback.md",
+      "blob": "551d3843bd373eb35de32a17af2ab1b008d7615f",
+      "sha256": "9ef5f3198bee8178d385e28c164c665f270002aa0720321ccf8e0d217b4edfd2"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/route.json",
+      "blob": "c3aff03734bdc886acf82f4bafaea5b4f2c60845",
+      "sha256": "7f1074b9bab5554e326d06378df331ebb416802f75d973627e246ebc14458e82"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/state.json",
+      "blob": "1ae408fae5f49345eaf764b0fa61de0b14fd12cf",
+      "sha256": "e83da4562f624fd2b9b6a9b4d6d49aacf5fe69e418b9b00b0318ada182a778c9"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/tasks.md",
+      "blob": "ce009696b85a16b9d7010fc435adcdcd86a8ce9b",
+      "sha256": "12a9fed7ffdaaeb96385469f86610c66f4c0dd4d909e6cf905415ed8ce684b49"
+    },
+    {
+      "source_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "path": "engineering/changes/20260921-fix-issue-163-name-postgresql-semantic-plan-repa-806a83/test-plan.md",
+      "blob": "d0668ea27518652ffee1c231a1630c19bbd078e4",
+      "sha256": "01d0bffb811f13a46912c52e5b8d68d04b48278f0a4b4b6964fa4dee17cd70ef"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/architecture.md",
+      "blob": "33e86a43e47f31e27a5d5cd6ce86007aac028c59",
+      "sha256": "b2e848e1c94f631d68ba2ea37dc8eb36cd69bc84a7b67375e12f855e1cc32201"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/brief.md",
+      "blob": "ba1af6d35e99d62faa5a2ad09b460b3fac482e82",
+      "sha256": "ce9d34672e45b7164aeb4db3c0719f87765403e8da4fd9078b7844baf2286605"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/change-spec.yaml",
+      "blob": "09145dc53b910505c7a2ab55fbd560108f494d19",
+      "sha256": "04292d3917a4a0c7135920ddaf2cc0324e6a91d8a783fa69b2d39646b88e8e89"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/README.md",
+      "blob": "bf8aefeef2ebabd8ba1a3e79a4ac99422cb5c8a3",
+      "sha256": "f5cc2ebaaa5b44577af5ee55f0ddfeb042c28a9b513744ed44b7c087cdd8b25d"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/analysis-ai_architect.md",
+      "blob": "37be1ba4309ac978f2c6d48cce1f86713cac3c9f",
+      "sha256": "ec61cff4dfe86391ae3b445348168e99a9832264344fcc9c41f4e0bea2d53c78"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/analysis-architect.md",
+      "blob": "e500df680efced03b30652961b67b8ec480a2671",
+      "sha256": "d8dfa7aeb58ded6c185631af73107ad3022052fe3c2a2dac73f1c110adde3cb6"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/analysis-docs_researcher.md",
+      "blob": "0baa845443c4da1fbf59b8d432abf4e0b4b4f89d",
+      "sha256": "1f36fbdcc4fb0a32fea6caa32881a2da5afeeb552a10fa2617e4f4178ab3d96a"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/analysis-integration_architect.md",
+      "blob": "1c02c5277c1b01f2ba375c141715b1128efc820a",
+      "sha256": "cca4ce1abeb49deff057f2ea7e70f91927155c155b53cbf8d101787fb392494f"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/analysis-repo_explorer.md",
+      "blob": "99d9b972ace216e8e38166e4a35fb106a704cbb6",
+      "sha256": "a3d398705de6148caab945c2a375bc46953137da711c1a42fb28e58758b5d43f"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/green-runner-attempt-1.json",
+      "blob": "5cb46b31e963602ea27d23186d4ebff76eef8281",
+      "sha256": "82fc0dde0e7b54638455dfaa47da3f33e36a6434b0b0b2ef6cc4c944a3438e6e"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/implementation-ai_implementer.md",
+      "blob": "e98540b6d629ca5d110c3dfcce5b9e5a7df46472",
+      "sha256": "d9d08e1791d1f00a2b08aabb50d4b1bcb66acf9dfd79f86f458e0d846ef2d461"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/prior-research-capacity.md",
+      "blob": "9c0f204693407769bd12df883ce67facee5bf9d0",
+      "sha256": "5702851107186baf04cf43f2b8d1fce3fcee32594d2c5cfb3af2aa817b9346ef"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/red-initial.json",
+      "blob": "24117302b1cf28b2e7b2e3f41acc463c9b0608ab",
+      "sha256": "59ce3520ffbfe990a9bce93f2f4a3a96a3c27a378606461719295c3de92e35b1"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/evidence/ruff-attempt-1.json",
+      "blob": "935ec07c559b05429b5a6e8f4d77bc2258cfe25a",
+      "sha256": "f06ce2d19c34bf13117870d65ddb05f7a2a0f2e8713e43033e5d33b068457a6d"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/release.md",
+      "blob": "728a40e95e897cbb5fd98dc880d0e2c053b12d08",
+      "sha256": "268d67fb7cc5c706a21ab951d37774b15b945fea4a069efdfbe4fe839f3c2249"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/requirements.md",
+      "blob": "b7a0374f3c640523fc08f6012abbbf1f6e23463b",
+      "sha256": "86508024d801bd748bab099102e57a9b6e1dec2fceac4c12d207c0c7ddf1357c"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/rollback.md",
+      "blob": "313fda040183a2db1df23befdd3d07ab63f5f223",
+      "sha256": "788bf77907865663a37ea3d6664ccb84f8765690a39a01daefa220ae608edce9"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/route.json",
+      "blob": "89f9fe5abb18e2141de24617967977c1faf41675",
+      "sha256": "8d4e5693ba2a4a24b3d7050a9e1c1e83ddec293887443f944088a842a46ca9ca"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/state.json",
+      "blob": "d21d5cbe6346ec9ec9028833c4ac4e8920d07c56",
+      "sha256": "075822c328a7843f6a92c46c0525308b489df498c46304c5ab55f2fb7f8b82e5"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/tasks.md",
+      "blob": "301fc4146d67e280c8075b6acd1e42c92575d908",
+      "sha256": "6d8a18160940ddc6aba78d81c3683cd96e0d723af21bc9566c33ef2c997e29cd"
+    },
+    {
+      "source_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "path": "engineering/changes/20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc/test-plan.md",
+      "blob": "8061fdb0b5520cab928d2be064faa43dd9d6b824",
+      "sha256": "504f60ff3403bfd03982f16f5fd834fb4707f7a5d4622478bdf5c948cf732c3b"
+    }
+  ]
+}

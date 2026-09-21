@@ -80,6 +80,41 @@ def repair_child_rejection_reason(data: Any) -> str | None:
     return reason
 
 
+# Resource 022 names planning refusals independently of successful repair or
+# persisted escalation results. Unknown values never become caller-visible text.
+REPAIR_PLAN_REJECTION_CHANNEL = "repair_plan_rejection"
+UNKNOWN_REPAIR_PLAN_REJECTION = "planning_rejected"
+REPAIR_PLAN_REJECTIONS = frozenset(
+    {
+        UNKNOWN_REPAIR_PLAN_REJECTION,
+        "baseline_risk_invalid",
+        "child_handoff_mismatch",
+        "child_proposal_conflict",
+        "command_input_invalid",
+        "cycle_lineage_invalid",
+        "directive_conflict",
+        "execution_material_missing",
+        "idempotency_conflict",
+        "lineage_mismatch",
+        "previous_proposal_mismatch",
+        "repair_payload_invalid",
+        "store_operation_rejected",
+        "subject_not_found",
+        "verdict_mismatch",
+    }
+)
+
+
+def repair_plan_rejection_reason(data: Any) -> str | None:
+    """Read only the closed planning-refusal envelope, with a bounded fallback."""
+    if not isinstance(data, Mapping) or set(data) != {REPAIR_PLAN_REJECTION_CHANNEL}:
+        return None
+    reason = data[REPAIR_PLAN_REJECTION_CHANNEL]
+    if not isinstance(reason, str) or reason not in REPAIR_PLAN_REJECTIONS:
+        return UNKNOWN_REPAIR_PLAN_REJECTION
+    return reason
+
+
 @dataclass(frozen=True)
 class SemanticRepairRequestV1(JsonContract):
     schema_version: int

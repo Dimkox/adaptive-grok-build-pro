@@ -68,6 +68,7 @@ from .semantic_repair import (
     RepairLifecycleResult,
     SemanticRepairRequestV1,
     repair_child_rejection_reason,
+    repair_plan_rejection_reason,
 )
 from .state import (
     TransitionCommand,
@@ -687,7 +688,16 @@ class PostgresSemanticCoordinatorStore:
             )
             response = cursor.fetchone()[0]
         if isinstance(response, str):
-            response = json.loads(response)
+            try:
+                response = json.loads(response)
+            except json.JSONDecodeError as exc:
+                raise StoreError("stored semantic repair result is corrupt") from exc
+        rejection = repair_plan_rejection_reason(response)
+        if rejection is not None:
+            raise StoreError(f"semantic repair plan rejected: {rejection}")
+        if response is None:
+            # A pre-022 database still uses SQL NULL for planning refusals.
+            raise StoreError("semantic repair plan rejected: store_returned_null")
         try:
             result = RepairLifecycleResult.from_dict(response)
         except (TypeError, ValueError) as exc:

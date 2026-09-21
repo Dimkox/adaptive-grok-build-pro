@@ -1,0 +1,478 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-21T11:35:45.679443+00:00",
+  "role": "data_implementer",
+  "route_id": "cf23849faca6",
+  "change_id": "20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
+  "operation": "exact candidate Git-blob import; no new behavior or repair",
+  "worktree": "/home/pall/grok-projects/adaptive-grok-build-factory-tooling",
+  "head_before_import": "93d4c97a4e5e05a05876e0efb70880db5d976d91",
+  "head_after_import": "93d4c97a4e5e05a05876e0efb70880db5d976d91",
+  "delivery_base": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+  "delivery_base_tree": "e5a5cb6b563e92fd234126acca9fc6c2eb1beb5f",
+  "pr173_tested_parent": "23984e55560c6d559a46445061f10331ca05bcf9",
+  "pr173_parent_tree_matches_delivered_base": true,
+  "delivered_base_is_ancestor": true,
+  "candidate_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/candidates.json",
+  "candidate_manifest_sha256": "d1867645cfb5343896f77f7fa3c913d61e378594d43034d90ce2f500c6a78d50",
+  "imported_file_count": 19,
+  "files": [
+    {
+      "path": ".grok-stack/adaptive_grok/change.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "88e46bda947d558fde41bc5f15ca296a42e96ea2",
+      "git_mode": "100644",
+      "sha256": "99586b99387285408f48dbb68b52e20a768c8551e872d3bb4b84d6c62befb886",
+      "bytes": 7256,
+      "new_file": false,
+      "destination_sha256": "99586b99387285408f48dbb68b52e20a768c8551e872d3bb4b84d6c62befb886",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/package_status.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "6f8c5f48471104b8b0c89c83eb9a1893c17c145d",
+      "git_mode": "100644",
+      "sha256": "b438510389762f4d62ea3dbb0f4d235580e6b1baa7c7fb7ee1d6f477ad912aa6",
+      "bytes": 28225,
+      "new_file": true,
+      "destination_sha256": "b438510389762f4d62ea3dbb0f4d235580e6b1baa7c7fb7ee1d6f477ad912aa6",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/state.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "4e51058367dd95bebae34bced652923dc961a404",
+      "git_mode": "100644",
+      "sha256": "7dd3a2acd933f7b4240f44248b773715d30931385e62a2d8c9ca6db89a3058c9",
+      "bytes": 11672,
+      "new_file": false,
+      "destination_sha256": "7dd3a2acd933f7b4240f44248b773715d30931385e62a2d8c9ca6db89a3058c9",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok-stack/templates/change/evidence/README.md",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "1d3f72ad6e5203a079cfaaa6241dc2832afaec7e",
+      "git_mode": "100644",
+      "sha256": "461b381c637dc0c5cf1ce7f82a2f4d4f1cc39f142f9f19fb473b737391f340dd",
+      "bytes": 771,
+      "new_file": false,
+      "destination_sha256": "461b381c637dc0c5cf1ce7f82a2f4d4f1cc39f142f9f19fb473b737391f340dd",
+      "byte_identical": true
+    },
+    {
+      "path": "scripts/grok_review.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "e5cbca568c2a889bf1fcfaaa8a42767e2aae36f5",
+      "git_mode": "100644",
+      "sha256": "11b2bd54c307867d775b80b227fda3298722d3cddaa5819b6287458d6f4c46b1",
+      "bytes": 1695,
+      "new_file": false,
+      "destination_sha256": "11b2bd54c307867d775b80b227fda3298722d3cddaa5819b6287458d6f4c46b1",
+      "byte_identical": true
+    },
+    {
+      "path": "scripts/grok_status.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "63be9c200ae3f29e223b8a9bf31a6d446144b88e",
+      "git_mode": "100644",
+      "sha256": "7bd6e8fd4268dde34c88705a6ed7fcf12dbd9b4b3ff9200ef9191fda44ec4281",
+      "bytes": 1347,
+      "new_file": false,
+      "destination_sha256": "7bd6e8fd4268dde34c88705a6ed7fcf12dbd9b4b3ff9200ef9191fda44ec4281",
+      "byte_identical": true
+    },
+    {
+      "path": "tests/test_package_status.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "39da52c4389a11a22a6198f442056b5fe0b00df4",
+      "git_mode": "100644",
+      "sha256": "87394eaf15e708a06a8b42aa8b25f4b93352ab25ee6e3c31d833eb33fd67d1b0",
+      "bytes": 38758,
+      "new_file": true,
+      "destination_sha256": "87394eaf15e708a06a8b42aa8b25f4b93352ab25ee6e3c31d833eb33fd67d1b0",
+      "byte_identical": true
+    },
+    {
+      "path": "docs/package-status.md",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "253de6aa3b07fa92e2624eca63d74b93aa051170",
+      "git_mode": "100644",
+      "sha256": "8058a0d121293e822a37987d76e53bd108b44c6006f0a0a9da334399d48484fc",
+      "bytes": 7500,
+      "new_file": true,
+      "destination_sha256": "8058a0d121293e822a37987d76e53bd108b44c6006f0a0a9da334399d48484fc",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok/hooks/stop_gate.py",
+      "candidate_head": "163847842ccddacd6f179c7a3ea082765530bb84",
+      "issues": [
+        165
+      ],
+      "git_blob": "dcad117a9f172ea44563c89190ae5db32f4abd5a",
+      "git_mode": "100644",
+      "sha256": "7be3f2be3fb9ea1e581344388a40da84c3a092945e3fb1a51a024847ad0bf48b",
+      "bytes": 2212,
+      "new_file": false,
+      "destination_sha256": "7be3f2be3fb9ea1e581344388a40da84c3a092945e3fb1a51a024847ad0bf48b",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "25a392da0b637931fcfc3cdef81b750ee963b9e7",
+      "git_mode": "100644",
+      "sha256": "3bd08d907c538ab3964727fdca91eb35565821889d1999da8fcba1278613267d",
+      "bytes": 26387,
+      "new_file": true,
+      "destination_sha256": "3bd08d907c538ab3964727fdca91eb35565821889d1999da8fcba1278613267d",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/src/adaptive_factory/semantic_repair.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "c09ac16d04ae7057532e8524cc1bc886636d0b70",
+      "git_mode": "100644",
+      "sha256": "db14245c0d25198936e7b468e81fe013e344ce6bf47b4599eab299d41766754a",
+      "bytes": 20789,
+      "new_file": false,
+      "destination_sha256": "db14245c0d25198936e7b468e81fe013e344ce6bf47b4599eab299d41766754a",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/src/adaptive_factory/store.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "7f38ba68201f9b3d0377d9bfa36d34d9762c33a3",
+      "git_mode": "100644",
+      "sha256": "5c61541fda124402d48fa81fc9550d610a3923263a2fd10e6fcbc0c5845f7411",
+      "bytes": 204912,
+      "new_file": false,
+      "destination_sha256": "5c61541fda124402d48fa81fc9550d610a3923263a2fd10e6fcbc0c5845f7411",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/tests/test_execution_persistence_postgres.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "069af430af09598fe70d81a17e64a20a0bd74369",
+      "git_mode": "100644",
+      "sha256": "62ad6b546dc4e6c8f0a7f2b6d0023fe2178b254d97bf5282481474db797ca47b",
+      "bytes": 278221,
+      "new_file": false,
+      "destination_sha256": "62ad6b546dc4e6c8f0a7f2b6d0023fe2178b254d97bf5282481474db797ca47b",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/tests/test_migrations.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "22e4dca172e002cb1fc294c00ff1a814aa302c14",
+      "git_mode": "100644",
+      "sha256": "7e6cdf9fcb5f135021b6e3369f4f68165f9dd910ca958c3a25ca0d1974b4348c",
+      "bytes": 44536,
+      "new_file": false,
+      "destination_sha256": "7e6cdf9fcb5f135021b6e3369f4f68165f9dd910ca958c3a25ca0d1974b4348c",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/tests/test_postgres_integration.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "40552c2aff91d582aee49d029a01aedd6a78b726",
+      "git_mode": "100644",
+      "sha256": "fe27ab926491a2fb476bd0de938c4d4c4a4b87d8243ae89f5520c6757735f3f1",
+      "bytes": 363406,
+      "new_file": false,
+      "destination_sha256": "fe27ab926491a2fb476bd0de938c4d4c4a4b87d8243ae89f5520c6757735f3f1",
+      "byte_identical": true
+    },
+    {
+      "path": "factory/tests/test_semantic_repair_lifecycle.py",
+      "candidate_head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
+      "issues": [
+        163
+      ],
+      "git_blob": "6d6d1eae77bfac65502e34eb41c48504579ce04c",
+      "git_mode": "100644",
+      "sha256": "cfd15a6e173b38e196dcd522f14a9250ae6e48a2a06ecaaf0fdf9cf89955061e",
+      "bytes": 28114,
+      "new_file": false,
+      "destination_sha256": "cfd15a6e173b38e196dcd522f14a9250ae6e48a2a06ecaaf0fdf9cf89955061e",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/_cpu_capacity.py",
+      "candidate_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "issues": [
+        62,
+        118
+      ],
+      "git_blob": "f85cd9514e2f0962029539c9d152fef2452c4959",
+      "git_mode": "100644",
+      "sha256": "30a5997a93cffa1e54496806402df4e8989467699ea2a58c11184086af42f453",
+      "bytes": 6977,
+      "new_file": true,
+      "destination_sha256": "30a5997a93cffa1e54496806402df4e8989467699ea2a58c11184086af42f453",
+      "byte_identical": true
+    },
+    {
+      "path": ".grok-stack/adaptive_grok/python_test_runner.py",
+      "candidate_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "issues": [
+        62,
+        118
+      ],
+      "git_blob": "870687292d822c2a1cbd3973d9d71ccb46c3cc8a",
+      "git_mode": "100644",
+      "sha256": "5efcc71bc50d447e60ba2626886cb8895ec2808882139cecaef375faf53fbcc0",
+      "bytes": 13925,
+      "new_file": false,
+      "destination_sha256": "5efcc71bc50d447e60ba2626886cb8895ec2808882139cecaef375faf53fbcc0",
+      "byte_identical": true
+    },
+    {
+      "path": "tests/test_python_test_runner.py",
+      "candidate_head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
+      "issues": [
+        62,
+        118
+      ],
+      "git_blob": "ba699682794e3e4ec99c1c62afd515523b4a9436",
+      "git_mode": "100644",
+      "sha256": "c8154aaeef74fcac8985dd476f2d16197ed4a6a8366a39abef5a55fa4f2890f5",
+      "bytes": 46059,
+      "new_file": false,
+      "destination_sha256": "c8154aaeef74fcac8985dd476f2d16197ed4a6a8366a39abef5a55fa4f2890f5",
+      "byte_identical": true
+    }
+  ],
+  "preservation": {
+    "immutable_sql_001_021": [
+      {
+        "path": "factory/src/adaptive_factory/resources/001_initial.sql",
+        "git_blob": "ad4f290cffe4a055d1f2c89f74924e216fcc3b43",
+        "sha256": "99f9d27962550ad7b25ac0fe2e426f3a764fee4141ecadd83a852a9ffafbdd58",
+        "bytes": 5380
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql",
+        "git_blob": "a26c75ab579752abf4036cbdd1fa3187908dcb2b",
+        "sha256": "2937eff5051561c0fd5a7a7aeb5c4abedf9cee851015c82e151959b6361589ea",
+        "bytes": 2622
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql",
+        "git_blob": "b3635a34a5714764dbb12971b3c5b9ced0ad4cf5",
+        "sha256": "44673bfe411c0f81380156ffe820bf5a037d8d221a7817b36e00689a0561a147",
+        "bytes": 3236
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/004_event_and_repair_budgets.sql",
+        "git_blob": "cd22b10f2b928dfb4a9acbbaf0dd67918f8634c9",
+        "sha256": "451f1e7985e4791048009aff089262e30c0bf7c3e9fba29d43ab8dbb79c678de",
+        "bytes": 230
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/005_security_accounting_commands.sql",
+        "git_blob": "ec1138f560baedcc972adef28e6fc8dcf5790bfe",
+        "sha256": "a91af691a25fce9f3651188f216650999f672f8bdd856c13f6b58f6efe6b2a4c",
+        "bytes": 3721
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql",
+        "git_blob": "f072e5ad611b02587b78094620f097a242976ab1",
+        "sha256": "1033584169acedbf18e29291102a3adee9342fcb35adc6a4113f4848efa65f5b",
+        "bytes": 169
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/007_capacity_authority.sql",
+        "git_blob": "5a6421f18517cf8a15d9e81c1df53be334c849b3",
+        "sha256": "d8f0b5c7ad5336851e1f39388b6343b55883541eac8568681e892da87fe62f13",
+        "bytes": 6639
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/008_allocation_release_authority.sql",
+        "git_blob": "a761901d7e1aa9bd4f4a5e7a576bf6c56b5957e0",
+        "sha256": "87ac3304c8f6fb4df3ba37e5eff23419fe5d70ff1446c7f4afa90cdf99716268",
+        "bytes": 68
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql",
+        "git_blob": "d01533e92c411ef4d5c9dc146352886f4ae5db52",
+        "sha256": "2e37378af506bf18ab11705430b6876136ac3918d3d1e5699e7d63848b946e6a",
+        "bytes": 3244
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/010_authority_accounting_and_cleanup.sql",
+        "git_blob": "12f9d13bb044440dcffaf681446e0d31b74882f1",
+        "sha256": "0190888c9344c9878b734c72a8c140e6529088b7659d34608a686695c0004063",
+        "bytes": 3079
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/011_legacy_accounting_quarantine.sql",
+        "git_blob": "ebdeb97763621605b5550eb8ecc539b940d363a8",
+        "sha256": "ff358ea06a5497d9d215f8fef7ab3540b0b4af993c806985e9d5ae6d46b01bea",
+        "bytes": 904
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/012_bounded_metrics_snapshot.sql",
+        "git_blob": "097a87a996732af7b6b7cd510dc9ad714f92752a",
+        "sha256": "887e59f809d5f4d31c619eccd568c35ced18a98fe047814f6020b91d28d5f2ce",
+        "bytes": 13628
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/013_persisted_infrastructure_retry_limit.sql",
+        "git_blob": "f69201c0195b944ea82424f0226e32282d984768",
+        "sha256": "523d0b16521a258a8b922410b555c93d986b896e908011b2b0563a1c7b8f7fcb",
+        "bytes": 692
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/014_execution_plane.sql",
+        "git_blob": "b678acdafaf19cd831cf5ab2c92bdc68c2d325bb",
+        "sha256": "997f3010ebdfc203931b6a629ec79d515e10b6614f3c13e0763f8a16cbea5b01",
+        "bytes": 24212
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/015_execution_canonical_persistence.sql",
+        "git_blob": "97d85ddeaf83c9f4756c07652af13739ba77d2d6",
+        "sha256": "e2c8ca88a7a7013da29a8d0ab440ccb5791100400b4f75b5ad5e815ba6fb0c94",
+        "bytes": 80720
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/016_contract_execution_canonical_persistence.sql",
+        "git_blob": "633a40c35d329a75aec040671908e88a1ce894e0",
+        "sha256": "3b6d6104a0074b5357915583385aa433f71ccf9755f101cf9a7d6322fcc75b54",
+        "bytes": 348
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/017_execution_recovery_topology.sql",
+        "git_blob": "0058c42560d4408734fb45d66eea14afcf312167",
+        "sha256": "4114b0a1d3b5e8ab86227b0bd2dd459d62d023d033d1ff2b9b5bdc66aaa07da1",
+        "bytes": 41691
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/018_semantic_validation_bridge.sql",
+        "git_blob": "a9338de775727d11a2826fe747cf1bbf6cea5db1",
+        "sha256": "33053563dce7c34edfa9301130272adb34651d44dd1f2bc305ba3eec01382c70",
+        "bytes": 107314
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/019_usage_token_components.sql",
+        "git_blob": "ecb0748e8daaf4e89492c42d1e9100a7263e1f6b",
+        "sha256": "e0cf573b2bd183f5bf6291f02d330e98edf7d4e00d34944daba5719eee91c790",
+        "bytes": 553
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/020_execution_v2_priced_usage.sql",
+        "git_blob": "eb7be98cd9419a040ec35054a31f1bf230472f48",
+        "sha256": "524c94bf95f38f8a339c3f5b1165d7f7b7fffc81eb7fd8a2faff4362f33d2ae3",
+        "bytes": 9303
+      },
+      {
+        "path": "factory/src/adaptive_factory/resources/021_semantic_repair_child_rejection_reasons.sql",
+        "git_blob": "5f864528f59870b528964553599980cf329003c0",
+        "sha256": "868bc21f47351f92b79acb8bd8e9390c62b43803c0b5761400e32c7143d56d5e",
+        "bytes": 12917
+      }
+    ],
+    "immutable_sql_file_count": 21,
+    "sql_changed_resources": [
+      "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql"
+    ],
+    "protected_base_objects": {
+      "trust-ci": "3776b2df790b8330c8c660509b28df4729b4a5b3",
+      "architecture": "e5baefb869011e16d49d05cffdd36511176ff8f5",
+      "governance": "f319632865e70e257131561561ba06add8c8f135",
+      "packages": "186672c2d31bf4209a7755aa9aa0f9efeb853fc4",
+      "VERSION": "c945ef1446c8ffe4a0a746dfdbc0cc316d3b432e"
+    },
+    "protected_tracked_differences": [],
+    "protected_untracked_additions": [],
+    "other_pr173_source_differences": [],
+    "checked_source_roots": [
+      ".grok",
+      ".grok-stack",
+      "scripts",
+      "schemas",
+      "tests",
+      "factory",
+      "trust-ci",
+      "architecture",
+      "governance",
+      "packages",
+      "VERSION"
+    ]
+  },
+  "evidence_boundary": {
+    "tests_run": false,
+    "lint_run": false,
+    "compile_run": false,
+    "docker_run": false,
+    "database_operations": false,
+    "receipt_operations": false,
+    "commits_or_external_writes": false,
+    "fresh_integrated_verification": "pending coordinator exclusive lane",
+    "independent_reviews": "pending all five selected roles",
+    "historical_candidate_results": "preserved provenance only; not reused as current receipts"
+  },
+  "closure_boundary": {
+    "eligible_after_verified_delivery": [
+      165,
+      163,
+      118
+    ],
+    "keep_open": [
+      62
+    ],
+    "issue62_remainder": "bounded failing-command output in App Check Runs remains a separate Trust CI source task",
+    "retained_pr135": "close only after successor delivery"
+  },
+  "known_limits": [
+    "No native Windows or older-Python qualification.",
+    "No PID headroom, hidden cgroup ancestor or operational capacity proof.",
+    "SQL 022 is source only; no deployed database was changed.",
+    "Current package has no observed initial diagnostic checkpoint; do not fabricate one.",
+    "Trusted validator seven-kind compatibility and issue158 child reaping remain separate."
+  ]
+}

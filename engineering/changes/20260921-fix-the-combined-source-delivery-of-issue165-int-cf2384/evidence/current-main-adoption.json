@@ -1,0 +1,44 @@
+{
+  "at": "2026-09-21T11:31:59.564801+00:00",
+  "route_id": "cf23849faca6",
+  "prior_route": "8b2ee0533ba5",
+  "source_head": "93d4c97a4e5e05a05876e0efb70880db5d976d91",
+  "actual_main": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+  "actual_main_tree": "e5a5cb6b563e92fd234126acca9fc6c2eb1beb5f",
+  "exact_parent_product_and_tree_match": true,
+  "source_import_started": false,
+  "reports": {
+    "repo_explorer": {
+      "source_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-repo_explorer.md",
+      "adopted_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/analysis-repo_explorer.md",
+      "sha256": "925c9b2babd471a33c67dc79b146d020e579dfbdce6e03526206680cf07bf3a1",
+      "scope": "Unchanged static source/candidate integration facts. Original scopingroute8b2ee0533ba5retained; no new analysis execution or current receipt claimed."
+    },
+    "architect": {
+      "source_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-architect.md",
+      "adopted_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/analysis-architect.md",
+      "sha256": "9eb7d874eb705e3553dd53d846b4a02300d4a071a62cf6c79d03f702eb58fc30",
+      "scope": "Unchanged static source/candidate integration facts. Original scopingroute8b2ee0533ba5retained; no new analysis execution or current receipt claimed."
+    },
+    "docs_researcher": {
+      "source_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-docs_researcher.md",
+      "adopted_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/analysis-docs_researcher.md",
+      "sha256": "8e6e4db0a9513b6115c0fc898a1aa24c73e6c08ec7013eee9a3308078ce701a3",
+      "scope": "Unchanged static source/candidate integration facts. Original scopingroute8b2ee0533ba5retained; no new analysis execution or current receipt claimed."
+    },
+    "data_architect": {
+      "source_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-data_architect.md",
+      "adopted_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/analysis-data_architect.md",
+      "sha256": "39ffec71b3b4f30d4a5dc33845129987f14ced31a727821d67659e7db5437be6",
+      "scope": "Unchanged static source/candidate integration facts. Original scopingroute8b2ee0533ba5retained; no new analysis execution or current receipt claimed."
+    },
+    "integration_architect": {
+      "source_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-integration_architect.md",
+      "adopted_report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/analysis-integration_architect.md",
+      "sha256": "2ab6e512cf7b07038398da79201256b95c01cc200ed6c95a1402655ea7ece18a",
+      "scope": "Unchanged static source/candidate integration facts. Original scopingroute8b2ee0533ba5retained; no new analysis execution or current receipt claimed."
+    }
+  },
+  "ruling": "Normal router generated current-main continuation after actual PR173squashmerge. No runtimebase, budget or policy handedit. No product changed since analysis; user contract no-op exception avoids duplicate analysis wave. Required fresh integrated verifier and all selected reviews remain mandatory.",
+  "external_authority": false
+}

@@ -1,0 +1,7 @@
+# Test runner capacity and platform selection — issues62/118
+
+User explicitly delegated remaining issue repairs, parallel work, PR delivery and verified closure. This bounded continuation fixes existing local runner selection: auto workers must respect Linux CPU quotas, while off-POSIX integer worker requests choose the supported sequential engine. Default-off behavior and explicit counts on supported platforms remain compatible. The prior research packet is in evidence; retain PR135's existing Windows fallback source7a7851af5d11e8ce5c3af23ab46214ae7ae4cdc8 and actual history, without importing stale receipts.
+
+Main839d3aa is the starting source. Historical PR33 failures are not evidence of a current failure: PR113 already delivered capability fallback. Fresh RED must isolate remaining quota/platform behavior. Publishing command output or changing deployed CI images/policy is outside this source repair. Do not close retained PR135 before its actual successor is delivered.
+
+Generated route45e0cc3b5da0 selects ai_implementer and five analyses because the unfixed short-token matcher on main matches rag inside coverage. Follow that route exactly; this task introduces no LLM/model/tool/RAG behavior and sends no code/data to providers. Root owns docs/integration; one selected writer owns product code/tests; reviews follow real verification. CPU-heavy commands require the coordinator's exclusive slot.

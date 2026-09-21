@@ -1,0 +1,42 @@
+{
+  "observed_at": "2026-09-21T11:23:35.504089+00:00",
+  "route_id": "8b2ee0533ba5",
+  "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+  "analysis_complete": true,
+  "reports": {
+    "repo_explorer": {
+      "path": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-repo_explorer.md",
+      "sha256": "925c9b2babd471a33c67dc79b146d020e579dfbdce6e03526206680cf07bf3a1",
+      "scope": "static integration analysis only"
+    },
+    "architect": {
+      "path": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-architect.md",
+      "sha256": "9eb7d874eb705e3553dd53d846b4a02300d4a071a62cf6c79d03f702eb58fc30",
+      "scope": "static integration analysis only"
+    },
+    "docs_researcher": {
+      "path": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-docs_researcher.md",
+      "sha256": "8e6e4db0a9513b6115c0fc898a1aa24c73e6c08ec7013eee9a3308078ce701a3",
+      "scope": "static integration analysis only"
+    },
+    "data_architect": {
+      "path": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-data_architect.md",
+      "sha256": "39ffec71b3b4f30d4a5dc33845129987f14ced31a727821d67659e7db5437be6",
+      "scope": "static integration analysis only"
+    },
+    "integration_architect": {
+      "path": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0/evidence/analysis-integration_architect.md",
+      "sha256": "2ab6e512cf7b07038398da79201256b95c01cc200ed6c95a1402655ea7ece18a",
+      "scope": "static integration analysis only"
+    }
+  },
+  "rulings": [
+    "Correct missing165Stop hook to19exactcandidatepaths, preserve18pathinitialmanifest.",
+    "After actualPR173delivery generate freshrouteon fetchedactualmain because historical839range includes already-deliveredbytes; no authority/rule handedit.",
+    "Six obligations startnot_run; no candidatecheckpoints or passingreceipts transplanted.",
+    "Close165/163/118onlyafteractualoutcomes;62staysopen for boundedAppCheckoutput,158separate."
+  ],
+  "implementation_started": false,
+  "verification_run": false,
+  "external_authority": false
+}

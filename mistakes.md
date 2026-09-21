@@ -1417,3 +1417,7 @@ The batch identity collector initially reused diff-specific glob pathspec syntax
 - 2026-09-21: Replacing the active-delivery bootstrap paragraph discarded the still-required historical PR19 fact, while a new red-risk spec retained the empty approval-scope scaffold. Existing handoff/spec checks caught both after an unnecessarily long full run; preserve historical facts and run those bounded checks immediately after metadata edits. Product and test source stayed unchanged.
 
 - 2026-09-21 (combined #156 repair): Applying word boundaries to short domain terms removed the auth stem from legitimate authentication/authorization prompts and dropped their security gates. The positive matrix omitted isolated security vocabulary and another test masked it with multiple signals; preserve legitimate aliases and assert the complete security route using one signal at a time.
+
+### 2026-09-21 — Enumerate candidate content before filtering an integration manifest
+
+I built the next source manifest from an incomplete directory-prefix list and omitted the reviewed165Stop hook under `.grok/`. Independent integration analysis caught the dependency before any import; compare every changed candidate path against explicit source and handoff exclusions instead of assuming all executable paths live under `.grok-stack/`.

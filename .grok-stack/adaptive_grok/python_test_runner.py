@@ -18,6 +18,8 @@ import tempfile
 import threading
 import time
 
+from ._cpu_capacity import linux_quota_capacity
+
 
 PINS = {'pytest': '9.1.1', 'pytest-xdist': '3.8.0', 'pytest-cov': '7.1.0', 'coverage': '7.15.4'}
 CONFIG = '.grok-test-runner.json'
@@ -69,8 +71,20 @@ def selected_workers(root: Path) -> int | None:
     if os.environ.get('_GROK_TEST_CHILD') == '1':
         return 0
     if value == 'auto':
-        available = len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else (os.cpu_count() or 1)
-        return min(28, max(1, available)) if os.name == 'posix' else 0
+        if os.name != 'posix':
+            return 0
+        try:
+            available = len(os.sched_getaffinity(0))
+        except (AttributeError, OSError):
+            available = 0
+        if available <= 0:
+            available = os.cpu_count() or 1
+        selected = min(28, max(1, available))
+        if sys.platform == 'linux':
+            quota = linux_quota_capacity()
+            if quota is not None:
+                selected = min(selected, quota)
+        return selected
     return int(value)
 
 
@@ -198,15 +212,22 @@ def parallel_engine_ready(measured: bool) -> bool:
     return all(importlib.util.find_spec(name) is not None for name in modules)
 
 
+def _parallel_process_cleanup_supported() -> bool:
+    """Whether this host can safely own and clean up the parallel process group."""
+    return os.name == 'posix'
+
+
 def select_engine(workers: int, measured: bool) -> tuple[int, str]:
-    """Capability-selected engine: parallel xdist only when actually importable.
+    """Capability-selected engine: xdist only when importable and safely cleanable.
 
     Retake of closed defect 33: the Trust CI runner image has no pytest, so a
     requested-parallel run must degrade to one disclosed sequential unittest
     pass before execution, never after a failure, and never claim the parallel
     backend it did not use.
     """
-    if workers > 0 and not parallel_engine_ready(measured):
+    if workers > 0 and (
+        not parallel_engine_ready(measured) or not _parallel_process_cleanup_supported()
+    ):
         return 0, "unittest-degraded"
     if workers > 0:
         return workers, "pytest-xdist"

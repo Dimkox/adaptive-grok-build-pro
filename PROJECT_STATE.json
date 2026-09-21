@@ -808,6 +808,71 @@
         ],
         "closed_at": "2026-09-21T09:06:53Z"
       }
+    },
+    "reviewed_issue_batch_pr173": {
+      "repository": "Dimkox/adaptive-grok-build-pro",
+      "pull_request": 173,
+      "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+      "base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+      "check_run_id": 106308434581,
+      "app_id": 4694114,
+      "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "check_conclusion": "success",
+      "completed_at": "2026-09-21T11:25:49Z",
+      "attestation": "aece820d-8177-4dd0-927c-6ce851e9a7ed",
+      "signer": "0519cf1d47436f2e",
+      "merge_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+      "merged_at": "2026-09-21T11:27:32Z",
+      "closed_issues": [
+        147,
+        148,
+        153,
+        156,
+        161,
+        162,
+        166,
+        168
+      ],
+      "closed_at_range": [
+        "2026-09-21T11:27:33Z",
+        "2026-09-21T11:27:36Z"
+      ],
+      "merged_tree": "e5a5cb6b563e92fd234126acca9fc6c2eb1beb5f",
+      "tested_tree": "e5a5cb6b563e92fd234126acca9fc6c2eb1beb5f",
+      "premerge_handoff": {
+        "observed_at": "2026-09-21T10:47:15.815494+00:00",
+        "route_id": "bcc1d645c438",
+        "branch": "fix/reviewed-issues-batch-20260921",
+        "issues": [
+          156,
+          162,
+          153,
+          161,
+          168,
+          147,
+          148,
+          166
+        ],
+        "pull_request": null,
+        "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+        "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
+        "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
+        "status": "corrected_source_full_and_five_reviews_pass_final_receipts_external_delivery_required",
+        "next_action": "Run final frozen-tree verifier, record all five current review receipts and confirm zero gaps; push isolated branch and create PR with exact grants, then wait for App-owned exact-head check before merge/eight issue closures. Close171/172 as superseded only afterward.",
+        "excluded_successors": [
+          "active165 interruption-status source",
+          "active163 migration022 source",
+          "separate162 trusted-validator compatibility source",
+          "other retained PR source and external operations"
+        ],
+        "historical_pre_repair_full": {
+          "head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
+          "record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json",
+          "scope": "Passed before the security alias correction; does not certify the corrected product"
+        },
+        "verified_source_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
+        "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-security-repair-result.json"
+      }
     }
   },
   "local_candidate": {
@@ -1888,10 +1953,10 @@
     }
   },
   "latest_source_observation": {
-    "observed_at": "2026-09-21T09:25:49.745618+00:00",
-    "main_sha": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
-    "source_pull_request": 170,
-    "source_role": "fetched main after exact-head App-owned verification and delivered155/164 repair"
+    "observed_at": "2026-09-21T11:34:42.674199+00:00",
+    "main_sha": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+    "source_pull_request": 173,
+    "source_role": "actual fetched main after exact-head App success, normal protected squash merge and eight confirmed issue closures"
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",
@@ -1906,38 +1971,41 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
-    "observed_at": "2026-09-21T10:47:15.815494+00:00",
-    "route_id": "bcc1d645c438",
-    "branch": "fix/reviewed-issues-batch-20260921",
+    "observed_at": "2026-09-21T12:05:39.938899+00:00",
+    "route_id": "cf23849faca6",
+    "branch": "fix/factory-tooling-batch-20260921",
     "issues": [
-      156,
-      162,
-      153,
-      161,
-      168,
-      147,
-      148,
-      166
+      165,
+      163,
+      62,
+      118
     ],
-    "pull_request": null,
-    "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
-    "change_package": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6",
-    "candidate_manifest": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/candidates.json",
-    "status": "corrected_source_full_and_five_reviews_pass_final_receipts_external_delivery_required",
-    "next_action": "Run final frozen-tree verifier, record all five current review receipts and confirm zero gaps; push isolated branch and create PR with exact grants, then wait for App-owned exact-head check before merge/eight issue closures. Close171/172 as superseded only afterward.",
-    "excluded_successors": [
-      "active165 interruption-status source",
-      "active163 migration022 source",
-      "separate162 trusted-validator compatibility source",
-      "other retained PR source and external operations"
+    "automatic_closure_scope": [
+      165,
+      163,
+      118
     ],
-    "historical_pre_repair_full": {
-      "head": "4bbbad340fee79e2d2e9d2598a6f58daa6c5b541",
-      "record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-result.json",
-      "scope": "Passed before the security alias correction; does not certify the corrected product"
+    "partial_issue_scope": {
+      "62": "Quota and platform subset here; bounded App Check Run command output remains a separate Trust CI source task, so issue62 stays open."
     },
-    "verified_source_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
-    "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-security-repair-result.json"
+    "pull_request": null,
+    "base_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+    "change_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
+    "candidate_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/candidates.json",
+    "status": "initial_full_and_five_independent_reviews_pass_final_frozen_receipts_external_delivery_pending",
+    "next_action": "Run complete final frozen-tree verification, record all five current review receipts and confirm zero gaps. Push the isolated branch and open the successor PR with exact delegated grants; require the exact App-owned external check before protected merge. Close165/163/118and retainedPR135 only after actual delivery; keep62open.",
+    "scoping_package": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0",
+    "source_adoption": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/current-main-adoption.json",
+    "excluded_successors": [
+      "Trust CI issue158 source and later live acceptance",
+      "Trusted-validator seven-kind compatibility",
+      "Bounded App Check Run command output for issue62",
+      "Other retained PR source and all live operations"
+    ],
+    "verified_source_head": "4bc43cb7876d92b11efb289a121dcfef0a0355ac",
+    "verification_record": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/combined-full-initial-summary.json",
+    "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5",
+    "review_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/final-review-wave.json"
   },
   "next_external_pilot": {
     "observed_at": "2026-09-21T05:31:11.851184Z",
@@ -1960,38 +2028,63 @@
     "next_action": "After #155, route a separate exact-profile/gate successor using the prepared current-target investigation. Obtain scope agreement and exact authority before creating the target issue or performing provider/publication effects; old issue1/closedPR3 and historical route are not reusable."
   },
   "parallel_issue_work": {
-    "observed_at": "2026-09-21T09:25:49.745618+00:00",
+    "observed_at": "2026-09-21T12:05:39.938899+00:00",
     "queue": "engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/issue-queue.json",
-    "current_open_issues": 60,
+    "current_open_issues": 52,
     "closed_issues": [
       56,
       60,
       61,
+      147,
+      148,
+      153,
       155,
-      164
+      156,
+      161,
+      162,
+      164,
+      166,
+      168
     ],
     "active_separate_work": [
       {
-        "issue": 165,
-        "branch": "fix/issue-165-interruption-status",
-        "route_id": "2dfd5804553e",
-        "status": "raw-byte review defect repaired;28focused testsPASS, full and renewed reviews pending"
+        "issues": [
+          165,
+          163,
+          62,
+          118
+        ],
+        "branch": "fix/factory-tooling-batch-20260921",
+        "route_id": "cf23849faca6",
+        "status": "Initial full and all five independent reviews PASS; final frozen verification/current receipts and external delivery pending;62partial"
       },
       {
-        "issue": 163,
-        "branch": "fix/issue-163-repair-plan-rejections",
-        "route_id": "d2e7e68e7bd5",
-        "status": "46offlineGREEN,11PGcases plus corrected deadlinePASS; exact main-ancestor integration done, initial full and reviews pending"
+        "issue": 158,
+        "branch": "fix/trust-ci-child-reaping",
+        "route_id": "2723ac23689b",
+        "status": "Exact10TrustCI files preserved while merging actualPR173 atd5fe0c39; current-main delivery route/full/reviews and separately authorized live acceptance pending"
+      },
+      {
+        "issues": [
+          59,
+          95,
+          119,
+          128
+        ],
+        "branch": "fix/verifier-lifecycle-batch-20260921",
+        "route_id": "cf340a89c6f4",
+        "status": "Five static analyses complete; one data writer preparing meaningful RED controls. Retained128lost tests/cancellation gaps identified; no new tests or completed repairs claimed."
       }
     ],
-    "superseded_candidate_prs_pending_delivery": [
+    "superseded_candidate_prs_pending_delivery": [],
+    "user_delegation": "делай всё и закрывай; fixes/delivery/verified closures, with exact operational grants and external trust gates retained",
+    "next_action": "Complete active factory/tooling successor; preserve52remaining issues and separate Trust CI source/operations boundaries.",
+    "closed_issues_scope": "current delivery wave",
+    "current_closed_issues_all_time": 22,
+    "superseded_candidate_prs_closed": [
       171,
       172
-    ],
-    "user_delegation": "делай всё и закрывай; fixes/delivery/verified closures, with exact operational grants and external trust gates retained",
-    "next_action": "Combined eight-issue delivery plus isolated165/163 continuation; follow dated queue for retained PRs and external dependencies.",
-    "closed_issues_scope": "current delivery wave",
-    "current_closed_issues_all_time": 14
+    ]
   },
   "active_ci_ingress_operation": {
     "branch": "fix/trust-ci-webhook-bridge",

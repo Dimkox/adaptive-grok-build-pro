@@ -1,0 +1,19 @@
+{
+  "command": [
+    "env",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "python3",
+    "-m",
+    "unittest",
+    "factory.tests.test_semantic_repair_lifecycle.SemanticRepairPlanRejectionTests",
+    "factory.tests.test_migrations.RepairPlanMigrationTests",
+    "-v"
+  ],
+  "started_at": "2026-09-21T09:09:54.197071+00:00",
+  "completed_at": "2026-09-21T09:09:55.314273+00:00",
+  "exit_code": 1,
+  "duration_seconds": 1.117176,
+  "log": "implementation-red-transcript.json",
+  "raw_log_cache": "/home/pall/.cache/agbp-run/issues-wave-20260921/issue163/offline-red.log",
+  "raw_log_sha256": "edbcc696e7b4511aa38f8c5cf2a8a83a80cc729fa919616a54e4f55809e0e503"
+}

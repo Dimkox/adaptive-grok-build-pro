@@ -1,0 +1,70 @@
+{
+  "change_id": "20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0",
+  "created_at": "2026-09-21T11:11:16+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "Scoping only; parent PR173 has not delivered, combined source not imported. Fresh continuation verification and independent reviews are pending.",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-21T11:11:16+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T11:23:35+00:00",
+      "from": "draft",
+      "reason": "All five static analyses adopted; exact19pathmanifest and original evidence retained. Parent PR173delivery and freshactual-mainroute are required before implementation; current obligations remain not_run.",
+      "to": "scoped"
+    }
+  ],
+  "route_id": "8b2ee0533ba5",
+  "schema_version": 1,
+  "status": "scoped",
+  "title": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001\u2013021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
+  "updated_at": "2026-09-21T11:23:35+00:00"
+}

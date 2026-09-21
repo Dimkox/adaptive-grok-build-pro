@@ -1,0 +1,9 @@
+# Regression and verification plan
+
+Measure RED against actual main source before edits; historical PR33 failures and old PR135 receipts are context only. Use pure fixed proc/quota fixtures: v1/v2, combined controllers, hybrid selection, nested and parent caps, fractional floor, unlimited, missing v2 leaf, true root, malformed/unreadable/oversize, escaped/nonstandard mounts, component prefix collision, bind mappings, namespace traversal and no reads outside matching mounts. Patch capacity inputs in existing auto tests so no test depends on host quotas.
+
+Retain/import PR135's three real selection/Core/Trust/coverage tests through the capability seam; preserve explicit requests, absent config, environment override and child guard. Exact expected marker names/exclusive writes prove tests ran once; requested worker PID participation is not a scheduling-independent assertion. Separately prove configured worker arguments and actual reported engine.
+
+Measured zero-test fallback regressions already passed on Python3.12: the static empty-success hypothesis was not reproduced. Retain those characterization tests, including actual zero-test diagnostics and unsuccessful measured coverage, while preserving existing serial commands/accounting. Python3.14 source inspection is not execution evidence; older interpreter behavior remains unqualified. Test ordinary assertion/import/abrupt failures and current coverage corruption/failure controls without broadening into general consumer product coverage.
+
+One host-wide CPU lane: writer prepares test files without executing, requests exact RED/GREEN selectors and expected cost, and waits for allocation. Root runs full route-selected PR verification after focused checks; every selected review follows verified source. Native Windows, actual new deployed quota behavior and external exact-head success are not claimed by simulated fixtures.

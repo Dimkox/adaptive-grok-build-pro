@@ -1,0 +1,47 @@
+{
+  "change_id": "20260921-fix-issue-163-name-postgresql-semantic-plan-repa-d2e7e6",
+  "created_at": "2026-09-21T08:53:56+00:00",
+  "history": [
+    {
+      "at": "2026-09-21T08:53:56+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T09:01:17+00:00",
+      "from": "draft",
+      "reason": "All five selected analyses adopted; six typed criteria and exact body parity plan recorded. No named human gate. User delegated remaining issue repair. Verified166 prerequisite integrated; single data writer owns implementation and reserved execution slots.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-21T09:01:17+00:00",
+      "from": "scoped",
+      "reason": "All five selected analyses adopted; six typed criteria and exact body parity plan recorded. No named human gate. User delegated remaining issue repair. Verified166 prerequisite integrated; single data writer owns implementation and reserved execution slots.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-21T09:01:18+00:00",
+      "from": "approved",
+      "reason": "All five selected analyses adopted; six typed criteria and exact body parity plan recorded. No named human gate. User delegated remaining issue repair. Verified166 prerequisite integrated; single data writer owns implementation and reserved execution slots.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T09:33:12+00:00",
+      "from": "implementing",
+      "reason": "Measured RED followed by46 offline GREEN and focused PostgreSQL outcomes; source/SQL invariants and failure history preserved. Full verification and all selected code/test/data reviews remain pending.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-21T10:17:00+00:00",
+      "from": "verifying",
+      "reason": "Initial full failed architecture budget against pre-PR170 base; preserve failure and adopt unchanged candidate into newly generated actual-main delivery route",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "d2e7e68e7bd5",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix issue #163: name PostgreSQL semantic_plan_repair precondition rejection reasons in a closed envelope via additive migration022 and a strict Python reader. Keep every predicate, lock, privilege and subject/verdict check unchanged. Add tests for the closed reason set and unchanged SQL clause text. Source code only.",
+  "updated_at": "2026-09-21T10:17:00+00:00"
+}

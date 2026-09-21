@@ -1,0 +1,100 @@
+{
+  "change_id": "20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
+  "created_at": "2026-09-21T11:30:25+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "receipt_kind": "verification",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T11:52:04.471060+00:00",
+        "reference": "evidence/combined-full-initial-report.json"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "receipt_kind": "code_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/code-review.md"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "receipt_kind": "test_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/test-review.md"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "receipt_kind": "security_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/security-review.md"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "receipt_kind": "data_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/data-review.md"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "receipt_kind": "release_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+        "reference": "evidence/release-review.md"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-21T11:30:25+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-21T11:31:59+00:00",
+      "from": "draft",
+      "reason": "Standing user authorization covers the named bounded issue repairs and PR delivery;19exactpreparedpaths, all5analyses adopted, actualPR173main/tree confirmed. No database/deployment operation or external human security approval is included. One selected data_implementer owns imports; all fresh integrated gates remain mandatory.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-21T11:31:59+00:00",
+      "from": "scoped",
+      "reason": "Standing user authorization covers the named bounded issue repairs and PR delivery;19exactpreparedpaths, all5analyses adopted, actualPR173main/tree confirmed. No database/deployment operation or external human security approval is included. One selected data_implementer owns imports; all fresh integrated gates remain mandatory.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-21T11:31:59+00:00",
+      "from": "approved",
+      "reason": "Standing user authorization covers the named bounded issue repairs and PR delivery;19exactpreparedpaths, all5analyses adopted, actualPR173main/tree confirmed. No database/deployment operation or external human security approval is included. One selected data_implementer owns imports; all fresh integrated gates remain mandatory.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-21T11:42:04+00:00",
+      "from": "implementing",
+      "reason": "Exact 19-path integration is complete; coordinator independently verified candidate bytes and immutable SQL001–021. Freeze this tree for fresh complete verification and five independent reviews.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "cf23849faca6",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001–021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
+  "updated_at": "2026-09-21T11:42:04+00:00"
+}

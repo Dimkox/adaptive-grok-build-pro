@@ -23,7 +23,9 @@ from adaptive_factory.semantic_contracts import (
 )
 from adaptive_factory.semantic_repair import (
     REPAIR_CHILD_REJECTIONS,
+    RepairChildProposalV1,
     RepairChildTaskBindingV1,
+    RepairLifecycleResult,
     SemanticRepairRequestV1,
     repair_child_rejection_reason,
 )
@@ -4105,7 +4107,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20, 21],
+                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4396,7 +4398,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], "ready", 21, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], "ready", 22, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5091,7 +5093,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 21)
+        self.assertEqual(result["schema_version"], 22)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login
@@ -5362,6 +5364,8 @@ class PostgresFactoryTests(unittest.TestCase):
         direct_store_intake=False,
         before_execution=None,
         intake_now=None,
+        database_url=None,
+        stage_wall_seconds=None,
     ):
         def command_key(operation):
             return canonical_digest(
@@ -5376,6 +5380,7 @@ class PostgresFactoryTests(unittest.TestCase):
             )
         import psycopg
 
+        database_url = database_url or DATABASE_URL
         if intake_now is None:
             # tasks.deadline_at is computed by PostgreSQL as now() + wall_seconds at its
             # own INSERT, while the child budget inherited below is measured against
@@ -5384,7 +5389,7 @@ class PostgresFactoryTests(unittest.TestCase):
             # host scheduling latency alone could place the child task past its
             # proposal deadline and make the bind refusal non-reproducible.  Pinning the
             # fixture to one injected server-clock reading removes that divergence.
-            with psycopg.connect(DATABASE_URL) as connection:
+            with psycopg.connect(database_url) as connection:
                 intake_now = connection.execute("SELECT now()").fetchone()[0]
         intake_payload = self.payload(repository=repository_id, source=source_id)
         intake_payload["request_id"] = f"semantic-repair-{namespace}"
@@ -5441,7 +5446,7 @@ class PostgresFactoryTests(unittest.TestCase):
             intake_payload["source_digest"] = source_id
         if limit_overrides:
             intake_payload["limits"].update(limit_overrides)
-        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+        with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """INSERT INTO factory.m0_authority_observations
                 (observation_id,observed_at,check_name,exact_head_sha,issuer,
@@ -5486,6 +5491,11 @@ class PostgresFactoryTests(unittest.TestCase):
             before_execution(task, intake)
         packet = valid_packet()
         packet["provider"]["capabilities"] = ["structured_output", "usage"]
+        if stage_wall_seconds is not None:
+            packet["plan"]["stages"] = [
+                {**stage, "wall_seconds": stage_wall_seconds}
+                for stage in packet["plan"]["stages"]
+            ]
         selection = {
             "provider": packet["provider"],
             "capability_policy": packet["capability_policy"],
@@ -5680,6 +5690,356 @@ class PostgresFactoryTests(unittest.TestCase):
             "verdict": verdict,
             "verdict_record": verdict_record,
         }
+
+    @staticmethod
+    def semantic_repair_request(fixture, **changes):
+        published = fixture["published"]
+        body = {
+            "schema_version": 1,
+            "subject_digest": published.subject.digest,
+            "verdict_digest": fixture["verdict"].digest,
+            "requested_cycle": 1,
+            "previous_child_proposal_digest": None,
+            "writer_id": published.subject.original_writer_id,
+            "context_digest": canonical_digest({"repair-context": published.subject.digest}),
+            "expected_workspace_result_digest": fixture["result"].workspace_result_digest,
+            "expected_fence": published.binding.fence,
+            "expected_head_sha": published.subject.exact_head_sha,
+            "expected_base_sha": published.subject.exact_base_sha,
+            "expected_architecture_digest": published.subject.architecture_digest,
+            "expected_authority_digest": published.subject.authority_digest,
+            "expected_diff_digest": published.subject.diff_digest,
+            "expected_risk_level": published.subject.risk_level,
+        }
+        body.update(changes)
+        return SemanticRepairRequestV1.from_dict(body)
+
+    @staticmethod
+    def semantic_plan_command(task_id, repair_request, key):
+        command = {
+            "contract": "adaptive-factory.semantic-repair-command/v1",
+            "idempotency_key": key, "task_id": task_id,
+            "repair_request": (repair_request.to_dict()
+                               if isinstance(repair_request, SemanticRepairRequestV1)
+                               else repair_request),
+        }
+        return (key, canonical_digest(command), canonical_json(command).decode(), task_id)
+
+    def test_semantic_plan_names_early_refusals_and_preserves_matching_replay(self):
+        import psycopg
+
+        fixture = self.semantic_repair_fixture(
+            namespace="plan-refusals", source_id="plan-refusals", result_head_sha="4" * 40
+        )
+        task_id = fixture["task"].task_id
+        repair_request = self.semantic_repair_request(fixture)
+        key = canonical_digest({"case": "plan-refusals"})
+        command = self.semantic_plan_command(task_id, repair_request, key)
+        cases = (
+            ((None, *command[1:]), "command_input_invalid"),
+            ((command[0], "0" * 64, *command[2:]), "repair_payload_invalid"),
+            (self.semantic_plan_command(task_id,
+                 {**repair_request.to_dict(), "requested_cycle": 2}, key),
+             "cycle_lineage_invalid"),
+            (self.semantic_plan_command(task_id,
+                 replace(repair_request, subject_digest="0" * 64), key),
+             "subject_not_found"),
+            (self.semantic_plan_command(task_id,
+                 replace(repair_request, verdict_digest="0" * 64), key),
+             "verdict_mismatch"),
+            (self.semantic_plan_command(task_id,
+                 replace(repair_request, requested_cycle=2,
+                         previous_child_proposal_digest="f" * 64), key),
+             "previous_proposal_mismatch"),
+            ((key, "0" * 64, "{", task_id), "store_operation_rejected"),
+        )
+        coordinator = PostgresSemanticCoordinatorStore(self.semantic_coordinator_url)
+        for params, reason in cases:
+            with self.subTest(reason=reason), coordinator._connect() as connection:
+                connection.execute("SET LOCAL statement_timeout='5s'")
+                actual = connection.execute(
+                    "SELECT factory.semantic_plan_repair(%s,%s,%s,%s)", params
+                ).fetchone()[0]
+                self.assertEqual(actual, {"repair_plan_rejection": reason})
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT (SELECT count(*) FROM factory.semantic_directives),"
+                "(SELECT count(*) FROM factory.semantic_child_proposals),"
+                "(SELECT count(*) FROM factory.semantic_escalations),"
+                "(SELECT count(*) FROM factory.semantic_command_results WHERE operation='plan_repair')"
+            ).fetchone(), (0, 0, 0, 0))
+        repaired = coordinator.request_repair(task_id, repair_request, idempotency_key=key)
+        self.assertEqual(repaired.decision, "repair")
+        self.assertEqual(coordinator.request_repair(task_id, repair_request,
+                                                   idempotency_key=key), repaired)
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: idempotency_conflict$"):
+            coordinator.request_repair(task_id, replace(repair_request, context_digest="1" * 64),
+                                       idempotency_key=key)
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: directive_conflict$"):
+            coordinator.request_repair(task_id, replace(repair_request, context_digest="1" * 64),
+                                       idempotency_key="1" * 64)
+        # A changed remaining budget alters the proposed child, while the directive
+        # and successful result already recorded for this context remain unchanged.
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.tasks SET cost_observed_micros=cost_observed_micros+1 WHERE task_id=%s",
+                (task_id,),
+            )
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: child_proposal_conflict$"):
+            coordinator.request_repair(task_id, repair_request, idempotency_key="2" * 64)
+        self.assertEqual(coordinator.request_repair(task_id, repair_request,
+                                                   idempotency_key=key), repaired)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM factory.semantic_command_results WHERE operation='plan_repair'"
+            ).fetchone()[0], 1)
+
+    def test_semantic_plan_exception_rolls_back_earlier_directive_insert(self):
+        import psycopg
+
+        fixture = self.semantic_repair_fixture(
+            namespace="plan-exception", source_id="plan-exception", result_head_sha="4" * 40
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "ALTER TABLE factory.semantic_child_proposals ADD CONSTRAINT "
+                "issue163_child_failure CHECK (cycle>1)"
+            )
+        try:
+            with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: store_operation_rejected$"):
+                PostgresSemanticCoordinatorStore(self.semantic_coordinator_url).request_repair(
+                    fixture["task"].task_id, self.semantic_repair_request(fixture),
+                    idempotency_key="3" * 64,
+                )
+            with psycopg.connect(DATABASE_URL) as connection:
+                self.assertEqual(connection.execute(
+                    "SELECT (SELECT count(*) FROM factory.semantic_directives),"
+                    "(SELECT count(*) FROM factory.semantic_child_proposals),"
+                    "(SELECT count(*) FROM factory.semantic_command_results WHERE operation='plan_repair')"
+                ).fetchone(), (0, 0, 0))
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(
+                    "ALTER TABLE factory.semantic_child_proposals DROP CONSTRAINT issue163_child_failure"
+                )
+
+    def test_semantic_plan_child_conflict_retains_a_normal_return_directive(self):
+        import psycopg
+
+        original = self.semantic_repair_fixture(
+            namespace="plan-original-child", source_id="plan-original-child", result_head_sha="4" * 40
+        )
+        coordinator = PostgresSemanticCoordinatorStore(self.semantic_coordinator_url)
+        prior = coordinator.request_repair(
+            original["task"].task_id, self.semantic_repair_request(original), idempotency_key="4" * 64
+        )
+        fixture = self.semantic_repair_fixture(
+            namespace="plan-conflicting-child", source_id="plan-conflicting-child", result_head_sha="5" * 40
+        )
+        # Construct an inconsistent stored lineage that still obeys every real
+        # table constraint. No trigger, foreign key or guard is disabled.
+        conflicting = RepairChildProposalV1.from_dict({
+            **prior.child_proposal.to_dict(), "subject_digest": fixture["published"].subject.digest,
+        })
+        self.insert_semantic_child_fixture(conflicting)
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: child_proposal_conflict$"):
+            coordinator.request_repair(fixture["task"].task_id, self.semantic_repair_request(fixture),
+                                       idempotency_key="6" * 64)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM factory.semantic_directives WHERE subject_digest=%s",
+                (fixture["published"].subject.digest,),
+            ).fetchone()[0], 1)
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM factory.semantic_command_results WHERE operation='plan_repair' "
+                "AND idempotency_key=%s", ("6" * 64,),
+            ).fetchone()[0], 0)
+            self.assertEqual(connection.execute(
+                "SELECT body FROM factory.semantic_child_proposals WHERE child_proposal_digest=%s",
+                (conflicting.digest,),
+            ).fetchone()[0], conflicting.to_dict())
+
+    @staticmethod
+    def insert_semantic_child_fixture(child):
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "INSERT INTO factory.semantic_child_proposals(child_proposal_digest,subject_digest,"
+                "directive_digest,parent_task_id,parent_run_id,parent_fence,cycle,"
+                "previous_child_proposal_digest,proposal_state,request_digest,body) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'pending_handoff',%s,%s::jsonb)",
+                (child.digest, child.subject_digest, child.directive_digest,
+                 child.parent_task_id, child.parent_run_id, child.parent_fence,
+                 child.cycle, child.previous_child_proposal_digest,
+                 "5" * 64, canonical_json(child.to_dict()).decode()),
+            )
+
+    def test_semantic_plan_missing_handoff_and_inconsistent_lineage_are_named(self):
+        fixture = self.semantic_repair_fixture(
+            namespace="plan-lineage", source_id="plan-lineage", result_head_sha="4" * 40
+        )
+        coordinator = PostgresSemanticCoordinatorStore(self.semantic_coordinator_url)
+        request = self.semantic_repair_request(fixture)
+        prior = coordinator.request_repair(fixture["task"].task_id, request,
+                                           idempotency_key="c" * 64)
+        unrelated = self.semantic_repair_fixture(
+            namespace="plan-no-handoff", source_id="plan-no-handoff", result_head_sha="5" * 40,
+            original_writer_context_digest=prior.child_proposal.context_digest,
+        )
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: child_handoff_mismatch$"):
+            coordinator.request_repair(unrelated["task"].task_id,
+                self.semantic_repair_request(unrelated, requested_cycle=2,
+                    previous_child_proposal_digest=prior.child_proposal_digest),
+                idempotency_key="d" * 64,
+            )
+        # Model stored lineage corruption with all real constraints still enabled.
+        # The typed child is individually valid but its parent head disagrees with
+        # the subject referenced by the recursive chain.
+        inconsistent = RepairChildProposalV1.from_dict({
+            **prior.child_proposal.to_dict(), "cycle": 2,
+            "previous_child_proposal_digest": prior.child_proposal_digest,
+            "parent_exact_head_sha": "f" * 40,
+        })
+        self.insert_semantic_child_fixture(inconsistent)
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: lineage_mismatch$"):
+            coordinator.request_repair(fixture["task"].task_id,
+                replace(request, requested_cycle=3, previous_child_proposal_digest=inconsistent.digest),
+                idempotency_key="e" * 64,
+            )
+
+    def semantic_plan_second_lookup(self, *, conflict):
+        import psycopg
+        from psycopg.conninfo import make_conninfo
+
+        fixture = self.semantic_repair_fixture(
+            namespace=f"plan-second-{conflict}", source_id=f"plan-second-{conflict}",
+            result_head_sha="4" * 40,
+        )
+        repair_request = self.semantic_repair_request(fixture)
+        task_id = fixture["task"].task_id
+        key = canonical_digest({"second-lookup": conflict})
+        application = f"plan-second-{uuid.uuid4().hex}"
+        worker_url = make_conninfo(self.semantic_coordinator_url, application_name=application)
+        outcome = []
+
+        def request_worker():
+            try:
+                outcome.append(PostgresSemanticCoordinatorStore(worker_url).request_repair(
+                    task_id, repair_request, idempotency_key=key
+                ))
+            except Exception as error:
+                outcome.append(error)
+
+        with psycopg.connect(DATABASE_URL) as holder, psycopg.connect(
+            DATABASE_URL, autocommit=True, options="-c statement_timeout=3000"
+        ) as observer:
+            holder.execute("SELECT subject_digest FROM factory.semantic_subjects "
+                           "WHERE subject_digest=%s FOR UPDATE", (repair_request.subject_digest,))
+            self.assertIsNone(holder.execute(
+                "SELECT 1 FROM factory.semantic_command_results WHERE operation='plan_repair' "
+                "AND idempotency_key=%s", (key,),
+            ).fetchone())
+            worker = threading.Thread(target=request_worker, daemon=True)
+            worker.start()
+            try:
+                deadline = time.monotonic() + 3
+                while observer.execute(
+                    "SELECT pid FROM pg_stat_activity WHERE datname=current_database() "
+                    "AND application_name=%s AND wait_event_type='Lock' "
+                    "AND %s=ANY(pg_blocking_pids(pid))",
+                    (application, holder.info.backend_pid),
+                ).fetchone() is None:
+                    self.assertTrue(worker.is_alive(), "request did not wait on its subject")
+                    self.assertLess(time.monotonic(), deadline, "subject wait was not observed")
+                    time.sleep(0.02)
+                stored_request = (replace(repair_request, context_digest="7" * 64)
+                                  if conflict else repair_request)
+                holder.execute("SET LOCAL ROLE factory_semantic_coordinator")
+                holder.execute("SET LOCAL statement_timeout='5s'")
+                stored_response = holder.execute(
+                    "SELECT factory.semantic_plan_repair(%s,%s,%s,%s)",
+                    self.semantic_plan_command(task_id, stored_request, key),
+                ).fetchone()[0]
+                self.assertEqual(stored_response["decision"], "repair")
+                holder.execute("RESET ROLE")
+                stored_row = holder.execute(
+                    "SELECT request_digest,response_body::text,created_at FROM factory.semantic_command_results "
+                    "WHERE operation='plan_repair' AND idempotency_key=%s", (key,),
+                ).fetchone()
+                holder.commit()
+                worker.join(timeout=8)
+                self.assertFalse(worker.is_alive(), "request exceeded its watchdog")
+                self.assertEqual(len(outcome), 1)
+                if conflict:
+                    self.assertIsInstance(outcome[0], StoreError)
+                    self.assertEqual(str(outcome[0]), "semantic repair plan rejected: idempotency_conflict")
+                else:
+                    if isinstance(outcome[0], Exception):
+                        raise outcome[0]
+                    self.assertEqual(outcome[0], RepairLifecycleResult.from_dict(stored_response))
+                self.assertEqual(observer.execute(
+                    "SELECT request_digest,response_body::text,created_at FROM factory.semantic_command_results "
+                    "WHERE operation='plan_repair' AND idempotency_key=%s", (key,),
+                ).fetchone(), stored_row)
+            finally:
+                holder.rollback()
+                try:
+                    if worker.is_alive():
+                        observer.execute(
+                            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                            "WHERE datname=current_database() AND application_name=%s", (application,),
+                        )
+                finally:
+                    worker.join(timeout=10)
+                    self.assertFalse(worker.is_alive(), "planning worker leaked")
+
+    def test_semantic_plan_second_lookup_replays_the_matching_committed_response(self):
+        self.semantic_plan_second_lookup(conflict=False)
+
+    def test_semantic_plan_second_lookup_names_the_conflicting_committed_response(self):
+        self.semantic_plan_second_lookup(conflict=True)
+
+    def test_semantic_plan_deadline_escalation_persists_and_success_replays_after_expiry(self):
+        import psycopg
+
+        fixture = self.semantic_repair_fixture(
+            namespace="plan-deadline", source_id="plan-deadline", result_head_sha="4" * 40,
+            limit_overrides={"wall_seconds": 20}, stage_wall_seconds=5,
+        )
+        task_id = fixture["task"].task_id
+        repair_request = self.semantic_repair_request(fixture)
+        coordinator = PostgresSemanticCoordinatorStore(self.semantic_coordinator_url)
+        repaired = coordinator.request_repair(task_id, repair_request, idempotency_key="8" * 64)
+        self.assertEqual(repaired.decision, "repair")
+        with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+            saved = connection.execute(
+                "SELECT response_body::text,created_at FROM factory.semantic_command_results "
+                "WHERE operation='plan_repair' AND idempotency_key=%s", ("8" * 64,),
+            ).fetchone()
+            deadline = time.monotonic() + 25
+            while not connection.execute(
+                "SELECT (body->>'deadline')::timestamptz<=clock_timestamp() "
+                "FROM factory.execution_manifests WHERE manifest_digest=%s",
+                (fixture["published"].binding.run_manifest_digest,),
+            ).fetchone()[0]:
+                self.assertLess(time.monotonic(), deadline, "server deadline was not reached")
+                time.sleep(0.05)
+            self.assertEqual(coordinator.request_repair(task_id, repair_request,
+                                                       idempotency_key="8" * 64), repaired)
+            self.assertEqual(connection.execute(
+                "SELECT response_body::text,created_at FROM factory.semantic_command_results "
+                "WHERE operation='plan_repair' AND idempotency_key=%s", ("8" * 64,),
+            ).fetchone(), saved)
+        escalated = coordinator.request_repair(task_id, repair_request, idempotency_key="9" * 64)
+        self.assertEqual((escalated.decision, escalated.reason), ("needs_human", "deadline_exhausted"))
+        self.assertEqual(coordinator.request_repair(task_id, repair_request,
+                                                   idempotency_key="9" * 64), escalated)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT reason,body FROM factory.semantic_escalations WHERE escalation_digest=%s",
+                (escalated.escalation_digest,),
+            ).fetchone(), ("deadline_exhausted", escalated.escalation.to_dict()))
 
 
     def test_semantic_subject_publish_is_exact_replay_safe_and_role_isolated(self):
@@ -6058,7 +6418,7 @@ class PostgresFactoryTests(unittest.TestCase):
             ),
             repair,
         )
-        with self.assertRaisesRegex(StoreError, "repair result"):
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: idempotency_conflict$"):
             semantic_store.request_repair(
                 task.task_id,
                 replace(repair_request, context_digest="3" * 64),
@@ -6101,7 +6461,7 @@ class PostgresFactoryTests(unittest.TestCase):
             (same_subject.decision, same_subject.reason, same_subject.child_proposal),
             ("needs_human", "workspace_result_changed", None),
         )
-        with self.assertRaisesRegex(StoreError, "repair result"):
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: previous_proposal_mismatch$"):
             semantic_store.request_repair(
                 task.task_id,
                 replace(
@@ -6349,7 +6709,7 @@ class PostgresFactoryTests(unittest.TestCase):
             cycle_three_fixture["published"].subject.original_writer_context_digest,
             cycle_two.child_proposal.context_digest,
         )
-        with self.assertRaisesRegex(StoreError, "repair result"):
+        with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: previous_proposal_mismatch$"):
             semantic_store.request_repair(
                 cycle_three_fixture["task"].task_id,
                 replace(

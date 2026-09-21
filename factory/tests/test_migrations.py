@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import subprocess
 from urllib.parse import urlsplit
 
+from adaptive_factory import semantic_repair
 from adaptive_factory.contracts import ContractError
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
 from adaptive_factory.semantic_repair import (
@@ -369,8 +370,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 22)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 21)
+        self.assertEqual([item.version for item in migrations], list(range(1, 23)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 22)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -849,6 +850,82 @@ class MigrationTests(unittest.TestCase):
             "grant execute on function factory.semantic_plan_repair",
             migration,
         )
+
+
+class RepairPlanMigrationTests(unittest.TestCase):
+    ORDERED_REASONS = (
+        "command_input_invalid", "repair_payload_invalid", "cycle_lineage_invalid",
+        "idempotency_conflict", "subject_not_found", "verdict_mismatch",
+        "execution_material_missing", "previous_proposal_mismatch",
+        "child_handoff_mismatch", "lineage_mismatch", "baseline_risk_invalid",
+        "idempotency_conflict", "directive_conflict", "child_proposal_conflict",
+        "store_operation_rejected",
+    )
+
+    def plan_migration(self):
+        migrations = discover_migrations()
+        self.assertEqual(migrations[-1].version, 22)
+        self.assertEqual(migrations[-1].name,
+                         "022_semantic_repair_plan_rejection_reasons.sql")
+        return migrations, migrations[-1]
+
+    def test_original_prefix_is_frozen_and_only_the_plan_upgrade_is_pending(self):
+        migrations, latest = self.plan_migration()
+        historical = PRE_RECOVERY_MIGRATIONS + (
+            (17, "017_execution_recovery_topology.sql", "4114b0a1d3b5e8ab86227b0bd2dd459d62d023d033d1ff2b9b5bdc66aaa07da1"),
+            (18, "018_semantic_validation_bridge.sql", "33053563dce7c34edfa9301130272adb34651d44dd1f2bc305ba3eec01382c70"),
+            (19, "019_usage_token_components.sql", "e0cf573b2bd183f5bf6291f02d330e98edf7d4e00d34944daba5719eee91c790"),
+            (20, "020_execution_v2_priced_usage.sql", "524c94bf95f38f8a339c3f5b1165d7f7b7fffc81eb7fd8a2faff4362f33d2ae3"),
+            (21, "021_semantic_repair_child_rejection_reasons.sql", "868bc21f47351f92b79acb8bd8e9390c62b43803c0b5761400e32c7143d56d5e"),
+        )
+        self.assertEqual(tuple((m.version, m.name, m.sha256) for m in migrations[:-1]),
+                         historical)
+        applied = [AppliedMigration(*item) for item in historical]
+        self.assertEqual(plan_migrations(migrations, applied), (latest,))
+        applied.append(AppliedMigration(latest.version, latest.name, latest.sha256))
+        self.assertEqual(plan_migrations(migrations, applied), ())
+
+    def test_plan_function_reverses_exactly_to_the_frozen_original_body(self):
+        migrations, latest = self.plan_migration()
+        original = MigrationTests._function_text(migrations[17].sql, "semantic_plan_repair")
+        replacement = MigrationTests._function_text(latest.sql, "semantic_plan_repair")
+        self.assertEqual(hashlib.sha256(original.encode("utf-8")).hexdigest(),
+                         "5ceffc2373c2cb7849f3accc79ed9b6b9b51024ce7b36f975c50ca71530e7d32")
+        expression = r"jsonb_build_object\('repair_plan_rejection','([a-z_]+)'\)"
+        self.assertEqual(tuple(re.findall(expression, replacement)), self.ORDERED_REASONS)
+        self.assertEqual(len(set(self.ORDERED_REASONS)), 14)
+        restored, replacements = re.subn(expression, "NULL", replacement)
+        self.assertEqual(replacements, 15)
+        restored = restored.replace("CREATE OR REPLACE FUNCTION", "CREATE FUNCTION", 1)
+        self.assertEqual(restored, original)
+        self.assertNotRegex(replacement, r"(?:RETURN|ELSE)\s+NULL\b")
+        replay = ("THEN v_prior.response_body ELSE jsonb_build_object("
+                  "'repair_plan_rejection','idempotency_conflict') END;")
+        self.assertEqual(" ".join(replacement.split()).count(replay), 2)
+
+    def test_plan_sql_vocabulary_matches_only_the_plan_python_channel(self):
+        _migrations, latest = self.plan_migration()
+        self.assertTrue(hasattr(semantic_repair, "REPAIR_PLAN_REJECTIONS"))
+        emitted = set(re.findall(r"'repair_plan_rejection','([a-z_]+)'", latest.sql))
+        self.assertEqual(emitted, set(self.ORDERED_REASONS))
+        self.assertEqual(emitted, semantic_repair.REPAIR_PLAN_REJECTIONS - {"planning_rejected"})
+        self.assertNotIn("deadline_exhausted", emitted)
+        self.assertNotIn("store_returned_null", emitted)
+        self.assertNotIn("repair_child_rejection", latest.sql)
+
+    def test_plan_upgrade_changes_no_schema_or_capability_boundary(self):
+        _migrations, latest = self.plan_migration()
+        function = MigrationTests._function_text(latest.sql, "semantic_plan_repair")
+        self.assertTrue(function.startswith("CREATE OR REPLACE FUNCTION factory.semantic_plan_repair("))
+        self.assertIn("p_idempotency_key char(64),p_request_digest char(64),\n"
+                      "  p_request_canonical text,p_task_id uuid\n) RETURNS jsonb", function)
+        self.assertIn("LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$", function)
+        outside = latest.sql.replace(function, "")
+        outside = re.sub(r"(?m)^--[^\n]*", "", outside).strip()
+        self.assertEqual(outside,
+            "REVOKE ALL ON FUNCTION factory.semantic_plan_repair(char,char,text,uuid) FROM PUBLIC;\n"
+            "GRANT EXECUTE ON FUNCTION factory.semantic_plan_repair(char,char,text,uuid)\n"
+            "  TO factory_semantic_coordinator;")
 
 
 if __name__ == "__main__":

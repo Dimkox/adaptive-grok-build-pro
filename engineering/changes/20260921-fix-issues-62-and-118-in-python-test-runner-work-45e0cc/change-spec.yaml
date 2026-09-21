@@ -1,0 +1,140 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Quota-aware auto selection applies component-safe process membership/mount mapping and visible ancestor minima with explicit conservative fractional rounding.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Malformed/unavailable/oversized/ambiguous relevant capacity inputs conservatively select one worker; known unlimited and absent controls are distinguished.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Explicit worker values, default-off, environment override, child suppression and platform boundaries preserve existing public contracts.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "PR135 platform capability fallback selects actual sequential Core/Trust execution and current measured coverage before launch without weakening supported xdist pins.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Selected engines preserve exact collection and failure/cleanup/coverage propagation; non-vacuous characterization tests retain zero-test serial rejection on the measured runtime without changing existing accounting or asserting untested interpreter behavior.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Complete current-tree verification and independent code/test/security reviews precede exact-head external source delivery.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260921-fix-issues-62-and-118-in-python-test-runner-work-45e0cc",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No capacity discovery outside bounded relevant visible mounts, no guessed traversal normalization, no serial retry after actual test failure, and no reuse of historical receipts as current authority.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No new default opt-in, public result schema, dependency, deployed CI policy/image, process ownership model or provider behavior; explicit supported-platform worker requests stay unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issues #62 and #118 in Python test runner worker and engine selection. Account for actual Linux cgroup CPU quota in auto worker selection, preserve explicit worker requests and default sequential execution, and carry the retained PR135 Windows platform fallback onto current main. Preserve test collection, cleanup and pass/fail coverage semantics. Bound this to existing runner code and tests; no external policy, runner image or service operation.",
+    "success_metric": "Auto respects supported visible CPU quotas; unsupported parallel platform degrades before launch while test/coverage results remain meaningful.",
+    "target": "Existing optional Python test runner and deterministic runner/capacity regression fixtures"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Existing requested/effective workers, actual engine and exit/coverage results, plus a concise unknown-capacity reason if needed.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "schema_version": 2
+}

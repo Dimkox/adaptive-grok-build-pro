@@ -1,5 +1,10 @@
+import json
+import traceback
 import unittest
+from unittest.mock import MagicMock, patch
 
+from adaptive_factory import semantic_repair
+from adaptive_factory.contracts import ContractError, canonical_digest
 from adaptive_factory.models import Actor
 from adaptive_factory.semantic_adjudication import adjudicate
 from adaptive_factory.semantic_contracts import SemanticCoverageV1, SemanticFindingV1, SemanticSubjectV1
@@ -442,6 +447,200 @@ class SemanticRepairLifecycleTests(unittest.TestCase):
             RepairChildProposalV1.from_dict(
                 {**child.to_dict(), "baseline_risk_level": "none"}
             )
+
+
+class SemanticRepairPlanRejectionTests(unittest.TestCase):
+    SQL_REASONS = frozenset({
+        "command_input_invalid", "repair_payload_invalid", "cycle_lineage_invalid",
+        "idempotency_conflict", "subject_not_found", "verdict_mismatch",
+        "execution_material_missing", "previous_proposal_mismatch",
+        "child_handoff_mismatch", "lineage_mismatch", "baseline_risk_invalid",
+        "directive_conflict", "child_proposal_conflict", "store_operation_rejected",
+    })
+
+    def setUp(self):
+        self.root, self.finding, self.verdict = repair_fixture()
+        self.repair_request = SemanticRepairRequestV1.from_dict(
+            request(self.root, self.verdict)
+        )
+        self.result = repair_result(self.root, self.finding, self.verdict)
+        self.idempotency_key = "5" * 64
+
+    def call_store(self, response, repair_request=None):
+        return ProbeCoordinatorStore([response]).request_repair(
+            TASK_ID, repair_request or self.repair_request,
+            idempotency_key=self.idempotency_key,
+        )
+
+    def assert_refusal(self, response, reason):
+        with patch.object(
+            RepairLifecycleResult, "from_dict", wraps=RepairLifecycleResult.from_dict
+        ) as parser:
+            with self.assertRaises(StoreError) as raised:
+                self.call_store(response)
+        error = raised.exception
+        self.assertEqual(str(error), f"semantic repair plan rejected: {reason}")
+        parser.assert_not_called()
+        self.assertIsNone(error.__cause__)
+        self.assertIsNone(error.__context__)
+        self.assertNotIn("invalid_object", "".join(traceback.format_exception(error)))
+
+    def test_plan_reader_has_a_closed_vocabulary_and_exact_single_key(self):
+        self.assertTrue(hasattr(semantic_repair, "repair_plan_rejection_reason"))
+        reader = semantic_repair.repair_plan_rejection_reason
+        self.assertEqual(semantic_repair.REPAIR_PLAN_REJECTION_CHANNEL,
+                         "repair_plan_rejection")
+        self.assertEqual(semantic_repair.UNKNOWN_REPAIR_PLAN_REJECTION,
+                         "planning_rejected")
+        self.assertEqual(semantic_repair.REPAIR_PLAN_REJECTIONS,
+                         self.SQL_REASONS | {"planning_rejected"})
+        for reason in sorted(self.SQL_REASONS):
+            with self.subTest(reason=reason):
+                self.assertEqual(reader({"repair_plan_rejection": reason}), reason)
+        for reason in ("", "untrusted database text", None, 7, False, [], {}):
+            with self.subTest(reason=reason):
+                self.assertEqual(reader({"repair_plan_rejection": reason}),
+                                 "planning_rejected")
+        for response in (
+            None, 7, False, [], {}, "repair_plan_rejection",
+            {"repair_child_rejection": "command_input_invalid"},
+            {"repair_plan_rejection": "subject_not_found", "extra": True},
+            {**result_wire(self.result), "repair_plan_rejection": "subject_not_found"},
+        ):
+            with self.subTest(response=response):
+                self.assertIsNone(reader(response))
+
+    def test_store_names_every_known_refusal_without_parsing_a_lifecycle(self):
+        for reason in sorted(self.SQL_REASONS):
+            for encoded in (False, True):
+                with self.subTest(reason=reason, encoded=encoded):
+                    response = {"repair_plan_rejection": reason}
+                    self.assert_refusal(json.dumps(response) if encoded else response,
+                                        reason)
+
+    def test_store_bounds_unknown_reasons_without_echoing_untrusted_data(self):
+        for reason in ("untrusted SQL detail", "", None, 7, False, [], {"secret": "x"}):
+            with self.subTest(reason=reason):
+                self.assert_refusal({"repair_plan_rejection": reason},
+                                    "planning_rejected")
+
+    def test_store_classifies_legacy_sql_null_and_json_null_as_refusals(self):
+        for response in (None, "null", " \nnull\t"):
+            with self.subTest(response=response):
+                self.assert_refusal(response, "store_returned_null")
+
+    def test_malformed_json_is_stored_corruption_with_decoder_cause(self):
+        for response in ("{", "untrusted database text", '{"decision":}'):
+            with self.subTest(response=response):
+                try:
+                    self.call_store(response)
+                except Exception as error:
+                    self.assertIsInstance(error, StoreError)
+                    self.assertEqual(str(error), "stored semantic repair result is corrupt")
+                    self.assertIsInstance(error.__cause__, json.JSONDecodeError)
+                else:
+                    self.fail("malformed wire response was accepted")
+
+    def test_malformed_documents_and_channel_smuggling_remain_corruption(self):
+        corrupt_digest = {**result_wire(self.result), "child_proposal_digest": "0" * 64}
+        for response in (
+            {}, [], 7, False, '"scalar"',
+            {"repair_child_rejection": "command_input_invalid"},
+            {"repair_plan_rejection": "subject_not_found", "extra": True},
+            {**result_wire(self.result), "repair_plan_rejection": "subject_not_found"},
+            corrupt_digest,
+        ):
+            with self.subTest(response=response):
+                with self.assertRaises(StoreError) as raised:
+                    self.call_store(response)
+                self.assertEqual(str(raised.exception),
+                                 "stored semantic repair result is corrupt")
+                self.assertIsInstance(raised.exception.__cause__, ContractError)
+        self.assertEqual(self.call_store(result_wire(self.result)), self.result)
+        self.assertEqual(self.call_store(json.dumps(result_wire(self.result))), self.result)
+
+    def test_valid_lifecycle_cannot_bypass_existing_request_bindings(self):
+        for key, value in (
+            ("subject_digest", "0" * 64), ("verdict_digest", "0" * 64),
+            ("requested_cycle", 2),
+        ):
+            with self.subTest(key=key):
+                changed = SemanticRepairRequestV1.from_dict(
+                    request(self.root, self.verdict, **{key: value})
+                )
+                with self.assertRaisesRegex(StoreError, "^stored semantic repair result binding mismatch$"):
+                    self.call_store(result_wire(self.result), changed)
+        for key, value in (
+            ("expected_workspace_result_digest", "0" * 64), ("expected_fence", 8),
+            ("expected_head_sha", "0" * 40), ("writer_id", "other-writer"),
+            ("context_digest", "0" * 64), ("expected_base_sha", "0" * 40),
+            ("expected_architecture_digest", "0" * 64),
+            ("expected_authority_digest", "0" * 64), ("expected_diff_digest", "0" * 64),
+        ):
+            with self.subTest(key=key):
+                changed = SemanticRepairRequestV1.from_dict(
+                    request(self.root, self.verdict, **{key: value})
+                )
+                with self.assertRaisesRegex(StoreError, "^stored semantic repair child binding mismatch$"):
+                    self.call_store(result_wire(self.result), changed)
+
+    def test_deadline_escalation_remains_a_bound_successful_result(self):
+        command_digest = canonical_digest({
+            "contract": "adaptive-factory.semantic-repair-command/v1",
+            "idempotency_key": self.idempotency_key,
+            "task_id": TASK_ID,
+            "repair_request": self.repair_request.to_dict(),
+        })
+        for request_digest in (command_digest, "0" * 64):
+            escalation = RepairEscalationV1.from_dict({
+                "schema_version": 1, "subject_digest": self.root.digest,
+                "verdict_digest": self.verdict.digest, "requested_cycle": 1,
+                "reason": "deadline_exhausted", "request_digest": request_digest,
+            })
+            wire = {
+                "decision": "needs_human", "reason": "deadline_exhausted",
+                "subject_digest": self.root.digest, "verdict_digest": self.verdict.digest,
+                "cycle": 1, "directive_digest": None, "directive": None,
+                "child_proposal_digest": None, "child_proposal": None,
+                "escalation_digest": escalation.digest, "escalation": escalation.to_dict(),
+            }
+            with self.subTest(matching=request_digest == command_digest):
+                if request_digest == command_digest:
+                    actual = self.call_store(wire)
+                    self.assertEqual(actual.decision, "needs_human")
+                    self.assertEqual(actual.escalation, escalation)
+                else:
+                    with self.assertRaisesRegex(StoreError, "^stored semantic repair escalation binding mismatch$"):
+                        self.call_store(wire)
+
+    def test_refusal_is_classified_after_the_database_transaction_exits(self):
+        store = ProbeCoordinatorStore([{"repair_plan_rejection": "child_proposal_conflict"}])
+        connection = MagicMock()
+        connection.__enter__.return_value = connection
+        connection.cursor.return_value = store.cursor
+        with patch.object(store, "_connect", return_value=connection):
+            with self.assertRaisesRegex(StoreError, "^semantic repair plan rejected: child_proposal_conflict$"):
+                store.request_repair(TASK_ID, self.repair_request,
+                                     idempotency_key=self.idempotency_key)
+        connection.transaction.return_value.__exit__.assert_called_once_with(None, None, None)
+        connection.__exit__.assert_called_once_with(None, None, None)
+
+    def test_service_propagates_refusal_without_broker_or_binding_calls(self):
+        store = CoordinatorStore(self.result)
+        broker = ChildBroker(self.result)
+        service = FactoryService(CoreStore(), semantic_store=store, repair_child_broker=broker)
+        actor = Actor("semantic-coordinator", "operator", frozenset({"semantic:repair"}),
+                      frozenset({REPOSITORY_ID}))
+        refusal = StoreError("semantic repair plan rejected: subject_not_found")
+        with patch.object(store, "request_repair", side_effect=refusal):
+            with self.assertRaises(StoreError) as raised:
+                service.request_semantic_repair(
+                    TASK_ID, request(self.root, self.verdict), actor=actor,
+                    idempotency_key=self.idempotency_key,
+                )
+        self.assertIs(raised.exception, refusal)
+        self.assertEqual(broker.proposals, [])
+        self.assertEqual(store.bindings, [])
 
 
 if __name__ == "__main__":

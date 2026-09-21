@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-09-21T12:05:39.938899+00:00",
+  "route_id": "cf23849faca6",
+  "base": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+  "verified_source_head": "4bc43cb7876d92b11efb289a121dcfef0a0355ac",
+  "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5",
+  "reports": {
+    "code_review": {
+      "report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/code-review.md",
+      "sha256": "4b541af72d6a1bba9fc2f65a427af1e48380f664594cd5f751701bd4f0b391af",
+      "status": "pass",
+      "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5"
+    },
+    "test_review": {
+      "report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/test-review.md",
+      "sha256": "536436e47358bc5fd4e4de142b7b9b37ae46c50eb23e2b64b1985c2a2e163bf2",
+      "status": "pass",
+      "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5"
+    },
+    "security_review": {
+      "report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/security-review.md",
+      "sha256": "256f4309a874e3d9a1bb6069376bcb5fac98a1e52615b42bf7a53a8c0a9ef1de",
+      "status": "pass",
+      "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5"
+    },
+    "data_review": {
+      "report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/data-review.md",
+      "sha256": "fe4a0e665eabc40e2897bb65351486ca3671b9c6fcff839d64314b1ef2025e21",
+      "status": "pass",
+      "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5"
+    },
+    "release_review": {
+      "report": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/release-review.md",
+      "sha256": "3f411c599496f57fc51a3fbb9eaff743d5280d0b1f6745a148b0412dc6eddf67",
+      "status": "pass",
+      "reviewed_head": "c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5"
+    }
+  },
+  "scope": "All five independent reviewers inspected the actual integrated diff and returned PASS. Current frozen-tree verifier, receipts and external delivery remain pending. This freeze only records reports and reconciles handoff; source remains identical."
+}

@@ -1,0 +1,20 @@
+{
+  "source_head": "1eef8ecc1f3cdc5e397f47814cf65de14360e0c1",
+  "route_id": "d2e7e68e7bd5",
+  "stage": "focused_implementation_evidence_complete_full_verification_pending",
+  "sha256": {
+    "factory/src/adaptive_factory/semantic_repair.py": "db14245c0d25198936e7b468e81fe013e344ce6bf47b4599eab299d41766754a",
+    "factory/src/adaptive_factory/store.py": "5c61541fda124402d48fa81fc9550d610a3923263a2fd10e6fcbc0c5845f7411",
+    "factory/src/adaptive_factory/resources/022_semantic_repair_plan_rejection_reasons.sql": "3bd08d907c538ab3964727fdca91eb35565821889d1999da8fcba1278613267d",
+    "factory/tests/test_semantic_repair_lifecycle.py": "cfd15a6e173b38e196dcd522f14a9250ae6e48a2a06ecaaf0fdf9cf89955061e",
+    "factory/tests/test_migrations.py": "7e6cdf9fcb5f135021b6e3369f4f68165f9dd910ca958c3a25ca0d1974b4348c",
+    "factory/tests/test_postgres_integration.py": "fe27ab926491a2fb476bd0de938c4d4c4a4b87d8243ae89f5520c6757735f3f1",
+    "factory/tests/test_execution_persistence_postgres.py": "62ad6b546dc4e6c8f0a7f2b6d0023fe2178b254d97bf5282481474db797ca47b"
+  },
+  "verification_scope": {
+    "offline": "46 tests passed before the isolated deadline fixture plan correction; product modules and offline test files unchanged since that run",
+    "postgres": "11 of12 initial focused cases passed; only failed deadline case corrected and rerun passed; exact real restarts passed on final rerun",
+    "full_verifier": "not_run_by_implementer",
+    "independent_reviews": "pending_coordinator"
+  }
+}

@@ -805,3 +805,9 @@ The issue166 regression seeds the real populated packaged prefix, observes the m
 The six reviewed candidates use a predecessor whose complete tree is identical to merged main, and their19 product paths are disjoint. Preserving exact blobs and separate issue evidence gives a concrete combined tree for fresh verification while shared handoff records are reconciled once.
 
 - When a short security keyword needs a word boundary, retain its legitimate expanded forms through an explicit finite alias set and check the entire resulting risk/reviewer/gate contract in an otherwise empty repository. This repaired the auth/роль compatibility regression while keeping unrelated author/authority and embedded lookalikes outside security routing.
+
+### 2026-09-21 — Preserve complete candidate entrypoints and historical evidence
+
+Comparing every candidate path against the source manifest exposed the missing Stop adapter before integration, while exact blob checks preserved the existing repair rather than inventing new behavior. Retain failed runs, revised reviews and candidate handoffs as historical evidence, then qualify the actual merged-base composition with fresh checks; this keeps provenance separate from current authority.
+
+- Preserve both historical and current populated migration-prefix tests when a new function replacement lands. Exact reversal of the refusal-only SQL edits, together with post-transaction classification and both upgrade proofs, let all five independent reviewers confirm unchanged guard, privilege and persistence behavior.

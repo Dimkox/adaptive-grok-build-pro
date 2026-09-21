@@ -1,0 +1,57 @@
+# Independent test review — PASS
+
+Reviewer role: `test_reviewer`. Route: `cf23849faca6`. Date: 2026-09-21.
+
+Reviewed base: `5674c369c4a427d42bde2a5fb3a3e2f73c853cd0`.
+Reviewed HEAD: `c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5`.
+
+No blocking test finding was identified in the declared nineteen-path integration for #165, #163 and the #62/#118 capacity/platform subset. This is a new independent inspection of the actual diff, surrounding implementation, tests and recorded execution evidence. Historical reviews were not adopted as this review's verdict.
+
+## Identity and execution evidence
+
+Read-only SHA-256/Git-blob comparisons independently confirmed all nineteen current source/test/guide paths against `candidates.json`. All 21 SQL resources numbered 001–021 are byte-identical to the reviewed base. All 107 files named in `imported-candidate-evidence.json` retain their recorded hashes, including failed attempts. The only SQL addition is 022.
+
+The [combined report](combined-full-initial-report.json) has SHA-256 `d797b047c16090a7b4869a30d27edc3b5a2b2a5cf6936bcfd9b82164b779d32f`, matching the [run summary](combined-full-initial-summary.json). It records route `cf23849faca6`, fingerprint `9e1ba0dfac35f1d09d6473a7b5bdcae1f0547cc32d0ec5f83c0df5c1d72c10c9`, overall PASS and exit 0 for `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json`, run at source head `4bc43cb7876d92b11efb289a121dcfef0a0355ac` from 11:42:40 to 11:52:04 UTC.
+
+| Recorded check | Actual reported outcome |
+| --- | --- |
+| Root tests | 877 passed, 1,426 subtests passed, 2 warnings; xdist with 8 workers |
+| Pilot tests | 44 tests, 1 skip; explicit pinned local Codex sandbox unavailable |
+| Factory unit selection | 60 tests, OK |
+| Full factory/disposable PostgreSQL command | 804 tests, OK with 2 skips; preflight and actual restart/reconciliation probes passed |
+| Coverage | PASS; invocation-owned branch data, reported aggregate 81% |
+| Other route checks | PASS, except unconfigured workflow artifacts explicitly skipped; source-stability PASS |
+
+These counts are not summed: the factory unit selection overlaps full discovery, and subtests are reported separately. The full factory command discovers all `factory/tests` with its disposable database configured; it is not a claim that all 804 tests are database integration cases.
+
+The six tracked paths changed between the verified source head and reviewed HEAD are `PROJECT_STATE.json`, `START_HERE.md`, this package's `state.json` and `tasks.md`, and the combined report/summary. They contain handoff/evidence changes only; the nineteen product paths are unchanged. This establishes the relationship between source verification and the reviewed diff, not a fresh whole-tree receipt for HEAD. Final verification and receipts after reports/handoff are frozen remain coordinator obligations. I ran no tests, lint, compilation, Docker or database commands in this review; only inspection and identity comparisons.
+
+## Coverage assessment
+
+**#165 diagnostics and lifecycle.** `tests/test_package_status.py` uses real temporary Git repositories and subprocess CLI/hook invocations, not just mocked return values. The status tests at lines 107 and 121 compare complete inventories across repeated reads, including index/runtime/bytecode behavior. Other tests distinguish draft omissions from scoped/blocked errors; `not_run` and recorded failure from valid receipts; selected current template slots from quoted/unreferenced history; and unknown Git/base/count observations from zero-ahead claims. Traversal, absolute paths, symlink ancestors/leaves, FIFO, duplicate/malformed JSON, invalid encoding, byte/aggregate bounds, denied reads and concurrent replacement have negative controls. Unsafe package input is also checked through the legacy receipt-validation boundary.
+
+The raw-byte regressions at lines 407, 452 and 488 exercise real invalid-UTF-8 branch/path names, distinct raw bytes, literal escape/tag-looking names and a replacement-character name. They assert canonical state reload, CLI status, immutable initial identity and repeat/resume behavior. The large representation case requires an explicit unknown observation and empty path list rather than a truncated successful checkpoint. This reaches the original lifecycle serialization failure, not merely a helper encoder. Mirror failure/retry preserves the canonical state and avoids duplicate history. Stop remains nonblocking while exposing incomplete packages even with current receipts; failed review recording is preserved while erroneous passing recording leaves the prior receipt untouched. The required Stop hook is included in the actual import.
+
+**#163 refusal semantics.** `SemanticRepairPlanRejectionTests` checks every named producer reason in both mapping and JSON responses, the exact single-key channel, bounded unknown fallback, SQL/JSON null, malformed JSON with the decoder cause, malformed lifecycle documents, mixed/foreign channels and existing request bindings. It asserts that refusals never enter the lifecycle parser or acquire an `invalid_object` exception chain. The successful deadline escalation is separately bound to the request digest. The transaction-context assertion at line 616 and service test at line 628 protect classification after transaction exit and zero broker/binding calls after refusal.
+
+`RepairPlanMigrationTests` pins historical migration names/hashes and the original 018 function hash. Reversing precisely fifteen refusal substitutions and `CREATE OR REPLACE` must recover the entire original function body; ordered sites include both replay lookups, and the fourteen SQL reasons must match the Python channel. The outside-function assertion pins the original grant/revoke boundary. This is meaningful preservation evidence for predicates, locks and existing successful/escalation paths, in addition to vocabulary checks.
+
+The real PostgreSQL tests at `factory/tests/test_postgres_integration.py:5728` onward cover reachable early refusals, exact replay/conflict, directive/child conflicts, valid-constraint lineage fixtures, and both outcomes of the second idempotency lookup after observing the real subject-lock wait. They distinguish two transaction effects: a normal child-conflict return retains an earlier directive, whereas a caught SQL CHECK failure rolls the function's earlier insert back. The deadline test waits on server time under a watchdog, verifies an already successful response still replays after expiry, and verifies persisted/replayed `needs_human` escalation. It no longer fails during construction of an over-budget execution plan.
+
+**Both prefix upgrades.** `factory/tests/test_execution_persistence_postgres.py:1852` onward populates real execution and semantic success/escalation rows before migration. The explicit historical 020→021 test at line 2034 restricts only migration discovery to the actual immutable 001–021 resources; it still applies real SQL through the migrator. Current-prefix tests construct 001–021 and apply only 022. Shared assertions preserve complete prior ledger rows including timestamps, all populated snapshot rows, both functions' OID/owner/ACL/SECURITY DEFINER/search path, and effective capability privileges. Only the intended function body changes. Reapplication must be empty and preserve the complete post-upgrade snapshot. Real ledger drift refusal and observed advisory-lock release/timeout/retry coverage remain present, with bounded joins/session cleanup. The older proof was retained and extended, not silently retargeted to 022.
+
+**#62/#118 runner.** Deterministic complete proc/cgroup fixtures cover nested v2 finite/unlimited/absent controls, tighter parents, affinity and the 28-worker ceiling, fractional flooring, v1 combined/hybrid membership, mount roots/escapes, misleading path prefixes, wider mounts behind a bind subtree, malformed/unreadable/ambiguous evidence and depth/mount/read bounds. Read inventories prove explicit 0–64, no opt-in, child suppression and other-platform paths avoid quota reads. Unknown relevant evidence selects one; explicit requests remain unchanged.
+
+Platform tests emulate the cleanup capability before real serial Core/Trust launches, assert the actual command/effective worker count/engine and preserve measured coverage-only pin checks. Supported parallel runs retain strict pins and distribution. Exclusive result markers test exact-once collection without requiring every requested worker to receive work. Existing and extended tests exercise assertion/collection/worker exits, empty discovery with a required `Ran 0 tests` observation, a single degraded launch without retry, missing/corrupt/incomplete coverage, output caps, SIGTERM, timeout and descendants after controller exit. Default-off and explicit sequential recovery remain covered. Actual failed parallel execution has no serial-retry path in the inspected implementation.
+
+## Preserved failures and limits
+
+- #165 retains initial RED, the failed first GREEN fixture attempt, the initial overall full-gate failure on raw-log whitespace, the failed initial reviews, and the three real raw-byte lifecycle RED failures before correction. Their existence is not replaced by the later PASS.
+- #163 retains its 14-method/47-assertion RED, the first PostgreSQL run's eleven passes plus one deadline-fixture failure, the separate corrected deadline result, and the historical-base full-gate architecture/governance failure. The corrected case is not relabelled as a passing original twelve-case command.
+- Capacity retains the four-method RED with eight failures and subsequent 38-test GREEN. The two empty-serial-discovery hypotheses already passed in RED; no newly repaired empty-suite defect is claimed. The inspected local interpreter is Python 3.12.3, whose unittest source exits nonzero for zero tests.
+- Native Windows and older Python were not executed for this review or established by the supplied combined evidence. Mocking a platform/capability boundary does not qualify native process behavior. Visible cgroup quotas do not establish hidden-parent limits, reserved CPU, memory or PID headroom.
+- `execution_material_missing`, invalid baseline risk and a null manifest deadline are not forced through invalid production constraints to manufacture runtime coverage. Whole-body/site preservation and reader coverage apply there; the evidence does not show every SQL guard firing dynamically.
+- The combined report retains 12,000-character stdout/stderr tails for large checks. It establishes the reported totals/exits, but does not retain a full per-test transcript or the identities of both factory skips. Those two skips remain disclosed; no unobserved fresh-cluster-specific acceptance is inferred. Workflow artifacts remain unconfigured, and the pilot sandbox skip remains explicit.
+- This review qualifies local source/test evidence only. It does not authorize migration rollout, provider/service operation, merge or issue closure. #62's App Check Run output task and #158 remain separate. Final frozen-tree verification/receipts and the exact-head external Trust CI gate are still required.
+
+Shared-memory fact for coordinator adoption: combining complete reversible SQL-body proof with populated historical/current prefix upgrades protects the old guard and transaction contract while independently testing the new bounded refusal channel. No shared-memory file was edited by this reviewer.

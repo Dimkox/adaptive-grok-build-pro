@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "change_id": "20260921-fix-the-combined-source-delivery-of-issue165-int-8b2ee0",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix the combined source delivery of issue165 interruption diagnostics, issue163 semantic repair plan refusal reasons with additive PostgreSQL migration022, and issues62 and118 optional Python test runner capacity and platform fallback. Integrate the three exact prepared candidates on verified PR173 head23984e55, preserve security and API boundaries, all immutable SQL001\u2013021, tested process cleanup and review evidence, and keep the separate Trust CI source change out of this branch. One writer imports bounded disjoint changes after PR173 is actually delivered, then run complete combined verification and independent reviews before exact-head PR delivery. No new service, dependency, deployment, database operation or deployed policy change.",
+    "success_metric": "Prepared source repairs preserve their declared contracts and pass fresh integrated verification/review on actual delivered main; no historical result or partial issue outcome is promoted.",
+    "target": "Nineteen exact candidate source/test/guide paths plus truthful durable integration evidence and handoff."
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "All nineteen declared source, test and guide paths preserve their exact prepared candidate bytes, including the165Stop hook; any necessary repair is separately reproduced and documented.",
+      "evidence": [
+        {
+          "test": "tests/test_package_status.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Package diagnostics preserve additive status fields, bounded lossless raw-path identities, explicit unknown/not_run outcomes and warning-only Stop semantics without mutating a status-read tree.",
+      "evidence": [
+        {
+          "test": "tests/test_package_status.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Semantic plan refusals use closed reason envelopes before success-object parsing; committed deadline outcomes, replay, rollback and legacy NULL compatibility remain intact.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_semantic_repair_lifecycle.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Immutable SQL001\u2013021 and exact historical020\u2192021 proof remain; additive022 and populated021\u2192022 upgrade preserve ledger/data/function identity/ACL and bounded contention recovery.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Auto workers respect bounded visible cgroup quotas and explicit unknown capacity; unsupported cleanup selects serial before launch while default-off, explicit counts, real failure and coverage behavior remain compatible.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "A fresh full integrated verifier and all five selected independent reviews qualify the actual current-base tree before external exact-head delivery.",
+      "evidence": [
+        {
+          "test": "tests/test_package_status.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "Only delivered165/163/118outcomes close automatically;62remains open for bounded App Check command output and PR135closes only after its successor delivers.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "SQL001\u2013021, all Trust CI source/deployed authority material, published archives, default-off provider behavior and local-versus-external trust boundaries remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No stale receipt adoption, manufactured checkpoint, rule-budget weakening, source import before parent delivery, destructive migration, live operation or false closure of62/158.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "data",
+      "api",
+      "security"
+    ]
+  },
+  "approvals": {
+    "required_scopes": [
+      "external-write"
+    ]
+  },
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact blob identity, closed plan-refusal reasons, package diagnostics, actual runner workers/engine/results and fresh integrated/external check outcomes",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  }
+}

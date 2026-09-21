@@ -1,0 +1,9 @@
+{
+  "status": "pass",
+  "tested_head": "bca409d10d01663ee90dbd083089f41edad0b2bd",
+  "tested_fingerprint": "1a37c3098177239578508680ae2bfa82c326114f4df206ed4d76dcd0a47d2dae",
+  "started_at": "2026-09-21T10:17:57.745883+00:00",
+  "finished_at": "2026-09-21T10:26:15.065083+00:00",
+  "report_sha256": "cdebdb7105546cf5396e91491fea9c04c902b8eaf706e096d80f67046a3b3c7a",
+  "scope": "Full route-selected pr verification for corrected raw-byte implementation. Later evidence/doc/report changes need current final receipts; not external merge authority."
+}
