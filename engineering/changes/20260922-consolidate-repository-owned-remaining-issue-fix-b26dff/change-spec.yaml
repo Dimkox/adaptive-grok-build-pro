@@ -32,11 +32,21 @@
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "The repository example cannot claim to install deployed Trust CI authority."
+      "statement": "The repository example cannot claim to install deployed Trust CI authority.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
     },
     {
       "id": "INV-002",
-      "statement": "Provider probe observations are never represented as durable local verification results."
+      "statement": "Provider probe observations are never represented as durable local verification results.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
     }
   ],
   "objective": {
