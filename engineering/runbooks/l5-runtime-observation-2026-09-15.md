@@ -20,6 +20,8 @@ The primary instance selects `qwen-intl` / `qwen-plus`, with its control checkou
 
 The September 15 service observation is a read-only status check. This documentation correction made no additional live model request. Detailed credentials, service config, private runtime state and raw inputs remain outside Git.
 
+Provider activation probes in this record are operator-attested observations. They are not durable job rows and are not re-derivable by local verification. Durable artifact jobs and their source digests are recorded separately; a future probe needs its own authorized runtime observation.
+
 ## Evidence limits and next outcomes
 
 These results establish bounded authenticated L5 artifact generation on two exact installed source revisions. They do not establish acceptance of every supported media class, a full external issue-to-proposal pilot with maintainer acceptance, an M8 exact-profile qualifying cohort/activation, or general M9 environment/recovery qualification.

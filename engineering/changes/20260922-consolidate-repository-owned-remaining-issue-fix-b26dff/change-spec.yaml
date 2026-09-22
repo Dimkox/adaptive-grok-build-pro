@@ -1,0 +1,46 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Example Trust CI policy is explicitly non-authoritative and points to deployed policy epoch",
+      "verification": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status"
+    },
+    {
+      "id": "AC-002",
+      "statement": "Runtime documentation distinguishes operator-attested provider probes from durable re-derivable jobs",
+      "verification": "engineering/runbooks/l5-runtime-observation-2026-09-15.md"
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260922-consolidate-repository-owned-remaining-issue-fix-b26dff",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [
+    "The repository example cannot claim to install deployed Trust CI authority",
+    "Provider probe observations are never represented as durable local verification results"
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Consolidate repository-owned remaining issue fixes into one bounded batch from current main, preserve external blockers, run one final PR verification and prepare one successor PR",
+    "success_metric": "UNKNOWN",
+    "target": "UNKNOWN"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

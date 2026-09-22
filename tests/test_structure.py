@@ -995,6 +995,9 @@ class StructureTests(unittest.TestCase):
 
     def test_trust_ci_policy_uses_immutable_sandbox_and_external_status(self) -> None:
         policy = json.loads((ROOT / "trust-ci/config/policy.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(policy["authority"], "illustrative-example-only")
+        trust_readme = (ROOT / "trust-ci/README.md").read_text(encoding="utf-8")
+        self.assertIn("server-mounted policy epoch", trust_readme)
         self.assertEqual(policy["status_context"], "adaptive-trust-ci/verified")
         image = str(policy["sandbox"]["image"])
         self.assertTrue(
