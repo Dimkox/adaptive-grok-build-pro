@@ -8,7 +8,7 @@ The service consumes HMAC-verified GitHub pull-request webhooks, stores jobs and
 adaptive-trust-ci/verified@<first-12-hex-of-policy-sha256>
 ```
 
-The checked-in `config/policy.example.json` is configuration shape documentation only. Its `authority` is `illustrative-example-only`; it cannot install approval scopes, change branch protection, or satisfy the App-owned check. The server-mounted policy epoch and its exact Check Run are the only merge authority.
+The checked-in `config/policy.example.json` is configuration shape documentation only. Its `authority` is `illustrative-example-only`; it cannot install approval scopes, change branch protection, or satisfy the App-owned check. The server-mounted policy epoch and exact App-owned Check Run are authoritative for merge decisions; they are the only merge authority.
 
 The suffix is a policy epoch. A green check produced under an older policy or holdout digest cannot satisfy the current protected-branch requirement.
 

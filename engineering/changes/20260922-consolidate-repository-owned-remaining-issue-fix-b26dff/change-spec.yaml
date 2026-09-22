@@ -1,70 +1,97 @@
 {
+  "schema_version": 2,
+  "change_id": "20260922-consolidate-repository-owned-remaining-issue-fix-b26dff",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Consolidate repository-owned remaining issue fixes into one bounded batch from current main, preserve external blockers, run one final PR verification and prepare one successor PR",
+    "success_metric": "source_policy_and_runtime_evidence_contract_tests_pass",
+    "target": "all selected tests, reviews, and exact-tree PR verification exit zero"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": ["api"]
+  },
   "acceptance_criteria": [
     {
       "id": "AC-001",
-      "statement": "Example Trust CI policy is explicitly non-authoritative and points to deployed policy epoch",
+      "statement": "The checked-in Trust CI policy example is explicitly illustrative-example-only, and the operator README points to the server-mounted policy epoch and App-owned exact-SHA Check Run as authority.",
       "evidence": [
-        {
-          "test": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status"
-        }
+        {"test": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status"}
       ]
     },
     {
       "id": "AC-002",
-      "statement": "Runtime documentation distinguishes operator-attested provider probes from durable re-derivable jobs",
+      "statement": "The dated L5 runtime observation distinguishes operator-attested provider probes from durable, locally re-derivable artifact jobs.",
       "evidence": [
-        {
-          "test": "engineering/runbooks/l5-runtime-observation-2026-09-15.md"
-        }
+        {"test": "tests/test_structure.py::StructureTests.test_l5_runtime_observation_marks_provider_probes_non_rederivable"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Issues whose source seams are absent from this checkout remain explicitly external and receive no speculative implementation or deployment claim.",
+      "evidence": [
+        {"test": "engineering/changes/20260922-consolidate-repository-owned-remaining-issue-fix-b26dff/evidence/analysis-repo_explorer.md"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The final repository tree has current verification and independent code/test review evidence bound to its exact fingerprint.",
+      "evidence": [
+        {"receipt": "verification"},
+        {"receipt": "code_review"},
+        {"receipt": "test_review"}
       ]
     }
   ],
-  "approvals": {
-    "required_scopes": []
-  },
-  "change_id": "20260922-consolidate-repository-owned-remaining-issue-fix-b26dff",
-  "contracts": {
-    "events": [],
-    "json_schema": [],
-    "openapi": []
-  },
-  "forbidden_outcomes": [],
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "The repository example cannot claim to install deployed Trust CI authority.",
+      "statement": "Repository configuration cannot install or alter deployed Trust CI authority, branch protection, holdouts, keys, or human approval scopes.",
       "evidence": [
-        {
-          "test": "tests/test_structure.py"
-        }
+        {"test": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status"}
       ]
     },
     {
       "id": "INV-002",
       "statement": "Provider probe observations are never represented as durable local verification results.",
       "evidence": [
-        {
-          "test": "tests/test_structure.py"
-        }
+        {"test": "tests/test_structure.py::StructureTests.test_l5_runtime_observation_marks_provider_probes_non_rederivable"}
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "The change introduces no OpenAPI, event, queue, database, provider, hosting, or production write contract.",
+      "evidence": [
+        {"receipt": "code_review"}
       ]
     }
   ],
-  "objective": {
-    "id": "OBJ-001",
-    "statement": "Consolidate repository-owned remaining issue fixes into one bounded batch from current main, preserve external blockers, run one final PR verification and prepare one successor PR",
-    "success_metric": "UNKNOWN",
-    "target": "UNKNOWN"
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No deployed policy, trust store, private key, holdout bundle, branch protection, live provider service, GitHub Actions workflow, or production host is modified.",
+      "evidence": [
+        {"receipt": "code_review"}
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
   },
-  "observability": [],
-  "risk": {
-    "domains": [
-      "api"
-    ],
-    "tier": "yellow"
-  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "source_policy_and_runtime_evidence_contract_pass",
+      "proves": ["OBJ-001"]
+    }
+  ],
   "rollback": {
-    "maximum_steps": 1,
-    "strategy": "forward_fix"
+    "strategy": "restore",
+    "maximum_steps": 1
   },
-  "schema_version": 2
+  "approvals": {
+    "required_scopes": []
+  }
 }

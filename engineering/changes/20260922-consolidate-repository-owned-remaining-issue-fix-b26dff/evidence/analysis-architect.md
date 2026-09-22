@@ -103,4 +103,3 @@ This is a read-only architecture analysis for route `b1531a671dc7`. The issues s
 - #121 cannot claim re-derivability until a durable row or an explicitly downgraded attestation is present.
 - #73 cannot be “fixed” by suppressing detectors or weakening secret scanning.
 - #167 cannot weaken merge authority; it only selects a local preflight profile for a narrowly bounded static tree.
-

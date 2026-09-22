@@ -4,11 +4,30 @@
 
 ## Acceptance criteria
 
-- [ ] Given ..., when ..., then ...
+- [x] Given the checked-in policy example, when a reviewer inspects its marker
+  and Trust CI README, then the example is explicitly illustrative-only and
+  the server-mounted policy epoch plus exact App-owned Check Run are named as
+  authoritative.
+- [x] Given the dated L5 observation, when a reviewer inspects its provider
+  probe section and structure test, then probes are operator-attested and
+  non-re-derivable while durable artifact jobs remain the re-derivable evidence.
+- [x] Given issues #35, #36, #39, #48, #73 and #167, when the repository is
+  searched for their affected seam, then absent/external seams remain recorded
+  as blockers and no fabricated implementation is added.
+- [ ] Given the final frozen tree, when the exact PR verifier and both selected
+  independent reviews run, then all required receipts bind to one fingerprint.
 
 ## Failure and edge cases
 
-- 
+- A checked-in example must not be read as deployed authority or approval
+  evidence.
+- A provider probe with usage or HTTP output but no durable job row must not be
+  represented as a durable verification result.
+- A missing external implementation seam must remain an explicit boundary;
+  the task fails closed rather than inventing a consumer, provider, or host
+  integration.
+- Any tree change after verification or review invalidates its receipt and
+  requires a fresh run.
 
 ## Governance context
 
@@ -20,10 +39,13 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 ## Non-functional requirements
 
-- Security:
-- Reliability:
-- Performance:
-- Observability:
+- Security: never elevate repository examples, local receipts, or provider
+  observations into merge authority.
+- Reliability: preserve current check names and runtime behavior; keep the
+  change reversible by reverting the bounded docs/test edits.
+- Performance: no new network, database, provider, or build dependency.
+- Observability: structure tests and the change package identify the exact
+  evidence boundary and external blockers.
 
 ## Bounded source-owned result
 

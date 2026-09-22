@@ -815,3 +815,7 @@ Comparing every candidate path against the source manifest exposed the missing S
 ### 2026-09-21 — Retake stale local-control PRs through path-scoped diffs
 
 Applying only the selected source, test and documentation diffs onto delivered main isolated three real textual conflicts without carrying historical approvals or receipts. Keep main's checkpoint and status behavior during conflict resolution, and qualify the new composition independently instead of promoting old App successes to current authority.
+
+### 2026-09-22 — Mark checked-in policy examples and provider probes as non-authoritative
+
+The checked-in Trust CI policy example now declares its illustrative-only authority explicitly, while the README names the deployed server-mounted policy epoch and exact App-owned Check Run as the merge authority. Runtime documentation and structure tests separately bind provider probes as operator-attested, non-re-derivable observations so local source evidence cannot be mistaken for deployed trust or durable job evidence.
