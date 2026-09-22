@@ -6,9 +6,9 @@ Reviewed the complete candidate diff and surrounding implementation in:
 
 - repository: `/tmp/agbp-b26dff`
 - branch: `fix/b26dff-source-20260922`
-- HEAD: `a6cbddcc939875cf0b3cf3204c62a8ee0b848557`
+- HEAD: `43a9b867514820f032aa80c21885c614a0eefbb9`
 - base: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
-- review snapshot fingerprint: `bee6406e9bd22c67da03ef82346619671e3f7ee9188567ea5ceb9ad8396fe580`
+- review snapshot fingerprint: `b5069e5d888c5a0dd25f7888985f75ddd48bba7044412057c424c737c53a1617`
 
 No substantive source or package defect remains.
 

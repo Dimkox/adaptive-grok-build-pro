@@ -1,10 +1,10 @@
 # Test review: PASS
 
 Reviewer: read-only final re-review. Reviewed the actual tree at HEAD
-`a6cbddcc939875cf0b3cf3204c62a8ee0b848557` on branch
+`43a9b867514820f032aa80c21885c614a0eefbb9` on branch
 `fix/b26dff-source-20260922`, against base
 `130ce4a42d9f9bbd1b56772d40b19ae530283205`, with final review snapshot
-fingerprint `bee6406e9bd22c67da03ef82346619671e3f7ee9188567ea5ceb9ad8396fe580`.
+fingerprint `7dffbc5b2e087ef1f7a1f5f038b497712521437efc68d266713e74157e68d0af`.
 
 The independent test/evidence review is PASS. The available verification
 receipt is from the prior pre-refresh snapshot, which is expected to be
@@ -73,7 +73,7 @@ verification after report freeze.
   `status: pass` but binds fingerprint
   `b837e0e91268fedb84e3c0d3ad8f245543cc85930c7e42cf24486e3087ac0fec`, not the
   the prior snapshot rather than the current review fingerprint
-  `bee6406e9bd22c67da03ef82346619671e3f7ee9188567ea5ceb9ad8396fe580`.
+  `7dffbc5b2e087ef1f7a1f5f038b497712521437efc68d266713e74157e68d0af`.
   This is coordinator post-review bookkeeping, not a test-review finding:
   the final full verifier is intentionally deferred until this report and the
   other review report are frozen, because writing either report changes the
