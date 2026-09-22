@@ -819,3 +819,7 @@ Applying only the selected source, test and documentation diffs onto delivered m
 ### 2026-09-22 — Mark checked-in policy examples and provider probes as non-authoritative
 
 The checked-in Trust CI policy example now declares its illustrative-only authority explicitly, while the README names the deployed server-mounted policy epoch and exact App-owned Check Run as the merge authority. Runtime documentation and structure tests separately bind provider probes as operator-attested, non-re-derivable observations so local source evidence cannot be mistaken for deployed trust or durable job evidence.
+
+### 2026-09-22 — Bind the release as a two-stage R/A chain
+
+Keep release-sync source identity on the merged R tree and build the ZIP from that sealed parent, while the artifact-only A child owns repository custody, tag and publication. This separates reproducible bytes from the commit that carries them and prevents a later documentation change from silently changing release identity.

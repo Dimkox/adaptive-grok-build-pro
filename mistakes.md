@@ -1433,3 +1433,9 @@ I built the next source manifest from an incomplete directory-prefix list and om
 **Symptom:** the first full verifier reported a non-ancestor route base, stale change specs, and unrelated ruff/root-test failures from `feature/winston-wolfe-landing-v2`, while the active `b26dff` route had a dedicated worktree based on `origin/main`.
 **Root cause:** I treated the shell cwd as the route worktree without reconciling the active route base and existing dedicated branch first.
 **Durable rule:** bind verification and edits to the route-owned worktree whose HEAD is based on the active route base; preserve unrelated dirty worktrees untouched.
+
+### 2026-09-22 — Bound a current-candidate test to historical runtime evidence
+
+**Symptom:** the focused release-sync tests initially compared the current observed main SHA with a historical published-runtime evidence source and failed before exercising the release assertions.
+**Root cause:** the test treated the mutable candidate observation as the provenance of an immutable historical record instead of binding that fixture to `published_release.merge_commit`.
+**Durable rule:** when current state advances, historical evidence tests must assert the immutable record they describe; current candidate identity belongs in separate pending-release assertions.

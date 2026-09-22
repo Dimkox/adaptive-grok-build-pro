@@ -1,0 +1,127 @@
+{
+  "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:45:01+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested assemble and release the next release; scope is v2.0.19 from exact candidate 5d93fc3, preserve v2.0.18, no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4a581195fa4c1c352f886b5d40883b2c60b0af79a0d0c90ae624a622cedc6d3f"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:45:11+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4a581195fa4c1c352f886b5d40883b2c60b0af79a0d0c90ae624a622cedc6d3f"
+    },
+    {
+      "action": "pull-request-merge",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:45:12+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4a581195fa4c1c352f886b5d40883b2c60b0af79a0d0c90ae624a622cedc6d3f"
+    },
+    {
+      "action": "git-push-tag",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:45:12+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4a581195fa4c1c352f886b5d40883b2c60b0af79a0d0c90ae624a622cedc6d3f"
+    },
+    {
+      "action": "github-release",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:45:12+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4a581195fa4c1c352f886b5d40883b2c60b0af79a0d0c90ae624a622cedc6d3f"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:54:55+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; revalidated after correcting the typed spec and release-state documentation.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4ea96ed05cfd278f914e314410cd6bf4737d89c752be9b2eb832b5dca748aa4b"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:54:55+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action git-push-branch is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4ea96ed05cfd278f914e314410cd6bf4737d89c752be9b2eb832b5dca748aa4b"
+    },
+    {
+      "action": "pull-request-merge",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:54:55+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action pull-request-merge is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4ea96ed05cfd278f914e314410cd6bf4737d89c752be9b2eb832b5dca748aa4b"
+    },
+    {
+      "action": "git-push-tag",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:54:55+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action git-push-tag is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4ea96ed05cfd278f914e314410cd6bf4737d89c752be9b2eb832b5dca748aa4b"
+    },
+    {
+      "action": "github-release",
+      "actor": "user",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "decided_at": "2026-09-22T23:54:55+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested assemble and release v2.0.19; exact action github-release is authorized only after current source, exact App-owned Trust CI check and named local grant; no deployment.",
+      "resource": null,
+      "route_id": "0ea34220576f",
+      "scope_digest": "4ea96ed05cfd278f914e314410cd6bf4737d89c752be9b2eb832b5dca748aa4b"
+    }
+  ],
+  "route_id": "0ea34220576f",
+  "schema_version": 1
+}
