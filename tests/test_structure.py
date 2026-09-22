@@ -1013,6 +1013,47 @@ class StructureTests(unittest.TestCase):
             commands = policy["commands"]
         self.assertTrue(all(command.get("required") is True for command in commands))
 
+    def test_trust_ci_policy_example_and_activation_report_are_not_live_evidence(self) -> None:
+        rollout = (ROOT / "trust-ci/README.md").read_text(encoding="utf-8")
+        root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        activation = (ROOT / "engineering/runbooks/trust-ci-activation-report.md").read_text(
+            encoding="utf-8"
+        )
+        policy = json.loads(
+            (ROOT / "trust-ci/config/policy.example.json").read_text(encoding="utf-8")
+        )
+
+        copy_line = next(
+            line
+            for line in rollout.splitlines()
+            if "cp config/policy.example.json runtime/policy.json" in line
+        )
+        copy_section = rollout[rollout.index(copy_line):rollout.index("### Build and pin the images")]
+        verify_section = rollout[
+            rollout.index("### Verify the policy epoch and exact review target"):
+            rollout.index("### Create and submit one envelope per scope")
+        ]
+        self.assertIn("illustrative starter", copy_section)
+        self.assertIn("approval_rules", copy_section)
+        self.assertIn("do not prove which approval scopes are active", copy_section)
+        self.assertIn("#verify-the-policy-epoch-and-exact-review-target", copy_section)
+        self.assertIn("authenticated", verify_section.lower())
+        self.assertIn("normalized canonical policy", verify_section)
+        self.assertIn("/health/ready", verify_section)
+        self.assertIn('"policy_digest"', verify_section)
+        self.assertIn("GitHub App ownership of the exact-SHA Check Run", verify_section)
+        self.assertIn("policy-epoch check name", verify_section)
+        self.assertIn("approval_rules", rollout)
+        self.assertIn("do not establish the scopes currently required", rollout)
+        self.assertIn("<policy-sha12>", root_readme)
+        self.assertNotIn("adaptive-trust-ci/verified@06ecf1c875bc", root_readme)
+        self.assertIn("trust-ci/README.md#verify-the-policy-epoch-and-exact-review-target", root_readme)
+        self.assertIn("historical snapshot", activation.lower())
+        self.assertIn("as observed on 2026-08-24", activation.lower())
+        self.assertIn("re-verify", activation.lower())
+        self.assertIn("none of these observations establish present state", activation.lower())
+        self.assertIsInstance(policy, dict)
+
     def test_hook_registration_has_required_lifecycle_events(self) -> None:
         hooks = json.loads((ROOT / ".grok/hooks/adaptive.json").read_text(encoding="utf-8"))["hooks"]
         for event in (

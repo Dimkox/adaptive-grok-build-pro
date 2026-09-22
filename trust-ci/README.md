@@ -16,7 +16,7 @@ Schema version 1 supports two mutually exclusive policy shapes. Legacy mode uses
 
 Catalog lookup has no wildcard, alias, normalization, or default fallback. Unknown or case-variant repositories are rejected before enqueue; a worker resolves the durable `(repository, policy_digest)` pair before checkout and finishes stale or unavailable bindings as non-success. A change to one profile rotates only that profile’s epoch; a common-field change rotates every profile.
 
-Repository profiles are a code/config capability in this repository, pending a separately reviewed and approved server-side policy and external holdout installation. The example at `config/policy.example.json` is illustrative only: the adaptive example digest matches the checked-in example bundle, while the second profile’s digest is a shape-valid placeholder; it is not a deployed policy and does not claim that either repository has been enabled.
+Repository profiles are a code/config capability in this repository, pending a separately reviewed and approved server-side policy and external holdout installation. The example at `config/policy.example.json` is illustrative only: the adaptive example digest matches the checked-in example bundle, while the second profile’s digest is a shape-valid placeholder; it is not a deployed policy and does not claim that either repository has been enabled. Its `approval_rules` are examples only and do not establish the scopes currently required by deployed Trust CI; obtain the authenticated deployed-policy handoff and verify its normalized digest as described in [Verify the policy epoch and exact review target](#verify-the-policy-epoch-and-exact-review-target).
 
 ### Profile rollout and rollback
 
@@ -94,6 +94,8 @@ cp config/policy.example.json runtime/policy.json
 cp config/trust-store.example.json runtime/trust-store.json
 chmod 600 env/*.env .env 2>/dev/null || true
 ```
+
+`policy.example.json` is an illustrative starter only. Its `approval_rules` do not prove which approval scopes are active in deployed Trust CI. Before relying on a policy epoch or required scope, follow the [authenticated deployed-policy handoff and exact-SHA verification procedure](#verify-the-policy-epoch-and-exact-review-target).
 
 Replace every placeholder. `runtime/trust-store.json` remains invalid until a real human public key is inserted.
 
@@ -285,9 +287,10 @@ fi
 
 Raw-file `sha256sum` is not equivalent: Trust CI digests normalized canonical policy
 JSON. Before signing, the human independently checks in GitHub the repository, PR
-number, exact base SHA, exact head SHA, actual diff, missing scopes, Check Run owner
-and policy-epoch check name. A new commit, base update, policy/holdout epoch change or
-expired envelope requires a fresh review and fresh envelope.
+number, exact base SHA, exact head SHA, actual diff, missing scopes, the configured
+GitHub App ownership of the exact-SHA Check Run, and its policy-epoch check name. A
+new commit, base update, policy/holdout epoch change or expired envelope requires a
+fresh review and fresh envelope.
 
 ### Create and submit one envelope per scope
 

@@ -1,0 +1,29 @@
+{
+  "change_id": "20260918-fix-github-issue-122-correct-policy-example-json-d4766a",
+  "created_at": "2026-09-18T19:50:38+00:00",
+  "history": [
+    {
+      "at": "2026-09-18T19:50:38+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-18T19:54:54+00:00",
+      "from": "draft",
+      "reason": "Four route-selected analyses confirm a docs-only correction: distinguish sample from deployed scopes, document authenticated epoch verification, and mark the dated activation record historical.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-18T19:54:54+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; the approved scope forbids changes to Trust CI behavior, sample policy rules, deployed policy, holdout, trust store, and branch protection.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "d4766a8451d2",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Fix GitHub issue #122: correct policy.example.json/runbook language so it clearly distinguishes illustrative approval scopes from deployed Trust CI policy and identifies where the active policy epoch is observed. Do not change deployed policy or Trust CI.",
+  "updated_at": "2026-09-18T19:54:54+00:00"
+}

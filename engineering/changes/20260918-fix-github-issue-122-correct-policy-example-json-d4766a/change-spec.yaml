@@ -1,0 +1,26 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"The Trust CI rollout instructions explicitly state that copying policy.example.json creates an illustrative starter configuration and does not assert that its approval rules match deployed policy.","evidence":[{"test":"tests/test_structure.py"}]},
+    {"id":"AC-002","statement":"Operator documentation identifies the authenticated deployed-policy handoff and /health/ready normalized policy_digest comparison as the authoritative way to identify the active policy epoch, then requires exact App-owned Check Run verification for the target SHA.","evidence":[{"test":"tests/test_structure.py"}]},
+    {"id":"AC-003","statement":"The dated 2026-08-24 activation report is visibly historical and directs operators to re-verify current epoch and check state rather than treating its values as current.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "approvals": {"required_scopes": []},
+  "change_id": "20260918-fix-github-issue-122-correct-policy-example-json-d4766a",
+  "contracts": {"events": [], "json_schema": [], "openapi": []},
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Do not change Trust CI behavior, sample approval rules, deployed policy, holdout, or trust store; do not infer current deployed scopes or epoch from repository examples or historical records.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"The sample policy remains valid JSON and documentation distinguishes source examples and dated snapshots from live authenticated deployment facts.","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "objective": {
+    "id":"OBJ-001",
+    "statement":"Make it impossible to mistake the repository's illustrative Trust CI policy example or dated activation report for current deployed approval rules, while documenting how an operator verifies the active epoch.",
+    "success_metric":"Runbook names the example as illustrative; operator docs link to authenticated deployed policy handoff, normalized /health/ready policy_digest comparison, and exact App-owned Check Run on target SHA; dated report is labeled historical.",
+    "target":"All documented sample/deployment boundaries are explicit without changing Trust CI behavior or policy data."
+  },
+  "observability": [],
+  "risk": {"domains":["api","frontend"],"tier":"yellow"},
+  "rollback": {"maximum_steps":1,"strategy":"forward_fix"},
+  "schema_version": 2
+}
