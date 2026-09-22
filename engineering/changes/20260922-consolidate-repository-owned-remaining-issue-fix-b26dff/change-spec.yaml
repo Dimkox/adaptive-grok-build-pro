@@ -3,7 +3,6 @@
     {
       "id": "AC-001",
       "statement": "Example Trust CI policy is explicitly non-authoritative and points to deployed policy epoch",
-      "verification": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status",
       "evidence": [
         {
           "test": "tests/test_structure.py::StructureTests.test_trust_ci_policy_uses_immutable_sandbox_and_external_status"
@@ -13,7 +12,6 @@
     {
       "id": "AC-002",
       "statement": "Runtime documentation distinguishes operator-attested provider probes from durable re-derivable jobs",
-      "verification": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
       "evidence": [
         {
           "test": "engineering/runbooks/l5-runtime-observation-2026-09-15.md"
