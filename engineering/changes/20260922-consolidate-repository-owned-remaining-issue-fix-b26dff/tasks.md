@@ -6,6 +6,6 @@
   wording, then restore the implementation and confirm green.
 - [x] Implement the smallest documentation/contract change through the single
   `general_implementer` write owner.
-- [ ] Run the route-selected PR verifier on the final tree.
-- [ ] Complete independent `code_reviewer` and `test_reviewer` reviews.
-- [ ] Bind verification and review receipts to the final tree fingerprint.
+- [x] Run the route-selected PR verifier on the final tree.
+- [x] Complete independent `code_reviewer` and `test_reviewer` reviews.
+- [x] Bind verification and review receipts to the final tree fingerprint.

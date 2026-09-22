@@ -2,7 +2,7 @@
 
 ## Scope and current boundary
 
-This is a read-only architecture analysis for route `b1531a671dc7`. The issues span verifier shell safety, lint scope, evidence naming, runtime-observation semantics, policy-example documentation, and static side-project verification. They should not be implemented as one undifferentiated change: #35/#36/#48 touch executable gate behavior, #39 changes lint discovery policy, #73 changes evidence naming or triage documentation, #121 changes runtime evidence semantics, #122 is a governance-documentation contract, and #167 changes local verification selection. The external App-owned Trust CI check remains the merge authority; local profile selection cannot weaken it.
+This is a read-only architecture analysis for route `b26dfffbedae`. The issues span verifier shell safety, lint scope, evidence naming, runtime-observation semantics, policy-example documentation, and static side-project verification. They should not be implemented as one undifferentiated change: #35/#36/#48 touch executable gate behavior, #39 changes lint discovery policy, #73 changes evidence naming or triage documentation, #121 changes runtime evidence semantics, #122 is a governance-documentation contract, and #167 changes local verification selection. The external App-owned Trust CI check remains the merge authority; local profile selection cannot weaken it.
 
 ## Issue findings and bounded design
 

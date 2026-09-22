@@ -8,7 +8,10 @@ wording, or the successor PR is abandoned.
 ## Application rollback
 
 Revert the bounded changes to `tests/test_structure.py`, `trust-ci/README.md`,
-and `trust-ci/config/policy.example.json`, plus their package evidence.
+`trust-ci/config/policy.example.json`, and
+`engineering/runbooks/l5-runtime-observation-2026-09-15.md`, plus their package
+evidence. Alternatively revert the whole candidate commit range, which restores
+the pre-change authority and runtime-evidence wording together.
 
 ## Data recovery / forward-fix
 

@@ -14,7 +14,7 @@
 - [x] Given issues #35, #36, #39, #48, #73 and #167, when the repository is
   searched for their affected seam, then absent/external seams remain recorded
   as blockers and no fabricated implementation is added.
-- [ ] Given the final frozen tree, when the exact PR verifier and both selected
+- [x] Given the final frozen tree, when the exact PR verifier and both selected
   independent reviews run, then all required receipts bind to one fingerprint.
 
 ## Failure and edge cases
