@@ -19,8 +19,8 @@ Base: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
 Commands run on the combined candidate before review:
 
 ```text
-python3 -m unittest tests.test_verification_doctor.VerificationTests.test_bash_syntax_fails_for_invalid_later_file tests.test_verification_doctor.QualityContourTests tests.test_history tests.test_policy tests.test_util_fingerprint tests.test_workflow_artifacts
-Ran 120 tests in 26.118s — OK
+python3 -m unittest tests.test_verification_doctor.VerificationTests.test_bash_syntax_fails_for_empty_selection tests.test_verification_doctor.VerificationTests.test_bash_syntax_fails_for_invalid_later_file tests.test_verification_doctor.QualityContourTests tests.test_history tests.test_policy tests.test_util_fingerprint tests.test_workflow_artifacts
+Ran 121 tests in 26.108s — OK
 
 python3 -m unittest discover -s trust-ci/tests -p 'test_smoke.py'
 Ran 20 tests in 1.034s — OK

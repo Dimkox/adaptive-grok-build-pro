@@ -14,11 +14,11 @@
   observations are captured, non-empty, and matched from captured text; required tool discovery
   and unavailable/empty outputs fail closed. The external guard's remaining traps remain linked
   through #186.
-- [ ] #73: new grants use `grant_binding_digest`, legacy `tree_fingerprint` reads remain valid,
+- [x] #73: new grants use `grant_binding_digest`, legacy `tree_fingerprint` reads remain valid,
   conflicting dual fields fail closed, and historical probe files remain byte-identical.
-- [ ] #167: an unambiguous landing-only change can use the explicit focused mode; mixed, unknown,
+- [x] #167: an unambiguous landing-only change can use the explicit focused mode; mixed, unknown,
   unsafe, or runtime/configuration changes fail closed to full PR verification.
-- [ ] Release metadata, README current-state text, and version identity match only the final
+- [x] Release metadata, README current-state text, and version identity match only the final
   verified candidate tree.
 - [x] #36 is not represented as a fabricated product fix; its no-owner disposition links to #186.
 
