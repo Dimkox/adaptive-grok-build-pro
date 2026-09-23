@@ -49,37 +49,47 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "verification",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/verification.md"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/code-review.md"
       },
       {
         "id": "test_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "test_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/test-review.md"
       },
       {
         "id": "security_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "security_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/security-review.md"
       },
       {
         "id": "release_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "release_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/release-review.md"
       }
     ],
     "schema_version": 1
@@ -108,6 +118,24 @@
       "from": "approved",
       "reason": "Begin bounded release-sync implementation on isolated branch; only identity, state, docs, coupled tests and change evidence are in scope.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-23T00:54:23+00:00",
+      "from": "implementing",
+      "reason": "Freeze release-sync implementation after independent reviews; run final exact-tree verification next.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-23T00:54:23+00:00",
+      "from": "verifying",
+      "reason": "Independent code, test, security, and release reviews are PASS; final verification is the remaining local gate.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-23T00:54:24+00:00",
+      "from": "reviewing",
+      "reason": "All local release-sync evidence is prepared; external exact-SHA Trust CI and protected PR delivery remain required.",
+      "to": "ready"
     }
   ],
   "human_gates": [
@@ -117,7 +145,7 @@
   "human_gates_digest": "4535e50711bb8a9e833517d5ba1a07f103c20b4d7d7e6546e2e4fb30ab74047a",
   "route_id": "0ea34220576f",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "Release v2.0.19 from candidate 5d93fc3",
-  "updated_at": "2026-09-22T23:45:19+00:00"
+  "updated_at": "2026-09-23T00:54:27+00:00"
 }

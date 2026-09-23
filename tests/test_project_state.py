@@ -30,6 +30,23 @@ V2018_TREE = "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3"
 V2018_ZIP_SHA256 = "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a"
 V2018_SIDECAR_SHA256 = "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216"
 V2018_ATTESTATION_ID = "8172a5bc-1377-428a-aaa9-b8da462f9952"
+POST_V2018_PR_HEADS = {
+    111: "176c3c6331241929c5e9091c93833c04d0d010d2",
+    112: "f541250196f6f08e13b6ad703d30434492fea2ff",
+    113: "2d1c0208faba0ca5635e37acfd46cace6182057a",
+    114: "245e565e95797032d94a310264e80ed803d95450",
+    115: "55dbb6b243a6523c38ee8332153a82d0885227a6",
+    116: "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
+    149: "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
+    150: "c335a33b9cffde4d8912b173803c3adec3348d06",
+    151: "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
+    154: "a4023258047a03e1176daa3a35695c9d9b49f8be",
+    170: "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+    173: "23984e55560c6d559a46445061f10331ca05bcf9",
+    174: "73a8edd7678b4d605f6335569534653c6587eabc",
+    184: "0d16a5370537e697657fd60c7b27d994f45bd4b2",
+    185: "17489bf52ae1f6fac7923d8e3448bcae26f54163",
+}
 
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
 V2016_MERGE_COMMIT = "969c4f65f54ef9230f3f94587e228098d1c2ecb9"
@@ -449,6 +466,7 @@ class ProjectStateTests(unittest.TestCase):
             {111, 112, 113, 114, 115, 116, 149, 150, 151, 154, 170, 173, 174, 184, 185},
         )
         for row in next_landing["pull_requests"]:
+            self.assertEqual(row["head"], POST_V2018_PR_HEADS[row["pull_request"]])
             self.assertRegex(row["head"], r"^[0-9a-f]{40}$")
             self.assertRegex(row["merge_commit"], r"^[0-9a-f]{40}$")
             self.assertRegex(row["merged_at"], r"^2026-09-\d{2}T\d{2}:\d{2}:\d{2}Z$")
