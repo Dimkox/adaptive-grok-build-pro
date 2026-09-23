@@ -7,9 +7,9 @@ Base: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
 
 ## Adopted slices
 
-- #35: `.grok-stack/adaptive_grok/verification.py` checks each changed shell file independently and fails closed on an empty/unavailable target set; regression coverage is in `tests/test_verification_doctor.py`.
-- #39: the Python quality contour selects bounded repository-owned files and reports its scope; regression coverage is in `tests/test_verification_doctor.py`.
-- #48: `trust-ci/scripts/smoke.sh` rejects empty health/readiness/metrics/Compose observations and avoids the unsafe producer-to-quiet-grep path; executable fake-runtime coverage is in `trust-ci/tests/test_smoke.py`.
+- #35-related local guard: `.grok-stack/adaptive_grok/verification.py` checks each changed shell file independently and fails closed on empty/unavailable target sets; regression coverage is in `tests/test_verification_doctor.py`. The external `verify:deploy` owner is not claimed.
+- #39-related local guard: the Python quality contour selects bounded repository-owned files and reports its scope; regression coverage is in `tests/test_verification_doctor.py`. The filed JavaScript/ESLint report remains external through #186.
+- #48-related local guard: `trust-ci/scripts/smoke.sh` rejects empty health/readiness/metrics/Compose observations and avoids the unsafe producer-to-quiet-grep path; executable fake-runtime coverage is in `trust-ci/tests/test_smoke.py`. The external guard's remaining traps are not claimed fixed.
 - #73: grant-binding serialization emits the neutral digest field, reads the legacy fingerprint during migration, and rejects conflicting dual values; coverage is in `tests/test_policy.py` and `tests/test_history.py`.
 - #167: focused static SEO verification is explicit and fail-closed, while mixed/runtime trees remain on the full PR profile; coverage is in the verifier/contour tests and the repository contract.
 - #36: no implementation was adopted. The repository has no owned shell recorder matching the reported status seam; the disposition remains linked to #186 and is not claimed as fixed.
@@ -29,4 +29,4 @@ python3 -m unittest tests.test_project_state tests.test_structure tests.test_man
 Ran 91 tests in 9.737s — OK
 ```
 
-The full PR verifier, independent reviews, receipts and external Trust CI check are still pending. This report is implementation provenance only and is not merge authority.
+The full PR verifier, independent reviews, receipts and external Trust CI check are still pending. This report is implementation provenance only and is not merge authority. Issues #35/#39/#48 remain linked to #186 for any external-owner closure; this release claims only the bounded local seams above.

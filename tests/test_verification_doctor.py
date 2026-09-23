@@ -294,6 +294,13 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_bash_syntax_fails_for_empty_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            result = _bash_syntax(Path(directory), [])
+
+        self.assertEqual(result.status, 'fail')
+        self.assertIn('no shell files selected', result.summary)
+
     def test_bash_syntax_fails_for_invalid_later_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -495,7 +495,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["status"], "release_sync_authored")
         self.assertEqual(
             current["identity"],
-            "v2.0.19 release candidate with repository-owned fail-closed fixes for issues #35, #39, #48, #73 and #167",
+            "v2.0.19 release candidate with bounded local guards related to #35/#39/#48 and owned fail-closed fixes for #73/#167",
         )
         self.assertEqual(current["route_id"], "4317e673390b")
         self.assertEqual(current["target_version"], "2.0.19")

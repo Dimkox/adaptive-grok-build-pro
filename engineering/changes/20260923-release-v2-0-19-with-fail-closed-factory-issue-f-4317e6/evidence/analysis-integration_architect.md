@@ -1,8 +1,8 @@
 # Integration architecture — v2.0.19 factory bugfix release
 
-Route: `4317e673390b`  
-Role: `integration_architect` (read-only analysis)  
-Observed base after `git fetch --all --prune`: `origin/main` = `130ce4a42d9f9bbd1b56772d40b19ae530283205`  
+Route: `4317e673390b`
+Role: `integration_architect` (read-only analysis)
+Observed base after `git fetch --all --prune`: `origin/main` = `130ce4a42d9f9bbd1b56772d40b19ae530283205`
 Release worktree/branch: `/tmp/agbp-release-factory-bugfixes`, `release/v2.0.19-factory-bugfixes`
 
 ## Recommendation

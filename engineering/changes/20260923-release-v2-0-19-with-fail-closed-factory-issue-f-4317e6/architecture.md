@@ -19,8 +19,11 @@ static mode. The release metadata is a second, separate commit after the fix tre
 
 ## Components and boundaries
 
-- `.grok-stack/adaptive_grok/verification.py` and its tests own #35/#39.
-- `trust-ci/scripts/smoke.sh` and `trust-ci/tests/test_smoke.py` own the local #48 seam.
+- `.grok-stack/adaptive_grok/verification.py` and its tests own the repository-local #35-related
+  shell guard and #39-related Python quality contour; the filed external #39 ESLint report is not
+  claimed closed.
+- `trust-ci/scripts/smoke.sh` and `trust-ci/tests/test_smoke.py` own the local #48 smoke seam;
+  the external guard's unrelated traps remain linked through #186.
 - `state.py`, policy/history tests and immutable fixture checks own #73.
 - verifier inventory/CLI/workflow validation and documentation own #167.
 - `VERSION`, README, CHANGELOG and state/package indexes are release metadata only.

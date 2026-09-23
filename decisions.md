@@ -28,6 +28,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-23 — Keep local hardening separate from external issue closure
+
+Treat the verifier/smoke changes as bounded repository-owned guards related to #35/#39/#48, while #73/#167 remain owned fixes and #35/#36/#39/#48 retain their external-owner disposition through #186. This keeps the release useful without turning a local analogue into a false automatic issue closure.
+
 ## 2026-09-05 — Calibrate only the accepted pilot vertical
 
 Raise only `FIT-BOUNDED-PILOT-CHANGE` to 400,000 bytes, 10,000 lines, and AST complexity 1,100, leaving global, Factory, and Trust-CI limits unchanged. This preserves a narrow ceiling with at most 15% headroom over the accepted pilot implementation while making the exact route fitness gate reflect its actual bounded scope.

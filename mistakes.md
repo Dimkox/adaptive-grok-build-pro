@@ -14,6 +14,10 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-23 — Promoted external issue analogues to release closure claims
+
+The first v2.0.19 metadata called local #35/#39/#48 guards broad repository-owned fixes and planned automatic closure, despite the source audit and #186 identifying the original `verify:deploy`, ESLint, and external guard owners as absent. The root cause was copying the requested issue list into release wording without preserving the authoritative ownership/disposition boundary; the metadata was corrected to bounded local guards, explicit references, and no broad closure claim.
+
 ## 2026-09-09 — Rewrote a whole architecture model to add three entries
 
 **Symptom:** Declaring one demo node, contract and edge produced a 1889-line diff in `architecture/system.yaml` instead of the 57 lines actually added.

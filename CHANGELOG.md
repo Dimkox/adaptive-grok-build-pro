@@ -4,7 +4,7 @@
 
 This candidate is one release train for repository-owned fail-closed factory fixes. The ZIP, sidecar, tag and GitHub Release remain pending the exact artifact-child delivery.
 
-- Fixes #35 by parsing changed shell files independently, #39 by bounding Ruff/Bandit inventory, #48 by rejecting empty/silent-green Trust CI smoke observations, #73 by neutralizing current grant-binding field names with legacy reads, and #167 by adding explicit fail-closed focused static verification.
+- Adds bounded repository-owned guards related to #35 (independent shell parsing), #39 (owned Python lint inventory), and #48 (local Trust CI smoke observations), plus owned fixes for #73 and #167. The external-owner portions of #35/#39/#48 remain linked to #186; no broad issue closure is claimed.
 - Keeps #36 explicitly linked to #186: no repository-owned recorder exists, so no speculative fix or false closure is claimed.
 - Binds the candidate to source base `130ce4a42d9f9bbd1b56772d40b19ae530283205` and the isolated `release/v2.0.19-factory-bugfixes` tree; M8/DEV work is not included.
 - Keeps published `v2.0.18` bytes immutable and preserves the separate artifact-child/package and no-deployment boundaries.

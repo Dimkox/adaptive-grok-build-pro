@@ -1,7 +1,7 @@
 {
   "acceptance_criteria": [
-    {"id":"AC-001","statement":"The release fix tree independently parses changed shell files, bounds Ruff/Bandit to owned inventory, and preserves real fail-closed outcomes with regression tests for issues #35 and #39.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
-    {"id":"AC-002","statement":"Trust CI smoke observations reject empty or pipeline-short-circuited evidence and retain required topology checks for issue #48.","evidence":[{"test":"trust-ci/tests/test_smoke.py"}]},
+    {"id":"AC-001","statement":"The release fix tree independently parses changed shell files and bounds the repository-owned Python quality inventory, with regression tests for the local guards related to issues #35 and #39.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"AC-002","statement":"The repository-owned Trust CI smoke seam rejects empty or pipeline-short-circuited evidence and retains required topology checks for the bounded local behavior related to issue #48.","evidence":[{"test":"trust-ci/tests/test_smoke.py"}]},
     {"id":"AC-003","statement":"Current local grants use grant_binding_digest, legacy tree_fingerprint grants remain readable, conflicting fields fail closed, and historical evidence bytes are unchanged for issue #73.","evidence":[{"test":"tests/test_policy.py"},{"test":"tests/test_history.py"}]},
     {"id":"AC-004","statement":"Focused static SEO verification is explicit and fail-closed for unsafe or mixed changes while full PR verification remains mandatory for the release candidate for issue #167.","evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"tests/test_workflow_artifacts.py"}]},
     {"id":"AC-005","statement":"Release metadata is changed only after the combined fix tree passes focused checks and full PR verification, and README matches the final VERSION/tree.","evidence":[{"receipt":"verification"}]}
@@ -27,8 +27,8 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Prepare the next repository-owned release v2.0.19 from origin/main with fail-closed bug fixes for issues #35, #36, #39, #48, #73, and #167, keeping each issue implementation independently reviewable and excluding unrelated M8/DEV work; update release metadata only after the bugfix tree is verified.",
-    "success_metric": "5 repository-owned issue slices pass their regressions and one exact release candidate is ready for protected PR delivery",
+    "statement": "Prepare the next repository-owned release v2.0.19 from origin/main with bounded local fail-closed guards related to #35/#39/#48 and owned fixes for #73/#167, retaining the #35/#36/#39/#48 external-owner disposition through #186 and excluding unrelated M8/DEV work; update release metadata only after the bugfix tree is verified.",
+    "success_metric": "three bounded local guard slices and two owned issue slices pass their regressions and one exact release candidate is ready for protected PR delivery",
     "target": "v2.0.19 candidate from origin/main"
   },
   "observability": [],

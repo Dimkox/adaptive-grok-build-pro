@@ -4,19 +4,23 @@
 
 ## Acceptance criteria
 
-- [ ] #35: every selected existing `.sh` file is parsed by its own `bash -n <path>` process;
-  a syntax error in a later file fails the check and names that file.
-- [ ] #39: fast lint uses only changed owned Python files; PR/release lint uses tracked plus
-  changed owned files, never `.` or unbounded scratch/generated paths, and reports its scope.
-- [ ] #48: smoke health/readiness/metrics/Compose observations are captured, non-empty, and
-  matched from captured text; required tool discovery and unavailable/empty outputs fail closed.
+- [x] #35-related repository-owned guard: every selected existing `.sh` file is parsed by its
+  own `bash -n <path>` process, empty selection fails closed, and a syntax error in a later file
+  names that file. This does not claim an external `verify:deploy` owner exists.
+- [x] #39-related repository-owned guard: fast lint uses only changed owned Python files;
+  PR/release lint uses tracked plus changed owned files, never `.` or unbounded scratch/generated
+  paths, and reports its scope. The filed ESLint/JavaScript report remains external through #186.
+- [x] #48-related repository-owned Trust CI smoke guard: health/readiness/metrics/Compose
+  observations are captured, non-empty, and matched from captured text; required tool discovery
+  and unavailable/empty outputs fail closed. The external guard's remaining traps remain linked
+  through #186.
 - [ ] #73: new grants use `grant_binding_digest`, legacy `tree_fingerprint` reads remain valid,
   conflicting dual fields fail closed, and historical probe files remain byte-identical.
 - [ ] #167: an unambiguous landing-only change can use the explicit focused mode; mixed, unknown,
   unsafe, or runtime/configuration changes fail closed to full PR verification.
 - [ ] Release metadata, README current-state text, and version identity match only the final
   verified candidate tree.
-- [ ] #36 is not represented as a fabricated product fix; its no-owner disposition links to #186.
+- [x] #36 is not represented as a fabricated product fix; its no-owner disposition links to #186.
 
 ## Failure and edge cases
 

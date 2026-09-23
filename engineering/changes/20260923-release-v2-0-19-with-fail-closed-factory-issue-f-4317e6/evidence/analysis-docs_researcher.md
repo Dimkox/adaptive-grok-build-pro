@@ -1,9 +1,9 @@
 # Docs/release research — v2.0.19 six-fix candidate
 
-Role: `docs_researcher` (read-only analysis)  
-Route: `4317e673390b`  
-Repository/worktree: `/tmp/agbp-release-factory-bugfixes`  
-Observed base/HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`  
+Role: `docs_researcher` (read-only analysis)
+Route: `4317e673390b`
+Repository/worktree: `/tmp/agbp-release-factory-bugfixes`
+Observed base/HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
 Observed: 2026-09-23 UTC
 
 ## Executive finding

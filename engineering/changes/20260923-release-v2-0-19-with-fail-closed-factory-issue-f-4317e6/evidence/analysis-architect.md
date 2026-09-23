@@ -1,9 +1,9 @@
 # Architect analysis — v2.0.19 fail-closed factory bugfix integration
 
-Route: `4317e673390b`  
-Worktree: `/tmp/agbp-release-factory-bugfixes`  
-Base/HEAD inspected: `130ce4a42d9f9bbd1b56772d40b19ae530283205` (`origin/main`)  
-Requested issue scope: `#35`, `#36`, `#39`, `#48`, `#73`, `#167` only  
+Route: `4317e673390b`
+Worktree: `/tmp/agbp-release-factory-bugfixes`
+Base/HEAD inspected: `130ce4a42d9f9bbd1b56772d40b19ae530283205` (`origin/main`)
+Requested issue scope: `#35`, `#36`, `#39`, `#48`, `#73`, `#167` only
 Role: route-selected read-only `architect`
 
 ## Architectural ruling
