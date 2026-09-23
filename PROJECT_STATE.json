@@ -2,9 +2,9 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-16T13:56:33Z",
-  "observed_main_sha": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
-  "product_version": "2.0.18",
+  "observed_at": "2026-09-22T23:35:00Z",
+  "observed_main_sha": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+  "product_version": "2.0.19",
   "latest_published_release": "v2.0.18",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -205,66 +205,154 @@
     }
   ],
   "current_unreleased_change": {
-    "change_id": "20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
-    "route_id": "968b3ce9e148",
-    "branch": "feature/v2.0.18-release-sync",
-    "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
-    "identity": "v2.0.18 release sync (identity bump + landing rows for the four pull requests merged after the v2.0.17 publication)",
-    "status": "published",
-    "stage": "released_and_published",
-    "source_base": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
-    "target_version": "2.0.18",
+    "change_id": "20260923-release-v2-0-19-with-fail-closed-factory-issue-f-4317e6",
+    "route_id": "4317e673390b",
+    "branch": "release/v2.0.19-factory-bugfixes",
+    "change_package": "engineering/changes/20260923-release-v2-0-19-with-fail-closed-factory-issue-f-4317e6",
+    "identity": "v2.0.19 release candidate with repository-owned fail-closed fixes for issues #35, #39, #48, #73 and #167",
+    "status": "release_sync_authored",
+    "stage": "identity_bump_in_pull_request",
+    "source_base": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+    "target_version": "2.0.19",
     "scope": [
-      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md H1/Identity, CHANGELOG.md top entry, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.18 candidate",
-      "this record: product identity, opened local_candidate slot with the artifact pair asserted absent, observed main SHA, post-publication landing archive",
-      "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
+      "Repository-owned fixes for #35, #39, #48, #73 and #167 with regression tests and bounded evidence",
+      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md, CHANGELOG.md, START_HERE.md, GROK_BUILD_HANDOFF.md and package guidance move to the 2.0.19 candidate",
+      "PROJECT_STATE records this release package and pending artifact slot; #36 remains dispositioned through #186"
     ],
     "predecessors": [
       {
-        "kind": "oversized_binary_streaming",
-        "pull_request": 101,
-        "head": "b40fd1a42a48efffea31480c2a5876de25826c2b",
-        "merge_commit": "83925c125258d15d80151cb16cf1abed51cf6cb2",
-        "merged_at": "2026-09-16T06:14:17Z",
-        "check_run_id": 104681990219
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 111,
+        "head": "176c3c6331241929c5e9091c93833c04d0d010d2",
+        "merge_commit": "d8b396cafc0c5953f2b419a29ce7eac292138d27",
+        "merged_at": "2026-09-16T15:58:23Z",
+        "check_run_id": 104861527743
       },
       {
-        "kind": "landing_convention_docs",
-        "pull_request": 102,
-        "head": "3f93e7bdfe7e0c492039b584bfc6c2b717f32a31",
-        "merge_commit": "98b77699beb4e78c4443429009e55dc19978e411",
-        "merged_at": "2026-09-16T07:52:29Z",
-        "check_run_id": 104704114422
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 112,
+        "head": "f541250196f6f08e13b6ad703d30434492fea2ff",
+        "merge_commit": "b1ac155b9829ba50ae482403ca4beb2bda13fe1e",
+        "merged_at": "2026-09-16T17:03:23Z",
+        "check_run_id": 104886975501
       },
       {
-        "kind": "qwen_omni_intl_and_probe_classification",
-        "pull_request": 105,
-        "head": "30fea4e3088a7c06575e80095ee2c41b8547e61a",
-        "merge_commit": "ad4d636e07289533f5e6231e64b19f57453141b1",
-        "merged_at": "2026-09-16T09:51:33Z",
-        "check_run_id": 104740673782
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 113,
+        "head": "2d1c0208faba0ca5635e37acfd46cace6182057a",
+        "merge_commit": "35cbbe0f857bdb03dec4eb0ecff542a148b84658",
+        "merged_at": "2026-09-16T17:24:50Z",
+        "check_run_id": 104894438685
       },
       {
-        "kind": "omni_package_closure",
-        "pull_request": 106,
-        "head": "0a99a4d66eaf3e423d18780b74dacca9eb099d18",
-        "merge_commit": "d146ca455d615683765b443b747f55aa4dbad436",
-        "merged_at": "2026-09-16T10:34:51Z",
-        "check_run_id": 104754117579
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 114,
+        "head": "245e565e95797032d94a310264e80ed803d95450",
+        "merge_commit": "379c64197aac82a0b70c1c2a98b249b381410305",
+        "merged_at": "2026-09-16T18:49:42Z",
+        "check_run_id": 104923457470
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 115,
+        "head": "55dbb6b243a6523c38ee8332153a82d0885227a6",
+        "merge_commit": "05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3",
+        "merged_at": "2026-09-16T22:53:12Z",
+        "check_run_id": 105002122003
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 116,
+        "head": "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
+        "merge_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+        "merged_at": "2026-09-17T02:51:57Z",
+        "check_run_id": 105053306144
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 149,
+        "head": "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
+        "merge_commit": "b51b1175e2441cbbfcbeee607d8d25ebd789a3b4",
+        "merged_at": "2026-09-19T10:13:40Z",
+        "check_run_id": 105878090745
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 150,
+        "head": "c335a33b9cffde4d8912b173803c3adec3348d06",
+        "merge_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+        "merged_at": "2026-09-19T10:54:42Z",
+        "check_run_id": 105883016776
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 154,
+        "head": "a4023258047a03e1176daa3a35695c9d9b49f8be",
+        "merge_commit": "f12807c2b75750072ba768fc95ed492362ae6489",
+        "merged_at": "2026-09-19T19:35:28Z",
+        "check_run_id": 105951303627
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 151,
+        "head": "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
+        "merge_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+        "merged_at": "2026-09-19T20:27:56Z",
+        "check_run_id": 105959227264
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 170,
+        "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+        "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+        "merged_at": "2026-09-21T09:06:51Z",
+        "check_run_id": 106268338358
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 173,
+        "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+        "merge_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+        "merged_at": "2026-09-21T11:27:32Z",
+        "check_run_id": 106308434581
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 174,
+        "head": "73a8edd7678b4d605f6335569534653c6587eabc",
+        "merge_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+        "merged_at": "2026-09-21T12:46:35Z",
+        "check_run_id": 106331000728
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 184,
+        "head": "0d16a5370537e697657fd60c7b27d994f45bd4b2",
+        "merge_commit": "f50912a2521be1da8f1da9ba3c956a824eb696bc",
+        "merged_at": "2026-09-21T20:52:15Z",
+        "check_run_id": 106483792325
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 185,
+        "head": "17489bf52ae1f6fac7923d8e3448bcae26f54163",
+        "merge_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+        "merged_at": "2026-09-21T21:58:06Z",
+        "check_run_id": 106525969438
       }
     ],
-    "explanation": "Four pull requests merged after the v2.0.17 publication, so the tree can no longer claim that no release preparation remains. The candidate identity is separated from the published identity by tests, not by prose.",
-    "external_effect": true,
+    "explanation": "The candidate combines five repository-owned fail-closed factory fixes into one release train. Issue #36 has no repository-owned recorder seam and remains linked to #186; the v2.0.18 record and bytes stay immutable; the v2.0.19 artifact is a separate exact-child step.",
+    "external_effect": false,
     "frozen": {
       "published_release": "v2.0.18",
       "package_bytes": true,
       "postgresql_migrations": "001-018"
     },
     "operational_activation": false,
-    "record_scope": "Release preparation for 2.0.18 only. Documentation workflow belongs to its change package; runtime state is in runtime_observations.",
-    "next_action": "Publishing is complete: v2.0.18 is tagged and released. Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification. Any new product change opens its own route and change package.",
-    "tag_and_release": "Published: tag v2.0.18 object 31d3171f651ea77e29de58d4affc58d008f1c7a5 binds merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0; the GitHub Release is live with the ZIP and sidecar assets, published 2026-09-16T13:52:24Z.",
-    "artifact_child": "Published: delivered by PR #108 (merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0) and shipped through tag v2.0.18 (object 31d3171f651ea77e29de58d4affc58d008f1c7a5) with the ZIP and sidecar as GitHub Release assets at 2026-09-16T13:52:24Z."
+    "record_scope": "Release preparation for v2.0.19 issue fixes only; M8/DEV observation, provider installation, host mutation and operational qualification remain out of scope.",
+    "next_action": "Finish final verification/reviews for the fix tree, open the protected v2.0.19 PR with automatic closure references for #35/#39/#48/#73/#167, then build the ZIP+sidecar from the exact merged tree as the separate artifact-child PR. #36 remains open under #186 until its owner is identified.",
+    "tag_and_release": "Not created. v2.0.18 remains the newest tag and GitHub Release; v2.0.19 publication requires the separate artifact-child merge, exact checks and named grants.",
+    "artifact_child": "Not built. The v2.0.19 ZIP+sidecar pair arrives only with the separate artifact-child commit; this record asserts their absence."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -873,47 +961,172 @@
         "verified_source_head": "28514bf0e3d7aa1812aa7d459136f0ca60989885",
         "verification_record": "engineering/changes/20260921-fix-the-combined-delivery-of-already-reviewed-is-bcc1d6/evidence/combined-full-security-repair-result.json"
       }
+    },
+    "post_v2_0_18_landing": {
+      "status": "landed_in_v2_0_19_candidate",
+      "record_scope": "Pull requests merged on main after the v2.0.18 publication and before this release-sync candidate. Each row is re-derived from Git and the GitHub checks API; release-chain commits are recorded through current_unreleased_change and local_candidate.",
+      "pull_requests": [
+        {
+          "pull_request": 111,
+          "head": "176c3c6331241929c5e9091c93833c04d0d010d2",
+          "merge_commit": "d8b396cafc0c5953f2b419a29ce7eac292138d27",
+          "merged_at": "2026-09-16T15:58:23Z",
+          "check_run_id": 104861527743,
+          "purpose": "release successor record for v2.0.18"
+        },
+        {
+          "pull_request": 112,
+          "head": "f541250196f6f08e13b6ad703d30434492fea2ff",
+          "merge_commit": "b1ac155b9829ba50ae482403ca4beb2bda13fe1e",
+          "merged_at": "2026-09-16T17:03:23Z",
+          "check_run_id": 104886975501,
+          "purpose": "object-valued enum analysis repair"
+        },
+        {
+          "pull_request": 113,
+          "head": "2d1c0208faba0ca5635e37acfd46cace6182057a",
+          "merge_commit": "35cbbe0f857bdb03dec4eb0ecff542a148b84658",
+          "merged_at": "2026-09-16T17:24:50Z",
+          "check_run_id": 104894438685,
+          "purpose": "capability-selected test engine retake"
+        },
+        {
+          "pull_request": 114,
+          "head": "245e565e95797032d94a310264e80ed803d95450",
+          "merge_commit": "379c64197aac82a0b70c1c2a98b249b381410305",
+          "merged_at": "2026-09-16T18:49:42Z",
+          "check_run_id": 104923457470,
+          "purpose": "retake reconciliation across records"
+        },
+        {
+          "pull_request": 115,
+          "head": "55dbb6b243a6523c38ee8332153a82d0885227a6",
+          "merge_commit": "05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3",
+          "merged_at": "2026-09-16T22:53:12Z",
+          "check_run_id": 105002122003,
+          "purpose": "installer keep-list hardening"
+        },
+        {
+          "pull_request": 116,
+          "head": "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
+          "merge_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+          "merged_at": "2026-09-17T02:51:57Z",
+          "check_run_id": 105053306144,
+          "purpose": "git-child cleanup on stream failure"
+        },
+        {
+          "pull_request": 149,
+          "head": "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
+          "merge_commit": "b51b1175e2441cbbfcbeee607d8d25ebd789a3b4",
+          "merged_at": "2026-09-19T10:13:40Z",
+          "check_run_id": 105878090745,
+          "purpose": "contract dependency closure references"
+        },
+        {
+          "pull_request": 150,
+          "head": "c335a33b9cffde4d8912b173803c3adec3348d06",
+          "merge_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+          "merged_at": "2026-09-19T10:54:42Z",
+          "check_run_id": 105883016776,
+          "purpose": "post-merge audit and recovered lessons"
+        },
+        {
+          "pull_request": 154,
+          "head": "a4023258047a03e1176daa3a35695c9d9b49f8be",
+          "merge_commit": "f12807c2b75750072ba768fc95ed492362ae6489",
+          "merged_at": "2026-09-19T19:35:28Z",
+          "check_run_id": 105951303627,
+          "purpose": "safe rejected-draft diagnostics"
+        },
+        {
+          "pull_request": 151,
+          "head": "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
+          "merge_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+          "merged_at": "2026-09-19T20:27:56Z",
+          "check_run_id": 105959227264,
+          "purpose": "Claw primary Qwen Omni acceptance record"
+        },
+        {
+          "pull_request": 170,
+          "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+          "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+          "merged_at": "2026-09-21T09:06:51Z",
+          "check_run_id": 106268338358,
+          "purpose": "repair-child binding diagnostics"
+        },
+        {
+          "pull_request": 173,
+          "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+          "merge_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+          "merged_at": "2026-09-21T11:27:32Z",
+          "check_run_id": 106308434581,
+          "purpose": "eight routing, evidence, schema and installer repairs"
+        },
+        {
+          "pull_request": 174,
+          "head": "73a8edd7678b4d605f6335569534653c6587eabc",
+          "merge_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+          "merged_at": "2026-09-21T12:46:35Z",
+          "check_run_id": 106331000728,
+          "purpose": "package diagnostics and test-worker capacity"
+        },
+        {
+          "pull_request": 184,
+          "head": "0d16a5370537e697657fd60c7b27d994f45bd4b2",
+          "merge_commit": "f50912a2521be1da8f1da9ba3c956a824eb696bc",
+          "merged_at": "2026-09-21T20:52:15Z",
+          "check_run_id": 106483792325,
+          "purpose": "bounded successor batch for issues 124, 125, 126 and 129"
+        },
+        {
+          "pull_request": 185,
+          "head": "17489bf52ae1f6fac7923d8e3448bcae26f54163",
+          "merge_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+          "merged_at": "2026-09-21T21:58:06Z",
+          "check_run_id": 106525969438,
+          "purpose": "merge-gate reachability and kept-local divergence"
+        }
+      ]
     }
   },
   "local_candidate": {
-    "version": "2.0.18",
-    "status": "published",
-    "route_id": "968b3ce9e148",
-    "branch": "feature/v2.0.18-release-sync",
-    "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
-    "source_base": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
+    "version": "2.0.19",
+    "status": "pending_release",
+    "route_id": "4317e673390b",
+    "branch": "release/v2.0.19-factory-bugfixes",
+    "change_package": "engineering/changes/20260923-release-v2-0-19-with-fail-closed-factory-issue-f-4317e6",
+    "source_base": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
-    "source_gate_status": "passed_for_artifact_head",
-    "review_status": "security_and_release_reviews_passed",
-    "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
-    "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
-    "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
-    "pull_request": 108,
-    "artifact_status": "published_tag_bound",
-    "predecessor_record": "The published v2.0.17 candidate record is archived verbatim as delivered_change_history.v2_0_17_release_preparation.published_local_candidate.",
+    "source_gate_status": "pending_final_tree",
+    "review_status": "pending",
+    "checked_head": null,
+    "merge_commit": null,
+    "tree": null,
+    "pull_request": null,
+    "artifact_status": "pending_unpublished_artifact_child",
+    "predecessor_record": "The published v2.0.18 candidate remains the immutable published_release record; earlier releases remain under prior_published_releases.",
     "artifact_child": {
       "identity": "A",
-      "source_parent": "fc8d9e6f11bb188ee514784d3b6f614a6da72803",
-      "source_parent_tree": "65d3a996018bf7564866c25b6b869c2493c9e15e",
-      "commit": "07d1141e70884397a61eb93fd76525baf2444a0e",
-      "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+      "source_parent": null,
+      "source_parent_tree": null,
+      "commit": null,
+      "tree": null,
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.18.zip",
-        "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.0.19.zip",
+        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
       ],
-      "zip_sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
-      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
-      "status": "published_as_v2.0.18",
-      "requirement": "Released: tag 31d3171f651ea77e29de58d4affc58d008f1c7a5 binds merge e7d0f72bf834b75eb543d9424ee47c7829cc65c0; the GitHub Release carries both delta_paths; publication flags are set only by this successor record.",
-      "zip_source_note": "The archive was built from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
+      "zip_sha256": null,
+      "sidecar_sha256": null,
+      "status": "not_built",
+      "requirement": "The separate artifact-child commit adds both delta paths built from the merged release-sync tree, flips artifact_status and the artifact identities, and keeps published, published_at, external_effect and operational_activation false until the exact tag and GitHub Release exist."
     },
-    "published": true,
-    "published_at": "2026-09-16T13:52:24Z",
-    "external_effect": true,
-    "external_effect_scope": "github_repository_delivery_and_release_only",
+    "published": false,
+    "published_at": null,
+    "external_effect": false,
+    "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "Artifact bytes published through tag v2.0.18 and the GitHub Release at 2026-09-16T13:52:24Z, built twice byte-identically from the merged release-sync tree fc8d9e6f11bb188ee514784d3b6f614a6da72803; the archive preserves that pre-publication snapshot, so candidate wording inside the ZIP is historical. operational_activation remains false: no provider install, host mutation, hosting or deployment is claimed by this record."
+    "notes": "2.0.19 is the unpublished identity carrying the fifteen post-v2.0.18 landings. Nothing is built, tagged or released for 2.0.19 until the separate artifact-child step, exact-head external checks and named delegated grants complete."
   },
   "delivered_non_milestone_work": [
     {
@@ -938,50 +1151,46 @@
     }
   ],
   "active_delivery": {
-    "route_id": "968b3ce9e148",
-    "branch": "feature/v2.0.18-release-sync",
-    "pull_request": 108,
-    "change_package": "engineering/changes/20260916-release-sync-2-0-17-to-2-0-18-identity-bump-r-wi-968b3c",
-    "status": "source_delivered_operational_qualification_incomplete",
+    "route_id": "4317e673390b",
+    "branch": "release/v2.0.19-factory-bugfixes",
+    "pull_request": null,
+    "change_package": "engineering/changes/20260923-release-v2-0-19-with-fail-closed-factory-issue-f-4317e6",
+    "status": "release_sync_pending",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Publishing is complete: v2.0.18 is tagged and released. Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 operational qualification. Any new product change opens its own route and change package.",
+    "next_action": "Finish final verification/reviews for the fix tree, open the protected v2.0.19 PR with automatic closure references for #35/#39/#48/#73/#167, then build the ZIP+sidecar from the exact merged tree as the separate artifact-child PR. #36 remains open under #186 until its owner is identified.",
     "local_source_gate": {
-      "status": "passed_for_published_artifact_head",
-      "artifact_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
-      "artifact_tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
-      "record_scope": "Current v2.0.18 release preflight: the release-sync and artifact-child heads passed the repository verifier fully locally; the App-owned exact-head check on PR #108 (run 104809218211) is the merge authority recorded by this successor."
+      "status": "pending_final_tree",
+      "artifact_head": null,
+      "artifact_tree": null,
+      "record_scope": "Current v2.0.19 release-sync preflight; local receipts and the future App-owned exact-head check must cover the final artifact-child head."
     },
     "package_handoff": {
-      "status": "published",
-      "artifact_child": "07d1141e70884397a61eb93fd76525baf2444a0e",
-      "artifact_tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+      "status": "pending_artifact_child",
+      "artifact_child": null,
+      "artifact_tree": null,
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.18.zip",
-        "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.0.19.zip",
+        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
       ],
-      "zip_sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
-      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
-      "release": "v2.0.18",
-      "tag_target": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0"
+      "zip_sha256": null,
+      "sidecar_sha256": null,
+      "release": "v2.0.19",
+      "tag_target": null
     },
     "repository_delivery": {
-      "status": "published",
-      "pull_request": 108,
-      "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
-      "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
-      "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
-      "merged_at": "2026-09-16T13:51:26Z",
-      "published_at": "2026-09-16T13:52:24Z",
-      "release": "v2.0.18",
+      "status": "pending_exact_head_external_check",
+      "pull_request": null,
+      "checked_head": null,
+      "merge_commit": null,
+      "tree": null,
+      "release": "v2.0.19",
       "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
-      "check_run_id": 104809218211,
-      "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
-      "signer": "0519cf1d47436f2e",
-      "gitguardian": "SUCCESS",
+      "check_run_id": null,
+      "attestation_id": null,
       "operational_activation": false,
-      "record_scope": "Release publication only; the installed L5 services are recorded separately in runtime_observations and remain un-activated by this successor."
+      "record_scope": "No repository merge or publication has occurred for v2.0.19."
     },
     "integrated_stack": {
       "status": "delivered_to_main",
@@ -1953,10 +2162,10 @@
     }
   },
   "latest_source_observation": {
-    "observed_at": "2026-09-21T11:34:42.674199+00:00",
-    "main_sha": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
-    "source_pull_request": 173,
-    "source_role": "actual fetched main after exact-head App success, normal protected squash merge and eight confirmed issue closures"
+    "observed_at": "2026-09-22T23:35:00Z",
+    "main_sha": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+    "source_pull_request": 185,
+    "source_role": "actual fetched main after the v2.0.18 publication and exact-head App success through PR #185"
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",

@@ -75,7 +75,15 @@ Do not spawn a second write agent for the same route. Review fixes return to the
 
 ## 5. Verification
 
-Run the route-selected profiles:
+For a positive changed-file classification confined to `side-projects/seo-landings/**` plus one explicitly named focused landing test in one landing directory, the safe default is the explicit focused contract command:
+
+```bash
+python3 scripts/grok_verify.py --mode focused-static-seo-landing
+```
+
+Fail closed and use full PR verification for mixed or unknown paths, multiple landing directories, missing/ambiguous tests, invalid/incomplete route or range inventory, or any runtime, contracts, Trust CI, packages, architecture, workflow/configuration, SEO-skill, or showcase change. `--mode pr` is always the full path and never silently downgrades.
+
+Run the route-selected full PR profiles otherwise:
 
 ```bash
 python scripts/grok_verify.py --mode pr

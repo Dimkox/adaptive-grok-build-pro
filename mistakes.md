@@ -1421,3 +1421,27 @@ The batch identity collector initially reused diff-specific glob pathspec syntax
 ### 2026-09-21 — Enumerate candidate content before filtering an integration manifest
 
 I built the next source manifest from an incomplete directory-prefix list and omitted the reviewed165Stop hook under `.grok/`. Independent integration analysis caught the dependency before any import; compare every changed candidate path against explicit source and handoff exclusions instead of assuming all executable paths live under `.grok-stack/`.
+
+### 2026-09-22 — Use the declared unittest class name
+
+The first focused test command named `WorkflowArtifactTests`, but the repository declares `WorkflowSourceTests`; the six verifier tests passed and the command ended with a loader error. Inspect test class declarations before composing targeted unittest selectors.
+
+### 2026-09-23 — Use valid `git apply` option grammar
+
+The first release integration attempt passed `--index=false`, but `git apply` exposes `--index` only as a flag and rejected the command before changing files. The root cause was assuming Boolean option syntax without checking the command contract; use plain `git apply` for an unstaged patch.
+
+### 2026-09-23 — Preserve repository edit-tool discipline during file integration
+
+The first import of the new smoke regression used `cp` instead of the required patch workflow. The root cause was treating a whole new file as a mechanical exception; subsequent repository edits must use `apply_patch` or a reviewed patch stream.
+
+### 2026-09-22 — Verify disposable mutation transforms before trusting their result
+
+The first issue #48 quiet-grep mutation helper removed the source assertion instead of inserting the mutated pipeline, so it falsely reported that the grep --quiet mutant survived. The root cause was a no-op replacement in the temporary harness; the corrected transform inserted each quiet form, and all three were killed before recording evidence.
+
+### 2026-09-22 — Pass required review settings explicitly
+
+The fresh issue #48 review wave omitted its required reasoning setting, so inherited defaults made otherwise valid work stale. The root cause was treating spawn defaults as sufficient instead of making repository/session rules explicit in every invocation.
+
+### 2026-09-22 — Bound verification waits instead of polling empty cycles
+
+Repeatedly polling a long verifier and reviewer statuses after useful results were available created an avoidable cost loop. The root cause was treating waiting as repeated status reads instead of one bounded wait with a terminal outcome.

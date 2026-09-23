@@ -174,6 +174,111 @@ def _git_paths(root: Path, *args: str) -> set[str] | None:
     return {os.fsdecode(path) for path in proc.stdout.split(b'\0') if path}
 
 
+def _git_name_status(root: Path, *args: str) -> list[dict[str, str]] | None:
+    try:
+        # Name-status records use one NUL-delimited field per status/path.  A
+        # rename or copy has an additional original-path field.
+        proc = subprocess.run(
+            ['git', *args], cwd=root, capture_output=True, timeout=60, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0 or (proc.stdout and not proc.stdout.endswith(b'\0')):
+        return None
+
+    fields = proc.stdout.split(b'\0')
+    if fields and fields[-1] == b'':
+        fields.pop()
+    records: list[dict[str, str]] = []
+    index = 0
+    while index < len(fields):
+        status = os.fsdecode(fields[index])
+        index += 1
+        if not status:
+            return None
+        if status[:1] in {'R', 'C'}:
+            if index + 1 >= len(fields):
+                return None
+            original_path = os.fsdecode(fields[index])
+            path = os.fsdecode(fields[index + 1])
+            index += 2
+            records.append({
+                'status': status,
+                'original_path': original_path,
+                'path': path,
+            })
+        else:
+            if index >= len(fields):
+                return None
+            records.append({
+                'status': status,
+                'path': os.fsdecode(fields[index]),
+            })
+            index += 1
+    return records
+
+
+def changed_file_statuses(
+    root: Path,
+    base: str | None = None,
+    *,
+    include_worktree: bool = True,
+    include_untracked: bool = True,
+) -> list[dict[str, str]] | None:
+    """Return focused-only Git status records without changing ``changed_files``.
+
+    The ordinary changed-file inventory intentionally returns names for the
+    repository fingerprint.  Focused verification additionally needs Git's
+    status and rename/copy provenance so it can reject unsafe landing/test
+    changes instead of treating them as ordinary modifications.
+    """
+    if not command_exists('git') or not git_head(root):
+        return None
+
+    records: list[dict[str, str]] = []
+
+    def add_diff(source: str, *arguments: str) -> bool:
+        parsed = _git_name_status(root, *arguments)
+        if parsed is None:
+            return False
+        for item in parsed:
+            item['source'] = source
+            records.append(item)
+        return True
+
+    if base is not None and not add_diff(
+        f'range:{base}',
+        'diff', '--name-status', '--find-renames', '--find-copies',
+        '--find-copies-harder', '-z', f'{base}...HEAD',
+    ):
+        return None
+    if include_worktree:
+        if not add_diff(
+            'index', 'diff', '--name-status', '--find-renames', '--find-copies',
+            '--find-copies-harder', '-z', '--cached',
+        ):
+            return None
+        if not add_diff(
+            'worktree', 'diff', '--name-status', '--find-renames', '--find-copies',
+            '--find-copies-harder', '-z',
+        ):
+            return None
+    if include_untracked:
+        untracked = _git_paths(root, 'ls-files', '--others', '--exclude-standard', '-z')
+        if untracked is None:
+            return None
+        records.extend(
+            {
+                'status': '??',
+                'path': path,
+                'source': 'untracked',
+            }
+            for path in sorted(untracked)
+            if not (_fingerprint_noise(path) or path.startswith('.qwen/tmp/'))
+        )
+    return records
+
+
 def changed_files(root: Path, base: str | None = None) -> list[str]:
     paths: set[str] = set()
     indexed = _git_paths(root, 'ls-files', '--cached', '-z')

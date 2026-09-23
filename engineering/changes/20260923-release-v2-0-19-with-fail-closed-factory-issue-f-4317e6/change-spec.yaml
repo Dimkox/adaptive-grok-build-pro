@@ -1,0 +1,46 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"The release fix tree independently parses changed shell files, bounds Ruff/Bandit to owned inventory, and preserves real fail-closed outcomes with regression tests for issues #35 and #39.","evidence":[{"test":"tests/test_verification_doctor.py"}]},
+    {"id":"AC-002","statement":"Trust CI smoke observations reject empty or pipeline-short-circuited evidence and retain required topology checks for issue #48.","evidence":[{"test":"trust-ci/tests/test_smoke.py"}]},
+    {"id":"AC-003","statement":"Current local grants use grant_binding_digest, legacy tree_fingerprint grants remain readable, conflicting fields fail closed, and historical evidence bytes are unchanged for issue #73.","evidence":[{"test":"tests/test_policy.py"},{"test":"tests/test_history.py"}]},
+    {"id":"AC-004","statement":"Focused static SEO verification is explicit and fail-closed for unsafe or mixed changes while full PR verification remains mandatory for the release candidate for issue #167.","evidence":[{"test":"tests/test_verification_doctor.py"},{"test":"tests/test_workflow_artifacts.py"}]},
+    {"id":"AC-005","statement":"Release metadata is changed only after the combined fix tree passes focused checks and full PR verification, and README matches the final VERSION/tree.","evidence":[{"receipt":"verification"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260923-release-v2-0-19-with-fail-closed-factory-issue-f-4317e6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Do not invent a repository-owned shell recorder or claim issue #36 fixed without an exact source seam and regression evidence; retain the #186 disposition.","evidence":[{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Do not import M8/DEV work, alter autonomy qualification, deployed Trust CI policy/holdout, GitHub Actions, secrets, or protected branches.","evidence":[{"receipt":"code_review"}]},
+    {"id":"FORBID-003","statement":"Do not treat local verification, reviews, delegated grants, or an older release candidate as merge authority for the final PR head.","evidence":[{"receipt":"test_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Every accepted check fails closed on missing, empty, ambiguous, unavailable, or untrusted evidence.","evidence":[{"receipt":"verification"}]},
+    {"id":"INV-002","statement":"Historical evidence is immutable and every local receipt binds to the exact final tree fingerprint.","evidence":[{"receipt":"verification"}]},
+    {"id":"INV-003","statement":"The final release candidate has no product changes outside the accepted issue slices and release metadata.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Prepare the next repository-owned release v2.0.19 from origin/main with fail-closed bug fixes for issues #35, #36, #39, #48, #73, and #167, keeping each issue implementation independently reviewable and excluding unrelated M8/DEV work; update release metadata only after the bugfix tree is verified.",
+    "success_metric": "5 repository-owned issue slices pass their regressions and one exact release candidate is ready for protected PR delivery",
+    "target": "v2.0.19 candidate from origin/main"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

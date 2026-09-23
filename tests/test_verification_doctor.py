@@ -19,6 +19,7 @@ from adaptive_grok.doctor import run_doctor
 from adaptive_grok import architecture as architecture_module
 from adaptive_grok import receipts as receipts_module
 from adaptive_grok import util as util_module
+from adaptive_grok import verification as verification_module
 from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
@@ -28,6 +29,7 @@ from adaptive_grok.verification import (
     GitRangeSelection,
     _git_diff_check,
     _change_specs,
+    _bash_syntax,
     _contracts,
     _governance_check,
     _workflow_artifacts_check,
@@ -292,6 +294,17 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_bash_syntax_fails_for_invalid_later_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'first.sh').write_text('#!/usr/bin/env bash\necho first\n', encoding='utf-8')
+            (root / 'later.sh').write_text('#!/usr/bin/env bash\nif true; then\n', encoding='utf-8')
+
+            result = _bash_syntax(root, ['first.sh', 'later.sh'])
+
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('later.sh', result.summary)
+
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
         for rel in (
@@ -318,6 +331,346 @@ class VerificationTests(unittest.TestCase):
             'governance-rule.schema.json',
         ):
             shutil.copy2(ROOT / 'schemas' / name, root / 'schemas' / name)
+
+    def _landing_scope(self, files: list[object], **kwargs):
+        selector = getattr(verification_module, 'select_static_seo_landing_scope', None)
+        self.assertIsNotNone(selector, 'focused static SEO landing selector is missing')
+        return selector(files, **kwargs)
+
+    def test_static_landing_scope_accepts_one_explicit_focused_contract(self) -> None:
+        scope = self._landing_scope([
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'side-projects/seo-landings/winston-wolfe/robots.txt',
+            'tests/test_winston_wolfe_seo_landing.py',
+        ])
+
+        self.assertTrue(scope['eligible'])
+        self.assertEqual(scope['profile'], 'static-seo-landing')
+        self.assertEqual(scope['focused_tests'], ['tests/test_winston_wolfe_seo_landing.py'])
+        self.assertEqual(scope['rejected_files'], [])
+
+    def test_static_landing_scope_rejects_mixed_product_paths(self) -> None:
+        scope = self._landing_scope([
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'tests/test_winston_wolfe_seo_landing.py',
+            'factory/src/adaptive_factory/landing_renderer.py',
+        ])
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['profile'], 'full-pr')
+        self.assertIn('factory/src/adaptive_factory/landing_renderer.py', scope['rejected_files'])
+        self.assertIn('out-of-scope', scope['reason'])
+
+    def test_static_landing_scope_keeps_showcase_skill_and_broad_test_on_full_path(self) -> None:
+        for excluded in (
+            'side-projects/seo-landing-showcase/index.html',
+            '.agents/skills/seo-landing/SKILL.md',
+            'tests/test_seo_landing_side_project.py',
+        ):
+            with self.subTest(excluded=excluded):
+                scope = self._landing_scope([excluded])
+                self.assertFalse(scope['eligible'])
+                self.assertEqual(scope['profile'], 'full-pr')
+                self.assertIn(excluded, scope['rejected_files'])
+
+    def test_static_landing_scope_fails_closed_for_missing_ambiguous_and_invalid_inventory(self) -> None:
+        landing = 'side-projects/seo-landings/winston-wolfe/index.html'
+        missing = self._landing_scope([landing])
+        self.assertFalse(missing['eligible'])
+        self.assertIn('focused test', missing['reason'])
+
+        ambiguous = self._landing_scope([
+            landing,
+            'tests/test_winston_wolfe_seo_landing.py',
+            'tests/test_other_seo_landing.py',
+        ])
+        self.assertFalse(ambiguous['eligible'])
+        self.assertIn('ambiguous', ambiguous['reason'])
+
+        malformed = self._landing_scope([
+            '../side-projects/seo-landings/winston-wolfe/index.html',
+            'tests/test_winston_wolfe_seo_landing.py',
+        ])
+        self.assertFalse(malformed['eligible'])
+        self.assertIn('invalid', malformed['reason'])
+
+        incomplete = self._landing_scope([
+            landing,
+            'tests/test_winston_wolfe_seo_landing.py',
+        ], range_findings=[{'code': 'pr-base-ambiguous'}], range_base_count=0)
+        self.assertFalse(incomplete['eligible'])
+        self.assertIn('comparison inventory', incomplete['reason'])
+
+    def test_static_landing_scope_rejects_multiple_landing_directories(self) -> None:
+        scope = self._landing_scope([
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'side-projects/seo-landings/other-landing/index.html',
+            'tests/test_winston_wolfe_seo_landing.py',
+        ])
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['profile'], 'full-pr')
+        self.assertIn('multiple static SEO landing directories', scope['reason'])
+        self.assertEqual(
+            scope['landing_directories'],
+            ['other-landing', 'winston-wolfe'],
+        )
+
+    def test_static_landing_scope_rejects_mismatched_focused_test(self) -> None:
+        scope = self._landing_scope([
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'tests/test_other_landing_seo_landing.py',
+        ])
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'focused-test-landing-mismatch')
+        self.assertEqual(scope['rejection']['landing_directory'], 'winston-wolfe')
+        self.assertEqual(scope['rejection']['focused_test_landing'], 'other_landing')
+
+    def test_static_landing_scope_rejects_non_string_and_non_hashable_values(self) -> None:
+        scope = self._landing_scope([
+            ['side-projects/seo-landings/winston-wolfe/index.html'],
+            {'path': 'tests/test_winston_wolfe_seo_landing.py'},
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'tests/test_winston_wolfe_seo_landing.py',
+        ])
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'out-of-scope-or-invalid-paths')
+        self.assertIn("['side-projects/seo-landings/winston-wolfe/index.html']", scope['rejected_files'])
+        self.assertIn("{'path': 'tests/test_winston_wolfe_seo_landing.py'}", scope['rejected_files'])
+
+    def test_static_landing_scope_rejects_deleted_landing_path_before_contract(self) -> None:
+        scope = self._landing_scope(
+            [
+                'side-projects/seo-landings/winston-wolfe/index.html',
+                'tests/test_winston_wolfe_seo_landing.py',
+            ],
+            file_statuses=[{
+                'status': 'D',
+                'path': 'side-projects/seo-landings/winston-wolfe/index.html',
+            }],
+            status_inventory_trusted=True,
+        )
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'unsafe-file-status')
+        self.assertEqual(scope['unsafe_file_statuses'][0]['status'], 'D')
+
+    def test_static_landing_scope_rejects_renamed_landing_path_before_contract(self) -> None:
+        scope = self._landing_scope(
+            [
+                'side-projects/seo-landings/winston-wolfe/renamed.html',
+                'tests/test_winston_wolfe_seo_landing.py',
+            ],
+            file_statuses=[{
+                'status': 'R100',
+                'original_path': 'side-projects/seo-landings/winston-wolfe/index.html',
+                'path': 'side-projects/seo-landings/winston-wolfe/renamed.html',
+            }],
+            status_inventory_trusted=True,
+        )
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'unsafe-file-status')
+        self.assertEqual(scope['unsafe_file_statuses'][0]['status'], 'R100')
+        self.assertEqual(
+            scope['unsafe_file_statuses'][0]['original_path'],
+            'side-projects/seo-landings/winston-wolfe/index.html',
+        )
+
+    def test_static_landing_scope_rejects_copied_test_path_before_contract(self) -> None:
+        scope = self._landing_scope(
+            [
+                'side-projects/seo-landings/winston-wolfe/index.html',
+                'tests/test_winston_wolfe_seo_landing.py',
+                'tests/test_winston_wolfe_seo_landing_copy.py',
+            ],
+            file_statuses=[{
+                'status': 'C100',
+                'original_path': 'tests/test_winston_wolfe_seo_landing.py',
+                'path': 'tests/test_winston_wolfe_seo_landing_copy.py',
+            }],
+            status_inventory_trusted=True,
+        )
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'unsafe-file-status')
+        self.assertEqual(scope['unsafe_file_statuses'][0]['status'], 'C100')
+
+    def test_static_landing_scope_rejects_ambiguous_file_status_metadata(self) -> None:
+        scope = self._landing_scope(
+            [
+                'side-projects/seo-landings/winston-wolfe/index.html',
+                'tests/test_winston_wolfe_seo_landing.py',
+            ],
+            file_statuses=[{
+                'path': 'side-projects/seo-landings/winston-wolfe/index.html',
+            }],
+            status_inventory_trusted=True,
+        )
+
+        self.assertFalse(scope['eligible'])
+        self.assertEqual(scope['reason_code'], 'file-status-ambiguous')
+
+    def test_static_landing_scope_rejects_traversal_and_control_paths_with_exact_code(self) -> None:
+        valid_files = [
+            'side-projects/seo-landings/winston-wolfe/index.html',
+            'tests/test_winston_wolfe_seo_landing.py',
+        ]
+        for malformed in (
+            '../side-projects/seo-landings/winston-wolfe/index.html',
+            '/side-projects/seo-landings/winston-wolfe/index.html',
+            'side-projects/seo-landings/winston-wolfe/../index.html',
+            'side-projects/seo-landings/winston-wolfe/index\x00.html',
+            'tests/test_winston_wolfe_seo_landing.py\n',
+            'tests/test_winston_wolfe_seo_landing.py\t',
+        ):
+            with self.subTest(malformed=repr(malformed)):
+                scope = self._landing_scope([*valid_files, malformed])
+                self.assertFalse(scope['eligible'])
+                self.assertEqual(scope['reason_code'], 'out-of-scope-or-invalid-paths')
+                self.assertIn(repr(malformed), scope['rejected_files'])
+
+    def test_focused_verification_runs_only_landing_contract_and_reports_scope(self) -> None:
+        with project_copy(git=True) as root:
+            base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            set_active_route(root, {
+                'route_id': 'focused-static-landing',
+                'base_commit': base,
+                'quality_profiles': ['base', 'contracts'],
+                'delivery_expected': False,
+            })
+            landing = root / 'side-projects/seo-landings/winston-wolfe/index.html'
+            landing.parent.mkdir(parents=True)
+            landing.write_text('<!doctype html>\n', encoding='utf-8')
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text(
+                'import unittest\n'
+                '\n'
+                'class LandingContract(unittest.TestCase):\n'
+                '    def test_contract(self):\n'
+                '        self.assertTrue(True)\n'
+                '\n'
+                'if __name__ == "__main__":\n'
+                '    unittest.main()\n',
+                encoding='utf-8',
+            )
+
+            report = verify(root, mode='focused-static-seo-landing', record=False)
+
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['verification_scope']['profile'], 'static-seo-landing')
+            self.assertEqual(
+                report['verification_scope']['focused_tests'],
+                ['tests/test_winston_wolfe_seo_landing.py'],
+            )
+            self.assertEqual(
+                {item['name'] for item in report['checks']},
+                {'git-diff-check', 'scope-selection', 'static-seo-landing-contract', 'source-stability'},
+            )
+
+    def test_pr_mode_keeps_eligible_landing_inventory_on_full_path(self) -> None:
+        with project_copy(git=True) as root:
+            base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            set_active_route(root, {
+                'route_id': 'full-pr-no-downgrade',
+                'base_commit': base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            landing = root / 'side-projects/seo-landings/winston-wolfe/index.html'
+            landing.parent.mkdir(parents=True)
+            landing.write_text('<!doctype html>\n', encoding='utf-8')
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text(_PASSING_UNITTEST, encoding='utf-8')
+
+            with (
+                patch.object(verification_module, '_verify_focused_static_seo_landing') as focused_verify,
+                patch.object(verification_module, '_focused_landing_contract') as focused_contract,
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            self.assertEqual(report['mode'], 'pr')
+            self.assertNotIn('verification_scope', report)
+            focused_verify.assert_not_called()
+            focused_contract.assert_not_called()
+
+    def test_rejected_focused_scope_does_not_execute_contract_subprocess(self) -> None:
+        with project_copy(git=True) as root:
+            base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            set_active_route(root, {
+                'route_id': 'focused-rejected-no-contract',
+                'base_commit': base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            landing = root / 'side-projects/seo-landings/winston-wolfe/index.html'
+            landing.parent.mkdir(parents=True)
+            landing.write_text('<!doctype html>\n', encoding='utf-8')
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text(_PASSING_UNITTEST, encoding='utf-8')
+            rejected = root / 'runtime/changed.py'
+            rejected.parent.mkdir(parents=True)
+            rejected.write_text('changed = True\n', encoding='utf-8')
+
+            with (
+                patch.object(verification_module, '_focused_landing_contract') as focused_contract,
+                patch.object(verification_module, '_command_check') as command_check,
+            ):
+                report = verify(root, mode='focused-static-seo-landing', record=False)
+
+            self.assertEqual(report['status'], 'fail')
+            scope = report['verification_scope']
+            self.assertEqual(scope['reason_code'], 'out-of-scope-or-invalid-paths')
+            focused_contract.assert_not_called()
+            command_check.assert_not_called()
+
+    def test_focused_landing_contract_rejects_empty_file_before_discovery(self) -> None:
+        with project_copy(git=True) as root:
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text('', encoding='utf-8')
+            with patch('adaptive_grok.verification._command_check') as command_check:
+                result = verification_module._focused_landing_contract(
+                    root,
+                    {'focused_tests': ['tests/test_winston_wolfe_seo_landing.py']},
+                )
+
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('contract file is empty', result.summary)
+            self.assertEqual(result.details[0]['code'], 'focused-test-not-unittest-contract')
+            command_check.assert_not_called()
+
+    def test_focused_landing_contract_rejects_non_unittest_file_before_discovery(self) -> None:
+        with project_copy(git=True) as root:
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text(
+                'class NotAContract:\n'
+                '    def test_something(self):\n'
+                '        pass\n',
+                encoding='utf-8',
+            )
+            with patch('adaptive_grok.verification._command_check') as command_check:
+                result = verification_module._focused_landing_contract(
+                    root,
+                    {'focused_tests': ['tests/test_winston_wolfe_seo_landing.py']},
+                )
+
+            self.assertEqual(result.status, 'fail')
+            self.assertIn('unittest.TestCase subclass', result.summary)
+            self.assertEqual(result.details[0]['code'], 'focused-test-not-unittest-contract')
+            command_check.assert_not_called()
 
     def test_pr_git_diff_check_rejects_whitespace_only_visible_from_local_target(self) -> None:
         with _divergent_pr_graph({'legacy.md': 'legacy  \n'}) as (
@@ -1352,6 +1705,71 @@ class TypedSpecVerificationTests(unittest.TestCase):
 
 
 class QualityContourTests(unittest.TestCase):
+    def test_fast_lint_uses_only_changed_repository_owned_python_files(self) -> None:
+        with project_copy() as root:
+            owned = root / 'scripts' / 'owned.py'
+            owned.parent.mkdir(exist_ok=True)
+            owned.write_text('value = 1\n', encoding='utf-8')
+            generated = root / 'dist' / 'generated.py'
+            generated.parent.mkdir()
+            generated.write_text('value = 2\n', encoding='utf-8')
+            scratch = root / 'scratch' / 'unowned.py'
+            scratch.parent.mkdir()
+            scratch.write_text('value = 3\n', encoding='utf-8')
+
+            with patch('adaptive_grok.verification.command_exists', return_value=True), patch(
+                'adaptive_grok.verification._command_check',
+                side_effect=lambda root_path, name, command, timeout=300: CheckResult(
+                    name, 'pass', 'ok', command=command
+                ),
+            ):
+                results = _python(
+                    root,
+                    mode='fast',
+                    files=['scripts/owned.py', 'dist/generated.py', 'scratch/unowned.py'],
+                )
+
+            ruff = next(item for item in results if item.name == 'ruff')
+            bandit = next(item for item in results if item.name == 'bandit')
+            self.assertEqual(ruff.command, ['ruff', 'check', 'scripts/owned.py'])
+            self.assertEqual(
+                bandit.command,
+                ['bandit', '-c', 'bandit.yaml', '-q', 'scripts/owned.py'],
+            )
+            self.assertIn('scope=changed-files', ruff.summary)
+            self.assertIn('scope=changed-files', bandit.summary)
+
+    def test_pr_lint_deep_scans_only_repository_owned_python_files(self) -> None:
+        with project_copy(git=True) as root:
+            tracked = root / 'scripts' / 'tracked.py'
+            tracked.parent.mkdir(exist_ok=True)
+            tracked.write_text('value = 1\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'scripts/tracked.py'], cwd=root, check=True)
+            untracked = root / 'scripts' / 'untracked.py'
+            untracked.write_text('value = 2\n', encoding='utf-8')
+            (root / 'scratch').mkdir()
+
+            with patch('adaptive_grok.verification.command_exists', return_value=True), patch(
+                'adaptive_grok.verification._command_check',
+                side_effect=lambda root_path, name, command, timeout=300: CheckResult(
+                    name, 'pass', 'ok', command=command
+                ),
+            ):
+                results = _python(root, mode='pr', files=['scratch/unowned.py'])
+
+            ruff = next(item for item in results if item.name == 'ruff')
+            bandit = next(item for item in results if item.name == 'bandit')
+            self.assertNotIn('.', ruff.command)
+            self.assertNotIn('scratch', ruff.command)
+            self.assertNotIn('scripts/untracked.py', ruff.command)
+            self.assertNotIn('.', bandit.command)
+            self.assertNotIn('scratch', bandit.command)
+            self.assertNotIn('scripts/untracked.py', bandit.command)
+            self.assertIn('scripts/tracked.py', ruff.command)
+            self.assertIn('scripts/tracked.py', bandit.command)
+            self.assertIn('scope=deep-owned-files', ruff.summary)
+            self.assertIn('scope=deep-owned-files', bandit.summary)
+
     def test_unmarked_tree_with_ruff_still_runs_unittest(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.19 — 2026-09-23 (candidate, unpublished)
+
+This candidate is one release train for repository-owned fail-closed factory fixes. The ZIP, sidecar, tag and GitHub Release remain pending the exact artifact-child delivery.
+
+- Fixes #35 by parsing changed shell files independently, #39 by bounding Ruff/Bandit inventory, #48 by rejecting empty/silent-green Trust CI smoke observations, #73 by neutralizing current grant-binding field names with legacy reads, and #167 by adding explicit fail-closed focused static verification.
+- Keeps #36 explicitly linked to #186: no repository-owned recorder exists, so no speculative fix or false closure is claimed.
+- Binds the candidate to source base `130ce4a42d9f9bbd1b56772d40b19ae530283205` and the isolated `release/v2.0.19-factory-bugfixes` tree; M8/DEV work is not included.
+- Keeps published `v2.0.18` bytes immutable and preserves the separate artifact-child/package and no-deployment boundaries.
+
 ## 2.0.18 — 2026-09-16
 
 Four pull requests merged after `v2.0.17` was published. This section records the landed source on `main` and its publication: that source was archived by the artifact child and shipped through tag `v2.0.18`.

@@ -815,3 +815,23 @@ Comparing every candidate path against the source manifest exposed the missing S
 ### 2026-09-21 — Retake stale local-control PRs through path-scoped diffs
 
 Applying only the selected source, test and documentation diffs onto delivered main isolated three real textual conflicts without carrying historical approvals or receipts. Keep main's checkpoint and status behavior during conflict resolution, and qualify the new composition independently instead of promoting old App successes to current authority.
+
+## 2026-09-23 — Lint explicit files instead of directories
+
+For local verification, intersect Git-tracked/currently changed Python files with declared quality roots and pass explicit file arguments to Ruff and Bandit. This preserves deep repository coverage while preventing generated, scratch, symlink-escaped, and unrelated untracked discovery.
+
+## 2026-09-22 — Exercise smoke assertions through a disposable fake runtime
+
+Source-only checks could not prove that empty observations, topology failures, or migration/Compose-ps commands affected the actual PASS path. A temporary cwd with sentinel-only fake curl/docker commands preserves the no-live-service boundary while making each runtime claim executable and mutation-checkable.
+
+### 2026-09-23 — Make smoke command discovery explicit and executable
+
+Resolving each required tool to a validated executable through an operator-supplied root, PATH, then standard user/system roots keeps PATH as a useful first-class source without making it the only source. A fake-runtime case with curl and docker absent from PATH proved the fallback path rather than merely inspecting its source.
+
+## 2026-09-23 — Migrate current grant bindings without rewriting evidence
+
+When a detector heuristic is caused by a current serialized grant envelope, rename only the current producer field and keep a fail-closed legacy reader. This preserved immutable evidence bytes while allowing existing runtime grants to expire normally without an in-place migration.
+
+### 2026-09-22 — Require Git status provenance for focused landing eligibility
+
+Focused verification now consumes a status-preserving Git inventory and rejects deleted, renamed, copied, malformed, or ambiguous records before selecting a landing contract. This keeps the optimization fail-closed while leaving the full PR path unchanged.
