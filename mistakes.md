@@ -1439,3 +1439,9 @@ I built the next source manifest from an incomplete directory-prefix list and om
 **Symptom:** the focused release-sync tests initially compared the current observed main SHA with a historical published-runtime evidence source and failed before exercising the release assertions.
 **Root cause:** the test treated the mutable candidate observation as the provenance of an immutable historical record instead of binding that fixture to `published_release.merge_commit`.
 **Durable rule:** when current state advances, historical evidence tests must assert the immutable record they describe; current candidate identity belongs in separate pending-release assertions.
+
+### 2026-09-23 — Ran release-sync architecture fitness from the wrong baseline
+
+**Symptom:** the full verifier passed code, tests, coverage and factory checks but failed `FIT-TRUST-CI-SEPARATION` because it compared the release metadata layer against `main` and reclassified the already reviewed candidate's Trust CI documentation alongside the version bump.
+**Root cause:** the active route base stayed at observed `main` even though the change package's initial checkpoint was the sealed input candidate commit.
+**Durable rule:** for a staged release from an already reviewed candidate, bind the release-sync route and evidence to that exact candidate checkpoint and document the inherited source evidence separately; do not hide or mutate the candidate diff.
