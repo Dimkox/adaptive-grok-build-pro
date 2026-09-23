@@ -30,7 +30,7 @@ Patterns that paid for themselves. Each entry is at most three sentences.
 
 ## 2026-09-23 — Keep local hardening separate from external issue closure
 
-Treat the verifier/smoke changes as bounded repository-owned guards related to #35/#39/#48, while #73/#167 remain owned fixes and #35/#36/#39/#48 retain their external-owner disposition through #186. This keeps the release useful without turning a local analogue into a false automatic issue closure.
+Treat the verifier changes as bounded repository-owned guards related to #35/#39, while #73/#167 remain owned fixes. Keep #48 out of this mixed tree because `FIT-TRUST-CI-SEPARATION` requires Trust CI changes to land separately; #35/#36/#39/#48 retain their external-owner disposition through #186. This keeps the release useful without turning a local analogue into a false automatic issue closure.
 
 ## 2026-09-05 — Calibrate only the accepted pilot vertical
 

@@ -9,7 +9,7 @@ Observed 2026-09-23 after `git fetch --all --prune`. The comparison base is `ori
 | #35 | `/tmp/agbp-issue35-bash-syntax` / `fix/issue-35-bash-syntax-20260922` | `.grok-stack/adaptive_grok/verification.py`; `tests/test_verification_doctor.py` | Adds `_bash_syntax`, runs it for changed `.sh` files, and tests a syntax error in a later file. |
 | #36 | `/tmp/agbp-issue36-recorder-status` / `fix/issue-36-recorder-status-20260922` | None | Only the untracked issue change package exists. Its brief records a no-op/cancelled disposition because no repository-owned shell recorder was found. |
 | #39 | `/tmp/agbp-issue39-lint-scope` / `fix/issue-39-lint-scope-20260922` | `.grok-stack/adaptive_grok/verification.py`; `tests/test_verification_doctor.py` | Changes Ruff/Bandit scope selection and summaries; adds changed-file and deep-owned-root tests. |
-| #48 | `/tmp/agbp-issue48-silent-green` / `fix/issue-48-silent-green-20260922` | `trust-ci/scripts/smoke.sh`; new `trust-ci/tests/test_smoke.py`; `decisions.md`; `mistakes.md` | Captures and rejects empty health/metrics/Compose observations, avoids live producer-to-quiet-grep pipelines, adds fake-runtime tests, and also adds command discovery/fallback logic. |
+| #48 | `/tmp/agbp-issue48-silent-green` / `fix/issue-48-silent-green-20260922` | `trust-ci/scripts/smoke.sh`; new `trust-ci/tests/test_smoke.py`; `decisions.md`; `mistakes.md` | Historical candidate only; its `trust-ci/**` paths are not imported because `FIT-TRUST-CI-SEPARATION` forbids mixing them with this release's implementation paths. |
 | #73 | `/tmp/agbp-issue73-evidence-digest` / `fix/issue-73-evidence-digest-20260922` | `.grok-stack/adaptive_grok/state.py`; `tests/test_history.py`; `tests/test_policy.py` | New grants write `grant_binding_digest`; reads remain compatible with legacy `tree_fingerprint`; records containing both fields fail closed; historical probe evidence is hash-pinned. |
 | #167 | `/tmp/agbp-issue167-static-scope` / `fix/issue-167-static-scope-20260922` | `.agents/skills/adaptive-delivery/SKILL.md`; `.grok-stack/adaptive_grok/util.py`; `.grok-stack/adaptive_grok/verification.py`; `.grok-stack/adaptive_grok/workflow_artifacts.py`; `AGENTS.md`; `scripts/grok_verify.py`; `tests/test_util_fingerprint.py`; `tests/test_verification_doctor.py`; `tests/test_workflow_artifacts.py`; `decisions.md`; `mistakes.md` | Adds fail-closed Git status/provenance inventory and an explicit `focused-static-seo-landing` verifier mode, CLI/allowlist support, tests, and workflow documentation. |
 
@@ -19,7 +19,7 @@ Every worktree also contains one untracked `engineering/changes/20260922-fix-iss
 
 - #35, #39, and #167 all modify `.grok-stack/adaptive_grok/verification.py` and `tests/test_verification_doctor.py`.
 - Their current base-line hunks do not directly overlap: #35 inserts near verifier base lines 693 and 1124 and test lines 30/294; #39 changes verifier lines 858-936/1135 and inserts tests near 1354; #167 changes verifier inventory/control flow near lines 2-606/1087 onward and inserts tests near 21/321. They are logically adjacent and large #167 insertions shift later locations, so the release owner should compose them in one current-base edit and rerun the combined tests. No independent branch commit exists to preserve review boundaries automatically.
-- #48, #73, and #167 share no implementation or test paths with one another. #48 and #167 both append `decisions.md` and `mistakes.md`; those append-only records require manual concatenation if retained.
+- #48, #73, and #167 share no implementation or test paths with one another. #48 is excluded from this release by the Trust CI separation rule; its append-only records are not imported.
 - #36 has no product delta and therefore no code conflict.
 - No candidate changes `VERSION`, `README.md`, `PROJECT_STATE.json`, release metadata, M8 qualification code, or a `DEV` tree.
 
@@ -39,7 +39,11 @@ The product edits also contradict the same worktree's durable brief. The brief s
 
 ### #48
 
-The empty-observation capture, here-string matching, diagnostics, and fake-runtime regressions match the repository-owned `trust-ci/scripts/smoke.sh` follow-up described by the package. However, `resolve_command`, `TRUST_CI_TOOL_PATHS`, and fallback search through `$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin` add PATH/tool-discovery behavior. The same brief explicitly lists the external issue's PATH discovery guard as out of scope. This command-discovery portion is separable and is unrelated to the stated bounded empty-observation/pipefail repair unless the release scope is expanded. The `decisions.md` and `mistakes.md` additions describe this work; they are workflow records, not required runtime behavior.
+The #48 worktree contains a bounded smoke hardening core plus a separable command-discovery
+expansion, but every implementation path is under `trust-ci/**`. Since this release also changes
+implementation prefixes, `FIT-TRUST-CI-SEPARATION` excludes the entire #48 slice from the final
+tree; its code and tests remain available on the separate issue branch and the disposition stays
+linked through #186.
 
 ### #73
 
@@ -54,6 +58,7 @@ All eleven modified files map to focused static-landing verification: status pro
 1. The independently reviewable implementation units currently available are worktree diffs, not commits.
 2. #36 supplies no implementation unit.
 3. #35 and #39 currently supply implementation units that conflict with their own recorded no-op scopes.
-4. #48 has a bounded in-scope core plus a separable command-discovery expansion.
+4. #48 has a bounded in-scope core plus a separable command-discovery expansion, but neither is
+   eligible for this mixed release because of `FIT-TRUST-CI-SEPARATION`.
 5. #73 is path-disjoint but retains a documented gate-status discrepancy that must be resolved by the coordinator.
 6. #167 is self-contained but must be composed carefully with any accepted #35/#39 verifier changes because the same source and test files are modified.

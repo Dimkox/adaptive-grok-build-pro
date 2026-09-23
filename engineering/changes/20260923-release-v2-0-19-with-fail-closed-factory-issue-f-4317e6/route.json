@@ -64,7 +64,7 @@
   "schema_version": 1,
   "session_id": "manual",
   "status": "routed",
-  "task": "Prepare the next repository-owned release v2.0.19 from origin/main with fail-closed bug fixes for issues #35, #36, #39, #48, #73, and #167, keeping each issue implementation independently reviewable and excluding unrelated M8/DEV work; update release metadata only after the bugfix tree is verified.",
+  "task": "Prepare the next repository-owned release v2.0.19 from origin/main with bounded fail-closed fixes related to #35, #39, #73, and #167; keep #36 and #48 explicitly separated or dispositioned through #186, preserve FIT-TRUST-CI-SEPARATION, exclude unrelated M8/DEV work, and update release metadata only after the fix tree is verified.",
   "task_domains": [],
   "workflow_skills": [
     "adaptive-delivery",

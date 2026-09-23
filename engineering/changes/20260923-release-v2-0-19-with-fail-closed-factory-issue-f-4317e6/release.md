@@ -12,9 +12,9 @@ delegated operations after merge.
 
 ## Go/no-go criteria
 
-- Fix tree contains only accepted bounded local guards related to #35/#39/#48 and owned #73/#167
-  changes plus their tests/evidence; #35/#36/#39/#48 remain dispositioned through #186 rather
-  than fabricated as broad closures.
+- Fix tree contains only accepted bounded local guards related to #35/#39 and owned #73/#167
+  changes plus their tests/evidence; #48 has no `trust-ci/**` change in this mixed tree and
+  remains dispositioned through #186 rather than fabricated as a closure.
 - Focused issue tests and full `python3 scripts/grok_verify.py --mode pr` pass on the final tree.
 - Independent code/test reviews and fingerprint-bound receipts are current.
 - Release metadata and README describe the exact candidate tree and retain architecture links.

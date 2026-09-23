@@ -1,9 +1,9 @@
 # Tasks — Release v2.0.19 with fail-closed factory issue fixes
 
-- [x] Freeze contracts and expected behavior for bounded local #35/#39/#48 guards, owned #73/#167 fixes, and the #36/#35/#39/#48 disposition.
+- [x] Freeze contracts and expected behavior for bounded local #35/#39 guards, owned #73/#167 fixes, and the #36/#35/#39/#48 disposition.
 - [x] Obtain independent issue-slice analysis and preserve separate worktree evidence.
 - [x] Integrate the accepted issue slices in one release worktree, resolving shared verifier files.
-- [x] Run issue-focused RED/GREEN/regression suites.
+- [x] Run issue-focused RED/GREEN/regression suites for the accepted non-Trust-CI slices; retain #48 for a separate Trust CI-only change.
 - [ ] Run full `python3 scripts/grok_verify.py --mode pr` on the fix tree.
 - [x] Update VERSION/README/CHANGELOG/state/package release metadata in a separate commit.
 - [ ] Complete independent code/test reviews on the final candidate.

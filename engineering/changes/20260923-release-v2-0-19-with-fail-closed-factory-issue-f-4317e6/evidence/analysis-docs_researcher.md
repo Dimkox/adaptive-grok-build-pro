@@ -1,4 +1,4 @@
-# Docs/release research — v2.0.19 six-fix candidate
+# Docs/release research — v2.0.19 issue-fix candidate
 
 Role: `docs_researcher` (read-only analysis)
 Route: `4317e673390b`
@@ -10,7 +10,7 @@ Observed: 2026-09-23 UTC
 
 The next `v2.0.19` release must not reuse the readiness or publication claims of open PR #189. PR #189 is a separately verified release-sync candidate whose source inventory stops at `130ce4a4` and does not contain the requested fixes for issues #35, #36, #39, #48, #73 and #167. At observation time all six issues are open, each named local issue branch resolves exactly to `130ce4a4`, and each branch has an empty diff against `origin/main`.
 
-Therefore the correct preparation order is: implement and independently review the six fixes first; assemble and verify the combined bugfix tree; only then update candidate release metadata; deliver that exact release-sync tree through a protected PR; and leave artifact creation, tagging and GitHub Release publication to later exact-SHA stages. Until those stages occur, `v2.0.18` remains the latest published release.
+Therefore the correct preparation order is: evaluate all six requested issues, implement and independently review only the accepted repository-owned slices, keep #48 for a separate Trust CI-only change, assemble and verify the combined bugfix tree, then update candidate release metadata; deliver that exact release-sync tree through a protected PR; and leave artifact creation, tagging and GitHub Release publication to later exact-SHA stages. Until those stages occur, `v2.0.18` remains the latest published release.
 
 ## Current release truth
 
@@ -43,11 +43,11 @@ At observation time issues #35, #36, #39, #48, #73 and #167 are all open and hav
 | #35 | Shell syntax gates validate every intended script and refuse an empty input set. | Regression must demonstrate a later broken operand is detected; do not claim all shell invocation classes are audited unless shown. |
 | #36 | Step recording preserves the executed command's non-zero status instead of the status of `!`, with evidence that the command ran. | Include a failing command/launch failure regression and recorded status/output or duration evidence. |
 | #39 | Lint scope excludes generated/out-of-band trees and exposes or bounds processed scope. | Name only the actual ignored paths/scoping behavior implemented; avoid a universal performance claim without measured final evidence. |
-| #48 | Environment checks fail closed when discovery is empty and avoid the implemented silent-green shell traps. | The issue lists several independent traps; release notes must enumerate only covered traps and leave any unimplemented interactive/automation gap explicit. |
+| #48 | Not included in this mixed implementation release; route the Trust CI smoke seam separately under `FIT-TRUST-CI-SEPARATION`. | No `trust-ci/**` change may be mixed with implementation paths; retain the #186 disposition until a separate Trust CI-only change is reviewed. |
 | #73 | Committed digest naming/scan convention avoids the known GitGuardian generic 64-hex false positive without weakening real secret detection. | Confirm the chosen key migration/allow-list approach, compatibility for retained evidence, and real-secret detection tests; GitGuardian remains informational, not merge authority. |
 | #167 | Static side-project-only changes use focused landing contract tests, while runtime/contracts/Trust CI/packages/workflow diffs still require full PR verification. | Preserve the exact focused-scope rule already present in AGENTS.md; do not imply reduced external merge authority. |
 
-Each issue fix should remain independently reviewable (separate commit or otherwise unambiguous per-issue diff/test mapping) even if delivered by one final release PR. Issue-closing language (`Fixes #…`) belongs only on the delivery PR after the corresponding implementation is present and verified; closing an issue is not evidence that publication occurred.
+Each accepted issue fix should remain independently reviewable (separate commit or otherwise unambiguous per-issue diff/test mapping) even if delivered by one final release PR. Issue #48 remains separately reviewable under its Trust CI route. Issue-closing language (`Fixes #…`) belongs only on the delivery PR after the corresponding implementation is present and verified; closing an issue is not evidence that publication occurred.
 
 ## Release metadata to update only after the combined bugfix tree passes
 
@@ -55,7 +55,7 @@ The release-sync owner should derive, rather than pre-fill, the final source SHA
 
 - `VERSION` and `.grok-stack/adaptive_grok/__init__.py`;
 - README H1, identity/current-state table and release-chain wording, retaining the architecture links;
-- a new top CHANGELOG section marked `candidate, unpublished`, listing the six fixes precisely and preserving all `2.0.18` facts unchanged;
+- a new top CHANGELOG section marked `candidate, unpublished`, listing the accepted five-slice scope and the separate #48 disposition precisely, while preserving all `2.0.18` facts unchanged;
 - `DARK_FACTORY_ROADMAP.md`, `START_HERE.md`, `GROK_BUILD_HANDOFF.md`, and `packages/README.md` where their current identity/source handoff text is coupled;
 - `PROJECT_STATE.json`, with `product_version=2.0.19` but `latest_published_release`/`published_release` still `v2.0.18`, a pending byte-free `2.0.19` candidate, exact included PR/head/merge/check provenance only after those facts exist, and `operational_activation=false`;
 - coupled assertions in `tests/test_structure.py`, `tests/test_project_state.py`, and `tests/test_manifest_package.py`.
@@ -65,8 +65,8 @@ Do not insert placeholder SHAs, future merge times, tag objects, artifact digest
 ## Recommended fail-closed delivery sequence
 
 1. Preserve `130ce4a4` as the route base and keep unrelated M8/DEV commits out of the diff.
-2. For each issue, establish deterministic reproduction/root cause, add the failing regression first, apply the smallest fix, and retain a clear issue-to-files/tests mapping.
-3. Assemble the six fixes without release identity edits. Verify focused tests and then the route-required `python3 scripts/grok_verify.py --mode pr`; obtain fresh route-selected code/test reviews on the frozen combined tree.
+2. For each accepted issue, establish deterministic reproduction/root cause, add the failing regression first, apply the smallest fix, and retain a clear issue-to-files/tests mapping. Route #48 separately under the Trust CI separation rule.
+3. Assemble the accepted five-slice release without release identity edits. Verify focused tests and then the route-required `python3 scripts/grok_verify.py --mode pr`; obtain fresh route-selected code/test reviews on the frozen combined tree.
 4. Only after step 3 passes, create the release-sync R edit in lockstep across identity, README/CHANGELOG/state and coupled tests. Re-run full verification and fresh independent reviews because metadata/report persistence changes the fingerprint.
 5. Open/update the protected release PR and require the App-owned policy-epoch check on its exact current head. A changed head/base/policy/holdout invalidates the prior check. Do not describe local receipts or PR #189's check as merge authority for the new tree.
 6. After R actually merges, build the ZIP and sidecar twice byte-identically from that exact merged R source in a separate artifact-child A. Track the pair only in A, verify/review A, and require A's own exact-head App check before merge.

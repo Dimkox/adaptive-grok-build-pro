@@ -20,8 +20,9 @@ same base, but their durable packages and implementations disagree on ownership 
 - #36 has no product change and is explicitly deferred to #186.
 - #35 and #39 analyses classify the filed defects as external/unowned, while their worktrees now
   contain newly scoped repository-verifier implementations.
-- #48 is an explicitly bounded repository-owned smoke hardening follow-up, not closure of all
-  behavior in filed issue #48.
+- #48 is a Trust CI-owned smoke hardening follow-up, but it cannot enter this implementation
+  release because `FIT-TRUST-CI-SEPARATION` forbids mixing `trust-ci/**` with implementation
+  paths; it remains linked through #186 for a separate change.
 - #73's package says implementation is blocked on a security scope/design gate, while its worktree
   changes the live local-grant field contract.
 - #167 is large and cross-cuts verifier selection, Git inventory, workflow command validation, and
@@ -41,8 +42,9 @@ close its issue.
 3. Resolve shared verifier code in this order: #35, #39, then #167. This is a dependency/order rule,
    not permission to combine their commits. Re-run each issue's focused tests after every later
    verifier edit.
-4. Integrate #48 and #73 as separate commits because they touch independent trust/safety seams.
-   #73 requires an explicit package/gate reconciliation before import.
+4. Do not integrate #48 into this tree: `FIT-TRUST-CI-SEPARATION` requires its `trust-ci/**`
+   implementation and tests to land in a separate Trust CI-only change. Integrate #73 only after
+   its explicit package/gate reconciliation.
 5. Do not create an empty "fix #36" commit. Either obtain and implement the exact repository-owned
    recorder seam with RED/GREEN evidence, or leave #36 out of the release-fix/closure claims.
 6. Run the full `python3 scripts/grok_verify.py --mode pr` against the combined product tree, then
@@ -128,31 +130,13 @@ Invariants:
 - Reconcile the package's no-op/external disposition with this later local implementation. If the
   filed issue remains external, describe this as a separately scoped local fix and do not close #39.
 
-### Issue #48 — fail-closed Trust CI smoke observations
+### Issue #48 — separate Trust CI disposition
 
-Candidate product/test paths:
-
-- `trust-ci/scripts/smoke.sh`
-- `trust-ci/tests/test_smoke.py` (currently untracked and therefore must be explicitly imported)
-- `decisions.md` and `mistakes.md` only where the entries directly document this fix
-
-Acceptance:
-
-- Required command resolution accepts only executable non-directories and fails with status 127
-  when unavailable; tests cover empty, malformed, and non-executable path candidates.
-- Health, readiness, metrics, and rendered Compose output are captured, required non-empty, and
-  matched without a live producer piped to early-exiting quiet grep.
-- Existing endpoints, bearer-token header, isolated Docker host assertion, forbidden host-socket
-  rejection, migration-status command, Compose `ps`, and final PASS line remain intact.
-- Disposable runtime tests execute the real script with sentinel fake tools and prove both valid
-  success and each fail-closed observation path.
-
-Invariants:
-
-- No live service, Docker daemon, credential, deployment, policy, holdout, or GitHub Actions change.
-- Never read secrets; preserve token handling through the existing environment variable.
-- The candidate fixes only the repository-owned smoke seam. The external `VAR=x break`, `grep -lf`,
-  and original PATH guard remain tracked by #186; do not over-claim issue #48 closure.
+The issue #48 worktree contains `trust-ci/**` implementation and tests. The architecture rule
+`FIT-TRUST-CI-SEPARATION` forbids those paths from sharing a diff with this release's
+implementation prefixes, so no #48 product path is imported here. The smoke seam and its
+external `VAR=x break`, `grep -lf`, and original PATH guard remain linked through #186 for a
+separately routed Trust CI-only change; this release claims no #48 fix.
 
 ### Issue #73 — neutral current grant binding field
 

@@ -5,25 +5,27 @@
 ## Current behavior
 
 The current base has separate seams: shell syntax is not independently checked, Python lint
-receives broad quality roots, Trust CI smoke assertions can consume empty/live-pipeline output,
-current grant binding uses a secret-like key name, and all changes invoke the full verifier even
-when a static landing could be checked by a bounded contract. The reported #36 shell recorder is
-not present in this repository.
+receives broad quality roots, current grant binding uses a secret-like key name, and all changes
+invoke the full verifier even when a static landing could be checked by a bounded contract. The
+reported #36 shell recorder is not present in this repository. The #48 Trust CI smoke seam is
+owned by `trust-ci/**`, which cannot be changed in the same tree as this release's implementation
+paths.
 
 ## Proposed behavior
 
 Keep the qualifying/merge authority path unchanged while hardening each owned seam. The fix tree
-adds independent shell parsing, explicit owned-file lint inventories, captured non-empty smoke
-observations, a neutral additive grant-binding key with legacy reads, and a fail-closed focused
-static mode. The release metadata is a second, separate commit after the fix tree is green.
+adds independent shell parsing, explicit owned-file lint inventories, a neutral additive
+grant-binding key with legacy reads, and a fail-closed focused static mode. The #48 Trust CI seam
+is intentionally not imported; `FIT-TRUST-CI-SEPARATION` keeps it in a separate Trust CI-only
+change. The release metadata is a second, separate commit after the fix tree is green.
 
 ## Components and boundaries
 
 - `.grok-stack/adaptive_grok/verification.py` and its tests own the repository-local #35-related
   shell guard and #39-related Python quality contour; the filed external #39 ESLint report is not
   claimed closed.
-- `trust-ci/scripts/smoke.sh` and `trust-ci/tests/test_smoke.py` own the local #48 smoke seam;
-  the external guard's unrelated traps remain linked through #186.
+- #48 remains a separate Trust CI-owned seam; no `trust-ci/**` path is changed by this release,
+  and its external disposition remains linked through #186.
 - `state.py`, policy/history tests and immutable fixture checks own #73.
 - verifier inventory/CLI/workflow validation and documentation own #167.
 - `VERSION`, README, CHANGELOG and state/package indexes are release metadata only.
@@ -60,6 +62,8 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 - Shared verifier edits from #35/#39/#167 can conflict: compose them on the current base and run
   their focused suites together after each integration step.
+- Mixing implementation paths with `trust-ci/**` fails `FIT-TRUST-CI-SEPARATION`; keep #48 in a
+  separate Trust CI-only change.
 - #36 has no owned implementation seam: retain an explicit no-op disposition rather than inventing
   a recorder.
 - Renaming the grant field can break old receipts: dual-read legacy records, reject ambiguous dual

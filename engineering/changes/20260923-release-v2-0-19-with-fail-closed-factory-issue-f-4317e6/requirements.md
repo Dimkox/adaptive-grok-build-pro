@@ -10,10 +10,9 @@
 - [x] #39-related repository-owned guard: fast lint uses only changed owned Python files;
   PR/release lint uses tracked plus changed owned files, never `.` or unbounded scratch/generated
   paths, and reports its scope. The filed ESLint/JavaScript report remains external through #186.
-- [x] #48-related repository-owned Trust CI smoke guard: health/readiness/metrics/Compose
-  observations are captured, non-empty, and matched from captured text; required tool discovery
-  and unavailable/empty outputs fail closed. The external guard's remaining traps remain linked
-  through #186.
+- [x] #48 disposition: this mixed implementation release changes no `trust-ci/**` path because
+  `FIT-TRUST-CI-SEPARATION` requires Trust CI changes to land separately; the issue remains
+  linked through #186 and is not claimed fixed here.
 - [x] #73: new grants use `grant_binding_digest`, legacy `tree_fingerprint` reads remain valid,
   conflicting dual fields fail closed, and historical probe files remain byte-identical.
 - [x] #167: an unambiguous landing-only change can use the explicit focused mode; mixed, unknown,
@@ -25,6 +24,8 @@
 ## Failure and edge cases
 
 - Empty or unavailable command output must never yield PASS.
+- A release that mixes implementation paths with `trust-ci/**` must fail the architecture fitness
+  gate rather than weakening the separation rule.
 - A new commit or evidence file invalidates prior fingerprint-bound local evidence.
 - The external App-owned exact-SHA Trust CI check remains the merge authority.
 
