@@ -26,5 +26,12 @@ else:
         print(f"{item['status'].upper():4} {item['name']}: {item['summary']}")
         for finding in item.get('details', []):
             print(f"     {finding.get('severity', '').upper()} {finding.get('path')}: {finding.get('message')}")
-    print(f"RESULT: {report['status'].upper()} | profiles={','.join(report['profiles'])} | changed={len(report['changed_files'])}")
-raise SystemExit(0 if report['status'] == 'pass' else 1)
+    label = 'CANCELLED' if report.get('outcome') == 'cancelled' else report['status'].upper()
+    print(f"RESULT: {label} | profiles={','.join(report['profiles'])} | changed={len(report['changed_files'])}")
+if report['status'] == 'pass':
+    exit_code = 0
+elif report.get('outcome') == 'cancelled':
+    exit_code = 143 if (report.get('cancellation') or {}).get('signal') == 15 else 130
+else:
+    exit_code = 1
+raise SystemExit(exit_code)

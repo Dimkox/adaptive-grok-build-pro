@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "change_id": "20260917-record-cancelled-verification-attempts-119-a049db",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Recognized cancellation of repository verification is durably recorded and cannot leave a current passing verification receipt.",
+    "success_metric": "Cancellation report, nonzero exit, and failing receipt replacement all pass in deterministic tests.",
+    "target": "100% of recognized cancellation scenarios produce explicit cancelled outcome and fail receipt; pass/fail receipt schema remains unchanged."
+  },
+  "risk": {"tier": "yellow", "domains": ["api"]},
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Recognized test-runner cancellation produces an explicit cancelled report/JSON outcome while preserving already collected checks.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Cancellation replaces any same-route passing verification receipt with a failing receipt carrying cancellation details.",
+      "evidence": [{"receipt": "test_review"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The CLI remains nonzero and distinguishable for cancellation, and normal pass/failure results remain compatible.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "SIGKILL/host loss are explicitly outside the guarantee; cancellation does not weaken child cleanup.",
+      "evidence": [{"receipt": "code_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Verification receipt status remains pass or fail; cancellation is not accepted as passing evidence.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "A prior passing receipt cannot remain current after a cancelled run of the same route and evidence kind.",
+      "evidence": [{"receipt": "test_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Cancellation escapes without a durable failure report/receipt or leaves a previously passing receipt current.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "test_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Arbitrary BaseException/programming errors are mislabeled as cancellation or successful verification.",
+      "evidence": [{"receipt": "code_review"}]
+    }
+  ],
+  "contracts": {"openapi": [], "events": [], "json_schema": []},
+  "observability": [],
+  "approvals": {"required_scopes": []},
+  "rollback": {"strategy": "forward_fix", "maximum_steps": 1}
+}
