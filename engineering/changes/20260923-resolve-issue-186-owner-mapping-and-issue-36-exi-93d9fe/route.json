@@ -1,0 +1,75 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+  "base_fingerprint": "9147b534a7f04e6201223f51431d113bbc3ce8f2ba926daf7ab18e7001766d34",
+  "complexity": "standard",
+  "created_at": "2026-09-23T17:06:25+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "93d9feecc1dc",
+  "schema_version": 1,
+  "session_id": "manual-issues-186-36-20260923",
+  "status": "routed",
+  "task": "Fix GitHub issues #186 and #36. Establish the exact repository-owned source/command owner for the reported exit-status recorder; if a live owner exists, add a failing regression test and minimal fix for #36, then update #186 with the binding evidence. If no owner exists after complete current-tree and history audit, produce a durable repository-local disposition for #186 and an explicit external-owner linkage for #36 without speculative code. Preserve separate issue scope and do not mix Trust CI deployed authority.",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

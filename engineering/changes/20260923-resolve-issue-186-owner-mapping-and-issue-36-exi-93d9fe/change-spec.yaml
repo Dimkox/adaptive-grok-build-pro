@@ -1,0 +1,41 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"At audited commit 130ce4a42d9f9bbd1b56772d40b19ae530283205, current-tree and reachable-history searches find no repository-owned source or command implementing the reported recorder; evidence is bound in evidence/owner-mapping.md.","evidence":[{"receipt":"verification"}]},
+    {"id":"AC-002","statement":"#36 is marked external/misrouted with no closure claim and a blocker requesting an authoritative external repository, path, command, and owner link.","evidence":[{"receipt":"code_review"}]},
+    {"id":"AC-003","statement":"#35/#36 are absent shell-gate targets, #39 is a distinct JS/ESLint target, and #48 is an external CLI guard target.","evidence":[{"receipt":"test_review"}]},
+    {"id":"AC-004","statement":"No product source, test, API/event/SQL contract, verifier semantics, or Trust CI deployed behavior changes.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260923-resolve-issue-186-owner-mapping-and-issue-36-exi-93d9fe",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Invented shell helper or speculative regression for absent code.","evidence":[{"receipt":"test_review"}]},
+    {"id":"FORBID-002","statement":"GitHub remote edit or claim of issue closure without an external owner link.","evidence":[{"receipt":"code_review"}]},
+    {"id":"FORBID-003","statement":"Trust CI deployed-policy or verifier semantic change.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix GitHub issues #186 and #36. Establish the exact repository-owned source/command owner for the reported exit-status recorder; if a live owner exists, add a failing regression test and minimal fix for #36, then update #186 with the binding evidence. If no owner exists after complete current-tree and history audit, produce a durable repository-local disposition for #186 and an explicit external-owner linkage for #36 without speculative code. Preserve separate issue scope and do not mix Trust CI deployed authority.",
+    "success_metric": "All acceptance criteria are evidenced by repository-local audit artifacts with exact source identity and no product-code diff.",
+    "target": "owner-mapping.md and the eight updated authority files describe the no-local-owner disposition and residual external blocker."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
