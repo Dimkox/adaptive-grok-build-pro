@@ -1,7 +1,7 @@
 # Final code review — v2.0.19 candidate
 
-Role: `code_reviewer`  
-Candidate: `/tmp/agbp-release-factory-bugfixes`  
+Role: `code_reviewer`
+Candidate: `/tmp/agbp-release-factory-bugfixes`
 Reviewed-tree-modified: **no**
 
 ## Exact final identity
