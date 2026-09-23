@@ -1,10 +1,10 @@
 # Code review — PASS
 
-Role: `code_reviewer`  
-Baseline: `5d93fc3d68869ab26799935adab5fa62be5e2a80`  
-Reviewed HEAD: `e95ada33501461cf848966f0bb4b68148ab065fd`  
-Reviewed tree/fingerprint: `81a40a7a00f36f976e178081edff0240dddb935d`  
-Scratch: `/tmp/agbp-code-review.PvRmFt` (mode `0700`, archive of reviewed HEAD)  
+Role: `code_reviewer`
+Baseline: `5d93fc3d68869ab26799935adab5fa62be5e2a80`
+Reviewed HEAD: `e95ada33501461cf848966f0bb4b68148ab065fd`
+Reviewed tree/fingerprint: `81a40a7a00f36f976e178081edff0240dddb935d`
+Scratch: `/tmp/agbp-code-review.PvRmFt` (mode `0700`, archive of reviewed HEAD)
 reviewed-tree-modified: no
 
 ## Result

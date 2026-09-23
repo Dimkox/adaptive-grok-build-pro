@@ -2,11 +2,11 @@
 
 Role: `security_reviewer`
 
-Reviewed release-sync baseline: `5d93fc3d68869ab26799935adab5fa62be5e2a80`  
-Reviewed HEAD: `e95ada33501461cf848966f0bb4b68148ab065fd`  
-Reviewed committed tree: `81a40a7a00f36f976e178081edff0240dddb935d`  
-Candidate tree fingerprint at review start: `7ca49133d483c48bd3883ca4bf5277861d2d0047c7b1e11c5f79986b790aec16`  
-Scratch path: not used; this security review was read-only and did not perform mutation probes.  
+Reviewed release-sync baseline: `5d93fc3d68869ab26799935adab5fa62be5e2a80`
+Reviewed HEAD: `e95ada33501461cf848966f0bb4b68148ab065fd`
+Reviewed committed tree: `81a40a7a00f36f976e178081edff0240dddb935d`
+Candidate tree fingerprint at review start: `7ca49133d483c48bd3883ca4bf5277861d2d0047c7b1e11c5f79986b790aec16`
+Scratch path: not used; this security review was read-only and did not perform mutation probes.
 reviewed-tree-modified: no
 
 ## Verdict
