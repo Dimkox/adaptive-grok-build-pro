@@ -7,5 +7,5 @@
 - [x] Add RED/GREEN regressions for current writes, legacy reads, dual-field rejection, and historical bytes.
 - [x] Implement the single-producer/single-reader compatibility change.
 - [x] Run focused policy/history and landing-consumer suites (76 tests passed); adjacent grant-consumer suites also passed (21 tests).
-- [ ] Run route verification (first run was harness-interrupted; see `evidence/verification-interrupted.md`).
-- [ ] Run security/code/test/release reviews and bind evidence after approval.
+- [x] Run route verification (final run passed on the evidence-bearing candidate).
+- [x] Run security/code/test/release reviews and bind evidence after approval.
