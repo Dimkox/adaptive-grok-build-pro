@@ -1,0 +1,91 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+  "base_fingerprint": "9147b534a7f04e6201223f51431d113bbc3ce8f2ba926daf7ab18e7001766d34",
+  "complexity": "high-risk",
+  "created_at": "2026-09-22T19:14:22+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "bugfix",
+  "matched_keywords": {
+    "security": [
+      "secret"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=bugfix",
+    "domains=security,api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "147e6461d649",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Fix issue #73: rename current evidence fingerprint fields that trigger GitGuardian secret heuristics while preserving historical evidence immutability and schema/test compatibility.",
+  "task_domains": [
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "general_implementer"
+}

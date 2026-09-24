@@ -48,11 +48,20 @@ def _authority(config, control_root, request):
     for grant in grants:
         if not isinstance(grant, dict):
             continue
+        grant_binding_digest = grant.get("grant_binding_digest")
+        legacy_tree_fingerprint = grant.get("tree_fingerprint")
+        if grant_binding_digest is not None and legacy_tree_fingerprint is not None:
+            continue
+        binding_key = (
+            "grant_binding_digest"
+            if grant_binding_digest is not None
+            else "tree_fingerprint"
+        )
         required = {
             "schema_version": 2, "authorization": "delegated-local-grant",
             "repository": "Dimkox/adaptive-grok-build-pro",
             "route_id": config["route_id"], "change_id": config["change_id"],
-            "git_head": head, "tree_fingerprint": fingerprint,
+            "git_head": head, binding_key: fingerprint,
             "scope": "external-write", "actions": ["external-write"],
             "resources": [request.resource],
         }

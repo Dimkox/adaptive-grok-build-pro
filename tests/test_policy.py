@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import subprocess
 import sys
 import unittest
@@ -12,7 +13,13 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.policy import WRITE_ROLES, evaluate_pre_tool, production_action, write_roles
 from adaptive_grok.router import build_route
-from adaptive_grok.state import add_approval, record_agent_start, set_active_route
+from adaptive_grok.state import (
+    add_approval,
+    approvals_path,
+    has_valid_approval,
+    record_agent_start,
+    set_active_route,
+)
 from tests._support import project_copy
 
 
@@ -30,6 +37,60 @@ def github_project() -> Iterator[Path]:
 
 
 class PolicyTests(unittest.TestCase):
+    def test_new_grant_uses_neutral_binding_digest_key(self) -> None:
+        with github_project() as root:
+            approval = add_approval(
+                root,
+                'production',
+                'ship',
+                5,
+                actions=['git-push-branch'],
+            )
+
+            self.assertIn('grant_binding_digest', approval)
+            self.assertNotIn('tree_fingerprint', approval)
+            self.assertNotIn('authorization_tree_fingerprint', json.dumps(approval))
+
+    def test_legacy_tree_fingerprint_grant_remains_valid(self) -> None:
+        with github_project() as root:
+            approval = add_approval(
+                root,
+                'production',
+                'ship',
+                5,
+                actions=['git-push-branch'],
+            )
+            approval['tree_fingerprint'] = approval.pop('grant_binding_digest')
+            approvals_path(root).write_text(json.dumps([approval]), encoding='utf-8')
+
+            self.assertTrue(
+                has_valid_approval(
+                    root,
+                    'production',
+                    action='git-push-branch',
+                )
+            )
+
+    def test_conflicting_grant_binding_fields_fail_closed(self) -> None:
+        with github_project() as root:
+            approval = add_approval(
+                root,
+                'production',
+                'ship',
+                5,
+                actions=['git-push-branch'],
+            )
+            approval['tree_fingerprint'] = '0' * 64
+            approvals_path(root).write_text(json.dumps([approval]), encoding='utf-8')
+
+            self.assertFalse(
+                has_valid_approval(
+                    root,
+                    'production',
+                    action='git-push-branch',
+                )
+            )
+
     def test_blocks_destructive_git(self) -> None:
         with project_copy() as root:
             allowed, reason = evaluate_pre_tool(root, {'tool_name': 'Bash', 'tool_input': {'command': 'git reset --hard HEAD~1'}})

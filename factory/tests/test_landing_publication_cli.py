@@ -249,6 +249,10 @@ class LandingPublicationBoundaryTests(unittest.TestCase):
             stack.enter_context(patch("adaptive_grok.util.tree_fingerprint", return_value="d" * 64))
             with patch.object(grok_landing_publish, "read_private_file", return_value=json.dumps([grant]).encode()):
                 self.assertEqual(64, len(grok_landing_publish._authority(config, self.root, request)))
+            current_grant = {**grant, "grant_binding_digest": grant["tree_fingerprint"]}
+            current_grant.pop("tree_fingerprint")
+            with patch.object(grok_landing_publish, "read_private_file", return_value=json.dumps([current_grant]).encode()):
+                self.assertEqual(64, len(grok_landing_publish._authority(config, self.root, request)))
             for grants in cases:
                 with self.subTest(grants=grants), patch.object(
                     grok_landing_publish, "read_private_file", return_value=json.dumps(grants).encode(),
@@ -258,6 +262,16 @@ class LandingPublicationBoundaryTests(unittest.TestCase):
                                                lambda value: grok_landing_publish._authority(config, self.root, value))
                 self.assertEqual("prepared", self.store.get(request.request_digest)["phase"])
                 self.assertFalse((self.target_root / "releases").exists())
+
+            for malformed in (
+                {**current_grant, "grant_binding_digest": ""},
+                {**current_grant, "grant_binding_digest": "not-a-digest", "tree_fingerprint": "d" * 64},
+            ):
+                with self.subTest(malformed=malformed), patch.object(
+                    grok_landing_publish, "read_private_file", return_value=json.dumps([malformed]).encode(),
+                ):
+                    with self.assertRaisesRegex(PublicationError, "publication_exact_grant_unavailable"):
+                        grok_landing_publish._authority(config, self.root, request)
 
     def test_direct_apply_requires_injected_authority_before_config_or_state_access(self):
         for authority in (None, "not-a-callback", object()):

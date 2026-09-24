@@ -815,3 +815,6 @@ Comparing every candidate path against the source manifest exposed the missing S
 ### 2026-09-21 — Retake stale local-control PRs through path-scoped diffs
 
 Applying only the selected source, test and documentation diffs onto delivered main isolated three real textual conflicts without carrying historical approvals or receipts. Keep main's checkpoint and status behavior during conflict resolution, and qualify the new composition independently instead of promoting old App successes to current authority.
+## 2026-09-23 — Migrate current grant bindings without rewriting evidence
+
+When a detector heuristic is caused by a current serialized grant envelope, rename only the current producer field and keep a fail-closed legacy reader. This preserved immutable evidence bytes while allowing existing runtime grants to expire normally without an in-place migration.
