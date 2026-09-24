@@ -1,0 +1,32 @@
+# Security review — issue #73
+
+## Review identity
+
+- Candidate HEAD: `8504fd34553eae89b7f3f5dfb65bb30fd663abbe`
+- Base: `origin/main` / `130ce4a42d9f9bbd1b56772d40b19ae530283205`
+- Candidate tree fingerprint before/after: `5055e57ab5d01bbec79a057087e442e5cc231f7c23b705446fd24501ece0fa07`
+- Git tree: `25b2c8222d986b157b2cd4f7f6941b7d82cbed27`
+- Scratch: `/tmp/issue73-review.LrLg3P/repo`
+- `reviewed-tree-modified: no`
+
+## Result
+
+No security defect was found within the bounded scope. The implementation remains fail-closed for
+ambiguous, malformed, stale, foreign, or mismatched grants.
+
+| Claim | Exact probe | Observed result | Mutant outcome |
+| --- | --- | --- | --- |
+| Candidate is exact and clean | `git rev-parse HEAD; git status --porcelain; git rev-parse HEAD^{tree}` | HEAD matched; status empty; tree stable | killed |
+| Focused authorization behavior passes | `python3 -m unittest tests.test_policy tests.test_history factory.tests.test_landing_publication_cli` | `Ran 76 tests ... OK` | killed |
+| New grants use `grant_binding_digest` | `PolicyTests.test_new_grant_uses_neutral_binding_digest_key` | new field present; legacy and historical detector-shaped fields absent | killed |
+| Legacy grants remain readable | `PolicyTests.test_legacy_tree_fingerprint_grant_remains_valid` | passed | killed |
+| Dual fields fail closed | policy conflicting-field test plus publisher dual-valid test | both rejected | killed |
+| Repository/route/change/HEAD/tree binding is exact | policy tree/commit tests and publisher stale/foreign/wrong-identity cases | rejected when any binding differs | killed |
+| Action/resource/expiry/source checks remain exact | full focused policy/publication suite | passed | killed |
+| Historical evidence is byte-identical | `sha256sum` on both historical files | both `f69eedc41e41be3920e36dd243d719de861b64a96a674983bd256f978e329e9b` | killed |
+| No trust/key paths changed | `git diff --name-only BASE..HEAD | rg -i '(^|/)(trust-ci|governance|.*key|.*pem|.*approval|\.github/workflows)'` | no output | killed for candidate diff scope |
+| Diff is whitespace-clean | `git diff --check BASE..HEAD` | no output | killed |
+
+The change does not touch historical evidence, trust stores, approval keys, deployed Trust CI
+policy, GitHub Actions, production systems, or external writes. GitGuardian detector/allow-list
+behavior and App-owned Trust CI remain external limitations and are not claimed as fixed here.
