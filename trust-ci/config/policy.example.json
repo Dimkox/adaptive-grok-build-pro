@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "authority": "illustrative-example-only",
   "status_context": "adaptive-trust-ci/verified",
   "pipeline": "pull_request",
   "checkout_depth": 250,
