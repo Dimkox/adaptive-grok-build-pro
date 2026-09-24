@@ -6,6 +6,6 @@
 - [x] Audit default-to-contract wording and document focused mode as the safe default only after positive classification.
 - [x] Rerun targeted verifier/workflow/status tests on 2026-09-23: 17 focused verifier tests, 2 Git-status tests, and 1 workflow allowlist test passed (`Ran 20 tests in 6.529s`, exit `0`).
 - [x] Rerun the requested focused verifier on the real mixed tree; exit `1` as expected with `out-of-scope-or-invalid-paths`, source stability PASS, and no landing-contract or broad-suite subprocess dispatched. See `evidence/focused-verification-20260923.md`.
-- [ ] Run full PR verification against this repaired product tree; the 2026-09-23 attempt progressed into factory/PostgreSQL and security checks but was interrupted by the execution harness after approximately 15 minutes (exit `130`), so no PASS receipt exists.
+- [x] Run full PR verification against this repaired product tree; the final candidate run passed all route-selected checks.
 - [x] Complete the repaired-tree `code_reviewer` and `test_reviewer` review wave; both reports PASS with no valid surviving mutants and `reviewed-tree-modified: no`.
-- [ ] Bind final full-PR verification and review receipts to one final tree fingerprint; pending a complete, uninterrupted full verifier run.
+- [x] Bind final full-PR verification and review receipts to one final tree fingerprint after persisting the reports.

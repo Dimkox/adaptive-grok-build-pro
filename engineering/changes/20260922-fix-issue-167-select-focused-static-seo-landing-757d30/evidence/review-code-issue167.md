@@ -2,46 +2,52 @@
 
 Decision: PASS. No blocking code findings.
 
-## Candidate identity
+## Exact candidate identity
 
-- Worktree: `/tmp/agbp-issue167-static-scope`
-- Branch: `fix/issue-167-static-scope-20260922`
-- Base and HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
-- Working-tree fingerprint: `e07b18ed30d5877f29c0e6a7df992948b9fee414e4389f9b1d7065585a5bd6f1`
-- Status: 10 modified tracked files and 12 untracked change-package files; no staged changes.
-- `reviewed-tree-modified: no`
+- Worktree: /tmp/agbp-issue167-static-scope
+- Branch: fix/issue-167-static-scope-20260922
+- HEAD reviewed: 526255f4ec7fd3ef00d45641da571c54f40cbe0f
+- Route/base: 130ce4a42d9f9bbd1b56772d40b19ae530283205
+- Repository fingerprint: 9cdee9f712cc80dd5ce16636788716bcb621581589d5fc8553a2d81d1c4d44bd
+- Git tree: 7251b1fc383aca958f0803683a6187522fc50d37
+- Worktree at review: clean
+- reviewed-tree-modified: no
+- Scratch: not used in this read-only re-review; no mutation claim is made from a private scratch.
+- This report records the candidate before the report itself and final receipt were persisted.
 
-The implementation is uncommitted on top of HEAD, so the review used the complete working-tree snapshot.
+## Scope probes
 
-## Scratch identity
+    git diff --name-status origin/main..HEAD
+    git diff --check origin/main..HEAD
+    git status --short --branch
+    rg -n 'focused-static-seo-landing|select_static_seo_landing_scope|_verification_command' .grok-stack scripts tests
 
-- Scratch: `/home/pall/agbp-issue167-review.pTQUBg`
-- Owner/mode: `pall:pall`, `0700`
-- Scratch HEAD and fingerprint matched the candidate exactly.
-- Changed files/status records: `22` / `22`.
+The 26-path candidate contains the focused verifier, status/provenance utilities, workflow allowlist, regression tests, AGENTS/skill wording, decisions/mistakes, and the change package. It contains no side-project landing, showcase, package, architecture, Trust CI deployed-policy, or GitHub Actions change.
 
-## Verification
+## Reviewed behavior
 
-The targeted verifier, status-inventory, and workflow tests passed:
+- Focused classification accepts only a positive product inventory under side-projects/seo-landings plus one explicitly named focused test in one landing directory; active change-package evidence is excluded from product classification.
+- Mixed or unknown paths, multiple landing directories, missing or ambiguous tests, malformed paths, unsafe Git statuses, and invalid provenance fail closed.
+- A rejected focused scope does not dispatch the landing contract subprocess.
+- --mode pr remains the full path and never silently downgrades.
+- Workflow dispatch accepts the exact focused command and rejects extra arguments.
+- Trust CI remains the external exact-SHA merge authority.
 
-```text
-Ran 20 tests in 6.609s
-OK
-```
+## Claim outcomes
 
-Coverage included accepted and rejected focused scopes, mixed/unknown paths, multiple landing directories, missing/ambiguous/malformed/deleted/renamed/copied status metadata, focused execution, PR no-downgrade, rejected-scope subprocess suppression, contract validation, Git provenance, and the exact workflow allowlist.
+- Current HEAD, base, tree, and repository fingerprint: killed stale-identity mutant; values matched the candidate.
+- Full-PR downgrade from focused mode: survived; explicit mode branches remain separate.
+- Unsafe status/provenance accepted as focused: survived; deleted, renamed, copied, malformed, and ambiguous records are rejected.
+- Rejected scope executes a landing contract: survived; subprocess is suppressed.
+- Workflow allowlist accepts arbitrary focused flags: survived; exact command is required.
+- Trust boundary weakened by local focused mode: survived; no deployed Trust CI or merge authority path changed.
+- Unexecuted mutation probes in this re-review: private-scratch mutation testing was not repeated because the prior scratch report covered the same pre-persistence implementation; the current review independently checked the exact committed tree and current focused tests.
 
-All valid scratch mutation probes were killed:
+## Limitations
 
-- adding `D` to safe statuses;
-- forcing rejected scope to run its contract;
-- allowing `pr` into the focused branch;
-- clearing malformed-status findings;
-- removing a focused workflow allowlist entry;
-- removing `--find-copies-harder` provenance.
+- The reviewer did not validate the external App-owned Trust CI check.
+- The final verification receipt must be rerun after this report and tasks file are persisted because that persistence changes the repository fingerprint.
 
-No implementation findings were identified. The code provides status-preserving NUL Git inventory, fail-closed selection, exact landing/test binding, unittest validation before discovery, contract suppression for rejected scope, explicit focused mode, exact workflow allowlisting, unchanged full PR behavior, and no Trust CI or merge-authority changes.
+## Final assessment
 
-## Inconclusive claims
-
-The reviewer did not rerun the full PR verifier or focused CLI smoke because the runtime route was not copied into scratch. The coordinator must record fresh receipts after persisting this report.
+The issue #167 implementation is bounded and fail-closed. It provides a fast contract-only path only after positive classification and retains the full PR verifier for every mixed or uncertain change.

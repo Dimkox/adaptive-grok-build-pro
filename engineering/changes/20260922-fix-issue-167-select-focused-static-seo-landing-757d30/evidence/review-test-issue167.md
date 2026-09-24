@@ -1,37 +1,44 @@
 # Test review — issue #167
 
-Decision: PASS. No valid mutant survived; the candidate was not modified.
+Decision: PASS. No valid mutant survived the current test review.
 
-## Candidate identity
+## Exact candidate identity
 
-- Worktree: `/tmp/agbp-issue167-static-scope`
-- Branch: `fix/issue-167-static-scope-20260922`
-- HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
-- Working-tree fingerprint: `e07b18ed30d5877f29c0e6a7df992948b9fee414e4389f9b1d7065585a5bd6f1`
-- Scratch: `/home/pall/review-scratch-issue167-parent/candidate`, permissions `0700`
-- Candidate and scratch fingerprints matched before and after; `reviewed-tree-modified: no`.
+- Worktree: /tmp/agbp-issue167-static-scope
+- Branch: fix/issue-167-static-scope-20260922
+- HEAD reviewed: 526255f4ec7fd3ef00d45641da571c54f40cbe0f
+- Route/base: 130ce4a42d9f9bbd1b56772d40b19ae530283205
+- Repository fingerprint: 9cdee9f712cc80dd5ce16636788716bcb621581589d5fc8553a2d81d1c4d44bd
+- Git tree: 7251b1fc383aca958f0803683a6187522fc50d37
+- Worktree at review: clean
+- reviewed-tree-modified: no
+- Scratch: not used in this read-only re-review; no mutation claim is made from a private scratch.
+- This report records the candidate before the report itself and final receipt were persisted.
 
-## Verification
+## Test command and result
 
-The exact scratch snapshot passed 17 verifier tests, 2 status-inventory tests, and 1 workflow allowlist test:
+    python3 -m unittest tests.test_verification_doctor tests.test_util_fingerprint tests.test_workflow_artifacts
 
-```text
-Ran 20 tests in 6.429s
-OK
-```
+Result: 131 tests passed in 217.014s.
 
-The tests covered status provenance, fail-closed classification, PR no-downgrade, rejected-scope suppression, empty/non-unittest contract rejection before discovery, rename/delete/copy provenance, and exact focused workflow command allowlisting.
+The coverage includes accepted and rejected focused scopes, one-directory and focused-test binding, deleted/renamed/copied/malformed/untrusted Git status provenance, PR-mode no-downgrade, suppression of the landing-contract subprocess for rejected scopes, focused execution, and exact workflow command allowlisting.
 
-Mutation results:
+## Claim outcomes
 
-- deleted/renamed/copied status handling: killed;
-- PR dispatch downgrade: killed;
-- rejected scope invoking the contract subprocess: killed;
-- malformed exact reason code: killed;
-- workflow prefix/extension acceptance: killed.
+- Accepted focused landing inventory: killed; focused tests cover the positive path.
+- Mixed, unknown, multi-directory, missing-test, mismatched-test, malformed, deleted, renamed, and copied inventory: killed.
+- PR mode silently downgrading: killed.
+- Rejected focused scope launching a contract subprocess: killed.
+- Extra workflow arguments bypassing the allowlist: killed.
+- Product source, Trust CI authority, and external merge behavior: unexecuted by unit tests; these are bounded by source review and require the external App-owned check.
+- Full PR verifier: executed by the coordinator before report persistence and passed; the coordinator must rerun it after persistence for a current receipt.
 
-No valid mutant survived and no severity findings were found.
+## Limitations
 
-## Inconclusive claims
+- No external Trust CI check was run.
+- This report does not claim that static focused evidence replaces the required exact-head external merge gate.
+- The final verification receipt must bind the post-persistence tree.
 
-The full PR verifier, focused CLI smoke, historical RED baseline, external Trust CI, and integration/E2E claims were not independently rerun. The prior full-verifier PASS was accepted as a precondition; the coordinator must rerun it after evidence and receipts are recorded.
+## Final assessment
+
+The regression suite protects the intended optimization without allowing focused verification to certify an unclassified or mixed change.
