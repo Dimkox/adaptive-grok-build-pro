@@ -199,6 +199,54 @@ class FingerprintTests(unittest.TestCase):
         self.git('commit', '-qm', 'delete')
         self.assertEqual([old], util.changed_files(self.root, base=base))
 
+    def test_changed_file_statuses_preserve_deleted_and_renamed_paths(self) -> None:
+        old = 'side-projects/seo-landings/winston-wolfe/index.html'
+        renamed = 'side-projects/seo-landings/winston-wolfe/renamed.html'
+        deleted = 'side-projects/seo-landings/winston-wolfe/robots.txt'
+        self.write(old, 'same\n')
+        self.write(deleted, 'delete\n')
+        self.commit()
+
+        self.git('mv', old, renamed)
+        (self.root / deleted).unlink()
+        statuses = util.changed_file_statuses(self.root)
+
+        self.assertIsNotNone(statuses)
+        self.assertTrue(any(
+            item['status'].startswith('R')
+            and item['original_path'] == old
+            and item['path'] == renamed
+            for item in statuses
+        ))
+        self.assertTrue(any(
+            item['status'] == 'D' and item['path'] == deleted
+            for item in statuses
+        ))
+
+    def test_changed_file_statuses_preserve_copied_paths_in_commit_range(self) -> None:
+        source = 'tests/test_winston_wolfe_seo_landing.py'
+        copied = 'tests/test_winston_wolfe_seo_landing_copy.py'
+        self.write(source, 'same\n')
+        self.commit()
+        base = self.git('rev-parse', 'HEAD')
+
+        self.write(copied, 'same\n')
+        self.commit()
+        statuses = util.changed_file_statuses(
+            self.root,
+            base=base,
+            include_worktree=False,
+            include_untracked=False,
+        )
+
+        self.assertIsNotNone(statuses)
+        self.assertTrue(any(
+            item['status'].startswith('C')
+            and item['original_path'] == source
+            and item['path'] == copied
+            for item in statuses
+        ))
+
     def test_meaningful_configuration_source_and_prefix_lookalikes_stay_bound(self) -> None:
         for rel in ('.qwen/settings.json', '.codex/config.toml', '.agents/skills/task.md',
                     '.claude/settings.json', 'new.py', '.qwen/tmpfile', '.qwen/tmp-config.json',

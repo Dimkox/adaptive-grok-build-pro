@@ -141,6 +141,8 @@ These rules apply whenever the route contains the `bitrix` domain:
 
 ## Local verification and completion
 
+For static side-project changes, classify the final product changed-file inventory before selecting a verifier. A positive focused classification may contain only `side-projects/seo-landings/**` plus one explicitly named focused landing test; the active `engineering/changes/<id>/` package is workflow evidence and is ignored by that product classification. Require exactly one landing directory and fail closed for multiple directories, mixed, unknown, malformed, or incomplete inventory. The focused contract is the safe default for a positive landing-only classification. `--mode pr` always remains full PR verification and must never silently downgrade. Any product diff touching runtime, contracts, Trust CI, packages, architecture, workflow/configuration, the SEO skill, or the checked-in showcase uses full PR verification. This scope rule does not replace the App-owned exact-SHA Trust CI merge check.
+
 Run:
 
 ```bash

@@ -1421,3 +1421,7 @@ The batch identity collector initially reused diff-specific glob pathspec syntax
 ### 2026-09-21 — Enumerate candidate content before filtering an integration manifest
 
 I built the next source manifest from an incomplete directory-prefix list and omitted the reviewed165Stop hook under `.grok/`. Independent integration analysis caught the dependency before any import; compare every changed candidate path against explicit source and handoff exclusions instead of assuming all executable paths live under `.grok-stack/`.
+
+### 2026-09-22 — Use the declared unittest class name
+
+The first focused test command named `WorkflowArtifactTests`, but the repository declares `WorkflowSourceTests`; the six verifier tests passed and the command ended with a loader error. Inspect test class declarations before composing targeted unittest selectors.

@@ -818,3 +818,7 @@ Applying only the selected source, test and documentation diffs onto delivered m
 ## 2026-09-23 — Migrate current grant bindings without rewriting evidence
 
 When a detector heuristic is caused by a current serialized grant envelope, rename only the current producer field and keep a fail-closed legacy reader. This preserved immutable evidence bytes while allowing existing runtime grants to expire normally without an in-place migration.
+
+### 2026-09-22 — Require Git status provenance for focused landing eligibility
+
+Focused verification now consumes a status-preserving Git inventory and rejects deleted, renamed, copied, malformed, or ambiguous records before selecting a landing contract. This keeps the optimization fail-closed while leaving the full PR path unchanged.
