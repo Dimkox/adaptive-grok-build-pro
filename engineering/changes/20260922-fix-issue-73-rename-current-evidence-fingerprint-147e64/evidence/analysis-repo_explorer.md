@@ -1,8 +1,8 @@
 # Repository analysis — issue #73
 
-Route: `147e6461d649`  
-Worktree: `/tmp/agbp-issue73-evidence-digest`  
-HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`  
+Route: `147e6461d649`
+Worktree: `/tmp/agbp-issue73-evidence-digest`
+HEAD: `130ce4a42d9f9bbd1b56772d40b19ae530283205`
 Scope: read-only analysis; no product implementation, no full `grok_verify`, and no secrets/private keys read.
 
 ## Finding
@@ -47,4 +47,3 @@ Then make the smallest current-evidence-only rename at the real producer, schema
 - A guard/documentation-only change is a one-commit revert with no data migration, deployment, VERSION bump, or release rebuild. It must not rewrite either historical JSON record.
 - If a real current contract is added, preserve existing v1 contracts and use an additive/versioned forward fix; rollback must leave readers able to consume already-emitted new records. Do not retag or rebuild immutable releases.
 - Any product/schema change proceeds through the pending `scope_and_design_approval`, one write owner, focused TDD evidence, route verification/reviews, PR delivery, and the exact-head App-owned Trust CI check. No external write or release action is authorized by this analysis.
-
