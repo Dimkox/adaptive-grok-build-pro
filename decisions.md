@@ -28,6 +28,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-23 — Preserve the no-owner disposition for #186/#36
+
+The exact-tree and reachable-history audit found no repository-owned shell recorder, while current Python/Trust CI paths already preserve nonzero exit codes. Keeping the change evidence-only avoids inventing a helper or regression target; #36 remains blocked until an authoritative external owner link and reproduction are supplied.
+
 ## 2026-09-05 — Calibrate only the accepted pilot vertical
 
 Raise only `FIT-BOUNDED-PILOT-CHANGE` to 400,000 bytes, 10,000 lines, and AST complexity 1,100, leaving global, Factory, and Trust-CI limits unchanged. This preserves a narrow ceiling with at most 15% headroom over the accepted pilot implementation while making the exact route fitness gate reflect its actual bounded scope.
