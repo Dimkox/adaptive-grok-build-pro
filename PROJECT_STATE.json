@@ -2,8 +2,8 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-22T23:35:00Z",
-  "observed_main_sha": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+  "observed_at": "2026-09-24T18:59:44Z",
+  "observed_main_sha": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
   "product_version": "2.0.19",
   "latest_published_release": "v2.0.18",
   "bootstrap_entrypoint": "START_HERE.md",
@@ -209,14 +209,14 @@
     "route_id": "0ea34220576f",
     "branch": "release/v2.0.19-candidate-20260922",
     "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "identity": "v2.0.19 release sync (identity bump and landing rows for the fifteen pull requests merged after the v2.0.18 publication)",
+    "identity": "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
     "status": "release_sync_authored",
     "stage": "identity_bump_in_pull_request",
-    "source_base": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+    "source_base": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
     "target_version": "2.0.19",
     "scope": [
       "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md, CHANGELOG.md, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.19 candidate",
-      "PROJECT_STATE records the observed main base, fifteen post-v2.0.18 landings and the pending v2.0.19 artifact slot",
+      "PROJECT_STATE records the observed main base, twenty post-v2.0.18 landings and the pending v2.0.19 artifact slot",
       "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
     ],
     "predecessors": [
@@ -267,6 +267,14 @@
         "merge_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
         "merged_at": "2026-09-17T02:51:57Z",
         "check_run_id": 105053306144
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 133,
+        "head": "2cbfa12f8ab6ff6f1b84c53792a0a5a0bd36b38b",
+        "merge_commit": "d871ea6d5d654406281dd65626a3dce61bf933fa",
+        "merged_at": "2026-09-19T03:58:35Z",
+        "check_run_id": 105815267537
       },
       {
         "kind": "post_v2_0_18_landing",
@@ -339,9 +347,41 @@
         "merge_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
         "merged_at": "2026-09-21T21:58:06Z",
         "check_run_id": 106525969438
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 192,
+        "head": "ee3da48e653b0dcaad956d10d40a295e283963f7",
+        "merge_commit": "08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc",
+        "merged_at": "2026-09-24T14:45:31Z",
+        "check_run_id": 107666547252
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 194,
+        "head": "7ed7444f01785a17749e157c3d0d1d6f2fd35748",
+        "merge_commit": "6cc360e48e608ef22fc6a68feff16ec9d78712b0",
+        "merged_at": "2026-09-24T16:27:14Z",
+        "check_run_id": 107718010308
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 191,
+        "head": "b7b4ab501a1bdcb83ab83198e583220256272244",
+        "merge_commit": "9312702d03f25e2256d1f3aa456bc41907c0c436",
+        "merged_at": "2026-09-24T18:07:28Z",
+        "check_run_id": 107756831859
+      },
+      {
+        "kind": "post_v2_0_18_landing",
+        "pull_request": 193,
+        "head": "78148986b1ce3712ee2fd9ba378137f51b08dc36",
+        "merge_commit": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+        "merged_at": "2026-09-24T18:53:58Z",
+        "check_run_id": 107775220562
       }
     ],
-    "explanation": "Fifteen pull requests merged after the v2.0.18 publication, so the tree must expose a new candidate identity. The v2.0.18 record and bytes stay immutable; the v2.0.19 artifact is a separate exact-child step.",
+    "explanation": "Twenty pull requests merged after the v2.0.18 publication, so the tree must expose a new candidate identity. The v2.0.18 record and bytes stay immutable; the v2.0.19 artifact is a separate exact-child step.",
     "external_effect": false,
     "frozen": {
       "published_release": "v2.0.18",
@@ -1015,6 +1055,14 @@
           "purpose": "git-child cleanup on stream failure"
         },
         {
+          "pull_request": 133,
+          "head": "2cbfa12f8ab6ff6f1b84c53792a0a5a0bd36b38b",
+          "merge_commit": "d871ea6d5d654406281dd65626a3dce61bf933fa",
+          "merged_at": "2026-09-19T03:58:35Z",
+          "check_run_id": 105815267537,
+          "purpose": "Trust CI source-mutation and holdout hardening"
+        },
+        {
           "pull_request": 149,
           "head": "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
           "merge_commit": "b51b1175e2441cbbfcbeee607d8d25ebd789a3b4",
@@ -1085,6 +1133,38 @@
           "merged_at": "2026-09-21T21:58:06Z",
           "check_run_id": 106525969438,
           "purpose": "merge-gate reachability and kept-local divergence"
+        },
+        {
+          "pull_request": 192,
+          "head": "ee3da48e653b0dcaad956d10d40a295e283963f7",
+          "merge_commit": "08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc",
+          "merged_at": "2026-09-24T14:45:31Z",
+          "check_run_id": 107666547252,
+          "purpose": "issue #167 routing and evidence repair"
+        },
+        {
+          "pull_request": 194,
+          "head": "7ed7444f01785a17749e157c3d0d1d6f2fd35748",
+          "merge_commit": "6cc360e48e608ef22fc6a68feff16ec9d78712b0",
+          "merged_at": "2026-09-24T16:27:14Z",
+          "check_run_id": 107718010308,
+          "purpose": "release and workflow documentation repair"
+        },
+        {
+          "pull_request": 191,
+          "head": "b7b4ab501a1bdcb83ab83198e583220256272244",
+          "merge_commit": "9312702d03f25e2256d1f3aa456bc41907c0c436",
+          "merged_at": "2026-09-24T18:07:28Z",
+          "check_run_id": 107756831859,
+          "purpose": "issues #186 and #36 repair"
+        },
+        {
+          "pull_request": 193,
+          "head": "78148986b1ce3712ee2fd9ba378137f51b08dc36",
+          "merge_commit": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+          "merged_at": "2026-09-24T18:53:58Z",
+          "check_run_id": 107775220562,
+          "purpose": "issue #73 evidence-digest repair"
         }
       ]
     }
@@ -1095,7 +1175,7 @@
     "route_id": "0ea34220576f",
     "branch": "release/v2.0.19-candidate-20260922",
     "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "source_base": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+    "source_base": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
     "source_gate_status": "pending_final_tree",
@@ -1126,7 +1206,7 @@
     "external_effect": false,
     "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "2.0.19 is the unpublished identity carrying the fifteen post-v2.0.18 landings. Nothing is built, tagged or released for 2.0.19 until the separate artifact-child step, exact-head external checks and named delegated grants complete."
+    "notes": "2.0.19 is the unpublished identity carrying the twenty post-v2.0.18 landings. Nothing is built, tagged or released for 2.0.19 until the separate artifact-child step, exact-head external checks and named delegated grants complete."
   },
   "delivered_non_milestone_work": [
     {
@@ -2162,10 +2242,10 @@
     }
   },
   "latest_source_observation": {
-    "observed_at": "2026-09-22T23:35:00Z",
-    "main_sha": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
-    "source_pull_request": 185,
-    "source_role": "actual fetched main after the v2.0.18 publication and exact-head App success through PR #185"
+    "observed_at": "2026-09-24T18:59:44Z",
+    "main_sha": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+    "source_pull_request": 193,
+    "source_role": "actual fetched main after the v2.0.18 publication and exact-head App success through PR #193"
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",

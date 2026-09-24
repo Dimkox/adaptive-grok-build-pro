@@ -8,12 +8,12 @@ Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`]
 
 | Layer | Dated source and runtime observations |
 | --- | --- |
-| Repository source | `main` observed on September 22 at `130ce4a42d9f9bbd1b56772d40b19ae530283205` (PR #185, after the fifteen post-`v2.0.18` landings recorded in `PROJECT_STATE.json`); the `v2.0.19` input/source candidate commit is `5d93fc3d68869ab26799935adab5fa62be5e2a80`. The release-sync head/tree remains pending until its changes are committed and verified. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
+| Repository source | `main` observed on September 24 at `7650a5e12aad55bdcf730cd37e2faf162bec0486` (PR #193, after twenty post-`v2.0.18` landings recorded in `PROJECT_STATE.json`); the earlier `v2.0.19` input/source candidate commit is `5d93fc3d68869ab26799935adab5fa62be5e2a80`. The release-sync branch is now rebased onto this protected-main snapshot and its final head/tree remain pending until verification. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
 
-The post-release source line through PR #185 is the input to the `v2.0.19` release-sync candidate. Its durable [change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) keeps source verification, artifact-child provenance and publication separate. Final frozen-tree verification, current receipts and external delivery remain required before the candidate is published.
+The post-release source line through PR #193 is the input to the `v2.0.19` release-sync candidate. Its durable [change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) keeps source verification, artifact-child provenance and publication separate. Final frozen-tree verification, current receipts and external delivery remain required before the candidate is published.
 
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 

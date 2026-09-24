@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "130ce4a42d9f9bbd1b56772d40b19ae530283205"  # 2026-09-22 observation, PR #185 source base for the v2.0.19 candidate
+OBSERVED_MAIN_SHA = "7650a5e12aad55bdcf730cd37e2faf162bec0486"  # 2026-09-24 observation, PR #193 source base for the v2.0.19 candidate
 V2017_SOURCE_BASE = "78082a290f8b90cade88685351fbb2ba263689b9"  # PR #98 release-sync merge: the base the candidate was authored on
 V2017_CHECKED_HEAD = "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d"
 V2017_MERGE_COMMIT = "c86b1a1989ace899a4450bde558fcd8adc00e4e2"
@@ -37,6 +37,7 @@ POST_V2018_PR_HEADS = {
     114: "245e565e95797032d94a310264e80ed803d95450",
     115: "55dbb6b243a6523c38ee8332153a82d0885227a6",
     116: "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
+    133: "2cbfa12f8ab6ff6f1b84c53792a0a5a0bd36b38b",
     149: "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
     150: "c335a33b9cffde4d8912b173803c3adec3348d06",
     151: "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
@@ -46,6 +47,10 @@ POST_V2018_PR_HEADS = {
     174: "73a8edd7678b4d605f6335569534653c6587eabc",
     184: "0d16a5370537e697657fd60c7b27d994f45bd4b2",
     185: "17489bf52ae1f6fac7923d8e3448bcae26f54163",
+    192: "ee3da48e653b0dcaad956d10d40a295e283963f7",
+    194: "7ed7444f01785a17749e157c3d0d1d6f2fd35748",
+    191: "b7b4ab501a1bdcb83ab83198e583220256272244",
+    193: "78148986b1ce3712ee2fd9ba378137f51b08dc36",
 }
 
 V2016_CHECKED_HEAD = "2b1517986b9b5b83a95b1286baac161074c58175"
@@ -109,7 +114,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["product_version"], "2.0.19")
         self.assertEqual(state["latest_published_release"], "v2.0.18")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-22T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -463,7 +468,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(next_landing["status"], "landed_in_v2_0_19_candidate")
         self.assertEqual(
             {row["pull_request"] for row in next_landing["pull_requests"]},
-            {111, 112, 113, 114, 115, 116, 149, 150, 151, 154, 170, 173, 174, 184, 185},
+            {111, 112, 113, 114, 115, 116, 133, 149, 150, 151, 154, 170, 173, 174, 184, 185, 192, 194, 191, 193},
         )
         for row in next_landing["pull_requests"]:
             self.assertEqual(row["head"], POST_V2018_PR_HEADS[row["pull_request"]])
@@ -495,7 +500,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["status"], "release_sync_authored")
         self.assertEqual(
             current["identity"],
-            "v2.0.19 release sync (identity bump and landing rows for the fifteen pull requests merged after the v2.0.18 publication)",
+            "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
         )
         self.assertEqual(current["route_id"], "0ea34220576f")
         self.assertEqual(current["target_version"], "2.0.19")

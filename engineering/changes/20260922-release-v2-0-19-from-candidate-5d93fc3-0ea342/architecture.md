@@ -4,7 +4,7 @@
 
 ## Current behavior
 
-`v2.0.18` is the newest published release. `main` is observed at `130ce4a42d9f9bbd1b56772d40b19ae530283205`; the separately reviewed input/source candidate is the exact `5d93fc3d68869ab26799935adab5fa62be5e2a80` documentation/evidence closure. The release-sync verification baseline is that sealed candidate commit, so the inherited source and Trust CI documentation boundary is not reclassified as a mixed release-sync mutation. Release identity, source provenance, package bytes and publication facts are recorded in `PROJECT_STATE.json`.
+`v2.0.18` is the newest published release. `main` is observed at protected-main commit `7650a5e12aad55bdcf730cd37e2faf162bec0486` after PR #193; the earlier separately reviewed input/source candidate `5d93fc3d68869ab26799935adab5fa62be5e2a80` is retained as historical evidence. The release-sync verification baseline is the current protected-main commit, so the post-#193 source and Trust CI documentation boundary is frozen before the expensive final gate. Release identity, source provenance, package bytes and publication facts are recorded in `PROJECT_STATE.json`.
 
 ## Proposed behavior
 

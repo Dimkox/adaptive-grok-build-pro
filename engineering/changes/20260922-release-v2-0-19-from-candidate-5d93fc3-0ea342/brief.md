@@ -10,7 +10,7 @@ Domains: security, api
 
 ## Problem
 
-The repository is at published `v2.0.18`, while the verified post-release source work is a separate exact candidate commit. A new release must preserve the immutable `v2.0.18` record while carrying the candidate identity, its provenance and a reproducible package through the protected delivery chain. The source candidate's own route and evidence remain separate; this package's local release-sync gate starts at sealed `5d93fc3d68869ab26799935adab5fa62be5e2a80`.
+The repository is at published `v2.0.18`, while the verified post-release source work has now landed through PR #193 at protected-main commit `7650a5e12aad55bdcf730cd37e2faf162bec0486`. A new release must preserve the immutable `v2.0.18` record while carrying the candidate identity, its provenance and a reproducible package through the protected delivery chain. The earlier input candidate `5d93fc3d68869ab26799935adab5fa62be5e2a80` remains historical evidence; this package's final release-sync gate starts at the frozen current-main commit.
 
 ## Outcome
 

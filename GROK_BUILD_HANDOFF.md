@@ -298,10 +298,10 @@ PR #2 contains the final evidence
 
 Each condition above held when P0 closed and PR #2 carried the final evidence; they remain the standing acceptance bar for the running service, and `.github/workflows/` still does not exist in this repository.
 
-## Next actions (observed 2026-09-22)
+## Next actions (observed 2026-09-24)
 
-1. Continue from [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). `v2.0.18` remains published and immutable; the `v2.0.19` candidate is based on `130ce4a42d9f9bbd1b56772d40b19ae530283205` and the isolated release-sync tree. Preserve every published release's bytes and tag.
-2. Source `main` was observed at `130ce4a42d9f9bbd1b56772d40b19ae530283205` after PR #185. The fifteen post-publication landings are recorded in the candidate state. Runtime defaults remain off; future external actions need their own exact authority.
+1. Continue from [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). `v2.0.18` remains published and immutable; the `v2.0.19` candidate is based on protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486` and the isolated release-sync tree. Preserve every published release's bytes and tag.
+2. Source `main` was observed at `7650a5e12aad55bdcf730cd37e2faf162bec0486` after PR #193. The twenty post-publication landings are recorded in the candidate state. Runtime defaults remain off; future external actions need their own exact authority.
 3. Establish the next unmet product outcome: a full external pilot with maintainer acceptance. M8 cohort/activation and general M9 qualification remain separate gates. L5 `artifact_ready` does not establish factory publication, hosting or those milestone outcomes.
-4. The next release chain is the isolated `v2.0.19` release-sync candidate followed by an artifact-child PR. PRs #111, #112, #113, #114, #115, #116, #149, #150, #151, #154, #170, #173, #174, #184 and #185 are recorded as dated source landings; displayed checks remain observations and do not establish eligibility for the new release PR. The exact App-owned check and fresh grants are required at each protected boundary.
+4. The next release chain is the isolated `v2.0.19` release-sync candidate followed by an artifact-child PR. PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193 are recorded as dated source landings; displayed checks remain observations and do not establish eligibility for the new release PR. The exact App-owned check and fresh grants are required at each protected boundary.
 5. Trust CI operations stay outside the pull-request trust domain. Deployed policy, holdout, images, PostgreSQL state, App keys, human trust stores and branch protection retain the independent approval and policy-epoch rules in `AGENTS.md`. Human approval private keys remain outside the agent environment.
