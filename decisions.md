@@ -839,3 +839,7 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 ## 2026-09-24 — Freeze the exact base before expensive gates
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
+
+### 2026-09-24 — Reclaim disposable gate containers by label at harness start, never by host cron
+
+The harness that mints `adaptive-factory.disposable-exit` now lists its own label before creating a container and removes only foreign-nonce runs older than a documented bound, reporting every decision. Cancellation is converted into a raised exception so the existing `finally` is reachable, and ownership begins at `docker run` rather than at a successful binding check. Why: issue #128 measured one leaked live PostgreSQL per interrupted run, and #52 already shows that an ownerless sweeper is the wrong control; age is the only signal this harness has that a sibling run is still alive.

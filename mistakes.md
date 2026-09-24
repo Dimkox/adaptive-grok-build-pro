@@ -1469,3 +1469,7 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-24 — A `finally` is not a cleanup guarantee when the process is killed
+
+Root cause: disposable-container release lived in a `finally` that a signal-cancelled gate run never reaches, and the dead `_cleanup` helper plus the `bound_container_id is not None` guard hid both the leak and the fact that ownership began only after a successful binding check. The corrective shape is reclaim-at-start by label plus signal-to-exception, with the age bound as the only evidence that a concurrent sibling is alive.

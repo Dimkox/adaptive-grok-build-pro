@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "change_id": "20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Close issue 128: make the disposable PostgreSQL gate harness reclaim the containers and volumes its own label minted but a cancelled run orphaned, and make the cleanup path reachable when the run is cancelled by signal instead of by exception.",
+    "success_metric": "Before creating its own container the harness lists runs by label and removes only those older than the documented bound whose nonce is not its own, reporting each decision; a SIGTERM delivered to the harness surfaces as a raised exception so the existing finally reclaims the container and the process still exits non-zero; a hermetic test arm proves a stale orphan is reclaimed while a concurrent sibling and the current run are untouched.",
+    "target": "`factory/tests/run_disposable_exit.py` and its regression tests"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": ["test-infra", "release-governance"]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Reclaim happens at start, is filtered by the harness label with untruncated ids, and is logged per container with age, name, running state and post-removal observation rather than deleting silently.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}, {"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Only a run this harness owns is removed: a container whose nonce equals the current run, a sibling younger than the documented age bound, a foreign name, a foreign image, or an entry that cannot be inspected is never deleted.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Cancellation reaches the cleanup: SIGTERM and SIGINT raise inside the harness so the finally reclaims the container, handlers are restored on exit, the run exits non-zero, and a cancelled run is never reported as a pass.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Ownership begins at `docker run`: the minted id is retained before the binding check, so a rejected binding reclaims its own container instead of leaking the running PostgreSQL plus volume.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}, {"receipt": "code_review"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "A removal that did not take effect is reported as leaked, and the module states the dependency on the caller raising on SIGTERM that this reachability rests on.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}, {"receipt": "test_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The gate still fails closed: any non-zero exit, unparsable container id, unparsable creation time or unverifiable binding is an error or a skip, never a reclaimed-success claim.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Cleanup authority stays with the harness that mints the label; no host cron, sweeper daemon or broad docker prune is introduced.",
+      "evidence": [{"receipt": "code_review"}, {"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "INV-003",
+      "statement": "The age bound stays strictly larger than this harness's own 30 s readiness wait plus its 480 s suite budget, so reclaim can never cut off a live sibling run.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Deleting any container, volume or resource that does not carry this harness label and this name and image shape.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Reclaim reported as success without a post-removal observation, or a still-inspectable container counted as gone.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "A cancelled gate run that exits zero, records a pass, or leaves the signal handlers of the calling process replaced.",
+      "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "RECLAIM lines in the factory-postgres-exit check output (reclaimed, leaked, skipped with reason, skipped-limit)",
+      "proves": ["OBJ-001"]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "label-filtered container count before and after a gate run on this host",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

@@ -1,18 +1,223 @@
 #!/usr/bin/env python3
-"""Run mandatory API/PostgreSQL/actual-restart evidence in one disposable container."""
+"""Run mandatory API/PostgreSQL/actual-restart evidence in one disposable container.
+
+Two cleanup facts are load-bearing here and neither is obvious from the code:
+
+1. A `finally` in this file only runs if an exception propagates. A gate cancelled by
+   signal — the observed way this host loses a run (see `mistakes.md` and issue #119,
+   where a cancelled `grok_verify` recorded nothing at all) — never reaches it. So the
+   harness installs signal handlers that convert cancellation into a raised exception
+   before any container exists, and `verify()` must keep raising on SIGTERM for this
+   path to stay reachable at all.
+2. Ownership begins at `docker run`, not at a successful binding check. A container this
+   process minted is reclaimed even when its binding later fails to verify, otherwise a
+   rejected bind leaks exactly the running PostgreSQL plus volume the gate exists to bound.
+"""
 
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 import re
+import signal
 import subprocess
+import sys
 import tempfile
+import threading
 import time
 import uuid
 
 
 _CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
+DISPOSABLE_LABEL = "adaptive-factory.disposable-exit"
+CONTAINER_NAME_PREFIX = "adaptive-factory-exit-"
+DISPOSABLE_IMAGE = "postgres:17-alpine"
+
+# An interrupted run is only distinguishable from a healthy concurrent one by age: the
+# harness cannot see another worktree's live process. Two hours is far beyond the 30 s
+# readiness wait plus the 480 s bounded suite this file drives, so an orphan older than the
+# bound is dead weight, while a sibling run in flight is never touched.
+ORPHAN_MIN_AGE_SECONDS = 2 * 60 * 60
+MAX_RECLAIM_PER_RUN = 24
+
+
+class HarnessCancelled(RuntimeError):
+    """Cancellation arrived as a signal; cleanup must run before the process exits."""
+
+
+def _minted_container_id(value: str) -> str | None:
+    container_id = value.strip()
+    return container_id if _CONTAINER_ID.fullmatch(container_id) else None
+
+
+def reclaim_orphan_runs(
+    current_nonce: str,
+    *,
+    now: float | None = None,
+    min_age_seconds: int = ORPHAN_MIN_AGE_SECONDS,
+    limit: int = MAX_RECLAIM_PER_RUN,
+    runner=subprocess.run,
+    clock=time.time,
+) -> list[dict[str, object]]:
+    """Remove labelled disposable runs older than the documented bound, and report each one.
+
+    Nothing is deleted silently: every candidate yields an entry with its age and the
+    post-removal observation, and a container that cannot be re-inspected is reported as
+    still present rather than assumed gone.
+    """
+    observed_at = clock() if now is None else now
+    listed = runner(
+        [
+            "docker", "ps", "--all", "--quiet", "--no-trunc",
+            "--filter", f"label={DISPOSABLE_LABEL}",
+        ],
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    if listed.returncode != 0:
+        return []
+    candidates = [line.strip() for line in listed.stdout.splitlines() if line.strip()]
+    reclaimed: list[dict[str, object]] = []
+    attempted = 0
+    for container_id in candidates:
+        if not _CONTAINER_ID.fullmatch(container_id):
+            continue
+        if attempted >= limit:
+            reclaimed.append({
+                'container': container_id,
+                'action': 'skipped-limit',
+                'reason': f'reclaim budget of {limit} reached; a later run continues',
+            })
+            continue
+        record = _reclaim_candidate(
+            container_id, current_nonce, observed_at, min_age_seconds, runner
+        )
+        if record is not None:
+            reclaimed.append(record)
+            if record.get('action') != 'skipped':
+                attempted += 1
+    return reclaimed
+
+
+def _reclaim_candidate(
+    container_id: str,
+    current_nonce: str,
+    observed_at: float,
+    min_age_seconds: int,
+    runner,
+) -> dict[str, object] | None:
+    inspected = runner(
+        [
+            "docker", "inspect",
+            "--format",
+            '{{.Id}}\t{{.Name}}\t{{.Config.Image}}\t'
+            '{{index .Config.Labels "adaptive-factory.disposable-exit"}}\t'
+            '{{.Created}}\t{{.State.Running}}',
+            container_id,
+        ],
+        text=True,
+        capture_output=True,
+        timeout=15,
+        check=False,
+    )
+    if inspected.returncode != 0 or len(inspected.stdout.strip().split("\t")) != 6:
+        return {'container': container_id, 'action': 'skipped', 'reason': 'cannot inspect'}
+    identity, name, image, nonce, created, running = inspected.stdout.strip().split("\t")
+    name = name.lstrip("/")
+    if identity != container_id:
+        return {'container': container_id, 'action': 'skipped', 'reason': 'identity mismatch'}
+    if nonce == current_nonce:
+        return None
+    age = _observed_age_seconds(created, observed_at)
+    if age is None:
+        return {'container': container_id, 'action': 'skipped', 'reason': 'unparsable creation time'}
+    if image != DISPOSABLE_IMAGE or not name.startswith(CONTAINER_NAME_PREFIX) or not nonce:
+        return {'container': container_id, 'action': 'skipped', 'reason': 'foreign run shape'}
+    if age < min_age_seconds:
+        return None
+    removed = runner(
+        ["docker", "rm", "-f", "-v", container_id],
+        text=True, capture_output=True, timeout=60, check=False,
+    )
+    after = runner(
+        ["docker", "inspect", container_id],
+        text=True, capture_output=True, timeout=15, check=False,
+    )
+    return {
+        'container': container_id,
+        'name': name,
+        'nonce': nonce,
+        'age_seconds': int(age),
+        'was_running': running == 'true',
+        'action': 'reclaimed' if after.returncode != 0 else 'leaked',
+        'removal_exit': removed.returncode,
+    }
+
+
+def _observed_age_seconds(created: str, observed_at: float) -> float | None:
+    """Age from Docker's RFC3339-nanosecond UTC `.Created`, without trusting local clocks."""
+    text = created.strip()
+    if not text:
+        return None
+    try:
+        normalized = re.sub(r'(\.\d{6})\d*', r'\1', text.replace('Z', '+00:00'))
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return max(0.0, observed_at - parsed.timestamp())
+
+
+def _report_reclaimed(records: list[dict[str, object]]) -> None:
+    for record in records:
+        action = record.get('action')
+        if action in (None, 'skipped-limit'):
+            print(f"RECLAIM {action} container={record.get('container')} reason={record.get('reason')}")
+            continue
+        if action == 'skipped':
+            print(f"RECLAIM skipped container={record.get('container')} reason={record.get('reason')}")
+            continue
+        print(
+            f"RECLAIM {action} container={record.get('container')} name={record.get('name')} "
+            f"age_seconds={record.get('age_seconds')} was_running={record.get('was_running')} "
+            f"removal_exit={record.get('removal_exit')}"
+        )
+
+
+def _cancel_on_signal(signum: int, _frame: object) -> None:  # pragma: no cover - raised below
+    raise HarnessCancelled(f'received signal {signum}')
+
+
+class _CancellationScope:
+    """Turn SIGTERM/SIGINT into a raised exception so the cleanup `finally` is reachable."""
+
+    def __init__(self) -> None:
+        self.previous: dict[int, object] = {}
+
+    def install(self) -> "_CancellationScope":
+        if threading.current_thread() is not threading.main_thread():
+            return self
+        for signum in (signal.SIGTERM, signal.SIGINT):
+            if signal.getsignal(signum) is _cancel_on_signal:
+                continue
+            try:
+                self.previous[signum] = signal.getsignal(signum)
+                signal.signal(signum, _cancel_on_signal)
+            except (OSError, ValueError):
+                self.previous.pop(signum, None)
+        return self
+
+    def restore(self) -> None:
+        for signum, handler in list(self.previous.items()):
+            try:
+                signal.signal(signum, handler)
+            except (OSError, ValueError):
+                pass
+        self.previous.clear()
 
 
 def _binding_matches(
@@ -130,7 +335,7 @@ def _cleanup(name: str, volume: str) -> None:
 
 
 def main() -> int:
-    name = f"adaptive-factory-exit-{uuid.uuid4().hex[:12]}"
+    name = f"{CONTAINER_NAME_PREFIX}{uuid.uuid4().hex[:12]}"
     nonce = uuid.uuid4().hex
     password = f"local-{uuid.uuid4().hex}"
     environment = os.environ.copy()
@@ -140,26 +345,38 @@ def main() -> int:
         (*import_roots, environment.get("PYTHONPATH", ""))
     ).rstrip(os.pathsep)
     bound_container_id: str | None = None
+    # Handlers go in before anything exists to clean up, so a cancellation that lands
+    # during `docker run` itself cannot leave an ownerless container behind.
+    cancellation = _CancellationScope()
+    cancellation.install()
     try:
+        _report_reclaimed(reclaim_orphan_runs(nonce))
         created = subprocess.run([
             "docker", "run", "--name", name,
-            "--label", f"adaptive-factory.disposable-exit={nonce}",
+            "--label", f"{DISPOSABLE_LABEL}={nonce}",
             "-e", "POSTGRES_DB=factory_exit",
             "-e", "POSTGRES_USER=factory_exit",
             "-e", f"POSTGRES_PASSWORD={password}",
             "-p", "127.0.0.1::5432",
-            "-d", "postgres:17-alpine",
+            "-d", DISPOSABLE_IMAGE,
         ], check=True, text=True, capture_output=True, timeout=60)
-        container_id = created.stdout.strip()
+        container_id = _minted_container_id(created.stdout)
+        if container_id is None:
+            raise RuntimeError(
+                "disposable container id is unparsable; "
+                f"leaked output={created.stdout.strip()[:120]!r}"
+            )
+        # Ownership begins here: from this line the finally below answers for this
+        # container whether or not its binding ever verifies.
+        bound_container_id = container_id
+        environment["FACTORY_TEST_POSTGRES_CONTAINER_ID"] = container_id
+        environment["FACTORY_TEST_POSTGRES_NONCE"] = nonce
         if not _binding_matches(
             container_id, name, nonce, require_running=True
         ):
             raise RuntimeError(
-                f"disposable container binding failed; leaked id={container_id}"
+                f"disposable container binding failed; reclaimed id={container_id}"
             )
-        bound_container_id = container_id
-        environment["FACTORY_TEST_POSTGRES_CONTAINER_ID"] = container_id
-        environment["FACTORY_TEST_POSTGRES_NONCE"] = nonce
         published = subprocess.run(
             ["docker", "port", container_id, "5432/tcp"],
             check=True,
@@ -207,9 +424,15 @@ def main() -> int:
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
         return 0
+    except HarnessCancelled as cancelled:
+        # A cancelled run is not a passed run and never was: report it, reclaim below, and
+        # leave a non-zero exit so no receipt can call this a pass.
+        print(f"CANCELLED: {cancelled}", file=sys.stderr)
+        raise SystemExit(130)
     finally:
         if bound_container_id is not None:
             _remove_bound_container(bound_container_id, name, nonce)
+        cancellation.restore()
 
 
 if __name__ == "__main__":
