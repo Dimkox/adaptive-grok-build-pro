@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-23 — Reviewed the inherited parent commit instead of the route base
+
+**Symptom:** The first code review falsely reported six unrelated product files as this change because it compared `HEAD^..HEAD` while the candidate `HEAD` was exactly the route base.
+**Root cause:** The review did not bind its diff query to the active route's exact base and did not distinguish inherited commit history from the candidate's uncommitted change package.
+**Durable rule:** Every review must compare the candidate to the route base (`base..HEAD`) and separately inspect staged, unstaged, and untracked candidate inputs before judging scope.
+
 ## 2026-09-09 — Rewrote a whole architecture model to add three entries
 
 **Symptom:** Declaring one demo node, contract and edge produced a 1889-line diff in `architecture/system.yaml` instead of the 57 lines actually added.
@@ -1445,3 +1451,13 @@ I built the next source manifest from an incomplete directory-prefix list and om
 **Symptom:** the full verifier passed code, tests, coverage and factory checks but failed `FIT-TRUST-CI-SEPARATION` because it compared the release metadata layer against `main` and reclassified the already reviewed candidate's Trust CI documentation alongside the version bump.
 **Root cause:** the active route base stayed at observed `main` even though the change package's initial checkpoint was the sealed input candidate commit.
 **Durable rule:** for a staged release from an already reviewed candidate, bind the release-sync route and evidence to that exact candidate checkpoint and document the inherited source evidence separately; do not hide or mutate the candidate diff.
+
+### 2026-09-22 — Use the declared unittest class name
+
+The first focused test command named `WorkflowArtifactTests`, but the repository declares `WorkflowSourceTests`; the six verifier tests passed and the command ended with a loader error. Inspect test class declarations before composing targeted unittest selectors.
+
+### 2026-09-24 — Started expensive gates before freezing the final base
+
+**Symptom:** a parallel full-verifier wave consumed substantial time, then one Trust job became stale when a predecessor merged and forced a restack plus another full verifier.
+**Root cause:** the continuation branch was verified and enqueued before all predecessor merges and final evidence/base updates were complete.
+**Durable rule:** settle the final protected-main base and all evidence commits first; run one serialized full verifier, then push and enqueue exactly one Trust job for that immutable pair.

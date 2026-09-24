@@ -252,7 +252,7 @@ def add_approval(
         'route_id': route.get('route_id'),
         'change_id': _active_change_id(root),
         'git_head': head,
-        'tree_fingerprint': tree_fingerprint(root),
+        'grant_binding_digest': tree_fingerprint(root),
         'created_at': now.isoformat(timespec='seconds'),
         'expires_at': (now + timedelta(minutes=ttl_minutes)).isoformat(timespec='seconds'),
     }
@@ -294,8 +294,8 @@ def has_valid_approval(
         'route_id': route.get('route_id'),
         'change_id': _active_change_id(root),
         'git_head': head,
-        'tree_fingerprint': tree_fingerprint(root),
     }
+    current_binding_digest = tree_fingerprint(root)
     now = datetime.now(timezone.utc)
     kept: list[dict[str, Any]] = []
     matched = False
@@ -315,6 +315,12 @@ def has_valid_approval(
         if approval.get('scope') != scope:
             continue
         if any(approval.get(key) != value for key, value in bindings.items()):
+            continue
+        grant_binding_digest = approval.get('grant_binding_digest')
+        legacy_tree_fingerprint = approval.get('tree_fingerprint')
+        if grant_binding_digest is not None and legacy_tree_fingerprint is not None:
+            continue
+        if (grant_binding_digest or legacy_tree_fingerprint) != current_binding_digest:
             continue
         if action and action not in set(approval.get('actions') or []):
             continue

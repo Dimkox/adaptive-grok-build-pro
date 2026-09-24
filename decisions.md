@@ -28,6 +28,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-23 — Preserve the no-owner disposition for #186/#36
+
+The exact-tree and reachable-history audit found no repository-owned shell recorder, while current Python/Trust CI paths already preserve nonzero exit codes. Keeping the change evidence-only avoids inventing a helper or regression target; #36 remains blocked until an authoritative external owner link and reproduction are supplied.
+
 ## 2026-09-05 — Calibrate only the accepted pilot vertical
 
 Raise only `FIT-BOUNDED-PILOT-CHANGE` to 400,000 bytes, 10,000 lines, and AST complexity 1,100, leaving global, Factory, and Trust-CI limits unchanged. This preserves a narrow ceiling with at most 15% headroom over the accepted pilot implementation while making the exact route fitness gate reflect its actual bounded scope.
@@ -816,6 +820,10 @@ Comparing every candidate path against the source manifest exposed the missing S
 
 Applying only the selected source, test and documentation diffs onto delivered main isolated three real textual conflicts without carrying historical approvals or receipts. Keep main's checkpoint and status behavior during conflict resolution, and qualify the new composition independently instead of promoting old App successes to current authority.
 
+## 2026-09-23 — Migrate current grant bindings without rewriting evidence
+
+When a detector heuristic is caused by a current serialized grant envelope, rename only the current producer field and keep a fail-closed legacy reader. This preserved immutable evidence bytes while allowing existing runtime grants to expire normally without an in-place migration.
+
 ### 2026-09-22 — Mark checked-in policy examples and provider probes as non-authoritative
 
 The checked-in Trust CI policy example now declares its illustrative-only authority explicitly, while the README names the deployed server-mounted policy epoch and exact App-owned Check Run as the merge authority. Runtime documentation and structure tests separately bind provider probes as operator-attested, non-re-derivable observations so local source evidence cannot be mistaken for deployed trust or durable job evidence.
@@ -823,3 +831,11 @@ The checked-in Trust CI policy example now declares its illustrative-only author
 ### 2026-09-22 — Bind the release as a two-stage R/A chain
 
 Keep release-sync source identity on the merged R tree and build the ZIP from that sealed parent, while the artifact-only A child owns repository custody, tag and publication. This separates reproducible bytes from the commit that carries them and prevents a later documentation change from silently changing release identity.
+
+### 2026-09-22 — Require Git status provenance for focused landing eligibility
+
+Focused verification now consumes a status-preserving Git inventory and rejects deleted, renamed, copied, malformed, or ambiguous records before selecting a landing contract. This keeps the optimization fail-closed while leaving the full PR path unchanged.
+
+## 2026-09-24 — Freeze the exact base before expensive gates
+
+When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.

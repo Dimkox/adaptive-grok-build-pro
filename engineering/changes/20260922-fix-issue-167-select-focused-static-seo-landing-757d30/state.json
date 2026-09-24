@@ -1,0 +1,100 @@
+{
+  "change_id": "20260922-fix-issue-167-select-focused-static-seo-landing-757d30",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-167-static-scope-20260922",
+      "change_id": "20260922-fix-issue-167-select-focused-static-seo-landing-757d30",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-22T19:14:43+00:00",
+      "route_id": "757d301a510b"
+    },
+    {
+      "branch": "fix/issue-167-static-scope-20260922",
+      "change_id": "20260922-fix-issue-167-select-focused-static-seo-landing-757d30",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-22T19:42:26+00:00",
+      "route_id": "757d301a510b"
+    }
+  ],
+  "created_at": "2026-09-22T19:14:43+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-22T19:14:43+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-22T19:42:26+00:00",
+      "from": "draft",
+      "reason": "Bounded design approved: add an explicit fail-closed static-landing verification path; mixed/runtime changes retain full PR verification.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-22T19:42:26+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; proceed with the recorded bounded design.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-22T19:42:26+00:00",
+      "from": "approved",
+      "reason": "Single route-selected write owner is implementing in this isolated worktree.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-22T19:57:28+00:00",
+      "from": "implementing",
+      "reason": "Write owner completed implementation, documentation, and targeted evidence; start full PR verification for this runtime/verifier change.",
+      "to": "verifying"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "cd2d5d1fa22e1ae7b8fa09a178f522c49606795f87d654efc569b56ef406f77f",
+  "route_id": "757d301a510b",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Fix issue #167: select focused static SEO landing verification for landing-only changes while retaining full PR verification for runtime, contract, Trust CI, package, architecture, or workflow changes, with regression tests.",
+  "updated_at": "2026-09-22T19:57:28+00:00"
+}
