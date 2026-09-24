@@ -36,3 +36,10 @@ related tests, and package evidence. External Trust CI and GitGuardian were not 
 - The coordinator committed that refresh as HEAD `13011c0610449c6f7a5b31917f67e87409589fb5`, tree `1f20160ffc1aef3541134380674985ea3bedfdc7`, working-tree fingerprint `bc54089ca2f0c7acca6ade20615bf3b68cf673178638af41ddd67b234115a65a`, with route base `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
 - The final verifier and machine receipt must bind the post-report-persistence tree; exact-head Trust CI remains required.
 - Verdict for the bounded code scope: **PASS**, pending final local receipt and exact-head Trust CI.
+
+## Restack after issue-186 merge — 2026-09-24
+
+- Protected main advanced to PR #191 merge `9312702d03f25e2256d1f3aa456bc41907c0c436`; the route now compares against that exact base.
+- The new base contains the separate #186/#36 disposition package. `git diff origin/main...HEAD` remains the bounded 27-path #73 change, with no new product or Trust CI implementation path.
+- The restacked candidate is HEAD `d1378a54b9e2beda0159f0dfa6647af1c0738cb8`, tree `856c6352a34daf30bd0b11dcbcbdb5846d2bc38d`, working-tree fingerprint `509b54886a0f36d6831270a0684d68f9bbb629a4905cdc2d059fd6d870707299`.
+- This restack changes the exact base identity only; final verification, review receipts, and Trust CI must bind the restacked head.

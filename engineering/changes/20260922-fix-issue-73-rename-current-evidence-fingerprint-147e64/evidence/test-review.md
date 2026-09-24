@@ -35,3 +35,10 @@ added the direct regression before this final review. No external writes were pe
 - The coordinator committed that refresh as HEAD `13011c0610449c6f7a5b31917f67e87409589fb5`, tree `1f20160ffc1aef3541134380674985ea3bedfdc7`, working-tree fingerprint `bc54089ca2f0c7acca6ade20615bf3b68cf673178638af41ddd67b234115a65a`.
 - Final verification and the machine receipt must be recorded after this report update; exact-head Trust CI remains a separate gate.
 - Verdict for the bounded test scope: **PASS**, pending final local receipt and exact-head Trust CI.
+
+## Restack after issue-186 merge — 2026-09-24
+
+- Protected main advanced to PR #191 merge `9312702d03f25e2256d1f3aa456bc41907c0c436`; the route now compares against that exact base.
+- The new base contains the separate #186/#36 disposition package. The #73 test scope and 27-path candidate diff are unchanged relative to the new base.
+- The restacked candidate is HEAD `d1378a54b9e2beda0159f0dfa6647af1c0738cb8`, tree `856c6352a34daf30bd0b11dcbcbdb5846d2bc38d`, working-tree fingerprint `509b54886a0f36d6831270a0684d68f9bbb629a4905cdc2d059fd6d870707299`.
+- Final verification, review receipts, and Trust CI must bind the restacked head.
