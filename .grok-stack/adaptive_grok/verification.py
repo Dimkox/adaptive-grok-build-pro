@@ -32,6 +32,7 @@ from .util import (
     read_text_limited,
     run,
     tree_fingerprint,
+    _git_name_status,
 )
 from .workflow_artifacts import WorkflowArtifactError, validate_stored_workflow
 from .verification_scope import (
@@ -1749,31 +1750,38 @@ def _docs_state_status_inventory(
 ) -> tuple[list[dict[str, object]], bool]:
     """Collect status records for the documentation/state decision only.
 
-    The PR/release changed-file inventory deliberately stays as it is: this side-channel
+    This read deliberately disables rename and copy detection, while the landing selector's
+    shared helper keeps them on. Git scores a freshly scaffolded change package as a copy of
+    an older one (`C085` plus an `original_path`), so with copy detection every pull request
+    that carries its own evidence would be pushed to the full suite and the focused profile
+    would never fire at all. Under `--no-renames` a scaffolded package is what it actually
+    is — additions — while any *removed* path still reports `D`, which is the one shape that
+    could hide a source file behind a documentation name.
+
+    The PR/release changed-file inventory itself stays byte-unchanged: this side channel
     feeds a scope decision and must not widen what the full suite already inspects.
     """
     records: list[dict[str, object]] = []
     trusted = True
-    local = changed_file_statuses(root)
-    if local is None:
-        trusted = False
-    else:
-        for item in local:
-            item['source'] = 'worktree'
-            records.append(item)
-    for selected in selection.bases:
-        ranged = changed_file_statuses(
-            root,
-            selected.comparison_base_sha,
-            include_worktree=False,
-            include_untracked=False,
-        )
-        if ranged is None:
+
+    def collect(source: str, *arguments: str) -> None:
+        nonlocal trusted
+        parsed = _git_name_status(root, *arguments)
+        if parsed is None:
             trusted = False
-            continue
-        for item in ranged:
-            item['source'] = f'range:{selected.comparison_base_sha}'
+            return
+        for item in parsed:
+            item['source'] = source
             records.append(item)
+
+    collect('index', 'diff', '--name-status', '--no-renames', '-z', '--cached')
+    collect('worktree', 'diff', '--name-status', '--no-renames', '-z')
+    for selected in selection.bases:
+        collect(
+            f'range:{selected.comparison_base_sha}',
+            'diff', '--name-status', '--no-renames', '-z',
+            f'{selected.comparison_base_sha}...HEAD',
+        )
     return records, trusted
 
 

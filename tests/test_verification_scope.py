@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -93,6 +95,117 @@ _TRIVIAL_TEST = (
 
 def _statuses(paths: list[str], status: str = 'M') -> list[dict[str, str]]:
     return [{'status': status, 'path': path} for path in paths]
+
+
+def _git_head(root: Path) -> str:
+    return subprocess.run(
+        ['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+class RealRepositoryInventoryTests(unittest.TestCase):
+    """The lane must fire on the shape real PRs have, and still fail on the shape attacks have.
+
+    A committed change package is byte-similar to an older one, so git's copy detection
+    reports it as `C0xx` with an original_path. Reading the docs/state status side channel
+    with copy detection on would push every evidence-carrying pull request to the full suite,
+    leaving the focused profile as dead code that only unit tests ever passed.
+    """
+
+    def _repo(self, root: Path):
+        def git(*args: str) -> None:
+            subprocess.run(['git', *args], cwd=root, check=True, capture_output=True)
+
+        git('init', '-q', '-b', 'main')
+        git('config', 'user.name', 'Test')
+        git('config', 'user.email', 'test@example.invalid')
+        package = root / 'engineering/changes/20260101-old-package'
+        package.mkdir(parents=True)
+        for name, text in (
+            ('requirements.md',
+             '# Requirements\n\n## Acceptance criteria\n\n- [x] Given a, when b, then c.\n\n'
+             '## Failure and edge cases\n\n- none\n\n## Governance context\n\n'
+             'Canonical governance JSON under `governance/`.\n'),
+            ('tasks.md',
+             '# Tasks\n\n1. Do the bounded work.\n2. Verify it.\n3. Record the evidence.\n'
+             '4. Deliver the branch.\n5. Close the package.\n6. Review the result.\n'
+             '7. Write the summary.\n8. Archive the state.\n'),
+            ('release.md',
+             '# Release\n\nRelease readiness for the bounded change.\n\n## Roll forward\n\n'
+             'Deliver the branch and re-check.\n\n## Roll back\n\nRevert the single commit.\n'),
+        ):
+            (package / name).write_text(text, encoding='utf-8')
+        (root / 'README.md').write_text('# Project\n\nidentity 1.0.0\n', encoding='utf-8')
+        (root / 'PROJECT_STATE.json').write_text('{"version": "1.0.0"}\n', encoding='utf-8')
+        git('add', '.')
+        git('commit', '-qm', 'baseline')
+        return git
+
+    def _scope_after(self, root: Path, base_sha: str) -> dict[str, object]:
+        from adaptive_grok.verification import GitRangeBase, _docs_state_status_inventory
+
+        head = _git_head(root)
+        selection = verification_module.GitRangeSelection(bases=[GitRangeBase(
+            kind='route', source='route.base_commit', target_sha=head, comparison_base_sha=base_sha,
+        )])
+        records, trusted = _docs_state_status_inventory(root, selection)
+        return select_docs_state_scope(
+            'pr',
+            sorted({str(item['path']) for item in records}),
+            range_base_count=1,
+            file_statuses=records,
+            status_inventory_trusted=trusted,
+            available_test_targets=list(FOCUSED_TEST_TARGETS),
+        )
+
+    def test_a_scaffolded_package_copy_still_selects_the_focused_profile(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='grok-scope-repo-') as tmp:
+            root = Path(tmp)
+            git = self._repo(root)
+            base = _git_head(root)
+            new_package = root / 'engineering/changes/20260924-new-package'
+            new_package.mkdir()
+            old_package = root / 'engineering/changes/20260101-old-package'
+            for name in ('requirements.md', 'tasks.md', 'release.md'):
+                shutil.copyfile(old_package / name, new_package / name)
+            (root / 'README.md').write_text('# Project\n\nidentity 1.0.1\n', encoding='utf-8')
+            (root / 'PROJECT_STATE.json').write_text('{"version": "1.0.1"}\n', encoding='utf-8')
+            git('add', '.')
+            git('commit', '-qm', 'docs successor')
+
+            # Prove git really did classify the scaffold as a copy, or this test would pass
+            # without ever exercising the thing it exists for.
+            detected = subprocess.run(
+                ['git', 'diff', '--name-status', '--find-copies-harder', f'{base}..HEAD'],
+                cwd=root, capture_output=True, text=True, check=True,
+            ).stdout
+            self.assertRegex(detected, r'C\d{2,3}\t', 'git reported no copy: the test is vacuous')
+
+            scope = self._scope_after(root, base)
+
+            self.assertTrue(scope['eligible'], scope)
+            self.assertEqual(scope['profile'], DOCS_STATE_PROFILE)
+
+    def test_a_source_path_removed_behind_a_docs_name_never_selects_it(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='grok-scope-repo-') as tmp:
+            root = Path(tmp)
+            git = self._repo(root)
+            source = root / '.grok-stack/adaptive_grok/service.py'
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text('VALUE = 1\n', encoding='utf-8')
+            git('add', '.')
+            git('commit', '-qm', 'add source')
+            base = _git_head(root)
+            source.unlink()
+            (root / 'docs').mkdir()
+            (root / 'docs/service.py.md').write_text('moved to prose\n', encoding='utf-8')
+            git('add', '-A')
+            git('commit', '-qm', 'docs-shaped replacement')
+
+            scope = self._scope_after(root, base)
+
+            self.assertFalse(scope['eligible'])
+            self.assertEqual(scope['reason_code'], 'unsafe-file-status')
 
 
 class DocsStateScopeSelectionTests(unittest.TestCase):
