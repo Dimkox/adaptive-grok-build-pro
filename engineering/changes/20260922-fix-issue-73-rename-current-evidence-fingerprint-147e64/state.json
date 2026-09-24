@@ -102,6 +102,18 @@
       "from": "implementing",
       "reason": "implementation and focused regression tests completed; route verification started",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-24T13:17:16+00:00",
+      "from": "verifying",
+      "reason": "verification passed and all independent review reports are persisted",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-24T13:17:16+00:00",
+      "from": "reviewing",
+      "reason": "bounded local PR candidate is ready; external Trust CI and merge remain separate",
+      "to": "ready"
     }
   ],
   "human_gates": [
@@ -110,7 +122,7 @@
   "human_gates_digest": "c4aa9a84de67d5a49c485ab2f60e555e6d4068f2a1c4a6ea45c84cfc636d9d0d",
   "route_id": "147e6461d649",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Fix issue #73: rename current evidence fingerprint fields that trigger GitGuardian secret heuristics while preserving historical evidence immutability and schema/test compatibility.",
-  "updated_at": "2026-09-24T12:29:02+00:00"
+  "updated_at": "2026-09-24T13:17:16+00:00"
 }
