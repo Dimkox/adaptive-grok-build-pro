@@ -19,7 +19,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "PROJECT_STATE records artifact bytes as delivered with ZIP digest 4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9, sidecar digest ac7f3551832bd73553aa65f842ea6cdad9dd95f1a16a386309a599a4136bf387, source parent and source tree, while published, tag, external-effect and operational-activation fields remain false or pending.",
+      "statement": "PROJECT_STATE records artifact bytes as delivered with ZIP digest 4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9, sidecar digest 77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8, source parent and source tree, while published, tag, external-effect and operational-activation fields remain false or pending.",
       "evidence": [{"test": "tests/test_project_state.py"}, {"test": "tests/test_manifest_package.py"}]
     },
     {
