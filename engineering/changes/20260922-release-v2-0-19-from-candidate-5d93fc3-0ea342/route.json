@@ -1,0 +1,91 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+  "base_fingerprint": "20fbfdbafbf9898c0fa7e82b4a8c44cf23f7f7ac9133ba70208b09eb40e2cd65",
+  "complexity": "high-risk",
+  "created_at": "2026-09-22T23:29:34+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "review",
+  "matched_keywords": {
+    "security": [
+      "security"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk signal: production",
+    "intent=review",
+    "domains=security,api",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "0ea34220576f",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Release v2.0.19 from candidate 5d93fc3: bump product identity and release records, run verification and independent release/security reviews, build deterministic ZIP with SHA256 sidecar, open PR, wait for exact-head adaptive-trust-ci verification, then merge, tag v2.0.19, and publish the GitHub Release only with exact delegated grants; no deployment or production service mutation.",
+  "task_domains": [
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

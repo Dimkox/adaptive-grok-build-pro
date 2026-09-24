@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.19 — 2026-09-24 (candidate, unpublished)
+
+Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. This section names the next product identity; the ZIP, sidecar, tag and GitHub Release remain pending the exact artifact-child delivery.
+
+- Carries the release-successor, architecture, verification, installer, landing, routing, evidence, schema, package-diagnostics, merge-gate and factory-fix repairs through PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193.
+- Binds candidate identity and source provenance to protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486` and the isolated `v2.0.19` release-sync tree; the earlier `5d93fc3` commit remains historical input evidence.
+- Keeps published `v2.0.18` bytes immutable and preserves the separate artifact-child/package and no-deployment boundaries.
+
 ## 2.0.18 — 2026-09-16
 
 Four pull requests merged after `v2.0.17` was published. This section records the landed source on `main` and its publication: that source was archived by the artifact child and shipped through tag `v2.0.18`.

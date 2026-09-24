@@ -1,0 +1,151 @@
+{
+  "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "release/v2.0.19-candidate-20260922",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "5d93fc3d68869ab26799935adab5fa62be5e2a80",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-22T23:29:46+00:00",
+      "route_id": "0ea34220576f"
+    },
+    {
+      "branch": "release/v2.0.19-candidate-20260922",
+      "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+      "detached": false,
+      "dirty_product_paths": [
+        ".grok-stack/adaptive_grok/__init__.py",
+        "CHANGELOG.md",
+        "DARK_FACTORY_ROADMAP.md",
+        "GROK_BUILD_HANDOFF.md",
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "VERSION",
+        "tests/test_manifest_package.py",
+        "tests/test_project_state.py",
+        "tests/test_structure.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [],
+      "head": "5d93fc3d68869ab26799935adab5fa62be5e2a80",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-22T23:45:19+00:00",
+      "route_id": "0ea34220576f"
+    }
+  ],
+  "created_at": "2026-09-22T23:29:46+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "receipt_kind": "verification",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/verification.md"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "receipt_kind": "code_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/code-review.md"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "receipt_kind": "test_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/test-review.md"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "receipt_kind": "security_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/security-review.md"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "receipt_kind": "release_review",
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-09-23T00:54:27Z",
+        "reference": "evidence/release-review.md"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-22T23:29:46+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-22T23:45:19+00:00",
+      "from": "draft",
+      "reason": "Typed v2.0.19 release objective, acceptance criteria, invariants, forbidden outcomes and rollback are authored; user scope/design gate approved.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-22T23:45:19+00:00",
+      "from": "scoped",
+      "reason": "Exact candidate source 5d93fc3, immutable v2.0.18 rollback, two-stage R/A chain and no-deployment boundary approved.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-22T23:45:19+00:00",
+      "from": "approved",
+      "reason": "Begin bounded release-sync implementation on isolated branch; only identity, state, docs, coupled tests and change evidence are in scope.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-23T00:54:23+00:00",
+      "from": "implementing",
+      "reason": "Freeze release-sync implementation after independent reviews; run final exact-tree verification next.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-23T00:54:23+00:00",
+      "from": "verifying",
+      "reason": "Independent code, test, security, and release reviews are PASS; final verification is the remaining local gate.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-23T00:54:24+00:00",
+      "from": "reviewing",
+      "reason": "All local release-sync evidence is prepared; external exact-SHA Trust CI and protected PR delivery remain required.",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "human_gates_digest": "4535e50711bb8a9e833517d5ba1a07f103c20b4d7d7e6546e2e4fb30ab74047a",
+  "route_id": "0ea34220576f",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Release v2.0.19 from candidate 5d93fc3",
+  "updated_at": "2026-09-23T00:54:27+00:00"
+}
