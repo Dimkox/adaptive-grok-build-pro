@@ -1,0 +1,25 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Newly written delegated grants use grant_binding_digest and omit the detector-shaped fingerprint field.", "evidence": [{"test": "tests/test_policy.py::PolicyTests.test_new_grant_uses_neutral_binding_digest_key"}, {"receipt": "verification"}]},
+    {"id": "AC-002", "statement": "Existing schema-version-2 grants using tree_fingerprint remain valid when every other binding matches.", "evidence": [{"test": "tests/test_policy.py::PolicyTests.test_legacy_tree_fingerprint_grant_remains_valid"}, {"receipt": "test_review"}]},
+    {"id": "AC-003", "statement": "Ambiguous grants containing both binding field names fail closed.", "evidence": [{"test": "tests/test_policy.py::PolicyTests.test_conflicting_grant_binding_fields_fail_closed"}, {"receipt": "security_review"}]},
+    {"id": "AC-004", "statement": "The two historical probe evidence files containing authorization_tree_fingerprint remain byte-identical.", "evidence": [{"test": "tests/test_history.py::HistoryTests.test_issue_73_historical_probe_evidence_remains_byte_identical"}, {"receipt": "code_review"}]}
+  ],
+  "approvals": {"required_scopes": ["scope_and_design_approval"]},
+  "change_id": "20260922-fix-issue-73-rename-current-evidence-fingerprint-147e64",
+  "contracts": {"events": [], "json_schema": [], "openapi": []},
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Immutable evidence under the two September 13 L5 packages must not be rewritten.", "evidence": [{"test": "tests/test_history.py::HistoryTests.test_issue_73_historical_probe_evidence_remains_byte_identical"}]},
+    {"id": "FORBID-002", "statement": "Conflicting legacy and current grant binding fields must not be accepted.", "evidence": [{"test": "tests/test_policy.py::PolicyTests.test_conflicting_grant_binding_fields_fail_closed"}]},
+    {"id": "FORBID-003", "statement": "This source change must not generate or submit a human security approval.", "evidence": [{"receipt": "release_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Local delegated grants remain bound to repository, route, change, Git HEAD, and the current tree digest.", "evidence": [{"test": "tests/test_policy.py"}]},
+    {"id": "INV-002", "statement": "No human approval, private key, external write, release, or deployment is created by this change.", "evidence": [{"receipt": "release_review"}]}
+  ],
+  "objective": {"id": "OBJ-001", "statement": "Rename the current delegated-grant tree binding field without rewriting historical evidence or invalidating existing local grants.", "success_metric": "focused_grant_binding_regressions_pass", "target": "new grants emit grant_binding_digest and legacy tree_fingerprint grants remain readable"},
+  "observability": [{"id": "SIG-001", "metric": "focused grant binding compatibility tests pass", "proves": ["OBJ-001"]}],
+  "risk": {"domains": ["api", "security"], "tier": "red"},
+  "rollback": {"maximum_steps": 1, "strategy": "forward_fix"},
+  "schema_version": 2
+}

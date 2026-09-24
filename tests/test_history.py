@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+
 import copy
 import json
 import os
@@ -87,6 +89,18 @@ def profile(**overrides) -> dict:
 
 
 class HistoryTests(unittest.TestCase):
+    def test_issue_73_historical_probe_evidence_remains_byte_identical(self) -> None:
+        paths = (
+            ROOT / "engineering/changes/20260913-l5-split-g-current-base-offline-recovery-and-com-352913/evidence/historical-qwen-probe.json",
+            ROOT / "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/historical-qwen-probe.json",
+        )
+
+        for path in paths:
+            self.assertEqual(
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+                "f69eedc41e41be3920e36dd243d719de861b64a96a674983bd256f978e329e9b",
+            )
+
     def test_merged_request_does_not_invent_task_acceptance(self) -> None:
         data = snapshot()
         data["repositories"][0]["pull_requests"] = [pull_request()]
