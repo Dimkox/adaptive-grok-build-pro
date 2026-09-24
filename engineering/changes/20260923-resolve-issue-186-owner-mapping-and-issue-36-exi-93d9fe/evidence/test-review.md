@@ -53,3 +53,10 @@ Do not add a regression test in this repository for code that is not present her
 ## Final assessment
 
 The test scope is correct for #186/#36: prove the owner boundary, preserve the shell reproduction, and avoid fabricating a product fix for an absent target.
+
+## Refresh after base merge — 2026-09-24
+
+- Reviewed HEAD `89dd75ec38855b47e975bdd3bb8e21e7b2ffce53`; worktree remained clean.
+- `python3 -m unittest tests.test_verification_doctor tests.test_util_fingerprint tests.test_workflow_artifacts`: **131 tests, OK**.
+- Focused verifier smoke rejected the mixed scope with exit `1`, as required; no landing contract ran.
+- Verdict: **PASS** for the bounded test review. Residual: the full verifier and external Trust CI remain separate gates.

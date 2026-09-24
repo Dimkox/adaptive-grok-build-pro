@@ -58,3 +58,10 @@ Observed result:
 ## Final assessment
 
 The candidate is an honest repository-local owner mapping and disposition for #186/#36. It preserves the blocker instead of pretending that an absent local implementation was fixed.
+
+## Refresh after base merge — 2026-09-24
+
+- Reviewed HEAD `89dd75ec38855b47e975bdd3bb8e21e7b2ffce53`, tree `ac391f07f4c1276c0eb04fdd40442f8e2162b638`, against `origin/main` `08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc`.
+- `git diff --check` passed; no product-code diff exists relative to `origin/main`.
+- The #186/#36 no-local-owner disposition and the landed #167 focused verifier remain intact; no speculative helper, regression, API, or Trust CI authority change was introduced.
+- Verdict: **PASS**. The refreshed full verifier is required for the persisted evidence tree.
