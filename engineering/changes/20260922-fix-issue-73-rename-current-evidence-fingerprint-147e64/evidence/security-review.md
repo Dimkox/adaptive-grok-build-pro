@@ -30,3 +30,11 @@ ambiguous, malformed, stale, foreign, or mismatched grants.
 The change does not touch historical evidence, trust stores, approval keys, deployed Trust CI
 policy, GitHub Actions, production systems, or external writes. GitGuardian detector/allow-list
 behavior and App-owned Trust CI remain external limitations and are not claimed as fixed here.
+
+## Exact candidate rebind — 2026-09-24
+
+- Independent re-review snapshot: HEAD `08b2a2881e8480f6bc8eeca0d8ea4570a619e81c`, tree `5ee5534d84ac8a78de4ca4e13e5043dc3f6f1d19`, working-tree fingerprint `8ead1eeef9855c06169f15fff2a3300e43c9142154c419f300373d1ed19c7e9d`, target `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The security reviewer found no correctness or security findings, validated the neutral binding field, legacy compatibility, dual-field fail-closed behavior, historical immutability, and focused tests.
+- The coordinator committed the route/evidence refresh as HEAD `13011c0610449c6f7a5b31917f67e87409589fb5`, tree `1f20160ffc1aef3541134380674985ea3bedfdc7`, working-tree fingerprint `bc54089ca2f0c7acca6ade20615bf3b68cf673178638af41ddd67b234115a65a`.
+- Final verification and the machine receipt must bind the post-report-persistence tree; exact-head Trust CI remains required.
+- Verdict for the bounded security scope: **PASS**, pending final local receipt and exact-head Trust CI.

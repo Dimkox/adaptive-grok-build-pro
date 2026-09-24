@@ -28,3 +28,11 @@ issue #73 change.
 The implementation keeps repository, route, change, Git HEAD, scope, action, resource, expiry, and
 tree-binding checks intact. Product changes are limited to the grant producer, landing publisher,
 related tests, and package evidence. External Trust CI and GitGuardian were not evaluated here.
+
+## Exact candidate rebind — 2026-09-24
+
+- Independent re-review snapshot: HEAD `08b2a2881e8480f6bc8eeca0d8ea4570a619e81c`, tree `5ee5534d84ac8a78de4ca4e13e5043dc3f6f1d19`, working-tree fingerprint `8ead1eeef9855c06169f15fff2a3300e43c9142154c419f300373d1ed19c7e9d`, target `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The reviewer found no correctness or security defect, confirmed the 76 focused tests and historical-evidence immutability, and noted only the uncommitted route/evidence refresh.
+- The coordinator committed that refresh as HEAD `13011c0610449c6f7a5b31917f67e87409589fb5`, tree `1f20160ffc1aef3541134380674985ea3bedfdc7`, working-tree fingerprint `bc54089ca2f0c7acca6ade20615bf3b68cf673178638af41ddd67b234115a65a`, with route base `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The final verifier and machine receipt must bind the post-report-persistence tree; exact-head Trust CI remains required.
+- Verdict for the bounded code scope: **PASS**, pending final local receipt and exact-head Trust CI.

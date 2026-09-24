@@ -39,3 +39,10 @@ readable, ambiguous grants fail closed, and historical evidence bytes remain pin
 The external last mile remains separate: App-owned Trust CI on the exact PR head, branch
 protection, human-signed approvals where required, merge, deployment, tagging, publication, and
 GitGuardian disposition were not evaluated and must not be inferred from this local PASS.
+
+## Exact candidate rebind — 2026-09-24
+
+- Independent release-review snapshot: HEAD `13011c0610449c6f7a5b31917f67e87409589fb5`, tree `1f20160ffc1aef3541134380674985ea3bedfdc7`, working-tree fingerprint `bc54089ca2f0c7acca6ade20615bf3b68cf673178638af41ddd67b234115a65a`, target `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The bounded release review found the candidate scope coherent, README/VERSION still consistent with `2.0.18`, rollback guidance present, `git diff --check` clean, and the 76 focused tests passing.
+- It correctly withheld a release-ready verdict until a fresh fingerprint-bound verification receipt and exact-head external Trust CI exist; those are final handoff gates, not release-review substitutes.
+- Verdict for the bounded release scope: **PASS for PR handoff**, pending final local verification receipt and exact-head Trust CI.
