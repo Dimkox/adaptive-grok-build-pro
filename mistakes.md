@@ -1422,6 +1422,18 @@ The batch identity collector initially reused diff-specific glob pathspec syntax
 
 I built the next source manifest from an incomplete directory-prefix list and omitted the reviewed165Stop hook under `.grok/`. Independent integration analysis caught the dependency before any import; compare every changed candidate path against explicit source and handoff exclusions instead of assuming all executable paths live under `.grok-stack/`.
 
+### 2026-09-22 — Started a duplicate full verifier before checking the active PID
+
+**Symptom:** a second full `grok_verify --mode pr` was launched while the writer's exact-tree verifier was already running, consuming redundant test resources; the duplicate was stopped before its result was used.
+**Root cause:** I trusted the handoff timing instead of checking the captured verifier PID and current receipt state before starting another gate.
+**Durable rule:** before launching a long repository gate, probe the exact known PID and receipt directory; run one final verifier only after all remaining tree edits are complete.
+
+### 2026-09-22 — Ran the gate from a divergent worktree instead of the route-owned branch
+
+**Symptom:** the first full verifier reported a non-ancestor route base, stale change specs, and unrelated ruff/root-test failures from `feature/winston-wolfe-landing-v2`, while the active `b26dff` route had a dedicated worktree based on `origin/main`.
+**Root cause:** I treated the shell cwd as the route worktree without reconciling the active route base and existing dedicated branch first.
+**Durable rule:** bind verification and edits to the route-owned worktree whose HEAD is based on the active route base; preserve unrelated dirty worktrees untouched.
+
 ### 2026-09-22 — Use the declared unittest class name
 
 The first focused test command named `WorkflowArtifactTests`, but the repository declares `WorkflowSourceTests`; the six verifier tests passed and the command ended with a loader error. Inspect test class declarations before composing targeted unittest selectors.

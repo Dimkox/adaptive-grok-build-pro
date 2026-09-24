@@ -1,0 +1,57 @@
+{
+  "change_id": "20260922-consolidate-repository-owned-remaining-issue-fix-b26dff",
+  "created_at": "2026-09-22T11:55:44+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "receipt_kind": "verification",
+        "status": "not_run",
+        "reason": "final-tree verification receipt will be recorded after the package and independent review reports are frozen"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "receipt_kind": "code_review",
+        "status": "not_run",
+        "reason": "independent code review receipt will be recorded after the final-tree review report is frozen"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "receipt_kind": "test_review",
+        "status": "not_run",
+        "reason": "independent test review receipt will be recorded after the final-tree review report is frozen"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-22T11:55:44+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-22T11:55:59+00:00",
+      "from": "draft",
+      "reason": "reused current-tree analyses; source-owned vs external boundaries recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-22T11:55:59+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; Trust CI remains merge authority",
+      "to": "approved"
+    }
+  ],
+  "route_id": "b26dfffbedae",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Consolidate repository-owned remaining issue fixes into one bounded batch from current main, preserve external blockers, run one final PR verification and prepare one successor PR",
+  "updated_at": "2026-09-22T18:15:00+00:00",
+  "human_gates": [],
+  "human_gates_digest": "053bb038b02108025d33eb47e31bb15acbae583194b1462cd39745e8774ec32c"
+}

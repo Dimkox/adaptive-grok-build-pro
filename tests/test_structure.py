@@ -995,6 +995,14 @@ class StructureTests(unittest.TestCase):
 
     def test_trust_ci_policy_uses_immutable_sandbox_and_external_status(self) -> None:
         policy = json.loads((ROOT / "trust-ci/config/policy.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(policy["authority"], "illustrative-example-only")
+        trust_readme = (ROOT / "trust-ci/README.md").read_text(encoding="utf-8")
+        self.assertIn("cannot install approval scopes", trust_readme)
+        self.assertIn("change branch protection", trust_readme)
+        self.assertIn("satisfy the App-owned check", trust_readme)
+        self.assertIn("server-mounted policy epoch", trust_readme)
+        self.assertIn("exact App-owned Check Run", trust_readme)
+        self.assertIn("authoritative", trust_readme.lower())
         self.assertEqual(policy["status_context"], "adaptive-trust-ci/verified")
         image = str(policy["sandbox"]["image"])
         self.assertTrue(
@@ -1012,6 +1020,15 @@ class StructureTests(unittest.TestCase):
         else:
             commands = policy["commands"]
         self.assertTrue(all(command.get("required") is True for command in commands))
+
+    def test_l5_runtime_observation_marks_provider_probes_non_rederivable(self) -> None:
+        runbook = (ROOT / "engineering/runbooks/l5-runtime-observation-2026-09-15.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("operator-attested observations", runbook)
+        self.assertIn("not durable job rows", runbook)
+        self.assertIn("not re-derivable by local verification", runbook)
+        self.assertIn("Durable artifact jobs and their source digests are recorded separately", runbook)
 
     def test_hook_registration_has_required_lifecycle_events(self) -> None:
         hooks = json.loads((ROOT / ".grok/hooks/adaptive.json").read_text(encoding="utf-8"))["hooks"]
