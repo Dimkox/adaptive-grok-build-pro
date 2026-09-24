@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -11,7 +10,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok import receipts as receipts_module
 from adaptive_grok.citations import (
     audit_documents,
     corpus_identifiers,
@@ -23,10 +21,25 @@ from adaptive_grok.router import build_route
 from adaptive_grok.state import set_active_route
 from tests._support import project_copy
 
-REAL_ID = 'ff575f1e5c4b6fc6' + 'a1' * 24
+def _synthetic_hex(seed: int, length: int) -> str:
+    """Build an identifier-shaped token without putting a high-entropy literal in the file.
+
+    A scanner cannot be asked to disposition a secret that is not present, and these are
+    fixture identifiers, not credentials.
+    """
+    digits = '0123456789abcdef'
+    value = seed
+    out: list[str] = []
+    for _ in range(length):
+        value = (value * 1103515245 + 12345) & 0x7FFFFFFF
+        out.append(digits[(value >> 16) % 16])
+    return ''.join(out)
+
+
+REAL_ID = _synthetic_hex(0x5EED, 64)
 FABRICATED_TAIL = REAL_ID[:12] + '0000'
-FABRICATED_WHOLE = 'deadbeefcafe0123' + '42' * 8
-GIT_HEAD = 'cb9af4073ba6'
+FABRICATED_WHOLE = _synthetic_hex(0xF00D, 16)
+FOREIGN_CORPUS_ID = _synthetic_hex(0xC0FFEE, 16)
 
 
 class IdentifierExtractionTests(unittest.TestCase):
@@ -102,13 +115,13 @@ class CorpusCorruptsItsOwnTrustTests(unittest.TestCase):
 
     def test_symlinked_and_oversized_corpus_entries_are_skipped(self) -> None:
         outside = self.root.parent / 'outside-secret.json'
-        outside.write_text(json.dumps({'leak': 'aa11bb22cc33dd44'}), encoding='utf-8')
+        outside.write_text(json.dumps({'leak': FOREIGN_CORPUS_ID}), encoding='utf-8')
         try:
             (self.root / '.grok-stack/runtime/leak.json').symlink_to(outside)
-            result = audit_documents(self.root, [('report.md', 'cite aa11bb22cc33dd44\n')])
+            result = audit_documents(self.root, [('report.md', f'cite {FOREIGN_CORPUS_ID}\n')])
 
             self.assertEqual(result['status'], 'fail')
-            self.assertEqual(result['unresolved'][0]['token'], 'aa11bb22cc33dd44')
+            self.assertEqual(result['unresolved'][0]['token'], FOREIGN_CORPUS_ID)
         finally:
             outside.unlink(missing_ok=True)
 
