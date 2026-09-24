@@ -95,6 +95,18 @@
       "from": "approved",
       "reason": "Artifact bytes, provenance, state, documentation and lockstep tests are prepared in the isolated artifact-child worktree.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-24T20:43:45+00:00",
+      "from": "implementing",
+      "reason": "Final product tree is frozen; full grok_verify --mode pr passed on a2486ff5.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-24T20:43:45+00:00",
+      "from": "verifying",
+      "reason": "Full verification passed; persist the two route-selected independent review receipts for the frozen tree.",
+      "to": "reviewing"
     }
   ],
   "human_gates": [
@@ -104,7 +116,7 @@
   "human_gates_digest": "517544f211e4f61be159a2128a857bb4170a249086f7df9bf8985e46b6d94731",
   "route_id": "09407b46cb4b",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "reviewing",
   "title": "Build v2.0.19 artifact child from merged release-sync 3f41be92",
-  "updated_at": "2026-09-24T20:10:58+00:00"
+  "updated_at": "2026-09-24T20:43:45+00:00"
 }
