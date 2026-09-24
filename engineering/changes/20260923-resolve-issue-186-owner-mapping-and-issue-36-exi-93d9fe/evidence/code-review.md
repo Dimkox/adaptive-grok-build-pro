@@ -65,3 +65,11 @@ The candidate is an honest repository-local owner mapping and disposition for #1
 - `git diff --check` passed; no product-code diff exists relative to `origin/main`.
 - The #186/#36 no-local-owner disposition and the landed #167 focused verifier remain intact; no speculative helper, regression, API, or Trust CI authority change was introduced.
 - Verdict: **PASS**. The refreshed full verifier is required for the persisted evidence tree.
+
+## Exact candidate rebind — 2026-09-24
+
+- Independent re-review snapshot: HEAD `7dcd64d66446bec8b4023287431ea4e84c2093d1`, tree `75d63fa373116d4ad4f107545806e0d168d4cba0`, working-tree fingerprint `1ea4fd899426f3199506dc7816aabc5075af66bfc78491131d1747aa3685663a`, target `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The re-review found the route/evidence refresh unstaged and no product-code paths in the candidate diff; it did not approve the stale remote PR identity.
+- The coordinator committed that refresh as HEAD `509e632d0cf0378fb23e23543ba79690e9ce1cf1`, tree `677ad2ac3ea7bff750dded4db4df0d7906fd3d96`, working-tree fingerprint `ad3d88e0612fed243bb46f57a6b8631fcbc21b1b484624796230480fcb5c6cd3`, with the route base set to `6cc360e48e608ef22fc6a68feff16ec9d78712b0`.
+- The final verifier and machine receipt must bind the post-report-persistence tree; external Trust CI remains required for the exact pushed head.
+- Verdict for the bounded issue disposition: **PASS**, pending final local receipt and exact-head Trust CI.
