@@ -4,16 +4,16 @@ MIT-licensed tooling for task-routed AI-assisted development, external verificat
 
 ## Current state
 
-Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The `v2.0.19` ZIP and sidecar are not published until the separate artifact-child merge and exact release gates complete.
+Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The `v2.0.19` ZIP and sidecar are now delivered in this artifact-child candidate from merged release-sync `3f41be92`, but tag and GitHub Release publication remain pending their separate exact gates.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |
-| Repository source | `main` observed on September 24 at `7650a5e12aad55bdcf730cd37e2faf162bec0486` (PR #193, after twenty post-`v2.0.18` landings recorded in `PROJECT_STATE.json`); the earlier `v2.0.19` input/source candidate commit is `5d93fc3d68869ab26799935adab5fa62be5e2a80`. The release-sync branch is now rebased onto this protected-main snapshot and its final head/tree remain pending until verification. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
+| Repository source | `main` observed on September 24 at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189), after twenty post-`v2.0.18` landings recorded in `PROJECT_STATE.json`; the artifact-child candidate carries the ZIP+sidecar built from that exact tree. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
 
-The post-release source line through PR #193 is the input to the `v2.0.19` release-sync candidate. Its durable [change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) keeps source verification, artifact-child provenance and publication separate. Final frozen-tree verification, current receipts and external delivery remain required before the candidate is published.
+The post-release source line through PR #193 is recorded by the merged `v2.0.19` release-sync PR #189. Its durable [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) keep source verification, artifact provenance and publication separate. Tagging and GitHub Release publication remain downstream of the artifact-child exact check and merge.
 
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 

@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "7650a5e12aad55bdcf730cd37e2faf162bec0486"  # 2026-09-24 observation, PR #193 source base for the v2.0.19 candidate
+OBSERVED_MAIN_SHA = "3f41be92161fef451a2dfa7451eb458ce8f022b3"  # 2026-09-24 observation, PR #189 release-sync merge and artifact source parent
+V2019_ARTIFACT_TREE = "aed3246585fc6435463c3e3a58f1fe6a16070e6a"
+V2019_ZIP_SHA256 = "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9"
+V2019_SIDECAR_SHA256 = "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8"
 V2017_SOURCE_BASE = "78082a290f8b90cade88685351fbb2ba263689b9"  # PR #98 release-sync merge: the base the candidate was authored on
 V2017_CHECKED_HEAD = "bbc5cdd9b8ee4dbc6927bf24244a5434f490576d"
 V2017_MERGE_COMMIT = "c86b1a1989ace899a4450bde558fcd8adc00e4e2"
@@ -414,7 +417,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[4]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.0.19")
-        self.assertEqual(local["status"], "pending_release")
+        self.assertEqual(local["status"], "artifact_bytes_delivered")
         self.assertEqual(local["route_id"], "0ea34220576f")
         self.assertEqual(local["branch"], "release/v2.0.19-candidate-20260922")
         self.assertIsNone(local["pull_request"])
@@ -422,20 +425,23 @@ class ProjectStateTests(unittest.TestCase):
             local["change_package"],
             "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
         )
-        self.assertEqual(local["artifact_status"], "pending_unpublished_artifact_child")
+        self.assertEqual(local["artifact_status"], "pending_tag_and_release")
         self.assertFalse(local["published"])
         self.assertIsNone(local["published_at"])
         self.assertFalse(local["external_effect"])
         self.assertIsNone(local["external_effect_scope"])
         self.assertFalse(local["operational_activation"])
-        self.assertIsNone(local["artifact_child"]["zip_sha256"])
-        self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
+        self.assertEqual(local["artifact_child"]["zip_sha256"], V2019_ZIP_SHA256)
+        self.assertEqual(local["artifact_child"]["sidecar_sha256"], V2019_SIDECAR_SHA256)
         for key in ("reviewed_product_head", "reviewed_product_tree", "checked_head", "merge_commit", "tree"):
             self.assertIsNone(local[key], f"pending candidate must not name {key}")
-        for key in ("source_parent", "source_parent_tree", "commit", "tree"):
-            self.assertIsNone(local["artifact_child"][key], f"pending artifact child must not name {key}")
+        self.assertEqual(local["artifact_child"]["source_parent"], OBSERVED_MAIN_SHA)
+        self.assertEqual(local["artifact_child"]["source_parent_tree"], V2019_ARTIFACT_TREE)
+        for key in ("commit", "tree"):
+            self.assertIsNone(local["artifact_child"][key], f"artifact child must not self-record {key}")
         self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(local["artifact_child"]["status"], "not_built")
+        self.assertEqual(local["artifact_child"]["status"], "built_byte_reproducible_twice")
+        self.assertTrue(local["artifact_child"]["zip_source_note"])
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [
@@ -505,7 +511,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["route_id"], "0ea34220576f")
         self.assertEqual(current["target_version"], "2.0.19")
         self.assertEqual(delivery["status"], "release_sync_pending")
-        self.assertIsNone(delivery["local_source_gate"]["artifact_head"])
+        self.assertEqual(
+            delivery["local_source_gate"]["status"], "passed_for_artifact_source_parent"
+        )
+        self.assertEqual(delivery["local_source_gate"]["artifact_head"], OBSERVED_MAIN_SHA)
+        self.assertEqual(delivery["local_source_gate"]["artifact_tree"], V2019_ARTIFACT_TREE)
         self.assertIsNone(delivery["repository_delivery"]["checked_head"])
         self.assertIsNone(delivery["repository_delivery"]["pull_request"])
         self.assertIsNone(delivery["package_handoff"]["tag_target"])

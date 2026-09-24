@@ -1,0 +1,90 @@
+{
+  "schema_version": 2,
+  "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver the v2.0.19 artifact child from the exact merged release-sync commit 3f41be92161fef451a2dfa7451eb458ce8f022b3 by adding the reproducible ZIP and SHA-256 sidecar plus bounded provenance updates, then leave tag and GitHub Release publication for their separate exact delegated actions.",
+    "success_metric": "The artifact-child PR contains exactly the two package delta files plus the required candidate-state and evidence updates, both builds from the sealed release-sync tree are byte-identical, local verification and release/security reviews pass, and publication remains false until the exact artifact-child merge is externally checked.",
+    "target": "exact artifact-child PR head derived from merged release-sync 3f41be92161fef451a2dfa7451eb458ce8f022b3"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": ["release-governance", "documentation", "test-infra", "security"]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The artifact ZIP and SHA-256 sidecar are built from exact merged release-sync commit 3f41be92161fef451a2dfa7451eb458ce8f022b3 and its tree aed3246585fc6435463c3e3a58f1fe6a16070e6a; two independent builds are byte-identical.",
+      "evidence": [{"test": "tests/test_manifest_package.py"}, {"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "PROJECT_STATE records artifact bytes as delivered with ZIP digest 4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9, sidecar digest ac7f3551832bd73553aa65f842ea6cdad9dd95f1a16a386309a599a4136bf387, source parent and source tree, while published, tag, external-effect and operational-activation fields remain false or pending.",
+      "evidence": [{"test": "tests/test_project_state.py"}, {"test": "tests/test_manifest_package.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "README, CHANGELOG, ROADMAP, START_HERE, GROK_BUILD_HANDOFF and packages/README describe the delivered artifact bytes and preserve the separate tag/GitHub Release boundary; the artifact-child change package records build provenance, rollback and exact-SHA sequencing.",
+      "evidence": [{"receipt": "release_review"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The artifact-child tree contains no provider installation, host mutation, deployment, credential, private-key, deployed-Trust-CI-policy or GitHub Actions change, and local evidence is not treated as merge authority.",
+      "evidence": [{"receipt": "security_review"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The artifact-child branch is delivered through a pull request whose exact head receives the App-owned adaptive-trust-ci/verified@06ecf1c875bc check before merge; tag v2.0.19 and GitHub Release publication remain downstream exact delegated actions.",
+      "evidence": [{"receipt": "release_review"}, {"receipt": "security_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Published v2.0.18 and all prior release bytes, tag identities, migration history and historical state remain unchanged.",
+      "evidence": [{"test": "tests/test_project_state.py"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "The ZIP bytes and embedded provenance remain bound to merged release-sync source parent 3f41be92161fef451a2dfa7451eb458ce8f022b3; the artifact-child commit is the repository custody boundary and cannot be substituted by a later documentation commit.",
+      "evidence": [{"test": "tests/test_manifest_package.py"}, {"receipt": "verification"}]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Tag, GitHub Release, external_effect and operational_activation remain unasserted until their separate exact protected actions complete.",
+      "evidence": [{"test": "tests/test_project_state.py"}, {"receipt": "release_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Building or delivering package bytes from a stale, unverified, mismatched or locally modified source tree.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "release_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Credential, private-key, environment, host-local runtime or production-service content enters the product diff or release archive.",
+      "evidence": [{"receipt": "security_review"}]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "A local receipt, prompt, route or delegated grant is treated as a substitute for the external App-owned exact-head Trust CI check or human-signed Trust CI approval.",
+      "evidence": [{"receipt": "security_review"}]
+    }
+  ],
+  "contracts": {"openapi": [], "json_schema": [], "events": []},
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact release-sync parent, artifact-child head/tree, ZIP digest, sidecar digest, App check identity and later tag target are recorded in the change package and PROJECT_STATE.",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "rollback": {
+    "strategy": "restore",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": ["pull-request-merge", "git-push-branch", "git-push-tag", "github-release"]
+  }
+}

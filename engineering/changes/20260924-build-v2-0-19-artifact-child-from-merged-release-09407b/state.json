@@ -1,0 +1,110 @@
+{
+  "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "release/v2.0.19-artifact-child-20260924",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-24T19:56:40+00:00",
+      "route_id": "09407b46cb4b"
+    },
+    {
+      "branch": "release/v2.0.19-artifact-child-20260924",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "detached": false,
+      "dirty_product_paths": [
+        "CHANGELOG.md",
+        "DARK_FACTORY_ROADMAP.md",
+        "GROK_BUILD_HANDOFF.md",
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "packages/README.md",
+        "packages/adaptive-grok-build-pro-v2.0.19.zip",
+        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+        "tests/test_project_state.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-24T20:10:58+00:00",
+      "route_id": "09407b46cb4b"
+    }
+  ],
+  "created_at": "2026-09-24T19:56:40+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-24T19:56:40+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-24T20:10:58+00:00",
+      "from": "draft",
+      "reason": "Scope and design gate approved; exact merged release-sync parent and artifact-child-only delivery are bounded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-24T20:10:58+00:00",
+      "from": "scoped",
+      "reason": "User-approved v2.0.19 release scope and named production actions are recorded; implementation may begin.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-24T20:10:58+00:00",
+      "from": "approved",
+      "reason": "Artifact bytes, provenance, state, documentation and lockstep tests are prepared in the isolated artifact-child worktree.",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "human_gates_digest": "517544f211e4f61be159a2128a857bb4170a249086f7df9bf8985e46b6d94731",
+  "route_id": "09407b46cb4b",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Build v2.0.19 artifact child from merged release-sync 3f41be92",
+  "updated_at": "2026-09-24T20:10:58+00:00"
+}

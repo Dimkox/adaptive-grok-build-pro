@@ -2,10 +2,11 @@
 
 ## 2.0.19 — 2026-09-24 (candidate, unpublished)
 
-Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. This section names the next product identity; the ZIP, sidecar, tag and GitHub Release remain pending the exact artifact-child delivery.
+Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. The release-sync parent is merged and the ZIP+sidecar are delivered by the separate artifact-child candidate; tag and GitHub Release remain pending their exact protected steps.
 
 - Carries the release-successor, architecture, verification, installer, landing, routing, evidence, schema, package-diagnostics, merge-gate and factory-fix repairs through PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193.
-- Binds candidate identity and source provenance to protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486` and the isolated `v2.0.19` release-sync tree; the earlier `5d93fc3` commit remains historical input evidence.
+- Binds candidate identity and source provenance to release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3`, whose source parent is protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486`; the earlier `5d93fc3` commit remains historical input evidence.
+- Delivers `packages/adaptive-grok-build-pro-v2.0.19.zip` and its sidecar twice byte-identically from the release-sync tree; the tag and GitHub Release are still unpublished and require fresh exact checks and grants.
 - Keeps published `v2.0.18` bytes immutable and preserves the separate artifact-child/package and no-deployment boundaries.
 
 ## 2.0.18 — 2026-09-16
