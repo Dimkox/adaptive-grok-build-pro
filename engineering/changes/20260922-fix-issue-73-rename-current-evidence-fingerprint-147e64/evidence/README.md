@@ -2,6 +2,10 @@
 
 Store human-readable review reports here. Machine receipts live under `.grok-stack/runtime/receipts/` and are bound to the current repository fingerprint.
 
+## Restack refresh
+
+After PR #194 merged as `6cc360e48e608ef22fc6a68feff16ec9d78712b0`, the route base was refreshed to that exact protected-main SHA. The original `130ce4a42d9f9bbd1b56772d40b19ae530283205` remains the historical review base; this refresh excludes the already-landed Trust CI documentation from the current change range and preserves the reviewed issue scope.
+
 `state.json` holds canonical local checkpoints and explicit evidence accounting. A `not_run` reason explains unfinished work; a recorded result is self-reported and does not satisfy a passing receipt. Checkpoints are observations in this worktree, and become available to another clone only when separately committed and published.
 
 New-package and first-implementation observations are appended below by the lifecycle commands. A pending README mirror is surfaced in status and can be retried with the same explicit lifecycle command; state and README publication is not a two-file atomic transaction.
