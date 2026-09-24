@@ -1433,3 +1433,7 @@ I built the next source manifest from an incomplete directory-prefix list and om
 **Symptom:** the first full verifier reported a non-ancestor route base, stale change specs, and unrelated ruff/root-test failures from `feature/winston-wolfe-landing-v2`, while the active `b26dff` route had a dedicated worktree based on `origin/main`.
 **Root cause:** I treated the shell cwd as the route worktree without reconciling the active route base and existing dedicated branch first.
 **Durable rule:** bind verification and edits to the route-owned worktree whose HEAD is based on the active route base; preserve unrelated dirty worktrees untouched.
+
+### 2026-09-22 — Use the declared unittest class name
+
+The first focused test command named `WorkflowArtifactTests`, but the repository declares `WorkflowSourceTests`; the six verifier tests passed and the command ended with a loader error. Inspect test class declarations before composing targeted unittest selectors.

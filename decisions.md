@@ -819,3 +819,7 @@ Applying only the selected source, test and documentation diffs onto delivered m
 ### 2026-09-22 — Mark checked-in policy examples and provider probes as non-authoritative
 
 The checked-in Trust CI policy example now declares its illustrative-only authority explicitly, while the README names the deployed server-mounted policy epoch and exact App-owned Check Run as the merge authority. Runtime documentation and structure tests separately bind provider probes as operator-attested, non-re-derivable observations so local source evidence cannot be mistaken for deployed trust or durable job evidence.
+
+### 2026-09-22 — Require Git status provenance for focused landing eligibility
+
+Focused verification now consumes a status-preserving Git inventory and rejects deleted, renamed, copied, malformed, or ambiguous records before selecting a landing contract. This keeps the optimization fail-closed while leaving the full PR path unchanged.

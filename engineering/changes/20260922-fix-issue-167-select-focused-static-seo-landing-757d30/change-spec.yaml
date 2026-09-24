@@ -1,0 +1,199 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "One landing directory under side-projects/seo-landings plus one matching focused test is eligible for static-seo-landing verification.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_accepts_one_explicit_focused_contract"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Malformed, non-string, non-hashable, mixed, unknown, missing, ambiguous, mismatched, multi-landing, deleted, renamed, copied, or status-ambiguous inventory fails closed without invoking an unsafe focused contract.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_non_string_and_non_hashable_values"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_mismatched_focused_test"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_deleted_landing_path_before_contract"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_renamed_landing_path_before_contract"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Focused mode executes only bounded Git checks, trusted status validation, source stability, and exactly one matching unittest contract; rejected scope and empty/non-unittest files do not reach contract subprocess discovery.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_focused_landing_contract_rejects_empty_file_before_discovery"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_focused_verification_runs_only_landing_contract_and_reports_scope"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_rejected_focused_scope_does_not_execute_contract_subprocess"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "--mode pr remains the full verification path for an eligible landing inventory and never silently downgrades, while the exact focused workflow command is allowlisted without arbitrary extensions.",
+      "evidence": [
+        {
+          "test": "tests/test_workflow_artifacts.py::WorkflowCompileTests.test_verification_command_accepts_focused_static_landing_mode"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_pr_mode_keeps_eligible_landing_inventory_on_full_path"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The package documents the exact landing-only scope, bounded non-goals, current targeted and pre-review full-verification evidence, pending route-selected reviews, rollback, and release gates.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "The App-owned exact-SHA adaptive-trust-ci/verified check remains the merge authority and local focused evidence does not replace it.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260922-fix-issue-167-select-focused-static-seo-landing-757d30",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Focused mode runs for runtime, contracts, Trust CI, packages, architecture, workflow, SEO skill, showcase, mixed, unknown, malformed, or multiple landing-directory changes.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_mixed_product_paths"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "--mode pr silently selects the focused verifier or local focused evidence substitutes for the App-owned exact-SHA Trust CI check.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Inventory normalization accepts only valid repository-relative strings, records invalid raw values safely, never raises TypeError, and requires trusted status provenance before focused eligibility.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_non_string_and_non_hashable_values"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_ambiguous_file_status_metadata"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "A focused run has exactly one landing directory and one basename-matching unittest contract, rejects unsafe Git status provenance, and preserves source stability and range integrity checks.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_mismatched_focused_test"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_focused_landing_contract_rejects_empty_file_before_discovery"
+        },
+        {
+          "test": "tests/test_verification_doctor.py::VerificationTests.test_static_landing_scope_rejects_copied_test_path_before_contract"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "No external writes, data migrations, dependency changes, or Trust CI policy changes occur in this source-only verifier change.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue #167: select focused static SEO landing verification for landing-only changes while retaining full PR verification for runtime, contract, Trust CI, package, architecture, or workflow changes, with regression tests.",
+    "success_metric": "Focused classification and contract execution are bounded and fail closed while full PR verification remains unchanged.",
+    "target": "Targeted verifier, workflow, and status checks pass; the repaired tree must pass full verification and a fresh independent review wave before final fingerprint-bound evidence is recorded."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "focused_static_seo_verification_outcomes_total by mode, scope reason, and contract result",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
