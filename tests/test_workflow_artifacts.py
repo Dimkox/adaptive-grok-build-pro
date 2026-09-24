@@ -291,6 +291,22 @@ class WorkflowCompileTests(unittest.TestCase):
             self.assertTrue(first["tasks"][0]["task_id"].startswith("TASK-"))
             self.assertNotIn("tree_fingerprint", json.dumps(first))
 
+    def test_verification_command_accepts_focused_static_landing_mode(self) -> None:
+        command = [
+            "python3",
+            "scripts/grok_verify.py",
+            "--mode",
+            "focused-static-seo-landing",
+        ]
+        try:
+            selected = self.artifacts._verification_command(command, "focused")
+        except self.artifacts.WorkflowArtifactError as exc:
+            self.fail(f"focused static landing mode is not allowlisted: {exc}")
+        self.assertEqual(selected, command)
+
+        with self.assertRaises(self.artifacts.WorkflowArtifactError):
+            self.artifacts._verification_command(command + ["--profile", "base"], "focused")
+
     def test_unmodified_spec_kit_tasks_subset_compiles_phases_and_parallel_markers(self) -> None:
         content = """# Tasks
 ## Phase 1: Setup
