@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-23 — Reviewed the inherited parent commit instead of the route base
+
+**Symptom:** The first code review falsely reported six unrelated product files as this change because it compared `HEAD^..HEAD` while the candidate `HEAD` was exactly the route base.
+**Root cause:** The review did not bind its diff query to the active route's exact base and did not distinguish inherited commit history from the candidate's uncommitted change package.
+**Durable rule:** Every review must compare the candidate to the route base (`base..HEAD`) and separately inspect staged, unstaged, and untracked candidate inputs before judging scope.
+
 ## 2026-09-09 — Rewrote a whole architecture model to add three entries
 
 **Symptom:** Declaring one demo node, contract and edge produced a 1889-line diff in `architecture/system.yaml` instead of the 57 lines actually added.
