@@ -266,6 +266,7 @@ class LandingPublicationBoundaryTests(unittest.TestCase):
             for malformed in (
                 {**current_grant, "grant_binding_digest": ""},
                 {**current_grant, "grant_binding_digest": "not-a-digest", "tree_fingerprint": "d" * 64},
+                {**current_grant, "tree_fingerprint": "d" * 64},
             ):
                 with self.subTest(malformed=malformed), patch.object(
                     grok_landing_publish, "read_private_file", return_value=json.dumps([malformed]).encode(),
