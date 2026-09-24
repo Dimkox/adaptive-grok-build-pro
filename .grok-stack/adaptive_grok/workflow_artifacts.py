@@ -564,6 +564,7 @@ def _verification_command(value: Any, name: str) -> list[str]:
     if command in (
         ["python3", "scripts/grok_verify.py", "--mode", "fast"],
         ["python3", "scripts/grok_verify.py", "--mode", "pr"],
+        ["python3", "scripts/grok_verify.py", "--mode", "focused-static-seo-landing"],
     ):
         return command
     raise WorkflowArtifactError(f"task {name} is not an allowlisted read-only verification command", code="command")
