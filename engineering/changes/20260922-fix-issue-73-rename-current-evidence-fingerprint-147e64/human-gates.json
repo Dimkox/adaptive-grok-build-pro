@@ -24,6 +24,18 @@
       "resource": null,
       "route_id": "147e6461d649",
       "scope_digest": "3c23a822ac8e6ef459b23efbbf79e0c2960e68f0e8ad4ace6e6aa22919e4d768"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260922-fix-issue-73-rename-current-evidence-fingerprint-147e64",
+      "decided_at": "2026-09-24T12:29:01+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User authorized the remaining issue work; scope remains the current delegated-grant binding migration, now explicitly covering the existing landing publisher consumer, with historical evidence immutability and compatibility tests.",
+      "resource": null,
+      "route_id": "147e6461d649",
+      "scope_digest": "5319e9420eadb7aef873e402882bf7994d2e4e022efee2e124c29098729ff344"
     }
   ],
   "route_id": "147e6461d649",

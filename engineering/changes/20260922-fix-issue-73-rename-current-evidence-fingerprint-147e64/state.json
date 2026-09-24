@@ -15,6 +15,20 @@
       "note": "draft; implementation not started",
       "observed_at": "2026-09-22T19:14:44+00:00",
       "route_id": "147e6461d649"
+    },
+    {
+      "branch": "fix/issue-73-evidence-digest-20260922",
+      "change_id": "20260922-fix-issue-73-rename-current-evidence-fingerprint-147e64",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "8d3d98fb137cde24f68b5fbc51f6720ea4263f81",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-24T12:29:02+00:00",
+      "route_id": "147e6461d649"
     }
   ],
   "created_at": "2026-09-22T19:14:44+00:00",
@@ -76,6 +90,18 @@
       "from": "scoped",
       "reason": "Explicit user scope/design approval recorded; bounded grant binding migration and compatibility design documented",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-24T12:29:02+00:00",
+      "from": "approved",
+      "reason": "implementation owner completed the bounded producer and consumer change",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-24T12:29:02+00:00",
+      "from": "implementing",
+      "reason": "implementation and focused regression tests completed; route verification started",
+      "to": "verifying"
     }
   ],
   "human_gates": [
@@ -84,7 +110,7 @@
   "human_gates_digest": "c4aa9a84de67d5a49c485ab2f60e555e6d4068f2a1c4a6ea45c84cfc636d9d0d",
   "route_id": "147e6461d649",
   "schema_version": 1,
-  "status": "approved",
+  "status": "verifying",
   "title": "Fix issue #73: rename current evidence fingerprint fields that trigger GitGuardian secret heuristics while preserving historical evidence immutability and schema/test compatibility.",
-  "updated_at": "2026-09-23T03:09:09+00:00"
+  "updated_at": "2026-09-24T12:29:02+00:00"
 }

@@ -84,3 +84,25 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20260922-fix-issue-73-rename-current-evidence-fingerprint-147e64",
+  "route_id": "147e6461d649",
+  "observed_at": "2026-09-24T12:29:02+00:00",
+  "branch": "fix/issue-73-evidence-digest-20260922",
+  "head": "8d3d98fb137cde24f68b5fbc51f6720ea4263f81",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "clean",
+  "dirty_product_paths": [],
+  "note": "implementation started; preserve work before handoff"
+}
+```
