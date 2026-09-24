@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "document_kind": "implementation_planning_map",
+  "change_id": "20260924-factory-unified-upgrade",
+  "document_date": "2026-09-24",
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "baseline_main_sha": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+  "spec": "FACTORY_UNIFIED_UPGRADE_TZ.md",
+  "handoff": "FACTORY_UPDATE_HANDOFF.md",
+  "delivery_scope": "documentation_only",
+  "runtime_implemented": false,
+  "runtime_admitted": false,
+  "deployed": false,
+  "authority_effect": "none",
+  "m8_qualifying_task_contribution": 0,
+  "m8_activation": false,
+  "source_recovery": {
+    "shared_pages_transcripts_read": false,
+    "method": "Titles from shared pages; available prior conversation context; pinned repository source",
+    "limitations": [
+      "Full five transcripts not available",
+      "Original S3 image and Factory_Scope_Control_Integration_TZ.md not directly read",
+      "Original Habr article could not be reopened",
+      "No claim of exact preservation of prior 12 requirements and 24 acceptance cases"
+    ]
+  },
+  "sources": [
+    {
+      "id": "S1",
+      "title": "Функции фабрики",
+      "url": "https://chatgpt.com/share/6ab53639-1a98-83eb-83a2-d1111e6bbbc1",
+      "requirements": [
+        "F01",
+        "F05",
+        "F06",
+        "F08",
+        "F15",
+        "F17",
+        "F18"
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Разбор статьи Habr",
+      "url": "https://chatgpt.com/share/6ab53648-a3d0-83ed-8cae-91d22c57a206",
+      "requirements": [
+        "F01",
+        "F03",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F09"
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Нужно ли на фабрике",
+      "url": "https://chatgpt.com/share/6ab53659-b65c-83eb-a806-516e1ee39bfa",
+      "requirements": [
+        "F01",
+        "F02",
+        "F03",
+        "F04",
+        "F07",
+        "F17"
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "SHAP для фабрики",
+      "url": "https://chatgpt.com/share/6ab33109-0300-83eb-a017-b87f583f72be",
+      "requirements": [
+        "F10",
+        "F11",
+        "F12",
+        "F13"
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "Настройка среды разработки Objective C",
+      "url": "https://chatgpt.com/share/6ab53688-4f58-83eb-b838-4c0a686ef0b5",
+      "requirements": [
+        "F14",
+        "F15",
+        "F16",
+        "F18"
+      ]
+    }
+  ],
+  "requirements": [
+    "F01",
+    "F02",
+    "F03",
+    "F04",
+    "F05",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14",
+    "F15",
+    "F16",
+    "F17",
+    "F18"
+  ],
+  "acceptance_criteria": [
+    "AC01",
+    "AC02",
+    "AC03",
+    "AC04",
+    "AC05",
+    "AC06",
+    "AC07",
+    "AC08",
+    "AC09",
+    "AC10",
+    "AC11",
+    "AC12",
+    "AC13",
+    "AC14",
+    "AC15",
+    "AC16",
+    "AC17",
+    "AC18",
+    "AC19",
+    "AC20",
+    "AC21",
+    "AC22",
+    "AC23",
+    "AC24",
+    "AC25",
+    "AC26",
+    "AC27",
+    "AC28",
+    "AC29",
+    "AC30",
+    "AC31",
+    "AC32",
+    "AC33",
+    "AC34",
+    "AC35",
+    "AC36",
+    "AC37",
+    "AC38",
+    "AC39",
+    "AC40"
+  ],
+  "phases": [
+    {
+      "id": "U0",
+      "title": "Baseline and gap reconciliation",
+      "depends_on": [],
+      "requirements": [],
+      "acceptance_criteria": [],
+      "gate": "Exact current refs, source mapping, blockers and characterization baseline",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U1",
+      "title": "Scope and phase control",
+      "depends_on": [
+        "U0"
+      ],
+      "requirements": [
+        "F01",
+        "F02",
+        "F03",
+        "F04"
+      ],
+      "acceptance_criteria": [
+        "AC01",
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC05",
+        "AC06",
+        "AC07",
+        "AC08",
+        "AC09",
+        "AC10"
+      ],
+      "gate": "Regression tests; observation-only classification before enforcement",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U2",
+      "title": "Decision and delivery accounting",
+      "depends_on": [
+        "U1"
+      ],
+      "requirements": [
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F17"
+      ],
+      "acceptance_criteria": [
+        "AC20",
+        "AC21",
+        "AC22",
+        "AC23",
+        "AC24",
+        "AC25",
+        "AC26",
+        "AC27",
+        "AC28",
+        "AC35"
+      ],
+      "gate": "Atomic evidence, explicit unknown values, compatible readers",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U3",
+      "title": "Semantic validation and bounded flow",
+      "depends_on": [
+        "U1",
+        "U2"
+      ],
+      "requirements": [
+        "F05",
+        "F06",
+        "F07"
+      ],
+      "acceptance_criteria": [
+        "AC11",
+        "AC12",
+        "AC13",
+        "AC14",
+        "AC15",
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19",
+        "AC36"
+      ],
+      "gate": "Independent validation; no unsafe retries or quota leakage",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U4",
+      "title": "Native macOS profile",
+      "depends_on": [
+        "U0",
+        "U2"
+      ],
+      "requirements": [
+        "F14",
+        "F15",
+        "F16"
+      ],
+      "acceptance_criteria": [
+        "AC31",
+        "AC32",
+        "AC33",
+        "AC34",
+        "AC37",
+        "AC38"
+      ],
+      "gate": "Compatible real Mac, separately authorized runner registration, independent exact-SHA live evidence",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U5",
+      "title": "Optional predictive SHAP pilot",
+      "depends_on": [
+        "U2"
+      ],
+      "requirements": [
+        "F12",
+        "F13"
+      ],
+      "acceptance_criteria": [
+        "AC29",
+        "AC30"
+      ],
+      "gate": "Suitable dataset, no leakage, observation-only; otherwise deferred/not_qualified",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U6",
+      "title": "Real end-to-end pilots",
+      "depends_on": [
+        "U1",
+        "U2",
+        "U3"
+      ],
+      "conditional_dependencies": {
+        "apple_pilot": [
+          "U4"
+        ]
+      },
+      "requirements": [
+        "F18"
+      ],
+      "acceptance_criteria": [
+        "AC39"
+      ],
+      "gate": "Human acceptance of exact Linux result; Apple result separately accepted",
+      "status": "planned",
+      "executed_in_this_update": false
+    },
+    {
+      "id": "U7",
+      "title": "Acceptance and recovery handoff",
+      "depends_on": [
+        "U6"
+      ],
+      "conditional_dependencies": {
+        "apple_scope": [
+          "U4"
+        ],
+        "ml_if_qualified": [
+          "U5"
+        ]
+      },
+      "requirements": [
+        "F17",
+        "F18"
+      ],
+      "acceptance_criteria": [
+        "AC40"
+      ],
+      "gate": "All applicable tests/evidence; mandatory Apple scope accepted or explicitly excluded by owner",
+      "status": "planned",
+      "executed_in_this_update": false
+    }
+  ],
+  "qualification": {
+    "core": "not_evaluated",
+    "apple": "not_evaluated",
+    "ml": "not_evaluated",
+    "program": "not_evaluated"
+  },
+  "observed_merge_gate": {
+    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "github_app_id": 4694114,
+    "refresh_before_delivery": true,
+    "local_checks_are_merge_authority": false
+  },
+  "safety": {
+    "github_actions_allowed": false,
+    "auto_merge_allowed": false,
+    "mac_default_enabled": false,
+    "ml_default_enabled": false,
+    "ml_can_change_authority": false,
+    "application_write_owners": 1,
+    "read_secrets_allowed": false
+  },
+  "notes": [
+    "This file is a planning map, not a runtime route, approval, test result or M8 ledger import.",
+    "No product test suites or independent route reviews executed by the documentation update."
+  ]
+}
