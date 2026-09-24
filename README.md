@@ -30,6 +30,16 @@ On Linux, `auto` uses the minimum of 28, process affinity or CPU-count fallback,
 
 Where this runner cannot provide its required parallel-process cleanup, a positive request selects the existing `unittest-degraded` engine before execution. Supported parallel execution retains its strict pins; measured serial execution retains pinned coverage. An actual failed parallel run is never retried serially. The implementation lives in `.grok-stack/adaptive_grok/python_test_runner.py` and its private `_cpu_capacity.py` helper; native Windows and older-interpreter qualification remain separate from fixture-based evidence.
 
+## Verification scope selection
+
+`grok_verify --mode pr` and `--mode release` classify the changed-path inventory before choosing what to run. A release documentation/state successor changes only prose, the dated state model, tracked release bytes, and the lockstep tests that bind them; it cannot move an executed product statement, so it does not owe a full-suite coverage run.
+
+The focused profile `docs-state-focused` still runs the spec, architecture, governance, workflow-artifact, secret, contract, SQL, Ruff, Bandit, pilot and factory-unit checks, plus exactly three lockstep modules (`tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`), and skips `coverage` and `factory-postgres-exit`. Measured on this checkout: the serial `coverage run -m unittest discover -s tests` path costs 629 s, the focused trio about 11 s.
+
+Selection is closed and fail-closed. Any path outside the explicit allowlist — every `.grok-stack/`, `scripts/`, `trust-ci/`, `factory/`, `pilot/`, `architecture/`, `schemas/`, `governance/`, `engineering/contracts/`, hook, `Makefile`, config and dotfile path, and every non-lockstep `tests/` path — keeps the full PR suite, as do an empty or invalid inventory, a deleted/renamed/copied/unmerged Git status, an unresolvable comparison base, an absent route, and an absent lockstep module. The classifier's own modules sit outside its allowlist, so a change to the shortcut can never be verified by the shortcut.
+
+The profile, its reason code, the exact admitted paths and each skipped check are reported by the `docs-state-scope` check and stored as `docs_state_scope` in the receipt with `evidence_kind` `verification:docs-state-focused` or `verification:full-pr-suite`. `python3 scripts/grok_verify.py --mode pr --full-scope` (or `GROK_VERIFY_FORCE_FULL=1`) forces the full suite regardless of classification. Exact-tree fingerprint binding, independent reviews and the App-owned external Trust CI check are unchanged by scope selection; the implementation is `.grok-stack/adaptive_grok/verification_scope.py`.
+
 ## Delivery history
 
 <details>
