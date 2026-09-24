@@ -28,3 +28,14 @@ No blocking findings.
 - Mutation claims: unexecuted; no executable mutation probe was needed for this provenance/documentation-only review, and the user prohibited product-tree edits.
 
 Residual gate: this PASS covers release-sync readiness only. It does not authorize merge, artifact creation, tagging, GitHub Release publication, or deployment; fresh exact-tree verification/reviews and external Trust CI remain mandatory after report persistence and at each later protected boundary.
+
+## Current protected-main rebind review
+
+The preceding report is historical and is not a receipt for the current candidate. The current release-sync rebind was inspected read-only at:
+
+- Base: `7650a5e12aad55bdcf730cd37e2faf162bec0486`
+- HEAD: `1498273fb9866e7b388f885518555a795e8bdd2f`
+- Tree fingerprint before this report section: `90704a206960486eb4b34feffcb9828dbc4993c67d8a57102daebb5bf103aa14`
+- `reviewed-tree-modified: no`
+
+README, START_HERE, CHANGELOG, roadmap, handoff and PROJECT_STATE now agree on the twenty landing rows and current protected-main base. The ZIP and sidecar are absent; the R → artifact-child A sequence, exact App-owned checks and no-deployment boundary remain explicit. Focused structure/project-state/manifest tests passed. This is local release preflight only; final receipts and external Trust CI are still required.

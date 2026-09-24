@@ -46,3 +46,14 @@ Result: `FAILED (failures=1)`, exit 1; mutant **killed**. The reviewed source re
 ## Limitations and required next gate
 
 The new regression assertion binds exact head SHAs, which is the defect under review. It does not independently hard-code merge SHAs, merge times, check-run IDs, or enforce equality between the duplicated predecessor collections; those values were inspected and currently agree. The existing full verification receipt predates this test patch and is stale. Commit/freeze the patch and reports, rerun `python3 scripts/grok_verify.py --mode pr`, and record fresh fingerprint-bound reviews before any PR delivery action.
+
+## Current protected-main rebind review
+
+The preceding report is historical and is not a receipt for the current candidate. The current release-sync rebind was inspected read-only at:
+
+- Base: `7650a5e12aad55bdcf730cd37e2faf162bec0486`
+- HEAD: `1498273fb9866e7b388f885518555a795e8bdd2f`
+- Tree fingerprint before this report section: `90704a206960486eb4b34feffcb9828dbc4993c67d8a57102daebb5bf103aa14`
+- `reviewed-tree-modified: no`
+
+`python3 -m unittest tests.test_project_state tests.test_structure` passed (36 tests), and the broader focused release set passed (92 tests). A parity probe found exactly 20 landing rows in both state representations, unique exact head SHAs, present merge objects, and #193's merge equal to observed `main=7650a5e…`; an in-memory head mutation was rejected without changing the worktree. Final verification and receipt binding remain pending until this section is committed.

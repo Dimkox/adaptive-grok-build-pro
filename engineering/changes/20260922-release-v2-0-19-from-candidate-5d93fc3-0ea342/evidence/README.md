@@ -6,6 +6,19 @@ Store human-readable review reports here. Machine receipts live under `.grok-sta
 
 New-package and first-implementation observations are appended below by the lifecycle commands. A pending README mirror is surfaced in status and can be retried with the same explicit lifecycle command; state and README publication is not a two-file atomic transaction.
 
+## Current protected-main rebind
+
+The initial reports below describe the first release-sync candidate and are retained as historical evidence. After PRs #192, #194, #191 and #193 landed, the release branch was restacked onto protected `main` at `7650a5e12aad55bdcf730cd37e2faf162bec0486`. The current release-sync checkpoint before final verification is:
+
+```text
+route: 0ea34220576f
+base: 7650a5e12aad55bdcf730cd37e2faf162bec0486
+head: 1498273fb9866e7b388f885518555a795e8bdd2f
+tree fingerprint: 90704a206960486eb4b34feffcb9828dbc4993c67d8a57102daebb5bf103aa14
+```
+
+The current candidate contains twenty post-`v2.0.18` landing rows, including #133, #192, #194, #191 and #193. The old receipt and report identities must not be used for this checkpoint; final verification and current review receipts are recorded only after this evidence section is committed.
+
 Code and test review reports perform bounded, change-relevant mutation probes in a reviewer-owned private scratch copy outside the reviewed worktree. Keep the reviewed candidate read-only; use scratch below a trusted non-sticky parent with mode `0700`. Reproduce the exact candidate (HEAD and relevant staged, unstaged, and untracked changes), record its HEAD and tree fingerprint before/after, and treat unsafe or mismatched snapshots and changed fingerprints as stale/inconclusive. Reviewer read-only configuration is not an OS-enforced isolation boundary.
 
 Reviewers return the complete report to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists all reports here, then reruns final verification and records fresh fingerprint-bound receipts for the tree containing those reports.

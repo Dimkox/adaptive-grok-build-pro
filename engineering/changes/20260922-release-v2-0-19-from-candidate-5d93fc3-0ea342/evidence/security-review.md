@@ -39,3 +39,14 @@ This is local review evidence only. It does not authorize or attest merge, tag, 
 No mutation was executed because the assigned security review is read-only and the supplied scope prohibited product changes. Mutation outcomes: none; all static claims are therefore `unexecuted` as mutants, while the listed focused tests and scanner are direct executable checks. The external Trust CI result, PR ownership/check-run identity, signed approval scopes, later artifact bytes, tag target, and GitHub Release assets do not yet exist in this release-sync tree and were not claimed as passed. They are mandatory later no-go gates, not defects in this pending candidate.
 
 During review another reviewer report appeared as an untracked evidence file. It was not read, did not alter the committed product tree or reviewed HEAD, and is excluded from this security verdict.
+
+## Current protected-main rebind review
+
+The preceding report is historical and is not a receipt for the current candidate. The current release-sync rebind was inspected read-only at:
+
+- Base: `7650a5e12aad55bdcf730cd37e2faf162bec0486`
+- HEAD: `1498273fb9866e7b388f885518555a795e8bdd2f`
+- Tree fingerprint before this report section: `90704a206960486eb4b34feffcb9828dbc4993c67d8a57102daebb5bf103aa14`
+- `reviewed-tree-modified: no`
+
+The route and local human-gate entries bind to route `0ea34220576f` and the current scope. Changed-path inspection found no secrets, credentials, private keys, deployment mutation, Trust CI policy, GitHub Actions or package artifact. `v2.0.18` remains immutable; `v2.0.19` remains unpublished with artifact-child, external-effect and operational-activation fields pending/false. This is a local security preflight; external exact-SHA Trust CI and action-specific grants remain mandatory.
