@@ -1,0 +1,127 @@
+{
+  "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:10:29+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested the v2.0.19 release with the merged release-sync source, reproducible artifact child, documentation update, exact PR verification, tag and GitHub Release; no deployment.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "35ddc70a55273929d554804f6033fc686277ee8c1c1cc815b987e1e9e588c9b3"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:10:50+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly delegated delivery of the isolated v2.0.19 artifact-child branch.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "35ddc70a55273929d554804f6033fc686277ee8c1c1cc815b987e1e9e588c9b3"
+    },
+    {
+      "action": "pull-request-merge",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:10:50+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly delegated merge of the v2.0.19 artifact-child PR after the exact App-owned Trust CI check.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "35ddc70a55273929d554804f6033fc686277ee8c1c1cc815b987e1e9e588c9b3"
+    },
+    {
+      "action": "git-push-tag",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:10:50+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested the next v2.0.19 release after exact merged-commit verification.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "35ddc70a55273929d554804f6033fc686277ee8c1c1cc815b987e1e9e588c9b3"
+    },
+    {
+      "action": "github-release",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:10:50+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested publication of the next release with the ZIP and sidecar; no deployment.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "35ddc70a55273929d554804f6033fc686277ee8c1c1cc815b987e1e9e588c9b3"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:44:30+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Final v2.0.19 artifact-child scope after provenance corrections: exact merged parent 3f41be, reproducible ZIP+sidecar, bounded state/docs/evidence, exact PR Trust CI, tag and Release; no deployment.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "eaa70af3ceff0e4e455df3fb23affc9abecaee5310ceb2876e31f10dc2ae36f5"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:44:30+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly delegated delivery of the isolated final v2.0.19 artifact-child branch.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "eaa70af3ceff0e4e455df3fb23affc9abecaee5310ceb2876e31f10dc2ae36f5"
+    },
+    {
+      "action": "pull-request-merge",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:44:30+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly delegated merge only after the exact App-owned Trust CI check on the PR head.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "eaa70af3ceff0e4e455df3fb23affc9abecaee5310ceb2876e31f10dc2ae36f5"
+    },
+    {
+      "action": "git-push-tag",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:44:30+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested v2.0.19 publication at the exact merged artifact-child commit.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "eaa70af3ceff0e4e455df3fb23affc9abecaee5310ceb2876e31f10dc2ae36f5"
+    },
+    {
+      "action": "github-release",
+      "actor": "user",
+      "change_id": "20260924-build-v2-0-19-artifact-child-from-merged-release-09407b",
+      "decided_at": "2026-09-24T20:44:30+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly requested v2.0.19 GitHub Release publication with the ZIP and sidecar; no deployment.",
+      "resource": null,
+      "route_id": "09407b46cb4b",
+      "scope_digest": "eaa70af3ceff0e4e455df3fb23affc9abecaee5310ceb2876e31f10dc2ae36f5"
+    }
+  ],
+  "route_id": "09407b46cb4b",
+  "schema_version": 1
+}

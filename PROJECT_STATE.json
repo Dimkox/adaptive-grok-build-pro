@@ -2,8 +2,8 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-24T18:59:44Z",
-  "observed_main_sha": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+  "observed_at": "2026-09-24T20:06:48Z",
+  "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.0.19",
   "latest_published_release": "v2.0.18",
   "bootstrap_entrypoint": "START_HERE.md",
@@ -211,12 +211,12 @@
     "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
     "identity": "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
     "status": "release_sync_authored",
-    "stage": "identity_bump_in_pull_request",
-    "source_base": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+    "stage": "artifact_child_delivered_pending_tag",
+    "source_base": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
     "target_version": "2.0.19",
     "scope": [
       "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md, CHANGELOG.md, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.19 candidate",
-      "PROJECT_STATE records the observed main base, twenty post-v2.0.18 landings and the pending v2.0.19 artifact slot",
+      "PROJECT_STATE records the merged release-sync parent, twenty post-v2.0.18 landings and the delivered v2.0.19 artifact-child bytes",
       "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
     ],
     "predecessors": [
@@ -390,9 +390,9 @@
     },
     "operational_activation": false,
     "record_scope": "Release preparation for v2.0.19 only; provider installation, host mutation and operational qualification remain out of scope.",
-    "next_action": "Merge the v2.0.19 release-sync PR on its exact-head App check, then build the ZIP+sidecar from that merged tree as the separate artifact-child PR. Tag and GitHub Release publication each require a fresh exact check and named delegated grants; no deployment is implied.",
-    "tag_and_release": "Not created. v2.0.18 remains the newest tag and GitHub Release; v2.0.19 publication requires the separate artifact-child merge, exact checks and named grants.",
-    "artifact_child": "Not built. The v2.0.19 ZIP+sidecar pair arrives only with the separate artifact-child commit; this record asserts their absence."
+    "next_action": "Merge the v2.0.19 artifact-child PR on its exact-head App check, then tag v2.0.19 at that merged commit and publish the GitHub Release with both assets; each separate action requires its named delegated grant and no deployment is implied.",
+    "tag_and_release": "Not created. v2.0.18 remains the newest tag and GitHub Release; v2.0.19 publication requires the artifact-child merge, exact checks and named grants.",
+    "artifact_child": "Delivered: packages/adaptive-grok-build-pro-v2.0.19.zip and its sidecar exist in the artifact-child candidate, built twice byte-identically from merged release-sync parent 3f41be92161fef451a2dfa7451eb458ce8f022b3; the tag and GitHub Release remain pending separate delegated actions."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -1171,11 +1171,11 @@
   },
   "local_candidate": {
     "version": "2.0.19",
-    "status": "pending_release",
+    "status": "artifact_bytes_delivered",
     "route_id": "0ea34220576f",
     "branch": "release/v2.0.19-candidate-20260922",
     "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "source_base": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+    "source_base": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
     "source_gate_status": "pending_final_tree",
@@ -1184,29 +1184,30 @@
     "merge_commit": null,
     "tree": null,
     "pull_request": null,
-    "artifact_status": "pending_unpublished_artifact_child",
+    "artifact_status": "pending_tag_and_release",
     "predecessor_record": "The published v2.0.18 candidate remains the immutable published_release record; earlier releases remain under prior_published_releases.",
     "artifact_child": {
       "identity": "A",
-      "source_parent": null,
-      "source_parent_tree": null,
+      "source_parent": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+      "source_parent_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
       "commit": null,
       "tree": null,
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.19.zip",
         "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
       ],
-      "zip_sha256": null,
-      "sidecar_sha256": null,
-      "status": "not_built",
-      "requirement": "The separate artifact-child commit adds both delta paths built from the merged release-sync tree, flips artifact_status and the artifact identities, and keeps published, published_at, external_effect and operational_activation false until the exact tag and GitHub Release exist."
+      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
+      "status": "built_byte_reproducible_twice",
+      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; the child's own identities — merge_commit, tree, checked_head and pull_request — stay null because the child cannot self-record them.",
+      "zip_source_note": "The archive was built from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
     },
     "published": false,
     "published_at": null,
     "external_effect": false,
     "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "2.0.19 is the unpublished identity carrying the twenty post-v2.0.18 landings. Nothing is built, tagged or released for 2.0.19 until the separate artifact-child step, exact-head external checks and named delegated grants complete."
+    "notes": "Artifact bytes (ZIP + sidecar, 14301716 bytes, built twice byte-identically in private 0700 staging from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3) are delivered into the repository tree. \"Delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect and no operational activation. published, external_effect and operational_activation remain false, and merge_commit/tree stay null because the child cannot self-record them; the tag and the Release bind to this pull request's merged commit under their own exact delegated grants."
   },
   "delivered_non_milestone_work": [
     {
@@ -1239,23 +1240,23 @@
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Merge the v2.0.19 release-sync PR on its exact-head App check, then build the ZIP+sidecar from that merged tree as the separate artifact-child PR. Tag and GitHub Release publication each require a fresh exact check and named delegated grants; no deployment is implied.",
+    "next_action": "Merge the v2.0.19 artifact-child PR on its exact-head App check, then tag v2.0.19 at that merged commit and publish the GitHub Release with both assets; each separate action requires its named delegated grant and no deployment is implied.",
     "local_source_gate": {
-      "status": "pending_final_tree",
-      "artifact_head": null,
-      "artifact_tree": null,
-      "record_scope": "Current v2.0.19 release-sync preflight; local receipts and the future App-owned exact-head check must cover the final artifact-child head."
+      "status": "passed_for_artifact_source_parent",
+      "artifact_head": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
+      "record_scope": "The artifact bytes were built twice from the exact merged v2.0.19 release-sync parent; the artifact-child head still requires its own local verifier and App-owned exact-head check."
     },
     "package_handoff": {
-      "status": "pending_artifact_child",
+      "status": "artifact_bytes_delivered_pending_artifact_pr",
       "artifact_child": null,
-      "artifact_tree": null,
+      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.19.zip",
         "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
       ],
-      "zip_sha256": null,
-      "sidecar_sha256": null,
+      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
       "release": "v2.0.19",
       "tag_target": null
     },
@@ -1270,7 +1271,7 @@
       "check_run_id": null,
       "attestation_id": null,
       "operational_activation": false,
-      "record_scope": "No repository merge or publication has occurred for v2.0.19."
+      "record_scope": "The v2.0.19 release-sync parent is merged, and artifact bytes are delivered in a separate candidate; no artifact-child repository merge, tag or GitHub Release publication has occurred yet."
     },
     "integrated_stack": {
       "status": "delivered_to_main",
@@ -2242,10 +2243,10 @@
     }
   },
   "latest_source_observation": {
-    "observed_at": "2026-09-24T18:59:44Z",
-    "main_sha": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
-    "source_pull_request": 193,
-    "source_role": "actual fetched main after the v2.0.18 publication and exact-head App success through PR #193"
+    "observed_at": "2026-09-24T20:06:48Z",
+    "main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+    "source_pull_request": 189,
+    "source_role": "actual fetched main at the v2.0.19 release-sync merge through PR #189; the artifact-child candidate remains separate"
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",

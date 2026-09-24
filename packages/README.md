@@ -6,7 +6,7 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptiv
 
 Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Published artifacts are not restacked for documentation-only successors.
 
-`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. The `v2.0.19` release-sync candidate is currently pending; its ZIP and sidecar are intentionally absent until the separate artifact-child merge.
+`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. The `v2.0.19` release-sync candidate is merged in PR #189 at `3f41be92161fef451a2dfa7451eb458ce8f022b3`; its ZIP and sidecar are delivered by the separate artifact-child candidate, while tag and GitHub Release publication remain pending exact-head Trust CI and named grants.
 
 | File | Version |
 | --- | --- |
@@ -29,6 +29,7 @@ Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `859
 | `adaptive-grok-build-pro-v2.0.16.zip` | 2.0.16 (published 2026-09-13T22:04:08Z) |
 | `adaptive-grok-build-pro-v2.0.17.zip` | 2.0.17 (published 2026-09-16T01:17:14Z) |
 | `adaptive-grok-build-pro-v2.0.18.zip` | 2.0.18 (published 2026-09-16T13:52:24Z) |
+| `adaptive-grok-build-pro-v2.0.19.zip` | 2.0.19 (artifact delivered, tag and GitHub Release pending) |
 
 ## Build a future candidate
 

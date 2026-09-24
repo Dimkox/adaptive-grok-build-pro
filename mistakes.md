@@ -1461,3 +1461,11 @@ The first focused test command named `WorkflowArtifactTests`, but the repository
 **Symptom:** a parallel full-verifier wave consumed substantial time, then one Trust job became stale when a predecessor merged and forced a restack plus another full verifier.
 **Root cause:** the continuation branch was verified and enqueued before all predecessor merges and final evidence/base updates were complete.
 **Durable rule:** settle the final protected-main base and all evidence commits first; run one serialized full verifier, then push and enqueue exactly one Trust job for that immutable pair.
+
+### 2026-09-24 — Validate sidecar filename identity after copying a rebuilt artifact
+
+The first copied checksum sidecar still named the private `-a.zip` staging filename even though the tracked ZIP had its final release name. The ZIP bytes were unchanged, but the sidecar was corrected before verification; always compare the sidecar's declared basename with the tracked artifact path.
+
+### 2026-09-24 — Persist route review reports before the final verifier
+
+I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
