@@ -1469,3 +1469,7 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-24 — A passing report can carry a fabricated fingerprint
+
+Root cause: identifier tokens were the only load-bearing evidence values an agent could produce from memory. Nothing forced transcription from tool output, so a plausible hex prefix plus an invented tail read as proof even when the underlying claim was true and independently reproducible. The corrective control is mechanical paste-able receipt echo plus `scripts/grok_citations.py`; the residual limit is that existence never proves an identifier was bound to the claim it accompanies.

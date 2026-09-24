@@ -294,12 +294,27 @@ Declared route `human_gates` require a separate decision in the active change pa
 | `scripts/grok_gate.py` | Inspect or record route-bound local human-gate decisions |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
+| `scripts/grok_citations.py` | Flag hex identifiers cited in a report that exist in no receipt, digest, package sidecar or Git object |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
 | `scripts/grok_doctor.py` | Local health check |
 | `scripts/grok_demo.py` | Start the loopback-only read-only product tour using bundled sample and checkout-derived evidence |
 | `scripts/install_into.py` | Plan an existing repository read-only or atomically materialize an absent new target |
 | `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |
+
+## Cited identifiers
+
+This stack binds evidence to fingerprints, so an identifier string is a load-bearing evidence token — and a plausible hex that exists nowhere is exactly how a false verification reads when the rest of the report is true. Two mechanisms make citation mechanical instead of a matter of trust.
+
+`grok_verify.py` and `grok_review.py` print one canonical line after recording a receipt:
+
+```text
+RECEIPT kind=verification status=pass fingerprint=<sha256> at=2026-09-24T22:02:59+00:00 path=.grok-stack/runtime/receipts/<route>/verification.json route=<route_id>
+```
+
+A report pastes that line; when it is unavailable the report says "see receipt file" rather than naming a remembered hex. Under `--json` the echo goes to stderr so stdout stays parseable, and `--no-record` prints nothing because no receipt was made. The echo refuses to present an older receipt as a fresh one: when the recorded receipt binds a different tree it reports `status=unavailable reason=tree-fingerprint-mismatch`.
+
+`python3 scripts/grok_citations.py <report.md> [...]` (or `-` for stdin, `--json` for machine output) extracts every maximal 8-64 character hex token from the documents and reports each one that matches no identifier in machine state — `.grok-stack/runtime/**`, change-package spec/state/route/gate JSON, `engineering/contracts/**`, `architecture/generated/**`, `packages/*.sha256`, `delivery/**` — nor resolves as a Git object. Report prose is deliberately excluded from the corpus so a fabricated token cannot become authoritative by being repeated in an earlier report. Decimal-only runs and degenerate repeats are treated as dates and counters, not identifiers. Exit code is 1 when anything is unresolved; `--warn-only` reports without gating. Existence is all it proves: a real fingerprint can still be cited for a claim it does not support.
 
 ## Local browser demo
 

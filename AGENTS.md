@@ -157,6 +157,8 @@ python3 scripts/grok_review.py code_review --status pass --report <path>
 
 Use the exact local evidence kind requested by the route. A local receipt is stale after any repository change. The Stop hook warns when local evidence is missing or stale.
 
+`grok_verify.py` and `grok_review.py` answer with one canonical `RECEIPT kind=… status=… fingerprint=… at=… path=… route=…` line. Reports, PR bodies and commit messages must paste identifiers from that line instead of retyping them, and a report that cannot quote it says "see receipt file" rather than naming a remembered hex. Before landing a report, run `python3 scripts/grok_citations.py <report>` to flag any hex identifier that exists in no machine-state receipt, contract digest, package sidecar or Git object; it exits non-zero on an unresolved token, so `--warn-only` is available where the operator wants the observation without the gate. Existence is a mechanical property and never proof that an identifier was bound to the claim it accompanies.
+
 For merge eligibility, open or update the pull request and require the App-owned check named by the deployed policy, currently shaped as `adaptive-trust-ci/verified@<policy-sha12>`, on the exact head SHA. Local receipts and delegated grants cannot create that check.
 
 Reviewers return complete reports to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists reports under the change evidence directory, then reruns final verification and records fresh fingerprint-bound receipts for the tree containing those reports.

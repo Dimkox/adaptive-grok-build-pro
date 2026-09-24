@@ -567,6 +567,51 @@ def write_receipt(
     return path
 
 
+def receipt_echo(root: Path, kind: str, expect_tree_fingerprint: str | None = None) -> str:
+    """Render the one canonical line a report may copy an identifier from.
+
+    A fingerprint that has to be retyped is a fingerprint that can be invented. This echo is
+    the authoritative rendering of a just-recorded receipt, and it always produces exactly
+    one line: when the receipt cannot be read, or binds a different tree than the run that
+    just finished, it says so on that line instead of presenting an older receipt as fresh
+    evidence or printing nothing and leaving the next reader to recall the value.
+    """
+    fallback = (runtime_dir(root) / 'receipts' / '<no-active-route>' / f'{kind}.json').as_posix()
+    reason = ''
+    try:
+        route = get_active_route(root)
+        if not route:
+            return f'RECEIPT kind={kind} status=unavailable reason=no-active-route path={fallback}'
+        route_id = str(route.get('route_id') or '')
+        expected = receipt_dir(root, route_id) / f'{kind}.json'
+        data = get_receipt(root, route_id, kind)
+    except (RuntimeError, OSError, ValueError) as exc:
+        data = None
+        expected = None
+        reason = (str(exc).replace('\n', ' ') or exc.__class__.__name__)[:200]
+    if data is None:
+        location = expected.as_posix() if expected is not None else fallback
+        return (
+            f'RECEIPT kind={kind} status=unavailable '
+            f'reason={reason or "receipt-not-recorded"} path={location}'
+        )
+    if expect_tree_fingerprint is not None and data.get('tree_fingerprint') != expect_tree_fingerprint:
+        return (
+            f'RECEIPT kind={kind} status=unavailable reason=tree-fingerprint-mismatch '
+            f'fingerprint={data.get("tree_fingerprint")} at={data.get("created_at")} '
+            f'path={expected.as_posix()}'
+        )
+    try:
+        location = expected.relative_to(root).as_posix()
+    except ValueError:
+        location = expected.as_posix()
+    return (
+        f'RECEIPT kind={data["kind"]} status={data["status"]} '
+        f'fingerprint={data["tree_fingerprint"]} at={data["created_at"]} '
+        f'path={location} route={data["route_id"]}'
+    )
+
+
 def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", route_id) or kind not in RECEIPT_KINDS:
         raise RuntimeError("receipt route or kind is outside the closed set")

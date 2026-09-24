@@ -8,7 +8,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 import argparse
 
-from adaptive_grok.receipts import write_receipt
+from adaptive_grok.receipts import receipt_echo, write_receipt
 from adaptive_grok.package_status import diagnostic_messages, inspect_package, receipt_inputs_unavailable
 from adaptive_grok.state import get_active_change, get_active_route
 from adaptive_grok.util import find_root
@@ -32,5 +32,6 @@ if active:
         raise SystemExit('Review was not recorded: selected package inputs cannot be read safely for receipt binding.')
     if args.status == 'pass' and any(item['severity'] == 'error' for item in package['findings']):
         raise SystemExit('Passing review was not recorded: resolve package completeness errors first.')
-path = write_receipt(root, args.kind, args.status, args.report)
-print(path.relative_to(root))
+write_receipt(root, args.kind, args.status, args.report)
+# One canonical line: the identifier a report cites must be pasted, never retyped.
+print(receipt_echo(root, args.kind))
