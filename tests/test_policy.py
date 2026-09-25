@@ -171,6 +171,9 @@ class PolicyTests(unittest.TestCase):
                     }),
                     ('empty-git-dir', 'git push origin feature', {'GIT_DIR': ''}),
                     ('empty-work-tree', 'git push origin feature', {'GIT_WORK_TREE': ''}),
+                    ('empty-both', 'git push origin feature', {
+                        'GIT_DIR': '', 'GIT_WORK_TREE': '',
+                    }),
                 )
                 for label, command, selectors in cases:
                     with self.subTest(case=label):
@@ -190,6 +193,51 @@ class PolicyTests(unittest.TestCase):
                         for value in selectors.values():
                             if value:
                                 self.assertNotIn(value, reason or '')
+
+    def test_inherited_git_selector_denial_precedes_approval_lookup_for_branch_and_tag(self) -> None:
+        with github_project() as root:
+            cases = (
+                ('branch', 'git push origin feature', {'GIT_DIR': '/must-not-leak-branch.git'}),
+                ('tag', 'git push origin v2.1.0', {'GIT_WORK_TREE': ''}),
+            )
+            for label, command, selectors in cases:
+                with self.subTest(action=label):
+                    with patch(
+                        'adaptive_grok._policy_legacy.has_valid_approval',
+                        side_effect=AssertionError('approval lookup must not run'),
+                    ) as approval_lookup, patch.dict(os.environ, selectors, clear=False):
+                        for name in {'GIT_DIR', 'GIT_WORK_TREE'} - selectors.keys():
+                            os.environ.pop(name, None)
+                        allowed, reason = evaluate_pre_tool(root, {
+                            'tool_name': 'Bash',
+                            'tool_input': {'command': command},
+                        })
+
+                    self.assertFalse(allowed)
+                    approval_lookup.assert_not_called()
+                    self.assertIn('unset', (reason or '').lower())
+                    for name, value in selectors.items():
+                        self.assertIn(name, reason or '')
+                        if value:
+                            self.assertNotIn(value, reason or '')
+
+    def test_exact_tag_grant_allows_tag_push_without_inherited_selectors(self) -> None:
+        with github_project() as root, patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('GIT_DIR', None)
+            os.environ.pop('GIT_WORK_TREE', None)
+            add_approval(
+                root,
+                'production',
+                'exact tag push fixture',
+                5,
+                actions=['git-push-tag'],
+            )
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'git push origin v2.1.0'},
+            })
+
+        self.assertTrue(allowed, reason)
 
     def test_new_grant_uses_neutral_binding_digest_key(self) -> None:
         with github_project() as root:

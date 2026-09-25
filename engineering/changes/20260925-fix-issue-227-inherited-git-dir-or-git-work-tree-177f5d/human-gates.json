@@ -12,6 +12,18 @@
       "resource": null,
       "route_id": "177f5dc1d5cf",
       "scope_digest": "0c6d047b13c93693eb359416f1dba878be8b2df121191b0401c272e6b0435a3e"
+    },
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+      "decided_at": "2026-09-25T09:15:34+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User-approved issue 227 local-only paired repair remains unchanged; refresh binds the already-approved scope after review-driven test coverage and specification evidence updates, with no external operation authorized.",
+      "resource": null,
+      "route_id": "177f5dc1d5cf",
+      "scope_digest": "c66f8353752dd7aa310e7b6ba5623aef7e40dee19572c1f7768e35ff4ba1bcf2"
     }
   ],
   "route_id": "177f5dc1d5cf",

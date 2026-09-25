@@ -232,6 +232,28 @@ class HookTests(unittest.TestCase):
             self.assertEqual(root_before, repository_snapshot(root))
             self.assertEqual(foreign_before, repository_snapshot(foreign))
 
+    def test_pre_tool_hook_denies_when_both_inherited_git_selectors_are_empty(self) -> None:
+        with project_copy(git=True) as root:
+            self._grant(root, 'production', actions=['git-push-branch'])
+            with patch.dict(os.environ, {'GIT_DIR': '', 'GIT_WORK_TREE': ''}, clear=False):
+                code, data, error = run_hook(root, 'pre_tool_use.py', {
+                    'cwd': str(root),
+                    'session_id': 'both-empty-inherited-git-selectors',
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': 'git push origin feature'},
+                })
+
+            self.assertEqual(0, code, error)
+            self.assertEqual('deny', data.get('decision'))
+            output = data['hookSpecificOutput']
+            self.assertEqual('deny', output['permissionDecision'])
+            reason = data.get('reason') or ''
+            self.assertEqual(reason, output['permissionDecisionReason'])
+            self.assertIn('GIT_DIR', reason)
+            self.assertIn('GIT_WORK_TREE', reason)
+            self.assertIn('unset', reason.lower())
+            self.assertTrue((root / '.grok-stack/runtime/tool-denials.json').is_file())
+
     def test_sensitive_nested_workdir_cannot_borrow_session_repository_grant(self) -> None:
         with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
             self._grant(session_root, 'production', actions=['git-push-branch'])

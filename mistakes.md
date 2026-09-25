@@ -1481,3 +1481,9 @@ I started a long verifier before saving the completed route review reports, then
 **Symptom:** the first issue-227 GREEN run failed because a test compared all untracked files before and after the hook, including the expected denial ledger and Python import caches.
 **Root cause:** the assertion measured incidental observability/import artifacts instead of the stated no-push invariant.
 **Durable rule:** prove no Git operation by comparing HEAD, refs, remotes, index, and tracked worktree state while asserting expected denial evidence separately.
+
+### 2026-09-25 — Asserted denial outputs without closing the control matrix
+
+**Symptom:** issue-227 tests passed while mutants could call approval lookup before denial, reject all clean tag grants, or exempt the both-empty selector combination.
+**Root cause:** the initial suite asserted returned outcomes but not control ordering, action-complete compatibility, or the full presence matrix.
+**Durable rule:** security-boundary tests must pair observable results with ordering tripwires, independent action cases, and all meaningful empty/present combinations.
