@@ -348,7 +348,7 @@ class DoctorPreflightGateTests(_ModelFixture):
         literal = json.dumps(BAD_ENTRY, ensure_ascii=False)
         expected_line = next(
             number
-            for number, line in enumerate(mutated.splitlines(), start=1)
+            for number, line in enumerate(mutated.split("\n"), start=1)
             if line.strip() in {literal, f"{literal},"}
         )
         item = self._model_item(root)
@@ -359,3 +359,91 @@ class DoctorPreflightGateTests(_ModelFixture):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+class LineLocationIntegrityTests(_ModelFixture):
+    """Pins the two majors an independent review found in head fc89a341."""
+
+    def test_line_break_lookalikes_in_free_text_do_not_shift_the_reported_line(self) -> None:
+        # U+2028 is legal inside a JSON string and schema-legal in a free-text contract
+        # field, but `str.splitlines()` counts it as a line break while the document, every
+        # editor and `git` do not. Before the fix a genuinely-bad path below such a value
+        # was reported one line too low: the operator is sent to the wrong place, with
+        # full confidence.
+        shipped = json.loads((ROOT / SYSTEM_RELATIVE).read_text(encoding="utf-8"))
+        contracts = [dict(contract) for contract in shipped.get("contracts", [])]
+        self.assertTrue(contracts, "shipped model declares no contracts to carry free text")
+        anchor = next(
+            (c for c in contracts if isinstance(c.get("version"), str)),
+            contracts[0],
+        )
+        anchor["version"] = str(anchor.get("version", "")) + "\u2028injected-line-break"
+
+        model = _system([BAD_ENTRY])
+        model["contracts"] = contracts
+        root = self._project_with(model, _rules(["factory/"]))
+        text = (root / SYSTEM_RELATIVE).read_text(encoding="utf-8")
+        literal = json.dumps(BAD_ENTRY, ensure_ascii=False)
+        expected = next(
+            number
+            for number, line in enumerate(text.split("\n"), start=1)
+            if line.strip() in {literal, f"{literal},"}
+        )
+        naive = next(
+            number
+            for number, line in enumerate(text.splitlines(), start=1)
+            if line.strip() in {literal, f"{literal},"}
+        )
+
+        item = self._model_item(root)
+        self.assertEqual(item.status, "fail", item.message)
+        self.assertIn(f"{SYSTEM_RELATIVE}:{expected}", item.message)
+        # The control that keeps the assertion above from being self-fulfilling: the old
+        # counting really is different here, so a green result is evidence, not a tautology.
+        self.assertEqual(naive, expected + 1)
+
+    def _project_with(self, system: dict, rules: dict) -> Path:
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        (root / "architecture").mkdir()
+        (root / "schemas").mkdir()
+        for name in ("architecture-system.schema.json", "architecture-rules.schema.json"):
+            (root / "schemas" / name).write_bytes((ROOT / "schemas" / name).read_bytes())
+        (root / SYSTEM_RELATIVE).write_text(_canonical(system), encoding="utf-8")
+        (root / RULES_RELATIVE).write_text(_canonical(rules), encoding="utf-8")
+        return root
+
+    def _model_item(self, root: Path):
+        items = [item for item in run_doctor(root) if item.name == "architecture-model"]
+        self.assertEqual(len(items), 1)
+        return items[0]
+
+
+class DoctorPresenceGateTests(_ModelFixture):
+    def test_missing_schema_with_both_documents_fails_instead_of_skipping(self) -> None:
+        # The presence gate covered four files, so a tree holding both authority documents
+        # but no rules schema reported "not present; skipped" as `info` while
+        # `load_architecture` genuinely failed there: a real defect downgraded to a skip.
+        root = self._project([BAD_ENTRY], ["factory/"])
+        (root / "schemas" / "architecture-rules.schema.json").unlink()
+
+        statuses = {i.name: (i.status, i.message) for i in run_doctor(root)}
+        try:
+            load_architecture(root)
+        except ArchitectureError as error:
+            load_code = error.code
+        else:
+            self.fail("load_architecture accepted a tree this test expects to be invalid")
+
+        self.assertEqual(statuses["architecture-model"][0], "fail", statuses["architecture-model"])
+        self.assertEqual(load_code, "io")
+
+    def test_tree_without_the_documents_stays_info_not_fail(self) -> None:
+        from tests._support import project_copy
+
+        with project_copy() as root:
+            statuses = {i.name: i.status for i in run_doctor(root)}
+
+        self.assertEqual(statuses.get("architecture-model"), "info")

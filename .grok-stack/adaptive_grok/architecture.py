@@ -183,7 +183,11 @@ def _document_scalar_lines(text: str, value: object) -> tuple[int, ...]:
         return ()
     literal = json.dumps(value, ensure_ascii=False)
     lines: list[int] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    # `str.splitlines()` also breaks on U+2028, U+2029, U+0085, \v, \f and \x1c-\x1e, which
+    # are legal inside JSON strings and schema-legal in free-text model fields. Counting
+    # them as lines makes a bad path at physical line N report line N+k, sending an operator
+    # to the wrong place with full confidence; the document and every editor count \n only.
+    for number, line in enumerate(text.split('\n'), start=1):
         stripped = line.strip()
         if stripped == literal or stripped == f"{literal},":
             lines.append(number)

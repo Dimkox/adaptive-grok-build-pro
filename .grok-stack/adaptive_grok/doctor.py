@@ -83,14 +83,13 @@ def run_doctor(root: Path) -> list[DoctorItem]:
     else:
         items.append(DoctorItem('fail', 'adaptive-routing', str(sample.to_dict())))
 
-    architecture_present = all(
+    # Only the two authority documents decide whether there is a model to check. Requiring
+    # all four files let a tree holding both documents but missing a schema report
+    # "not present; skipped" as `info`, while `load_architecture` genuinely fails there —
+    # a real defect downgraded to a skipped line. Missing schemas surface via preflight.
+    architecture_present = any(
         (root / relative).is_file()
-        for relative in (
-            'architecture/system.yaml',
-            'architecture/rules.yaml',
-            'schemas/architecture-system.schema.json',
-            'schemas/architecture-rules.schema.json',
-        )
+        for relative in ('architecture/system.yaml', 'architecture/rules.yaml')
     )
     if not architecture_present:
         items.append(DoctorItem('info', 'architecture-model', 'architecture documents are not present; skipped'))
