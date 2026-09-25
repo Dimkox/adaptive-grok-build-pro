@@ -11,7 +11,7 @@ import json
 import sys
 
 from adaptive_grok.receipts import receipt_echo
-from adaptive_grok.util import find_root
+from adaptive_grok.util import find_root, now_utc
 from adaptive_grok.verification import verify
 
 parser = argparse.ArgumentParser(description='Run route-selected verification and record a fingerprint-bound receipt.')
@@ -24,6 +24,10 @@ parser.add_argument('--profile', action='append', dest='profiles')
 parser.add_argument('--no-record', action='store_true')
 parser.add_argument('--json', action='store_true')
 args = parser.parse_args()
+# The echo answers "what did this run record", so it has to know when this run began. The tree
+# fingerprint cannot answer that: the verifier records nothing when governance fails, and on that
+# branch the tree is untouched, so an older receipt still matches the guard.
+run_started_at = now_utc()
 root = find_root()
 report = verify(root, args.mode, args.profiles, record=not args.no_record)
 if args.json:
@@ -44,7 +48,12 @@ else:
 # goes to stderr under --json so the JSON on stdout stays machine-parseable.
 if not args.no_record:
     print(
-        receipt_echo(root, 'verification', expect_tree_fingerprint=report.get('tree_fingerprint')),
+        receipt_echo(
+            root,
+            'verification',
+            expect_tree_fingerprint=report.get('tree_fingerprint'),
+            not_before=run_started_at,
+        ),
         file=sys.stderr if args.json else sys.stdout,
     )
 raise SystemExit(0 if report['status'] == 'pass' else 1)

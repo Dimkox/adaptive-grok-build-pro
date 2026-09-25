@@ -58,6 +58,7 @@
     "grok_governance.py",
     "grok_history.py",
     "grok_change.py",
+    "grok_citations.py",
     "grok_deploy.py",
     "grok_doctor.py",
     "grok_review.py",

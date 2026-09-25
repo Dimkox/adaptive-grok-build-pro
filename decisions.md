@@ -843,3 +843,7 @@ When a predecessor merges, first restack the continuation branch and bind its ro
 ### 2026-09-24 — Make cited identifiers pasteable and mechanically checkable
 
 Receipts now echo one canonical `RECEIPT kind=… fingerprint=… path=…` line, and `scripts/grok_citations.py` flags any 8-64 hex token that exists in no machine-state receipt, contract digest, package sidecar or Git object. The corpus deliberately excludes report prose so a fabricated hex cannot become authoritative by repetition. Why: issue #206 and #117 are the same failure — a plausible identifier cited as proof inside an otherwise-true report — and existence of an enumerable id is a mechanical question that should never be a judgment call.
+
+### 2026-09-24 — Drop `extended-citation` and bind the echo to the run instead of the tree
+
+A citation longer than every real identifier it prefixes is not a faithful truncation of anything, so no acceptance rule covers it; keeping the branch reopened the exact issue #206 shape for 197 of 547 corpus identifiers, and the deleted-branch mutation passed the whole suite. The receipt echo now answers only "what did this invocation record", bounded by the CLI's own run start, because the tree fingerprint cannot distinguish "recorded now" from "never recorded" on the governance-fail branch where the tree is unchanged.
