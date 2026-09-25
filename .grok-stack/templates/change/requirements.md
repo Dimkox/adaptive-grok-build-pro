@@ -6,6 +6,15 @@
 
 - [ ] Given ..., when ..., then ...
 
+A criterion that declares a set of expected outcomes must stay falsifiable and
+achievable. Naming an exact set — `the cutover reds are exactly {key-a, key-b}` —
+obliges a per-member liveness proof: the same criterion must carry `test` evidence
+naming every member, i.e. a probe that actually produces it. A member no rule of
+the stack can ever produce (for example one whose detector reads a frozen
+historical artifact) cannot be proven that way, so declare the set as an upper
+bound (`observed ⊆ {…}`) and assert non-emptiness; an upper bound without that
+assertion is satisfied by an empty observation and is rejected too.
+
 ## Failure and edge cases
 
 - 
