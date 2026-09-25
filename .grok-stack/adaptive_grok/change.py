@@ -36,7 +36,11 @@ DRIVE_PREFIX = re.compile(r'(?<![0-9A-Za-z])[A-Za-z]:[\\/]')
 ABSOLUTE_PATH_TITLE = re.compile(r'^(?:~?/[A-Za-z0-9._-]+){2,}(?:[/\s]|$)')
 # Names the derived id can never produce (it always starts with eight digits), but a
 # caller-supplied ``change_id`` can, and a Windows checkout could not read them back.
-RESERVED_WINDOWS_NAMES = re.compile(r'^(?:con|prn|aux|com[0-9]|lpt[0-9])(?:\..*)?$', re.IGNORECASE)
+# `nul` is the one reserved Windows name that needs no extension: `nul`, `nul.txt` and
+# `nul .txt` all address the device, and `con`/`prn`/`aux` are already covered.
+RESERVED_WINDOWS_NAMES = re.compile(
+    r'^(?:con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\..*)?$', re.IGNORECASE
+)
 
 
 def printable_value(value: str, limit: int = MAX_REFUSAL_ECHO_CHARS) -> str:

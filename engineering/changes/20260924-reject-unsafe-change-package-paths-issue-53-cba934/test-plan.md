@@ -35,3 +35,19 @@ this hardening from becoming a routing regression. Details in `evidence/test-rev
 
 - Whole-repository structure scan: `git ls-files -z` (3949 tracked paths at review time, 294 of them non-ASCII) checked component by component for a backslash, `:`, a control byte or the drive-prefix pattern — result clean, no artifact of the #53 class exists in the tracked tree. The same scan runs automatically as `test_tracked_tree_has_no_backslash_colon_or_control_byte_path`, which skips only when the git inventory is unavailable.
 - Historical-name sweep: 148 directory names under `engineering/changes/` enumerated and each accepted by `change_id_block_reason` (measured independently by the code reviewer, who also widened it to 275 names across sibling worktrees with the same result); the 19 non-ASCII ones additionally decoded from `state.json` with strict UTF-8. Automatable and automated (`::test_every_historical_package_name_is_still_acceptable`), kept as a manual check because an orphaned package would otherwise surface only when someone tried to open it.
+
+## Counting basis (so a reader can reproduce, not trust)
+
+Every historical-package figure in this package means directories reported by
+
+```
+git ls-tree --name-only origin/main:engineering/changes | wc -l
+```
+
+measured **148** at `cb9af407`. The number is command-qualified on purpose: git quotes
+non-ASCII entry names, so a line-based count that pipes through `grep -P '[^\x00-\x7F]'`
+or `sed` can silently drop rows and report a smaller figure (an independent review of this
+contour measured 147 the same way, along with 19 non-ASCII names, while the quoted-form
+count shows them). Non-ASCII names were therefore re-checked through the tree objects, not
+through a text pipeline, and the readability assertions run over every entry the command
+lists, not over a sample.

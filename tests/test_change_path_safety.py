@@ -331,3 +331,98 @@ class ChangePathSafetyTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+
+# The rule sets overlap on purpose - a control byte is also non-alphanumeric, a Windows
+# drive also contains a colon - so asserting only "refused" cannot tell a live rule from a
+# coincidence. These tables drive the reason class, which is what kills the three mutants an
+# example spot-check left alive.
+ID_REFUSAL_CASES: tuple[tuple[str, str], ...] = (
+    ('nul', 'windows'),
+    ('nul.txt', 'windows'),
+    ('NUL', 'windows'),
+    ('con', 'windows'),
+    ('aux.doc', 'windows'),
+    ('20260925-safe.', 'windows'),
+    ('-rf', 'dash'),
+    ('20260925-a\u001bb', 'control byte'),
+    ('C:\\Users\\x', ':'),
+    ('20260925-a:b', ':'),
+    ('..', 'traversal'),
+)
+
+TITLE_REFUSAL_CASES: tuple[tuple[str, str], ...] = (
+    (r'trust-ci/C:\Users\someone\notes', 'backslash'),
+    (r'sync from \\fileserv\share\notes', 'backslash'),
+    ('write a brief\u0001here', 'control byte'),
+    ('/home/user/project/promote the gate', 'absolute path'),
+)
+
+# The other half of the boundary: words that merely look hostile must still be accepted, or
+# the guard would "pass" by refusing everything.
+HARMLESS_TITLE_CASES: tuple[str, ...] = (
+    'nul',
+    '-rf',
+    'promotion:production',
+    'promotion:production:' + 'x' * 300,
+    'rename brief.md to hidden',
+    'https://example.invalid/a/b',
+)
+
+
+class RuleDifferentialTests(unittest.TestCase):
+    """Drives the reason classes, not just the refusal, through both entry channels."""
+
+    def test_each_id_shape_is_refused_by_the_rule_that_owns_it(self) -> None:
+        from adaptive_grok.change import change_id_block_reason
+
+        for value, marker in ID_REFUSAL_CASES:
+            with self.subTest(value=value):
+                reason = change_id_block_reason(value)
+                self.assertIsNotNone(reason, f'{value!r} was accepted as a package id')
+                self.assertIn(marker.lower(), reason.lower(),
+                              f'{value!r} refused for the wrong reason: {reason}')
+
+    def test_harmless_looking_titles_are_still_accepted(self) -> None:
+        from adaptive_grok.change import title_block_reason
+
+        for value in HARMLESS_TITLE_CASES:
+            with self.subTest(value=value):
+                self.assertIsNone(title_block_reason(value), 'the guard over-refused a plain title')
+
+    def test_each_title_shape_is_refused_before_anything_is_materialised(self) -> None:
+        for value, marker in TITLE_REFUSAL_CASES:
+            with self.subTest(value=value):
+                with project_copy() as root:
+                    route_for(root, 'Promote only after human approval', f'diff-{abs(hash(value)) % 10**6}')
+                    with self.assertRaises(ValueError) as caught:
+                        start_change(root, value)
+                    self.assertEqual({}, unsafe_package_entries(root), 'a directory was created')
+                    self.assertEqual([], list((root / 'engineering/changes').iterdir()))
+                    message = str(caught.exception)
+                self.assertIn(marker.lower(), message.lower(),
+                              f'{value!r} refused for the wrong reason: {message}')
+
+    def test_writer_and_schema_disagree_in_the_measured_direction(self) -> None:
+        # F4 is recorded debt, not a hypothesis: the schema pattern still admits `:` and a
+        # trailing dot that the writer refuses. Asserting the exact disagreement keeps it
+        # visible and makes a silent one-sided change impossible.
+        from adaptive_grok.change import change_id_block_reason
+
+        schema = json.loads((ROOT / 'schemas' / 'change-spec.schema.json').read_text(encoding='utf-8'))
+        pattern = schema['properties']['change_id']['pattern']
+        compiled = re.compile(pattern)
+
+        for value in ('20260925-ab:cd', '20260925-ab.'):
+            with self.subTest(value=value):
+                self.assertIsNotNone(change_id_block_reason(value), 'the writer became lenient')
+                self.assertTrue(compiled.fullmatch(value), 'the schema became strict')
+
+    def test_reserved_device_names_are_not_sufficiently_covered_by_the_slug_rules(self) -> None:
+        # Proves the `nul` addition is load-bearing: every other reserved name already trips
+        # a different rule, so only a dedicated assertion can show this one was open.
+        from adaptive_grok.change import change_id_block_reason
+
+        self.assertIsNotNone(change_id_block_reason('nul'))
+        self.assertIn('windows', (change_id_block_reason('nul') or '').lower())
