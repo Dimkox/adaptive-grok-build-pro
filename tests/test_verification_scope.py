@@ -777,7 +777,8 @@ class VerifyReportScopeFieldTests(unittest.TestCase):
 
 
 class FocusedPythonEmptyTargetTests(unittest.TestCase):
-    """`python -m unittest` with no module arguments exits 0 having run zero tests."""
+    """An empty target list must be refused, not handed to a runner whose zero-test
+    behavior varies by interpreter (exit 5 "NO TESTS RAN" on this host's 3.12 and 3.14)."""
 
     def test_an_empty_target_list_fails_instead_of_reporting_a_green_zero_test_run(self) -> None:
         with tempfile.TemporaryDirectory(prefix='grok-scope-empty-') as tmp:
@@ -907,12 +908,13 @@ class DocsStateStatusInventoryTests(unittest.TestCase):
             self.assertFalse(vetoed['eligible'])
             self.assertEqual(vetoed['reason_code'], 'unsafe-file-status')
 
-    def test_rename_detection_is_disabled_on_every_side_channel_read(self) -> None:
-        # Three properties at once, all of them claimed in comments before this arm existed:
-        # the side channel must read *both* halves without rename/copy scoring; the shared
-        # helper must still score them for the landing lane by default; and a working-tree
-        # rename must actually be invisible to the docs/state veto only because the production
-        # inventory keeps the deleted path in view.
+    def test_a_working_tree_rename_reaches_the_lane_as_a_deletion_not_a_rename(self) -> None:
+        # Three properties at once, all of them previously claimed only in comments: the index and
+        # worktree reads of the side channel do not score renames or copies; the shared helper the
+        # landing lane uses still does, by default; and the production inventory keeps the deleted
+        # path in view instead of collapsing a rename onto its new name. The committed-range half of
+        # the same rule is pinned by test_a_scaffolded_package_copy_still_selects_the_focused_profile
+        # and test_a_staged_successor_package_is_not_pushed_out_by_copy_detection.
         with tempfile.TemporaryDirectory(prefix='grok-scope-reads-') as tmp:
             root = Path(tmp)
             git = self._docs_repo(root)
@@ -923,10 +925,10 @@ class DocsStateStatusInventoryTests(unittest.TestCase):
                 root, self._selection(root, base)
             )
 
-            # Both halves of the side channel read with rename/copy detection off, so the staged
-            # rename arrives as the deletion-plus-addition it is. Reading it with rename scoring
-            # would report `R100` plus an `original_path`, and a scaffolded package would report
-            # `C0xx`, which is exactly the veto that kept this lane from ever firing.
+            # The index and worktree reads arrive with rename/copy detection off, so the staged
+            # rename is reported as the deletion-plus-addition it is. Reading it with rename scoring
+            # would report `R100` plus an `original_path`, and a staged scaffolded package would
+            # report `C0xx`, which is the veto that kept this lane from ever firing.
             self.assertTrue(trusted)
             self.assertEqual(
                 {str(item['status']) for item in records}, {'A', 'D'},

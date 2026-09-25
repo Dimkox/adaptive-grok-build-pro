@@ -1502,8 +1502,9 @@ def _focused_python(
     """
     targets = [str(target) for target in scope.get('focused_tests', [])]
     if not targets:
-        # `python -m unittest` with no module arguments exits 0 having run zero tests, so an
-        # empty target list would be reported as a green focused run. Refuse instead.
+        # `python -m unittest` with no module arguments runs zero tests (exit 5, "NO TESTS RAN",
+        # on this host's 3.12 and 3.14), so an empty target list must never be recorded as the
+        # focused run the profile claims. Refuse with an explanatory check instead.
         results.append(CheckResult(
             'python-focused-unittest',
             'fail',

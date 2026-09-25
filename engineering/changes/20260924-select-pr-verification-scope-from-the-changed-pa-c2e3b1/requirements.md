@@ -35,6 +35,6 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 ## Non-functional requirements
 
 - Security: scope selection is evidence-disclosure only and grants no merge authority; the App-owned exact-SHA Trust CI check is unchanged and still runs the whole suite.
-- Reliability: classification is deterministic from the changed-path inventory and its Git statuses, fail-closed on every ambiguity, and reproducible without network or provider access. An empty focused-target list is a failed check, never a green zero-test `python -m unittest` run.
+- Reliability: classification is deterministic from the changed-path inventory and its Git statuses, fail-closed on every ambiguity, and reproducible without network or provider access. An empty focused-target list is refused by its own failed check (carrying no command) instead of being handed to `python -m unittest`, whose zero-test exit status is interpreter-dependent: measured on this host, both 3.12.3 and 3.14.6 exit 5 with `NO TESTS RAN`.
 - Performance: measured baseline for the gated core suite on this checkout is 629 s serial under coverage; the five admitted modules run in about 14 s, and the focused profile also skips the bounded 600 s factory PostgreSQL exit run.
 - Observability: `docs_state_scope` in every PR/release report and receipt carries `profile`, `evidence_kind`, `reason_code`, admitted path lists, and the full skipped-check list including the replaced discovery runner.
