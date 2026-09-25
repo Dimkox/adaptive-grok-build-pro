@@ -1473,3 +1473,7 @@ I started a long verifier before saving the completed route review reports, then
 ### 2026-09-24 — A `finally` is not a cleanup guarantee when the process is killed
 
 Root cause: disposable-container release lived in a `finally` that a signal-cancelled gate run never reaches, and the dead `_cleanup` helper plus the `bound_container_id is not None` guard hid both the leak and the fact that ownership began only after a successful binding check. The corrective shape is reclaim-at-start by label plus signal-to-exception, with the age bound as the only evidence that a concurrent sibling is alive.
+
+### 2026-09-25 — A regression test can pin the defect it was written around
+
+`factory/tests/test_migrations.py` asserted `remove.assert_not_called()` plus a `leaked id=` message for a failed container binding, so the suite was green *because* the harness refused to clean up its own container. Fixing issue #128 therefore failed two gate checks (`factory-unit`, `factory-postgres-exit`) until the assertion was rewritten to require reclamation. Root cause: the test recorded the observable behavior of a known-bad implementation instead of the intended contract, and no other arm covered ownership-from-creation. Corollary class: when a fix turns a test red, prove which one is wrong by reading the test's own comment and the issue text, never by assuming the newest code is right.

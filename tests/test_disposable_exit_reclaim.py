@@ -6,6 +6,7 @@ import signal
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / 'factory' / 'tests' / 'run_disposable_exit.py'
@@ -230,6 +231,39 @@ class OwnedFromCreationTests(unittest.TestCase):
         self.assertIsNone(harness._minted_container_id('a1b2c3d4e5f6'))
         self.assertIsNone(harness._minted_container_id(''))
         self.assertIsNone(harness._minted_container_id('Error: No such image'))
+
+    def test_minted_removal_skips_the_binding_check_but_not_the_id_shape_check(self) -> None:
+        calls: list[list[str]] = []
+
+        def recorder(command, **_kwargs):
+            calls.append(list(command))
+            return _Result()
+
+        with patch.object(harness.subprocess, 'run', side_effect=recorder):
+            harness._remove_bound_container(
+                OLD_ID, 'adaptive-factory-exit-abc', 'nonce', minted=True
+            )
+
+        self.assertEqual(calls, [['docker', 'rm', '-f', '-v', OLD_ID]])
+
+        with patch.object(harness.subprocess, 'run', side_effect=recorder) as run:
+            with self.assertRaises(RuntimeError) as raised:
+                harness._remove_bound_container(
+                    'factory-test-container', 'name', 'nonce', minted=True
+                )
+        run.assert_not_called()
+        self.assertIn('did not mint', str(raised.exception))
+
+    def test_unbound_non_minted_container_is_still_refused(self) -> None:
+        with patch.object(harness, '_binding_matches', return_value=False), patch.object(
+            harness.subprocess, 'run'
+        ) as run:
+            with self.assertRaises(RuntimeError) as raised:
+                harness._remove_bound_container(
+                    OLD_ID, 'adaptive-factory-exit-abc', 'nonce'
+                )
+        run.assert_not_called()
+        self.assertIn('unbound container', str(raised.exception))
 
 
 class CancellationReachabilityTests(unittest.TestCase):

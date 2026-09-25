@@ -255,15 +255,28 @@ def _binding_matches(
     return identity_matches and (not require_running or fields[3] == "true")
 
 
-def _remove_bound_container(container_id: str, name: str, nonce: str) -> None:
-    if not _binding_matches(
+def _remove_bound_container(
+    container_id: str,
+    name: str,
+    nonce: str,
+    *,
+    minted: bool = False,
+) -> None:
+    if not _CONTAINER_ID.fullmatch(container_id):
+        raise RuntimeError(
+            f"refusing to delete a container id this process did not mint; id={container_id[:16]}"
+        )
+    if not minted and not _binding_matches(
         container_id, name, nonce, require_running=False
     ):
         raise RuntimeError(
             f"refusing to delete unbound container; leaked id={container_id}"
         )
+    # `minted` means the id came straight from this process's own `docker run` stdout. No
+    # stranger can own it, so a failed binding check must not become a second leak: the
+    # old shape of that refusal is exactly what issue 128 reports.
     subprocess.run(
-        ["docker", "rm", "-f", container_id],
+        ["docker", "rm", "-f", "-v", container_id],
         check=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -345,6 +358,7 @@ def main() -> int:
         (*import_roots, environment.get("PYTHONPATH", ""))
     ).rstrip(os.pathsep)
     bound_container_id: str | None = None
+    binding_verified = False
     # Handlers go in before anything exists to clean up, so a cancellation that lands
     # during `docker run` itself cannot leave an ownerless container behind.
     cancellation = _CancellationScope()
@@ -377,6 +391,7 @@ def main() -> int:
             raise RuntimeError(
                 f"disposable container binding failed; reclaimed id={container_id}"
             )
+        binding_verified = True
         published = subprocess.run(
             ["docker", "port", container_id, "5432/tcp"],
             check=True,
@@ -431,7 +446,9 @@ def main() -> int:
         raise SystemExit(130)
     finally:
         if bound_container_id is not None:
-            _remove_bound_container(bound_container_id, name, nonce)
+            _remove_bound_container(
+                bound_container_id, name, nonce, minted=not binding_verified
+            )
         cancellation.restore()
 
 
