@@ -306,27 +306,74 @@ class OwnedFromCreationTests(unittest.TestCase):
         self.assertIsNone(harness._minted_container_id(''))
         self.assertIsNone(harness._minted_container_id('Error: No such image'))
 
-    def test_minted_removal_skips_the_binding_check_but_not_the_id_shape_check(self) -> None:
+    def test_minted_removal_still_verifies_identity_before_it_destroys(self) -> None:
+        # `minted=True` exists so a failed binding check cannot leak our own container.
+        # It must not become a licence to delete whatever `docker run` happened to print:
+        # a spoofed shim or a daemon returning a foreign id would otherwise destroy an
+        # unrelated database plus its anonymous volume.
         calls: list[list[str]] = []
 
         def recorder(command, **_kwargs):
             calls.append(list(command))
-            return _Result()
+            if command[1] == 'inspect' and command[2] == '--format':
+                return _Result('	'.join([OLD_ID, '/' + EXIT_1, harness.DISPOSABLE_IMAGE,
+                                          'true', 'keep']), 0)
+            if command[1] == 'inspect':
+                return _Result(returncode=1)
+            return _Result(OLD_ID)
 
         with patch.object(harness.subprocess, 'run', side_effect=recorder):
-            harness._remove_bound_container(
-                OLD_ID, 'adaptive-factory-exit-abc', 'nonce', minted=True
-            )
+            harness._remove_bound_container(OLD_ID, EXIT_1, 'keep', minted=True)
 
-        self.assertEqual(calls, [['docker', 'rm', '-f', '-v', OLD_ID]])
+        self.assertIn(['docker', 'rm', '-f', '-v', OLD_ID], calls)
 
-        with patch.object(harness.subprocess, 'run', side_effect=recorder) as run:
+    def test_minted_removal_refuses_when_the_daemon_says_it_is_not_ours(self) -> None:
+        calls: list[list[str]] = []
+
+        def recorder(command, **_kwargs):
+            calls.append(list(command))
+            if command[1] == 'inspect' and command[2] == '--format':
+                # Readable daemon, identity present, but the label/nonce is somebody else's.
+                return _Result('	'.join(['b' * 64, '/adaptive-factory-exit-00000000000f',
+                                          harness.DISPOSABLE_IMAGE, 'true',
+                                          'someone-elses-nonce']), 0)
+            return _Result(returncode=0)
+
+        import io
+        import contextlib
+
+        buffer = io.StringIO()
+        with patch.object(harness.subprocess, 'run', side_effect=recorder):
             with self.assertRaises(RuntimeError) as raised:
-                harness._remove_bound_container(
-                    'factory-test-container', 'name', 'nonce', minted=True
-                )
-        run.assert_not_called()
-        self.assertIn('did not mint', str(raised.exception))
+                with contextlib.redirect_stdout(buffer):
+                    harness._remove_bound_container(OLD_ID, EXIT_1, 'keep', minted=True)
+
+        self.assertIn('does not match the run', str(raised.exception))
+        self.assertIn('RECLAIM refused', buffer.getvalue())
+        self.assertNotIn('rm', [command[1] for command in calls])
+
+    def test_a_container_that_survives_removal_is_reported_leaked_and_raises(self) -> None:
+        # Trusting `rm`'s exit code alone was the reviewer's point: the only honest proof
+        # is that the daemon can no longer see it.
+        def recorder(command, **_kwargs):
+            if command[1] == 'inspect' and command[2] == '--format':
+                return _Result('	'.join([OLD_ID, '/' + EXIT_1, harness.DISPOSABLE_IMAGE,
+                                          'true', 'keep']), 0)
+            if command[1] == 'inspect':
+                return _Result(returncode=0)
+            return _Result(returncode=0)
+
+        import io
+        import contextlib
+
+        buffer = io.StringIO()
+        with patch.object(harness.subprocess, 'run', side_effect=recorder):
+            with self.assertRaises(RuntimeError) as raised:
+                with contextlib.redirect_stdout(buffer):
+                    harness._remove_bound_container(OLD_ID, EXIT_1, 'keep', minted=True)
+
+        self.assertIn('survived removal', str(raised.exception))
+        self.assertIn('RECLAIM leaked', buffer.getvalue())
 
     def test_unbound_non_minted_container_is_still_refused(self) -> None:
         with patch.object(harness, '_binding_matches', return_value=False), patch.object(

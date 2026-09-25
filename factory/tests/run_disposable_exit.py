@@ -320,6 +320,34 @@ def _binding_matches(
     return identity_matches and (not require_running or fields[3] == "true")
 
 
+def _verify_ownership(container_id: str, name: str, nonce: str) -> str:
+    """Return 'ours', 'not-ours' or 'unknown' without ever raising.
+
+    Three outcomes are required, not two: "the daemon cannot tell me" must not be
+    indistinguishable from "the daemon says this is somebody else's". Collapsing them
+    either deletes foreign containers or leaks ours, and the difference is exactly the
+    one a spoofed `docker run` stdout would exploit.
+    """
+    try:
+        if _binding_matches(container_id, name, nonce, require_running=False):
+            return "ours"
+    except (subprocess.SubprocessError, OSError):
+        return "unknown"
+    inspected = subprocess.run(
+        ["docker", "inspect", "--format", "{{.Id}}", container_id],
+        text=True,
+        capture_output=True,
+        timeout=15,
+        check=False,
+    )
+    if inspected.returncode != 0:
+        # Gone already, or unreadable: deleting is then harmless or impossible, not a risk.
+        return "unknown"
+    # The container exists and the binding check above already said its identity is not
+    # this run's, so a readable daemon is testifying that it is somebody else's.
+    return "not-ours"
+
+
 def _remove_bound_container(
     container_id: str,
     name: str,
@@ -337,16 +365,44 @@ def _remove_bound_container(
         raise RuntimeError(
             f"refusing to delete unbound container; leaked id={container_id}"
         )
-    # `minted` means the id came straight from this process's own `docker run` stdout. No
-    # stranger can own it, so a failed binding check must not become a second leak: the
-    # old shape of that refusal is exactly what issue 128 reports.
-    subprocess.run(
+    if minted:
+        # The id came from this process's own `docker run` stdout, so a failed binding
+        # check must not become the second leak issue 128 reports. It is still not a
+        # licence to destroy: if the daemon can be asked and says this identity is not
+        # ours, that is a spoofed or hijacked `docker run` result, and deleting an
+        # arbitrary container plus its anonymous volume is the worse failure.
+        ownership = _verify_ownership(container_id, name, nonce)
+        if ownership == "not-ours":
+            print(
+                f"RECLAIM refused container={container_id} reason=identity-not-ours "
+                f"expected_nonce={nonce[:8]}"
+            )
+            raise RuntimeError(
+                f"refusing to delete a container whose identity does not match the run "
+                f"that minted it; leaked id={container_id}"
+            )
+    removal = subprocess.run(
         ["docker", "rm", "-f", "-v", container_id],
-        check=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         timeout=30,
+        check=False,
     )
+    still_there = subprocess.run(
+        ["docker", "inspect", container_id],
+        capture_output=True,
+        timeout=15,
+        check=False,
+    )
+    if still_there.returncode == 0:
+        print(
+            f"RECLAIM leaked container={container_id} name={name} "
+            f"removal_exit={removal.returncode}"
+        )
+        raise RuntimeError(
+            f"disposable container survived removal; leaked id={container_id} "
+            f"removal_exit={removal.returncode}"
+        )
 
 
 def _run(command: list[str], *, environment: dict[str, str] | None = None, timeout: int = 300) -> None:
