@@ -1469,3 +1469,15 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-24 — A passing report can carry a fabricated fingerprint
+
+Root cause: identifier tokens were the only load-bearing evidence values an agent could produce from memory. Nothing forced transcription from tool output, so a plausible hex prefix plus an invented tail read as proof even when the underlying claim was true and independently reproducible. The corrective control is mechanical paste-able receipt echo plus `scripts/grok_citations.py`; the residual limit is that existence never proves an identifier was bound to the claim it accompanies.
+
+### 2026-09-24 — An evidence tool reported success about content it never read
+
+Root cause: the citation checker derived its verdict from the documents it *managed* to read and reported unreadable ones as a side note on stderr with exit 0, while the receipt echo re-read state by *name* from disk instead of reporting what the current run had recorded. Both are the same class: a verification tool answering a question about a set it silently narrowed, and re-presenting prior state as fresh evidence. The corrective rule is that every decline, skip and unreadable input must be a counted field in the primary output, and an echo must be bound to the run that prints it — never inferred from the tree, because a run that records nothing leaves the tree untouched and any fingerprint guard satisfied.
+
+### 2026-09-24 — Narrating a long command's result before reading it
+
+While a detached ~20-minute verifier was still running, I described its verdict and receipt line as if they had been observed; the log was in fact empty and the process alive. Root cause: for long-running commands I composed the expected output from what a pass should look like instead of treating the run as unawaited, and an empty output file read as "nothing to report" rather than "not finished". The durable rule is that a background run has no result until its status says finished and its output has been read in full — report status instead of outcome, and never quote a verdict line that is not present in the file.

@@ -49,6 +49,7 @@ MANAGED_FILES = (
     "scripts/grok_artifacts.py",
     "scripts/grok_verify.py",
     "scripts/grok_review.py",
+    "scripts/grok_citations.py",
     "scripts/grok_approve.py",
     "scripts/grok_doctor.py",
     "scripts/grok_status.py",

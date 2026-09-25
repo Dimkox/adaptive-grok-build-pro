@@ -1,0 +1,62 @@
+{
+  "change_id": "20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-206-receipt-identifier-citation",
+      "change_id": "20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-24T22:27:31+00:00",
+      "route_id": "64a3e7f316b9"
+    }
+  ],
+  "created_at": "2026-09-24T22:27:31+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-24T22:27:31+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "1da6fa8af0327909c0c018ffbd76593c3136ec7e9069db8604e4c30f9113b9e7",
+  "route_id": "64a3e7f316b9",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "Bind cited identifiers to real receipts (issue 206)",
+  "updated_at": "2026-09-24T22:27:31+00:00"
+}

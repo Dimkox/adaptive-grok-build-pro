@@ -192,6 +192,7 @@ class StructureTests(unittest.TestCase):
             "scripts/grok_artifacts.py",
             "scripts/grok_verify.py",
             "scripts/grok_review.py",
+            "scripts/grok_citations.py",
             "scripts/grok_approve.py",
             "scripts/grok_deploy.py",
             "scripts/install_into.py",

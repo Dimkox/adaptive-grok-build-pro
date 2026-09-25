@@ -294,12 +294,27 @@ Declared route `human_gates` require a separate decision in the active change pa
 | `scripts/grok_gate.py` | Inspect or record route-bound local human-gate decisions |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
+| `scripts/grok_citations.py` | Flag hex identifiers cited in a report that exist in no receipt, digest, package sidecar or Git object |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
 | `scripts/grok_doctor.py` | Local health check |
 | `scripts/grok_demo.py` | Start the loopback-only read-only product tour using bundled sample and checkout-derived evidence |
 | `scripts/install_into.py` | Plan an existing repository read-only or atomically materialize an absent new target |
 | `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |
+
+## Cited identifiers
+
+This stack binds evidence to fingerprints, so an identifier string is a load-bearing evidence token — and a plausible hex that exists nowhere is exactly how a false verification reads when the rest of the report is true. Two mechanisms make citation mechanical instead of a matter of trust.
+
+`grok_verify.py` and `grok_review.py` print one canonical line after recording a receipt:
+
+```text
+RECEIPT kind=verification status=pass fingerprint=<sha256> at=2026-09-24T22:02:59+00:00 path=.grok-stack/runtime/receipts/<route>/verification.json route=<route_id>
+```
+
+A report pastes that line; when it is unavailable the report says "see receipt file" rather than naming a remembered hex. Under `--json` the echo goes to stderr so stdout stays parseable, and `--no-record` prints nothing because no receipt was made. The line is a fact about the run that printed it, never about whatever is on disk: an echo refuses a receipt this invocation did not record (`reason=not-recorded-this-run` — the verifier records nothing when governance fails, while the tree fingerprint guard still passes), one invalidated in place afterwards (`reason=receipt-invalidated`), one whose envelope does not match the route and kind it was read under (`reason=receipt-envelope-invalid`), and one binding a different tree (`reason=tree-fingerprint-mismatch`). An `unavailable` line carries no identifier at all, so there is nothing to paste by mistake; `path=` is always repository-relative and `detail=` is the only quoted field.
+
+`python3 scripts/grok_citations.py <report.md> [...]` (or `-` for stdin, `--json` for machine output, `--max-bytes` for the read ceiling applied to every input including stdin) extracts every maximal hex run of 8-64 characters that contains at least one `a-f` digit — the shape this stack's identifiers actually have — and reports each one that matches no identifier in machine state nor resolves as a Git object. Machine state means `.grok-stack/runtime/**`, change-package spec/state/route/gate files, `engineering/contracts/**`, `architecture/generated/**`, `packages/*.sha256` and `delivery/**`, read only through paths that resolve inside the repository and never through a symlink that leaves it. Because these files also carry prose that people write, a token inside a JSON or YAML corpus file counts only when it sits under an identifier-bearing key (`*fingerprint`, `*digest`, `*commit`, `route_id`, …), and JSON that does not parse contributes nothing instead of falling back to its prose — so a hex typed into a title or a reason line cannot become authoritative tree-wide. Report prose is excluded from the corpus entirely, so a token cannot become authoritative by being repeated in an earlier report. Runs the checker declines to judge are counted rather than dropped: the `CITATION` summary reports `declined=<n>` for all-decimal strings, degenerate repeats and hex longer than 64 characters (a sha512), because an unjudged token must not read as a clean one. Exit codes are `0` pass, `1` unresolved identifiers, `2` when a named document could not be read at all (so a typo'd path, a directory or an oversized file is never a green check on content nobody looked at); `--warn-only` downgrades both to `0`. A citation longer than every real identifier it prefixes is reported `MISSING`: a genuine prefix with an invented tail is the exact shape of issue #206, and no truncation rule covers it. Existence is all it proves — a real fingerprint can still be cited for a claim it does not support.
 
 ## Local browser demo
 

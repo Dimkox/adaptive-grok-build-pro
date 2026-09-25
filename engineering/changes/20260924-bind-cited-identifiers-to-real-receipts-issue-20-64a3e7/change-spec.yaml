@@ -1,0 +1,104 @@
+{
+  "schema_version": 2,
+  "change_id": "20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Close issue 206: make the load-bearing evidence identifiers pasteable rather than recallable, and make their existence a mechanical question, so a report cannot cite a plausible hex that binds nothing and still read as verified.",
+    "success_metric": "`grok_verify` and `grok_review` answer with exactly one canonical `RECEIPT kind=… status=… fingerprint=… at=… path=… route=…` line that always prints (unavailable is stated, not omitted); `scripts/grok_citations.py` reproduces the incident shape — a real identifier prefix with an invented tail — as unresolved while resolving the genuine identifier, its faithful prefix, and a real Git object, and exits non-zero on the fabricated token.",
+    "target": "`.grok-stack/adaptive_grok/citations.py`, `receipt_echo` in `.grok-stack/adaptive_grok/receipts.py`, `scripts/grok_citations.py`, `scripts/grok_verify.py`, `scripts/grok_review.py`, and the verification-evidence skill guidance"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": ["security", "test-infra", "documentation"]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Each recording CLI prints one canonical receipt line carrying kind, status, the bound tree fingerprint, timestamp, receipt path and route id, on stdout for human mode and on stderr under `--json` so JSON stays parseable.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}, {"receipt": "verification"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The echo never implies a receipt that this run did not produce: with no active route it reports `reason=no-active-route`, with no recorded receipt `reason=receipt-not-recorded`, and with a receipt bound to another tree `reason=tree-fingerprint-mismatch`, each on exactly one line.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The identifier audit flags a fabricated 8-64 hex token, including the incident shape of a genuine prefix plus an invented tail, and accepts an exact corpus identifier, a faithful prefix of one, and a real Git object id.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The audit corpus is machine state only — runtime receipts and routes, change spec/state/route/gate JSON, engineering contracts, generated architecture views, package sidecars and delivery records — so a token repeated in report prose never becomes authoritative.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The CLI exits non-zero when any cited identifier is unresolved, supports `--warn-only` and `--json`, reads stdin, and refuses oversized or non-regular documents.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "AC-006",
+      "statement": "AGENTS.md, README and the verification-evidence skill (both tracked copies) require pasting the `RECEIPT` line, say \"see receipt file\" instead of a remembered hex, and state that existence checking never proves an identifier was bound to its claim.",
+      "evidence": [{"receipt": "code_review"}, {"receipt": "test_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Receipt binding, status semantics, staleness rules and the App-owned external Trust CI exact-SHA authority are unchanged; this control adds transcription and existence evidence and grants no merge authority.",
+      "evidence": [{"test": "tests/test_change_receipts.py"}, {"receipt": "verification"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Symlinked, oversized and unreadable corpus entries are skipped rather than read, and unreadable cited documents are reported instead of passing silently.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "INV-003",
+      "statement": "The checker's verdict is existence only and is stated as such in its own output and in the guidance.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}, {"receipt": "code_review"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A successful run prints no identifier line, leaving the next reader to retype a fingerprint from memory.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "A fabricated identifier is accepted because it resembles a real one, or because an earlier report already repeated it.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "An unavailable or stale receipt is echoed as a fresh pass, or the existence verdict is presented as proof that a claim was verified.",
+      "evidence": [{"test": "tests/test_citation_identifiers.py"}, {"receipt": "security_review"}]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "CITATION status line: citation count, distinct tokens, unresolved count, corpus files and corpus identifiers scanned",
+      "proves": ["OBJ-001"]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "RECEIPT echo status field distribution (pass/fail/unavailable with reason)",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}
