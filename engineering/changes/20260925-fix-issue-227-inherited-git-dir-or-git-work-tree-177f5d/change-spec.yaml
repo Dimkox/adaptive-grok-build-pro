@@ -22,7 +22,7 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": ["scope_and_design_approval"]
   },
   "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
   "contracts": {

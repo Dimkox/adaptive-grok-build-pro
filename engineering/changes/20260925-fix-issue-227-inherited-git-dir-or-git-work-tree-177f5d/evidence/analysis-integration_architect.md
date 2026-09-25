@@ -153,4 +153,3 @@ Tests use only policy evaluation, temporary local Git repositories, and read-onl
 ## Gate recommendation
 
 Approve the narrow paired design only after AC-001 through AC-006 are copied into the typed change spec/test plan and the residual push-destination decision is recorded. Implementation should remain with the route's single `general_implementer`; afterward run focused tests, full `grok_verify --mode pr`, and independent code/test/security/release reviews. No local result authorizes push, merge, release, or deployment.
-
