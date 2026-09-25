@@ -839,3 +839,7 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 ## 2026-09-24 — Freeze the exact base before expensive gates
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
+
+## 2026-09-25 — Carry new spec obligations on existing document fields
+
+Issue #202 needed a per-member liveness obligation inside `change-spec.yaml`, but the independently deployed holdout accepts a criterion containing exactly `id`, `statement` and `evidence`, and repository changes cannot modify that deployed bundle. The obligation was therefore expressed as semantics over the existing prose and the existing `test` evidence kind instead of a new field, so no spec can become locally valid and externally rejectable.

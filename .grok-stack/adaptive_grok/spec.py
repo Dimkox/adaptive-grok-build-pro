@@ -47,6 +47,30 @@ JSON_SCHEMA_TYPE_NAMES = frozenset(
 
 RISK_MAP = {"low": "green", "medium": "yellow", "high": "red"}
 
+# Expectation-set satisfiability (issue #202). A criterion may declare a *set*
+# of expected outcomes ("the cutover reds are exactly {key-A, key-B}"). Shape
+# validation cannot tell whether every declared member is achievable, so an
+# unreachable member is only discovered when the implementer measures reality.
+# These cues let the recorder's own wording decide which obligation applies.
+BRACE_GROUP_RE = re.compile(r"\{([^{}]{1,512})\}")
+EXPECTATION_MEMBER_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.@/-]{2,127}")
+# A bare all-uppercase word in braces is a template placeholder (``{TITLE}``),
+# never one member of a declared expectation set.
+PLACEHOLDER_TOKEN_RE = re.compile(r"[A-Z][A-Z0-9]*")
+EXACTNESS_CUE_RE = re.compile(
+    r"\b(?:exactly|exact|precisely|identical to|closed set|nothing else)\b", re.IGNORECASE
+)
+UPPER_BOUND_CUE_RE = re.compile(
+    r"\b(?:subset|at most|upper bound|allowed deviation|allowable deviation|never outside)\b"
+    r"|\bmay (?:include|contain)\b|⊆",
+    re.IGNORECASE,
+)
+NON_EMPTY_CUE_RE = re.compile(
+    r"\b(?:non-?empty|at least one|must not be empty|cannot be empty|never empty)\b",
+    re.IGNORECASE,
+)
+TOKEN_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+
 
 class SpecError(ValueError):
     def __init__(self, message: str, *, code: str = "invalid") -> None:
@@ -718,6 +742,103 @@ def spec_fingerprint(
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def _declared_expectation_members(statement: str) -> list[str]:
+    """Return the ordered member names a statement declares inside ``{...}``.
+
+    Only identifier-shaped names of at least three characters are kept, so an
+    empty ``{}``, a placeholder such as ``{0}`` or ``{X}``, a bare all-uppercase
+    template variable such as ``{TITLE}``, and a JSON literal such as
+    ``{"a": 1}`` cannot turn ordinary prose into an expectation set. A brace
+    group with no eligible member is not a set, and a set with no exactness or
+    upper-bound cue in the same sentence imposes no obligation.
+    """
+    members: list[str] = []
+    for group in BRACE_GROUP_RE.findall(statement):
+        for raw in group.split(","):
+            token = raw.strip().strip("`\"'")
+            if len(token) < 3 or not EXPECTATION_MEMBER_RE.fullmatch(token):
+                continue
+            if PLACEHOLDER_TOKEN_RE.fullmatch(token):
+                continue
+            if token not in members:
+                members.append(token)
+    return members
+
+
+def _token_sequence(value: str) -> list[str]:
+    return [token for token in TOKEN_SPLIT_RE.split(value.lower()) if token]
+
+
+def _contains_sequence(needle: list[str], haystack: list[str]) -> bool:
+    span = len(needle)
+    return any(haystack[index : index + span] == needle for index in range(len(haystack) - span + 1))
+
+
+def _liveness_probe_tokens(item: dict[str, Any]) -> list[str]:
+    """Concatenated token sequences of the ``test`` evidence of one criterion."""
+    tokens: list[str] = []
+    for ref in item.get("evidence") or []:
+        if not isinstance(ref, dict) or len(ref) != 1:
+            continue
+        kind, value = next(iter(ref.items()))
+        if kind != "test" or not isinstance(value, str):
+            continue
+        tokens.extend(_token_sequence(value))
+    return tokens
+
+
+def expectation_set_findings(spec: dict[str, Any]) -> list[str]:
+    """Find declared expectation sets that cannot be shown satisfiable.
+
+    A criterion that declares an *exact* set must prove every member is
+    reachable: some ``test`` evidence of the same criterion must name it, which
+    is the record-time form of the per-member liveness probe. A member that no
+    rule of the stack can ever produce is therefore rejected while the spec is
+    still a plan, instead of during implementation. The alternative the author
+    may take is to declare the set as an upper bound and assert non-emptiness,
+    because an upper bound with no non-emptiness obligation is satisfied by an
+    empty observation and can never fail.
+    """
+    findings: list[str] = []
+    for collection, label in (
+        ("acceptance_criteria", "acceptance criterion"),
+        ("invariants", "invariant"),
+        ("forbidden_outcomes", "forbidden outcome"),
+    ):
+        items = spec.get(collection) if isinstance(spec.get(collection), list) else []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            statement = item.get("statement")
+            if not isinstance(statement, str):
+                continue
+            members = _declared_expectation_members(statement)
+            if not members:
+                continue
+            item_id = str(item.get("id", ""))
+            exact = EXACTNESS_CUE_RE.search(statement) is not None
+            upper_bound = UPPER_BOUND_CUE_RE.search(statement) is not None
+            if exact:
+                probes = _liveness_probe_tokens(item)
+                for member in members:
+                    if _contains_sequence(_token_sequence(member), probes):
+                        continue
+                    findings.append(
+                        f"{label} {item_id} declares the exact expectation set member {member!r} "
+                        f"without a liveness proof: no test evidence of {item_id} names {member!r}, "
+                        f"so the member cannot be shown reachable; either attach a test that "
+                        f"produces {member!r} through its own detector path, or declare the set "
+                        f"as an upper bound and assert non-emptiness"
+                    )
+            elif upper_bound and NON_EMPTY_CUE_RE.search(statement) is None:
+                findings.append(
+                    f"{label} {item_id} declares the expectation set {', '.join(members)} as an "
+                    f"upper bound without asserting non-emptiness, so an empty observation "
+                    f"satisfies {item_id} and the criterion can never fail"
+                )
+    return findings
+
+
 def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     collections = (("acceptance_criteria", "acceptance criterion"), ("invariants", "invariant"), ("forbidden_outcomes", "forbidden outcome"))
@@ -780,6 +901,7 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
                         raise SpecError(f"unsafe contract path: {raw!r}")
             except SpecError as exc:
                 errors.append(str(exc))
+    errors.extend(expectation_set_findings(spec))
     if gate:
         objective = spec.get("objective") or {}
         for field in ("success_metric", "target"):
