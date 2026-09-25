@@ -1469,3 +1469,11 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-25 — Retyped anchor lines inside an edit silently change behavior
+
+While inserting a new function above `contract_inventory()` I re-typed the preceding unchanged lines in the replacement text instead of quoting them verbatim, and rewrote `code = "missing_contract" if result == "missing" else "unsafe_contract_path"` into an equivalent-looking but wrong expression; the same mistake in `doctor.py` deleted an `if` header and broke the file's syntax. Root cause: treating the anchor as prose to reproduce rather than as bytes to preserve. Durable rule: an insert edit must copy its surrounding anchor text exactly from what was just read, and be followed by a syntax/diff check of the *unchanged* region before moving on.
+
+### 2026-09-25 — Do not freeze shipped-model literals into contour tests
+
+The doctor-gate test first injected the defect by replacing a hard-coded line copied from the current `architecture/system.yaml`, and asserted a bare-literal line match that only holds when the injected entry is not last in its array. Both break the moment another contour edits the model (issue #120 owns the same file). Root cause: snapshot expectations instead of re-derived ones. Durable rule: mutate the live model programmatically after parsing it, and recompute every expected value (line, count, digest) from the tree at run time.

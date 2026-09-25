@@ -71,9 +71,25 @@ RULE_PATH_FIELDS = {
 
 
 class ArchitectureError(ValueError):
-    def __init__(self, message: str, *, code: str = "invalid") -> None:
+    """Model or evidence rejection.
+
+    ``document`` and ``line`` name the location inside the authority document that
+    produced the failure when it is known, so one consumer can report the defect once
+    instead of every caller re-deriving an unlocated message.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "invalid",
+        document: str | None = None,
+        line: int | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
+        self.document = document
+        self.line = line
 
 
 @dataclass(frozen=True)
@@ -119,23 +135,101 @@ def _unsafe_text(value: str) -> bool:
     )
 
 
-def _safe_relative_path(value: str, *, label: str) -> str:
+def _path_shape_problem(value: object) -> str:
+    """Return the precise reason ``value`` is not a repository-relative path, or ``""``.
+
+    The rejection set is exactly the one :func:`_safe_relative_path` enforced before this
+    helper existed; only the diagnosis is finer. A single trailing separator used to read
+    as the same "unsafe" verdict as a ``../`` escape, so a contributor had to open the
+    validator to learn which character was wrong.
+    """
     if not isinstance(value, str):
-        raise ArchitectureError(f"{label}: path must be a string", code="path")
-    pure = PurePosixPath(value)
-    raw_parts = value.split("/")
-    if (
-        not value
-        or _unsafe_text(value)
-        or unicodedata.normalize("NFC", value) != value
-        or "\\" in value
-        or pure.is_absolute()
-        or value.endswith("/")
-        or "//" in value
-        or any(part in {"", ".", ".."} for part in raw_parts)
-    ):
-        raise ArchitectureError(f"{label}: unsafe repository-relative path {value!r}", code="path")
-    return pure.as_posix()
+        return "must be a string"
+    if not value:
+        return "is empty"
+    if _unsafe_text(value):
+        return "contains control or formatting characters"
+    if unicodedata.normalize("NFC", value) != value:
+        return "is not NFC-normalized"
+    if "\\" in value:
+        return "contains a backslash separator"
+    if PurePosixPath(value).is_absolute():
+        return "is absolute"
+    if value.endswith("/"):
+        return "has a trailing separator"
+    if "//" in value:
+        return "contains an empty segment ('//')"
+    if any(part in {"", ".", ".."} for part in value.split("/")):
+        return "contains a '.' or '..' segment"
+    return ""
+
+
+def _safe_relative_path(value: str, *, label: str) -> str:
+    problem = _path_shape_problem(value)
+    if problem:
+        raise ArchitectureError(
+            f"{label}: unsafe repository-relative path {value!r} ({problem})", code="path"
+        )
+    return PurePosixPath(value).as_posix()
+
+
+def _document_scalar_lines(text: str, value: object) -> tuple[int, ...]:
+    """Return the 1-based lines of a canonical document that hold exactly ``value``.
+
+    Architecture documents are byte-checked as canonical two-space JSON, so every scalar
+    occupies its own line and a string literal is matched by its trimmed rendering.
+    """
+    if not isinstance(value, str):
+        return ()
+    literal = json.dumps(value, ensure_ascii=False)
+    lines: list[int] = []
+    # `str.splitlines()` also breaks on U+2028, U+2029, U+0085, \v, \f and \x1c-\x1e, which
+    # are legal inside JSON strings and schema-legal in free-text model fields. Counting
+    # them as lines makes a bad path at physical line N report line N+k, sending an operator
+    # to the wrong place with full confidence; the document and every editor count \n only.
+    for number, line in enumerate(text.split('\n'), start=1):
+        stripped = line.strip()
+        if stripped == literal or stripped == f"{literal},":
+            lines.append(number)
+    return tuple(lines)
+
+
+def _located_path_error(
+    error: ArchitectureError,
+    value: object,
+    *,
+    document: str | None,
+    text: str | None,
+) -> ArchitectureError:
+    """Copy of ``error`` naming ``document:line`` for the offending value."""
+    if document is None or text is None:
+        return error
+    lines = _document_scalar_lines(text, value)
+    if not lines:
+        return ArchitectureError(
+            f"{error} at {document}", code=error.code, document=document
+        )
+    occurrences = "" if len(lines) == 1 else f" ({len(lines)} occurrences)"
+    return ArchitectureError(
+        f"{error} at {document}:{lines[0]}{occurrences}",
+        code=error.code,
+        document=document,
+        line=lines[0],
+    )
+
+
+def _checked_model_path(
+    value: object,
+    *,
+    label: str,
+    document: str | None,
+    text: str | None,
+) -> str:
+    """Normalize a declared path, attaching the document location to any shape failure."""
+    try:
+        return _safe_relative_path(value, label=label)
+    except ArchitectureError as exc:
+        raise _located_path_error(exc, value, document=document, text=text) from None
 
 
 def _document_relative(root: Path, path: Path | str, *, label: str) -> str:
@@ -359,7 +453,12 @@ def _require_references(values: list[str], known: set[str], *, label: str) -> No
         raise ArchitectureError(f"{label}: unresolved references: {missing}", code="reference")
 
 
-def _validate_system_semantics(system: dict[str, Any]) -> None:
+def _validate_system_semantics(
+    system: dict[str, Any],
+    *,
+    document: str | None = None,
+    text: str | None = None,
+) -> None:
     _stable_ids(system, SYSTEM_COLLECTIONS, label="system")
     trust_domains = {item["id"] for item in system["trust_domains"]}
     data_types = {item["id"] for item in system["data_classifications"]}
@@ -370,7 +469,12 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
     nodes = {item["id"] for item in system["nodes"]}
 
     for contract in system["contracts"]:
-        path = _safe_relative_path(contract["path"], label=f"contract {contract['id']}")
+        path = _checked_model_path(
+            contract["path"],
+            label=f"contract {contract['id']}",
+            document=document,
+            text=text,
+        )
         if Path(path).name == ".gitkeep" or "examples" in PurePosixPath(path).parts:
             raise ArchitectureError(
                 f"contract {contract['id']}: examples and .gitkeep are non-authoritative",
@@ -391,7 +495,12 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
             node["public_contracts"], contracts, label=f"node {node['id']} public_contracts"
         )
         for path in node["repository_paths"]:
-            normalized = _safe_relative_path(path, label=f"node {node['id']} repository path")
+            normalized = _checked_model_path(
+                path,
+                label=f"node {node['id']} repository path",
+                document=document,
+                text=text,
+            )
             prior = repository_owners.get(normalized)
             if prior is not None and prior != node["id"]:
                 raise ArchitectureError(
@@ -428,7 +537,13 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
         capability_keys.add(encoded)
 
 
-def _validate_rule_semantics(rules: dict[str, Any], system: dict[str, Any]) -> None:
+def _validate_rule_semantics(
+    rules: dict[str, Any],
+    system: dict[str, Any],
+    *,
+    document: str | None = None,
+    text: str | None = None,
+) -> None:
     rule_ids = _stable_ids(rules, RULE_COLLECTIONS, label="rules")
     if len(rule_ids) > MAX_RULES:
         raise ArchitectureError("rules: total rule limit exceeded", code="limit")
@@ -454,7 +569,12 @@ def _validate_rule_semantics(rules: dict[str, Any], system: dict[str, Any]) -> N
         for rule in rules[collection]:
             for field in RULE_PATH_FIELDS & set(rule):
                 for value in rule[field]:
-                    _safe_relative_path(value, label=f"rule {rule['id']} {field}")
+                    _checked_model_path(
+                        value,
+                        label=f"rule {rule['id']} {field}",
+                        document=document,
+                        text=text,
+                    )
 
 
 def _normalize(value: Any) -> Any:
@@ -570,8 +690,12 @@ def load_architecture(
         raise ArchitectureError("system model node limit exceeded", code="limit")
     if len(system["edges"]) > MAX_MODEL_EDGES:
         raise ArchitectureError("system model edge limit exceeded", code="limit")
-    _validate_system_semantics(system)
-    _validate_rule_semantics(rules, system)
+    _validate_system_semantics(
+        system, document=system_relative, text=system_data.decode("utf-8")
+    )
+    _validate_rule_semantics(
+        rules, system, document=rules_relative, text=rules_data.decode("utf-8")
+    )
     return ArchitectureSnapshot(
         system=_normalize(system),
         rules=_normalize(rules),
@@ -650,6 +774,31 @@ def validate_architecture(
             code = "missing_contract" if result == "missing" else "unsafe_contract_path"
             findings.append(ArchitectureFinding(code, f"contract path is {result}: {path}", path))
     return tuple(sorted(findings, key=lambda item: (item.code, item.path, item.message)))
+
+
+def preflight_architecture(root: Path | str) -> tuple[ArchitectureFinding, ...]:
+    """Report the defect that stops the model from loading, located in its document.
+
+    This is the cheap pre-test form of the check and it never raises for a model defect, so
+    one doctor run prints a single diagnostic naming ``file:line`` instead of every
+    ``load_architecture()`` consumer raising its own unlocated copy across the consumer suites.
+    It fails fast like the loader: it reports the first blocking defect, not every one.
+    Filesystem resolution findings stay with :func:`validate_architecture`.
+    """
+    try:
+        load_architecture(root)
+    except ArchitectureError as exc:
+        document = exc.document or SYSTEM_PATH.as_posix()
+        message = str(exc)
+        if exc.line is None and f"{document}:" not in message:
+            message = f"{message} (see {document})"
+        return (ArchitectureFinding(exc.code, message, document),)
+    except (OSError, ValueError) as exc:
+        document = SYSTEM_PATH.as_posix()
+        return (
+            ArchitectureFinding("io", f"architecture model cannot be read: {exc}", document),
+        )
+    return ()
 
 
 def contract_inventory(

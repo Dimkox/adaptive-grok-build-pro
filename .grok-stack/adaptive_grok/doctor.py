@@ -5,6 +5,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from .architecture import preflight_architecture
 from .manifest import verify_manifest
 from .repo import detect_repo
 from .router import build_route
@@ -81,6 +82,23 @@ def run_doctor(root: Path) -> list[DoctorItem]:
         items.append(DoctorItem('pass', 'adaptive-routing', 'Bitrix route selects specialized agents'))
     else:
         items.append(DoctorItem('fail', 'adaptive-routing', str(sample.to_dict())))
+
+    # Only the two authority documents decide whether there is a model to check. Requiring
+    # all four files let a tree holding both documents but missing a schema report
+    # "not present; skipped" as `info`, while `load_architecture` genuinely fails there —
+    # a real defect downgraded to a skipped line. Missing schemas surface via preflight.
+    architecture_present = any(
+        (root / relative).is_file()
+        for relative in ('architecture/system.yaml', 'architecture/rules.yaml')
+    )
+    if not architecture_present:
+        items.append(DoctorItem('info', 'architecture-model', 'architecture documents are not present; skipped'))
+    else:
+        findings = preflight_architecture(root)
+        if findings:
+            items.append(DoctorItem('fail', 'architecture-model', findings[0].message))
+        else:
+            items.append(DoctorItem('pass', 'architecture-model', 'model loads; path, schema and reference checks passed'))
 
     manifest_path = root / 'MANIFEST.sha256'
     if manifest_path.is_file():

@@ -1,0 +1,173 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::TrailingSeparatorTests::test_trailing_separator_yields_one_located_preflight_finding"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "A trailing separator in a node repository_paths entry is reported once by preflight_architecture() as a single finding naming the document, the exact line, the node id, the quoted value and the reason 'trailing separator'."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::TrailingSeparatorTests::test_trailing_separator_is_rejected_not_silently_normalized"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "The rejection still happens: the bad value is never normalized or accepted, and load_architecture() still raises ArchitectureError with code 'path'."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::TrailingSeparatorTests::test_valid_model_preflights_clean_and_loads"
+        },
+        {
+          "test": "tests/test_architecture_model_preflight.py::ShapeReasonTests::test_valid_path_shape_is_accepted"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Contradictory control: the same preflight on an identical model without the trailing separator returns no findings and loads, so the new check is not vacuously red."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::ShapeReasonTests::test_each_shape_defect_gets_its_own_reason"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Each path shape defect gets its own reason: trailing separator, absolute path, empty segment ('//'), '.'/'..' segment and backslash are distinguished, and one case's reason text never appears in another case's message."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::RulesDocumentLocationTests::test_rule_path_defect_names_the_rules_document"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "A path shape defect in a rules document field is located in architecture/rules.yaml, not misattributed to the system document."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::DoctorPreflightGateTests::test_doctor_reports_one_located_failure_for_a_bad_trailing_slash"
+        },
+        {
+          "test": "tests/test_architecture_model_preflight.py::DoctorPreflightGateTests::test_doctor_passes_the_shipped_model"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "scripts/grok_doctor.py carries an architecture-model item that fails with that one located diagnostic in seconds, before any test suite runs, and passes on the shipped model."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-007",
+      "statement": "The shipped architecture model, its generated views, governance, receipts and doctor suites stay green with the diagnosis change in place."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260925-architecture-model-path-shape-preflight-with-loc-636406",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::TrailingSeparatorTests::test_trailing_separator_is_rejected_not_silently_normalized"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Silently accepting or normalizing a trailing separator to make the cascade disappear: the model must stay rejective for every value it rejected before."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::PreflightRobustnessTests::test_live_project_model_preflights_clean"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Any hand-written or drifted file under architecture/generated, or any edit of the shipped architecture documents, as part of this diagnostic change."
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "Editing another contour's in-flight files (verification, receipts, citations, repo, deploy, change, human_gates, policy, shared scripts or shared tests) to obtain the fix."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model_preflight.py::ShapeReasonTests::test_each_shape_defect_gets_its_own_reason"
+        },
+        {
+          "test": "tests/test_architecture_model_preflight.py::ShapeReasonTests::test_non_string_entry_yields_one_finding_without_locating_a_line"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "The set of rejected repository path shapes is unchanged by this contour; only the diagnosis text and the attached document location got finer."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "test": "tests/test_architecture_model_preflight.py::PreflightRobustnessTests::test_live_project_declares_no_badly_shaped_path"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The shipped architecture model is untouched, so architecture, system, rules and generated-view digests stay identical and the verifier keeps re-deriving the same views."
+    }
+  ],
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "scripts/grok_doctor.py architecture-model item status plus its single located message (file:line, node id, offending value, reason) printed in seconds before the suite.",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "Number of preflight_architecture() findings for the injected model (must stay 1) versus the repaired model (must stay 0).",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "architecture/system.yaml: report unsafe repository_paths shape errors once at load time with file:line instead of a 32-test cascade",
+    "success_metric": "One grok_doctor/preflight call reports the injected trailing slash as a single located finding naming architecture/system.yaml:<line>, the owning node and the reason, and the 40-error, 453-second root-suite cascade is replaced by that one diagnostic; every copy of the loader error names the same location.",
+    "target": "Contributors and the pre-merge gate learn the exact document, line and offending entry of an architecture path-shape defect from one seconds-scale command instead of a full suite cascade."
+  },
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
