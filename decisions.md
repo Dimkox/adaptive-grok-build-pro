@@ -839,3 +839,7 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 ## 2026-09-24 — Freeze the exact base before expensive gates
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
+
+### 2026-09-25 — Locate architecture path defects from the canonical text
+
+`load_architecture()` already byte-proves both authority documents are canonical two-space JSON, so every scalar occupies its own line; that invariant let issue #50 be fixed with a reason classifier plus a literal line scan instead of a position-tracking parser. The set of rejected path values was left exactly as before and only the diagnosis got finer, which preserved architecture/rules/contract digests and every generated view. `preflight_architecture()` plus the doctor `architecture-model` item now report the defect once in ~3 s rather than as 40 unlocated cascade errors after ~450 s of root-suite runtime.
