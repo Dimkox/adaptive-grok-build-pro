@@ -45,3 +45,59 @@ No `git push`, network access, external write, Daybreak operation, commit, or so
 ## Verdict
 
 **PASS** — the exact reviewed head implements the required root-bound probe environment and early fail-closed branch/tag push denial, preserves clean-environment behavior, and has no Critical, Important, or Minor code-review findings.
+
+---
+
+## Re-review — 2026-09-25 — final candidate `57c249d2b8543742bdfdcbaba364797a86ab489f`
+
+### Review binding
+
+- Base SHA: `cb9af4073ba6c3d515145164d771c75ebdfa3224`
+- Re-review head SHA: `57c249d2b8543742bdfdcbaba364797a86ab489f`
+- Re-review head tree: `2ac21d83a525ab70187045e19b682dea953fe208`
+- Prior reviewed head: `5f4e8fef003271a9b62198d181ad6be1f1838158`
+- Exact target: committed Git object `cb9af4073ba6c3d515145164d771c75ebdfa3224..57c249d2b8543742bdfdcbaba364797a86ab489f`
+- Private scratch root: `/home/pall/review-issue227-rereview.aoa2WG` (`0700`), populated from `git archive 57c249d2b8543742bdfdcbaba364797a86ab489f`.
+- `reviewed-tree-modified: no` — the exact committed candidate and all scoped production/test/gate paths remained unchanged during review. Concurrent agents appended only their own review evidence outside the target SHA; those files were not used as implementation proof.
+
+### Delta assessment
+
+- `.grok-stack/adaptive_grok/util.py` and `.grok-stack/adaptive_grok/_policy_legacy.py` have no diff between the prior PASS head and this final candidate. The root-bound probe sanitation and early branch/tag denial therefore remain exactly as previously reviewed.
+- `tests/test_policy.py:174-240` adds the both-empty selector case, a branch/tag approval-lookup ordering tripwire, and a clean-environment exact tag-grant positive control.
+- `tests/test_hooks.py:235-255` adds direct hook coverage for simultaneous empty `GIT_DIR` and `GIT_WORK_TREE` presence.
+- `engineering/changes/20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d/human-gates.json:16-28` refreshes the local scope decision against the current scope digest while retaining the explicit local-only/no-external-operation boundary.
+- The remaining delta from the prior reviewed head is review evidence and the root-cause lesson in `mistakes.md`; it does not alter runtime behavior.
+
+### Findings
+
+#### Critical
+
+None.
+
+#### Important
+
+None.
+
+#### Minor
+
+None.
+
+### Verification and mutation probes
+
+- `python3 -m unittest tests.test_policy` — PASS, 29 tests.
+- `python3 -m unittest tests.test_hooks` — PASS, 34 tests.
+- `python3 -m unittest tests.test_util_fingerprint` — PASS, 20 tests.
+- `git diff --check cb9af4073ba6c3d515145164d771c75ebdfa3224..57c249d2b8543742bdfdcbaba364797a86ab489f` — PASS.
+- The coordinator supplied a PASS result for full `python3 scripts/grok_verify.py --mode pr` on this exact SHA; this reviewer did not rerun the long full gate.
+
+Executed scratch mutants:
+
+1. Premature `has_valid_approval(...)` call before selector denial — **killed** by `test_inherited_git_selector_denial_precedes_approval_lookup_for_branch_and_tag`; both branch and tag subtests failed on the ordering tripwire.
+2. Unconditional tag denial in a clean environment — **killed** by `test_exact_tag_grant_allows_tag_push_without_inherited_selectors`; one expected failure.
+3. Truthiness-based selector collection that ignores empty values — **killed** by the policy presence matrix and direct hook both-empty test; four expected failures covering empty `GIT_DIR`, empty `GIT_WORK_TREE`, both empty, and hook propagation.
+
+Unexecuted claims: no mutation was attempted against production Git-probe sanitation because that source is unchanged from the prior PASS and its root/HEAD/inventory/fingerprint regression suite was rerun successfully. No real push, network operation, external write, Daybreak action, commit, or production-file mutation was performed.
+
+### Re-review verdict
+
+**PASS** — the exact final candidate keeps the previously approved production repair unchanged, adds effective regression coverage for the review gaps, preserves clean branch and tag grant behavior, and has no Critical, Important, or Minor code-review findings.

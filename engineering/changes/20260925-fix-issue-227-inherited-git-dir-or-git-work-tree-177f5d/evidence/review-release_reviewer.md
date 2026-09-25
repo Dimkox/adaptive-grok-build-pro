@@ -144,3 +144,99 @@ None.
 No release mutation test was executed: this review assessed already verified
 local source and workflow readiness, and the assignment prohibited all external
 or release actions.
+
+---
+
+## Re-review — repaired exact head
+
+Re-review date: 2026-09-25.
+
+### Final local verdict
+
+**PASS — the issue #227 candidate at exact HEAD
+`57c249d2b8543742bdfdcbaba364797a86ab489f` is locally release-ready for
+coordinator evidence closure.**
+
+The earlier FAIL remains valid historical evidence for HEAD
+`5f4e8fef003271a9b62198d181ad6be1f1838158`. Its stale-gate blocker and the
+subsequent test-review blockers are closed on this repaired head. No Critical or
+Important readiness finding remains.
+
+**EXTERNAL DELIVERY: NOT AUTHORIZED.** This PASS authorizes no push,
+pull-request write, merge, tag, release, deployment, network access, or
+Daybreak operation. It is local workflow evidence only and does not replace the
+GitHub App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on an exact
+pull-request head.
+
+### Exact binding
+
+- Base: `cb9af4073ba6c3d515145164d771c75ebdfa3224`
+- Re-reviewed HEAD: `57c249d2b8543742bdfdcbaba364797a86ab489f`
+- Git tree: `2ac21d83a525ab70187045e19b682dea953fe208`
+- Clean committed-tree fingerprint from the exact-head verifier and independent
+  test re-review:
+  `e50bf7e4d44594a60f8558646c7f3f988c93b4a0f463250a9a6323a0d2c08ce3`
+- `reviewed-tree-modified: no`; this reviewer appends only this re-review to the
+  assigned report. Concurrent test/security re-review appendages do not change
+  HEAD, the Git tree, or reviewed source/test bytes.
+
+### Closed findings and current evidence
+
+1. **Prior release finding closed — scope gate is current.** `python3
+   scripts/grok_gate.py status` reports `scope_and_design_approval` as
+   `approved`, bound to current scope digest
+   `c66f8353752dd7aa310e7b6ba5623aef7e40dee19572c1f7768e35ff4ba1bcf2`.
+   The latest recorded decision at `human-gates.json:16-27` preserves the
+   user-approved local-only scope and explicitly authorizes no external
+   operation. The gate output reiterates that it is local workflow evidence,
+   not merge or operational authority.
+2. **Full verifier is current for the repaired committed candidate.** The
+   verification receipt is `status=pass`, created
+   `2026-09-25T09:37:59+00:00`, bound to route `177f5dc1d5cf`, HEAD
+   `57c249d2b8543742bdfdcbaba364797a86ab489f`, and fingerprint
+   `e50bf7e4d44594a60f8558646c7f3f988c93b4a0f463250a9a6323a0d2c08ce3`.
+   All configured checks pass; workflow artifacts alone are explicitly not
+   configured, and source stability passed.
+3. **Test-review I-01 closed — exact tag compatibility.** The repaired test
+   creates a selector-free `git-push-tag` grant and requires the matching tag
+   push to be allowed (`tests/test_policy.py:224-240`). The independent test
+   re-review killed an unconditional clean-tag denial mutant.
+4. **Test-review I-02 closed — denial ordering.** The repaired test replaces
+   the evaluator's approval lookup with a raising mock and proves it is not
+   called for inherited-selector branch and tag pushes
+   (`tests/test_policy.py:197-222`). The independent re-review killed the
+   approval-before-selector mutant.
+5. **Test-review I-03 closed — both-empty selector presence.** The core table
+   now covers both keys present with empty values
+   (`tests/test_policy.py:174-176`), and the real hook subprocess covers the
+   same case (`tests/test_hooks.py:235-255`). Both core and hook mutants were
+   killed by the independent re-review.
+6. **Independent repaired-head test verdict is PASS.** The route-selected test
+   reviewer ran the 83-test focused suite successfully, reran the four repaired
+   cases under exec/network tracing, observed zero Git-push executions and zero
+   network syscalls, and recorded a final PASS for this exact head. The earlier
+   test FAIL remains correctly scoped to the prior head.
+7. **Independent repaired-head security verdict is PASS.** Production policy
+   bytes are unchanged from the first reviewed source, the strengthened tests
+   add no new disclosure or bypass, and the security re-review reports no
+   Critical, Important, or Minor finding for this exact head.
+
+### Residual and closure boundary
+
+- The test review retains one non-blocking Minor limitation: the ordinary real
+  hook regression is observational rather than a permanently hermetic
+  process-level network sandbox. Independent tracing of both original and
+  repaired cases observed no push and no network syscall; the core exploit test
+  also retains its direct push tripwire. This does not block the bounded
+  local-only fix.
+- Root-local push-URL mutation and unscoped Git/config selectors remain the
+  already documented residual scope; this change does not claim to solve them.
+- Persisting the test, security, code, and this release re-review changes the
+  repository fingerprint. The coordinator must therefore run final
+  `python3 scripts/grok_verify.py --mode pr` and record fresh fingerprint-bound
+  review receipts after all reports are frozen. That bookkeeping is required
+  for local completion but does not change this exact-head readiness PASS.
+
+Final local verdict for
+`cb9af4073ba6c3d515145164d771c75ebdfa3224..57c249d2b8543742bdfdcbaba364797a86ab489f`:
+**PASS**.

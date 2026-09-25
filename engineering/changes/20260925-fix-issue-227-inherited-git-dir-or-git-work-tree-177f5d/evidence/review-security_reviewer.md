@@ -65,3 +65,56 @@ The regression fixtures use disposable local repositories and read-only Git insp
 - Local scope/design gates, delegated grants, verification receipts, and this review are workflow evidence only. They neither create nor replace the GitHub App-owned exact-SHA `adaptive-trust-ci/verified@<policy-sha12>` check, deployed policy/holdout validation, branch protection, or any human-signed external approval required by Trust CI.
 
 reviewed-source-modified: no
+
+---
+
+## Re-review after test, gate, and review-evidence closure
+
+### Exact binding and verdict
+
+**PASS** for exact base `cb9af4073ba6c3d515145164d771c75ebdfa3224` through exact HEAD `57c249d2b8543742bdfdcbaba364797a86ab489f` (HEAD tree `2ac21d83a525ab70187045e19b682dea953fe208`).
+
+The intervening commit changes tests and local workflow evidence only. The production controls are byte-for-byte unchanged from the first reviewed head: `.grok-stack/adaptive_grok/_policy_legacy.py` remains SHA-256 `d4e7db99b64297f41d0684422e15f52e836c29f8614e035139ddfc30b5ec5e98`, and `.grok-stack/adaptive_grok/util.py` remains SHA-256 `80ce05c87fae83c892067f5b38cbefb09d146afb48a5d506609cfdd652e8bd75`. No new leakage or scoped bypass was found.
+
+### Final findings
+
+#### Critical
+
+None.
+
+#### Important
+
+None.
+
+#### Minor
+
+None.
+
+### Strengthened boundary evidence
+
+- `tests/test_policy.py:174-195` adds the previously missing both-present/both-empty matrix case while retaining per-key name-only and value-nondisclosure assertions.
+- `tests/test_policy.py:197-222` directly patches the production evaluator's approval lookup to raise and asserts it is never called for inherited-selector branch and tag pushes, including an empty selector value. This converts the prior ordering inference into an executable regression.
+- `tests/test_policy.py:224-240` proves that a clean-environment exact tag grant still permits the corresponding tag push, independently of branch-grant compatibility.
+- `tests/test_hooks.py:235-255` carries the both-empty selector case through the real hook subprocess and confirms the names-only actionable denial plus intended-root ledger placement.
+- A diff from `5f4e8fef003271a9b62198d181ad6be1f1838158` to this head contains no changes to `_policy_legacy.py`, `util.py`, `state.py`, `_lib.py`, or `pre_tool_use.py`; therefore the original root-bound probes, early key-presence denial, branch/tag coverage, and generic hashed denial ledger remain intact.
+
+### Verification evidence
+
+```text
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_policy tests.test_hooks tests.test_util_fingerprint
+Ran 83 tests in 44.761s
+OK
+
+git diff --check cb9af4073ba6c3d515145164d771c75ebdfa3224..57c249d2b8543742bdfdcbaba364797a86ab489f
+exit 0; no output
+```
+
+The inspected full-verifier receipt is `status=pass`, created `2026-09-25T09:37:59+00:00`, bound to route `177f5dc1d5cf`, exact head `57c249d2b8543742bdfdcbaba364797a86ab489f`, and tree fingerprint `e50bf7e4d44594a60f8558646c7f3f988c93b4a0f463250a9a6323a0d2c08ce3`. It records passing source stability and a zero-finding secret scan.
+
+### Authority separation
+
+The refreshed `scope_and_design_approval` now matches the local scope digest, but its own status output identifies it as local workflow evidence only. It is not cryptographic identity, a delegated operational grant, a human-signed Trust CI approval, merge authority, or a substitute for the GitHub App-owned policy-epoch check on an exact pull-request head. This re-review likewise authorizes no push, pull-request write, merge, release, deployment, network access, or Daybreak operation.
+
+Final verdict: **PASS** with no Critical, Important, or Minor security findings for the exact candidate above.
+
+reviewed-source-modified-on-re-review: no

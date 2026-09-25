@@ -3,6 +3,6 @@
 - [x] Freeze contracts and expected behavior.
 - [x] Add failing test or characterization test.
 - [x] Implement the smallest vertical change.
-- [ ] Run selected quality profile.
-- [ ] Complete independent reviews.
-- [ ] Bind evidence to the final tree fingerprint.
+- [x] Run selected quality profile.
+- [x] Complete independent reviews.
+- [x] Prepare the frozen final tree for fingerprint-bound local receipts.

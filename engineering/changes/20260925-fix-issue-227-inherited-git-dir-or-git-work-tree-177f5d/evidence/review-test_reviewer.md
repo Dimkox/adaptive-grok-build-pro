@@ -116,3 +116,65 @@ All commands used `env -u GIT_DIR -u GIT_WORK_TREE`; no fetch, push, remote acce
 - A mutant that actually executes `git push` or opens a network connection was intentionally not run because both are expressly forbidden. Current absence was established with exec/network tracing instead.
 - The already-reported full verifier PASS was not treated as proof of test adequacy and was not rerun by this reviewer. Focused and nearby suites were independently executed as listed above.
 - External Trust CI, branch protection, pull-request delivery, and merge eligibility are outside this local test review.
+
+---
+
+## Re-review — repaired test matrix
+
+Re-review date: 2026-09-25.
+
+### Final verdict
+
+**PASS.** At repaired HEAD `57c249d2b8543742bdfdcbaba364797a86ab489f`, all three blocking findings from the initial review are closed and their equivalent mutants are killed. The initial FAIL above remains historical evidence for HEAD `5f4e8fef003271a9b62198d181ad6be1f1838158`; it does not describe this repaired head.
+
+No Critical or Important finding remains. Minor finding M-01 remains applicable: the real-hook tests observe safe behavior but do not impose a hermetic process-level push/network prohibition. Independent tracing again observed no Git push and no network syscall in the repaired tests.
+
+### Re-review binding
+
+- Base: `cb9af4073ba6c3d515145164d771c75ebdfa3224`
+- Repaired head: `57c249d2b8543742bdfdcbaba364797a86ab489f`
+- Git tree: `2ac21d83a525ab70187045e19b682dea953fe208`
+- Clean committed-tree fingerprint before re-review: `e50bf7e4d44594a60f8558646c7f3f988c93b4a0f463250a9a6323a0d2c08ce3`
+- Repaired test hashes: `tests/test_policy.py` `090e873380370cd79a7efc6aeb14d47beab74a72edb21be189e2b2905924ed82`; `tests/test_hooks.py` `8999813656e4c1914fc88783e6765708a85c4cdfe81c436a4a4f0f662eb26bd9`.
+- Production policy hash remained `d4e7db99b64297f41d0684422e15f52e836c29f8614e035139ddfc30b5ec5e98`; this repair changes regression tests, not production behavior.
+- Fresh private scratch: `/tmp/issue227-test-rereview.g0q8Iu/review`, parent mode `0700`, local `--no-local --no-hardlinks` clone checked out at the repaired head.
+- Scratch was restored after every mutant; its final status and `git diff --check` were empty.
+- A concurrent modification to another reviewer's evidence report appeared during this re-review. It did not change HEAD, the Git tree, or any reviewed production/test hash and was not modified by this reviewer.
+- `reviewed-tree-modified: no`
+
+### Closure evidence
+
+#### I-01 closed — selector-free valid tag grant
+
+`tests/test_policy.py:224-240` explicitly removes both selector keys, creates a grant containing only `git-push-tag`, evaluates `git push origin v2.1.0`, and requires allow. An unconditional clean tag denial was **killed**: the dedicated test failed with `False is not true: Production action git-push-tag denied.`
+
+#### I-02 closed — selector denial precedes approval lookup
+
+`tests/test_policy.py:197-222` patches the exact legacy-policy lookup symbol with an exception and `assert_not_called()`. It separately covers branch push with non-empty `GIT_DIR` and tag push with empty `GIT_WORK_TREE`, while retaining selector-specific and secret-safe denial assertions. Inserting `has_valid_approval(...)` before selector inspection was **killed**: both branch and tag subtests failed at the forbidden lookup.
+
+#### I-03 closed — both selectors empty in core and real hook
+
+The core table now contains `empty-both` at `tests/test_policy.py:174-176`, and the subprocess integration at `tests/test_hooks.py:235-255` passes both empty variables through the real pre-tool hook and requires the complete denial output. Exempting exactly the both-present/both-empty combination was **killed** by both layers: core unexpectedly allowed and hook returned `allow` instead of `deny`.
+
+### Re-review commands and results
+
+All commands used `env -u GIT_DIR -u GIT_WORK_TREE`; no fetch, push, network request, Daybreak call, external write, commit, merge, or deployment was performed.
+
+1. `python3 -m unittest tests.test_policy tests.test_hooks tests.test_util_fingerprint`
+
+   Result: `Ran 83 tests in 40.146s — OK`.
+
+2. Repaired four-test set under `strace -f -qq -e trace=execve,network` in restored scratch:
+
+   - selector-free exact tag grant;
+   - branch/tag denial-before-lookup;
+   - complete selector-presence table;
+   - both-empty real-hook integration.
+
+   Result: `Ran 4 tests in 3.931s — OK`; exact Git push exec count `0`, `AF_INET`/`AF_INET6` connect count `0`, and total traced network syscall count `0`.
+
+3. `git diff --check cb9af4073ba6c3d515145164d771c75ebdfa3224..57c249d2b8543742bdfdcbaba364797a86ab489f`
+
+   Result: exit `0`, no output.
+
+The coordinator-reported full `grok_verify --mode pr` PASS was considered supporting context, not substituted for this independent source inspection and mutation work.

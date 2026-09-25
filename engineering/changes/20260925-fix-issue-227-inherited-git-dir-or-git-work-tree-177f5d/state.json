@@ -102,6 +102,24 @@
       "from": "approved",
       "reason": "Approved local-only TDD implementation started by the single route-selected write owner",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-25T09:46:11+00:00",
+      "from": "implementing",
+      "reason": "Implementation and review-driven regression coverage complete; full PR profile passed on 57c249d2",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-25T09:46:11+00:00",
+      "from": "verifying",
+      "reason": "Route-selected code, test, security and release re-reviews passed on exact candidate 57c249d2",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-25T09:46:11+00:00",
+      "from": "reviewing",
+      "reason": "Local-only candidate accepted for final evidence freeze; external delivery remains unauthorized",
+      "to": "ready"
     }
   ],
   "human_gates": [
@@ -110,7 +128,7 @@
   "human_gates_digest": "d388527b69e91a4fa3b0d344d7dff4484a819a83081cf56b6e2250036f4531ab",
   "route_id": "177f5dc1d5cf",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "Fix issue 227: inherited GIT_DIR or GIT_WORK_TREE can redirect repository identity and let a valid local grant authorize git push to a foreign pushurl. Add root-bound Git probes and explicit fail-closed denial. Never execute git push or access the network.",
-  "updated_at": "2026-09-25T08:09:17+00:00"
+  "updated_at": "2026-09-25T09:46:11+00:00"
 }
