@@ -1,0 +1,175 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_backslash_title_creates_no_directory"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_backslash_alone_leaks_no_host_identity"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_a_path_handed_as_a_title_is_refused_in_either_dialect"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "A title carrying a backslash, a drive prefix or an absolute path is refused before any write."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_control_byte_title_creates_no_directory"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_route_components_cannot_inject_a_path_into_the_derived_id"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "A control byte in a title or in a route field cannot create a package directory."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_rejection_is_reported_with_the_offending_input_printably"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_printable_value_escapes_bounds_and_keeps_non_ascii_visible"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "A refusal names the offending input, bounded in length, without emitting control bytes to the terminal."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_transition_cannot_write_outside_the_packages_directory"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "transition cannot read or write state outside the packages directory, including through a symlink."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_ordinary_punctuation_in_a_title_is_still_accepted"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_task_style_titles_are_not_mistaken_for_paths"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_ordinary_whitespace_in_a_title_is_not_a_control_byte"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_every_historical_package_name_is_still_acceptable"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_historical_non_ascii_package_stays_writable_readable_and_printable"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_historical_non_ascii_paths_are_readable_and_printable"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "Ordinary task prose and historical package names stay accepted, readable and printable."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_route_components_cannot_inject_a_path_into_the_derived_id"
+        }
+      ],
+      "id": "AC-006",
+      "statement": "Each derived id component is validated on its own, so a hostile route record cannot splice a path into the name."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260924-reject-unsafe-change-package-paths-issue-53-cba934",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_backslash_alone_leaks_no_host_identity"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Silently slugging a path-shaped title into a created directory, hiding the writer bug that produced it."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_rejection_is_reported_with_the_offending_input_printably"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_transition_cannot_write_outside_the_packages_directory"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "A host username, an absolute host path or an ANSI escape sequence reaching a public path, a traceback or a diagnostic stream."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_historical_non_ascii_paths_are_readable_and_printable"
+        },
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_every_historical_package_name_is_still_acceptable"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "Renaming or rewriting historical engineering/changes content, which is issue #52 scope."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_transition_cannot_write_outside_the_packages_directory"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "A change package is exactly one directory component under engineering/changes/ that resolves inside that directory."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_change_path_safety.py::ChangePathSafetyTests::test_tracked_tree_has_no_backslash_colon_or_control_byte_path"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "No tracked repository path carries a backslash, a drive prefix or a control byte."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Refuse to materialise a change package whose directory name would carry a path separator, a drive or absolute-path prefix or a control byte, and report the refused input in bounded printable form.",
+    "success_metric": "python3 -m unittest tests.test_change_path_safety -q is green (15 tests) and the in-memory mutation battery kills 9/9 mutants: unsafe title, route field, caller-supplied id, symlinked and over-long names create or modify nothing, while every historical package name and every ordinary task title still works.",
+    "target": "change-package path derivation and package lookup in .grok-stack/adaptive_grok/change.py (start_change, transition)"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "ValueError from change-package path validation, naming the refused component and the rule that fired",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

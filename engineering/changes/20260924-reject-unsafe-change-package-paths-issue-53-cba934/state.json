@@ -1,0 +1,112 @@
+{
+  "change_id": "20260924-reject-unsafe-change-package-paths-issue-53-cba934",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-53-change-path-safety",
+      "change_id": "20260924-reject-unsafe-change-package-paths-issue-53-cba934",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-24T23:44:29+00:00",
+      "route_id": "cba934e15911"
+    },
+    {
+      "branch": "fix/issue-53-change-path-safety",
+      "change_id": "20260924-reject-unsafe-change-package-paths-issue-53-cba934",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "59d7be50e9f19c59fffbde45764f5d135231fda5",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-25T01:15:03+00:00",
+      "route_id": "cba934e15911"
+    }
+  ],
+  "created_at": "2026-09-24T23:44:29+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-24T23:44:29+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-25T01:15:02+00:00",
+      "from": "draft",
+      "reason": "issue #53 path-safety boundary: reviewed and verified locally",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-25T01:15:03+00:00",
+      "from": "scoped",
+      "reason": "issue #53 path-safety boundary: reviewed and verified locally",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-25T01:15:03+00:00",
+      "from": "approved",
+      "reason": "issue #53 path-safety boundary: reviewed and verified locally",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-25T01:15:03+00:00",
+      "from": "implementing",
+      "reason": "issue #53 path-safety boundary: reviewed and verified locally",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-25T01:15:03+00:00",
+      "from": "verifying",
+      "reason": "issue #53 path-safety boundary: reviewed and verified locally",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-25T01:15:03+00:00",
+      "from": "reviewing",
+      "reason": "issue #53 path-safety boundary: local evidence complete",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "c1aef292ff50079d3fa75e2ee1fa6c37eb3f331c42c63bee129f27b7eb1b8a35",
+  "route_id": "cba934e15911",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Reject unsafe change-package paths (issue 53)",
+  "updated_at": "2026-09-25T01:15:03+00:00"
+}
