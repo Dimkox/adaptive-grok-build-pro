@@ -19,7 +19,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "Only a run this harness owns is removed: a container whose nonce equals the current run, a sibling younger than the documented age bound, a foreign name, a foreign image, or an entry that cannot be inspected is never deleted.",
+      "statement": "Only a run this harness could have minted is removed: fullmatch of the 12-hex run name and 32-hex nonce, the exact image, a nonce other than the current run, and an age inside the trusted window. A sibling younger than the bound, a container older than the ceiling, a foreign name, a foreign image, or an entry that cannot be inspected is never deleted.",
       "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}]
     },
     {
@@ -29,7 +29,7 @@
     },
     {
       "id": "AC-004",
-      "statement": "Ownership begins at `docker run`: the minted id is retained before the binding check, so a rejected binding reclaims its own container instead of leaking the running PostgreSQL plus volume.",
+      "statement": "Ownership begins at `docker run`: the minted id is retained before the binding check and is treated as authoritative in the finally, so a rejected binding or a transient daemon failure still reclaims this process's own container instead of leaking the running PostgreSQL plus volume.",
       "evidence": [{"test": "tests/test_disposable_exit_reclaim.py"}, {"receipt": "code_review"}]
     },
     {

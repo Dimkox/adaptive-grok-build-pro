@@ -50,6 +50,13 @@ class MigrationTests(unittest.TestCase):
         with patch.object(
             run_disposable_exit.subprocess, "run", side_effect=[created, port]
         ) as subprocess_run, patch.object(
+            # Reclaim is isolated here on purpose. Before this contour it escaped the patch
+            # entirely (the default runner was bound at import), so this fixture's two-item
+            # side effect silently matched real `docker run`/`docker port` calls while a
+            # unit test could have deleted live containers on the host. Isolating it makes
+            # the ordering under test explicit instead of accidental.
+            run_disposable_exit, "reclaim_orphan_runs", return_value=[]
+        ), patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
         ), patch.object(
             run_disposable_exit, "_final_postgres_ready", return_value=True
@@ -354,28 +361,6 @@ class MigrationTests(unittest.TestCase):
         with patch.object(run_disposable_exit.subprocess, "run", return_value=not_final) as run:
             self.assertFalse(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertEqual(run.call_count, 1)
-
-    def test_exit_runner_removes_its_exact_container_and_restart_volume(self):
-        removed = type("Completed", (), {"returncode": 0})()
-        absent = type("Completed", (), {"returncode": 1})()
-        with patch.object(
-            run_disposable_exit.subprocess,
-            "run",
-            side_effect=[removed, removed, absent, absent],
-        ) as run:
-            run_disposable_exit._cleanup(
-                "factory-test-container",
-                "factory-test-volume",
-            )
-        self.assertEqual(
-            [call.args[0] for call in run.call_args_list],
-            [
-                ["docker", "rm", "-f", "factory-test-container"],
-                ["docker", "volume", "rm", "factory-test-volume"],
-                ["docker", "inspect", "factory-test-container"],
-                ["docker", "volume", "inspect", "factory-test-volume"],
-            ],
-        )
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()

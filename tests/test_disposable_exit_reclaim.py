@@ -21,6 +21,14 @@ def _load_harness():
 
 harness = _load_harness()
 
+# The reclaim predicate shares the probe's identity contract: 12-hex run suffix and
+# 32-hex nonce. Fixtures must satisfy it, or they test the wrong branch.
+EXIT_1 = 'adaptive-factory-exit-' + '0' * 11 + '1'
+EXIT_2 = 'adaptive-factory-exit-' + '0' * 11 + '2'
+EXIT_3 = 'adaptive-factory-exit-' + '0' * 11 + '3'
+NONCE_1 = '1' * 32
+NONCE_2 = '2' * 32
+NONCE_4 = '4' * 32
 OLD_ID = 'a' * 64
 FRESH_ID = 'b' * 64
 OWN_ID = 'c' * 64
@@ -90,13 +98,10 @@ def _fake(runs: dict[str, dict[str, object]], *, removable: bool = True) -> Fake
 class ReclaimAtStartTests(unittest.TestCase):
     def setUp(self) -> None:
         self.runs = {
-            OLD_ID: {'name': 'adaptive-factory-exit-old', 'nonce': 'oldnonce',
-                     'created': _created(3 * 60 * 60)},
-            FRESH_ID: {'name': 'adaptive-factory-exit-sibling', 'nonce': 'siblingnonce',
-                       'created': _created(60)},
-            OWN_ID: {'name': 'adaptive-factory-exit-own', 'nonce': 'mine',
-                     'created': _created(10)},
-            FOREIGN_ID: {'name': 'unrelated-web-app', 'nonce': 'someoneelse',
+            OLD_ID: {'name': EXIT_1, 'nonce': NONCE_1, 'created': _created(3 * 60 * 60)},
+            FRESH_ID: {'name': EXIT_2, 'nonce': NONCE_2, 'created': _created(60)},
+            OWN_ID: {'name': EXIT_3, 'nonce': 'mine', 'created': _created(10)},
+            FOREIGN_ID: {'name': 'unrelated-web-app', 'nonce': NONCE_4,
                          'created': _created(9 * 60 * 60)},
         }
 
@@ -119,7 +124,7 @@ class ReclaimAtStartTests(unittest.TestCase):
 
         reclaimed = [item for item in records if item.get('action') == 'reclaimed']
         self.assertEqual([item['container'] for item in reclaimed], [OLD_ID])
-        self.assertEqual(reclaimed[0]['name'], 'adaptive-factory-exit-old')
+        self.assertEqual(reclaimed[0]['name'], EXIT_1)
         # Docker's fractional seconds make the truncated age at most one second below the
         # requested offset.
         self.assertIn(reclaimed[0]['age_seconds'], (3 * 60 * 60 - 1, 3 * 60 * 60))
@@ -149,7 +154,7 @@ class ReclaimAtStartTests(unittest.TestCase):
 
     def test_a_foreign_image_under_an_exit_prefix_shape_is_not_deleted(self) -> None:
         self.runs[FOREIGN_ID] = {
-            'name': 'adaptive-factory-exit-lookalike',
+            'name': 'adaptive-factory-exit-' + '0' * 11 + '9',
             'nonce': 'other',
             'image': 'postgres:9.6',
             'created': _created(9 * 60 * 60),
@@ -202,10 +207,79 @@ class ReclaimAtStartTests(unittest.TestCase):
             harness._report_reclaimed(records)
         printed = buffer.getvalue().splitlines()
 
-        self.assertEqual(len(printed), len(records))
+        self.assertEqual(len(printed), len(records) + 1)
         for line in printed:
             self.assertTrue(line.startswith('RECLAIM '), line)
         self.assertIn('container=' + OLD_ID, ''.join(printed))
+        # A leaked orphan must be countable at a glance, not inferred from the line spread.
+        self.assertTrue(printed[-1].startswith('RECLAIM summary '), printed[-1])
+        self.assertIn('reclaimed=1', printed[-1])
+
+    def test_a_labeled_persistent_database_outside_the_run_name_shape_is_never_deleted(self) -> None:
+        # The reviewer's constructed deletion: a hand-started long-lived database that
+        # happens to carry the label and the exact image. A prefix test destroyed it;
+        # the identity contract shared with the probe must spare it.
+        runs = {OLD_ID: {'name': 'adaptive-factory-exit-cache-prod', 'nonce': NONCE_1,
+                         'created': _created(400 * 24 * 60 * 60)}}
+        fake = _fake(runs)
+
+        records = harness.reclaim_orphan_runs('mine', now=NOW, runner=fake, clock=lambda: NOW)
+
+        self.assertEqual(records[0]['action'], 'skipped')
+        self.assertEqual(records[0]['reason'], 'foreign run shape')
+        self.assertEqual(fake.removals, [])
+
+    def test_an_age_beyond_the_trusted_window_is_not_trusted_enough_to_delete(self) -> None:
+        # An absurd `Created` is evidence the clock or the field is wrong, and deleting a
+        # LIVE sibling's PostgreSQL plus its anonymous PGDATA is the failure mode to avoid.
+        runs = {OLD_ID: {'name': EXIT_1, 'nonce': NONCE_1,
+                         'created': _created(400 * 24 * 60 * 60)}}
+        fake = _fake(runs)
+
+        records = harness.reclaim_orphan_runs('mine', now=NOW, runner=fake, clock=lambda: NOW)
+
+        self.assertEqual(records[0]['reason'], 'age outside the trusted window')
+        self.assertEqual(fake.removals, [])
+
+    def test_the_time_budget_stops_reclaim_before_it_can_consume_the_gate(self) -> None:
+        # The only caller answers its 600 s wall clock with SIGKILL, which no handler can
+        # catch, so reclaim must stop itself.
+        runs = {
+            'f' * 64: {'name': EXIT_2, 'nonce': NONCE_2, 'created': _created(3 * 60 * 60)},
+            'e' * 64: {'name': EXIT_3, 'nonce': NONCE_4, 'created': _created(3 * 60 * 60)},
+        }
+        fake = _fake(runs)
+        ticks = iter([0.0, 10.0, 5_000.0, 5_000.1, 5_000.2, 5_000.3])
+
+        records = harness.reclaim_orphan_runs(
+            'mine', now=NOW, runner=fake, clock=lambda: next(ticks), time_budget_seconds=120,
+        )
+
+        self.assertIn('skipped-timeout', {item['action'] for item in records})
+        self.assertLessEqual(len(fake.removals), 1)
+
+    def test_the_module_level_docker_call_cannot_escape_a_patched_subprocess(self) -> None:
+        # `runner=subprocess.run` bound at import let main()'s reclaim reach the real binary
+        # while a test patched the module attribute, i.e. a unit test could delete a live
+        # container. Defaults must resolve late, and the seam must be the only door.
+        import inspect
+
+        signature = inspect.signature(harness.reclaim_orphan_runs)
+        self.assertIsNone(signature.parameters['runner'].default)
+        self.assertIsNone(signature.parameters['clock'].default)
+
+        class Tripwire:
+            def run(self, command, **_kwargs):
+                raise AssertionError(f'the real docker binary was reached: {command[:3]!r}')
+
+        original = harness.subprocess
+        try:
+            harness.subprocess = Tripwire()
+            with self.assertRaises(AssertionError) as raised:
+                harness.reclaim_orphan_runs('mine')
+            self.assertIn('real docker binary', str(raised.exception))
+        finally:
+            harness.subprocess = original
 
 
 class CreationTimeParsingTests(unittest.TestCase):

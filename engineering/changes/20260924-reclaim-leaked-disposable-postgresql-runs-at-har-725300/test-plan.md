@@ -34,3 +34,15 @@ called — so the suite was green precisely because the container was never recl
 | `test_unbound_non_minted_container_is_still_refused` (new) | the pre-existing refusal is intact for non-minted callers | 1 arm |
 
 `tests.test_disposable_exit_reclaim` + `factory.tests.test_migrations`: 49 tests OK; `ruff check tests .grok-stack/adaptive_grok scripts` clean; `git diff --check` clean.
+
+## P0 arms added after the independent code review (head ff3191c3)
+
+| Arm | Pins | Measured |
+| --- | --- | --- |
+| `test_the_module_level_docker_call_cannot_escape_a_patched_subprocess` | no unit test can reach the real `docker` binary through `main()`'s reclaim | green; would raise `AssertionError: the real docker binary was reached` under the old import-time default |
+| `test_a_labeled_persistent_database_outside_the_run_name_shape_is_never_deleted` | reviewer's constructed `adaptive-factory-exit-cache-prod` is skipped, zero removals | green |
+| `test_an_age_beyond_the_trusted_window_is_not_trusted_enough_to_delete` | `age outside the trusted window`, zero removals | green |
+| `test_the_time_budget_stops_reclaim_before_it_can_consume_the_gate` | `skipped-timeout` emitted, removals bounded | green |
+| `factory` ordering test isolates `reclaim_orphan_runs` | the reclaim path is now visible to the module-level patch, so ordering is asserted deliberately rather than by accident of the escape | green |
+
+`tests.test_disposable_exit_reclaim` + `factory.tests.test_migrations`: **52 tests OK**; `ruff check .grok-stack/adaptive_grok scripts tests` clean; `git diff --check` clean.
