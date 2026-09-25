@@ -225,19 +225,23 @@ class MigrationTests(unittest.TestCase):
 
         inspected = type("Completed", (), {"returncode": 0, "stdout": valid})()
         removed = type("Completed", (), {"returncode": 0, "stdout": ""})()
+        # Removal is not believed on its exit code: the honest proof is that the daemon can
+        # no longer see the container, so the sequence needs a third answer.
+        absent = type("Completed", (), {"returncode": 1, "stdout": ""})()
         with patch.object(
             run_disposable_exit.subprocess,
             "run",
-            side_effect=[inspected, removed],
+            side_effect=[inspected, removed, absent],
         ) as run:
             run_disposable_exit._remove_bound_container(container_id, name, nonce)
         # `-v` is required, not cosmetic: `docker rm -f` releases the container and leaves the
         # anonymous volume Postgres was initialised into, which is the half of the leak that
         # fills the disk. Deletion stays exact-id scoped, never by name.
         self.assertEqual(
-            run.call_args_list[-1].args[0], ["docker", "rm", "-f", "-v", container_id]
+            run.call_args_list[1].args[0], ["docker", "rm", "-f", "-v", container_id]
         )
         self.assertEqual(run.call_args_list[0].args[0][-1], container_id)
+        self.assertEqual(run.call_args_list[-1].args[0][:2], ["docker", "inspect"])
 
         with patch.object(
             run_disposable_exit, "_binding_matches", return_value=False
