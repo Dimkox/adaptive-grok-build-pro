@@ -1469,3 +1469,15 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-25 — Assumed observability could prove an acceptance criterion
+
+**Symptom:** the first issue-227 change specification failed schema validation because `observability.proves` referenced `AC-002` as well as `OBJ-001`.
+**Root cause:** I composed the typed link from semantic intent without checking the schema's objective-only identifier pattern.
+**Durable rule:** validate the generated scaffold before implementation and bind observability `proves` only to schema-permitted objective IDs; acceptance criteria carry their own evidence mappings.
+
+### 2026-09-25 — Treated expected hook artifacts as forbidden Git mutation
+
+**Symptom:** the first issue-227 GREEN run failed because a test compared all untracked files before and after the hook, including the expected denial ledger and Python import caches.
+**Root cause:** the assertion measured incidental observability/import artifacts instead of the stated no-push invariant.
+**Durable rule:** prove no Git operation by comparing HEAD, refs, remotes, index, and tracked worktree state while asserting expected denial evidence separately.

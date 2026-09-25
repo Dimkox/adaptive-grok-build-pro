@@ -138,6 +138,63 @@ class FingerprintTests(unittest.TestCase):
         encoded = output.getvalue().encode('utf-8')
         self.assertEqual(report, json.loads(encoded.decode('utf-8')))
 
+    def test_git_probes_stay_bound_to_explicit_root_under_foreign_selectors(self) -> None:
+        self.git('remote', 'add', 'origin', 'git@github.com:example/intended.git')
+        self.write('source.py', 'dirty in intended root')
+        self.write('untracked.py', 'intended only')
+        expected = {
+            'root': self.root.resolve(),
+            'toplevel': str(self.root.resolve()),
+            'repository': 'git@github.com:example/intended.git',
+            'head': util.git_head(self.root),
+            'files': util.changed_files(self.root),
+            'statuses': util.changed_file_statuses(self.root),
+            'fingerprint': util.tree_fingerprint(self.root),
+        }
+
+        with tempfile.TemporaryDirectory(prefix='foreign-git-selector-') as tmp:
+            foreign = Path(tmp) / 'foreign'
+            foreign.mkdir()
+            subprocess.run(['git', 'init', '-q'], cwd=foreign, check=True)
+            subprocess.run(['git', 'config', 'user.name', 'Foreign'], cwd=foreign, check=True)
+            subprocess.run(
+                ['git', 'config', 'user.email', 'foreign@example.com'], cwd=foreign, check=True,
+            )
+            (foreign / 'source.py').write_text('foreign repository', encoding='utf-8')
+            subprocess.run(['git', 'add', '-A'], cwd=foreign, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'foreign'], cwd=foreign, check=True)
+            subprocess.run(
+                ['git', 'remote', 'add', 'origin', 'git@github.com:example/foreign.git'],
+                cwd=foreign,
+                check=True,
+            )
+            self.assertNotEqual(expected['head'], subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=foreign, text=True,
+            ).strip())
+
+            cases = (
+                {'GIT_DIR': str(foreign / '.git')},
+                {'GIT_WORK_TREE': str(foreign)},
+                {'GIT_DIR': str(foreign / '.git'), 'GIT_WORK_TREE': str(foreign)},
+            )
+            for selectors in cases:
+                with self.subTest(selectors=tuple(selectors)):
+                    with patch.dict(os.environ, selectors, clear=False):
+                        for name in {'GIT_DIR', 'GIT_WORK_TREE'} - selectors.keys():
+                            os.environ.pop(name, None)
+                        observed = {
+                            'root': util.find_root(self.root),
+                            'toplevel': util.git_output(self.root, 'rev-parse', '--show-toplevel'),
+                            'repository': util.git_output(
+                                self.root, 'config', '--get', 'remote.origin.url',
+                            ),
+                            'head': util.git_head(self.root),
+                            'files': util.changed_files(self.root),
+                            'statuses': util.changed_file_statuses(self.root),
+                            'fingerprint': util.tree_fingerprint(self.root),
+                        }
+                    self.assertEqual(expected, observed)
+
     def test_tracked_noise_paths_bind_edits_and_deletions(self) -> None:
         for rel in ('.qwen/tmp/probe', '.grok-stack/runtime/probe', 'vendor/source.py',
                     'node_modules/source.js', '__pycache__/source.py', 'coverage/source',

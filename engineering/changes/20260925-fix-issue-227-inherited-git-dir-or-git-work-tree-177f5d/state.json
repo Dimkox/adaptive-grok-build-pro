@@ -1,0 +1,116 @@
+{
+  "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-227-git-env-grant-boundary",
+      "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-25T07:57:57+00:00",
+      "route_id": "177f5dc1d5cf"
+    },
+    {
+      "branch": "fix/issue-227-git-env-grant-boundary",
+      "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+      "detached": false,
+      "dirty_product_paths": [
+        "decisions.md",
+        "docs/superpowers/plans/2026-09-25-issue-227-git-env-grant-boundary.md",
+        "mistakes.md"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-25T08:09:17+00:00",
+      "route_id": "177f5dc1d5cf"
+    }
+  ],
+  "created_at": "2026-09-25T07:57:57+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-25T07:57:57+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-25T08:09:08+00:00",
+      "from": "draft",
+      "reason": "Issue #227 scope, acceptance criteria, architecture, tests and residual risk recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-25T08:09:09+00:00",
+      "from": "scoped",
+      "reason": "Explicit user approval for local-only implementation; no external or production action authorized",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-25T08:09:17+00:00",
+      "from": "approved",
+      "reason": "Approved local-only TDD implementation started by the single route-selected write owner",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "human_gates_digest": "d388527b69e91a4fa3b0d344d7dff4484a819a83081cf56b6e2250036f4531ab",
+  "route_id": "177f5dc1d5cf",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix issue 227: inherited GIT_DIR or GIT_WORK_TREE can redirect repository identity and let a valid local grant authorize git push to a foreign pushurl. Add root-bound Git probes and explicit fail-closed denial. Never execute git push or access the network.",
+  "updated_at": "2026-09-25T08:09:17+00:00"
+}

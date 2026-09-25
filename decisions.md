@@ -839,3 +839,7 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 ## 2026-09-24 — Freeze the exact base before expensive gates
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
+
+## 2026-09-25 — Couple root-bound Git probes with execution-ambiguity denial
+
+Removing ambient repository selectors from grant probes is safe only when the eventual Git push is also denied whenever those selectors are inherited. The two controls prevent policy from validating the intended checkout while the shell executes against a foreign one.

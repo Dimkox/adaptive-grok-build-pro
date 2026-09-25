@@ -13,6 +13,14 @@ from pathlib import Path
 from typing import Any, Iterable
 
 RUNTIME_REL = Path('.grok-stack/runtime')
+_GIT_REPOSITORY_SELECTORS = ('GIT_DIR', 'GIT_WORK_TREE')
+
+
+def _root_bound_git_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    for name in _GIT_REPOSITORY_SELECTORS:
+        environment.pop(name, None)
+    return environment
 
 
 def now_utc() -> str:
@@ -32,6 +40,7 @@ def find_root(start: str | Path | None = None) -> Path:
             cwd=current,
             text=True,
             capture_output=True,
+            env=_root_bound_git_environment(),
             check=False,
         )
         if proc.returncode == 0 and proc.stdout.strip():
@@ -124,7 +133,18 @@ def command_exists(name: str) -> bool:
 def git_output(root: Path, *args: str) -> str | None:
     if not command_exists('git'):
         return None
-    proc = run(['git', *args], cwd=root, timeout=30)
+    try:
+        proc = subprocess.run(
+            ['git', *args],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            timeout=30,
+            env=_root_bound_git_environment(),
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
     if proc.returncode != 0:
         return None
     return proc.stdout.strip()
@@ -164,7 +184,8 @@ def _git_paths(root: Path, *args: str) -> set[str] | None:
         # -z emits filesystem bytes, not quoted text. Binary mode also avoids
         # newline translation changing legal carriage returns in filenames.
         proc = subprocess.run(
-            ['git', *args], cwd=root, capture_output=True, timeout=60, check=False,
+            ['git', *args], cwd=root, capture_output=True, timeout=60,
+            env=_root_bound_git_environment(), check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -179,7 +200,8 @@ def _git_name_status(root: Path, *args: str) -> list[dict[str, str]] | None:
         # Name-status records use one NUL-delimited field per status/path.  A
         # rename or copy has an additional original-path field.
         proc = subprocess.run(
-            ['git', *args], cwd=root, capture_output=True, timeout=60, check=False,
+            ['git', *args], cwd=root, capture_output=True, timeout=60,
+            env=_root_bound_git_environment(), check=False,
         )
     except (OSError, subprocess.TimeoutExpired):
         return None

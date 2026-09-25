@@ -1,0 +1,19 @@
+{
+  "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+      "decided_at": "2026-09-25T08:09:08+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly directed local repair, excluded Daybreak/external access, and requested continuous monitoring; approved scope is issue #227 only with root-bound probes plus inherited-selector denial and no external operation.",
+      "resource": null,
+      "route_id": "177f5dc1d5cf",
+      "scope_digest": "0c6d047b13c93693eb359416f1dba878be8b2df121191b0401c272e6b0435a3e"
+    }
+  ],
+  "route_id": "177f5dc1d5cf",
+  "schema_version": 1
+}

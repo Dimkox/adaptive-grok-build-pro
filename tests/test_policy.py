@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Iterator
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
@@ -20,6 +23,7 @@ from adaptive_grok.state import (
     record_agent_start,
     set_active_route,
 )
+from adaptive_grok.util import tree_fingerprint
 from tests._support import project_copy
 
 
@@ -36,7 +40,157 @@ def github_project() -> Iterator[Path]:
         yield root
 
 
+@contextlib.contextmanager
+def matching_foreign_push_target(root: Path) -> Iterator[tuple[Path, str]]:
+    with tempfile.TemporaryDirectory(prefix='foreign-push-target-') as tmp:
+        foreign = Path(tmp) / 'foreign'
+        subprocess.run(
+            ['git', 'clone', '--no-local', '-q', str(root), str(foreign)],
+            check=True,
+        )
+        expected_origin = 'git@github.com:Dimkox/adaptive-grok-build-pro.git'
+        foreign_pushurl = 'git@github.com:example/foreign-target.git'
+        subprocess.run(
+            ['git', 'remote', 'set-url', 'origin', expected_origin], cwd=foreign, check=True,
+        )
+        subprocess.run(
+            ['git', 'config', 'remote.origin.pushurl', foreign_pushurl], cwd=foreign, check=True,
+        )
+        observed_pushurl = subprocess.check_output(
+            ['git', 'remote', 'get-url', '--push', 'origin'], cwd=foreign, text=True,
+        ).strip()
+        if observed_pushurl != foreign_pushurl:
+            raise AssertionError('foreign pushurl fixture was not established')
+        yield foreign, foreign_pushurl
+
+
 class PolicyTests(unittest.TestCase):
+    def test_grant_binding_ignores_foreign_inherited_git_selectors(self) -> None:
+        with github_project() as root, project_copy(git=True) as foreign:
+            (foreign / 'foreign-only.txt').write_text('different head\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'foreign-only.txt'], cwd=foreign, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'foreign head'], cwd=foreign, check=True)
+            subprocess.run(
+                ['git', 'remote', 'add', 'origin', 'git@github.com:example/foreign.git'],
+                cwd=foreign,
+                check=True,
+            )
+            expected_head = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True,
+            ).strip()
+            expected_digest = tree_fingerprint(root)
+            selectors = {
+                'GIT_DIR': str(foreign / '.git'),
+                'GIT_WORK_TREE': str(foreign),
+            }
+
+            with patch.dict(os.environ, selectors, clear=False):
+                approval = add_approval(
+                    root,
+                    'production',
+                    'root-bound grant fixture',
+                    5,
+                    actions=['git-push-branch'],
+                )
+                valid = has_valid_approval(
+                    root,
+                    'production',
+                    action='git-push-branch',
+                )
+
+            self.assertEqual('Dimkox/adaptive-grok-build-pro', approval['repository'])
+            self.assertEqual(expected_head, approval['git_head'])
+            self.assertEqual(expected_digest, approval['grant_binding_digest'])
+            self.assertTrue(valid)
+
+    def test_inherited_git_selectors_deny_matching_foreign_push_without_execution(self) -> None:
+        with github_project() as root:
+            add_approval(
+                root,
+                'production',
+                'exact branch push fixture',
+                5,
+                actions=['git-push-branch'],
+            )
+            with matching_foreign_push_target(root) as (foreign, foreign_pushurl):
+                selectors = {
+                    'GIT_DIR': str(foreign / '.git'),
+                    'GIT_WORK_TREE': str(foreign),
+                }
+                original_run = subprocess.run
+
+                def reject_push_execution(args, *positional, **kwargs):
+                    if isinstance(args, (list, tuple)) and args:
+                        executable = Path(str(args[0])).name
+                        if executable == 'git':
+                            self.assertNotIn('push', [str(item) for item in args[1:]])
+                    return original_run(args, *positional, **kwargs)
+
+                with patch.dict(os.environ, selectors, clear=False), patch(
+                    'subprocess.run', side_effect=reject_push_execution,
+                ):
+                    allowed, reason = evaluate_pre_tool(root, {
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': 'git push origin feature'},
+                    })
+
+                self.assertFalse(allowed)
+                self.assertIn('git-push-branch', reason or '')
+                self.assertIn('GIT_DIR', reason or '')
+                self.assertIn('GIT_WORK_TREE', reason or '')
+                self.assertIn('unset', (reason or '').lower())
+                self.assertNotIn(str(foreign), reason or '')
+                self.assertNotIn(str(foreign / '.git'), reason or '')
+                self.assertNotIn(foreign_pushurl, reason or '')
+                self.assertNotIn('git@github.com:Dimkox/adaptive-grok-build-pro.git', reason or '')
+
+    def test_git_push_denies_each_inherited_selector_by_presence(self) -> None:
+        with github_project() as root:
+            add_approval(
+                root,
+                'production',
+                'exact Git push fixture',
+                5,
+                actions=['git-push-branch', 'git-push-tag'],
+            )
+            with matching_foreign_push_target(root) as (foreign, _):
+                with patch.dict(os.environ, {}, clear=False):
+                    os.environ.pop('GIT_DIR', None)
+                    os.environ.pop('GIT_WORK_TREE', None)
+                    allowed, reason = evaluate_pre_tool(root, {
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': 'git push origin feature'},
+                    })
+                self.assertTrue(allowed, reason)
+
+                cases = (
+                    ('branch-git-dir', 'git push origin feature', {'GIT_DIR': str(foreign / '.git')}),
+                    ('branch-work-tree', 'git push origin feature', {'GIT_WORK_TREE': str(foreign)}),
+                    ('tag-both', 'git push origin v2.1.0', {
+                        'GIT_DIR': str(foreign / '.git'), 'GIT_WORK_TREE': str(foreign),
+                    }),
+                    ('empty-git-dir', 'git push origin feature', {'GIT_DIR': ''}),
+                    ('empty-work-tree', 'git push origin feature', {'GIT_WORK_TREE': ''}),
+                )
+                for label, command, selectors in cases:
+                    with self.subTest(case=label):
+                        with patch.dict(os.environ, selectors, clear=False):
+                            for name in {'GIT_DIR', 'GIT_WORK_TREE'} - selectors.keys():
+                                os.environ.pop(name, None)
+                            allowed, reason = evaluate_pre_tool(root, {
+                                'tool_name': 'Bash',
+                                'tool_input': {'command': command},
+                            })
+                        self.assertFalse(allowed)
+                        self.assertIn('unset', (reason or '').lower())
+                        for name in selectors:
+                            self.assertIn(name, reason or '')
+                        for name in {'GIT_DIR', 'GIT_WORK_TREE'} - selectors.keys():
+                            self.assertNotIn(name, reason or '')
+                        for value in selectors.values():
+                            if value:
+                                self.assertNotIn(value, reason or '')
+
     def test_new_grant_uses_neutral_binding_digest_key(self) -> None:
         with github_project() as root:
             approval = add_approval(

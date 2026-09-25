@@ -1,0 +1,82 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Repository identity, HEAD, changed-file inventory and tree fingerprint remain bound to the explicit root when ambient GIT_DIR or GIT_WORK_TREE selects another repository.",
+      "evidence": [{"test": "tests/test_util_fingerprint.py"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Production Git push policy denies inherited GIT_DIR or GIT_WORK_TREE before grant consumption, including empty values, and names no selector value.",
+      "evidence": [{"test": "tests/test_policy.py"}, {"test": "tests/test_hooks.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "A matching foreign checkout with a foreign pushurl cannot turn a valid grant into an allow decision, and the regression performs no push or network call.",
+      "evidence": [{"test": "tests/test_policy.py"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Clean-environment grants retain exact action, repository, route, change, HEAD, tree and TTL binding behavior.",
+      "evidence": [{"test": "tests/test_policy.py"}]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260925-fix-issue-227-inherited-git-dir-or-git-work-tree-177f5d",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No git push, network request, GitHub write, merge, deployment or Daybreak dependency occurs in implementation or verification.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No denial, report or log discloses selector values, foreign paths, credentials or remote URL secrets.",
+      "evidence": [{"test": "tests/test_policy.py"}, {"receipt": "security_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Every Git selector stripped from control-plane probes also causes actual Git push policy to fail closed when inherited.",
+      "evidence": [{"test": "tests/test_policy.py"}, {"test": "tests/test_util_fingerprint.py"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Grant schema v2 and has_valid_approval boolean compatibility remain unchanged.",
+      "evidence": [{"test": "tests/test_policy.py"}]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue 227: inherited GIT_DIR or GIT_WORK_TREE can redirect repository identity and let a valid local grant authorize git push to a foreign pushurl. Add root-bound Git probes and explicit fail-closed denial. Never execute git push or access the network.",
+    "success_metric": "Foreign inherited Git selectors are denied offline and all root-bound policy, hook and fingerprint regressions plus PR verification pass.",
+    "target": "local source branch from origin/main"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Secret-safe fail-closed denial names inherited Git selector variables",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

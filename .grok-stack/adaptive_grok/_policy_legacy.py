@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import fnmatch
+import os
 import re
 import shlex
 from dataclasses import dataclass
@@ -8,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .state import active_write_agents, get_active_route, has_valid_approval
-from .util import load_json, safe_relative_path
+from .util import _GIT_REPOSITORY_SELECTORS, load_json, safe_relative_path
 
 WRITE_ROLES = {
     'general_implementer', 'php_implementer', 'bitrix_implementer', 'frontend_implementer',
@@ -589,6 +590,18 @@ def evaluate_pre_tool(
         if action:
             if action == 'workflow-dispatch':
                 return False, 'GitHub Actions workflow dispatch is forbidden for this repository.'
+            if action in {'git-push-branch', 'git-push-tag'}:
+                inherited_selectors = [
+                    name for name in _GIT_REPOSITORY_SELECTORS if name in os.environ
+                ]
+                if inherited_selectors:
+                    names = ', '.join(inherited_selectors)
+                    return False, (
+                        f'Production action {action} denied: inherited Git repository selection '
+                        f'is overridden by {names}. Unset the named variable(s) and retry from '
+                        'the intended repository root; no delegated grant is valid for a Git push '
+                        'while an override is present.'
+                    )
             from .human_gates import gate_block_reason
 
             gate_reason = gate_block_reason(root, 'production', action)

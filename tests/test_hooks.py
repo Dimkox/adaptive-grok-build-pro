@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
@@ -161,6 +164,73 @@ class HookTests(unittest.TestCase):
             })
             output = data['hookSpecificOutput']
             self.assertEqual(output['permissionDecision'], 'deny')
+
+    def test_pre_tool_hook_denies_inherited_foreign_git_selectors_without_leaking_values(self) -> None:
+        with project_copy(git=True) as root, tempfile.TemporaryDirectory(
+            prefix='hook-foreign-push-target-',
+        ) as tmp:
+            self._grant(root, 'production', actions=['git-push-branch'])
+            foreign = Path(tmp) / 'foreign'
+            subprocess.run(
+                ['git', 'clone', '--no-local', '-q', str(root), str(foreign)],
+                check=True,
+            )
+            expected_origin = 'git@github.com:Dimkox/adaptive-grok-build-pro.git'
+            foreign_pushurl = 'git@github.com:example/hook-foreign-target.git'
+            subprocess.run(
+                ['git', 'remote', 'set-url', 'origin', expected_origin],
+                cwd=foreign,
+                check=True,
+            )
+            subprocess.run(
+                ['git', 'config', 'remote.origin.pushurl', foreign_pushurl],
+                cwd=foreign,
+                check=True,
+            )
+            def repository_snapshot(repository: Path) -> tuple[bytes, bytes, bytes, bytes]:
+                return (
+                    subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repository),
+                    subprocess.check_output(['git', 'show-ref'], cwd=repository),
+                    subprocess.check_output(
+                        ['git', 'config', '--get-regexp', r'^remote\.'], cwd=repository,
+                    ),
+                    subprocess.check_output(
+                        ['git', 'status', '--porcelain=v1', '--untracked-files=no'],
+                        cwd=repository,
+                    ),
+                )
+
+            root_before = repository_snapshot(root)
+            foreign_before = repository_snapshot(foreign)
+            selectors = {
+                'GIT_DIR': str(foreign / '.git'),
+                'GIT_WORK_TREE': str(foreign),
+            }
+
+            with patch.dict(os.environ, selectors, clear=False):
+                code, data, error = run_hook(root, 'pre_tool_use.py', {
+                    'cwd': str(root),
+                    'session_id': 'inherited-git-selector',
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': 'git push origin feature'},
+                })
+
+            self.assertEqual(0, code, error)
+            self.assertEqual('deny', data.get('decision'))
+            output = data['hookSpecificOutput']
+            self.assertEqual('deny', output['permissionDecision'])
+            reason = data.get('reason') or ''
+            self.assertEqual(reason, output['permissionDecisionReason'])
+            self.assertIn('GIT_DIR', reason)
+            self.assertIn('GIT_WORK_TREE', reason)
+            self.assertIn('unset', reason.lower())
+            self.assertNotIn(str(foreign), reason)
+            self.assertNotIn(str(foreign / '.git'), reason)
+            self.assertNotIn(foreign_pushurl, reason)
+            self.assertTrue((root / '.grok-stack/runtime/tool-denials.json').is_file())
+            self.assertFalse((foreign / '.grok-stack/runtime/tool-denials.json').exists())
+            self.assertEqual(root_before, repository_snapshot(root))
+            self.assertEqual(foreign_before, repository_snapshot(foreign))
 
     def test_sensitive_nested_workdir_cannot_borrow_session_repository_grant(self) -> None:
         with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
