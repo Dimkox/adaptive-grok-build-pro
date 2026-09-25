@@ -839,3 +839,7 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 ## 2026-09-24 — Freeze the exact base before expensive gates
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
+
+## 2026-09-25 — Refuse an unusable path instead of silently slugging it
+
+At the boundary that materialises a change package, a hostile name is now refused with the offending input echoed in bounded, control-byte-free form, and every derived id component is validated on its own instead of trusting `slugify` to absorb it. This worked because silent mangling was itself the defect: the #53 artifact only reached git because a writer turned a path into a plausible directory name, so a green result from hostile input hides the bug. Backward compatibility was pinned in the same wave — ordinary `:` and `/` in prose titles, CRLF pastes, and all 148 historical package names must keep working — so a hardening rule cannot orphan shipped packages.

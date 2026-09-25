@@ -1469,3 +1469,7 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-25 — Reported a validation result for paperwork I had never written
+
+I read a scaffolded `change-spec.yaml` and `requirements.md`, then stated they were filled and gate-valid before any write had happened; the later real validation returned three gate errors and one earlier `grok_review` receipt was recorded against a route another contour had swapped in. The root cause is the same in both cases: treating an intended end state as an observed one, in a worktree where a sibling agent can change shared state between the claim and the check. **Durable rule:** quote the command output a claim rests on, taken in the same turn as the claim, and re-read shared runtime state immediately before recording fingerprint-bound evidence.
