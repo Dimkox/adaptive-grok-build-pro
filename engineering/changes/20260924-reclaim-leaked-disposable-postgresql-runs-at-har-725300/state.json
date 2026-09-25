@@ -1,0 +1,74 @@
+{
+  "change_id": "20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-128-disposable-container-reclaim",
+      "change_id": "20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300",
+      "detached": false,
+      "dirty_product_paths": [
+        "factory/tests/run_disposable_exit.py",
+        "tests/test_disposable_exit_reclaim.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-24T23:04:43+00:00",
+      "route_id": "725300ea573f"
+    }
+  ],
+  "created_at": "2026-09-24T23:04:43+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-24T23:04:43+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "d0652b951d3a094aecfb40f8d2623de633e9bacd2e6d822904d03106059ed410",
+  "route_id": "725300ea573f",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "Reclaim leaked disposable PostgreSQL runs at harness start (issue 128)",
+  "updated_at": "2026-09-24T23:04:43+00:00"
+}

@@ -50,6 +50,13 @@ class MigrationTests(unittest.TestCase):
         with patch.object(
             run_disposable_exit.subprocess, "run", side_effect=[created, port]
         ) as subprocess_run, patch.object(
+            # Reclaim is isolated here on purpose. Before this contour it escaped the patch
+            # entirely (the default runner was bound at import), so this fixture's two-item
+            # side effect silently matched real `docker run`/`docker port` calls while a
+            # unit test could have deleted live containers on the host. Isolating it makes
+            # the ordering under test explicit instead of accidental.
+            run_disposable_exit, "reclaim_orphan_runs", return_value=[]
+        ), patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
         ), patch.object(
             run_disposable_exit, "_final_postgres_ready", return_value=True
@@ -72,7 +79,7 @@ class MigrationTests(unittest.TestCase):
             "restart/reconciliation"
         )
 
-    def test_exit_runner_reports_leaked_id_without_cleanup_when_binding_fails(self):
+    def test_exit_runner_reclaims_its_own_container_when_binding_fails(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
         with patch.object(
@@ -82,10 +89,14 @@ class MigrationTests(unittest.TestCase):
         ), patch.object(run_disposable_exit, "_run") as run, patch.object(
             run_disposable_exit, "_remove_bound_container"
         ) as remove:
-            with self.assertRaisesRegex(RuntimeError, f"leaked id={container_id}"):
+            with self.assertRaisesRegex(RuntimeError, f"reclaimed id={container_id}"):
                 run_disposable_exit.main()
         run.assert_not_called()
-        remove.assert_not_called()
+        # Ownership begins at `docker run`. This arm used to assert the opposite:
+        # `remove.assert_not_called()` pinned the leak itself as the contract, which is why
+        # a rejected binding kept leaving a live PostgreSQL plus volume behind (issue 128).
+        self.assertEqual(remove.call_args.args[0], container_id)
+        self.assertIs(remove.call_args.kwargs["minted"], True)
 
     def test_restart_probe_database_identity_is_exact_postgresql_17_cluster(self):
         valid = ("factory_exit", "factory_exit", 170_006, "cluster-1")
@@ -214,14 +225,23 @@ class MigrationTests(unittest.TestCase):
 
         inspected = type("Completed", (), {"returncode": 0, "stdout": valid})()
         removed = type("Completed", (), {"returncode": 0, "stdout": ""})()
+        # Removal is not believed on its exit code: the honest proof is that the daemon can
+        # no longer see the container, so the sequence needs a third answer.
+        absent = type("Completed", (), {"returncode": 1, "stdout": ""})()
         with patch.object(
             run_disposable_exit.subprocess,
             "run",
-            side_effect=[inspected, removed],
+            side_effect=[inspected, removed, absent],
         ) as run:
             run_disposable_exit._remove_bound_container(container_id, name, nonce)
-        self.assertEqual(run.call_args_list[-1].args[0], ["docker", "rm", "-f", container_id])
+        # `-v` is required, not cosmetic: `docker rm -f` releases the container and leaves the
+        # anonymous volume Postgres was initialised into, which is the half of the leak that
+        # fills the disk. Deletion stays exact-id scoped, never by name.
+        self.assertEqual(
+            run.call_args_list[1].args[0], ["docker", "rm", "-f", "-v", container_id]
+        )
         self.assertEqual(run.call_args_list[0].args[0][-1], container_id)
+        self.assertEqual(run.call_args_list[-1].args[0][:2], ["docker", "inspect"])
 
         with patch.object(
             run_disposable_exit, "_binding_matches", return_value=False
@@ -345,28 +365,6 @@ class MigrationTests(unittest.TestCase):
         with patch.object(run_disposable_exit.subprocess, "run", return_value=not_final) as run:
             self.assertFalse(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertEqual(run.call_count, 1)
-
-    def test_exit_runner_removes_its_exact_container_and_restart_volume(self):
-        removed = type("Completed", (), {"returncode": 0})()
-        absent = type("Completed", (), {"returncode": 1})()
-        with patch.object(
-            run_disposable_exit.subprocess,
-            "run",
-            side_effect=[removed, removed, absent, absent],
-        ) as run:
-            run_disposable_exit._cleanup(
-                "factory-test-container",
-                "factory-test-volume",
-            )
-        self.assertEqual(
-            [call.args[0] for call in run.call_args_list],
-            [
-                ["docker", "rm", "-f", "factory-test-container"],
-                ["docker", "volume", "rm", "factory-test-volume"],
-                ["docker", "inspect", "factory-test-container"],
-                ["docker", "volume", "inspect", "factory-test-volume"],
-            ],
-        )
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()

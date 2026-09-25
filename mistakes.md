@@ -1469,3 +1469,15 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-24 — A `finally` is not a cleanup guarantee when the process is killed
+
+Root cause: disposable-container release lived in a `finally` that a signal-cancelled gate run never reaches, and the dead `_cleanup` helper plus the `bound_container_id is not None` guard hid both the leak and the fact that ownership began only after a successful binding check. The corrective shape is reclaim-at-start by label plus signal-to-exception, with the age bound as the only evidence that a concurrent sibling is alive.
+
+### 2026-09-25 — A regression test can pin the defect it was written around
+
+`factory/tests/test_migrations.py` asserted `remove.assert_not_called()` plus a `leaked id=` message for a failed container binding, so the suite was green *because* the harness refused to clean up its own container. Fixing issue #128 therefore failed two gate checks (`factory-unit`, `factory-postgres-exit`) until the assertion was rewritten to require reclamation. Root cause: the test recorded the observable behavior of a known-bad implementation instead of the intended contract, and no other arm covered ownership-from-creation. Corollary class: when a fix turns a test red, prove which one is wrong by reading the test's own comment and the issue text, never by assuming the newest code is right.
+
+### 2026-09-25 — A default argument bound at import defeats the patch meant to contain it
+
+`reclaim_orphan_runs(..., runner=subprocess.run, clock=time.time)` captured the real functions at import, so `main()`'s reclaim kept calling the actual `docker` binary even while a factory test patched `run_disposable_exit.subprocess`. A unit test could then delete a live container on whoever's machine ran the suite, and a fixture's two-item `side_effect` had quietly "matched" that escape instead of detecting it. Injectable collaborators must be resolved at call time (`runner=None` → `subprocess.run`), and the fix is pinned by a tripwire test that patches the module attribute and asserts the real binary is unreachable.
