@@ -3,8 +3,6 @@ from __future__ import annotations
 import importlib.util
 import os
 import signal
-import subprocess
-import sys
 import threading
 import unittest
 from pathlib import Path
