@@ -406,3 +406,137 @@ class CancellationReachabilityTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ReclaimWiringTests(unittest.TestCase):
+    """The wiring, not just the function: both load-bearing properties were unpinned."""
+
+    @staticmethod
+    def _completed(stdout='', returncode=0):
+        return type('Completed', (), {'returncode': returncode, 'stdout': stdout})()
+
+    def _main_docker_calls(self, root: Path, on_call=None):
+        calls: list[list[str]] = []
+        container_id = 'c' * 64
+
+        def fake_run(command, **_kwargs):
+            calls.append(list(command))
+            if on_call is not None:
+                outcome = on_call(list(command))
+                if outcome is not None:
+                    return outcome
+            if command[1] == 'run':
+                return self._completed(container_id + '\n')
+            if command[1] == 'port':
+                return self._completed('127.0.0.1:4321\n')
+            if command[1] == 'inspect':
+                return self._completed(returncode=1)
+            return self._completed()
+
+        return calls, fake_run, container_id
+
+    def test_main_reclaims_and_installs_handlers_before_it_creates_anything(self) -> None:
+        # Deleting either wiring line used to leave every test green: the reclaim call in
+        # main() and the handler install are the feature, not the helper functions.
+        import factory.tests.run_disposable_exit as production
+
+        order: list[str] = []
+        calls, fake_run, _cid = self._main_docker_calls(Path('.'))
+
+        def spy_reclaim(nonce, **kwargs):
+            order.append('reclaim')
+            return []
+
+        real_install = production._CancellationScope.install
+
+        def spy_install(self):
+            order.append('install')
+            return real_install(self)
+
+        def watch(command):
+            if command[1] == 'run':
+                order.append('docker-run')
+            return None
+
+        calls, fake_run, cid = self._main_docker_calls(Path('.'), on_call=watch)
+        with _chdir(ROOT), patch.object(production.subprocess, 'run', side_effect=fake_run), \
+             patch.object(production, 'reclaim_orphan_runs', side_effect=spy_reclaim), \
+             patch.object(production._CancellationScope, 'install', spy_install), \
+             patch.object(production, '_binding_matches', return_value=True), \
+             patch.object(production, '_final_postgres_ready', return_value=True), \
+             patch.object(production, '_run'), \
+             patch.object(production, '_remove_bound_container'), \
+             patch('builtins.print'):
+            try:
+                production.main()
+            except Exception:  # the fake never runs a real suite; ordering is what matters
+                pass
+
+        self.assertEqual(order[:3], ['install', 'reclaim', 'docker-run'], order)
+
+    def test_cancellation_exits_non_zero_and_still_reclaims_its_container(self) -> None:
+        # The #119 defect is a cancelled run that records a pass. A `return 0` here must
+        # not be able to hide behind a green suite.
+        import factory.tests.run_disposable_exit as production
+
+        def fire(command):
+            if command[1] == 'port':
+                os.kill(os.getpid(), signal.SIGTERM)
+            return None
+
+        calls, fake_run, cid = self._main_docker_calls(Path('.'), on_call=fire)
+        removed: list[str] = []
+        with _chdir(ROOT), patch.object(production.subprocess, 'run', side_effect=fake_run), \
+             patch.object(production, 'reclaim_orphan_runs', return_value=[]), \
+             patch.object(production, '_binding_matches', return_value=True), \
+             patch.object(production, '_remove_bound_container', side_effect=lambda c, n, nonce, **k: removed.append(c)), \
+             patch('builtins.print'):
+            with self.assertRaises(SystemExit) as raised:
+                production.main()
+
+        self.assertEqual(raised.exception.code, 130, 'a cancelled gate run must not exit 0')
+        self.assertEqual(removed, [cid])
+
+    def test_a_run_younger_than_the_bound_with_my_nonce_is_never_a_candidate(self) -> None:
+        # With the age floor removed for the probe, only the nonce exclusion can save this
+        # process's own container. Before this arm, deleting that exclusion passed.
+        runs = {OLD_ID: {'name': EXIT_1, 'nonce': 'mine', 'created': _created(5)}}
+        fake = _fake(runs)
+
+        records = harness.reclaim_orphan_runs(
+            'mine', now=NOW, min_age_seconds=0, runner=fake, clock=lambda: NOW
+        )
+
+        self.assertEqual(records, [])
+        self.assertEqual(fake.removals, [])
+
+    def test_the_orphan_bound_exceeds_the_real_durations_not_a_restated_literal(self) -> None:
+        total = (
+            harness.READY_DEADLINE_SECONDS
+            + harness.SUITE_TIMEOUT_SECONDS
+            + 2 * harness.RESTART_PROBE_TIMEOUT_SECONDS
+        )
+
+        self.assertGreater(harness.ORPHAN_MIN_AGE_SECONDS, total)
+        self.assertGreater(harness.ORPHAN_MAX_AGE_SECONDS, harness.ORPHAN_MIN_AGE_SECONDS)
+        self.assertLess(harness.RECLAIM_TIME_BUDGET_SECONDS, 600)
+
+
+class _chdir:
+    """Context-managed cwd that always restores, so a failure cannot leak the directory."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.previous = ''
+
+    def __enter__(self):
+        import os
+
+        self.previous = os.getcwd()
+        os.chdir(self.path)
+        return self
+
+    def __exit__(self, *_):
+        import os
+
+        os.chdir(self.previous)

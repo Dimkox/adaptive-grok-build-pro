@@ -50,6 +50,13 @@ ORPHAN_MIN_AGE_SECONDS = 2 * 60 * 60
 # the latter must not be destroyed, because an over-stated age is exactly what would let a
 # reclaim delete a LIVE sibling's PostgreSQL and its anonymous PGDATA volume.
 ORPHAN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+# Named so the age bound is compared against the real durations rather than a literal
+# restated in a test. Readiness deadline + bounded suite + the two restart probes are the
+# longest a healthy run can go without touching its container, which is what the orphan
+# bound must exceed.
+READY_DEADLINE_SECONDS = 30
+SUITE_TIMEOUT_SECONDS = 480
+RESTART_PROBE_TIMEOUT_SECONDS = 300
 MAX_RECLAIM_PER_RUN = 24
 # The only caller gives this harness a 600 s wall clock and answers its timeout with
 # SIGKILL, which no signal handler can catch. Reclaim therefore gets its own budget well
@@ -432,7 +439,7 @@ def main() -> int:
         ).stdout.strip()
         port = _published_loopback_port(published)
         environment["FACTORY_TEST_DATABASE_URL"] = f"postgresql://factory_exit:{password}@127.0.0.1:{port}/factory_exit"
-        deadline = time.monotonic() + 30
+        deadline = time.monotonic() + READY_DEADLINE_SECONDS
         while True:
             if _final_postgres_ready(container_id):
                 break
@@ -465,7 +472,7 @@ def main() -> int:
                     "-v",
                 ],
                 environment=environment,
-                timeout=480,
+                timeout=SUITE_TIMEOUT_SECONDS,
             )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
