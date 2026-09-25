@@ -4,7 +4,7 @@
   "objective": {
     "id": "OBJ-001",
     "statement": "Close issue 205: classify the changed-path inventory before verification so a documentation/dated-state/lockstep-test-only successor runs the disclosed focused lockstep profile instead of the full coverage suite, while any executed-behavior, schema/contract, Trust CI, workflow or package-tooling change keeps the full PR suite.",
-    "success_metric": "A release-sync inventory of the v2.0.19 shape completes `grok_verify --mode pr` without executing `coverage run -m unittest discover -s tests` (measured baseline 629 s serial, focused trio 11 s), the receipt names the profile, reason code, admitted paths and each omitted check, and an execution probe proves one added source path returns the same tree to full discovery.",
+    "success_metric": "A release-sync inventory of the v2.0.19 shape completes `grok_verify --mode pr` without executing `coverage run -m unittest discover -s tests` (measured baseline 629 s serial, the five admitted modules 14 s), the receipt names the profile, reason code, admitted paths and each omitted check, and `verify()`-level probes on a real repository prove that one added source path, an untrusted status channel, or a missing admitted module returns the same tree to full discovery.",
     "target": "`.grok-stack/adaptive_grok/verification_scope.py`, its `verification.py` integration, `scripts/grok_verify.py`, and the README/AGENTS scope rule"
   },
   "risk": {
@@ -19,7 +19,7 @@
     },
     {
       "id": "AC-002",
-      "statement": "The focused profile reports its exact admitted paths, reason code and evidence kind, and names each check it does not run, in both the printed check list and the fingerprint-bound receipt.",
+      "statement": "The focused profile reports its exact admitted paths, reason code and evidence kind, and names each check it does not run — the full-discovery runner it replaced, coverage measurement, and the factory PostgreSQL exit run — in both the printed check list and the fingerprint-bound receipt.",
       "evidence": [{"test": "tests/test_verification_scope.py"}, {"receipt": "verification"}]
     },
     {
@@ -36,6 +36,16 @@
       "id": "AC-005",
       "statement": "The existing focused static-SEO-landing profile keeps its own `verification_scope` report key and its separate explicit mode, and `--mode pr` never carries a landing scope.",
       "evidence": [{"test": "tests/test_verification_doctor.py"}]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Admission is decided by content role and never by directory: documentation is admitted as named files or directory-shaped prefixes only; shipped-and-executed content (`docs/bitrix-local-AGENTS.md`, installed as `local/AGENTS.md` in every consumer Bitrix install) and byte-pinned immutable evidence (`**/evidence/historical-*`) are refused with their own reason codes; and every admitted content class is re-derived by a module the focused profile itself executes.",
+      "evidence": [{"test": "tests/test_verification_scope.py"}]
+    },
+    {
+      "id": "AC-007",
+      "statement": "The wiring, not only the pure classifier, is proven end to end: `verify()` on a real temporary repository reports the profile it acted on, so passing no admitted module as available, ignoring the status side channel's trust flag, or never threading the classification into the runner each fail a test.",
+      "evidence": [{"test": "tests/test_verification_scope.py"}, {"receipt": "code_review"}]
     }
   ],
   "invariants": [

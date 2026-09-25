@@ -1469,3 +1469,9 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 ### 2026-09-24 — Persist route review reports before the final verifier
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
+
+### 2026-09-24 — Justified an allowlist by directory name instead of by content role
+
+**Symptom:** the `docs-state-focused` lane (issue #205, heads `7fdfa57e`/`a08060c1`) admitted `docs/` and `engineering/changes/` wholesale, which put `docs/bitrix-local-AGENTS.md` — installed verbatim as `local/AGENTS.md` into every consumer Bitrix install, so agent-executed instructions shipped as product — and `engineering/changes/**/evidence/historical-*` — bytes `tests/test_history.py` pins to a literal sha256 — on a lane that runs five modules and no executed suite. The same location-shaped thinking left `FOCUSED_SKIPPED_CHECKS` naming two of the three checks the lane stops running, and let non-directory-shaped prefixes string-match `engineering/decisions.md.bak` into scope.
+**Root cause:** admission was argued from what a directory is called rather than from what its bytes do, and the disclosure list was written from memory instead of from what the replacement branch actually emits. No test checked either gap, because both gaps were invisible in the shape the tests were built from.
+**Durable rule:** when a lane narrows what is verified, enumerate admission by content role and exact name and check every non-obvious consumer of each admitted path (installer payloads, literal digest pins, other suites' fixtures); derive a skipped-check list from the code that replaces the checks; and prove the wiring end to end on the integration seam (`verify()` and the report), not only on the pure function.

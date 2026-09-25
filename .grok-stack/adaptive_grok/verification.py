@@ -32,7 +32,6 @@ from .util import (
     read_text_limited,
     run,
     tree_fingerprint,
-    _git_name_status,
 )
 from .workflow_artifacts import WorkflowArtifactError, validate_stored_workflow
 from .verification_scope import (
@@ -1492,17 +1491,30 @@ def _focused_python(
     root: Path,
     results: list[CheckResult],
     scope: dict[str, object],
+    replaced_runner: str = 'python-unittest',
 ) -> list[CheckResult]:
-    """Run the admitted lockstep trio instead of full discovery or coverage measurement.
+    """Run the admitted lockstep modules instead of full discovery or coverage measurement.
 
     Product statements are unchanged by an admitted inventory, so a fresh coverage number
-    would restate the last full run. Both omitted checks stay visible as explicit skips.
+    would restate the last full run. Every omitted check stays visible as an explicit skip,
+    including the full-discovery runner this branch replaced — which is named by the caller
+    because it is `pytest` in a consumer install and `python-unittest` in this repository.
     """
     targets = [str(target) for target in scope.get('focused_tests', [])]
+    if not targets:
+        # `python -m unittest` with no module arguments exits 0 having run zero tests, so an
+        # empty target list would be reported as a green focused run. Refuse instead.
+        results.append(CheckResult(
+            'python-focused-unittest',
+            'fail',
+            'the focused documentation/state profile was given no test module to run',
+        ))
+        return results
     results.append(CheckResult(
-        'python-unittest',
+        replaced_runner,
         'skip',
-        'focused documentation/state profile runs the lockstep trio instead of full test discovery',
+        'focused documentation/state profile runs the admitted lockstep modules '
+        'instead of full test discovery',
     ))
     results.append(CheckResult(
         'coverage',
@@ -1535,10 +1547,18 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
         )
     has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
     tests_dir = root / 'tests'
-    has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
+    uses_pytest_runner = has_project and command_exists('pytest') and tests_dir.is_dir()
     if focused:
-        return _focused_python(root, results, scope or {})
-    if has_project and command_exists('pytest') and tests_dir.is_dir():
+        # Named here rather than assumed: the focused profile replaces whichever full-discovery
+        # runner this tree would have used, and the skip it reports must say so.
+        return _focused_python(
+            root,
+            results,
+            scope or {},
+            'pytest' if uses_pytest_runner else 'python-unittest',
+        )
+    has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
+    if uses_pytest_runner:
         results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
         if mode in {'pr', 'release'}:
             if command_exists('coverage'):
@@ -1758,29 +1778,36 @@ def _docs_state_status_inventory(
     is — additions — while any *removed* path still reports `D`, which is the one shape that
     could hide a source file behind a documentation name.
 
+    The records come from the shared name-status helper in `util`, called with rename/copy
+    detection off and with the same untracked collection the changed-file inventory performs,
+    so this veto channel spans exactly the path domain it guards instead of a subset of it.
     The PR/release changed-file inventory itself stays byte-unchanged: this side channel
     feeds a scope decision and must not widen what the full suite already inspects.
     """
     records: list[dict[str, object]] = []
     trusted = True
 
-    def collect(source: str, *arguments: str) -> None:
+    def merge(part: list[dict[str, str]] | None, source: str | None) -> None:
         nonlocal trusted
-        parsed = _git_name_status(root, *arguments)
-        if parsed is None:
+        if part is None:
             trusted = False
             return
-        for item in parsed:
-            item['source'] = source
+        for item in part:
+            if source is not None:
+                item['source'] = source
             records.append(item)
 
-    collect('index', 'diff', '--name-status', '--no-renames', '-z', '--cached')
-    collect('worktree', 'diff', '--name-status', '--no-renames', '-z')
+    merge(changed_file_statuses(root, rename_detection=False), None)
     for selected in selection.bases:
-        collect(
+        merge(
+            changed_file_statuses(
+                root,
+                selected.comparison_base_sha,
+                include_worktree=False,
+                include_untracked=False,
+                rename_detection=False,
+            ),
             f'range:{selected.comparison_base_sha}',
-            'diff', '--name-status', '--no-renames', '-z',
-            f'{selected.comparison_base_sha}...HEAD',
         )
     return records, trusted
 

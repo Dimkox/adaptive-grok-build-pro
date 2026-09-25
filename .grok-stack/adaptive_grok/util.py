@@ -224,6 +224,7 @@ def changed_file_statuses(
     *,
     include_worktree: bool = True,
     include_untracked: bool = True,
+    rename_detection: bool = True,
 ) -> list[dict[str, str]] | None:
     """Return focused-only Git status records without changing ``changed_files``.
 
@@ -231,10 +232,21 @@ def changed_file_statuses(
     repository fingerprint.  Focused verification additionally needs Git's
     status and rename/copy provenance so it can reject unsafe landing/test
     changes instead of treating them as ordinary modifications.
+
+    ``rename_detection`` selects the provenance flags on every diff read.  It stays on by
+    default because the landing lane wants to see a rename or a copy.  The documentation/state
+    lane turns it off: a scaffolded change package is byte-similar to an older one, so copy
+    detection would report it as ``C0xx`` and push every evidence-carrying pull request back to
+    the full suite, while ``--no-renames`` still reports a *removed* path as ``D``.
     """
     if not command_exists('git') or not git_head(root):
         return None
 
+    provenance = (
+        ('--find-renames', '--find-copies', '--find-copies-harder')
+        if rename_detection
+        else ('--no-renames',)
+    )
     records: list[dict[str, str]] = []
 
     def add_diff(source: str, *arguments: str) -> bool:
@@ -248,19 +260,16 @@ def changed_file_statuses(
 
     if base is not None and not add_diff(
         f'range:{base}',
-        'diff', '--name-status', '--find-renames', '--find-copies',
-        '--find-copies-harder', '-z', f'{base}...HEAD',
+        'diff', '--name-status', *provenance, '-z', f'{base}...HEAD',
     ):
         return None
     if include_worktree:
         if not add_diff(
-            'index', 'diff', '--name-status', '--find-renames', '--find-copies',
-            '--find-copies-harder', '-z', '--cached',
+            'index', 'diff', '--name-status', *provenance, '-z', '--cached',
         ):
             return None
         if not add_diff(
-            'worktree', 'diff', '--name-status', '--find-renames', '--find-copies',
-            '--find-copies-harder', '-z',
+            'worktree', 'diff', '--name-status', *provenance, '-z',
         ):
             return None
     if include_untracked:
