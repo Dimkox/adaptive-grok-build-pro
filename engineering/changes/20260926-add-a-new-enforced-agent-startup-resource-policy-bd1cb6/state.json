@@ -43,20 +43,20 @@
         "id": "verification",
         "kind": "receipt",
         "outcome": "pass",
-        "reason": "Historical exact-554a29d6 focused PASS; not current repair evidence. The repaired commit must refresh its runtime receipt after persistence, before independent re-review",
+        "reason": "Exact b70f5790 focused PASS completed before successor review; persisting the report/disposition invalidates this pre-review result for the final candidate. Post-evidence committed-tree verification is pending at this persistence checkpoint",
         "receipt_kind": "verification",
-        "recorded_at": "2026-09-26T01:27:41+00:00",
-        "reference": "evidence/review-repair-20260926.md",
+        "recorded_at": "2026-09-26T01:45:17+00:00",
+        "reference": "evidence/successor-review-disposition.md",
         "status": "recorded"
       },
       {
         "id": "code_review",
         "kind": "receipt",
         "outcome": "fail",
-        "reason": "Historical independent FAIL against 554a29d6 is preserved in evidence/code-review.md; wording repaired by sole writer, independent re-review of the successor remains pending",
+        "reason": "Historical successor FAIL against b70f5790 preserved exactly; prior selector finding closed, standalone-jq diagnostic finding dispositioned against original gh interface, handoff staleness corrected. No independent PASS is claimed",
         "receipt_kind": "code_review",
-        "recorded_at": "2026-09-26T01:42:41+00:00",
-        "reference": "evidence/code-review.md",
+        "recorded_at": "2026-09-26T01:49:26+00:00",
+        "reference": "evidence/code-review-successor-fail-b70f5790.md",
         "status": "recorded"
       }
     ],
@@ -110,6 +110,24 @@
       "from": "implementing",
       "reason": "Historical FAIL preserved exactly; admission wording and jq root cause repaired; bounded probes PASS; committed-tree verifier and independent re-review follow",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "verifying",
+      "reason": "Successor independent review completed against b70f5790; selector finding repaired, diagnostic interface and handoff findings recorded",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "reviewing",
+      "reason": "Evidence-only disposition preserves exact FAIL; original gh interface supports unchanged jq entry; dated pre-review verification accounting refreshed",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "implementing",
+      "reason": "Evidence/state updates complete; commit then exact post-evidence PR verifier; no product or mistakes entry changes",
+      "to": "verifying"
     }
   ],
   "human_gates": [],
@@ -118,5 +136,5 @@
   "schema_version": 1,
   "status": "verifying",
   "title": "Add a new enforced agent-startup resource policy and structure contract: parallelize all independent route-permitted work, expose 12 worker slots plus controller, launch eligible CPU-heavy child processes across all verified 28 logical CPUs, keep one writer per isolated contour, and label operator-delegated pre-verification branch pushes as unverified in AGENTS.md README.md START_HERE.md and focused structure coverage",
-  "updated_at": "2026-09-26T01:44:16+00:00"
+  "updated_at": "2026-09-26T01:51:00+00:00"
 }

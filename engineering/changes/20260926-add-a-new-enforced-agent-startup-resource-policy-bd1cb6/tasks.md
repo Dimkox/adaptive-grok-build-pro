@@ -13,4 +13,7 @@
 - [x] Record the requested jq dot-context mistake and corrected bound-variable pattern; final inventory was unaffected.
 - [x] Recheck selector probes and all four repaired wording blocks; retain RED/GREEN and report digest in evidence/review-repair-20260926.md.
 
-Current repair handoff: commit the complete repair, then run the standard PR verifier on that exact commit without further source edits. The fingerprint-bound runtime receipt and coordinator handoff establish the resulting identity/status; this pre-commit checklist does not claim that future run passed. Independent re-review remains a separate coordinator obligation above.
+- [x] Commit repair b70f5790 and pass its exact-tree focused PR verifier at 01:45:17 UTC, fingerprint 08cd2cd1414a71d7154169582b392aaf703dfde04a77ae298cab2820a8d23aa2; this is now pre-review evidence.
+- [x] Preserve the successor FAIL without overwriting the first; record the original gh 2.86.0 interface reproduction and leave the jq mistake entry unchanged. The independent successor review closes the prior selector finding.
+
+At the September 26 successor-report persistence checkpoint, final post-evidence verification is pending: commit these evidence/state updates, then run the standard PR verifier on that exact commit without further source edits. Its fingerprint-bound runtime receipt and coordinator handoff establish the resulting identity/status; this dated checkpoint does not claim that future run passed. Review disposition and external exact-head Trust CI/approvals remain coordinator obligations, with no local merge authority inferred.
