@@ -42,16 +42,22 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "Preliminary docs-state-focused PASS recorded in evidence/startup-scope-20260926.md; final frozen commit verification must refresh the runtime receipt after evidence persistence",
+        "outcome": "pass",
+        "reason": "Historical exact-554a29d6 focused PASS; not current repair evidence. The repaired commit must refresh its runtime receipt after persistence, before independent re-review",
         "receipt_kind": "verification",
-        "status": "not_run"
+        "recorded_at": "2026-09-26T01:27:41+00:00",
+        "reference": "evidence/review-repair-20260926.md",
+        "status": "recorded"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "Independent exact-candidate code review remains pending with the coordinator; implementer does not approve own work",
+        "outcome": "fail",
+        "reason": "Historical independent FAIL against 554a29d6 is preserved in evidence/code-review.md; wording repaired by sole writer, independent re-review of the successor remains pending",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "recorded_at": "2026-09-26T01:42:41+00:00",
+        "reference": "evidence/code-review.md",
+        "status": "recorded"
       }
     ],
     "schema_version": 1
@@ -86,6 +92,24 @@
       "from": "implementing",
       "reason": "Documentation edits complete; selector-driven PR verification pending independent review",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-26T01:39:11+00:00",
+      "from": "verifying",
+      "reason": "Independent exact-head code review of 554a29d6 returned FAIL for incomplete focused-scope wording",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-26T01:39:11+00:00",
+      "from": "reviewing",
+      "reason": "Sole writer repairs verified admission wording and records requested jq dot-context root cause",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-26T01:44:16+00:00",
+      "from": "implementing",
+      "reason": "Historical FAIL preserved exactly; admission wording and jq root cause repaired; bounded probes PASS; committed-tree verifier and independent re-review follow",
+      "to": "verifying"
     }
   ],
   "human_gates": [],
@@ -94,5 +118,5 @@
   "schema_version": 1,
   "status": "verifying",
   "title": "Add a new enforced agent-startup resource policy and structure contract: parallelize all independent route-permitted work, expose 12 worker slots plus controller, launch eligible CPU-heavy child processes across all verified 28 logical CPUs, keep one writer per isolated contour, and label operator-delegated pre-verification branch pushes as unverified in AGENTS.md README.md START_HERE.md and focused structure coverage",
-  "updated_at": "2026-09-26T01:24:46+00:00"
+  "updated_at": "2026-09-26T01:44:16+00:00"
 }

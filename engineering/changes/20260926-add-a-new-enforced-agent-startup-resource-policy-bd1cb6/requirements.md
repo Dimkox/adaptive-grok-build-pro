@@ -5,7 +5,7 @@
 ## Acceptance criteria
 
 - AC-001: measured capacity precedes all startup work; independent route-permitted dispatch follows dependencies and isolated writer ownership.
-- AC-002: the next mandatory startup step invokes the merged selector on trusted base..HEAD plus dirty inventory before heavy verification; no broader manual factory exemption exists.
+- AC-002: the next mandatory startup step invokes the merged selector on trusted base..HEAD plus dirty inventory before heavy verification; its closed admission includes named docs/state, tracked release bytes and exactly the five named binding test modules, with no broader manual factory exemption.
 - AC-003 / INV-001 / FORBID-001: observations are dated, skips are not fresh passes, and independent exact-head external merge gates remain mandatory. See the typed specification for evidence mappings.
 
 ## Failure and edge cases

@@ -2,6 +2,8 @@
 
 Store human-readable review reports here. Machine receipts live under `.grok-stack/runtime/receipts/` and are bound to the current repository fingerprint.
 
+Current repair index: [code-review.md](code-review.md) is the unaltered **historical FAIL** against exact HEAD `554a29d6396555ebd4961508eca86917126ce4f1`, SHA-256 `a77338963c5b4789f57442a4b3e714bfde343f990d39115cb98094458ed83a6a`; it is not a successor review or approval. [review-repair-20260926.md](review-repair-20260926.md) records the writer's verified repair and bounded probes. Independent re-review follows exact committed-tree local verification.
+
 `state.json` holds canonical local checkpoints and explicit evidence accounting. A `not_run` reason explains unfinished work; a recorded result is self-reported and does not satisfy a passing receipt. Checkpoints are observations in this worktree, and become available to another clone only when separately committed and published.
 
 New-package and first-implementation observations are appended below by the lifecycle commands. A pending README mirror is surfaced in status and can be retried with the same explicit lifecycle command; state and README publication is not a two-file atomic transaction.

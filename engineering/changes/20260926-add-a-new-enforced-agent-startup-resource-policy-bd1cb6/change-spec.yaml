@@ -1,7 +1,7 @@
 {
   "acceptance_criteria": [
     {"id": "AC-001", "statement": "AGENTS and START_HERE require measured CPU/cpuset/quota capacity before all other startup work, followed by dependency-aware parallel dispatch and one writer per isolated contour; README agrees.", "evidence": [{"receipt": "code_review"}]},
-    {"id": "AC-002", "statement": "The second mandatory startup step invokes the merged closed verification selector using exact base..HEAD plus dirty inventory; only admitted docs/state may skip full discovery, coverage and PostgreSQL, while ambiguous or executable changes retain full scope.", "evidence": [{"receipt": "code_review"}, {"receipt": "verification"}]},
+    {"id": "AC-002", "statement": "The second mandatory startup step invokes the merged closed verification selector using exact base..HEAD plus dirty inventory. Its focused inventory admits named docs/state paths, tracked packages/** release bytes, and exactly five binding test modules: tests/test_structure.py, tests/test_project_state.py, tests/test_manifest_package.py, tests/test_workflow_sources.py and tests/test_repo_router.py; only that inventory may skip full discovery, coverage and PostgreSQL, while all other executable changes, non-admitted paths or ambiguous inventories retain full scope.", "evidence": [{"receipt": "code_review"}, {"receipt": "verification"}]},
     {"id": "AC-003", "statement": "Hardware and 629 s/14 s timings are dated observations, skipped and historical/reused evidence are distinct from fresh passes, and no new test or runtime enforcement is claimed.", "evidence": [{"receipt": "code_review"}]}
   ],
   "approvals": {

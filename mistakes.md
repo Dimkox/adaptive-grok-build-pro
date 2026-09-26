@@ -1470,9 +1470,13 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
 
+### 2026-09-26 — Lost jq object context inside an array pipeline
+
+The ad-hoc inventory filter failed with `expected an object but got: array`: in `select([...] | index(.number))`, the pipe changed dot context to the array, so `.number` targeted that array rather than the input object. Bind the field before entering the array pipeline: `.number as $n | select([... ] | index($n))`. The command was immediately corrected and the final inventory was unaffected.
+
 ### 2026-09-26 — Generalized component reuse beyond the closed selector
 
-The coordinator initially generalized a historical Git-bound component-reuse decision into an unaffected-factory shortcut beyond the closed verification selector. The correction was to merge issue #205 / PR #207 first, then make the startup rule selector-driven: only its admitted inventory may skip checks, while ambiguous or executable changes retain full verification and prior evidence keeps its original exact Git identity.
+The coordinator initially generalized a historical Git-bound component-reuse decision into an unaffected-factory shortcut beyond the closed verification selector. The correction was to merge issue #205 / PR #207 first, then make the startup rule selector-driven: only its admitted inventory may skip checks, while ambiguous or non-admitted executable changes retain full verification and prior evidence keeps its original exact Git identity.
 
 ### 2026-09-24 — Justified an allowlist by directory name instead of by content role
 
