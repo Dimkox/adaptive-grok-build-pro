@@ -226,6 +226,14 @@
       "version": "1"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-PROBE-OPENAPI-V1",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/landing-probe.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-LANDING-INPUT-V1",
       "kind": "json_schema",
@@ -1624,6 +1632,7 @@
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
         "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+        "CONTRACT-FACTORY-LANDING-PROBE-OPENAPI-V1",
         "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
         "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1"
       ],
@@ -1635,10 +1644,13 @@
         "factory/src/adaptive_factory/cli.py",
         "factory/src/adaptive_factory/landing_backend_api.py",
         "factory/src/adaptive_factory/landing_host.py",
+        "factory/src/adaptive_factory/landing_activation_probe.py",
+        "factory/src/adaptive_factory/landing_probe_api.py",
         "factory/src/adaptive_factory/landing_server.py",
         "factory/src/adaptive_factory/server.py",
         "factory/src/adaptive_factory/settings.py",
         "factory/tests/test_landing_host.py",
+        "factory/tests/test_landing_activation_probe.py",
         "factory/tests/test_landing_server.py",
         "factory/tests/test_server.py",
         "factory/tests/test_landing_failover_backend.py"

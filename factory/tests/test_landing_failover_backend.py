@@ -92,7 +92,6 @@ class BackendObservationTests(unittest.TestCase):
             self.assertEqual("authentication", retained.observation.category)
 
     def test_v1_store_migrates_without_fabricating_historical_observations(self):
-        from adaptive_factory import landing_sqlite_store as module
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "state"
             store = SQLiteLandingJobStore(root, repository_root=Path(__file__).parents[2])
@@ -101,6 +100,9 @@ class BackendObservationTests(unittest.TestCase):
                                    command_key=item.job_id, request_digest=item.input_digest)
             store.close()
             with sqlite3.connect(root / "landing.sqlite3") as connection:
+                connection.execute("DROP TRIGGER landing_activation_probes_no_delete")
+                connection.execute("DROP TRIGGER landing_activation_probes_no_update")
+                connection.execute("DROP TABLE landing_activation_probes")
                 connection.execute("ALTER TABLE landing_jobs DROP COLUMN observation_json")
                 connection.execute("PRAGMA user_version = 1")
             migrated = SQLiteLandingJobStore(root, repository_root=Path(__file__).parents[2])
@@ -108,7 +110,7 @@ class BackendObservationTests(unittest.TestCase):
             retained = migrated.get(item.tenant_id, item.repository_id, item.job_id)
             self.assertIsNone(retained.observation)
             with sqlite3.connect(migrated.database_path) as connection:
-                self.assertEqual(2, connection.execute("PRAGMA user_version").fetchone()[0])
+                self.assertEqual(3, connection.execute("PRAGMA user_version").fetchone()[0])
 
 
 class DraftReceiptPersistenceTests(unittest.TestCase):

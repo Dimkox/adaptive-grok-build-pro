@@ -1,0 +1,110 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Adaptive Factory Landing Activation Probe API",
+    "version": "1.0.0",
+    "description": "Operator-only durable records for new synthetic provider probes. This API is available only on the dedicated landing Unix socket."
+  },
+  "servers": [{"url": "http://landing-unix-socket"}],
+  "paths": {
+    "/v1/landing-probes": {
+      "post": {
+        "operationId": "createLandingActivationProbe",
+        "summary": "Run one configured synthetic provider probe",
+        "description": "The server durably reserves the idempotency key and request-start marker before one provider call. Repeating a key never calls the provider again.",
+        "x-landing-only": true,
+        "x-required-actor-kind": "operator",
+        "x-required-scope": "landing:probe",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
+          {"name": "X-Correlation-ID", "in": "header", "required": false, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["profile_id"],
+            "properties": {"profile_id": {"type": "string", "enum": ["qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl"]}}
+          }}}
+        },
+        "responses": {
+          "200": {"description": "Current or terminal durable probe record", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProbeRecord"}}}},
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/Invalid"},
+          "500": {"$ref": "#/components/responses/Failure"},
+          "503": {"$ref": "#/components/responses/Unavailable"}
+        }
+      }
+    },
+    "/v1/landing-probes/{probe_id}": {
+      "get": {
+        "operationId": "getLandingActivationProbe",
+        "summary": "Read one durable activation probe",
+        "description": "This lookup performs no provider request. A pending request-start marker recovered after restart is exposed as unknown and is not replayed.",
+        "x-landing-only": true,
+        "x-required-actor-kind": "operator",
+        "x-required-scope": "landing:probe",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "probe_id", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9-]{1,64}$"}},
+          {"name": "X-Correlation-ID", "in": "header", "required": false, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
+        ],
+        "responses": {
+          "200": {"description": "Durable probe record", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProbeRecord"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "500": {"$ref": "#/components/responses/Failure"},
+          "503": {"$ref": "#/components/responses/Unavailable"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}},
+    "schemas": {
+      "ProbeRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_version", "probe_id", "revision", "state", "profile_id", "provider_id", "model_id", "profile_digest", "input_digest", "spec_digest", "response_digest", "usage_input_units", "usage_output_units", "provider_attempts", "elapsed_ms", "request_started_at", "completed_at", "failure_category", "http_status"],
+        "properties": {
+          "schema_version": {"type": "integer", "const": 1},
+          "probe_id": {"type": "string", "minLength": 1, "maxLength": 64},
+          "revision": {"type": "integer", "minimum": 1},
+          "state": {"type": "string", "enum": ["pending", "normalized", "failed", "unknown"]},
+          "profile_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "provider_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "model_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "profile_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "input_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "spec_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+          "response_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+          "usage_input_units": {"type": ["integer", "null"], "minimum": 0, "maximum": 2147483647},
+          "usage_output_units": {"type": ["integer", "null"], "minimum": 0, "maximum": 2147483647},
+          "provider_attempts": {"type": "integer", "const": 1},
+          "elapsed_ms": {"type": ["integer", "null"], "minimum": 0, "maximum": 2147483647},
+          "request_started_at": {"type": "string", "format": "date-time"},
+          "completed_at": {"type": ["string", "null"], "format": "date-time"},
+          "failure_category": {"type": ["string", "null"], "enum": ["accounting", "authentication", "deadline", "permission", "policy", "protocol", "rate_limit", "transport", "unavailable", "outcome_ambiguous", null]},
+          "http_status": {"type": ["integer", "null"], "minimum": 100, "maximum": 599}
+        }
+      },
+      "Error": {"type": "object", "additionalProperties": false, "required": ["error", "code", "detail"], "properties": {"error": {"type": "string"}, "code": {"type": "string"}, "detail": {"type": "string"}}}
+    },
+    "responses": {
+      "BadRequest": {"description": "Malformed request identity", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Unauthorized": {"description": "Bearer credential required", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Forbidden": {"description": "Operator actor and landing:probe scope required", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Conflict": {"description": "Idempotency key reused with a different profile", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Invalid": {"description": "Closed request or configured profile invalid", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "NotFound": {"description": "Probe ID not found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Failure": {"description": "Durable store failure", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Unavailable": {"description": "Selected runtime has no configured activation probe provider", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  }
+}

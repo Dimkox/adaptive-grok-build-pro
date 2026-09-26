@@ -1389,6 +1389,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
                 "CONTRACT-FACTORY-LANDING-INPUT-V1",
                 "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+                "CONTRACT-FACTORY-LANDING-PROBE-OPENAPI-V1",
                 "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
                 "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V2",
                 "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
@@ -1410,6 +1411,7 @@ class ArchitectureModelTests(unittest.TestCase):
             set(landing_node["public_contracts"]),
             set(landing_records) - {
                 "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+                "CONTRACT-FACTORY-LANDING-PROBE-OPENAPI-V1",
                 "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
             },
         )
