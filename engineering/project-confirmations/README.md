@@ -5,5 +5,6 @@ These dated cases describe source-pinned observations of Factory-assisted work i
 | Case | Observed work | Qualifying M8 task contribution from this case | M8 activation |
 | --- | --- | ---: | --- |
 | [Caroline — 2026-09-13](caroline-20260913.md) | Read-only audit, three open issues, and one open draft repair PR | **0** | **No** |
+| [Puls Pump Selector — 2026-09-21](pulse-20260921.md) | DEV function of HRS catalog/selector; 126 P2 series; 150 legacy hidden; owner DEV-function acceptance | **0** | **No** |
 
-Repository identity is part of the exact M8 trust-profile tuple. Caroline observations cannot be pooled with SEO or Factory tasks to satisfy a 30-task cohort. This index grants no autonomy, merge, deployment, or external-action authority.
+Repository identity is part of the exact M8 trust-profile tuple. Caroline and Pulse observations cannot be pooled with SEO or Factory tasks to satisfy a 30-task cohort. This index grants no autonomy, merge, deployment, or external-action authority.
