@@ -1,0 +1,72 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+  "base_fingerprint": "756d6145e7bee0da05b3d74d19d4989f21f94be737b05da571abfda6a19699d9",
+  "complexity": "standard",
+  "created_at": "2026-09-26T00:44:39+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "bd1cb67aa011",
+  "schema_version": 1,
+  "session_id": "resource-startup-feature-20260926",
+  "status": "routed",
+  "task": "Add a new enforced agent-startup resource policy and structure contract: parallelize all independent route-permitted work, expose 12 worker slots plus controller, launch eligible CPU-heavy child processes across all verified 28 logical CPUs, keep one writer per isolated contour, and label operator-delegated pre-verification branch pushes as unverified in AGENTS.md README.md START_HERE.md and focused structure coverage",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

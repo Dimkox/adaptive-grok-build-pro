@@ -1,5 +1,19 @@
 # Adaptive Grok Build Pro Engineering Contract
 
+## Mandatory startup algorithm: measure, then dispatch
+
+**Step zero precedes all other startup work, including backlog/route inspection, dependency planning, agent spawning and CPU-heavy commands.** Complete resource discovery below and record its snapshot locally first; attach it to the change package after selecting the route. Only then inspect backlog/routes, plan dependencies, dispatch work, assign isolated writers and apply verification/delivery gates, in that order.
+
+1. Observe host physical-core and online logical-CPU topology (`lscpu`, `nproc --all`), current process capacity (`nproc`) and affinity (`taskset -pc <pid>`). Physical cores, logical CPUs and allowed CPUs are different quantities.
+2. Resolve the process's actual cgroup membership/mounts, effective cpuset and finite CPU quota, including applicable ancestor limits. Do not infer usable capacity from host CPU count alone; if a bound cannot be established, report the uncertainty and use a conservative capacity.
+3. When affinity appears narrower than the effective cpuset and policy permits it, run one bounded child-only affinity-widening probe over the candidate allowed CPU IDs. For example, `taskset -c 0-27 nproc` previously exposed 28 CPUs where default `nproc` showed 22. Recheck that child's affinity and quotas; a failed probe leaves the existing limits in force. Never assume this example's CPU IDs exist on another host or change the controller/system affinity as a shortcut.
+4. Compute verified effective CPU capacity from the child/process allowed online CPUs, effective cpuset and finite quota (conservatively round quota capacity down, with one worker minimum). Record timestamp, commands/results, topology, affinity, cpuset/quota bounds, probe result and chosen capacity. Remeasure at every startup and when the execution environment changes. The September 26 host observation was **14 physical cores / 28 logical CPUs**, not a permanent capacity guarantee.
+5. After the CPU snapshot is recorded, inspect repository handoff/backlog/routes and build the dependency plan. Separately observe available agent slots: the current platform exposes **one controller plus 12 child-agent slots**; route `max_parallel_analysis=10` remains the routing cap, and test-process worker counts are a third independent limit. Never manufacture route permissions or add unselected agents to fill slots.
+6. Dispatch all independent route-permitted analyses, checks and reviews in parallel when their prerequisites are satisfied, scheduling available slots in waves. Spread eligible CPU-heavy child work across the verified effective CPU capacity, using the successfully probed affinity when needed and coordinating worker totals to avoid oversubscription. Record dependencies, isolation or resource limits that require serialization.
+7. Keep exactly one write owner per isolated task/route/branch/worktree. Independent writers may run concurrently only on separate isolated task contours and worktrees; no two writers share a mutable candidate. Reviews remain independent and read-only.
+
+An explicitly delegated push of an exact isolated branch/HEAD before verification is **UNVERIFIED transport only**: materialize the exact action/resource grant and label the handoff unverified. It does not establish completion, authorize direct push to `main` or another protected/shared branch, or confer merge authority. Merge still requires a pull request, the App-owned policy-epoch Trust CI check on the exact up-to-date head and all required approvals.
+
 ## Agent self-learning
 
 - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).
@@ -42,6 +56,7 @@
 - Local `python3 scripts/grok_verify.py --mode pr` and route-selected reviews are preflight evidence. They never replace the App-owned policy-epoch check on the exact PR SHA.
 - Merge only after the external Trust CI check succeeds and all required signed approval scopes are present. A new commit, new base SHA, deployed holdout change or server-policy change requires a fresh check and fresh external approvals.
 - A user may explicitly delegate named operational actions, including branch push, tag push and GitHub Release publication. `scripts/grok_approve.py` may materialize that consent only as an exact delegated local grant bound to repository, route, change, Git HEAD, tree fingerprint, action/resource list and TTL.
+- An exact delegated isolated-branch push may precede verification only as clearly labelled **UNVERIFIED transport**; verification/completion and PR merge eligibility remain separate requirements.
 - A delegated local grant never creates or substitutes the external Trust CI check, a human-signed security approval, or branch protection. It authorizes only the named local operation.
 - Tagging and GitHub Release publication must use the exact merged commit. No delegated grant permits changing the tested tree after approval and then reusing the grant.
 
@@ -51,13 +66,14 @@ This repository uses an adaptive, task-routed Grok Build workflow. The `UserProm
 
 For every software-development task:
 
+0. Complete and record the startup CPU/capacity discovery above before inspecting handoff/backlog/routes or doing any other startup work.
 1. Read `START_HERE.md`, `PROJECT_STATE.json`, and this contract.
 2. Run `git fetch --all --prune` when remote Git is available so open milestone branches/PRs are not missed.
 3. Read `.grok-stack/runtime/active-route.json` if it exists. On a fresh clone where it does not exist, continue the explicitly named active PR/branch from `PROJECT_STATE.json` or route a new task; never invent runtime state.
 4. Invoke `/adaptive-delivery` once a local route exists for the task.
 5. Use only agents listed in `allowed_agents`.
-6. Run analysis agents in parallel when independent.
-7. Use exactly one `write_agent` as the implementation owner.
+6. Use the recorded startup capacity and dependency plan to dispatch all independent route-permitted work in parallel within measured limits and prerequisite order.
+7. Use exactly one `write_agent` per isolated task/route/branch/worktree; independent isolated writers may run concurrently.
 8. Run the listed review agents only after implementation and verification.
 9. Record fingerprint-bound local receipts before declaring local completion.
 10. Deliver the branch through a pull request and wait for external Trust CI.
@@ -78,8 +94,8 @@ When sources conflict, stop only for a named human gate or an irreversible/secur
 
 ## Multi-agent discipline
 
-- Parallel work is for read-heavy exploration, impact analysis, test analysis, and independent review.
-- Exactly one write agent owns application-code changes in a route.
+- Parallel work includes independent route-permitted exploration, impact/test analysis, checks and review after their prerequisites, plus independent implementations in isolated task/route/branch/worktree contours.
+- Exactly one write agent owns application-code changes in each route and candidate worktree; this is not a global one-writer limit across independent isolated tasks.
 - Review agents are read-only and must inspect the actual diff and surrounding implementation.
 - Do not let an implementer approve its own work.
 - Do not spawn an agent that the active route did not select; the hook may block it.

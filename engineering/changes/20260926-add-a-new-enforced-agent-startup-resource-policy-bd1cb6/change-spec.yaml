@@ -1,0 +1,32 @@
+{
+  "acceptance_criteria": [],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Document the mandatory measured startup algorithm in AGENTS.md, START_HERE.md and README.md: CPU/capacity discovery and recording first, then backlog/routes, dependencies, parallel dispatch, isolated writers, and verification/delivery gates. No tests or executable enforcement are added.",
+    "success_metric": "three_document_baseline",
+    "target": "reviewable_documentation_diff"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

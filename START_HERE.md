@@ -2,6 +2,16 @@
 
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
+## First action: measure resources and schedule independent work
+
+**Step zero, before all other startup work:** complete and record CPU/capacity discovery before inspecting backlog/routes, planning dependencies, spawning agents or running heavy commands. Store the snapshot locally first and attach it to the active package after routing. Follow the [mandatory startup algorithm](AGENTS.md#mandatory-startup-algorithm-measure-then-dispatch):
+
+1. Measure physical/online logical topology (`lscpu`, `nproc --all`), current capacity (`nproc`) and affinity. Resolve actual cgroup membership/mounts, effective cpuset and finite quota, including ancestor limits.
+2. If permitted and appropriate, run a bounded child-only affinity-widening probe over verified CPU IDs, then inspect the child's affinity and limits. Derive effective CPU capacity from allowed online CPUs, cpuset and quota; unknown bounds require a conservative choice. Record timestamp, commands/results, bounds and chosen capacity in the active package, and remeasure when the environment changes.
+3. Only after recording effective capacity, inspect the repository handoff/backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel after its prerequisites. Spread eligible heavy child work over measured capacity without oversubscribing it. The observed host had **14 physical cores / 28 logical CPUs**; default affinity could expose 22, while `taskset -c 0-27 nproc` exposed 28 in a verified child. These are dated September 26 observations, not permanent guarantees.
+4. Count agent slots separately: the current platform exposes **one controller + 12 child slots**, route `max_parallel_analysis=10` is a separate routing cap, and test workers are separate processes. Use only route-selected agents. Then keep one writer per isolated task/route/branch/worktree; independent isolated writers may run concurrently. Verification and delivery gates follow implementation.
+5. Treat an explicitly delegated exact isolated-branch push before verification as **UNVERIFIED transport only**, with its exact local action/resource grant and unverified handoff label. Direct push to protected/shared branches remains forbidden. Merge requires a PR, App-owned exact-head Trust CI and all required approvals.
+
 ## Current project state
 
 Snapshot: **2026-09-24**. Repository `main` was observed at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189); fetch refs before assuming it is still the tip.
@@ -31,7 +41,7 @@ The earlier [dated backlog](engineering/changes/20260921-research-open-backlog-m
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
 3. Inspect `PROJECT_STATE.json`, its dated source/runtime/release observations, the open-work inventory and [runtime runbook](engineering/runbooks/l5-production-runtime.md). Historical milestone branches and release-preparation records are evidence, not current continuation instructions.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
-5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
+5. Follow `AGENTS.md`: measured parallel-first scheduling, one write owner per isolated task/route/branch/worktree, route-selected agents, local verification as evidence, and PR-only merge through external Trust CI and required approvals. Explicitly delegated pre-verification branch transport remains labelled UNVERIFIED.
 6. Never add GitHub Actions.
 7. Never bypass the exact-SHA App-owned Trust CI check.
 
