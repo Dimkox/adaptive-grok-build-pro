@@ -14,6 +14,14 @@
 
 An explicitly delegated push of an exact isolated branch/HEAD before verification is **UNVERIFIED transport only**: materialize the exact action/resource grant and label the handoff unverified. It does not establish completion, authorize direct push to `main` or another protected/shared branch, or confer merge authority. Merge still requires a pull request, the App-owned policy-epoch Trust CI check on the exact up-to-date head and all required approvals.
 
+## Second mandatory startup step: select verification scope before heavy work
+
+After capacity discovery and route/dependency scheduling, and before launching verification-heavy work, invoke `python3 scripts/grok_verify.py --mode pr` with the verified CPU allocation. Its merged fail-closed selector (`.grok-stack/adaptive_grok/verification_scope.py`, issue #205 / PR #207) derives scope from the trusted exact comparison base..HEAD plus staged, unstaged and untracked inventory and Git statuses; a route label or an agent's assertion that factory is unaffected is not scope evidence. Refresh an outdated comparison base only to the actual agreed PR base, never to hide candidate changes.
+
+Only the selector's closed admitted documentation/state inventory may use `docs-state-focused`, skipping the replaced full-discovery runner, `coverage` and `factory-postgres-exit` while retaining the other selected checks, including factory-unit checks. Executable code, factory runtime/tests, database/migrations/schema/contracts, selector changes, any other non-admitted path or ambiguous inventory retain the full PR suite. The measured historical comparison is **629 s for serial Core coverage versus about 14 s for the five focused modules**, not a promise about total verifier duration or this host.
+
+Record the exact base/head, dirty inventory, selected profile/reason, checked paths, changed-path digest and every skipped check from the report/receipt. Skipped is not passed or reused: prior component evidence may be referenced only with its original exact Git identities and scope, explicitly labelled historical/reused, and never authorizes an extra skip or fresh completion claim. `--full-scope` forces full verification. This local selector does not bypass independent review, the external App-owned exact-head Trust CI check or required approvals.
+
 ## Agent self-learning
 
 - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).

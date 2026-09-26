@@ -12,6 +12,14 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 4. Count agent slots separately: the current platform exposes **one controller + 12 child slots**, route `max_parallel_analysis=10` is a separate routing cap, and test workers are separate processes. Use only route-selected agents. Then keep one writer per isolated task/route/branch/worktree; independent isolated writers may run concurrently. Verification and delivery gates follow implementation.
 5. Treat an explicitly delegated exact isolated-branch push before verification as **UNVERIFIED transport only**, with its exact local action/resource grant and unverified handoff label. Direct push to protected/shared branches remains forbidden. Merge requires a PR, App-owned exact-head Trust CI and all required approvals.
 
+## Second mandatory startup step: select the verification scope
+
+After the capacity snapshot and route/dependency scheduling above, but before verification-heavy work, invoke `python3 scripts/grok_verify.py --mode pr` using the verified CPU allocation. The merged issue #205 / PR #207 [closed selector](.grok-stack/adaptive_grok/verification_scope.py) computes scope from the trusted exact base..HEAD plus staged, unstaged and untracked inventory/statuses; use the actual agreed PR base, not a shortened range that hides changes.
+
+Only its admitted docs/state inventory selects `docs-state-focused`: it skips the replaced full-discovery runner, coverage and `factory-postgres-exit`, not factory-unit or the other selected checks. Executable/factory/database/schema/contract/selector changes, any other non-admitted path or ambiguity require the full suite; "factory unaffected" is not a separate shortcut. Historical measurements were **629 s serial Core coverage versus about 14 s for the five focused modules**, not the complete verifier or a future timing guarantee.
+
+Record exact base/head, dirty paths, profile/reason, changed-path digest and all skipped checks. Do not call skips passes or reuse: references to prior component evidence must retain their original exact Git identities and scope and be explicitly marked historical/reused; they grant no additional skips or current completion. `--full-scope` forces full. Independent review and the external exact-SHA App-owned Trust CI plus approvals remain mandatory; see [the complete startup rule](AGENTS.md#second-mandatory-startup-step-select-verification-scope-before-heavy-work).
+
 ## Current project state
 
 Snapshot: **2026-09-24**. Repository `main` was observed at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189); fetch refs before assuming it is still the tip.

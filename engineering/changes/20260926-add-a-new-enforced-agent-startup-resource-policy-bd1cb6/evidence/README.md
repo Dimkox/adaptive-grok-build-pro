@@ -63,3 +63,30 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+  "route_id": "bd1cb67aa011",
+  "observed_at": "2026-09-26T01:24:46+00:00",
+  "branch": "docs/parallel-resource-startup-20260926",
+  "head": "5681d0c8da7cf3f6dc0b8612b80aa026e1a7eb3c",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "dirty",
+  "dirty_product_paths": [
+    "AGENTS.md",
+    "README.md",
+    "START_HERE.md",
+    "mistakes.md"
+  ],
+  "note": "implementation started; preserve work before handoff"
+}
+```

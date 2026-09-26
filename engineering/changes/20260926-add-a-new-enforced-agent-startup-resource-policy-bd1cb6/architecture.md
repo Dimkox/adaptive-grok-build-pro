@@ -4,13 +4,19 @@
 
 ## Current behavior
 
+Main 33a4d3ec already contains the closed docs/state verification selector; the existing branch documents measured startup resources but does not yet require invoking that selector as startup step two.
+
 ## Proposed behavior
+
+Documentation-only ordering: measure capacity, inspect routes/dependencies and dispatch eligible isolated work, then invoke the existing standard PR verifier before heavy verification. Selection remains owned by the merged executable code, which this change does not edit.
 
 ## Components and boundaries
 
 ## Data flow
 
 ## API and event contracts
+
+No API/event/schema/producer/consumer change. The api route domain is inherited repository classification, not an added interface requirement. External Trust CI and approvals remain outside local evidence authority.
 
 ## Governance context
 
@@ -31,3 +37,5 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 ## Decisions
 
 ## Risks and mitigations
+
+Risk: an agent may generalize historical timing or component evidence into a manual skip. Mitigation: all three entry documents explicitly defer to the closed fail-closed selector and preserve historical identities and exact-head merge gates.

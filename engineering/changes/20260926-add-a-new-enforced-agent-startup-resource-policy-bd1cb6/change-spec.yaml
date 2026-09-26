@@ -1,5 +1,9 @@
 {
-  "acceptance_criteria": [],
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "AGENTS and START_HERE require measured CPU/cpuset/quota capacity before all other startup work, followed by dependency-aware parallel dispatch and one writer per isolated contour; README agrees.", "evidence": [{"receipt": "code_review"}]},
+    {"id": "AC-002", "statement": "The second mandatory startup step invokes the merged closed verification selector using exact base..HEAD plus dirty inventory; only admitted docs/state may skip full discovery, coverage and PostgreSQL, while ambiguous or executable changes retain full scope.", "evidence": [{"receipt": "code_review"}, {"receipt": "verification"}]},
+    {"id": "AC-003", "statement": "Hardware and 629 s/14 s timings are dated observations, skipped and historical/reused evidence are distinct from fresh passes, and no new test or runtime enforcement is claimed.", "evidence": [{"receipt": "code_review"}]}
+  ],
   "approvals": {
     "required_scopes": []
   },
@@ -9,11 +13,15 @@
     "json_schema": [],
     "openapi": []
   },
-  "forbidden_outcomes": [],
-  "invariants": [],
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "An unaffected-factory assertion or historical component pass authorizes skips outside the closed selector.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Pre-verification isolated branch transport is UNVERIFIED only; PR-only exact-head external App Trust CI and required approvals remain merge authority.", "evidence": [{"receipt": "code_review"}]}
+  ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Document the mandatory measured startup algorithm in AGENTS.md, START_HERE.md and README.md: CPU/capacity discovery and recording first, then backlog/routes, dependencies, parallel dispatch, isolated writers, and verification/delivery gates. No tests or executable enforcement are added.",
+    "statement": "Document measured capacity before startup/parallel dispatch and the merged closed verification-scope selector as the second mandatory step before heavy checks; preserve isolated writers and external delivery gates. Scope is AGENTS.md, START_HERE.md, README.md, mistakes.md and this package; no tests or executable enforcement are added.",
     "success_metric": "three_document_baseline",
     "target": "reviewable_documentation_diff"
   },
