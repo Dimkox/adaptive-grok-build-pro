@@ -1470,6 +1470,14 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
 
+### 2026-09-26 — Lost jq object context inside an array pipeline
+
+The ad-hoc inventory filter failed with `expected an object but got: array`: in `select([...] | index(.number))`, the pipe changed dot context to the array, so `.number` targeted that array rather than the input object. Bind the field before entering the array pipeline: `.number as $n | select([... ] | index($n))`. The command was immediately corrected and the final inventory was unaffected.
+
+### 2026-09-26 — Generalized component reuse beyond the closed selector
+
+The coordinator initially generalized a historical Git-bound component-reuse decision into an unaffected-factory shortcut beyond the closed verification selector. The correction was to merge issue #205 / PR #207 first, then make the startup rule selector-driven: only its admitted inventory may skip checks, while ambiguous or non-admitted executable changes retain full verification and prior evidence keeps its original exact Git identity.
+
 ### 2026-09-24 — Justified an allowlist by directory name instead of by content role
 
 **Symptom:** the `docs-state-focused` lane (issue #205, heads `7fdfa57e`/`a08060c1`) admitted `docs/` and `engineering/changes/` wholesale, which put `docs/bitrix-local-AGENTS.md` — installed verbatim as `local/AGENTS.md` into every consumer Bitrix install, so agent-executed instructions shipped as product — and `engineering/changes/**/evidence/historical-*` — bytes `tests/test_history.py` pins to a literal sha256 — on a lane that runs five modules and no executed suite. The same location-shaped thinking left `FOCUSED_SKIPPED_CHECKS` naming two of the three checks the lane stops running, and let non-directory-shaped prefixes string-match `engineering/decisions.md.bak` into scope.

@@ -1,0 +1,146 @@
+{
+  "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "docs/parallel-resource-startup-20260926",
+      "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-26T00:47:12+00:00",
+      "route_id": "bd1cb67aa011"
+    },
+    {
+      "branch": "docs/parallel-resource-startup-20260926",
+      "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+      "detached": false,
+      "dirty_product_paths": [
+        "AGENTS.md",
+        "README.md",
+        "START_HERE.md",
+        "mistakes.md"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [],
+      "head": "5681d0c8da7cf3f6dc0b8612b80aa026e1a7eb3c",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-26T01:24:46+00:00",
+      "route_id": "bd1cb67aa011"
+    }
+  ],
+  "created_at": "2026-09-26T00:47:12+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "outcome": "pass",
+        "reason": "Exact d4f199c9 focused PASS completed before final independent PASS review; persisting the final report invalidates this pre-review result for the final candidate. Post-evidence committed-tree verification is pending at this dated persistence checkpoint",
+        "receipt_kind": "verification",
+        "recorded_at": "2026-09-26T01:51:27+00:00",
+        "reference": "evidence/code-review-final.md",
+        "status": "recorded"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "outcome": "pass",
+        "reason": "Independent final PASS with no findings against d4f199c9 is preserved exactly; both historical FAIL reports remain unchanged. Bind the final report to the post-evidence candidate only after its fresh verification",
+        "receipt_kind": "code_review",
+        "recorded_at": "2026-09-26T01:54:44+00:00",
+        "reference": "evidence/code-review-final.md",
+        "status": "recorded"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-26T00:47:12+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-26T01:24:45+00:00",
+      "from": "draft",
+      "reason": "Documentation-only scope and selector-driven acceptance updated against merged base 33a4d3ec",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-26T01:24:45+00:00",
+      "from": "scoped",
+      "reason": "Explicit user scope; no named route human gate; local workflow state only",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-26T01:24:46+00:00",
+      "from": "approved",
+      "reason": "Sole writer documents startup algorithm and merged closed selector; no executable changes",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-26T01:24:46+00:00",
+      "from": "implementing",
+      "reason": "Documentation edits complete; selector-driven PR verification pending independent review",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-26T01:39:11+00:00",
+      "from": "verifying",
+      "reason": "Independent exact-head code review of 554a29d6 returned FAIL for incomplete focused-scope wording",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-26T01:39:11+00:00",
+      "from": "reviewing",
+      "reason": "Sole writer repairs verified admission wording and records requested jq dot-context root cause",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-26T01:44:16+00:00",
+      "from": "implementing",
+      "reason": "Historical FAIL preserved exactly; admission wording and jq root cause repaired; bounded probes PASS; committed-tree verifier and independent re-review follow",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "verifying",
+      "reason": "Successor independent review completed against b70f5790; selector finding repaired, diagnostic interface and handoff findings recorded",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "reviewing",
+      "reason": "Evidence-only disposition preserves exact FAIL; original gh interface supports unchanged jq entry; dated pre-review verification accounting refreshed",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-26T01:51:00+00:00",
+      "from": "implementing",
+      "reason": "Evidence/state updates complete; commit then exact post-evidence PR verifier; no product or mistakes entry changes",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-26T01:55:43+00:00",
+      "from": "verifying",
+      "reason": "Final independent code review PASS with no findings against d4f199c9; final report persisted; post-evidence committed-tree verification and receipts follow",
+      "to": "reviewing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "c8ddf3e592793a17d97053ab3c2b5fda95f295e8ee137d5c63b99938cde470b5",
+  "route_id": "bd1cb67aa011",
+  "schema_version": 1,
+  "status": "reviewing",
+  "title": "Add a new enforced agent-startup resource policy and structure contract: parallelize all independent route-permitted work, expose 12 worker slots plus controller, launch eligible CPU-heavy child processes across all verified 28 logical CPUs, keep one writer per isolated contour, and label operator-delegated pre-verification branch pushes as unverified in AGENTS.md README.md START_HERE.md and focused structure coverage",
+  "updated_at": "2026-09-26T01:55:43+00:00"
+}
