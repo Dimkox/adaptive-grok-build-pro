@@ -22,7 +22,8 @@
       "Original S3 image and Factory_Scope_Control_Integration_TZ.md not directly read",
       "Original Habr article could not be reopened",
       "No claim of exact preservation of prior 12 requirements and 24 acceptance cases"
-    ]
+    ],
+    "supplement_S6": "Full user-provided message read on 2026-09-27; share transcript and external article not independently reread."
   },
   "sources": [
     {
@@ -87,6 +88,21 @@
         "F16",
         "F18"
       ]
+    },
+    {
+      "id": "S6",
+      "title": "Прицельный предметный контекст — предоставленный владельцем текст",
+      "url": "https://chatgpt.com/share/6ab8e17b-1664-83eb-bd05-30322c6c71dd?ogimg=plain",
+      "requirements": [
+        "F19",
+        "F20",
+        "F21",
+        "F22",
+        "F23",
+        "F24"
+      ],
+      "content_basis": "user_provided_text",
+      "read_status": "provided_text_read"
     }
   ],
   "requirements": [
@@ -107,7 +123,13 @@
     "F15",
     "F16",
     "F17",
-    "F18"
+    "F18",
+    "F19",
+    "F20",
+    "F21",
+    "F22",
+    "F23",
+    "F24"
   ],
   "acceptance_criteria": [
     "AC01",
@@ -149,7 +171,25 @@
     "AC37",
     "AC38",
     "AC39",
-    "AC40"
+    "AC40",
+    "AC41",
+    "AC42",
+    "AC43",
+    "AC44",
+    "AC45",
+    "AC46",
+    "AC47",
+    "AC48",
+    "AC49",
+    "AC50",
+    "AC51",
+    "AC52",
+    "AC53",
+    "AC54",
+    "AC55",
+    "AC56",
+    "AC57",
+    "AC58"
   ],
   "phases": [
     {
@@ -172,7 +212,11 @@
         "F01",
         "F02",
         "F03",
-        "F04"
+        "F04",
+        "F19",
+        "F20",
+        "F21",
+        "F23"
       ],
       "acceptance_criteria": [
         "AC01",
@@ -184,11 +228,53 @@
         "AC07",
         "AC08",
         "AC09",
-        "AC10"
+        "AC10",
+        "AC41",
+        "AC42",
+        "AC43",
+        "AC44",
+        "AC45",
+        "AC46",
+        "AC47",
+        "AC48",
+        "AC49",
+        "AC53",
+        "AC54",
+        "AC55"
       ],
       "gate": "Regression tests; observation-only classification before enforcement",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "subdeliveries": [
+        {
+          "id": "U1a",
+          "scope": "Targeted navigation and mandatory-source preservation",
+          "requirements": [
+            "F19"
+          ]
+        },
+        {
+          "id": "U1b",
+          "scope": "Target-owned canonical rule reuse",
+          "requirements": [
+            "F20"
+          ]
+        },
+        {
+          "id": "U1c",
+          "scope": "Versioned context manifest, pins and compatible bindings",
+          "requirements": [
+            "F21"
+          ]
+        },
+        {
+          "id": "U1d",
+          "scope": "Active/archive lifecycle and shipped instructions",
+          "requirements": [
+            "F23"
+          ]
+        }
+      ]
     },
     {
       "id": "U2",
@@ -201,7 +287,8 @@
         "F09",
         "F10",
         "F11",
-        "F17"
+        "F17",
+        "F24"
       ],
       "acceptance_criteria": [
         "AC20",
@@ -213,7 +300,8 @@
         "AC26",
         "AC27",
         "AC28",
-        "AC35"
+        "AC35",
+        "AC58"
       ],
       "gate": "Atomic evidence, explicit unknown values, compatible readers",
       "status": "planned",
@@ -229,7 +317,8 @@
       "requirements": [
         "F05",
         "F06",
-        "F07"
+        "F07",
+        "F22"
       ],
       "acceptance_criteria": [
         "AC11",
@@ -241,7 +330,10 @@
         "AC17",
         "AC18",
         "AC19",
-        "AC36"
+        "AC36",
+        "AC50",
+        "AC51",
+        "AC52"
       ],
       "gate": "Independent validation; no unsafe retries or quota leakage",
       "status": "planned",
@@ -303,12 +395,15 @@
         ]
       },
       "requirements": [
-        "F18"
+        "F18",
+        "F24"
       ],
       "acceptance_criteria": [
-        "AC39"
+        "AC39",
+        "AC56",
+        "AC57"
       ],
-      "gate": "Human acceptance of exact Linux result; Apple result separately accepted",
+      "gate": "Human acceptance of exact Linux result; Apple result separately accepted; paired context evaluation must preserve all mandatory invariants and demonstrate reduced irrelevant reading before enablement",
       "status": "planned",
       "executed_in_this_update": false
     },
@@ -361,6 +456,80 @@
   },
   "notes": [
     "This file is a planning map, not a runtime route, approval, test result or M8 ledger import.",
-    "No product test suites or independent route reviews executed by the documentation update."
-  ]
+    "No product test suites or independent route reviews executed by the documentation update.",
+    "Revision 1.1 adds S6 as supplied user text, retains all prior F/AC IDs, and extends existing U1/U2/U3/U6 rather than adding a subsystem."
+  ],
+  "document_version": "1.1",
+  "updated_at": "2026-09-27",
+  "context_delta_source_sha": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+  "context_delta": {
+    "requirements": [
+      "F19",
+      "F20",
+      "F21",
+      "F22",
+      "F23",
+      "F24"
+    ],
+    "acceptance_criteria": [
+      "AC41",
+      "AC42",
+      "AC43",
+      "AC44",
+      "AC45",
+      "AC46",
+      "AC47",
+      "AC48",
+      "AC49",
+      "AC50",
+      "AC51",
+      "AC52",
+      "AC53",
+      "AC54",
+      "AC55",
+      "AC56",
+      "AC57",
+      "AC58"
+    ],
+    "context_manifest_location": "existing change package",
+    "normative_source": "existing target-owned governance/contracts plus approved change-spec",
+    "change_spec_v2_preserved": true,
+    "new_context_service": false,
+    "openviking_added": false,
+    "state": "planned",
+    "benchmark_min_scenarios": 12,
+    "optimized_context_enabled": false,
+    "requirement_to_acceptance": {
+      "F19": [
+        "AC41",
+        "AC42",
+        "AC43"
+      ],
+      "F20": [
+        "AC44",
+        "AC45",
+        "AC46"
+      ],
+      "F21": [
+        "AC47",
+        "AC48",
+        "AC49"
+      ],
+      "F22": [
+        "AC50",
+        "AC51",
+        "AC52"
+      ],
+      "F23": [
+        "AC53",
+        "AC54",
+        "AC55"
+      ],
+      "F24": [
+        "AC56",
+        "AC57",
+        "AC58"
+      ]
+    }
+  }
 }
