@@ -415,7 +415,14 @@ def _unittest_collection_summary(stdout: str, stderr: str) -> str | None:
 
 
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300, *, env: dict[str, str] | None = None) -> CheckResult:
-    proc = run(command, cwd=root, timeout=timeout, env=env)
+    proc = run(
+        command,
+        cwd=root,
+        timeout=timeout,
+        env=env,
+        encoding='utf-8',
+        errors='backslashreplace',
+    )
     summary = f'exit={proc.returncode}'
     details: list[dict[str, str]] = []
     if proc.returncode != 0 and _is_unittest_command(command):
@@ -437,6 +444,51 @@ def _command_check(root: Path, name: str, command: list[str], timeout: int = 300
         stderr=proc.stderr[-12000:],
         details=details,
     )
+
+
+def _receipt_failure_message(exc: Exception) -> str:
+    message = ''.join(
+        ' ' if ord(character) < 32 or ord(character) == 127 else character
+        for character in str(exc)
+    )
+    message = ' '.join(message.split())
+    diagnostic = type(exc).__name__
+    if message:
+        diagnostic = f'{diagnostic}: {message}'
+    return diagnostic[:512]
+
+
+def _record_verification_receipt(
+    root: Path,
+    report: dict[str, object],
+    final_fingerprint: str,
+    *,
+    receipt_id: str | None,
+) -> None:
+    try:
+        write_receipt(
+            root,
+            'verification',
+            report['status'],
+            details=report,
+            expected_tree_fingerprint=final_fingerprint,
+            receipt_id=receipt_id,
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        report['status'] = 'fail'
+        report['checks'].append(
+            CheckResult(
+                name='receipt-recording',
+                status='fail',
+                summary='verification receipt was not recorded',
+                details=[{
+                    'severity': 'error',
+                    'code': 'receipt-recording-failed',
+                    'path': '.grok-stack/runtime/receipts',
+                    'message': _receipt_failure_message(exc),
+                }],
+            ).to_dict()
+        )
 
 
 _EXACT_SHA = re.compile(r'^[0-9a-fA-F]{40}$')
@@ -1895,12 +1947,10 @@ def _verify_focused_static_seo_landing(
         'checks': [item.to_dict() for item in results],
     }
     if record and route and source_stable:
-        write_receipt(
+        _record_verification_receipt(
             root,
-            'verification',
-            report['status'],
-            details=report,
-            expected_tree_fingerprint=final_fingerprint,
+            report,
+            final_fingerprint,
             receipt_id=receipt_id,
         )
     return report
@@ -2204,12 +2254,10 @@ def verify(
         'checks': [item.to_dict() for item in results],
     }
     if record and route and governance_check.status != 'fail' and source_stable:
-        write_receipt(
+        _record_verification_receipt(
             root,
-            'verification',
-            report['status'],
-            details=report,
-            expected_tree_fingerprint=final_fingerprint,
+            report,
+            final_fingerprint,
             receipt_id=receipt_id,
         )
     return report

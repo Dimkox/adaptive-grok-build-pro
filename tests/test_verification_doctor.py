@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import contextlib
+import io
 import json
 import os
+import runpy
 import shutil
 import stat
 import subprocess
@@ -325,6 +327,46 @@ class VerificationTests(unittest.TestCase):
         self.assertIsNotNone(selector, 'focused static SEO landing selector is missing')
         return selector(files, **kwargs)
 
+    @staticmethod
+    def _create_focused_landing_change(root: Path, route_id: str) -> dict[str, object]:
+        base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        route = {
+            'route_id': route_id,
+            'base_commit': base,
+            'quality_profiles': ['base', 'contracts'],
+            'delivery_expected': False,
+        }
+        set_active_route(root, route)
+        landing = root / 'side-projects/seo-landings/winston-wolfe/index.html'
+        landing.parent.mkdir(parents=True)
+        landing.write_text('<!doctype html>\n', encoding='utf-8')
+        focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+        focused_test.parent.mkdir(parents=True, exist_ok=True)
+        focused_test.write_text(_PASSING_UNITTEST, encoding='utf-8')
+        return route
+
+    def _assert_receipt_recording_failure(self, report: dict[str, object]) -> dict:
+        self.assertEqual(report['status'], 'fail')
+        failures = [
+            item for item in report['checks']
+            if item.get('name') == 'receipt-recording'
+        ]
+        self.assertEqual(len(failures), 1)
+        failure = failures[0]
+        self.assertEqual(failure['status'], 'fail')
+        self.assertEqual(failure['summary'], 'verification receipt was not recorded')
+        self.assertEqual(len(failure['details']), 1)
+        detail = failure['details'][0]
+        self.assertEqual(detail['code'], 'receipt-recording-failed')
+        self.assertEqual(detail['path'], '.grok-stack/runtime/receipts')
+        self.assertIsInstance(detail['message'], str)
+        self.assertLessEqual(len(detail['message']), 512)
+        self.assertNotRegex(detail['message'], r'[\r\n]')
+        json.dumps(report, ensure_ascii=True)
+        return failure
+
     def test_static_landing_scope_accepts_one_explicit_focused_contract(self) -> None:
         scope = self._landing_scope([
             'side-projects/seo-landings/winston-wolfe/index.html',
@@ -561,6 +603,94 @@ class VerificationTests(unittest.TestCase):
                 {'git-diff-check', 'scope-selection', 'static-seo-landing-contract', 'source-stability'},
             )
 
+    def test_focused_receipt_type_error_returns_one_bounded_failed_check(self) -> None:
+        with project_copy(git=True) as root:
+            base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            route = {
+                'route_id': 'focused-receipt-failure',
+                'base_commit': base,
+                'quality_profiles': ['base', 'contracts'],
+                'delivery_expected': False,
+            }
+            set_active_route(root, route)
+            landing = root / 'side-projects/seo-landings/winston-wolfe/index.html'
+            landing.parent.mkdir(parents=True)
+            landing.write_text('<!doctype html>\n', encoding='utf-8')
+            focused_test = root / 'tests/test_winston_wolfe_seo_landing.py'
+            focused_test.parent.mkdir(parents=True, exist_ok=True)
+            focused_test.write_text(_PASSING_UNITTEST, encoding='utf-8')
+            receipt = (
+                root / '.grok-stack/runtime/receipts'
+                / route['route_id'] / 'verification.json'
+            )
+
+            message = 'serialization failed\n' + ('x' * 800)
+            with patch.object(
+                verification_module,
+                'write_receipt',
+                side_effect=TypeError(message),
+            ) as writer:
+                report = verify(root, mode='focused-static-seo-landing', record=True)
+
+            writer.assert_called_once()
+            self._assert_receipt_recording_failure(report)
+            self.assertTrue(report['verification_scope']['eligible'])
+            self.assertFalse(receipt.exists())
+
+    def test_focused_success_records_receipt_bound_to_final_fingerprint(self) -> None:
+        with project_copy(git=True) as root:
+            route = self._create_focused_landing_change(
+                root, 'focused-receipt-success'
+            )
+            receipt_path = (
+                root / '.grok-stack/runtime/receipts'
+                / route['route_id'] / 'verification.json'
+            )
+
+            report = verify(root, mode='focused-static-seo-landing', record=True)
+
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['schema_version'], 1)
+            self.assertIsNone(_check(report, 'receipt-recording'))
+            self.assertTrue(receipt_path.is_file())
+            receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+            self.assertEqual(receipt['schema_version'], 1)
+            self.assertEqual(receipt['kind'], 'verification')
+            self.assertEqual(receipt['status'], 'pass')
+            self.assertEqual(receipt['tree_fingerprint'], report['tree_fingerprint'])
+            self.assertEqual(
+                receipt['tree_fingerprint'], util_module.tree_fingerprint(root)
+            )
+            self.assertEqual(receipt['details'], report)
+
+    def test_focused_record_false_never_attempts_or_creates_receipt(self) -> None:
+        with project_copy(git=True) as root:
+            route = self._create_focused_landing_change(
+                root, 'focused-receipt-disabled'
+            )
+            receipt_path = (
+                root / '.grok-stack/runtime/receipts'
+                / route['route_id'] / 'verification.json'
+            )
+
+            with patch.object(
+                verification_module,
+                'write_receipt',
+                side_effect=AssertionError('record=False attempted a receipt write'),
+            ) as writer:
+                report = verify(
+                    root, mode='focused-static-seo-landing', record=False
+                )
+
+            writer.assert_not_called()
+            self.assertFalse(receipt_path.exists())
+            self.assertEqual(report['status'], 'pass')
+            self.assertTrue(report['verification_scope']['eligible'])
+            self.assertIsNone(_check(report, 'receipt-recording'))
+            json.dumps(report, ensure_ascii=True)
+
     def test_pr_mode_keeps_eligible_landing_inventory_on_full_path(self) -> None:
         with project_copy(git=True) as root:
             base = subprocess.check_output(
@@ -733,19 +863,63 @@ class VerificationTests(unittest.TestCase):
         self.assertNotIn('encoding', invoke.call_args.kwargs)
         self.assertNotIn('errors', invoke.call_args.kwargs)
 
+        default_timeout = subprocess.TimeoutExpired(
+            ['cmd'], 1, output=b'partial-default', stderr=b'error-default'
+        )
+        with patch.object(util_module.subprocess, 'run', side_effect=default_timeout):
+            default_timed_out = util_module.run(['cmd'], cwd=ROOT)
+        self.assertEqual(default_timed_out.returncode, 124)
+        self.assertIsInstance(default_timed_out.stdout, str)
+        self.assertIsInstance(default_timed_out.stderr, str)
+        self.assertEqual(default_timed_out.stdout, 'partial-default')
+        self.assertEqual(default_timed_out.stderr, 'error-default')
+        json.dumps({
+            'stdout': default_timed_out.stdout,
+            'stderr': default_timed_out.stderr,
+        })
+
         timeout = subprocess.TimeoutExpired(['cmd'], 1, output=b'partial-\xff', stderr=b'err-\xfe')
         with patch.object(util_module.subprocess, 'run', side_effect=timeout):
             timed_out = util_module.run(
                 ['cmd'], cwd=ROOT, encoding='utf-8', errors='backslashreplace'
             )
         self.assertEqual(timed_out.returncode, 124)
+        self.assertIsInstance(timed_out.stdout, str)
+        self.assertIsInstance(timed_out.stderr, str)
         self.assertEqual(timed_out.stdout, r'partial-\xff')
         self.assertEqual(timed_out.stderr, r'err-\xfe')
+        json.dumps({'stdout': timed_out.stdout, 'stderr': timed_out.stderr})
 
         with patch.object(util_module.subprocess, 'run', side_effect=FileNotFoundError):
             missing = util_module.run(['missing'], cwd=ROOT, encoding='utf-8', errors='backslashreplace')
         self.assertEqual(missing.returncode, 127)
         self.assertEqual(missing.stderr, 'command not found: missing')
+
+    def test_command_check_real_timeout_returns_json_safe_partial_text(self) -> None:
+        command = [
+            sys.executable,
+            '-c',
+            (
+                "import os, time; "
+                "os.write(1, b'partial-\\xff'); "
+                "os.write(2, b'error-\\xfe'); "
+                "time.sleep(2)"
+            ),
+        ]
+
+        check = verification_module._command_check(
+            ROOT, 'real-timeout', command, timeout=0.1
+        )
+
+        self.assertEqual(check.status, 'fail')
+        self.assertEqual(check.summary, 'exit=124')
+        self.assertIsInstance(check.stdout, str)
+        self.assertIsInstance(check.stderr, str)
+        self.assertIn(r'partial-\xff', check.stdout)
+        self.assertIn(r'error-\xfe', check.stderr)
+        self.assertLessEqual(len(check.stdout), 12000)
+        self.assertLessEqual(len(check.stderr), 12000)
+        json.dumps(check.to_dict(), ensure_ascii=True)
 
     def test_pr_changed_file_inventory_unions_route_and_local_target_ranges(self) -> None:
         contract = 'engineering/contracts/schemas/pr-only.schema.json'
@@ -1039,8 +1213,131 @@ class VerificationTests(unittest.TestCase):
             set_active_route(root, route)
             report = verify(root, mode='fast', record=True)
             self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['schema_version'], 1)
+            self.assertIsNone(_check(report, 'receipt-recording'))
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_normal_receipt_contract_errors_return_one_failure_and_preserve_existing_receipt(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 'receipt-failure').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            receipt = (
+                root / '.grok-stack/runtime/receipts'
+                / route['route_id'] / 'verification.json'
+            )
+            receipt.parent.mkdir(parents=True, exist_ok=True)
+            sentinel = b'pre-existing receipt remains untouched\n'
+            receipt.write_bytes(sentinel)
+            for error_type in (OSError, RuntimeError, ValueError):
+                with self.subTest(error_type=error_type.__name__):
+                    message = f'{error_type.__name__} unavailable\n' + ('y' * 800)
+                    with patch.object(
+                        verification_module,
+                        'write_receipt',
+                        side_effect=error_type(message),
+                    ) as writer:
+                        report = verify(root, mode='fast', record=True)
+
+                    writer.assert_called_once()
+                    failure = self._assert_receipt_recording_failure(report)
+                    self.assertIn(
+                        error_type.__name__, failure['details'][0]['message']
+                    )
+                    self.assertEqual(receipt.read_bytes(), sentinel)
+
+    def test_receipt_writer_is_not_called_when_recording_is_disabled(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 'no-record').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+
+            with patch.object(verification_module, 'write_receipt') as writer:
+                report = verify(root, mode='fast', record=False)
+
+            writer.assert_not_called()
+            self.assertEqual(report['status'], 'pass')
+            self.assertIsNone(_check(report, 'receipt-recording'))
+
+    def test_normal_record_true_without_route_never_attempts_or_creates_receipt(self) -> None:
+        with project_copy(git=True) as root:
+            receipts = root / '.grok-stack/runtime/receipts'
+
+            with patch.object(
+                verification_module,
+                'write_receipt',
+                side_effect=AssertionError('route-less verification attempted a receipt write'),
+            ) as writer:
+                report = verify(root, mode='fast', record=True)
+
+            writer.assert_not_called()
+            self.assertEqual(list(receipts.rglob('verification.json')), [])
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['schema_version'], 1)
+            self.assertIsNone(report['route_id'])
+            self.assertIsNone(_check(report, 'receipt-recording'))
+            json.dumps(report, ensure_ascii=True)
+
+    def test_receipt_writer_exceptions_outside_contract_propagate(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 'narrow-catch').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+
+            for error in (
+                KeyError('programmer error'),
+                KeyboardInterrupt(),
+                MemoryError('fatal allocation failure'),
+            ):
+                with self.subTest(error=type(error).__name__):
+                    with patch.object(
+                        verification_module,
+                        'write_receipt',
+                        side_effect=error,
+                    ) as writer:
+                        with self.assertRaises(type(error)):
+                            verify(root, mode='fast', record=True)
+                    writer.assert_called_once()
+
+    def test_cli_human_and_json_render_real_receipt_failure_and_exit_one(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 'cli-receipt-failure').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            script = ROOT / 'scripts/grok_verify.py'
+
+            for arguments in ([], ['--json']):
+                with self.subTest(arguments=arguments):
+                    stdout = io.StringIO()
+                    stderr = io.StringIO()
+                    with (
+                        patch.object(sys, 'argv', [str(script), '--mode', 'fast', *arguments]),
+                        patch.object(util_module, 'find_root', return_value=root),
+                        patch.object(
+                            verification_module,
+                            'write_receipt',
+                            side_effect=OSError('cli receipt unavailable'),
+                        ) as writer,
+                        contextlib.redirect_stdout(stdout),
+                        contextlib.redirect_stderr(stderr),
+                    ):
+                        with self.assertRaises(SystemExit) as raised:
+                            runpy.run_path(str(script), run_name='__main__')
+
+                    self.assertEqual(raised.exception.code, 1)
+                    writer.assert_called_once()
+                    if arguments:
+                        report = json.loads(stdout.getvalue())
+                        self._assert_receipt_recording_failure(report)
+                    else:
+                        self.assertEqual(stderr.getvalue(), '')
+                        output = stdout.getvalue()
+                        self.assertIn(
+                            'FAIL receipt-recording: verification receipt was not recorded',
+                            output,
+                        )
+                        self.assertIn('RESULT: FAIL | mode=fast', output)
 
     def test_governance_runs_after_spec_and_architecture_and_failure_is_not_receipted(self) -> None:
         with project_copy(git=True) as root:

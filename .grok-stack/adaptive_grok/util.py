@@ -170,12 +170,11 @@ def run(
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout or ''
         stderr = exc.stderr or 'timeout'
-        if encoding is not None or errors != 'strict':
-            output_encoding = encoding or locale.getpreferredencoding(False)
-            if isinstance(stdout, bytes):
-                stdout = stdout.decode(output_encoding, errors)
-            if isinstance(stderr, bytes):
-                stderr = stderr.decode(output_encoding, errors)
+        output_encoding = encoding or locale.getpreferredencoding(False)
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode(output_encoding, errors)
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode(output_encoding, errors)
         return subprocess.CompletedProcess(args, 124, stdout, stderr)
 
 
