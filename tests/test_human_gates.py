@@ -386,6 +386,65 @@ class HumanGateTests(unittest.TestCase):
             self.assertTrue(result['local_workflow_evidence_only'])
             self.assertFalse(result.get('external_trust_ci_authority', False))
 
+    def test_recorded_approval_does_not_outlive_the_route_that_declared_it(self) -> None:
+        """Deleting the route must not launder a previously recorded decision into a pass."""
+        from adaptive_grok.human_gates import gate_block_reason
+        from adaptive_grok.state import has_valid_approval
+
+        route_path = '.grok-stack/runtime/active-route.json'
+        with project_copy(git=True) as root:
+            self._active_change(root, ['production_action_approval'])
+            record_gate_decision(
+                root,
+                'production_action_approval',
+                'approved',
+                'Approve the named branch action',
+                actor='operator',
+                action='git-push-branch',
+            )
+            self.assertEqual(gate_statuses(root)[0]['state'], 'approved')
+            self.assertIsNone(gate_block_reason(root, 'production', 'git-push-branch'))
+
+            route_file = root / route_path
+            saved = route_file.read_text(encoding='utf-8')
+            route_file.unlink()
+            self.assertIsNotNone(gate_block_reason(root, 'production', 'git-push-branch'))
+            statuses = gate_statuses(root)
+            self.assertEqual(statuses[0]['state'], 'invalid')
+            self.assertFalse(any(item['state'] == 'approved' for item in statuses), statuses)
+            self.assertFalse(has_valid_approval(root, 'production', action='git-push-branch'))
+
+            route_file.write_text(saved, encoding='utf-8')
+            self.assertIsNone(gate_block_reason(root, 'production', 'git-push-branch'))
+            self.assertEqual(gate_statuses(root)[0]['state'], 'approved')
+
+    def test_delegated_grant_does_not_count_while_route_record_is_absent(self) -> None:
+        """A delegated grant must not count as valid while the route record is absent."""
+        from adaptive_grok.state import approvals_path, get_active_route, has_valid_approval
+
+        route_path = '.grok-stack/runtime/active-route.json'
+        with project_copy(git=True) as root:
+            subprocess.run(
+                ['git', 'remote', 'add', 'origin', 'git@github.com:Dimkox/adaptive-grok-build-pro.git'],
+                cwd=root,
+                check=True,
+            )
+            route = build_route(root, 'Prepare production release and canary', 'gate-test').to_dict()
+            route['route_id'] = None
+            route['human_gates'] = []
+            set_active_route(root, route)
+            add_approval(root, 'production', 'ship the branch', 5, actions=['git-push-branch'])
+            self.assertIsNone(get_active_route(root).get('route_id'))
+            self.assertTrue(has_valid_approval(root, 'production', action='git-push-branch'))
+
+            (root / route_path).unlink()
+            self.assertIsNone(get_active_route(root))
+            self.assertEqual(len(json.loads(approvals_path(root).read_text(encoding='utf-8'))), 1)
+            self.assertFalse(
+                has_valid_approval(root, 'production', action='git-push-branch'),
+                'delegated grant approved while the route record was absent',
+            )
+
 
 if __name__ == '__main__':
     unittest.main()
