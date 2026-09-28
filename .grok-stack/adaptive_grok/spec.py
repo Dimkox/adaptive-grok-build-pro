@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -8,7 +9,7 @@ import stat
 import subprocess
 import unicodedata
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterable
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "change-spec.schema.json"
 LEGACY_SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "change-spec-v1.schema.json"
@@ -47,11 +48,78 @@ JSON_SCHEMA_TYPE_NAMES = frozenset(
 
 RISK_MAP = {"low": "green", "medium": "yellow", "high": "red"}
 
-
+# Expectation-set satisfiability (issue #202). A criterion may declare a *set*
+# of expected outcomes ("the cutover reds are exactly {key-A, key-B}"). Shape
+# validation cannot tell whether every declared member is achievable, so an
+# unreachable member is only discovered when the implementer measures reality.
+# These cues let the recorder's own wording decide which obligation applies.
+BRACE_GROUP_RE = re.compile(r"\{([^{}]{1,512})\}")
+EXPECTATION_MEMBER_RE = re.compile(r"[A-Za-z][A-Za-z0-9_.@/-]{0,127}")
+# A bare all-uppercase word in braces is a template placeholder (``{TITLE}``),
+# never one member of a declared expectation set.
+PLACEHOLDER_TOKEN_RE = re.compile(r"[A-Z][A-Z0-9]*")
+EXACTNESS_CUE_RE = re.compile(
+    r"\b(?:exactly|exact|precisely|identical to|closed set|nothing else)\b", re.IGNORECASE
+)
+UPPER_BOUND_CUE_RE = re.compile(
+    r"\b(?:subset|at most|upper bound|allowed deviations?|allowable deviations?|never outside)\b"
+    r"|\bmay (?:include|contain)\b|⊆",
+    re.IGNORECASE,
+)
+NON_EMPTY_CUE_RE = re.compile(
+    r"\b(?:non-?empty|at least one|must not be empty|cannot be empty|never empty)\b",
+    re.IGNORECASE,
+)
 class SpecError(ValueError):
     def __init__(self, message: str, *, code: str = "invalid") -> None:
         super().__init__(message)
         self.code = code
+
+
+def exercise_expectation_member(
+    member: str,
+    *,
+    observe: Callable[[], Iterable[str]],
+    mutate: Callable[[], object],
+    undo: Callable[[], object],
+) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
+    """Exercise one declared member through an absent→present→restored probe.
+
+    The spec validator only inspects the probe selector's AST. The ordinary
+    test runner executes this helper, so validation never imports or runs
+    repository test code. A probe fails unless its detector observes the named
+    member only after the mutation and undo restores the complete observation.
+    """
+
+    if not isinstance(member, str) or not member:
+        raise AssertionError("expectation member must be a non-empty string")
+
+    def snapshot() -> frozenset[str]:
+        observed = observe()
+        if isinstance(observed, str):
+            raise AssertionError("expectation observation must be an iterable of member strings")
+        try:
+            values = frozenset(observed)
+        except TypeError as exc:
+            raise AssertionError("expectation observation must be an iterable of member strings") from exc
+        if any(not isinstance(value, str) for value in values):
+            raise AssertionError("expectation observation members must be strings")
+        return values
+
+    before = snapshot()
+    if member in before:
+        raise AssertionError(f"expectation member {member!r} is present before mutation")
+    try:
+        mutate()
+        during = snapshot()
+    finally:
+        undo()
+    after = snapshot()
+    if member not in during:
+        raise AssertionError(f"expectation member {member!r} was not produced by mutation")
+    if after != before:
+        raise AssertionError("expectation observation was not restored after undo")
+    return before, during, after
 
 
 def _schema_preflight(schema: Any, path: str = "$") -> None:
@@ -718,6 +786,354 @@ def spec_fingerprint(
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def _statement_sentences(statement: str) -> list[str]:
+    """Split prose at sentence boundaries without splitting brace members."""
+    sentences: list[str] = []
+    start = 0
+    depth = 0
+    for index, character in enumerate(statement):
+        if character == "{":
+            depth += 1
+        elif character == "}" and depth:
+            depth -= 1
+        if depth == 0 and character in ".!?\n":
+            sentence = statement[start : index + 1].strip()
+            if sentence:
+                sentences.append(sentence)
+            start = index + 1
+    tail = statement[start:].strip()
+    if tail:
+        sentences.append(tail)
+    return sentences
+
+
+def _declared_expectation_groups(statement: str) -> list[tuple[str, list[str]]]:
+    """Return each brace group together with only its local sentence.
+
+    A single all-uppercase group remains a template placeholder (``{TITLE}``
+    or ``{X}``). Multiple identifier-shaped members are a declared set even
+    when their stable codes are one character long, so ``{A, B}`` is checked.
+    """
+    groups: list[tuple[str, list[str]]] = []
+    for sentence in _statement_sentences(statement):
+        for match in BRACE_GROUP_RE.finditer(sentence):
+            raw_parts = match.group(1).split(",")
+            members: list[str] = []
+            for raw in raw_parts:
+                token = raw.strip().strip("`\"'")
+                if not EXPECTATION_MEMBER_RE.fullmatch(token):
+                    continue
+                if token not in members:
+                    members.append(token)
+            if len(raw_parts) == 1 and len(members) == 1 and PLACEHOLDER_TOKEN_RE.fullmatch(members[0]):
+                members = []
+            if members:
+                groups.append((sentence, members))
+    return groups
+
+
+def _selector_parts(reference: str) -> tuple[str, list[str]] | None:
+    parts = reference.split("::")
+    if len(parts) < 2 or not parts[0]:
+        return None
+    selectors: list[str] = []
+    for part in parts[1:]:
+        selectors.extend(value for value in part.split(".") if value)
+    if len(selectors) != 2 or any(not value.isidentifier() for value in selectors):
+        return None
+    return parts[0], selectors
+
+
+_UNITTEST_INACTIVE_MARKERS = frozenset({"skip", "skipIf", "skipUnless", "expectedFailure"})
+
+
+def _module_shadowed_names(module: ast.Module) -> set[str]:
+    shadowed: set[str] = set()
+    compound = (
+        ast.Assign,
+        ast.AnnAssign,
+        ast.AugAssign,
+        ast.NamedExpr,
+        ast.For,
+        ast.With,
+        ast.If,
+        ast.Try,
+        ast.While,
+        ast.Match,
+    )
+    for node in module.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            shadowed.add(node.name)
+        elif isinstance(node, compound):
+            shadowed.update(
+                child.id
+                for child in ast.walk(node)
+                if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store)
+            )
+    return shadowed
+
+
+def _import_time_helper_attribute_rebounds(module: ast.Module) -> set[str]:
+    """Aliases whose helper attribute is reassigned while the module is imported."""
+    rebound: set[str] = set()
+
+    def walk(node: ast.AST) -> None:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            return
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Store)
+            and node.attr == "exercise_expectation_member"
+            and isinstance(node.value, ast.Name)
+        ):
+            rebound.add(node.value.id)
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+
+    walk(module)
+    return rebound
+
+
+def _trusted_probe_bindings(module: ast.Module) -> tuple[set[str], set[str]]:
+    direct: set[str] = set()
+    modules: set[str] = set()
+    for node in module.body:
+        if isinstance(node, ast.ImportFrom) and node.module == "adaptive_grok.spec":
+            for alias in node.names:
+                if alias.name == "exercise_expectation_member":
+                    direct.add(alias.asname or alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "adaptive_grok.spec" and alias.asname:
+                    modules.add(alias.asname)
+    shadowed = _module_shadowed_names(module)
+    modules.difference_update(_import_time_helper_attribute_rebounds(module))
+    return direct - shadowed, modules - shadowed
+
+
+def _trusted_testcase_bindings(module: ast.Module) -> tuple[set[str], set[str]]:
+    direct: set[str] = set()
+    modules: set[str] = set()
+    for node in module.body:
+        if isinstance(node, ast.ImportFrom) and node.module == "unittest":
+            for alias in node.names:
+                if alias.name == "TestCase":
+                    direct.add(alias.asname or alias.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "unittest":
+                    modules.add(alias.asname or alias.name)
+    shadowed = _module_shadowed_names(module)
+    return direct - shadowed, modules - shadowed
+
+
+def _selector_function(module: ast.Module, selectors: list[str]) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+    class_name, method_name = selectors
+    direct_cases, unittest_modules = _trusted_testcase_bindings(module)
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        is_test_case = any(
+            (isinstance(base, ast.Name) and base.id in direct_cases)
+            or (
+                isinstance(base, ast.Attribute)
+                and isinstance(base.value, ast.Name)
+                and base.value.id in unittest_modules
+                and base.attr == "TestCase"
+            )
+            for base in node.bases
+        )
+        if not is_test_case or not method_name.startswith("test"):
+            return None
+        for child in node.body:
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name:
+                return child
+    return None
+
+
+def _literal_probe_members(root: Path | None, reference: str) -> set[str]:
+    """Resolve one selector and return members bound to the trusted helper.
+
+    This is static inspection only. It never imports or executes the referenced
+    module; the ordinary test runner executes the helper call later.
+    """
+    if root is None:
+        return set()
+    parsed_reference = _selector_parts(reference)
+    if parsed_reference is None:
+        return set()
+    file_part, selectors = parsed_reference
+    try:
+        target = _safe_contract_path(root, file_part)
+        if target is None or target.suffix != ".py" or target.stat().st_size > MAX_SPEC_BYTES:
+            return set()
+        source = target.read_text(encoding="utf-8")
+        module = ast.parse(source, filename=file_part)
+    except (OSError, UnicodeError, SyntaxError, SpecError):
+        return set()
+    direct, modules = _trusted_probe_bindings(module)
+    function = _selector_function(module, selectors)
+    if function is None or isinstance(function, ast.AsyncFunctionDef) or _unittest_marked_inactive(function, module):
+        return set()
+    function_bindings = {
+        argument.arg
+        for argument in (
+            *function.args.posonlyargs,
+            *function.args.args,
+            *function.args.kwonlyargs,
+        )
+    }
+    function_bindings.update(
+        child.id
+        for child in ast.walk(function)
+        if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store)
+    )
+    direct.difference_update(function_bindings)
+    modules.difference_update(function_bindings)
+    modules.difference_update(_function_helper_attribute_rebounds(function))
+    members: set[str] = set()
+    for statement in function.body:
+        if isinstance(statement, (ast.Return, ast.Raise)):
+            break
+        if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+            continue
+        node = statement.value
+        trusted = (
+            isinstance(node.func, ast.Name) and node.func.id in direct
+        ) or (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "exercise_expectation_member"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id in modules
+        )
+        if not trusted or not _call_supplies_probe_callables(node):
+            continue
+        member_node: ast.expr | None = node.args[0] if node.args else None
+        if member_node is None:
+            member_node = next((keyword.value for keyword in node.keywords if keyword.arg == "member"), None)
+        if isinstance(member_node, ast.Constant) and isinstance(member_node.value, str):
+            members.add(member_node.value)
+    return members
+
+
+def _function_helper_attribute_rebounds(function: ast.AST) -> set[str]:
+    return {
+        child.value.id
+        for child in ast.walk(function)
+        if isinstance(child, ast.Attribute)
+        and isinstance(child.ctx, ast.Store)
+        and child.attr == "exercise_expectation_member"
+        and isinstance(child.value, ast.Name)
+    }
+
+
+def _unittest_marked_inactive(node: ast.AST, module: ast.Module) -> bool:
+    names: set[str] = set()
+    modules: set[str] = set()
+    for statement in module.body:
+        if isinstance(statement, ast.ImportFrom) and statement.module == "unittest":
+            for alias in statement.names:
+                if alias.name == "*":
+                    names.update(_UNITTEST_INACTIVE_MARKERS)
+                elif alias.name in _UNITTEST_INACTIVE_MARKERS:
+                    names.add(alias.asname or alias.name)
+        elif isinstance(statement, ast.Import):
+            for alias in statement.names:
+                if alias.name == "unittest":
+                    modules.add(alias.asname or alias.name)
+    for decorator in getattr(node, "decorator_list", ()):
+        target = decorator.func if isinstance(decorator, ast.Call) else decorator
+        if isinstance(target, ast.Name) and target.id in names:
+            return True
+        if (
+            isinstance(target, ast.Attribute)
+            and target.attr in _UNITTEST_INACTIVE_MARKERS
+            and isinstance(target.value, ast.Name)
+            and target.value.id in modules
+        ):
+            return True
+    return False
+
+
+def _is_static_callable(node: ast.expr) -> bool:
+    return isinstance(node, (ast.Lambda, ast.Name, ast.Attribute, ast.Call))
+
+
+def _call_supplies_probe_callables(node: ast.Call) -> bool:
+    """observe, mutate, and undo are keyword-only and must themselves be callables."""
+    if any(keyword.arg is None for keyword in node.keywords) or len(node.args) > 1:
+        return False
+    if len(node.args) == 1 and any(keyword.arg == "member" for keyword in node.keywords):
+        return False
+    values = {keyword.arg: keyword.value for keyword in node.keywords}
+    return all(name in values and _is_static_callable(values[name]) for name in ("observe", "mutate", "undo"))
+
+
+def _liveness_probe_members(item: dict[str, Any], root: Path | None) -> set[str]:
+    members: set[str] = set()
+    for ref in item.get("evidence") or []:
+        if not isinstance(ref, dict) or len(ref) != 1:
+            continue
+        kind, value = next(iter(ref.items()))
+        if kind == "test" and isinstance(value, str):
+            members.update(_literal_probe_members(root, value))
+    return members
+
+
+def expectation_set_findings(spec: dict[str, Any], *, root: Path | None = None) -> list[str]:
+    """Find declared expectation sets that cannot be shown satisfiable.
+
+    A criterion that declares an *exact* set must prove every member is
+    reachable: some ``test`` evidence of the same criterion must name it, which
+    is the record-time form of the per-member liveness probe. A member that no
+    rule of the stack can ever produce is therefore rejected while the spec is
+    still a plan, instead of during implementation. The alternative the author
+    may take is to declare the set as an upper bound and assert non-emptiness,
+    because an upper bound with no non-emptiness obligation is satisfied by an
+    empty observation and can never fail.
+    """
+    findings: list[str] = []
+    for collection, label in (
+        ("acceptance_criteria", "acceptance criterion"),
+        ("invariants", "invariant"),
+        ("forbidden_outcomes", "forbidden outcome"),
+    ):
+        items = spec.get(collection) if isinstance(spec.get(collection), list) else []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            statement = item.get("statement")
+            if not isinstance(statement, str):
+                continue
+            item_id = str(item.get("id", ""))
+            groups = _declared_expectation_groups(statement)
+            exact_declared = any(EXACTNESS_CUE_RE.search(sentence) is not None for sentence, _ in groups)
+            probes = _liveness_probe_members(item, root) if exact_declared else set()
+            for sentence, members in groups:
+                exact = EXACTNESS_CUE_RE.search(sentence) is not None
+                upper_bound = UPPER_BOUND_CUE_RE.search(sentence) is not None
+                if not exact and not upper_bound:
+                    continue
+                if exact:
+                    for member in members:
+                        if member in probes:
+                            continue
+                        findings.append(
+                            f"{label} {item_id} declares the exact expectation set member {member!r} "
+                            f"without an executable mutation/undo probe: no resolvable test selector of "
+                            f"{item_id} calls exercise_expectation_member for {member!r}; attach a test "
+                            f"that observes {member!r} as absent, produced by mutation, and restored by "
+                            f"undo, or declare the set as an upper bound and assert non-emptiness"
+                        )
+                elif NON_EMPTY_CUE_RE.search(sentence) is None:
+                    findings.append(
+                        f"{label} {item_id} declares the expectation set {', '.join(members)} as an "
+                        f"upper bound without asserting non-emptiness, so an empty observation "
+                        f"satisfies {item_id} and the criterion can never fail"
+                    )
+    return findings
+
+
 def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = None) -> list[str]:
     errors: list[str] = []
     collections = (("acceptance_criteria", "acceptance criterion"), ("invariants", "invariant"), ("forbidden_outcomes", "forbidden outcome"))
@@ -780,6 +1196,7 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
                         raise SpecError(f"unsafe contract path: {raw!r}")
             except SpecError as exc:
                 errors.append(str(exc))
+    errors.extend(expectation_set_findings(spec, root=root))
     if gate:
         objective = spec.get("objective") or {}
         for field in ("success_metric", "target"):
@@ -814,6 +1231,7 @@ def validate_spec(
     path_or_schema: Path | dict[str, Any] | None = None,
     *,
     gate: bool = True,
+    root: Path | None = None,
     route: dict[str, Any] | None = None,
     changed: list[str] | None = None,
     schema_only: bool = False,
@@ -825,7 +1243,7 @@ def validate_spec(
             validate_schema(spec, path_or_schema, path_or_schema)
             if schema_only:
                 return {"ok": True, "digest": canonical_spec_digest(spec), "change_id": spec.get("change_id")}
-        return _validate_document(spec, gate=gate and not schema_only)
+        return _validate_document(spec, gate=gate and not schema_only, root=root)
     root = Path(root_or_spec)
     if not isinstance(path_or_schema, Path):
         raise TypeError("path must be a Path")
