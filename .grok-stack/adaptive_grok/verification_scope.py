@@ -17,12 +17,15 @@ that is shipped and executed somewhere else (``docs/bitrix-local-AGENTS.md`` is 
 verbatim as ``local/AGENTS.md`` into every consumer Bitrix install, so it is agent-executed
 instructions, not documentation), and content a test pins to literal bytes as declared
 immutable evidence (``tests/test_history.py`` sha256-pins ``evidence/historical-*``). Both are
-rejected here even though they live under a documentation path. What remains is admitted on one
-of two grounds: a module this lane runs re-derives it (root identity, dated state and package
-bytes by the lockstep trio; README's Workflow-sources table by ``tests/test_workflow_sources.py``;
-a delivered change package's route record by ``tests/test_repo_router.py``), or nothing executes
-it at all (per-change workflow records, ADRs, backlogs, reviews and runbooks), so there is no
-binding for it to lose.
+rejected here even though they live under a documentation path. Root ``decisions.md`` and
+``mistakes.md`` are the same miss: their governance projection blocks are byte-checked only by
+``tests/test_governance.py``, which this lane does not run, so those names are refused instead of
+sitting on the prose allowlist. What remains is admitted on one of two grounds: a module this
+lane runs re-derives it (root identity, dated state and package bytes by the lockstep trio;
+README's Workflow-sources table by ``tests/test_workflow_sources.py``; a delivered change
+package's route record by ``tests/test_repo_router.py``), or nothing executes it at all
+(per-change workflow records, ADRs, backlogs, reviews and runbooks), so there is no binding for
+it to lose.
 """
 from __future__ import annotations
 
@@ -50,6 +53,11 @@ DOCUMENT_ROOT_FILES = frozenset({
     'QUICKSTART.md',
     'README.md',
     'START_HERE.md',
+})
+# Root logs whose marked governance projection blocks are byte-checked only by
+# tests/test_governance.py (`check-projections`). That module is not a focused target, so
+# admitting these files would certify a projection rewrite this lane does not re-derive.
+GOVERNANCE_PROJECTION_FILES = frozenset({
     'decisions.md',
     'mistakes.md',
 })
@@ -218,6 +226,8 @@ def _classify_path(path: str) -> str | None:
         return 'shipped-executed-content'
     if is_immutable_historical_evidence(path):
         return 'immutable-historical-evidence'
+    if path in GOVERNANCE_PROJECTION_FILES:
+        return 'governance-projection-binding'
     if path in DOCUMENT_ROOT_FILES or path in STATE_ROOT_FILES:
         return None
     if path in DOCUMENT_FILES:

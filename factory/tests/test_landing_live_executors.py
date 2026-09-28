@@ -744,6 +744,11 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
         self.path.write_text(text)
         self.path.chmod(0o600)
 
+    def state_directory(self) -> Path:
+        state = self.root / "state"
+        state.mkdir(mode=0o700, exist_ok=True)
+        return state
+
     def test_explicit_file_reads_only_standard_assignment_without_interpolation(self):
         for prefix, quote in (("", ""), ("export ", "'"), ("", '"')):
             with self.subTest(prefix=prefix, quote=quote):
@@ -802,7 +807,8 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             self.assertFalse(body["enable_thinking"])
             self.assertFalse(body["stream"])
             return _transport("qwen-plus").handle_request(request)
-        result = live.probe_qwen(qwen_env_file=self.path, transport=httpx.MockTransport(handler))
+        result = live.probe_qwen(qwen_env_file=self.path, transport=httpx.MockTransport(handler),
+                                 state_directory=self.state_directory())
         self.assertEqual("normalized", result["state"])
         self.assertEqual("qwen-intl", result["profile_id"])
         self.assertEqual((12, 34), (result["usage_input_units"], result["usage_output_units"]))
@@ -810,6 +816,53 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
         self.assertEqual("dashscope-intl.aliyuncs.com", requests[0].url.host)
         self.assertNotIn(self.value, json.dumps(result))
         self.assertEqual(64, len(result["spec_digest"]))
+
+    def test_successful_probe_ledger_keeps_state_digest_and_usage(self):
+        self.write(f"DASHSCOPE_API_KEY={self.value}")
+        state = self.state_directory()
+        ledger = state / live.PROBE_LEDGER_FILENAME
+        called = []
+
+        def handler(request):
+            called.append(request)
+            return _transport("qwen-plus").handle_request(request)
+
+        with self.assertRaisesRegex(LandingProviderError, "landing_path"):
+            live.probe_qwen(qwen_env_file=self.path, transport=httpx.MockTransport(handler),
+                            state_directory=self.root / "missing-state")
+        self.assertEqual([], called)
+        self.assertFalse(ledger.exists())
+        self.assertFalse((state / "landing.sqlite3").exists())
+        rejected = {
+            "object": "chat.completion", "model": "qwen-plus",
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": "{}"}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
+        }
+        with self.assertRaisesRegex(LandingProviderError, "draft_fields"):
+            live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=rejected),
+                            state_directory=state)
+        self.assertFalse(ledger.exists())
+        profile = HttpLandingProfile.for_provider("qwen-intl", available=True)
+        result = live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus"),
+                                 state_directory=state)
+        with self.assertRaisesRegex(LandingProviderError, "draft_fields"):
+            live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=rejected),
+                            state_directory=state)
+        again = live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus"),
+                                state_directory=state)
+        raw = ledger.read_bytes()
+        rows = [json.loads(line) for line in raw.splitlines()]
+        self.assertEqual([result, again], rows)
+        self.assertEqual(canonical_json(result) + b"\n" + canonical_json(again) + b"\n", raw)
+        for row in rows:
+            self.assertEqual("normalized", row["state"])
+            self.assertEqual(profile.profile_digest, row["profile_digest"])
+            self.assertEqual(12, row["usage_input_units"])
+            self.assertEqual(34, row["usage_output_units"])
+            self.assertNotIn("job_id", row)
+        self.assertNotIn(self.value.encode(), raw)
+        self.assertEqual([live.PROBE_LEDGER_FILENAME], sorted(path.name for path in state.iterdir()))
 
     def test_probe_cli_failure_never_prints_exception_or_credential(self):
         output = io.StringIO()
@@ -916,7 +969,8 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
         for payload in ({"object": "chat.completion", "model": "qwen-plus", "choices": []},
                         {"object": "chat.completion", "model": "qwen-plus", "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "{}"}}], "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 4}}):
             with self.subTest(payload=payload), self.assertRaises(LandingProviderError):
-                live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=payload))
+                live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=payload),
+                                state_directory=self.state_directory())
 
     def test_probe_rejects_invalid_draft_after_valid_http_envelope(self):
         self.write(f"DASHSCOPE_API_KEY={self.value}")
@@ -927,7 +981,8 @@ class QwenCredentialAndProfileTests(unittest.TestCase):
             "usage": {"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3},
         }
         with self.assertRaisesRegex(LandingProviderError, "draft_fields"):
-            live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=payload))
+            live.probe_qwen(qwen_env_file=self.path, transport=_transport("qwen-plus", payload=payload),
+                            state_directory=self.state_directory())
 
     def test_malformed_provider_unicode_is_closed_at_decoder_and_probe_cli(self):
         self.write(f"DASHSCOPE_API_KEY={self.value}")

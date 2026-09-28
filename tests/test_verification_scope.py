@@ -20,6 +20,7 @@ from adaptive_grok.verification_scope import (
     DOCUMENT_PREFIXES,
     DOCUMENT_ROOT_FILES,
     FORCE_FULL_VARIABLE,
+    GOVERNANCE_PROJECTION_FILES,
     FOCUSED_SKIPPED_CHECKS,
     FOCUSED_TEST_TARGETS,
     FULL_PROFILE,
@@ -43,12 +44,12 @@ RELEASE_SYNC_INVENTORY = [
     'README.md',
     'START_HERE.md',
     'VERSION',
-    'decisions.md',
+    # Root decisions.md / mistakes.md are not in this admissible inventory: their
+    # governance projection blocks are bound only by tests/test_governance.py.
     'engineering/changes/20260924-example/change-spec.yaml',
     'engineering/changes/20260924-example/state.json',
     'engineering/reviews/l5-delivery-stack.json',
     'engineering/runbooks/l5-production-runtime.md',
-    'mistakes.md',
     'packages/adaptive-grok-build-pro-v2.0.19.zip',
     'packages/adaptive-grok-build-pro-v2.0.19.zip.sha256',
     'packages/README.md',
@@ -488,6 +489,34 @@ class RoleBasedAdmissionTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIsNone(_classify_path(path))
                 self.assertTrue(self._scope(['README.md', *FOCUSED_TEST_TARGETS, path])['eligible'])
+
+    def test_root_governance_projection_logs_are_not_certified_by_the_docs_state_lane(self) -> None:
+        # decisions.md / mistakes.md projection blocks are byte-checked only by
+        # tests/test_governance.py, which this lane does not run (AC-006). A change
+        # that touches only those files must stay on the full suite.
+        self.assertEqual(GOVERNANCE_PROJECTION_FILES, frozenset({'decisions.md', 'mistakes.md'}))
+        self.assertNotIn('tests/test_governance.py', FOCUSED_TEST_TARGETS)
+        governance = (ROOT / 'tests' / 'test_governance.py').read_text(encoding='utf-8')
+        self.assertIn('check-projections', governance)
+        self.assertIn('decisions.md', governance)
+        self.assertIn('mistakes.md', governance)
+        for path in ('decisions.md', 'mistakes.md'):
+            with self.subTest(path=path):
+                self.assertNotIn(path, DOCUMENT_ROOT_FILES)
+                self.assertEqual(_classify_path(path), 'governance-projection-binding')
+                scope = self._scope([path])
+                self.assertFalse(scope['eligible'])
+                self.assertEqual(scope['profile'], FULL_PROFILE)
+                self.assertEqual(scope['reason_code'], 'governance-projection-binding')
+                self.assertIn(path, scope['rejected_files'])
+        both = self._scope(['decisions.md', 'mistakes.md'])
+        self.assertFalse(both['eligible'])
+        self.assertEqual(both['profile'], FULL_PROFILE)
+        self.assertEqual(both['reason_code'], 'governance-projection-binding')
+        mixed = self._scope(['README.md', 'decisions.md', 'mistakes.md', *FOCUSED_TEST_TARGETS])
+        self.assertFalse(mixed['eligible'])
+        self.assertEqual(mixed['profile'], FULL_PROFILE)
+        self.assertNotEqual(mixed['evidence_kind'], f'verification:{DOCS_STATE_PROFILE}')
 
     def test_shipped_and_executed_content_is_rejected_by_its_own_reason_code(self) -> None:
         # docs/bitrix-local-AGENTS.md is installed verbatim as local/AGENTS.md into every

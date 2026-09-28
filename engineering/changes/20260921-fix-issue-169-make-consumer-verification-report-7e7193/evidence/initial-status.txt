@@ -1,0 +1,208 @@
+{
+  "route": {
+    "allowed_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "integration_architect",
+      "code_reviewer",
+      "test_reviewer",
+      "general_implementer"
+    ],
+    "analysis_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "integration_architect"
+    ],
+    "base_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+    "base_fingerprint": "867074e9521a82cab3ccb0155e0fecb222c9284afad476b156904a691dde3acd",
+    "change_id": "20260921-fix-issue-169-make-consumer-verification-report-7e7193",
+    "complexity": "standard",
+    "created_at": "2026-09-21T13:47:43+00:00",
+    "delivery_expected": true,
+    "domains": [
+      "api"
+    ],
+    "human_gates": [],
+    "intent": "bugfix",
+    "matched_keywords": {},
+    "primary_skill": "adaptive-delivery",
+    "quality_profiles": [
+      "base",
+      "contracts"
+    ],
+    "rationale": [
+      "medium-risk integration, contract, data, AI, or modernization work",
+      "intent=bugfix",
+      "domains=api",
+      "repository=generic",
+      "write-owner=general_implementer",
+      "analysis-wave=4/10"
+    ],
+    "repo": {
+      "bitrix_modules": [],
+      "domains": [
+        "api"
+      ],
+      "kind": "generic",
+      "languages": [],
+      "package_scripts": [],
+      "signals": [
+        "contract:engineering/contracts/openapi"
+      ]
+    },
+    "required_evidence": [
+      "verification",
+      "code_review",
+      "test_review"
+    ],
+    "review_agents": [
+      "code_reviewer",
+      "test_reviewer"
+    ],
+    "risk": "medium",
+    "route_id": "7e7193c77d53",
+    "schema_version": 1,
+    "session_id": "consumer-coverage-169-20260921",
+    "status": "routed",
+    "task": "Fix issue #169: make consumer verification report truthful product coverage when installed lint configuration selects no product files or the consumer language has no applicable check. Preserve existing pass/fail report and receipt compatibility, optional irrelevant skips, consumer-owned configuration, and exact external merge authority. Analyze the bounded inventory, actual analyzer scope and missing-tool behavior first; coordinate with separately delivered Swift detection and verifier lifecycle/doctor changes before overlapping source edits. Do not run native build tools or install dependencies merely to detect a language. Source-only repair in an isolated pull request.",
+    "task_domains": [],
+    "updated_at": "2026-09-21T13:47:44+00:00",
+    "workflow_skills": [
+      "adaptive-delivery",
+      "bugfix-workflow",
+      "api-event-change"
+    ],
+    "write_agent": "general_implementer"
+  },
+  "change": {
+    "change_id": "20260921-fix-issue-169-make-consumer-verification-report-7e7193",
+    "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193"
+  },
+  "agents": {
+    "active": {},
+    "history": []
+  },
+  "evidence_gaps": [
+    "verification: missing receipt",
+    "code_review: missing receipt",
+    "test_review: missing receipt"
+  ],
+  "package_completeness": {
+    "observed_at": "2026-09-21T13:48:27+00:00",
+    "status": "draft",
+    "stage": "draft",
+    "change_id": "20260921-fix-issue-169-make-consumer-verification-report-7e7193",
+    "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193",
+    "required_stage": false,
+    "findings": [
+      {
+        "code": "objective_unresolved",
+        "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+        "message": "objective is not resolved",
+        "severity": "expected",
+        "field": "objective.success_metric"
+      },
+      {
+        "code": "objective_unresolved",
+        "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+        "message": "objective is not resolved",
+        "severity": "expected",
+        "field": "objective.target"
+      },
+      {
+        "code": "acceptance_criteria_missing",
+        "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+        "message": "no typed acceptance criteria are declared",
+        "severity": "expected"
+      },
+      {
+        "code": "template_unexpanded",
+        "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/requirements.md",
+        "message": "current template slot is unexpanded",
+        "severity": "expected",
+        "line": 7
+      }
+    ],
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "receipt_kind": "verification",
+        "status": "not_run",
+        "reason": "implementation not started",
+        "outcome": null,
+        "recorded_at": null,
+        "reference": null
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "receipt_kind": "code_review",
+        "status": "not_run",
+        "reason": "implementation not started",
+        "outcome": null,
+        "recorded_at": null,
+        "reference": null
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "receipt_kind": "test_review",
+        "status": "not_run",
+        "reason": "implementation not started",
+        "outcome": null,
+        "recorded_at": null,
+        "reference": null
+      }
+    ],
+    "initial_checkpoint": {
+      "head": "21ced3709dff48abf3e15aff62e2493de75f2fa0"
+    }
+  },
+  "package_incomplete": [
+    {
+      "code": "objective_unresolved",
+      "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+      "message": "objective is not resolved",
+      "severity": "expected",
+      "field": "objective.success_metric"
+    },
+    {
+      "code": "objective_unresolved",
+      "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+      "message": "objective is not resolved",
+      "severity": "expected",
+      "field": "objective.target"
+    },
+    {
+      "code": "acceptance_criteria_missing",
+      "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+      "message": "no typed acceptance criteria are declared",
+      "severity": "expected"
+    },
+    {
+      "code": "template_unexpanded",
+      "path": "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/requirements.md",
+      "message": "current template slot is unexpanded",
+      "severity": "expected",
+      "line": 7
+    }
+  ],
+  "worktree": {
+    "observed_at": "2026-09-21T13:48:27+00:00",
+    "git_available": true,
+    "branch": "fix/issue-169-consumer-coverage",
+    "detached": false,
+    "head": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+    "route_base": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+    "diagnostic_base": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+    "base_source": "initial_checkpoint",
+    "commits_ahead": 0,
+    "dirty_product_state": "clean",
+    "dirty_product_paths": [],
+    "uncommitted_product_zero_ahead": false,
+    "findings": []
+  }
+}

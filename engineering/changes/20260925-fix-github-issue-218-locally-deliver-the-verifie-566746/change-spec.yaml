@@ -1,0 +1,43 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "The staged pre-package squash projection has exact tree 0914b5d6ad8c9f35211c4ac96ea96807f5ee8a66.", "evidence": [{"test": "tests/test_structure.py"}]},
+    {"id": "AC-002", "statement": "Every post-source delta is confined to this package and thirteen non-package paths: .grok-stack/templates/change/{brief,requirements,test-plan}.md, .grok-stack/adaptive_grok/{util,verification}.py, tests/{test_change_receipts,test_hooks,test_util_fingerprint,test_verification_doctor}.py, decisions.md, mistakes.md, README.md, and START_HERE.md. The latter two only reconcile dated release/tag observations.", "evidence": [{"test": "tests/test_change_receipts.py"}, {"test": "tests/test_hooks.py"}, {"test": "tests/test_util_fingerprint.py"}, {"test": "tests/test_verification_doctor.py"}, {"receipt": "release_review"}]},
+    {"id": "AC-003", "statement": "Generated packages are whitespace-clean and compatibility fixtures obtain closed-scope verification evidence without weakening validation.", "evidence": [{"test": "tests/test_change_receipts.py"}, {"test": "tests/test_hooks.py"}, {"receipt": "code_review"}]},
+    {"id": "AC-004", "statement": "Fast selected-chain secret and whitespace checks pass without secret-value disclosure and incomplete coverage fails closed.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-005", "statement": "Exact base/source/tree provenance, observability, rollback, and required verification/reviews are durable in this package.", "evidence": [{"receipt": "release_review"}, {"receipt": "verification"}]},
+    {"id": "AC-006", "statement": "The issue 219 Trust CI lane is excluded and trust-ci paths are unchanged.", "evidence": [{"test": "tests/test_structure.py"}, {"receipt": "test_review"}]},
+    {"id": "AC-007", "statement": "Stored PASS scan coverage is accepted only after exact independent full-scan recomputation with no failures or findings.", "evidence": [{"test": "tests/test_change_receipts.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-008", "statement": "Selected graph, object, and diff Git commands are root-bound, configuration-isolated, and ignore replacement objects and ambient selectors.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-009", "statement": "Symlink blobs are scanned and uninspectable history/worktree types or replacement races fail closed.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-010", "statement": "Whitespace diagnostics retain bounded metadata without raw offending lines or secret values.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-011", "statement": "Maximum-monotone clean-anchor selection is operation-budgeted across all comparisons, rejects ambiguous unequal multiplicities as incomplete, and preserves established clean-insertion and legacy-bad-line compatibility.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "code_review"}, {"receipt": "test_review"}]},
+    {"id": "AC-012", "statement": "Endpoint blob metadata enforces per-blob and aggregate byte limits before retrieving any body; worktree secret scanning shares path and byte budgets and rejects exhaustion before further content reads or complete coverage.", "evidence": [{"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "AC-013", "statement": "Completion follows preliminary no-record verification, independent reviews, persisted reports, ready transition, one-commit amend, final recording verification, verification PASS receipt, review receipts, and read-only zero-gap status.", "evidence": [{"receipt": "verification"}, {"receipt": "release_review"}]}
+  ],
+  "approvals": {"required_scopes": ["scope_and_design_approval"]},
+  "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+  "contracts": {"events": [], "json_schema": [], "openapi": []},
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Do not modify product behavior beyond the generated-template/fixture compatibility repair and bounded post-source verifier/util security repairs: scope recomputation, root/configuration isolation, safe object/file inspection, confidential diagnostics, bounded maximum-monotone whitespace classification, and pre-read resource budgets.", "evidence": [{"test": "tests/test_change_receipts.py"}, {"test": "tests/test_verification_doctor.py"}, {"receipt": "security_review"}]},
+    {"id": "FORBID-002", "statement": "Do not weaken or bypass any scanner, receipt, or source-stability check.", "evidence": [{"receipt": "security_review"}]},
+    {"id": "FORBID-003", "statement": "Do not modify trust-ci paths or absorb issue 219.", "evidence": [{"test": "tests/test_structure.py"}]},
+    {"id": "FORBID-004", "statement": "Do not move, rewrite, delete, or commit onto any source branch.", "evidence": [{"receipt": "release_review"}]},
+    {"id": "FORBID-005", "statement": "Do not perform network, GitHub, deployment, Daybreak, merge, tag, release, or production actions.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "The candidate is exactly one non-merge commit whose sole parent is cb9af4073ba6c3d515145164d771c75ebdfa3224.", "evidence": [{"test": "tests/test_structure.py"}]},
+    {"id": "INV-002", "statement": "Verified source remains 68dfc70c5f58adcc927f731c5d88de09a1b4b242 with tree 0914b5d6ad8c9f35211c4ac96ea96807f5ee8a66.", "evidence": [{"test": "tests/test_structure.py"}]},
+    {"id": "INV-003", "statement": "The external App-owned exact-SHA check remains merge authority.", "evidence": [{"receipt": "release_review"}]},
+    {"id": "INV-004", "statement": "No commit occurs until the four route analysis reports are present and coordinator confirmation is received.", "evidence": [{"test": "tests/test_structure.py"}]}
+  ],
+  "objective": {"id": "OBJ-001", "statement": "Deliver cumulative issue 227-through-218 source as one clean squash candidate, including the authorized bounded compatibility and verifier/util security repairs and truthful local delivery evidence, without weakened verification or external actions.", "success_metric": "exact_source_projection_plus_bounded_review_repairs", "target": "one_hygienic_candidate_commit"},
+  "observability": [
+    {"id": "SIG-001", "metric": "delivery.base_source_tree_identity", "proves": ["OBJ-001"]},
+    {"id": "SIG-002", "metric": "delivery.source_relative_delta", "proves": ["OBJ-001"]},
+    {"id": "SIG-003", "metric": "verification.scan_scope.status", "proves": ["OBJ-001"]},
+    {"id": "SIG-004", "metric": "external.app_owned_exact_sha_check", "proves": ["OBJ-001"]}
+  ],
+  "risk": {"domains": ["api", "security"], "tier": "red"},
+  "rollback": {"maximum_steps": 1, "strategy": "restore"},
+  "schema_version": 2
+}

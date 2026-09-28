@@ -41,8 +41,65 @@ def find_root(start: str | Path | None = None) -> Path:
     return current
 
 
+def _lexical_repository(path: Path) -> Path | None:
+    """Repository that lexically contains ``path``, without following links."""
+    for candidate in [path, *path.parents]:
+        if candidate.name == '.grok-stack':
+            return candidate.parent
+    for candidate in [path, *path.parents]:
+        marker = candidate / '.grok-stack'
+        try:
+            if marker.is_symlink():
+                continue
+            if marker.is_dir():
+                return candidate
+        except OSError:
+            continue
+    return None
+
+
+def _refuse_uncontained_write(path: Path) -> None:
+    """Fail closed before a write follows a symlink out of the repository.
+
+    ``os.replace`` would otherwise replace a child symlink with a regular file,
+    copying outside bytes in, and ``mkstemp`` would follow a runtime symlink.
+    """
+    if path.is_symlink():
+        raise ValueError('refusing write: target is a symlink')
+    anchor = _lexical_repository(path)
+    if anchor is None:
+        return
+    try:
+        resolved_parent = path.parent.resolve()
+        resolved_anchor = anchor.resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(
+            f'refusing write: path cannot be resolved ({type(exc).__name__})'
+        ) from None
+    if resolved_parent != resolved_anchor and resolved_anchor not in resolved_parent.parents:
+        raise ValueError('refusing write: path resolves outside the repository')
+
+
+def contained_runtime_dir(root: Path) -> Path:
+    """Return the declared runtime directory without creating it.
+
+    An external symlink and a symlink loop both fail closed as ``ValueError``
+    and the message does not include an absolute host path.
+    """
+    try:
+        declared = root.resolve() / RUNTIME_REL
+        resolved = (root / RUNTIME_REL).resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(
+            f'refusing runtime path: runtime directory cannot be resolved ({type(exc).__name__})'
+        ) from None
+    if resolved != declared:
+        raise ValueError('refusing runtime path: runtime directory resolves outside the repository')
+    return root / RUNTIME_REL
+
+
 def runtime_dir(root: Path) -> Path:
-    path = root / RUNTIME_REL
+    path = contained_runtime_dir(root)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -55,6 +112,8 @@ def load_json(path: Path, default: Any = None) -> Any:
 
 
 def atomic_write_text(path: Path, text: str) -> None:
+    # Containment before mkdir/mkstemp: both follow a parent directory symlink.
+    _refuse_uncontained_write(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
     try:

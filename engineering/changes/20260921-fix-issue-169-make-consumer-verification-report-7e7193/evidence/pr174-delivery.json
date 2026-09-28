@@ -1,0 +1,88 @@
+{
+  "observed_at": "2026-09-21T12:48:51.090494+00:00",
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "pull_request": 174,
+  "url": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/174",
+  "state": "MERGED",
+  "merged_at": "2026-09-21T12:46:35Z",
+  "checked_head": "73a8edd7678b4d605f6335569534653c6587eabc",
+  "checked_base": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+  "merge_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+  "checked_tree": "3e0703e90e96d00f0f7ff5deea92b7d3a6777b2b",
+  "merged_tree": "3e0703e90e96d00f0f7ff5deea92b7d3a6777b2b",
+  "tree_identity_preserved": true,
+  "external_check": {
+    "id": 106331000728,
+    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "app_id": 4694114,
+    "head_sha": "73a8edd7678b4d605f6335569534653c6587eabc",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2026-09-21T12:22:48Z",
+    "completed_at": "2026-09-21T12:44:51Z",
+    "summary": "holdout-bundle-integrity: pass (exit 0)\nexternal-holdout: pass (exit 0)\nroot-unittest: pass (exit 0)\ntrust-ci-unittest: pass (exit 0)\ncompileall: pass (exit 0)\nrepository-verification: pass (exit 0)\nattestation=d57752be-821c-4512-87e2-34c869851bb0; signer=0519cf1d47436f2e",
+    "details_url": "http://127.0.0.1:18080/jobs/6b8426dc-3c75-448b-aa04-4bce52a3315f"
+  },
+  "local_verification": {
+    "command": [
+      "python3",
+      "scripts/grok_verify.py",
+      "--mode",
+      "pr",
+      "--json"
+    ],
+    "env": {
+      "GROK_TEST_WORKERS": "8"
+    },
+    "head": "73a8edd7678b4d605f6335569534653c6587eabc",
+    "started_at": "2026-09-21T12:06:05.235249+00:00",
+    "ended_at": "2026-09-21T12:15:18.642385+00:00",
+    "exit_code": 0,
+    "wall_seconds": 553.4052237690048,
+    "report_sha256": "de9fd455c4b7cdb943f3a842863dc7819ba259cf20a8b059e6a0cb07e6700677"
+  },
+  "local_evidence": {
+    "head": "73a8edd7678b4d605f6335569534653c6587eabc",
+    "tree_fingerprint": "264d49af21b56572c07427a8391b9313210b6853b372d663f733a9fb16995e51",
+    "gaps": []
+  },
+  "issue_readback": [
+    {
+      "closedAt": "2026-09-21T12:46:38Z",
+      "number": 118,
+      "state": "CLOSED",
+      "title": "Capability-selected test engine refuses instead of degrading on Windows",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/issues/118"
+    },
+    {
+      "closedAt": "2026-09-21T12:46:37Z",
+      "number": 163,
+      "state": "CLOSED",
+      "title": "semantic_plan_repair has 15 anonymous NULL guards: precondition refusals surface as \"stored semantic repair result is corrupt\"",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/issues/163"
+    },
+    {
+      "closedAt": "2026-09-21T12:46:37Z",
+      "number": 165,
+      "state": "CLOSED",
+      "title": "Crash-orphaned contour is invisible to the repository: zero-commit branch, scaffold-only change package, placeholder in mandatory evidence",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/issues/165"
+    },
+    {
+      "closedAt": null,
+      "number": 62,
+      "state": "OPEN",
+      "title": "PR #33's parallel verification runner fails only under the gate's CPU/PID limits: green on an unconstrained host, red in the runner image",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/issues/62"
+    }
+  ],
+  "issue_counts": {
+    "open": 49,
+    "closed": 25
+  },
+  "boundaries": [
+    "Issues165/163/118 closed after actual verified merge.",
+    "Issue62 remains open for bounded App Check Run command output.",
+    "No deployed migration, image/service, policy, holdout, trust-store, tag or release operation."
+  ]
+}
