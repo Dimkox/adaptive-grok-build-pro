@@ -36,6 +36,12 @@ _DECISION_KEYS = {
     "gate", "decision", "route_id", "change_id", "scope_digest", "action", "resource",
     "decided_at", "actor", "reason",
 }
+# An absent local route is legitimate in a fresh clone, so it must never be read as an
+# approval. It is also recoverable, so the blocking reason names the exact restoring
+# command instead of leaving the operator with a dead end.
+ROUTE_RECOVERY_HINT = (
+    "; recreate it with: python3 scripts/grok_route.py \"<task text>\" --json"
+)
 
 
 def route_gate_digest(route_id: str, gates: list[str]) -> str:
@@ -54,7 +60,7 @@ def _context(root: Path) -> tuple[dict[str, Any] | None, dict[str, Any] | None, 
     route = get_active_route(root)
     change = get_active_change(root)
     if not isinstance(route, dict) or not route.get("route_id"):
-        return route, change, None, "active route is missing or malformed"
+        return route, change, None, f"active route is missing or malformed{ROUTE_RECOVERY_HINT}"
     if not isinstance(change, dict) or not change.get("change_id") or not change.get("path"):
         return route, change, None, "active change package is missing"
     if route.get("change_id") not in (None, change.get("change_id")):

@@ -140,10 +140,13 @@ def run(
     cwd: Path,
     timeout: int = 120,
     env: dict[str, str] | None = None,
+    env_remove: Iterable[str] = (),
     encoding: str | None = None,
     errors: str = 'strict',
 ) -> subprocess.CompletedProcess[str]:
     merged = os.environ.copy()
+    for key in env_remove:
+        merged.pop(key, None)
     if env:
         merged.update(env)
     try:

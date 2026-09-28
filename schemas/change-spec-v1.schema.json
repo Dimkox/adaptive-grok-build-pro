@@ -21,7 +21,7 @@
   },
   "properties": {
     "schema_version": {"const": 1},
-    "change_id": {"type": "string", "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._:\u0400-\u04FF-]{2,120}$"},
+    "change_id": {"type": "string", "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._\u0400-\u04FF-]{1,119}[A-Za-z0-9_\u0400-\u04FF-]$"},
     "objective": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "statement", "success_metric", "target"],

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -310,6 +311,8 @@ class DocsStateScopeSelectionTests(unittest.TestCase):
             './README.md',
             'nested\x00name',
             'back\\slash.md',
+            'docs/C:Users-someone.md',
+            os.fsdecode(b'engineering/changes/raw-\x85-note.md'),
             'packages/../etc/passwd',
         ):
             with self.subTest(path=path):
@@ -890,6 +893,37 @@ class DocsStateStatusInventoryTests(unittest.TestCase):
                 available_test_targets=list(FOCUSED_TEST_TARGETS),
             )
             self.assertTrue(scope['eligible'], scope)
+
+    @unittest.skipUnless(os.name == 'posix', 'raw-byte filename semantics are POSIX-specific')
+    def test_untracked_non_utf8_path_forces_full_scope(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='grok-scope-raw-name-') as tmp:
+            root = Path(tmp)
+            self._docs_repo(root)
+            base = _git_head(root)
+            raw_relative = b'engineering/changes/raw-\x85-note.md'
+            (root / 'engineering/changes').mkdir(parents=True)
+            raw_path = os.fsencode(root) + b'/' + raw_relative
+            descriptor = os.open(raw_path, os.O_WRONLY | os.O_CREAT, 0o600)
+            os.write(descriptor, b'unsafe raw filename\n')
+            os.close(descriptor)
+            decoded = os.fsdecode(raw_relative)
+
+            records, trusted = verification_module._docs_state_status_inventory(
+                root, self._selection(root, base)
+            )
+            production = util_module.changed_files(root, base)
+            self.assertIn(decoded, production)
+            self.assertTrue(any(item.get('path') == decoded for item in records), records)
+            scope = select_docs_state_scope(
+                'pr',
+                ['README.md', *FOCUSED_TEST_TARGETS, decoded],
+                range_base_count=1,
+                file_statuses=records,
+                status_inventory_trusted=trusted,
+                available_test_targets=list(FOCUSED_TEST_TARGETS),
+            )
+            self.assertFalse(scope['eligible'])
+            self.assertEqual(scope['reason_code'], 'invalid-inventory-path')
 
     def test_a_rename_blind_primary_inventory_still_meets_the_status_veto(self) -> None:
         # With rename detection on, `git diff --name-only` collapses a source removal behind a

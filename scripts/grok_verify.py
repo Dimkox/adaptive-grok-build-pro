@@ -10,7 +10,8 @@ import argparse
 import json
 import os
 
-from adaptive_grok.util import find_root
+from adaptive_grok.receipts import new_receipt_id, receipt_echo
+from adaptive_grok.util import find_root, now_utc
 from adaptive_grok.verification import verify
 from adaptive_grok.verification_scope import FORCE_FULL_VARIABLE
 
@@ -31,7 +32,19 @@ parser.add_argument(
 args = parser.parse_args()
 if args.full_scope:
     os.environ[FORCE_FULL_VARIABLE] = '1'
-report = verify(find_root(), args.mode, args.profiles, record=not args.no_record)
+# The echo answers "what did this run record", so it has to know when this run began. The tree
+# fingerprint cannot answer that: the verifier records nothing when governance fails, and on that
+# branch the tree is untouched, so an older receipt still matches the guard.
+run_started_at = now_utc()
+receipt_id = new_receipt_id()
+root = find_root()
+report = verify(
+    root,
+    args.mode,
+    args.profiles,
+    record=not args.no_record,
+    receipt_id=receipt_id,
+)
 if args.json:
     print(json.dumps(report, ensure_ascii=True, indent=2))
 else:
@@ -48,5 +61,18 @@ else:
         f"| profiles={','.join(report['profiles'])} | changed={len(report['changed_files'])} "
         f"checked={len(scope.get('checked_files', []))} "
         f"focused_tests={','.join(scope.get('focused_tests', [])) or 'none'}"
+    )
+# The canonical identifier line: a report pastes this instead of retyping a fingerprint. It
+# goes to stderr under --json so the JSON on stdout stays machine-parseable.
+if not args.no_record:
+    print(
+        receipt_echo(
+            root,
+            'verification',
+            expect_tree_fingerprint=report.get('tree_fingerprint'),
+            not_before=run_started_at,
+            expected_receipt_id=receipt_id,
+        ),
+        file=sys.stderr if args.json else sys.stdout,
     )
 raise SystemExit(0 if report['status'] == 'pass' else 1)

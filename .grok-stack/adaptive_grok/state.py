@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from .util import (
+    RUNTIME_REL,
     dump_json,
     git_head,
     git_output,
@@ -20,6 +21,7 @@ from .util import (
     tree_fingerprint,
 )
 
+ROUTE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{1,128}$')
 APPROVAL_SCOPES = {'production', 'external-write', 'protected-path'}
 APPROVAL_SOURCES = {'standing-user-consent', 'explicit-user-consent'}
 SCOPE_ACTIONS = {
@@ -99,12 +101,48 @@ def get_active_route(root: Path) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def route_id_block_reason(route_id: Any) -> str | None:
+    """Return why a route id cannot safely name one runtime snapshot file."""
+    if not isinstance(route_id, str) or not route_id:
+        return 'is not non-empty text'
+    if not ROUTE_ID_PATTERN.fullmatch(route_id):
+        return 'must be 1..128 ASCII letters, digits, underscores or dashes'
+    return None
+
+
+def route_snapshot_path(root: Path, route_id: Any) -> Path:
+    """Return one contained runtime snapshot path or refuse the identity."""
+    reason = route_id_block_reason(route_id)
+    if reason:
+        rendered = repr(route_id)
+        if len(rendered) > 180:
+            rendered = rendered[:160] + '…[truncated]'
+        raise ValueError(f'refusing unsafe route id {rendered}: it {reason}')
+    try:
+        declared = root.resolve() / RUNTIME_REL / 'routes'
+        base = (root / RUNTIME_REL / 'routes').resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(
+            f'refusing route snapshot: runtime routes root cannot be resolved ({type(exc).__name__})'
+        ) from exc
+    if base != declared:
+        raise ValueError('refusing route snapshot: runtime routes root resolves outside the repository')
+    candidate = base / f'{route_id}.json'
+    try:
+        resolved = candidate.resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ValueError(f'refusing route snapshot: route file cannot be resolved ({type(exc).__name__})') from exc
+    if resolved.parent != base:
+        raise ValueError('refusing route snapshot: route file resolves outside the runtime routes directory')
+    return candidate
+
+
 def set_active_route(root: Path, route: dict[str, Any]) -> None:
+    snapshot = route_snapshot_path(root, route.get('route_id') if isinstance(route, dict) else None)
     with runtime_lock(root, 'route'):
         dump_json(active_route_path(root), route)
-        route_dir = runtime_dir(root) / 'routes'
-        route_dir.mkdir(parents=True, exist_ok=True)
-        dump_json(route_dir / f"{route['route_id']}.json", route)
+        snapshot.parent.mkdir(parents=True, exist_ok=True)
+        dump_json(snapshot, route)
 
 
 def update_route(root: Path, **updates: Any) -> dict[str, Any] | None:
@@ -114,8 +152,10 @@ def update_route(root: Path, **updates: Any) -> dict[str, Any] | None:
             return None
         route.update(updates)
         route['updated_at'] = now_utc()
+        snapshot = route_snapshot_path(root, route.get('route_id'))
         dump_json(active_route_path(root), route)
-        dump_json(runtime_dir(root) / 'routes' / f"{route['route_id']}.json", route)
+        snapshot.parent.mkdir(parents=True, exist_ok=True)
+        dump_json(snapshot, route)
         return route
 
 
