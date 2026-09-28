@@ -1,0 +1,6 @@
+{
+  "source": "/home/pall/grok-projects/adaptive-grok-build-issues-wave/engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-consumer-coverage-157-169.md",
+  "sha256": "326920afd53cdee83377be77579550266cb43c1a8be0b7a323418227f4616761",
+  "scope": "research packet only; all current route analyses independently inspect current source",
+  "observed_at": "2026-09-21T13:48:26.662307+00:00"
+}

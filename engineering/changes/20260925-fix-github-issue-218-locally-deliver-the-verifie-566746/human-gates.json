@@ -1,0 +1,55 @@
+{
+  "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+      "decided_at": "2026-09-25T20:12:22+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly directed local fixes through issue 224 and downward to completion, confirmed continuation, prohibited network/Daybreak access, and requested full monitoring; approval is limited to this local issue-218 clean-squash delivery scope with no external writes.",
+      "resource": null,
+      "route_id": "566746aef130",
+      "scope_digest": "20cf865a0bbcc7948231e3ab22246e69d6e47a08b331328967625e0cc3a9b11c"
+    },
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+      "decided_at": "2026-09-25T20:50:58+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly required issue 218 to be fixed and directed continuation; refreshed approval is limited to the four independently reproduced local #218 scan/receipt security repairs, with no network, external write, merge, or release.",
+      "resource": null,
+      "route_id": "566746aef130",
+      "scope_digest": "27333d393f8284064aa1df968bea50c56a3869557cfb93f9dc79102d788fbe49"
+    },
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+      "decided_at": "2026-09-25T22:19:13+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly directed completion of issue 218 and its optimization; approval is refreshed only for the bounded linear whitespace classifier, structured fail-closed budget evidence, legacy compatibility repair, and exact package inventory correction, with no network, external write, merge, release, or production action.",
+      "resource": null,
+      "route_id": "566746aef130",
+      "scope_digest": "2ba6e2e67943b3ca4f6144ef9b4f5af7194f6f7a56157623c989eaea6c1d1dfa"
+    },
+    {
+      "action": null,
+      "actor": "user-via-chat",
+      "change_id": "20260925-fix-github-issue-218-locally-deliver-the-verifie-566746",
+      "decided_at": "2026-09-26T00:37:36+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Materializes the existing explicit user instruction to continue issue 227 through issue 0 and complete issue 218 locally: corrected thirteen-path plus active-package scope includes bounded verifier/util security repairs, maximum-monotone ambiguity rejection, endpoint metadata and worktree pre-read budgets, and dated README/START_HERE local-tag corrections. This is local workflow evidence only; no network, external write, commit by this writer, merge, tag, release, deployment, production action or human security approval is authorized.",
+      "resource": null,
+      "route_id": "566746aef130",
+      "scope_digest": "d2cc86307c68ffd2a0f5b0bf2482b75e08a6ea1698175419ae918eab9a9971de"
+    }
+  ],
+  "route_id": "566746aef130",
+  "schema_version": 1
+}

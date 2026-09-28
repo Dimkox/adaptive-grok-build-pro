@@ -377,15 +377,65 @@ def _workflow_artifacts_check(
         ), {"configured": True, "status": "fail", "error": str(exc)}
 
 
+_COLLECTION_ERROR = re.compile(
+    r'^ERROR: [^\n]*\bunittest\.loader\._FailedTest\b',
+    re.MULTILINE,
+)
+_UNITTEST_RESULT = re.compile(r'^(OK|FAILED)(?: \(([^)]*)\))?\s*$', re.MULTILINE)
+_UNITTEST_COUNT = re.compile(r'\b(failures|errors)=(\d+)\b')
+
+
+def _is_unittest_command(command: list[str] | None) -> bool:
+    return bool(command) and 'unittest' in command
+
+
+def _unittest_collection_summary(stdout: str, stderr: str) -> str | None:
+    """Count loader._FailedTest rows as suites not collected, not test failures."""
+    text = stderr if 'unittest.loader._FailedTest' in stderr else stdout
+    collected = len(_COLLECTION_ERROR.findall(text))
+    if collected == 0:
+        return None
+    failures = 0
+    errors = 0
+    found = list(_UNITTEST_RESULT.finditer(text))
+    if found:
+        counts = {
+            name: int(value)
+            for name, value in _UNITTEST_COUNT.findall(found[-1].group(2) or '')
+        }
+        failures = counts.get('failures', 0)
+        errors = counts.get('errors', 0)
+    ordinary = failures + max(0, errors - collected)
+    parts: list[str] = []
+    if ordinary:
+        noun = 'test failure' if ordinary == 1 else 'test failures'
+        parts.append(f'{ordinary} {noun}')
+    parts.append(f'{collected} suites not collected')
+    return '; '.join(parts)
+
+
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300, *, env: dict[str, str] | None = None) -> CheckResult:
     proc = run(command, cwd=root, timeout=timeout, env=env)
+    summary = f'exit={proc.returncode}'
+    details: list[dict[str, str]] = []
+    if proc.returncode != 0 and _is_unittest_command(command):
+        note = _unittest_collection_summary(proc.stdout, proc.stderr)
+        if note:
+            summary = note
+            details.append({
+                'severity': 'error',
+                'code': 'suites-not-collected',
+                'path': name,
+                'message': note,
+            })
     return CheckResult(
         name=name,
         status='pass' if proc.returncode == 0 else 'fail',
-        summary=f'exit={proc.returncode}',
+        summary=summary,
         command=command,
         stdout=proc.stdout[-12000:],
         stderr=proc.stderr[-12000:],
+        details=details,
     )
 
 
@@ -1580,15 +1630,42 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
             requested_workers, workers = workers, core.workers
             for name, process in [('python-unittest', core.tests), ('coverage', core.coverage)]:
                 if process is not None:
+                    summary = (
+                        f'{"pytest-xdist" if workers else "unittest"} workers={workers} '
+                        f'exit={process.returncode} seconds={process.seconds:.3f}'
+                    )
+                    details: list[dict[str, str]] = [{
+                        'severity': 'info',
+                        'path': 'tests',
+                        'message': (
+                            f'backend={"pytest-xdist" if workers else "unittest"}; '
+                            'fresh invocation-owned coverage'
+                        ),
+                        'requested_workers': str(requested_workers),
+                        'versions': json.dumps(core.versions, sort_keys=True),
+                        'coverage': json.dumps(core.coverage_metadata, sort_keys=True),
+                    }]
+                    if (
+                        name == 'python-unittest'
+                        and process.returncode != 0
+                        and _is_unittest_command(process.command)
+                    ):
+                        note = _unittest_collection_summary(process.stdout, process.stderr)
+                        if note:
+                            summary = f'{summary}; {note}'
+                            details.append({
+                                'severity': 'error',
+                                'code': 'suites-not-collected',
+                                'path': 'tests',
+                                'message': note,
+                            })
                     results.append(CheckResult(
                         name, 'pass' if process.returncode == 0 else 'fail',
-                        f'{"pytest-xdist" if workers else "unittest"} workers={workers} exit={process.returncode} seconds={process.seconds:.3f}',
-                        command=process.command, stdout=process.stdout[-12000:], stderr=process.stderr[-12000:],
-                        details=[{'severity': 'info', 'path': 'tests',
-                                  'message': f'backend={"pytest-xdist" if workers else "unittest"}; fresh invocation-owned coverage',
-                                  'requested_workers': str(requested_workers),
-                                  'versions': json.dumps(core.versions, sort_keys=True),
-                                  'coverage': json.dumps(core.coverage_metadata, sort_keys=True)}],
+                        summary,
+                        command=process.command,
+                        stdout=process.stdout[-12000:],
+                        stderr=process.stderr[-12000:],
+                        details=details,
                     ))
         elif workers == -1:
             pass
@@ -1639,11 +1716,68 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
     return results
 
 
-def summarize_verification_report(report: dict[str, object]) -> dict[str, object]:
+def _quality_member(rel: str, root_rel: str) -> bool:
+    if root_rel.endswith('.py'):
+        return rel == root_rel
+    prefix = root_rel.rstrip('/')
+    return rel == prefix or rel.startswith(prefix + '/')
+
+
+def _unscanned_consumer_files(root: Path, files: list[str]) -> list[str]:
+    # Ruff and bandit select only existing QUALITY_PY_PATHS. Swift has no check.
+    quality = _existing_quality_paths(root)
+    uncovered: list[str] = []
+    for rel in files:
+        suffix = Path(rel).suffix.lower()
+        if suffix not in {'.py', '.pyi', '.swift'}:
+            continue
+        candidate = root / rel
+        try:
+            linked = candidate.is_symlink()
+            regular = candidate.is_file()
+        except OSError:
+            uncovered.append(rel)
+            continue
+        if linked or not regular:
+            if linked:
+                uncovered.append(rel)
+            continue
+        if suffix == '.swift' or not any(_quality_member(rel, item) for item in quality):
+            uncovered.append(rel)
+    return uncovered
+
+
+def _incomplete_product_coverage(uncovered: list[str]) -> CheckResult:
+    shown = uncovered[:32]
+    summary = f'{len(uncovered)} changed consumer files were not scanned'
+    if len(uncovered) > len(shown):
+        summary += f'; {len(uncovered) - len(shown)} paths omitted'
+    return CheckResult(
+        'product-coverage',
+        'fail',
+        summary,
+        details=[
+            {
+                'severity': 'error',
+                'code': 'incomplete_product_coverage',
+                'path': rel,
+                'message': 'No applicable check scanned this changed consumer file.',
+            }
+            for rel in shown
+        ],
+    )
+
+
+def summarize_verification_report(
+    report: dict[str, object],
+    *,
+    uncovered_consumer_files: list[str] | None = None,
+) -> dict[str, object]:
     """Validate and summarize a bounded, explicitly sample-labelled report.
 
     This function is deliberately pure: it does not run checks, inspect Git, write a
-    receipt, or infer merge authority.
+    receipt, or infer merge authority. Skip-only reports and named unscanned consumer
+    files are not a pass. Optional skips alongside a real pass still are.
     """
     allowed = {"schema_version", "sample_id", "status", "checks"}
     unknown = set(report) - allowed
@@ -1673,7 +1807,12 @@ def summarize_verification_report(report: dict[str, object]) -> dict[str, object
             raise ValueError(f"verification check {index} summary is invalid")
         counts[status] += 1
         normalized.append({"name": name, "status": status, "summary": summary})
-    overall = "fail" if counts["fail"] else "pass"
+    uncovered = [
+        path for path in (uncovered_consumer_files or ())
+        if isinstance(path, str) and path
+    ]
+    skip_only = counts["pass"] == 0 and counts["fail"] == 0 and counts["skip"] > 0
+    overall = "fail" if counts["fail"] or uncovered or skip_only else "pass"
     return {
         "sample_id": sample_id,
         "status": overall,
@@ -1813,6 +1952,130 @@ def _docs_state_status_inventory(
     return records, trusted
 
 
+_SHARED_MEMORY_PATHS = ('decisions.md', 'mistakes.md')
+_PROJECTION_BEGIN = 'BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION'
+_H2_HEADING = re.compile('^## ', re.MULTILINE)
+
+
+def _revision_text(root: Path, rev: str, rel: str) -> tuple[str | None, str | None]:
+    """Return blob text, or None when the path is absent. The second item is an error."""
+    try:
+        proc = run(
+            ['git', 'show', '--end-of-options', f'{rev}:{rel}'],
+            cwd=root,
+            timeout=30,
+            encoding='utf-8',
+            errors='strict',
+        )
+    except UnicodeDecodeError:
+        return None, f'{rel} at {rev} is not valid UTF-8'
+    if proc.returncode == 0:
+        return proc.stdout, None
+    stderr = (proc.stderr or '').strip()
+    if 'does not exist' in stderr or 'exists on disk, but not in' in stderr:
+        return None, None
+    return None, stderr or f'cannot read {rel} at {rev}'
+
+
+def _worktree_text(root: Path, rel: str) -> tuple[str | None, str | None]:
+    path = root / rel
+    if path.is_symlink():
+        return None, f'{rel} is not a regular file'
+    if not path.exists():
+        return None, None
+    if not path.is_file():
+        return None, f'{rel} is not a regular file'
+    try:
+        return path.read_text(encoding='utf-8'), None
+    except (OSError, UnicodeError) as exc:
+        return None, f'{rel}: {exc}'
+
+
+def _h2_count(text: str | None) -> int:
+    if not text:
+        return 0
+    return len(_H2_HEADING.findall(text))
+
+
+def _shared_memory_check(
+    root: Path,
+    mode: str,
+    selection: GitRangeSelection,
+) -> CheckResult:
+    """Fail a diff that shrinks shared-memory headings or drops the projection block.
+
+    The count is compared to the selected diff target tip. An append onto a stale
+    snapshot grows versus the merge base and still deletes headings or the
+    projection block that the target already has. A path unchanged since the
+    comparison base is left untouched so the target side of the merge survives.
+    """
+    if mode not in {'pr', 'release'}:
+        return CheckResult(
+            'shared-memory',
+            'skip',
+            'shared-memory preservation applies to PR and release diffs',
+        )
+    if not command_exists('git'):
+        return CheckResult('shared-memory', 'skip', 'git not available')
+    if not selection.bases:
+        return CheckResult('shared-memory', 'skip', 'no diff base selected')
+
+    findings: list[dict[str, str]] = []
+    for selected in selection.bases:
+        for rel in _SHARED_MEMORY_PATHS:
+            base_text, base_error = _revision_text(root, selected.comparison_base_sha, rel)
+            target_text, target_error = _revision_text(root, selected.target_sha, rel)
+            candidate_text, candidate_error = _worktree_text(root, rel)
+            error = base_error or target_error or candidate_error
+            if error:
+                findings.append({
+                    'severity': 'error',
+                    'code': 'shared-memory-unreadable',
+                    'path': rel,
+                    'message': error,
+                })
+                continue
+            if candidate_text == base_text:
+                continue
+            target_count = _h2_count(target_text)
+            candidate_count = _h2_count(candidate_text)
+            if candidate_count < target_count:
+                findings.append({
+                    'severity': 'error',
+                    'code': 'shared-memory-headings',
+                    'path': rel,
+                    'message': (
+                        f'{rel} ## heading count fell from {target_count} to {candidate_count} '
+                        f'against {selected.source} ({selected.target_sha})'
+                    ),
+                })
+            target_has_projection = bool(target_text) and _PROJECTION_BEGIN in target_text
+            candidate_has_projection = (
+                bool(candidate_text) and _PROJECTION_BEGIN in candidate_text
+            )
+            if target_has_projection and not candidate_has_projection:
+                findings.append({
+                    'severity': 'error',
+                    'code': 'shared-memory-projection',
+                    'path': rel,
+                    'message': (
+                        f'{rel} removed {_PROJECTION_BEGIN} '
+                        f'against {selected.source} ({selected.target_sha})'
+                    ),
+                })
+    rendered = ','.join(f'{item.kind}:{item.target_sha}' for item in selection.bases)
+    return CheckResult(
+        name='shared-memory',
+        status='fail' if findings else 'pass',
+        summary=(
+            f'{len(findings)} shared-memory regressions; targets={rendered}'
+            if findings
+            else f'shared-memory entries preserved; targets={rendered}'
+        ),
+        details=findings,
+    )
+
+
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
     checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
@@ -1868,6 +2131,8 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     results: list[CheckResult] = [
         _git_diff_check(root, mode, git_ranges),
         _docs_state_scope_check(docs_scope),
+
+        _shared_memory_check(root, mode, git_ranges),
         spec_check,
         architecture_check,
         governance_check,
@@ -1890,6 +2155,9 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     if trivy is not None:
         results.append(trivy)
     results.extend(_python(root, mode, docs_scope))
+    uncovered_consumer_files = _unscanned_consumer_files(root, files)
+    if uncovered_consumer_files:
+        results.append(_incomplete_product_coverage(uncovered_consumer_files))
 
     final_fingerprint = tree_fingerprint(root)
     source_stable = final_fingerprint == checked_fingerprint

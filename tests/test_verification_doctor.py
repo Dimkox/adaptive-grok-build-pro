@@ -1602,6 +1602,117 @@ class VerificationTests(unittest.TestCase):
             self.assertIn('pytest', names)
             self.assertNotIn('python-unittest', names)
 
+    def test_shared_memory_check_fails_heading_loss_and_projection_removal(self) -> None:
+        from adaptive_grok.verification import GitRangeBase, _shared_memory_check
+
+        def document(name: str, headings: list[str], *, projection: bool) -> str:
+            lines = [f'# {name}', '']
+            if projection:
+                lines.extend([
+                    f'<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: {name} -->',
+                    '## Active governance rules',
+                    '## Candidate governance rules',
+                    f'<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: {name} -->',
+                ])
+            lines.extend(f'## {heading}' for heading in headings)
+            lines.append('')
+            return '\n'.join(lines)
+
+        def codes(result: CheckResult) -> set[tuple[str, str]]:
+            return {(item['path'], item['code']) for item in result.details}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subprocess.run(['git', 'init', '-q', '-b', 'main'], cwd=root, check=True)
+            subprocess.run(['git', 'config', 'user.email', 'memory@example.com'], cwd=root, check=True)
+            subprocess.run(['git', 'config', 'user.name', 'Memory Test'], cwd=root, check=True)
+            subprocess.run(['git', 'config', 'commit.gpgsign', 'false'], cwd=root, check=True)
+            ancestor_docs = {
+                'decisions.md': document('decisions.md', ['one', 'two'], projection=True),
+                'mistakes.md': document('mistakes.md', ['one', 'two'], projection=True),
+            }
+            for rel, content in ancestor_docs.items():
+                (root / rel).write_text(content, encoding='utf-8')
+            subprocess.run(['git', 'add', 'decisions.md', 'mistakes.md'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'ancestor'], cwd=root, check=True)
+            ancestor = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8',
+            ).strip()
+            target_decisions = document(
+                'decisions.md', ['one', 'two', 'three', 'four'], projection=True,
+            )
+            (root / 'decisions.md').write_text(target_decisions, encoding='utf-8')
+            subprocess.run(['git', 'add', 'decisions.md'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'target'], cwd=root, check=True)
+            target = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8',
+            ).strip()
+            subprocess.run(['git', 'checkout', '-q', ancestor], cwd=root, check=True)
+            selected = GitRangeBase(
+                kind='pr-target',
+                source='refs/remotes/origin/main',
+                target_sha=target,
+                comparison_base_sha=ancestor,
+            )
+
+            def check() -> CheckResult:
+                return _shared_memory_check(
+                    root,
+                    'pr',
+                    GitRangeSelection(bases=[selected]),
+                )
+
+            untouched = check()
+            self.assertEqual(untouched.status, 'pass', untouched.details)
+            self.assertEqual(codes(untouched), set())
+
+            (root / 'decisions.md').write_text(
+                document('decisions.md', ['one', 'two', 'stale'], projection=True),
+                encoding='utf-8',
+            )
+            stale = check()
+            self.assertEqual(stale.status, 'fail')
+            self.assertEqual(codes(stale), {('decisions.md', 'shared-memory-headings')})
+
+            (root / 'decisions.md').write_text(
+                target_decisions.replace(
+                    '<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->\n',
+                    '',
+                    1,
+                ),
+                encoding='utf-8',
+            )
+            removed = check()
+            self.assertEqual(removed.status, 'fail')
+            self.assertEqual(codes(removed), {('decisions.md', 'shared-memory-projection')})
+
+            (root / 'decisions.md').write_text(
+                target_decisions + '## five\n',
+                encoding='utf-8',
+            )
+            appended = check()
+            self.assertEqual(appended.status, 'pass', appended.details)
+            self.assertEqual(codes(appended), set())
+
+            (root / 'decisions.md').write_text(ancestor_docs['decisions.md'], encoding='utf-8')
+            (root / 'mistakes.md').write_text(
+                document('mistakes.md', ['one'], projection=True),
+                encoding='utf-8',
+            )
+            same_base = GitRangeBase(
+                kind='route',
+                source='route.base_commit',
+                target_sha=ancestor,
+                comparison_base_sha=ancestor,
+            )
+            reduced = _shared_memory_check(
+                root,
+                'pr',
+                GitRangeSelection(bases=[same_base]),
+            )
+            self.assertEqual(reduced.status, 'fail')
+            self.assertEqual(codes(reduced), {('mistakes.md', 'shared-memory-headings')})
+
 
 class TypedSpecVerificationTests(unittest.TestCase):
     def test_gate_fails_unmapped_non_ac_criteria_and_keeps_coverage(self) -> None:
@@ -1930,6 +2041,47 @@ class QualityContourTests(unittest.TestCase):
 
 
 class DoctorTests(unittest.TestCase):
+    def test_doctor_names_missing_suite_runtime_modules(self) -> None:
+        import importlib.util
+
+        with project_copy() as root:
+            (root / 'factory').mkdir()
+            (root / 'factory' / 'pyproject.toml').write_text(
+                '[project]\n'
+                'name = "factory"\n'
+                'dependencies = [\n'
+                '  "unittest",\n'
+                '  "missing_factory_runtime_module[binary]==9.9.9",\n'
+                '  "missing_factory_runtime_other>=1",\n'
+                ']\n',
+                encoding='utf-8',
+            )
+            (root / 'trust-ci').mkdir()
+            (root / 'trust-ci' / 'pyproject.toml').write_text(
+                '[project]\nname = "trust-ci"\ndependencies = ["unittest"]\n',
+                encoding='utf-8',
+            )
+            (root / 'delivery').mkdir()
+            (root / 'delivery' / 'pyproject.toml').write_text(
+                '[project]\nname = "delivery"\ndependencies = []\n',
+                encoding='utf-8',
+            )
+            items = run_doctor(root)
+            by_name = {item.name: item for item in items}
+            factory = by_name['test-deps:factory']
+            self.assertEqual(factory.status, 'fail')
+            self.assertEqual(
+                factory.message,
+                'missing_factory_runtime_module, missing_factory_runtime_other missing',
+            )
+            self.assertEqual(by_name['test-deps:trust-ci'].status, 'pass')
+            self.assertEqual(by_name['test-deps:trust-ci'].message, 'runtime dependencies importable')
+            self.assertEqual(by_name['test-deps:delivery'].status, 'pass')
+            self.assertEqual(by_name['test-deps:delivery'].message, 'no runtime dependencies')
+            self.assertNotIn('test-deps:pilot', by_name)
+            self.assertIsNone(importlib.util.find_spec('missing_factory_runtime_module'))
+            self.assertIsNone(importlib.util.find_spec('missing_factory_runtime_other'))
+
     def test_project_doctor_has_no_failures(self) -> None:
         items = run_doctor(ROOT)
         failures = [item for item in items if item.status == 'fail']

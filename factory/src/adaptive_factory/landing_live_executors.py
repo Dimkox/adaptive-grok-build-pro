@@ -12,6 +12,7 @@ import hashlib
 import os
 from pathlib import Path
 import re
+import stat
 import time
 from typing import Mapping
 
@@ -62,6 +63,9 @@ LANDING_PROVIDER_ENV = "FACTORY_LANDING_PROVIDER"
 LANDING_SOURCE_ENV = "FACTORY_LANDING_SOURCE_PATH"
 LANDING_SCRATCH_ENV = "FACTORY_LANDING_SCRATCH_PATH"
 LANDING_OUTPUT_ENV = "FACTORY_LANDING_OUTPUT_PATH"
+LANDING_STATE_ENV = "FACTORY_LANDING_STATE_PATH"
+# Sibling of landing.sqlite3. Not a landing_jobs row and not created on failure.
+PROBE_LEDGER_FILENAME = "activation-probe-ledger.jsonl"
 PROVIDER_KEY_NAMES = {
     "qwen": QWEN_API_KEY_ENV, "grok": GROK_API_KEY_ENV,
     "openai": "FACTORY_LANDING_OPENAI_API_KEY", "anthropic": "FACTORY_LANDING_ANTHROPIC_API_KEY",
@@ -725,11 +729,72 @@ def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
     return {"category": category, "http_status": status}
 
 
+def _probe_state_directory(state_directory: Path | None) -> Path:
+    """Existing landing state directory. Does not create it or the probe ledger."""
+    if state_directory is None:
+        raw = os.environ.get(LANDING_STATE_ENV, "").strip()
+        if not raw:
+            raise LandingProviderError("landing_path")
+        state_directory = Path(raw)
+    if (
+        not isinstance(state_directory, Path) or not state_directory.is_absolute()
+        or state_directory.anchor == "//" or ".." in state_directory.parts
+    ):
+        raise LandingProviderError("landing_path")
+    try:
+        metadata = state_directory.lstat()
+    except OSError as exc:
+        raise LandingProviderError("landing_path") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        raise LandingProviderError("landing_path")
+    return state_directory
+
+
+def _append_probe_ledger(result: dict[str, object], state_directory: Path) -> None:
+    """Append one canonical probe object. Never inserts a landing-job row."""
+    path = state_directory / PROBE_LEDGER_FILENAME
+    payload = canonical_json(result) + b"\n"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW | os.O_CLOEXEC
+    previous = os.umask(0o077)
+    descriptor = None
+    try:
+        descriptor = os.open(path, flags, 0o600)
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid()
+            or metadata.st_nlink != 1
+        ):
+            raise LandingProviderError("landing_path")
+        if stat.S_IMODE(metadata.st_mode) != 0o600:
+            os.fchmod(descriptor, 0o600)
+        pending = payload
+        while pending:
+            written = os.write(descriptor, pending)
+            if written <= 0:
+                raise LandingProviderError("landing_path")
+            pending = pending[written:]
+        os.fsync(descriptor)
+    except LandingProviderError:
+        raise
+    except OSError as exc:
+        raise LandingProviderError("landing_path") from exc
+    finally:
+        os.umask(previous)
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = None,
-               transport: httpx.AsyncBaseTransport | None = None) -> dict[str, object]:
-    """One synthetic normalization request; never reads project or customer inputs."""
+               transport: httpx.AsyncBaseTransport | None = None,
+               state_directory: Path | None = None) -> dict[str, object]:
+    """One synthetic normalization request; never reads project or customer inputs.
+
+    On success, appends the same result object to the probe ledger in the
+    existing landing state directory. Failures leave that file untouched.
+    """
     if profile_id not in PROBE_PROFILES:
         raise LandingProviderError("http_profile_identity")
+    root = _probe_state_directory(state_directory)
     profile = HttpLandingProfile.for_provider(profile_id, available=True)
     executor = qwen_landing_executor(
         api_key=qwen_api_key(env_file=qwen_env_file), profile=profile, transport=transport,
@@ -743,13 +808,15 @@ def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = No
     }})
     result = executor.run(HttpLandingExecutionRequest(profile.profile_digest, input_digest, payload))
     spec = decode_landing_draft(input_digest, result.stdout, maximum=MAX_PROVIDER_OUTPUT_BYTES)
-    return {
+    recorded = {
         "state": "normalized", "profile_id": profile.profile_id, "model_id": profile.model_id,
         "profile_digest": profile.profile_digest, "input_digest": input_digest,
         "spec_digest": spec.spec_digest, "response_digest": result.response_digest,
         "usage_input_units": result.usage_input_units, "usage_output_units": result.usage_output_units,
         "elapsed_ms": result.elapsed_ms,
     }
+    _append_probe_ledger(recorded, root)
+    return recorded
 
 
 def main() -> int:

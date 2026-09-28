@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +19,90 @@ class DoctorItem:
     status: str
     name: str
     message: str
+
+
+_SUITE_RUNTIME_DEPS = (
+    ('factory', 'factory/pyproject.toml'),
+    ('trust-ci', 'trust-ci/pyproject.toml'),
+    ('delivery', 'delivery/pyproject.toml'),
+)
+_REQUIREMENT_NAME = re.compile(r'^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$')
+_REQUIREMENT_OPERATORS = ('===', '==', '~=', '!=', '>=', '<=', '>', '<')
+
+
+def _dependency_module(requirement: str) -> str | None:
+    name = requirement.split(';', 1)[0].strip().split('[', 1)[0].strip()
+    for operator in _REQUIREMENT_OPERATORS:
+        if operator in name:
+            name = name.split(operator, 1)[0].strip()
+            break
+    name = name.split()[0] if name else ''
+    if not _REQUIREMENT_NAME.fullmatch(name):
+        return None
+    module = name.replace('-', '_')
+    if not module.isidentifier():
+        return None
+    return module
+
+
+def _module_importable(module: str) -> bool:
+    try:
+        return importlib.util.find_spec(module) is not None
+    except (ImportError, ValueError, AttributeError):
+        return False
+
+
+def _runtime_modules(dependencies: object) -> list[str] | None:
+    if not isinstance(dependencies, list):
+        return None
+    modules: list[str] = []
+    seen: set[str] = set()
+    for item in dependencies:
+        if not isinstance(item, str):
+            return None
+        module = _dependency_module(item)
+        if module is None:
+            if item.strip():
+                return None
+            continue
+        if module not in seen:
+            seen.add(module)
+            modules.append(module)
+    return modules
+
+
+def _suite_dependency_items(root: Path) -> list[DoctorItem]:
+    """Report pyproject runtime modules that this interpreter cannot import.
+
+    The probe never installs or executes a dependency. A suite with no
+    pyproject.toml is omitted instead of failed.
+    """
+    items: list[DoctorItem] = []
+    for name, rel in _SUITE_RUNTIME_DEPS:
+        path = root / rel
+        if not path.is_file():
+            continue
+        try:
+            document = tomllib.loads(path.read_text(encoding='utf-8'))
+        except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
+            items.append(DoctorItem('fail', f'test-deps:{name}', str(exc)))
+            continue
+        project = document.get('project') if isinstance(document, dict) else None
+        if not isinstance(project, dict) or 'dependencies' not in project:
+            items.append(DoctorItem('pass', f'test-deps:{name}', 'no runtime dependencies'))
+            continue
+        modules = _runtime_modules(project.get('dependencies'))
+        if modules is None:
+            items.append(DoctorItem('fail', f'test-deps:{name}', f'invalid runtime dependencies in {rel}'))
+            continue
+        missing = [module for module in modules if not _module_importable(module)]
+        if missing:
+            items.append(DoctorItem('fail', f'test-deps:{name}', f'{", ".join(missing)} missing'))
+        elif modules:
+            items.append(DoctorItem('pass', f'test-deps:{name}', 'runtime dependencies importable'))
+        else:
+            items.append(DoctorItem('pass', f'test-deps:{name}', 'no runtime dependencies'))
+    return items
 
 
 def run_doctor(root: Path) -> list[DoctorItem]:
@@ -95,4 +181,5 @@ def run_doctor(root: Path) -> list[DoctorItem]:
 
     for tool in check_toolchain(root):
         items.append(DoctorItem(tool.status, f'tool:{tool.id}', tool.message))
+    items.extend(_suite_dependency_items(root))
     return items

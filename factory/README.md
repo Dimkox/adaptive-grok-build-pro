@@ -65,13 +65,14 @@ The existing `adaptive-factory-server` composes durable unavailable mode when `F
 The explicit synthetic probe is available when separately invoked with factory dependencies installed:
 
 ```bash
+FACTORY_LANDING_STATE_PATH=/absolute/private-landing-state \
 PYTHONPATH=factory/src python -m adaptive_factory.landing_live_executors \
   --profile qwen-intl --qwen-env-file "$HOME/.qwen/.env"
 ```
 
-`--profile` accepts `qwen`, `qwen-intl`, `qwen-omni` and `qwen-omni-intl`; use the omni variant matching the account region of the key. A failed probe prints one closed JSON object — `state`, `reason`, plus the allowlisted `category` (one of `authentication`, `rate_limit`, `permission`, `policy`, `protocol`, `deadline`, `transport`, `accounting`, `unavailable`) and the numeric `http_status` — and never an upstream body, exception text or the key.
+`--profile` accepts `qwen`, `qwen-intl`, `qwen-omni` and `qwen-omni-intl`; use the omni variant matching the account region of the key. A failed probe prints one closed JSON object — `state`, `reason`, plus the allowlisted `category` (one of `authentication`, `rate_limit`, `permission`, `policy`, `protocol`, `deadline`, `transport`, `accounting`, `unavailable`) and the numeric `http_status` — and never an upstream body, exception text or the key. Failure does not create or extend the probe ledger.
 
-It sends one fixed synthetic request and prints bounded status, profile/model, digests, usage and elapsed time. It does not start a service or publish a site. This command is documentation; the source extraction and automated tests do not execute it.
+It sends one fixed synthetic request and prints bounded status, profile/model, digests, usage and elapsed time. `FACTORY_LANDING_STATE_PATH` must already exist. A successful probe appends that same JSON object as one line of `activation-probe-ledger.jsonl` in that directory. The ledger is not a landing-job row. It does not start a service or publish a site. This command is documentation; the source extraction and automated tests do not execute it.
 
 ## Dedicated Unix landing host
 
