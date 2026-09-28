@@ -544,7 +544,14 @@ class ReceiptEchoTests(unittest.TestCase):
 
     def test_echo_does_not_reject_a_hostile_route_and_writes_nothing(self) -> None:
         with project_copy(git=True) as root:
-            set_active_route(root, {'route_id': 'oops/../../escape', 'required_evidence': []})
+            # Issue 53 refuses this id in set_active_route. The echo claim is about a hostile
+            # route file that is already on disk, not about the writer accepting it.
+            route_path = root / '.grok-stack/runtime/active-route.json'
+            route_path.parent.mkdir(parents=True, exist_ok=True)
+            route_path.write_text(
+                json.dumps({'route_id': 'oops/../../escape', 'required_evidence': []}),
+                encoding='utf-8',
+            )
             before = sorted(path.name for path in root.iterdir())
 
             line = receipt_echo(root, 'verification', not_before=now_utc())

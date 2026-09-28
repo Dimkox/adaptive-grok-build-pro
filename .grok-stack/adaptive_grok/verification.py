@@ -1832,6 +1832,7 @@ def _verify_focused_static_seo_landing(
     checked_fingerprint: str,
     *,
     record: bool,
+    receipt_id: str | None,
 ) -> dict[str, object]:
     active_change = get_active_change(root) or {}
     change_package = active_change.get('path')
@@ -1900,6 +1901,7 @@ def _verify_focused_static_seo_landing(
             report['status'],
             details=report,
             expected_tree_fingerprint=final_fingerprint,
+            receipt_id=receipt_id,
         )
     return report
 
@@ -2076,7 +2078,14 @@ def _shared_memory_check(
     )
 
 
-def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
+def verify(
+    root: Path,
+    mode: str = 'pr',
+    profiles: list[str] | None = None,
+    record: bool = True,
+    *,
+    receipt_id: str | None = None,
+) -> dict[str, object]:
     checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
     active_profiles = profiles or (route.get('quality_profiles', ['base']) if route else ['base'])
@@ -2098,6 +2107,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
             changed_file_inventory,
             checked_fingerprint,
             record=record,
+            receipt_id=receipt_id,
         )
 
     spec_check, spec_metadata = _change_specs(root, files, route, mode)
@@ -2200,5 +2210,6 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
             report['status'],
             details=report,
             expected_tree_fingerprint=final_fingerprint,
+            receipt_id=receipt_id,
         )
     return report

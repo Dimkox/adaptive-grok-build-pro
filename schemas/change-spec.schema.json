@@ -21,12 +21,13 @@
     },
     "criterion": {
       "type": "object", "additionalProperties": false, "required": ["id", "statement", "evidence"],
+      "description": "A statement may declare a set of expected outcomes in braces, for example the cutover reds are exactly {key-A, key-B}. In the same sentence, an exact set requires every member to be bound by one repository-contained unittest selector whose AST calls exercise_expectation_member with that literal member and observe, mutate and undo callables; the ordinary test run proves absent, present after mutation and restored after undo. Where a member cannot be produced, declare the set as an upper bound and assert non-emptiness instead.",
       "properties": {"id": {"$ref": "#/$defs/ac_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/evidence"}}}
     }
   },
   "properties": {
     "schema_version": {"const": 2},
-    "change_id": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._:\u0400-\u04FF-]{2,120}$"},
+    "change_id": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._\u0400-\u04FF-]{1,119}[A-Za-z0-9_\u0400-\u04FF-]$"},
     "objective": {"type": "object", "additionalProperties": false, "required": ["id", "statement", "success_metric", "target"], "properties": {"id": {"$ref": "#/$defs/obj_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "success_metric": {"type": "string", "minLength": 1, "maxLength": 512}, "target": {"type": "string", "minLength": 1, "maxLength": 512}}},
     "risk": {"type": "object", "additionalProperties": false, "required": ["tier", "domains"], "properties": {"tier": {"type": "string", "enum": ["green", "yellow", "red"]}, "domains": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}}}},
     "acceptance_criteria": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/criterion"}},

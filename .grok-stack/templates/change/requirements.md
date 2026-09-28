@@ -6,6 +6,17 @@
 
 - [ ] Given ..., when ..., then ...
 
+A criterion that declares a set of expected outcomes must stay falsifiable and
+achievable. Naming an exact set — `the cutover reds are exactly {key-a, key-b}` —
+obliges a per-member executable liveness probe: the same criterion must reference
+one repository-contained `unittest.TestCase` selector whose AST calls
+`exercise_expectation_member("key-a", observe=…, mutate=…, undo=…)`. The validator
+resolves this structure without importing the test; the ordinary test run proves
+the member absent before mutation, present after mutation, and fully restored by
+undo. A member no detector can produce cannot be proven that way, so declare the
+set as an upper bound (`observed ⊆ {…}`) and assert non-emptiness. Quantifier cues
+apply only to their brace group's sentence.
+
 ## Failure and edge cases
 
 - 

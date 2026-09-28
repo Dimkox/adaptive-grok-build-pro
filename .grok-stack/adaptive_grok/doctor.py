@@ -7,6 +7,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from .git_audit import audit_git_state, doctor_items as git_audit_items
 from .manifest import verify_manifest
 from .repo import detect_repo
 from .router import build_route
@@ -105,7 +106,7 @@ def _suite_dependency_items(root: Path) -> list[DoctorItem]:
     return items
 
 
-def run_doctor(root: Path) -> list[DoctorItem]:
+def run_doctor(root: Path, *, git_audit: bool = True) -> list[DoctorItem]:
     items: list[DoctorItem] = []
 
     required = [
@@ -162,6 +163,18 @@ def run_doctor(root: Path) -> list[DoctorItem]:
 
     profile = detect_repo(root)
     items.append(DoctorItem('pass', 'repo-detection', f'{profile.kind}; domains={profile.domains}; signals={profile.signals[:5]}'))
+    if git_audit:
+        # Issue #54: worktree, branch and stash state is where unpushed work is lost, so the
+        # health screen shows it. Read-only, and never a `fail` - see adaptive_grok.git_audit.
+        # Contained like every other row here: `scripts/bootstrap.sh` runs this screen under
+        # `set -euo pipefail`, so one unexpected exception in an advisory screen would abort the
+        # contour setup it exists to inform. A broken audit reports itself, it does not escalate.
+        try:
+            audit_items = git_audit_items(audit_git_state(root))
+        except Exception as exc:  # noqa: BLE001 - advisory row, any failure is reported as info
+            audit_items = [('info', 'git-audit', f'audit error: {type(exc).__name__}: {exc}')]
+        for status, name, message in audit_items:
+            items.append(DoctorItem(status, name, message))
     sample = build_route(root, 'Исправить ошибку в обработчике события Битрикс D7 и добавить PHPUnit тест', 'doctor')
     if sample.write_agent == 'bitrix_implementer' and 'bitrix_reviewer' in sample.review_agents:
         items.append(DoctorItem('pass', 'adaptive-routing', 'Bitrix route selects specialized agents'))

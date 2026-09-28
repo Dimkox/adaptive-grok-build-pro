@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import stat
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -51,6 +52,12 @@ RECEIPT_KINDS = frozenset(
     }
 )
 MAX_RECEIPT_BYTES = 262_144
+RECEIPT_ID_PATTERN = re.compile(r'[0-9a-f]{32}')
+
+
+def new_receipt_id() -> str:
+    """Return an unpredictable per-invocation receipt identity."""
+    return secrets.token_hex(16)
 
 
 def _exact_head(root: Path) -> str | None:
@@ -510,6 +517,7 @@ def write_receipt(
     spec_digest: str | None = None,
     spec_fingerprint: str | None = None,
     expected_tree_fingerprint: str | None = None,
+    receipt_id: str | None = None,
 ) -> Path:
     route = get_active_route(root)
     if not route:
@@ -538,8 +546,12 @@ def write_receipt(
         binding = current
     else:
         binding = explicit
+    bound_receipt_id = receipt_id or new_receipt_id()
+    if RECEIPT_ID_PATTERN.fullmatch(bound_receipt_id) is None:
+        raise ValueError('receipt_id must be 32 lowercase hexadecimal characters')
     data = {
         'schema_version': 1,
+        'receipt_id': bound_receipt_id,
         'route_id': route['route_id'],
         'kind': kind,
         'status': status,
@@ -565,6 +577,153 @@ def write_receipt(
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
     dump_json(path, data)
     return path
+
+
+def _echo_slug(value: object, default: str) -> str:
+    """Render a diagnostic as one shell-safe ``key=value`` token.
+
+    The echo line is documented as ``key=value`` pairs and is copied into reports and shell
+    pipelines, so a reason carrying a space or a colon would break the grammar for every field
+    after it. Anything outside the slug charset is folded to a single hyphen instead.
+    """
+    slug = re.sub(r'[^a-z0-9._-]+', '-', str(value).lower()).strip('-')
+    return slug[:64] or default
+
+
+def _echo_detail(value: object) -> str:
+    """The one quoted field on an echo line: free text a human may read, never paste."""
+    cleaned = ' '.join(str(value).split())[:180]
+    escaped = cleaned.replace('\\', '\\\\').replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _echo_relative(root: Path, path: Path | None) -> str:
+    if path is None:
+        return '<unknown-path>'
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def _parse_stamp(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    except ValueError:
+        return None
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+
+
+RECEIPT_ENVELOPE_KEYS = (
+    'schema_version',
+    'receipt_id',
+    'route_id',
+    'kind',
+    'status',
+    'created_at',
+    'tree_fingerprint',
+)
+
+
+def receipt_echo(
+    root: Path,
+    kind: str,
+    expect_tree_fingerprint: str | None = None,
+    *,
+    not_before: str | None = None,
+    expected_receipt_id: str | None = None,
+) -> str:
+    """Render the one canonical line a report may copy an identifier from.
+
+    A fingerprint that has to be retyped is a fingerprint that can be invented. This echo is the
+    authoritative rendering of a receipt *that the calling run itself recorded*, and it always
+    produces exactly one line. Every other state is reported as ``status=unavailable`` with a
+    reason, so a report can never inherit an identifier it did not earn: a receipt this run did
+    not write (the verifier records nothing when governance fails, yet the tree is unchanged and
+    the fingerprint guard therefore passes), a receipt that was invalidated in place afterwards,
+    a receipt whose envelope does not match the route and kind it was read under, and a receipt
+    binding a different tree are all refused. An unavailable line deliberately carries no
+    pasteable identifier at all, because a value named ``fingerprint=`` is what a report copies.
+
+    ``expected_receipt_id`` is a per-invocation nonce shared only by the caller and the write it
+    requested. A timestamp and tree fingerprint remain compatibility and staleness guards, but
+    neither can distinguish concurrent or same-second runs.
+    """
+    label = _echo_slug(kind, 'unknown')
+    fallback = runtime_dir(root) / 'receipts' / '<no-active-route>' / f'{label}.json'
+
+    def unavailable(reason: str, path: Path | None = None, detail: str | None = None) -> str:
+        line = (
+            f'RECEIPT kind={label} status=unavailable reason={reason} '
+            f'path={_echo_relative(root, path if path is not None else fallback)}'
+        )
+        return f'{line} detail={detail}' if detail else line
+
+    if kind not in RECEIPT_KINDS:
+        return unavailable('kind-outside-closed-set', fallback)
+    try:
+        route = get_active_route(root)
+    except (RuntimeError, OSError, ValueError) as exc:
+        return unavailable('route-read-failed', fallback, _echo_detail(exc))
+    route_id = str(route.get('route_id') or '') if route else ''
+    if not route or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', route_id):
+        return unavailable('no-active-route', fallback)
+    expected = runtime_dir(root) / 'receipts' / route_id / f'{kind}.json'
+    try:
+        data = get_receipt(root, route_id, kind)
+    except (RuntimeError, OSError, ValueError) as exc:
+        return unavailable('receipt-read-failed', expected, _echo_detail(exc))
+    if not data:
+        return unavailable('receipt-not-recorded', expected)
+    missing = [key for key in RECEIPT_ENVELOPE_KEYS if key not in data]
+    status = data.get('status')
+    fingerprint = data.get('tree_fingerprint')
+    defects: list[str] = []
+    if missing:
+        defects.append('missing-key:' + ','.join(missing))
+    if data.get('schema_version') != 1:
+        defects.append('schema-version')
+    if data.get('route_id') != route_id:
+        defects.append('route-id-mismatch')
+    if data.get('kind') != kind:
+        defects.append('kind-mismatch')
+    if status not in ('pass', 'fail'):
+        defects.append('status')
+    if not isinstance(fingerprint, str) or not re.fullmatch(r'[0-9a-f]{64}', fingerprint):
+        defects.append('tree-fingerprint')
+    if _parse_stamp(data.get('created_at')) is None:
+        defects.append('created-at')
+    if defects:
+        # The failed checks are named, the offending values are not: an echoed foreign
+        # fingerprint is exactly what a report would then quote.
+        return unavailable('receipt-envelope-invalid', expected, _echo_detail(';'.join(defects)))
+    if data.get('stale') is True:
+        # ``stale_reason`` is stored prose and is not repeated here: an unavailable line must
+        # never carry a value a report could quote, and the reason is readable in the file.
+        return unavailable('receipt-invalidated', expected)
+    if expected_receipt_id is None or RECEIPT_ID_PATTERN.fullmatch(expected_receipt_id) is None:
+        return unavailable('invocation-unbound', expected)
+    if data.get('receipt_id') != expected_receipt_id:
+        return unavailable('not-recorded-this-invocation', expected)
+    if not_before is None:
+        return unavailable('freshness-unbound', expected)
+    recorded = _parse_stamp(data.get('created_at'))
+    bound = _parse_stamp(not_before)
+    if bound is None or recorded is None:
+        return unavailable('freshness-unparseable', expected)
+    if recorded.replace(microsecond=0) < bound.replace(microsecond=0):
+        return unavailable('not-recorded-this-run', expected)
+    if expect_tree_fingerprint is not None and fingerprint != expect_tree_fingerprint:
+        # The foreign value is named neither ``fingerprint`` nor at all: whatever this line
+        # points at, it is not an identifier a report may quote.
+        return unavailable('tree-fingerprint-mismatch', expected)
+    return (
+        f'RECEIPT kind={kind} status={status} '
+        f'fingerprint={fingerprint} at={data.get("created_at")} '
+        f'path={_echo_relative(root, expected)} route={route_id}'
+    )
 
 
 def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:

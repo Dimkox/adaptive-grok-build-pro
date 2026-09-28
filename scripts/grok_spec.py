@@ -21,6 +21,7 @@ from adaptive_grok.spec import (  # noqa: E402
     summarize_spec,
     validate_spec,
 )
+from adaptive_grok.change import package_dir  # noqa: E402
 from adaptive_grok.state import get_active_change, get_active_route  # noqa: E402
 from adaptive_grok.util import atomic_write_text, find_root  # noqa: E402
 
@@ -41,7 +42,11 @@ def _spec_path(root: Path, explicit_path: str | None, change_id: str | None) -> 
         candidate = Path(explicit_path)
         candidate = candidate if candidate.is_absolute() else root / candidate
     else:
-        candidate = root / "engineering" / "changes" / _change_id(root, change_id) / "change-spec.yaml"
+        try:
+            package = package_dir(root, _change_id(root, change_id))
+        except ValueError as exc:
+            raise SpecError(str(exc), code="usage") from exc
+        candidate = package / "change-spec.yaml"
     try:
         candidate.resolve(strict=False).relative_to(root.resolve())
     except ValueError as exc:

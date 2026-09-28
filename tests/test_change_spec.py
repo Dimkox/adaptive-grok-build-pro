@@ -502,6 +502,31 @@ class ChangeSpecTests(unittest.TestCase):
             self.assertEqual(code, 0, out)
             self.assertEqual(json.loads(out)['profile'], 'draft')
 
+    def test_cli_generate_rejects_an_unsafe_change_id_before_writing(self) -> None:
+        with project_copy() as fake_root:
+            for change_id in (
+                '../../outside',
+                r'C:\Users\someone\promotion-notes',
+                '20260926-safe-αβγδεζ',
+                'notadate-safe-title-abc123',
+                'safe',
+            ):
+                with self.subTest(change_id=change_id):
+                    code, out = _run_cli(
+                        ['x', 'generate', '--change-id', change_id, '--json'],
+                        root=fake_root,
+                    )
+                    self.assertEqual(code, 2, out)
+                    result = json.loads(out)
+                    self.assertEqual(result['code'], 'usage')
+                    self.assertFalse(result['ok'])
+                    self.assertIn('refusing to open change package', result['error'])
+                    self.assertFalse((fake_root / 'outside' / 'change-spec.yaml').exists())
+                    self.assertEqual(
+                        list((fake_root / 'engineering' / 'changes').iterdir()),
+                        [],
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -49,6 +49,7 @@ Dispatch every `analysis_agents` entry in one wave. The route already caps that 
 ## 3. Scope and design gate
 
 Write or update the change brief, acceptance criteria, architecture, risk, and test plan.
+A criterion that declares a set of expected outcomes is checked for satisfiability, not only shape: each exact-set member requires one repository-contained `unittest.TestCase` selector whose AST calls the trusted `exercise_expectation_member` helper with that literal member and observe/mutate/undo callables; the ordinary test run must then prove absent→present→restored. Cues apply only to the brace group's sentence, and an upper bound requires non-emptiness because observing nothing otherwise satisfies it.
 
 When `human_gates` contains `scope_and_design_approval`, present the decision and stop before implementation. For ordinary low/medium-risk tasks without a named gate, proceed after recording a bounded design.
 

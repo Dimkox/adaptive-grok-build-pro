@@ -24,10 +24,13 @@ move.add_argument('--reason', required=True)
 sub.add_parser('show')
 args = parser.parse_args()
 root = find_root()
-if args.command == 'start':
-    result = start_change(root, args.title)
-elif args.command == 'transition':
-    result = transition(root, args.change_id, args.target, args.reason)
-else:
-    result = get_active_change(root)
+try:
+    if args.command == 'start':
+        result = start_change(root, args.title)
+    elif args.command == 'transition':
+        result = transition(root, args.change_id, args.target, args.reason)
+    else:
+        result = get_active_change(root)
+except ValueError as exc:
+    parser.error(str(exc))
 print(json.dumps(result, ensure_ascii=False, indent=2))

@@ -134,11 +134,29 @@ FOCUSED_SKIPPED_CHECKS = ('python-unittest', 'coverage', 'factory-postgres-exit'
 SAFE_FILE_STATUSES = frozenset({'A', 'M', '??'})
 
 
+def _has_unsafe_inventory_codepoint(value: str) -> bool:
+    """Return whether Git's decoded path contains a terminal or encoding hazard."""
+    return any(
+        ord(char) < 32
+        or ord(char) == 0x7f
+        or 0x80 <= ord(char) <= 0x9f
+        or 0xd800 <= ord(char) <= 0xdfff
+        or not char.isprintable()
+        for char in value
+    )
+
+
 def is_valid_inventory_path(value: object) -> bool:
     """Reject any inventory entry that is not a plain repository-relative POSIX path."""
-    if not isinstance(value, str) or not value or '\x00' in value or '\\' in value:
+    if (
+        not isinstance(value, str)
+        or not value
+        or '\x00' in value
+        or '\\' in value
+        or ':' in value
+    ):
         return False
-    if any(ord(char) < 32 for char in value):
+    if _has_unsafe_inventory_codepoint(value):
         return False
     path = PurePosixPath(value)
     return (
@@ -203,9 +221,15 @@ def _is_normalized_relative(path: object) -> bool:
     the classifier through ``is_valid_inventory_path`` today; matching in depth anyway keeps
     the closed allowlist closed if a future caller forgets that validator.
     """
-    if not isinstance(path, str) or not path or path.startswith('/') or '\\' in path:
+    if (
+        not isinstance(path, str)
+        or not path
+        or path.startswith('/')
+        or '\\' in path
+        or ':' in path
+    ):
         return False
-    if any(ord(char) < 32 for char in path):
+    if _has_unsafe_inventory_codepoint(path):
         return False
     parts = path.split('/')
     return all(part not in {'', '.', '..'} for part in parts)
