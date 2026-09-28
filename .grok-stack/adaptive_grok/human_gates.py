@@ -404,6 +404,9 @@ def gate_block_reason(root: Path, scope: str, action: str, resource: str | None 
         if declaration_error:
             return declaration_error
         if not gates:
+            route_id = route.get("route_id")
+            if not isinstance(route_id, str) or not route_id:
+                return f"active route is missing or malformed{ROUTE_RECOVERY_HINT}"
             # No change package means there is no scoped route decision to consume.
             # Preserve existing ungated grant workflows; declared gates still fail closed.
             return None

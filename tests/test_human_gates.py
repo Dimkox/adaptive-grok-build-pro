@@ -465,14 +465,11 @@ class HumanGateTests(unittest.TestCase):
                 check=True,
             )
             route = build_route(root, 'Prepare production release and canary', 'gate-test').to_dict()
-            # Null route and change ids are what has_valid_approval binds when the
-            # route file is gone. The same grant therefore approves if that function
-            # skips the route gate and trusts the grant alone.
-            route['route_id'] = None
+            # Keep the route id from build_route. Empty human_gates leave that
+            # route ungated, so this grant counts only while the route file exists.
             route['human_gates'] = []
             set_active_route(root, route)
             add_approval(root, 'production', 'ship the branch', 5, actions=['git-push-branch'])
-            self.assertIsNone(get_active_route(root).get('route_id'))
             self.assertTrue(has_valid_approval(root, 'production', action='git-push-branch'))
 
             (root / ROUTE_PATH).unlink()
@@ -482,6 +479,14 @@ class HumanGateTests(unittest.TestCase):
                 has_valid_approval(root, 'production', action='git-push-branch'),
                 'delegated grant approved while the route record was absent',
             )
+
+    def test_route_dict_without_route_id_is_not_an_ungated_route(self) -> None:
+        """An empty gate list must not launder a route record that has no route id."""
+        with project_copy() as root:
+            (root / ROUTE_PATH).write_text('{"human_gates": []}', encoding='utf-8')
+            reason = gate_block_reason(root, 'production', 'git-push-branch')
+            self.assertIsNotNone(reason)
+            self.assertIn('route', reason or '')
 
     def test_absent_route_block_reason_names_the_recovery_command(self) -> None:
         """An absent route must block with the exact way an operator restores it."""
