@@ -23,7 +23,8 @@
       "Original Habr article could not be reopened",
       "No claim of exact preservation of prior 12 requirements and 24 acceptance cases"
     ],
-    "supplement_S6": "Full user-provided message read on 2026-09-27; share transcript and external article not independently reread."
+    "supplement_S6": "Full user-provided message read on 2026-09-27; share transcript and external article not independently reread.",
+    "supplement_S7": "Full user-provided synthesis read on 2026-09-28. Shared transcript, four external materials and external harness not independently reread. The missing-share-content blocker is resolved for this supplied synthesis."
   },
   "sources": [
     {
@@ -103,6 +104,24 @@
       ],
       "content_basis": "user_provided_text",
       "read_status": "provided_text_read"
+    },
+    {
+      "id": "S7",
+      "title": "Tool-output boundary and repeatable behavior qualification — user-provided synthesis",
+      "url": "https://chatgpt.com/share/6aba3bbb-6c00-83ed-b67b-5fe9646aa74d?ogimg=plain",
+      "requirements": [
+        "F25",
+        "F26"
+      ],
+      "refines_requirements": [
+        "F05",
+        "F22",
+        "F06",
+        "F11",
+        "F17"
+      ],
+      "content_basis": "user_provided_text",
+      "read_status": "provided_text_read"
     }
   ],
   "requirements": [
@@ -129,7 +148,9 @@
     "F21",
     "F22",
     "F23",
-    "F24"
+    "F24",
+    "F25",
+    "F26"
   ],
   "acceptance_criteria": [
     "AC01",
@@ -189,7 +210,31 @@
     "AC55",
     "AC56",
     "AC57",
-    "AC58"
+    "AC58",
+    "AC59",
+    "AC60",
+    "AC61",
+    "AC62",
+    "AC63",
+    "AC64",
+    "AC65",
+    "AC66",
+    "AC67",
+    "AC68",
+    "AC69",
+    "AC70",
+    "AC71",
+    "AC72",
+    "AC73",
+    "AC74",
+    "AC75",
+    "AC76",
+    "AC77",
+    "AC78",
+    "AC79",
+    "AC80",
+    "AC81",
+    "AC82"
   ],
   "phases": [
     {
@@ -198,7 +243,7 @@
       "depends_on": [],
       "requirements": [],
       "acceptance_criteria": [],
-      "gate": "Exact current refs, source mapping, blockers and characterization baseline",
+      "gate": "Exact current refs, source mapping, blockers and characterization baseline; current AGENTS capacity-first startup; tool-output/effect coverage and behavioral impact inventory",
       "status": "planned",
       "executed_in_this_update": false
     },
@@ -305,7 +350,10 @@
       ],
       "gate": "Atomic evidence, explicit unknown values, compatible readers",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "notes": [
+        "Reuse accounting for F25 false positives/latency and F26 all-attempt evaluation cost; no second metrics store."
+      ]
     },
     {
       "id": "U3",
@@ -318,7 +366,11 @@
         "F05",
         "F06",
         "F07",
-        "F22"
+        "F22",
+        "F11",
+        "F17",
+        "F25",
+        "F26"
       ],
       "acceptance_criteria": [
         "AC11",
@@ -333,11 +385,100 @@
         "AC36",
         "AC50",
         "AC51",
-        "AC52"
+        "AC52",
+        "AC59",
+        "AC60",
+        "AC61",
+        "AC62",
+        "AC63",
+        "AC64",
+        "AC65",
+        "AC66",
+        "AC67",
+        "AC68",
+        "AC69",
+        "AC70",
+        "AC71",
+        "AC72",
+        "AC73",
+        "AC74",
+        "AC75",
+        "AC76",
+        "AC77",
+        "AC78",
+        "AC79",
+        "AC80",
+        "AC81",
+        "AC82"
       ],
-      "gate": "Independent validation; no unsafe retries or quota leakage",
+      "gate": "Independent validation; no unsafe retries or quota leakage; test all declared ingress/sink paths before claiming adapter coverage; fake qualification is not live profile qualification",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "subdeliveries": [
+        {
+          "id": "U3a",
+          "scope": "Pre-model tool-output boundary, declared adapter coverage and false-block controls",
+          "requirements": [
+            "F25"
+          ],
+          "acceptance_criteria": [
+            "AC59",
+            "AC60",
+            "AC61",
+            "AC62",
+            "AC63",
+            "AC64",
+            "AC65",
+            "AC66",
+            "AC67"
+          ]
+        },
+        {
+          "id": "U3b",
+          "scope": "Behavioral trigger, shared corpus, independent baseline, paired runner and result gate",
+          "requirements": [
+            "F26"
+          ],
+          "acceptance_criteria": [
+            "AC68",
+            "AC69",
+            "AC70",
+            "AC71",
+            "AC72",
+            "AC73",
+            "AC74",
+            "AC75",
+            "AC76",
+            "AC77"
+          ]
+        },
+        {
+          "id": "U3c",
+          "scope": "Scoped negative controls and unchanged reviewer candidate",
+          "requirements": [
+            "F05",
+            "F22"
+          ],
+          "acceptance_criteria": [
+            "AC78",
+            "AC79"
+          ]
+        },
+        {
+          "id": "U3d",
+          "scope": "Observed external effects, lost confirmations, rejection and stale-worker evidence",
+          "requirements": [
+            "F06",
+            "F11",
+            "F17"
+          ],
+          "acceptance_criteria": [
+            "AC80",
+            "AC81",
+            "AC82"
+          ]
+        }
+      ]
     },
     {
       "id": "U4",
@@ -396,16 +537,39 @@
       },
       "requirements": [
         "F18",
-        "F24"
+        "F24",
+        "F25",
+        "F26"
       ],
       "acceptance_criteria": [
         "AC39",
         "AC56",
         "AC57"
       ],
-      "gate": "Human acceptance of exact Linux result; Apple result separately accepted; paired context evaluation must preserve all mandatory invariants and demonstrate reduced irrelevant reading before enablement",
+      "gate": "Human acceptance of exact Linux result; Apple result separately accepted; paired context evaluation must preserve all mandatory invariants and demonstrate reduced irrelevant reading before enablement; real supported-profile interception/behavior qualification, trusted baseline and human review of new domain results; live calls require budget and authority",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "profile_qualification_criteria": [
+        "AC59",
+        "AC60",
+        "AC61",
+        "AC62",
+        "AC63",
+        "AC64",
+        "AC65",
+        "AC66",
+        "AC67",
+        "AC68",
+        "AC69",
+        "AC70",
+        "AC71",
+        "AC72",
+        "AC73",
+        "AC74",
+        "AC75",
+        "AC76",
+        "AC77"
+      ]
     },
     {
       "id": "U7",
@@ -457,10 +621,11 @@
   "notes": [
     "This file is a planning map, not a runtime route, approval, test result or M8 ledger import.",
     "No product test suites or independent route reviews executed by the documentation update.",
-    "Revision 1.1 adds S6 as supplied user text, retains all prior F/AC IDs, and extends existing U1/U2/U3/U6 rather than adding a subsystem."
+    "Revision 1.1 adds S6 as supplied user text, retains all prior F/AC IDs, and extends existing U1/U2/U3/U6 rather than adding a subsystem.",
+    "Revision 1.2 adds exactly two requirements F25/F26, appends clarifications to F05/F06/F11/F17/F22, preserves all old requirement statements and AC01–AC58, and adds AC59–AC82. No runtime or behavioral evaluation executed by this document update."
   ],
-  "document_version": "1.1",
-  "updated_at": "2026-09-27",
+  "document_version": "1.2",
+  "updated_at": "2026-09-28",
   "context_delta_source_sha": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
   "context_delta": {
     "requirements": [
@@ -531,5 +696,129 @@
         "AC58"
       ]
     }
+  },
+  "behavior_delta": {
+    "source_id": "S7",
+    "source_sha": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+    "documentation_base_sha": "06610b0f20d015e41ca8c2283fb5ca38bf766221",
+    "new_requirements": [
+      "F25",
+      "F26"
+    ],
+    "refined_requirements": [
+      "F05",
+      "F06",
+      "F11",
+      "F17",
+      "F22"
+    ],
+    "acceptance_criteria": [
+      "AC59",
+      "AC60",
+      "AC61",
+      "AC62",
+      "AC63",
+      "AC64",
+      "AC65",
+      "AC66",
+      "AC67",
+      "AC68",
+      "AC69",
+      "AC70",
+      "AC71",
+      "AC72",
+      "AC73",
+      "AC74",
+      "AC75",
+      "AC76",
+      "AC77",
+      "AC78",
+      "AC79",
+      "AC80",
+      "AC81",
+      "AC82"
+    ],
+    "requirement_to_acceptance": {
+      "F25": [
+        "AC59",
+        "AC60",
+        "AC61",
+        "AC62",
+        "AC63",
+        "AC64",
+        "AC65",
+        "AC66",
+        "AC67"
+      ],
+      "F26": [
+        "AC68",
+        "AC69",
+        "AC70",
+        "AC71",
+        "AC72",
+        "AC73",
+        "AC74",
+        "AC75",
+        "AC76",
+        "AC77"
+      ],
+      "F05": [
+        "AC78",
+        "AC79"
+      ],
+      "F22": [
+        "AC78",
+        "AC79"
+      ],
+      "F06": [
+        "AC80",
+        "AC81",
+        "AC82"
+      ],
+      "F11": [
+        "AC80",
+        "AC81"
+      ],
+      "F17": [
+        "AC80",
+        "AC81",
+        "AC82"
+      ]
+    },
+    "implementation_phases": [
+      "U3a",
+      "U3b",
+      "U3c",
+      "U3d"
+    ],
+    "live_qualification_phase": "U6",
+    "state": "planned",
+    "upstream_code_imported": false,
+    "new_harness": false,
+    "new_evaluator": false,
+    "new_database_or_queue": false,
+    "kafka_added": false,
+    "mandatory_per_call_llm_judge": false,
+    "pre_model_interception_required_for_protected_profiles": true,
+    "pre_execution_authorization_retained": true,
+    "candidate_can_update_baseline": false,
+    "baseline_changes_require_separate_authority": true,
+    "source_trust_ci_retained": true,
+    "synthetic_secret_tests_only": true,
+    "unknown_values_are_zero": false,
+    "live_profile_qualification": "not_evaluated",
+    "initial_baseline_is_comparative_pass": false,
+    "behavior_change_triggers": [
+      "model_profile",
+      "prompt",
+      "context_builder_or_rules",
+      "tools_capabilities_or_versions",
+      "tool_output_policy",
+      "response_schema",
+      "observed_profile_drift"
+    ],
+    "no_paid_eval_for_proven_nonbehavioral_doc_typo": true,
+    "benchmark_repetitions_and_tolerances": "must_be_declared_before_each_profile_evaluation",
+    "four_external_materials_independently_verified": false
   }
 }
