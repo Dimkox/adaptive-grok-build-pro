@@ -34,6 +34,12 @@ from .util import (
     tree_fingerprint,
 )
 from .workflow_artifacts import WorkflowArtifactError, validate_stored_workflow
+from .verification_scope import (
+    FOCUSED_TEST_TARGETS,
+    focused_command,
+    is_valid_inventory_path,
+    select_docs_state_scope,
+)
 
 
 @dataclass
@@ -677,16 +683,7 @@ def _changed_file_inventory(
 
 
 def _is_valid_inventory_path(value: object) -> bool:
-    if not isinstance(value, str) or not value or '\x00' in value or '\\' in value:
-        return False
-    if any(ord(char) < 32 for char in value):
-        return False
-    path = PurePosixPath(value)
-    return (
-        not path.is_absolute()
-        and path.as_posix() == value
-        and all(part not in {'', '.', '..'} for part in path.parts)
-    )
+    return is_valid_inventory_path(value)
 
 
 def _is_focused_landing_test(path: str, change_package: str | None) -> bool:
@@ -970,6 +967,55 @@ def _focused_scope_check(scope: dict[str, object]) -> CheckResult:
         f"landing={len(landing_files)}; focused_tests={len(focused_tests)}; "
         f"ignored={len(scope.get('ignored_files') or [])}",
         details=details + ([scope['rejection']] if isinstance(scope.get('rejection'), dict) else []),
+    )
+
+
+def _docs_state_scope_check(scope: dict[str, object]) -> CheckResult:
+    """Render the documentation/state scope decision as a first-class reported check.
+
+    An ineligible result is not a failure: it is the ordinary full-suite path. The check
+    exists so the profile that ran, and every check that profile did not run, appear in the
+    receipt instead of being inferred from their absence.
+    """
+    eligible = scope.get('eligible') is True
+    admitted = [
+        *scope.get('documentation_files', []),
+        *scope.get('state_files', []),
+        *scope.get('artifact_files', []),
+        *scope.get('changed_lockstep_tests', []),
+    ]
+    details: list[dict[str, str]] = [
+        {
+            'severity': 'info',
+            'code': str(scope.get('reason_code') or 'inventory-unclassified'),
+            'path': str(path),
+            'message': 'admitted by the focused documentation/state profile' if eligible
+            else 'not admitted by the focused documentation/state profile',
+        }
+        for path in (admitted if eligible else scope.get('rejected_files', []))
+    ]
+    if eligible:
+        details.extend({
+            'severity': 'warning',
+            'code': 'focused-scope-skip',
+            'path': str(name),
+            'message': f'{name} is not measured by the focused documentation/state profile',
+        } for name in scope.get('skipped_checks', []))
+    else:
+        details.append({
+            'severity': 'info',
+            'code': str(scope.get('reason_code') or 'inventory-unclassified'),
+            'path': '',
+            'message': f'full PR suite is required: {scope.get("reason")}',
+        })
+    checked = scope.get('checked_files') if eligible else []
+    return CheckResult(
+        'docs-state-scope',
+        'pass',
+        f"profile={scope.get('profile')}; evidence={scope.get('evidence_kind')}; "
+        f"reason={scope.get('reason_code')}; paths={len(checked or [])}; "
+        f"skipped={','.join(scope.get('skipped_checks') or []) or 'none'}",
+        details=details,
     )
 
 
@@ -1422,8 +1468,74 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
     return results
 
 
-def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
+def _factory_unit(root: Path) -> list[CheckResult]:
+    factory_tests = root / 'factory' / 'tests'
+    factory_modules = [
+        f'factory.tests.test_{name}'
+        for name in ('contracts', 'state', 'migrations', 'service')
+        if (factory_tests / f'test_{name}.py').is_file()
+    ]
+    if (root / 'factory' / 'pyproject.toml').is_file() and factory_modules:
+        return [
+            _command_check(
+                root,
+                'factory-unit',
+                [sys.executable, '-m', 'unittest', *factory_modules],
+                300,
+            )
+        ]
+    return []
+
+
+def _focused_python(
+    root: Path,
+    results: list[CheckResult],
+    scope: dict[str, object],
+    replaced_runner: str = 'python-unittest',
+) -> list[CheckResult]:
+    """Run the admitted lockstep modules instead of full discovery or coverage measurement.
+
+    Product statements are unchanged by an admitted inventory, so a fresh coverage number
+    would restate the last full run. Every omitted check stays visible as an explicit skip,
+    including the full-discovery runner this branch replaced — which is named by the caller
+    because it is `pytest` in a consumer install and `python-unittest` in this repository.
+    """
+    targets = [str(target) for target in scope.get('focused_tests', [])]
+    if not targets:
+        # `python -m unittest` with no module arguments runs zero tests (exit 5, "NO TESTS RAN",
+        # on this host's 3.12 and 3.14), so an empty target list must never be recorded as the
+        # focused run the profile claims. Refuse with an explanatory check instead.
+        results.append(CheckResult(
+            'python-focused-unittest',
+            'fail',
+            'the focused documentation/state profile was given no test module to run',
+        ))
+        return results
+    results.append(CheckResult(
+        replaced_runner,
+        'skip',
+        'focused documentation/state profile runs the admitted lockstep modules '
+        'instead of full test discovery',
+    ))
+    results.append(CheckResult(
+        'coverage',
+        'skip',
+        'focused documentation/state profile does not measure full-suite coverage; '
+        'the admitted inventory changes no executed product statement',
+    ))
+    results.append(_command_check(root, 'python-focused-unittest', focused_command(targets), 300))
+    results.extend(_factory_unit(root))
+    results.append(CheckResult(
+        'factory-postgres-exit',
+        'skip',
+        'focused documentation/state profile changes no factory runtime path',
+    ))
+    return results
+
+
+def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = None) -> list[CheckResult]:
     results: list[CheckResult] = [_ruff(root), _bandit(root)]
+    focused = bool(scope and scope.get('eligible') is True)
     pilot_tests = root / 'pilot' / 'tests'
     if pilot_tests.is_dir() and any(pilot_tests.glob('test*.py')):
         results.append(
@@ -1436,8 +1548,18 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
         )
     has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
     tests_dir = root / 'tests'
+    uses_pytest_runner = has_project and command_exists('pytest') and tests_dir.is_dir()
+    if focused:
+        # Named here rather than assumed: the focused profile replaces whichever full-discovery
+        # runner this tree would have used, and the skip it reports must say so.
+        return _focused_python(
+            root,
+            results,
+            scope or {},
+            'pytest' if uses_pytest_runner else 'python-unittest',
+        )
     has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
-    if has_project and command_exists('pytest') and tests_dir.is_dir():
+    if uses_pytest_runner:
         results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
         if mode in {'pr', 'release'}:
             if command_exists('coverage'):
@@ -1494,20 +1616,7 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
             if mode in {'pr', 'release'}:
                 results.append(CheckResult('coverage', 'skip', 'coverage not available'))
     factory_tests = root / 'factory' / 'tests'
-    factory_modules = [
-        f'factory.tests.test_{name}'
-        for name in ('contracts', 'state', 'migrations', 'service')
-        if (factory_tests / f'test_{name}.py').is_file()
-    ]
-    if (root / 'factory' / 'pyproject.toml').is_file() and factory_modules:
-        results.append(
-            _command_check(
-                root,
-                'factory-unit',
-                [sys.executable, '-m', 'unittest', *factory_modules],
-                300,
-            )
-        )
+    results.extend(_factory_unit(root))
     factory_exit = factory_tests / 'run_disposable_exit.py'
     if mode in {'pr', 'release'} and factory_exit.is_file():
         if os.environ.get('GROK_VERIFY_CAPABILITY') == 'repository-sandbox':
@@ -1656,6 +1765,54 @@ def _verify_focused_static_seo_landing(
     return report
 
 
+def _docs_state_status_inventory(
+    root: Path,
+    selection: GitRangeSelection,
+) -> tuple[list[dict[str, object]], bool]:
+    """Collect status records for the documentation/state decision only.
+
+    This read deliberately disables rename and copy detection, while the landing selector's
+    shared helper keeps them on. Git scores a freshly scaffolded change package as a copy of
+    an older one (`C085` plus an `original_path`), so with copy detection every pull request
+    that carries its own evidence would be pushed to the full suite and the focused profile
+    would never fire at all. Under `--no-renames` a scaffolded package is what it actually
+    is — additions — while any *removed* path still reports `D`, which is the one shape that
+    could hide a source file behind a documentation name.
+
+    The records come from the shared name-status helper in `util`, called with rename/copy
+    detection off and with the same untracked collection the changed-file inventory performs,
+    so this veto channel spans exactly the path domain it guards instead of a subset of it.
+    The PR/release changed-file inventory itself stays byte-unchanged: this side channel
+    feeds a scope decision and must not widen what the full suite already inspects.
+    """
+    records: list[dict[str, object]] = []
+    trusted = True
+
+    def merge(part: list[dict[str, str]] | None, source: str | None) -> None:
+        nonlocal trusted
+        if part is None:
+            trusted = False
+            return
+        for item in part:
+            if source is not None:
+                item['source'] = source
+            records.append(item)
+
+    merge(changed_file_statuses(root, rename_detection=False), None)
+    for selected in selection.bases:
+        merge(
+            changed_file_statuses(
+                root,
+                selected.comparison_base_sha,
+                include_worktree=False,
+                include_untracked=False,
+                rename_detection=False,
+            ),
+            f'range:{selected.comparison_base_sha}',
+        )
+    return records, trusted
+
+
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
     checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
@@ -1681,6 +1838,22 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         )
 
     spec_check, spec_metadata = _change_specs(root, files, route, mode)
+    if mode in _RANGE_MODES - {FOCUSED_STATIC_SEO_LANDING_MODE}:
+        status_records, status_trusted = _docs_state_status_inventory(root, git_ranges)
+    else:
+        status_records, status_trusted = None, None
+    docs_scope = select_docs_state_scope(
+        mode,
+        files,
+        range_findings=list(git_ranges.findings),
+        range_base_count=len(git_ranges.bases),
+        file_statuses=status_records,
+        status_inventory_trusted=status_trusted,
+        route_present=route is not None,
+        available_test_targets=[
+            target for target in FOCUSED_TEST_TARGETS if (root / target).is_file()
+        ],
+    )
     architecture_check, architecture_metadata = _architecture_check(root, route)
     governance_check, governance_metadata = _governance_check(
         root, route, architecture_metadata
@@ -1694,6 +1867,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
 
     results: list[CheckResult] = [
         _git_diff_check(root, mode, git_ranges),
+        _docs_state_scope_check(docs_scope),
         spec_check,
         architecture_check,
         governance_check,
@@ -1715,7 +1889,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     trivy = _trivy_config(root)
     if trivy is not None:
         results.append(trivy)
-    results.extend(_python(root, mode))
+    results.extend(_python(root, mode, docs_scope))
 
     final_fingerprint = tree_fingerprint(root)
     source_stable = final_fingerprint == checked_fingerprint
@@ -1741,6 +1915,9 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'tree_fingerprint': final_fingerprint,
         'changed_files': files,
         'changed_file_inventory': changed_file_inventory,
+        # `verification_scope` stays reserved for the landing profile, which is a distinct
+        # explicit mode; the two profiles must never share one report key.
+        'docs_state_scope': docs_scope,
         'spec': spec_metadata,
         'architecture': architecture_metadata,
         'governance': governance_metadata,

@@ -1,0 +1,40 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "AGENTS and START_HERE require measured CPU/cpuset/quota capacity before all other startup work, followed by dependency-aware parallel dispatch and one writer per isolated contour; README agrees.", "evidence": [{"receipt": "code_review"}]},
+    {"id": "AC-002", "statement": "The second mandatory startup step invokes the merged closed verification selector using exact base..HEAD plus dirty inventory. Its focused inventory admits named docs/state paths, tracked packages/** release bytes, and exactly five binding test modules: tests/test_structure.py, tests/test_project_state.py, tests/test_manifest_package.py, tests/test_workflow_sources.py and tests/test_repo_router.py; only that inventory may skip full discovery, coverage and PostgreSQL, while all other executable changes, non-admitted paths or ambiguous inventories retain full scope.", "evidence": [{"receipt": "code_review"}, {"receipt": "verification"}]},
+    {"id": "AC-003", "statement": "Hardware and 629 s/14 s timings are dated observations, skipped and historical/reused evidence are distinct from fresh passes, and no new test or runtime enforcement is claimed.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260926-add-a-new-enforced-agent-startup-resource-policy-bd1cb6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "An unaffected-factory assertion or historical component pass authorizes skips outside the closed selector.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Pre-verification isolated branch transport is UNVERIFIED only; PR-only exact-head external App Trust CI and required approvals remain merge authority.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Document measured capacity before startup/parallel dispatch and the merged closed verification-scope selector as the second mandatory step before heavy checks; preserve isolated writers and external delivery gates. Scope is AGENTS.md, START_HERE.md, README.md, mistakes.md and this package; no tests or executable enforcement are added.",
+    "success_metric": "three_document_baseline",
+    "target": "reviewable_documentation_diff"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -843,3 +843,10 @@ When a predecessor merges, first restack the continuation branch and bind its ro
 ## 2026-09-25 — Carry new spec obligations on existing document fields
 
 Issue #202 needed a per-member liveness obligation inside `change-spec.yaml`, but the independently deployed holdout accepts a criterion containing exactly `id`, `statement` and `evidence`, and repository changes cannot modify that deployed bundle. The obligation was therefore expressed as semantics over the existing prose and the existing `test` evidence kind instead of a new field, so no spec can become locally valid and externally rejectable.
+### 2026-09-24 — Select verification scope from the changed-path inventory, not from the route label
+
+`docs-state-focused` admits only prose, `PROJECT_STATE.json`, `VERSION`, tracked `packages/**` and the three lockstep state tests, and it re-derives eligibility from a status-preserving Git inventory; anything else stays on the 629 s full suite. Why: the route label is unreliable (issue #123) and a prose/state diff cannot move an executed product statement, so the path inventory is the only honest scope proof. The classifier lives outside its own allowlist and records `docs_state_scope.evidence_kind` in the receipt, so a shortcut can never verify its own change.
+
+### 2026-09-24 — Admit by content role, never by directory (corrects the entry above)
+
+The review of head `a08060c1` showed "prose" is not a directory property: `docs/bitrix-local-AGENTS.md` is installed verbatim as `local/AGENTS.md` into every consumer Bitrix install (executed product), and `**/evidence/historical-*` bytes are pinned to a literal sha256 by `tests/test_history.py` (declared immutable). Both are now refused by their own reason codes, documentation prefixes are directory-shaped only, and every remaining admitted class is bound by a module the lane itself runs — `tests/test_workflow_sources.py` and `tests/test_repo_router.py` joined the trio for that reason, so the lane runs five modules (~14 s) and skips three named checks including the discovery runner it replaced.
