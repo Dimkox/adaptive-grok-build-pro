@@ -24,7 +24,8 @@
       "No claim of exact preservation of prior 12 requirements and 24 acceptance cases"
     ],
     "supplement_S6": "Full user-provided message read on 2026-09-27; share transcript and external article not independently reread.",
-    "supplement_S7": "Full user-provided synthesis read on 2026-09-28. Shared transcript, four external materials and external harness not independently reread. The missing-share-content blocker is resolved for this supplied synthesis."
+    "supplement_S7": "Full user-provided synthesis read on 2026-09-28. Shared transcript, four external materials and external harness not independently reread. The missing-share-content blocker is resolved for this supplied synthesis.",
+    "supplement_S8": "User-provided announcement and pinned upstream README, lock-and-store and boot-lane read on 2026-09-29. No binary, resolver/spec-map implementation, benchmark, Zap/Air or Claw execution audit."
   },
   "sources": [
     {
@@ -122,6 +123,25 @@
       ],
       "content_basis": "user_provided_text",
       "read_status": "provided_text_read"
+    },
+    {
+      "id": "S8",
+      "title": "VibeVM — context packaging and optional adapter",
+      "url": "https://github.com/vibevm/vibevm/tree/30d217bfce47bcaccadabd9468f00e315dbcfead",
+      "requirements": [],
+      "refines_requirements": [
+        "F19",
+        "F20",
+        "F21",
+        "F22",
+        "F23",
+        "F24",
+        "F17",
+        "F25",
+        "F26"
+      ],
+      "content_basis": "user_announcement_and_pinned_upstream_documentation",
+      "read_status": "documentation_read_runtime_not_evaluated"
     }
   ],
   "requirements": [
@@ -234,7 +254,19 @@
     "AC79",
     "AC80",
     "AC81",
-    "AC82"
+    "AC82",
+    "AC83",
+    "AC84",
+    "AC85",
+    "AC86",
+    "AC87",
+    "AC88",
+    "AC89",
+    "AC90",
+    "AC91",
+    "AC92",
+    "AC93",
+    "AC94"
   ],
   "phases": [
     {
@@ -245,7 +277,10 @@
       "acceptance_criteria": [],
       "gate": "Exact current refs, source mapping, blockers and characterization baseline; current AGENTS capacity-first startup; tool-output/effect coverage and behavioral impact inventory",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "notes": [
+        "S8: bounded reuse/build decision before a custom resolver; pin upstream/profile/licenses, analysis budget and criterion applicability. Refresh current startup/verifier rules; no full pilot in U0."
+      ]
     },
     {
       "id": "U1",
@@ -285,7 +320,16 @@
         "AC49",
         "AC53",
         "AC54",
-        "AC55"
+        "AC55",
+        "AC83",
+        "AC84",
+        "AC85",
+        "AC86",
+        "AC87",
+        "AC88",
+        "AC89",
+        "AC91",
+        "AC92"
       ],
       "gate": "Regression tests; observation-only classification before enforcement",
       "status": "planned",
@@ -296,6 +340,9 @@
           "scope": "Targeted navigation and mandatory-source preservation",
           "requirements": [
             "F19"
+          ],
+          "notes": [
+            "S8: deterministic boot, conditions and unchanged mandatory startup order."
           ]
         },
         {
@@ -303,6 +350,9 @@
           "scope": "Target-owned canonical rule reuse",
           "requirements": [
             "F20"
+          ],
+          "notes": [
+            "S8: frozen package graph; content integrity does not activate rules or grant access."
           ]
         },
         {
@@ -310,6 +360,9 @@
           "scope": "Versioned context manifest, pins and compatible bindings",
           "requirements": [
             "F21"
+          ],
+          "notes": [
+            "S8: lock as snapshot input; backend/configuration identities and isolated offline replay."
           ]
         },
         {
@@ -317,6 +370,9 @@
           "scope": "Active/archive lifecycle and shipped instructions",
           "requirements": [
             "F23"
+          ],
+          "notes": [
+            "S8: managed blocks, data-only materialization, atomic generations, native export and safe rollback."
           ]
         }
       ]
@@ -352,7 +408,8 @@
       "status": "planned",
       "executed_in_this_update": false,
       "notes": [
-        "Reuse accounting for F25 false positives/latency and F26 all-attempt evaluation cost; no second metrics store."
+        "Reuse accounting for F25 false positives/latency and F26 all-attempt evaluation cost; no second metrics store.",
+        "S8: include resolve/fetch/materialize/build/update/export and disk/cache footprint; separate package cache from provider prompt cache; unknown usage is not zero."
       ]
     },
     {
@@ -409,7 +466,8 @@
         "AC79",
         "AC80",
         "AC81",
-        "AC82"
+        "AC82",
+        "AC90"
       ],
       "gate": "Independent validation; no unsafe retries or quota leakage; test all declared ingress/sink paths before claiming adapter coverage; fake qualification is not live profile qualification",
       "status": "planned",
@@ -461,7 +519,11 @@
           ],
           "acceptance_criteria": [
             "AC78",
-            "AC79"
+            "AC79",
+            "AC90"
+          ],
+          "notes": [
+            "S8: resolve imported canonical rule/revision mappings; mapped does not mean executed."
           ]
         },
         {
@@ -544,7 +606,9 @@
       "acceptance_criteria": [
         "AC39",
         "AC56",
-        "AC57"
+        "AC57",
+        "AC93",
+        "AC94"
       ],
       "gate": "Human acceptance of exact Linux result; Apple result separately accepted; paired context evaluation must preserve all mandatory invariants and demonstrate reduced irrelevant reading before enablement; real supported-profile interception/behavior qualification, trusted baseline and human review of new domain results; live calls require budget and authority",
       "status": "planned",
@@ -568,7 +632,20 @@
         "AC74",
         "AC75",
         "AC76",
-        "AC77"
+        "AC77",
+        "AC83",
+        "AC84",
+        "AC85",
+        "AC86",
+        "AC87",
+        "AC88",
+        "AC89",
+        "AC90",
+        "AC91",
+        "AC92"
+      ],
+      "notes": [
+        "S8: reuse the same 12 F24 case IDs and F26 oracle; qualify only an exact backend/CLI profile with demonstrated benefit, or retain the qualified native path with reasons."
       ]
     },
     {
@@ -594,14 +671,18 @@
       ],
       "gate": "All applicable tests/evidence; mandatory Apple scope accepted or explicitly excluded by owner",
       "status": "planned",
-      "executed_in_this_update": false
+      "executed_in_this_update": false,
+      "notes": [
+        "S8: core acceptance and optional VibeVM adapter qualification are separate; retain native export and recovery evidence."
+      ]
     }
   ],
   "qualification": {
     "core": "not_evaluated",
     "apple": "not_evaluated",
     "ml": "not_evaluated",
-    "program": "not_evaluated"
+    "program": "not_evaluated",
+    "vibevm_adapter": "not_evaluated"
   },
   "observed_merge_gate": {
     "name": "adaptive-trust-ci/verified@06ecf1c875bc",
@@ -622,10 +703,11 @@
     "This file is a planning map, not a runtime route, approval, test result or M8 ledger import.",
     "No product test suites or independent route reviews executed by the documentation update.",
     "Revision 1.1 adds S6 as supplied user text, retains all prior F/AC IDs, and extends existing U1/U2/U3/U6 rather than adding a subsystem.",
-    "Revision 1.2 adds exactly two requirements F25/F26, appends clarifications to F05/F06/F11/F17/F22, preserves all old requirement statements and AC01–AC58, and adds AC59–AC82. No runtime or behavioral evaluation executed by this document update."
+    "Revision 1.2 adds exactly two requirements F25/F26, appends clarifications to F05/F06/F11/F17/F22, preserves all old requirement statements and AC01–AC58, and adds AC59–AC82. No runtime or behavioral evaluation executed by this document update.",
+    "Revision 1.3 refines F19–F24 in spec section 4.2, applies F17/F25/F26, retains 26 requirements and eight phases, and adds AC83–AC94. VibeVM is optional, default-off and not installed by this update."
   ],
-  "document_version": "1.2",
-  "updated_at": "2026-09-28",
+  "document_version": "1.3",
+  "updated_at": "2026-09-29",
   "context_delta_source_sha": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
   "context_delta": {
     "requirements": [
@@ -820,5 +902,160 @@
     "no_paid_eval_for_proven_nonbehavioral_doc_typo": true,
     "benchmark_repetitions_and_tolerances": "must_be_declared_before_each_profile_evaluation",
     "four_external_materials_independently_verified": false
+  },
+  "packaging_delta": {
+    "source_id": "S8",
+    "spec_section": "4.2",
+    "upstream_repository": "vibevm/vibevm",
+    "upstream_sha": "30d217bfce47bcaccadabd9468f00e315dbcfead",
+    "documentation_base_sha": "dfb3c227e3e5480a46a9ef9ed6b36144f2af9dbe",
+    "observed_factory_base_sha": "08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc",
+    "new_requirements": [],
+    "refined_requirements": [
+      "F19",
+      "F20",
+      "F21",
+      "F22",
+      "F23",
+      "F24"
+    ],
+    "applicable_existing_requirements": [
+      "F17",
+      "F25",
+      "F26"
+    ],
+    "acceptance_criteria": [
+      "AC83",
+      "AC84",
+      "AC85",
+      "AC86",
+      "AC87",
+      "AC88",
+      "AC89",
+      "AC90",
+      "AC91",
+      "AC92",
+      "AC93",
+      "AC94"
+    ],
+    "reused_acceptance_criteria": [
+      "AC56",
+      "AC57",
+      "AC58",
+      "AC68",
+      "AC69",
+      "AC70",
+      "AC71",
+      "AC72",
+      "AC73",
+      "AC74",
+      "AC75",
+      "AC76",
+      "AC77"
+    ],
+    "requirement_to_acceptance": {
+      "F19": [
+        "AC87",
+        "AC88",
+        "AC94"
+      ],
+      "F20": [
+        "AC83",
+        "AC84",
+        "AC86"
+      ],
+      "F21": [
+        "AC84",
+        "AC85",
+        "AC88",
+        "AC91"
+      ],
+      "F22": [
+        "AC90"
+      ],
+      "F23": [
+        "AC85",
+        "AC86",
+        "AC89",
+        "AC91",
+        "AC92",
+        "AC93"
+      ],
+      "F24": [
+        "AC56",
+        "AC57",
+        "AC58",
+        "AC93",
+        "AC94"
+      ],
+      "F17": [
+        "AC87",
+        "AC91",
+        "AC93"
+      ],
+      "F25": [
+        "AC89",
+        "AC92"
+      ],
+      "F26": [
+        "AC68",
+        "AC70",
+        "AC75",
+        "AC77",
+        "AC88",
+        "AC93"
+      ]
+    },
+    "implementation_phases": [
+      "U1a",
+      "U1b",
+      "U1c",
+      "U1d",
+      "U2",
+      "U3c"
+    ],
+    "reuse_decision_phase": "U0",
+    "live_qualification_phase": "U6",
+    "state": "planned",
+    "vibevm_required_for_core": false,
+    "vibevm_default_enabled": false,
+    "upstream_code_imported": false,
+    "new_orchestrator": false,
+    "new_database_or_queue": false,
+    "new_harness_or_corpus": false,
+    "parallel_native_and_vibevm_package_managers_required": false,
+    "lock_replaces_context_manifest": false,
+    "package_install_activates_rules": false,
+    "pilot_data_only": true,
+    "implicit_lifecycle_hooks_allowed": false,
+    "native_export_required": true,
+    "atomic_generation_required": true,
+    "isolated_offline_replay_required": true,
+    "cross_tenant_cache_access_allowed": false,
+    "qualification": "not_evaluated",
+    "binary_or_runtime_tested": false,
+    "package_licenses_and_profiles": "not_evaluated",
+    "benchmark_min_scenarios": 12,
+    "benchmark_corpus": "reuse F24 case identities and F26 oracle",
+    "pilot_limits": "declare in F03 budget before work",
+    "upstream_documentation_read": [
+      "README.md",
+      "model/lock-and-store.xml",
+      "model/boot-lane.xml"
+    ],
+    "not_audited": [
+      "full resolver implementation",
+      "spec-map scanner",
+      "Zap",
+      "Air",
+      "live Claw"
+    ],
+    "decision_outcomes": [
+      "retain_native",
+      "qualify_exact_adapter_profile",
+      "rejected",
+      "blocked"
+    ],
+    "decision_outcomes_are_runtime_enums": false
   }
 }
