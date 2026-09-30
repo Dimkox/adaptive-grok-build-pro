@@ -12,10 +12,11 @@ Add a package-owned deterministic qualification module. It loads corpus and base
 
 ## Components and boundaries
 
-- `behavior_qualification.py`: strict contracts, impact selector, resource loader, Pump oracle, paired runner and gates.
+- `behavior_qualification.py`: strict contracts, hash-verifying impact selector, anchored resource loader, distinct Pump/lifecycle/routing/recovery/cross-conflict oracles, generic closed comparator profile, paired runner and gates.
 - `pump-selector-qualification-v1.json`: four Pump Selector, four factory and four cross-component/rule-conflict frozen cases.
 - `pump-selector-baseline-v1.json`: separately accepted expected baseline identities and scores.
 - The executor boundary returns observations only. It cannot mutate trusted inputs through the API.
+- `make_comparator_profile` is an additive comparison seam for BB/native observation. Profiles default disabled, reuse the anchored corpus/oracles, and cannot grant merge, deploy or production authority.
 
 ## Data flow
 
@@ -50,6 +51,6 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 ## Risks and mitigations
 
 - Fixture gaming: stable IDs, independently accepted corpus/baseline digest constants and executable negative controls.
-- Confounded comparison: common-pin equality and declared-factor validation.
+- Confounded comparison: common-pin equality and declared-factor validation; strict benefit requires both context-load and reread reductions.
 - Cheap-but-wrong candidate: domain/safety gates precede efficiency.
 - Partial execution: exact required case/mode/attempt accounting.

@@ -1,5 +1,6 @@
 import importlib
 import importlib.util
+import hashlib
 import unittest
 from copy import deepcopy
 
@@ -11,7 +12,7 @@ COMMON_PINS = {
     "model": "fixture-model@1",
     "tools_digest": "2" * 64,
     "policy_digest": "3" * 64,
-    "oracle_version": "pump-selector-oracle-v1",
+    "oracle_version": "factory-semantic-oracles-v1",
     "cache_mode": "case_declared",
     "tool_version": "pump-fixture@1",
     "tool_responses_digest": "4" * 64,
@@ -42,14 +43,7 @@ class BehaviorQualificationTests(unittest.TestCase):
         expected = case["expected"]
         result = {
             "status": "completed",
-            "decision": expected["decision"],
-            "source_document_id": expected["source_document_id"],
-            "pump_model": expected["pump_model"],
-            "flow": expected["flow_m3h"],
-            "flow_unit": "m3/h",
-            "head": expected["head_m"],
-            "head_unit": "m",
-            "curve": deepcopy(expected["curve"]),
+            "domain_result": deepcopy(expected["domain_result"]),
             "latency_ms": 10 + ord(mode),
             "cost_usd_micros": 10,
             "input_tokens": 100,
@@ -71,9 +65,14 @@ class BehaviorQualificationTests(unittest.TestCase):
             "update_cost_usd_micros": {"A": 10, "B": 8, "C": 6}[mode],
             "corrections": {"A": 2, "B": 1, "C": 0}[mode],
         }
+        if case["domain"] == "pump_selector":
+            result["domain_result"]["flow"] = result["domain_result"].pop("flow_m3h")
+            result["domain_result"]["flow_unit"] = "m3/h"
+            result["domain_result"]["head"] = result["domain_result"].pop("head_m")
+            result["domain_result"]["head_unit"] = "m"
         if case["case_id"] == "F24-004":
-            result["flow"] = expected["flow_m3h"] / 3.6
-            result["flow_unit"] = "l/s"
+            result["domain_result"]["flow"] = expected["domain_result"]["flow_m3h"] / 3.6
+            result["domain_result"]["flow_unit"] = "l/s"
         return result
 
     def config(self):
@@ -87,7 +86,6 @@ class BehaviorQualificationTests(unittest.TestCase):
             "minimum_quality_micros": 1_000_000,
             "maximum_quality_regression_micros": 0,
             "declared_variable_factors": ["representation", "backend"],
-            "benefit_metric": "total_context_bytes",
         }
 
     def test_frozen_corpus_has_exact_four_pump_four_factory_four_cross_cases_and_baseline(self):
@@ -98,17 +96,21 @@ class BehaviorQualificationTests(unittest.TestCase):
         self.assertEqual(len(facts["cases"]), 12)
         self.assertEqual([c["case_id"] for c in facts["cases"]], [f"F24-{n:03d}" for n in range(1, 13)])
         self.assertEqual([c["domain"] for c in facts["cases"]], ["pump_selector"]*4+["factory"]*4+["cross_component"]*4)
-        self.assertTrue(all(c["required"] and not c["optional"] and c["oracle"] == "pump-selector-oracle-v1" for c in facts["cases"]))
+        self.assertEqual([c["oracle"] for c in facts["cases"]], [
+            "pump_selection", "pump_selection", "pump_selection", "pump_selection",
+            "factory_lifecycle", "factory_routing", "factory_recovery", "factory_unknown",
+            "cross_rule_conflict", "cross_context", "cross_authority", "cross_handoff",
+        ])
+        self.assertTrue(all(c["required"] and not c["optional"] for c in facts["cases"]))
         controls = {control["control_id"] for c in facts["cases"] for control in c["negative_controls"]}
-        self.assertTrue({"wrong_document","wrong_curve","unknown_to_zero","unsupported_units","unknown_tokens"} <= controls)
+        self.assertTrue({"wrong_document","wrong_curve","unknown_to_zero","unsupported_units","illegal_transition","wrong_write_owner","duplicate_effect","silent_precedence"} <= controls)
         self.assertTrue(all(c["forbidden_outcomes"] and c["isolation"]["external_writes"] == "forbidden" for c in facts["cases"]))
         self.assertEqual(baseline.to_dict()["corpus_digest"], suite.record_digest)
-        self.assertEqual(module.ACCEPTED_CORPUS_DIGEST, "384c86fa02b5e570c353f0423eac956119c45142699e0d9a2dab3114f11d9f1b")
-        self.assertEqual(module.ACCEPTED_BASELINE_DIGEST, "de100d45be16ed381b2a8e8aa2ad2e111dff56c144df59d0a8f65bd2a13622b4")
-        with self.assertRaisesRegex(ContractError, "corpus_digest_mismatch"):
-            module.load_frozen_suite(accepted_digest="0" * 64)
+        self.assertEqual(module.ACCEPTED_CORPUS_DIGEST, "d57c08cecf33c021e15911cfd3a6b4c96ea198c4b3e34f8b76048399daf51c9a")
+        self.assertEqual(module.ACCEPTED_BASELINE_DIGEST, "04c31a27456e78c4b883ea763e1d8511778b1d1dde9f79cbfadc64bc3cfe5612")
+        self.assertNotIn("accepted_digest", module.load_frozen_suite.__code__.co_varnames)
         mutated = suite.to_dict()
-        mutated["cases"][0]["expected"]["pump_model"] = "candidate-chosen-baseline"
+        mutated["cases"][0]["expected"]["domain_result"]["pump_model"] = "candidate-chosen-baseline"
         with self.assertRaisesRegex(ContractError, "corpus_digest_mismatch"):
             module.FrozenQualificationSuite.from_dict(mutated)
         changed_baseline = baseline.to_dict(); changed_baseline["accepted_by"] = "candidate"
@@ -127,6 +129,10 @@ class BehaviorQualificationTests(unittest.TestCase):
             "benefit": "pass", "budgets": "pass", "completeness": "pass", "common_conditions": "pass", "negative_controls": "pass", "quality": "pass"
         })
         self.assertEqual(report["distributions"]["A"]["latency_ms"], {"p50": 75, "p95": 75})
+        self.assertEqual(report["distributions"]["A"]["input_tokens"], {"p50": 100, "p95": 100})
+        self.assertEqual(report["distributions"]["A"]["cost_usd_micros"], {"p50": 10, "p95": 10})
+        self.assertEqual(report["distributions"]["A"]["corrections"], {"p50": 2, "p95": 2})
+        self.assertEqual(report["distributions"]["A"]["quality_regression_micros"], {"p50": 0, "p95": 0})
         self.assertLess(report["benefit_metrics"]["C"]["total_context_bytes"], report["benefit_metrics"]["B"]["total_context_bytes"])
         self.assertTrue(all(item["status"] == "killed" for item in report["negative_control_results"]))
         self.assertEqual(report["authority_effect"], "none")
@@ -147,7 +153,10 @@ class BehaviorQualificationTests(unittest.TestCase):
             def bad(mode, case, attempt, *, _case=case_id, _field=field, _value=value):
                 result = self.executor(mode, case, attempt)
                 if mode == "C" and case["case_id"] == _case:
-                    result[_field] = _value
+                    if _field in result["domain_result"]:
+                        result["domain_result"][_field] = _value
+                    else:
+                        result[_field] = _value
                 return result
             with self.subTest(case_id=case_id):
                 report = module.run_frozen_comparison(self.variants(), self.config(), bad).to_dict()
@@ -195,6 +204,14 @@ class BehaviorQualificationTests(unittest.TestCase):
         self.assertEqual(report["gates"]["benefit"], "fail")
         self.assertEqual(report["verdict"], "fail")
 
+        def context_only(mode, case, attempt):
+            result = self.executor(mode, case, attempt)
+            result["reread_bytes"] = 200
+            result["unique_context_bytes"] = result["context_bytes"] - 200
+            return result
+        report = module.run_frozen_comparison(self.variants(), self.config(), context_only).to_dict()
+        self.assertEqual(report["gates"]["benefit"], "fail")
+
     def test_common_pin_drift_and_missing_baseline_fail_closed(self):
         module = self.module()
         variants = self.variants()
@@ -206,35 +223,50 @@ class BehaviorQualificationTests(unittest.TestCase):
 
     def test_impact_selector_runs_behavior_changes_and_skips_only_proven_doc_typo(self):
         module = self.module()
+        def change(path, before, after):
+            return {"path": path, "before_digest": hashlib.sha256(before.encode()).hexdigest(),
+                    "after_digest": hashlib.sha256(after.encode()).hexdigest(), "before_text": before, "after_text": after}
         typo = module.select_behavior_impact([
-            {"path": "docs/operator.md", "before_digest": "4" * 64, "after_digest": "5" * 64,
-             "before_text": "Operator guidf.", "after_text": "Operator guide."}
+            change("docs/operator.md", "Operator guidf.", "Operator guide.")
         ]).to_dict()
         self.assertEqual(typo["selection"], "deterministic_only")
         self.assertEqual(typo["affected_capabilities"], [])
 
         behavior = module.select_behavior_impact([
-            {"path": "prompts/system.md", "before_digest": "4" * 64, "after_digest": "5" * 64,
-             "before_text": "old", "after_text": "new"},
-            {"path": "factory/contracts/result.json", "before_digest": "6" * 64, "after_digest": "7" * 64,
-             "before_text": "{}", "after_text": "{\"type\":\"object\"}"},
+            change("prompts/system.md", "old", "new"),
+            change("factory/contracts/result.json", "{}", "{\"type\":\"object\"}"),
         ]).to_dict()
         self.assertEqual(behavior["selection"], "paired_required")
         self.assertEqual(behavior["case_ids"], [f"F24-{n:03d}" for n in range(1, 13)])
         self.assertEqual(behavior["affected_capabilities"], ["prompt_behavior", "tool_result_handling"])
 
         unknown = module.select_behavior_impact([
-            {"path": "mystery.bin", "before_digest": "8" * 64, "after_digest": "9" * 64,
-             "before_text": "old", "after_text": "new"}
+            change("mystery.bin", "old", "new")
         ]).to_dict()
         self.assertEqual(unknown["selection"], "paired_required")
         self.assertIn("bounded_unknown_impact", unknown["reasons"])
 
         runtime = module.select_behavior_impact([
-            {"path": "factory/src/adaptive_factory/runtime.py", "before_digest": "a" * 64, "after_digest": "b" * 64,
-             "before_text": "typoo", "after_text": "typo"}
+            change("factory/src/adaptive_factory/runtime.py", "typoo", "typo")
         ]).to_dict()
         self.assertEqual(runtime["selection"], "paired_required")
+
+        forged = change("docs/operator.md", "bad", "bat"); forged["after_digest"] = "f" * 64
+        with self.assertRaisesRegex(ContractError, "text_digest_mismatch"):
+            module.select_behavior_impact([forged])
+
+    def test_generic_comparator_profile_is_closed_and_bb_defaults_disabled(self):
+        module = self.module()
+        profile = module.native_comparator_profile()
+        self.assertEqual(profile.profile_id, "factory-f24-f26-native-v1")
+        self.assertTrue(profile.enabled)
+        bb = module.make_comparator_profile("bb-observation-v1", profile.suite, profile.baseline, profile.oracle, enabled=False)
+        with self.assertRaisesRegex(ContractError, "profile_disabled"):
+            module.run_comparison(bb, self.variants(), self.config(), self.executor)
+        enabled = module.make_comparator_profile("bb-observation-v1", profile.suite, profile.baseline, profile.oracle, enabled=True)
+        report = module.run_comparison(enabled, self.variants(), self.config(), self.executor).to_dict()
+        self.assertEqual(report["comparator_profile_id"], "bb-observation-v1")
+        self.assertEqual(report["verdict"], "pass")
 
 
 if __name__ == "__main__":

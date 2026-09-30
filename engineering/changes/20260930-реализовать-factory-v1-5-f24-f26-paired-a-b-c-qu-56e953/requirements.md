@@ -14,6 +14,8 @@
 - [ ] Qualification requires strict improvement in the predeclared benefit metric and reports unique/total/reread bytes, preparation/update cost, cold/warm cache totals, corrections, criterion coverage, and p50/p95 latency.
 - [ ] Prompt, context, model, tools, tool responses, resources and sanitizer identities are bound and checked on every attempt.
 - [ ] Behavior-impact selection is deterministic and records changed paths/digests, affected capabilities and reason.
+- [ ] Selector recomputes SHA-256 from supplied before/after bytes; a claimed digest or typo label cannot suppress F26.
+- [ ] BB/native observers can reuse the closed comparator profile, which remains disabled by default and uses the same anchored corpus/oracles.
 
 ## Failure and edge cases
 

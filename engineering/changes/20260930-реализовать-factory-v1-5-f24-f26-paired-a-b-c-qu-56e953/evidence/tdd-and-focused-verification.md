@@ -42,9 +42,11 @@ The first review rejected the initial all-Pump/self-described-resource shape. A 
 The accepted resource identities are explicit trust inputs rather than fields declared by the JSON being checked:
 
 ```text
-corpus  384c86fa02b5e570c353f0423eac956119c45142699e0d9a2dab3114f11d9f1b
-baseline de100d45be16ed381b2a8e8aa2ad2e111dff56c144df59d0a8f65bd2a13622b4
+corpus  d57c08cecf33c021e15911cfd3a6b4c96ea198c4b3e34f8b76048399daf51c9a
+baseline 04c31a27456e78c4b883ea763e1d8511778b1d1dde9f79cbfadc64bc3cfe5612
 ```
+
+The second review removed all public digest overrides and required the runner to reload both anchors on every invocation. It also replaced relabelled Pump payloads with distinct lifecycle, routing, recovery, unknown-accounting, rule-conflict, context-staleness, authority and handoff semantics; added simultaneous strict context-load and reread improvement; added usage/cost/regression p50/p95; verified selector text hashes; and introduced a closed BB/native comparator profile that defaults disabled. Final focused plus adjacent observation: `Ran 26 tests — OK`; structure/manifest/state: `Ran 92 tests — OK`.
 
 ## Wider discovery observation
 
