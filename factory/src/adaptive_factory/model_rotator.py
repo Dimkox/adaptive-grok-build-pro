@@ -149,7 +149,7 @@ class InMemoryRotationStore:
             key=(tenant_digest,registry_digest); state=self._state[key]
             for digest,claim in list(self._quarantine.items()):
                 if claim["key"]!=key: continue
-                ledger=self._state[("reservation",claim["grant"].reservation_id)]
+                ledger=self._state.setdefault(("reservation",claim["grant"].reservation_id),{"held_token":0,"settled_token":0,"held_request":0,"settled_request":0})
                 ledger["held_token"]-=claim["reserved_token"]; ledger["held_request"]-=claim["reserved_request"]
                 if settle: ledger["settled_token"]+=claim["reserved_token"]; ledger["settled_request"]+=claim["reserved_request"]
                 del self._quarantine[digest]

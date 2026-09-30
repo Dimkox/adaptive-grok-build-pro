@@ -265,6 +265,17 @@ class ModelRotatorTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError,"reconciliation_required"): rotator.execute(next_binding,lambda *a: None,now=101)
         store.reconcile(result["binding"]["tenant_digest"],reg.registry_digest)
 
+    def test_claim_expiry_before_reserve_reconciles_then_same_operation_succeeds(self):
+        reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); authorize(store,bind)
+        requested=canonical_digest({"provider_id":"openrouter","model_id":"qwen/a:free"})
+        store.claim(bind,reg.registry_digest,0,requested,100)
+        newer=binding(reg,operation_id="operation-2"); authorize(store,newer)
+        with self.assertRaisesRegex(ContractError,"reconciliation_required"):
+            store.claim(newer,reg.registry_digest,0,requested,131)
+        store.reconcile(canonical_digest(bind.repository_id),reg.registry_digest)
+        result=ModelRotator(reg,store,enabled=True).execute(bind,lambda *a: TransportResult.success(response_digest="1"*64,input_tokens=1,output_tokens=1),now=132)
+        self.assertEqual("selected",result["status"])
+
     def test_request_quota_not_token_threshold_and_is_one_per_dispatch(self):
         reg=registry(); bind=binding(reg,remaining_token_units=0,remaining_request_units=1); store=InMemoryRotationStore(); authorize(store,bind)
         result=ModelRotator(reg,store,enabled=True).execute(bind,lambda *a: TransportResult.success(response_digest="f"*64,input_tokens=999,output_tokens=999),now=100)
