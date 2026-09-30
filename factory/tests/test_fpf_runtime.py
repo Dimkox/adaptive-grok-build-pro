@@ -138,10 +138,19 @@ class FpfRuntimeTests(unittest.TestCase):
     def test_ac106_adapter_requires_exact_supported_profile(self):
         matrix = fpf.AdapterCompatibility(
             adapter_version="1.0", cli_version="2.0", supported_formats=("markdown",),
-            progressive_lookup=True, offline_replay=True)
+            progressive_lookup=True, offline_replay=True,
+            package="ai.lev/fpf", package_version="1.2.3")
         self.assertEqual(matrix.qualify(format="markdown", progressive=True, exact_cli="2.0"), "supported")
         self.assertEqual(matrix.qualify(format="xml", progressive=True, exact_cli="2.0"), "unsupported")
         self.assertEqual(matrix.qualify(format="markdown", progressive=True, exact_cli="2.1"), "not_evaluated")
+        self.assertEqual(matrix.qualify_snapshot(self.snapshot(), format="markdown", progressive=True,
+                                                 exact_cli="2.0"), "supported")
+        other = fpf.FrozenFpfSnapshot.build(
+            tenant_id="tenant-1", repository_id="owner/project", source_revision="a" * 40,
+            package="ai.lev/fpf", package_version="9", license_id="CC-BY-4.0",
+            generator_id="g", fragments=[fragment("x", "safe")])
+        self.assertEqual(matrix.qualify_snapshot(other, format="markdown", progressive=True,
+                                                 exact_cli="2.0"), "not_evaluated")
 
     def test_ac107_snapshot_replay_never_fetches_and_detects_loss(self):
         snapshot = self.snapshot(); reader = fpf.ProgressiveReader(snapshot, tenant_id="tenant-1")

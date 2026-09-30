@@ -333,12 +333,24 @@ class AdapterCompatibility:
     supported_formats: tuple[str, ...]
     progressive_lookup: bool
     offline_replay: bool
+    package: str | None = None
+    package_version: str | None = None
 
     def qualify(self, *, format: str, progressive: bool, exact_cli: str) -> str:
         if exact_cli != self.cli_version: return "not_evaluated"
         if format not in self.supported_formats or (progressive and not self.progressive_lookup):
             return "unsupported"
         return "supported"
+
+    def qualify_snapshot(self, snapshot: FrozenFpfSnapshot, *, format: str,
+                         progressive: bool, exact_cli: str) -> str:
+        if self.package is None or self.package_version is None:
+            return "not_evaluated"
+        if snapshot.package != self.package or snapshot.package_version != self.package_version:
+            return "not_evaluated"
+        if not snapshot.fragments:
+            return "unsupported"
+        return self.qualify(format=format, progressive=progressive, exact_cli=exact_cli)
 
 
 def export_offline(snapshot: FrozenFpfSnapshot, selections: Iterable[SelectionRevision]) -> dict:
