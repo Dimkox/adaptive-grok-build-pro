@@ -138,10 +138,14 @@ class VibeVMRuntimeTests(unittest.TestCase):
             lock, boot_owner_text="owner\n", boot_block="block", bindings=[], configuration={"backend": "native"}))
 
     def test_bindings_remain_mapped_and_native_export_preserves_canonical_facts(self):
-        payload = archive({"rules/a.md": "canonical"}); item = package("rules", "1.0.0", payload)
+        digest = hashlib.sha256(b"canonical").hexdigest()
+        catalog = json.dumps([{"rule_id": "RULE-1", "revision": "7", "source_path": "rules/a.md",
+                               "source_digest": digest}])
+        payload = archive({"rules/a.md": "canonical", ".adaptive-bindings.json": catalog})
+        item = package("rules", "1.0.0", payload)
         lock = self.store.resolve([item]); self.store.admit(item, payload)
         bindings = [{"criterion_id": "AC-001", "rule_id": "RULE-1", "revision": "7",
-                     "source_digest": hashlib.sha256(b"canonical").hexdigest(), "status": "mapped"}]
+                     "source_digest": digest, "status": "mapped"}]
         snapshot = self.store.publish(lock, boot_owner_text="owner\n", boot_block="block",
                                       bindings=bindings, configuration={"backend": "native"})
         exported = self.store.export_native(snapshot.generation_id)
@@ -151,6 +155,10 @@ class VibeVMRuntimeTests(unittest.TestCase):
         bad = [{**bindings[0], "source_digest": "0" * 64}]
         self.assert_code("binding_source_missing:RULE-1", lambda: self.store.publish(
             lock, boot_owner_text="owner\n", boot_block="block", bindings=bad,
+            configuration={"backend": "native"}))
+        nonexistent = [{**bindings[0], "revision": "NONEXISTENT"}]
+        self.assert_code("binding_not_authoritative:RULE-1@NONEXISTENT", lambda: self.store.publish(
+            lock, boot_owner_text="owner\n", boot_block="block", bindings=nonexistent,
             configuration={"backend": "native"}))
 
     def test_atomic_compare_and_swap_crash_recovery_frozen_snapshot_and_qualified_rollback(self):
@@ -179,10 +187,13 @@ class VibeVMRuntimeTests(unittest.TestCase):
         self.assertEqual(self.store.active_generation(), first.generation_id)
 
     def test_generation_identity_binds_boot_and_bindings_and_ids_cannot_escape_store(self):
-        payload = archive({"rules/a.md": "canonical"}); item = package("rules", "1", payload)
+        digest = hashlib.sha256(b"canonical").hexdigest()
+        catalog = json.dumps([{"rule_id": "RULE-1", "revision": "1", "source_path": "rules/a.md",
+                               "source_digest": digest}])
+        payload = archive({"rules/a.md": "canonical", ".adaptive-bindings.json": catalog}); item = package("rules", "1", payload)
         lock = self.store.resolve([item]); self.store.admit(item, payload)
         binding = [{"criterion_id": "AC-1", "rule_id": "RULE-1", "revision": "1",
-                    "source_digest": hashlib.sha256(b"canonical").hexdigest(), "status": "mapped"}]
+                    "source_digest": digest, "status": "mapped"}]
         first = self.store.publish(lock, boot_owner_text="owner\n", boot_block="one", bindings=binding,
                                    configuration={"backend": "native"})
         second = self.store.publish(lock, boot_owner_text="owner\n", boot_block="two", bindings=binding,
@@ -262,6 +273,26 @@ class VibeVMRuntimeTests(unittest.TestCase):
         value["safety_known"] = True; value["mandatory_rules_complete"] = False; status.write_text(json.dumps(value))
         self.assert_code("fallback_mandatory_rules_missing", lambda: self.store.native_fallback(snapshot.generation_id, adapter_available=False))
 
+    def test_fallback_export_and_revoke_are_one_locked_snapshot(self):
+        payload = archive({"a": "x"}); item = package("rules", "1", payload)
+        lock = self.store.resolve([item]); self.store.admit(item, payload)
+        snapshot = self.store.publish(lock, boot_owner_text="owner\n", boot_block="x", bindings=[],
+                                      configuration={"backend": "native"})
+        reading = threading.Event(); release = threading.Event(); revoked = threading.Event()
+        original = self.store.export_native
+        def paused(generation_id):
+            reading.set(); release.wait(2); return original(generation_id)
+        self.store.export_native = paused
+        result = []
+        fallback = threading.Thread(target=lambda: result.append(self.store.native_fallback(
+            snapshot.generation_id, adapter_available=False)))
+        revoke = threading.Thread(target=lambda: (reading.wait(2), self.store.set_generation_status(
+            snapshot.generation_id, qualified=True, revoked=True), revoked.set()))
+        fallback.start(); revoke.start(); self.assertTrue(reading.wait(2))
+        self.assertFalse(revoked.wait(0.05)); release.set(); fallback.join(); revoke.join()
+        self.assertEqual(result[0]["generation_id"], snapshot.generation_id)
+        self.assertTrue(revoked.is_set())
+
     def test_revoke_racing_rollback_never_leaves_revoked_generation_active(self):
         payload = archive({"a": "x"}); item = package("rules", "1", payload)
         lock = self.store.resolve([item]); self.store.admit(item, payload)
@@ -321,6 +352,8 @@ class VibeVMRuntimeTests(unittest.TestCase):
         fallback = self.store.native_fallback(snapshot.generation_id, adapter_available=False)
         self.assertEqual(fallback["generation_id"], snapshot.generation_id)
         self.assertEqual(self.store.active_generation(), snapshot.generation_id)
+        with self.assertRaises(TypeError): snapshot.native_export["sources"][0]["content"] = "mutated"
+        with self.assertRaises(TypeError): snapshot.native_export["lock"]["packages"][0]["version"] = "latest"
 
 
 if __name__ == "__main__":

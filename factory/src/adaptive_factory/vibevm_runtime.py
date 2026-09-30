@@ -26,6 +26,14 @@ def _canonical(value) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
+def _deep_freeze(value):
+    if isinstance(value, dict):
+        return MappingProxyType({key: _deep_freeze(child) for key, child in value.items()})
+    if isinstance(value, list):
+        return tuple(_deep_freeze(child) for child in value)
+    return value
+
+
 def _scope(value: str, field: str) -> str:
     if not value or len(value) > 128 or any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/" for character in value):
         raise VibeVMError(f"invalid_{field}")
@@ -283,16 +291,42 @@ class VibeVMStore:
                 if len(binding["source_digest"]) != 64 or any(character not in "0123456789abcdef" for character in binding["source_digest"]):
                     raise VibeVMError("invalid_binding")
                 normalized_bindings.append(dict(binding))
-            sources = []
+            sources = []; authoritative = {}
             for source in sorted(projection.rglob("*")):
                 if source.is_file():
-                    sources.append({"path": source.relative_to(projection).as_posix(),
-                                    "content": source.read_text(encoding="utf-8"),
+                    relative = source.relative_to(projection)
+                    if relative.name == ".adaptive-bindings.json":
+                        try:
+                            catalog = json.loads(source.read_text(encoding="utf-8"))
+                        except (UnicodeDecodeError, json.JSONDecodeError):
+                            raise VibeVMError("invalid_binding_catalog") from None
+                        if not isinstance(catalog, list):
+                            raise VibeVMError("invalid_binding_catalog")
+                        package_root = relative.parts[0]
+                        for entry in catalog:
+                            if not isinstance(entry, dict) or set(entry) != {"rule_id", "revision", "source_path", "source_digest"}:
+                                raise VibeVMError("invalid_binding_catalog")
+                            _scope(entry["rule_id"], "rule_id"); _scope(entry["revision"], "revision")
+                            source_path = PurePosixPath(entry["source_path"])
+                            if source_path.is_absolute() or any(part in ("", ".", "..") for part in source_path.parts):
+                                raise VibeVMError("invalid_binding_catalog")
+                            key = (entry["rule_id"], entry["revision"])
+                            if key in authoritative:
+                                raise VibeVMError(f"ambiguous_binding:{entry['rule_id']}@{entry['revision']}")
+                            authoritative[key] = (f"{package_root}/{source_path.as_posix()}", entry["source_digest"])
+                        continue
+                    sources.append({"path": relative.as_posix(), "content": source.read_text(encoding="utf-8"),
                                     "sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
             source_digests = {source["sha256"] for source in sources}
+            sources_by_path = {source["path"]: source["sha256"] for source in sources}
             for binding in normalized_bindings:
                 if binding["source_digest"] not in source_digests:
                     raise VibeVMError(f"binding_source_missing:{binding['rule_id']}")
+                authority = authoritative.get((binding["rule_id"], binding["revision"]))
+                if authority is None:
+                    raise VibeVMError(f"binding_not_authoritative:{binding['rule_id']}@{binding['revision']}")
+                if authority[1] != binding["source_digest"] or sources_by_path.get(authority[0]) != binding["source_digest"]:
+                    raise VibeVMError(f"binding_authority_mismatch:{binding['rule_id']}@{binding['revision']}")
             native = {"schema_version": 1, "generation_id": generation_id, "lock": lock,
                       "bindings": normalized_bindings, "sources": sources, "authority_effect": "none"}
             (staging / "boot.md").write_text(reconcile_boot_block(boot_owner_text, boot_block), encoding="utf-8")
@@ -344,7 +378,7 @@ class VibeVMStore:
     def open_snapshot(self, generation_id):
         _generation_id(generation_id)
         value = json.loads(json.dumps(self.export_native(generation_id)))
-        return Snapshot(generation_id, MappingProxyType(value))
+        return Snapshot(generation_id, _deep_freeze(value))
 
     def set_generation_status(self, generation_id, *, qualified, revoked=False):
         _generation_id(generation_id)
@@ -391,16 +425,21 @@ class VibeVMStore:
 
     def native_fallback(self, generation_id, *, adapter_available):
         _generation_id(generation_id)
-        status_value = json.loads((self.generations / generation_id / "status.json").read_text(encoding="utf-8"))
-        if status_value.get("revoked"):
-            raise VibeVMError("fallback_target_revoked")
-        if not status_value.get("qualified"):
-            raise VibeVMError("fallback_target_unqualified")
-        if not status_value.get("safety_known"):
-            raise VibeVMError("fallback_safety_unknown")
-        if not status_value.get("mandatory_rules_complete"):
-            raise VibeVMError("fallback_mandatory_rules_missing")
-        exported = self.export_native(generation_id)
+        with (self.root / ".generation.lock").open("a+b") as update_lock:
+            fcntl.flock(update_lock, fcntl.LOCK_SH)
+            status_path = self.generations / generation_id / "status.json"
+            if not status_path.is_file():
+                raise VibeVMError("fallback_target_missing")
+            status_value = json.loads(status_path.read_text(encoding="utf-8"))
+            if status_value.get("revoked"):
+                raise VibeVMError("fallback_target_revoked")
+            if not status_value.get("qualified"):
+                raise VibeVMError("fallback_target_unqualified")
+            if not status_value.get("safety_known"):
+                raise VibeVMError("fallback_safety_unknown")
+            if not status_value.get("mandatory_rules_complete"):
+                raise VibeVMError("fallback_mandatory_rules_missing")
+            exported = self.export_native(generation_id)
         return {"generation_id": generation_id, "backend": "vibevm" if adapter_available else "native",
                 "native_export": exported}
 
