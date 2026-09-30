@@ -9,6 +9,8 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 
 ## Rulings
 
+- Pre-verification negative control found that a known cost subset was incorrectly marked complete without declared usage coverage. `test_cost_completeness_requires_declared_usage_coverage` RED: `True is not false`; GREEN requires an exact declared physical-usage ID set and all actual priced entries, otherwise total remains null. Qualification carries the same coverage requirement.
+
 - Task 6: qualification RED: 3 failures for missing consumer; GREEN: 52 qualification/semantic/API/OpenAPI tests. The optional endpoint delegates repository/task authorization to the existing Factory service before reading evidence. Bound full technical and semantic observations can produce only `ready_for_human`; missing mappings/execution stay `not_evaluated`, and Apple/M8/Trust CI/BB/FPF/VibeVM retain explicit statuses. Current-state docs, typed spec evidence paths, architecture model and generated views are updated.
 - Installer addition was separated by the controller into an independent isolated writer/branch based on 70bc5f9d. No installer code is copied or implemented in this contour; its integration and combined verification remain coordinator-owned.
 

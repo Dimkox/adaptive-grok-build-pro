@@ -34,7 +34,7 @@ class DecisionRecordV1(FrozenWire):
         return cls.freeze(data)
 
 
-def summarize_cost(entries):
+def summarize_cost(entries, *, expected_usage_ids=None):
     seen = set(); known = 0; unknown = 0; estimated = 0
     for entry in sequence(entries, 1024):
         closed(entry, ('usage_id', 'source', 'currency', 'pricing_version', 'amount_usd_micros', 'status'))
@@ -51,7 +51,14 @@ def summarize_cost(entries):
             integer(amount, 'amount'); identity(entry['pricing_version'])
             known += amount; estimated += entry['status'] == 'estimated'
         if entry['pricing_version'] is not None: identity(entry['pricing_version'])
-    complete = bool(entries) and unknown == 0 and estimated == 0
+    expected = None
+    if expected_usage_ids is not None:
+        required = sequence(expected_usage_ids, 1024)
+        for item in required: identity(item)
+        expected = set(required)
+        if len(expected) != len(required): raise ContractError('duplicate_usage_coverage')
+        unknown += len(expected-seen)
+    complete = bool(entries) and expected == seen and unknown == 0 and estimated == 0
     return dict(known_usd_micros=known, complete=complete, total_usd_micros=known if complete else None,
                 unknown_items=unknown, estimated_items=estimated)
 

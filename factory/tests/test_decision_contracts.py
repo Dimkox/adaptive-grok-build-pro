@@ -46,7 +46,7 @@ class DecisionContractTests(unittest.TestCase):
         entries[1].update(amount_usd_micros=20, status='estimated', pricing_version='p2')
         self.assertFalse(module.summarize_cost(entries)['complete'])
         entries[1]['status'] = 'actual'
-        self.assertEqual(module.summarize_cost(entries)['total_usd_micros'], 140)
+        self.assertEqual(module.summarize_cost(entries, expected_usage_ids=['call-1','call-2'])['total_usd_micros'], 140)
         entries.append(deepcopy(entries[0]))
         with self.assertRaises(ContractError): module.summarize_cost(entries)
 
@@ -59,6 +59,14 @@ class DecisionContractTests(unittest.TestCase):
                          resource_seconds=20, human_seconds=None))
         intervals[0]['end'] = '2026-09-30T11:00:00Z'
         with self.assertRaises(ContractError): module.summarize_timing('2026-09-30T12:00:00Z', '2026-09-30T12:00:20Z', intervals)
+
+    def test_cost_completeness_requires_declared_usage_coverage(self):
+        module = self.module()
+        entry = dict(usage_id='call-1', source='provider', currency='USD', pricing_version='p1',
+                     amount_usd_micros=120, status='actual')
+        self.assertFalse(module.summarize_cost([entry])['complete'], 'known subset is not full cost')
+        self.assertFalse(module.summarize_cost([entry], expected_usage_ids=['call-1','call-2'])['complete'])
+        self.assertTrue(module.summarize_cost([entry], expected_usage_ids=['call-1'])['complete'])
 
     def test_append_only_migration_and_transactional_store_seam_exist(self):
         self.module()

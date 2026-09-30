@@ -13,7 +13,7 @@ class FactoryV15QualificationV1(FrozenWire):
 
 def qualify(repository_id, task_id, evidence):
     identity(repository_id); identity(task_id)
-    allowed = {'context', 'decisions', 'result', 'semantic', 'technical', 'prediction', 'cost_entries'}
+    allowed = {'context', 'decisions', 'result', 'semantic', 'technical', 'prediction', 'cost_entries', 'expected_usage_ids'}
     if not isinstance(evidence, dict) or set(evidence)-allowed: raise ContractError('unknown_qualification_evidence')
     missing = []; digests = []; candidate = None; context_digest = None; statuses = []
     context = evidence.get('context'); result = evidence.get('result')
@@ -69,7 +69,7 @@ def qualify(repository_id, task_id, evidence):
     return FactoryV15QualificationV1.freeze(dict(schema_version=1, repository_id=repository_id, task_id=task_id,
         candidate_sha=candidate, context_digest=context_digest, implementation_status='implemented', core_status=core,
         missing_evidence=sorted(set(missing)), evidence_digests=sorted(set(digests)),
-        cost=summarize_cost(evidence.get('cost_entries', [])), prediction_status=prediction_status,
+        cost=summarize_cost(evidence.get('cost_entries', []), expected_usage_ids=evidence.get('expected_usage_ids')), prediction_status=prediction_status,
         apple_status='excluded_by_owner', bb_status='not_run', fpf_status='not_evaluated', vibevm_status='not_evaluated',
         m8_status='inactive', external_trust_status='pending', human_acceptance='awaiting_human', authority_effect='none'))
 
