@@ -1,12 +1,12 @@
 {
   "acceptance_criteria": [
     {
-      "evidence": [{"receipt": "verification"}],
+      "evidence": [{"receipt": "verification"}, {"test": "factory/tests/test_runtime_installer.py"}],
       "id": "AC-001",
       "statement": "Unsafe or mismatched release artifacts are rejected before mutation and verified candidates switch atomically only after bounded health evidence."
     },
     {
-      "evidence": [{"receipt": "code_review"}, {"receipt": "test_review"}],
+      "evidence": [{"receipt": "code_review"}, {"receipt": "test_review"}, {"test": "factory/tests/test_runtime_installer.py"}],
       "id": "AC-002",
       "statement": "Lifecycle operations are idempotent, preserve prior release and data on failure, fail closed without backup/schema compatibility, and require exact confirmation for destructive purge."
     }

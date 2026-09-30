@@ -35,6 +35,8 @@ The post-release source line through PR #193 is recorded by the merged `v2.0.19`
 
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 
+The [Factory Linux setup manager](factory/runtime/SETUP_MANAGER.md) verifies independently pinned runtime ZIP/manifest bytes, journals immutable release switches, and preserves data on removal. Its stdlib lifecycle policy requires an explicitly injected runtime adapter; the standalone CLI cannot activate services. Updates/reversal require a retained checked backup and the same data schema. Owner-authorized Liqvera safety patterns carry explicit provenance and no upstream open-license claim.
+
 - Current source adds [`adaptive-landing-submit`](engineering/runbooks/l5-provider-failover.md): durable text/safe-DOCX submission through Qwen → Grok → OpenAI → Claude → OpenRouter, authenticated capability/attempt APIs, and atomic SQLite observations. Ambiguous submissions reconcile the same child; existing artifacts prevent further generation. Grok and primary Qwen now have accepted direct runtime results; the three added providers/full chain remain unqualified for inference. Monetary cost remains unknown; publication stays separate.
 - Trust CI repository-scoped immutable profiles are implemented in code and documented by the example catalog; the worker uses `TRUST_CI_HOLDOUT_PATH` and `TRUST_CI_HOLDOUT_HOST_PATH` as independently configured trusted roots, validated binary-first before dependency construction. The capability is pending a separately reviewed and approved server-side policy/holdout installation; no deployed policy or branch protection is changed by it.
 

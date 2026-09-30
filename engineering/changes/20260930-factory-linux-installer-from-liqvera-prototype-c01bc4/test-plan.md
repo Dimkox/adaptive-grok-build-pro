@@ -11,6 +11,10 @@
 
 ## Automated checks
 
+Implemented focused command: `python3 -m unittest factory.tests.test_runtime_installer`
+(31 tests). Observed RED/GREEN cycles and coverage boundary matrix are recorded in
+`evidence/implementation-report.md`; immutable crash/lock behaviors use real files.
+
 - Unit: manifest, archive, path, state, token, transition helpers.
 - Integration: temporary-root install/update/reversal/removal using a fake runtime adapter.
 - Contract: CLI JSON/error/status schema and manifest schema.
@@ -19,4 +23,8 @@
 
 ## Manual checks
 
-- 
+- Live host/service activation and real database snapshot/restore qualification:
+  NOT_RUN; no operational authority was delegated to this implementation contour.
+- Concrete activated systemd/Docker adapter and schema-changing migrations/restores:
+  intentionally unsupported source in this slice, not classified as unexecuted tests.
+- Full final-tree verifier and independent code/test reviews remain coordinator gates.
