@@ -9,6 +9,8 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 
 ## Rulings
 
+- Task 7 executed before Task 6 because qualification consumes BB status: BB RED: 3 failures for missing boundary; GREEN: 3 BB tests. Enabled live profiles reject, native remains available; identities/fences/command digests bind replay, acknowledgement remains separate from observed effect/stop. No BB installation, listeners, provider calls, live qualification or Orchestra activation.
+
 - Task 5: prediction RED: 3 failures for missing observation module; GREEN: 7 prediction/result tests. Temporal leakage, split overlap, nonfinite values, incomplete SHAP vectors, digest mismatch, incorrect output space and failed additivity reject. Insufficient history reports `not_qualified`; artifact availability is not model qualification or permission. No ML dependency/runtime was added.
 
 - Task 4: result RED: 4 failures for missing pre-model module; GREEN: 49 context/decision/result/broker/protocol/semantic tests. Captured model requests and sinks contain sanitized synthetic canaries only. Opaque interception is unavailable; oversized/malformed streams are rejected without raw fallback. Semantic pass requires a full allowed result with matching digest.

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:bb-lifecycle-observation.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repository_id",
+    "task_id",
+    "run_id",
+    "attempt_id",
+    "fence",
+    "context_digest",
+    "policy_digest",
+    "operation_id",
+    "command_digest",
+    "acknowledged",
+    "effect_outcome",
+    "stop_outcome",
+    "evidence_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "attempt_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "fence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "command_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "acknowledged": {
+      "type": "boolean"
+    },
+    "effect_outcome": {
+      "enum": [
+        "unknown",
+        "observed",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "stop_outcome": {
+      "enum": [
+        "unknown",
+        "observed",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "evidence_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

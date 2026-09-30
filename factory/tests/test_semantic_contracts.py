@@ -119,6 +119,8 @@ class SemanticContractTests(unittest.TestCase):
         }
         names = semantic_names | failover_names | {
             "context-manifest.v1.schema.json",
+            "bb-backend-profile.v1.schema.json",
+            "bb-lifecycle-observation.v1.schema.json",
             "prediction-observation.v1.schema.json",
             "prediction-explanation.v1.schema.json",
             "decision-record.v1.schema.json",
