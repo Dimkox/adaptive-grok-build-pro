@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/Dimkox/qwen-model-rotator",
+  "commit": "f91ead60dfab81912e8224f9eab503e8cbc09976",
+  "commit_time": "2026-09-30T22:16:22+00:00",
+  "git_archive_sha256": "7e53bc18c9e7517a70c2eb7f3972ad6fdc1b05df6de3d4d3e065b65011c88bbe",
+  "license_observation": "No LICENSE or SPDX grant observed; no source copied.",
+  "files": {
+    "README.md": "6561bce2b92d45d28e94aa960dfd59d3fb913b77f8002e43d6d08bfeab38f660",
+    "failover_proxy.py": "28d6e5d2ac2ed89befc4d2be41a87ca541ccd3c887873df7e36033eba979fadc",
+    "models-dashscope.txt": "b2e7349d4a875106b7a0cb3ed7d99acdd7984257db95755eda17aae3cbb5ffc5",
+    "models-openrouter.txt": "9b2edc85d28a506184e6a8e380a8e17463be922da45749bd801823857991575e",
+    "rotate.py": "49879a94c2461b81b53303681537ba668666b469f47e466fc023ed72c49a21bd",
+    "tests/test_rotate.py": "d41b647b4e1afa1f5cc951725258f132f815f4c2c8f51bae724bfcf8a774372c",
+    "tests/test_failover_proxy.py": "726f3b8073b8b4986af82c7953b7f9c310c13ca7488f4a75405020fd51c4bcde"
+  },
+  "adopted_semantics": ["provider-specific quota_mode", "bounded cooldown", "deterministic candidate order"],
+  "excluded_semantics": ["--yolo", "process-tree killing", "home/settings mutation", "proxy/network server", "broad unsafe retry", "raw error logging"]
+}

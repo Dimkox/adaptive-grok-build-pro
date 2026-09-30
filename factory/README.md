@@ -97,6 +97,26 @@ The three files in `runtime/` implement immutable-release installation with sepa
 Historical observation: a separately authorized `qwen-intl` / `qwen-plus` synthetic normalization used 735 input and 117 output units in 8,598 ms on the prior source. That does not establish current-HEAD connectivity or Omni/multimodal acceptance. The user's earlier `data_inspection_failed` is an observed rejection with undetermined trigger. Mocked refusal/SSE and defensive Unicode, path, DOCX and PDF fixtures prove local handling, without identifying live moderation triggers.
 # Factory v1.5 fast Linux candidate
 
+## Default-off model rotation
+
+`model_rotator.py` provides a closed registry and a caller-owned transport boundary.
+Before dispatch, migration 027 atomically validates the current task/run fence, live lease
+and unreleased token reservation, then claims the operation idempotently. Cooldowns and the
+next cursor survive restart; concurrent duplicate claims do not produce a second dispatch.
+OpenRouter entries use request quota mode and rotate only after a bounded eligible failure;
+Qwen/DashScope entries may use token quota mode. No credential, endpoint, prompt, body,
+header or raw provider error is accepted or stored.
+
+The installed inspection command is deliberately read-only:
+
+```bash
+adaptive-model-rotator status
+```
+
+It reports `enabled:false` and `live_qualification:NOT_RUN`. Source integration does not
+activate providers, edit `~/.qwen`, start a proxy, kill processes, or enable upstream
+`--yolo` behavior.
+
 The additive v1.5 modules provide native bounded context, immutable factual decisions,
 pre-model result envelopes, observation artifacts and read-only qualification.
 `FactoryV15QualificationService(existing_factory_service, evidence_reader)` composes

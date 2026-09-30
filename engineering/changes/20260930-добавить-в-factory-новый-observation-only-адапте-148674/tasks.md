@@ -3,6 +3,6 @@
 - [x] Freeze contracts and expected behavior.
 - [x] Add failing test or characterization test.
 - [x] Implement the smallest vertical change.
-- [x] Run focused tests (7 pass); full selected profile remains coordinator-owned.
+- [x] Run focused review-repair tests (14 pass); full integrated profile remains coordinator-owned because migration 027 depends on integrated 026.
 - [ ] Complete independent reviews.
 - [ ] Bind evidence to the final tree fingerprint.

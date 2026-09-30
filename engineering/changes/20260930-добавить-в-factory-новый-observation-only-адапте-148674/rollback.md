@@ -11,3 +11,7 @@ Keep adapter disabled (the default) and revert the source commit; no persistent 
 ## Data recovery / forward-fix
 
 ## Verification after rollback
+
+Run `adaptive-model-rotator status` and require `enabled:false`; verify no new operation
+rows appear. Migration 027 data may remain inert for audit/replay safety and must not be
+dropped during ordinary rollback. Re-run the pre-existing Factory unit and migration suite.

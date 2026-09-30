@@ -10,6 +10,11 @@ Source-only. No deployment or provider call in this change.
 
 ## Metrics and alerts
 
+- Count `selected`, `exhausted`, `stopped` and `needs_human` terminal evidence by registry digest.
+- Alert on any budget overrun, unknown usage, stale claim or authority rejection; never include opaque identifiers or provider text in labels.
+- Track cooldown saturation and duplicate-claim rejection. These are observations, not provider-health or zero-cost claims.
+
 ## Go/no-go criteria
 
 Focused and full route verification plus all selected reviews; live status remains `NOT_RUN`.
+Migration 027 must be integrated strictly after migration 026 and exercised by the integrated PostgreSQL suite.

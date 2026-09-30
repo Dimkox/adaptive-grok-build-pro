@@ -1,6 +1,6 @@
 # Implementation handoff
 
-Source commit: `6e170318`
+Initial source commit: `6e170318`; review repairs are recorded by the later branch head.
 
 ## Delivered
 
@@ -12,7 +12,7 @@ Source commit: `6e170318`
 - incomplete usage remains unknown and forces `needs_human`;
 - no endpoint, credential, header/body, home-directory or settings interface.
 
-The source repository `Dimkox/qwen-model-rotator@b76a09849c132ab62f73bee76f949bd600bc4649`
+The source repository `Dimkox/qwen-model-rotator@f91ead60dfab81912e8224f9eab503e8cbc09976`
 had no observed license. Its code was not copied; the independent implementation uses only
 the explicitly authorized behavioral idea and records provenance.
 
@@ -30,3 +30,19 @@ the explicitly authorized behavioral idea and records provenance.
 
 Live provider calls and qualification are `NOT_RUN`. Independent route reviews and the
 authoritative integrated full verifier remain coordinator-owned.
+
+## Review repairs
+
+- Runtime execution now requires a store-authorized exact binding; PostgreSQL migration
+  027 validates current task/run/fence/lease/reservation and atomically persists unique
+  operation claims, replay evidence, cooldowns and cursor. It intentionally depends on
+  the integrated branch's migration 026, so standalone full migration discovery remains
+  `NOT_RUN` until integration.
+- The closed transport result rejects inconsistent status/category/digest/usage facts.
+  Unknown and over-limit usage stop as `needs_human`; active/all-model cooldowns prevent
+  dispatch. Evidence stores only digests of opaque identities.
+- Upstream advanced to `f91ead60dfab81912e8224f9eab503e8cbc09976`; its own suite passed
+  53 tests. The exact archive/file hashes and clean-room exclusions are recorded in
+  `upstream-inventory.json`.
+- Focused repaired suite: 14 tests pass. Live providers and integrated PostgreSQL remain
+  `NOT_RUN`; no verification or review receipt is claimed here.

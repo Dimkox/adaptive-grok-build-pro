@@ -41,7 +41,8 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 ## Decisions
 
-- Prototype provenance: `Dimkox/qwen-model-rotator@b76a09849c132ab62f73bee76f949bd600bc4649`; no license was present, so only behavioral ideas were studied and implementation is original.
+- Prototype provenance: `Dimkox/qwen-model-rotator@f91ead60dfab81912e8224f9eab503e8cbc09976`; no license was present, so only behavioral ideas were studied and implementation is original. Exact source hashes and exclusions are in `evidence/upstream-inventory.json`.
+- OpenRouter is request-quota mode; token observations never trigger rotation there. DashScope/Qwen may use token-quota mode.
 - Live activation and real credentials are outside this source contour and remain `NOT_RUN`.
 
 ## Risks and mitigations
