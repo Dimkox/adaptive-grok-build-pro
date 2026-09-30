@@ -323,7 +323,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, "
+                "TRUNCATE factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
                 "factory.semantic_escalations, factory.semantic_child_task_bindings, "
                 "factory.semantic_child_proposals, factory.semantic_directives, "
                 "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -727,6 +727,78 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 "source": "trusted_workspace_broker",
             }
         )
+
+    def test_unverified_capacity_race_reconnect_and_owner_only_resolution(self):
+        import psycopg
+        from adaptive_factory.admin import configure_unverified_limit
+        from adaptive_factory.execution_contracts import ProviderProfileV1
+        from adaptive_factory.store import BudgetError
+
+        selection = self.selection(capabilities=["structured_output"])
+        profile = ProviderProfileV1.from_dict(selection["provider"]).profile_digest
+        configure_unverified_limit(DATABASE_URL, "owner/repository", profile, 1)
+        _task, winner = self.claim_execution("unverified-race", capabilities=["structured_output"])
+        from adaptive_factory.execution_contracts import TaskPacketV1, RunManifestV1
+        with psycopg.connect(DATABASE_URL) as connection:
+            packet_body = connection.execute("SELECT body FROM factory.execution_packets WHERE run_id=%s", (winner.lease.run_id,)).fetchone()[0]
+            packet_body.pop("packet_digest")
+            packet = TaskPacketV1.from_dict(packet_body)
+            manifest = RunManifestV1(**connection.execute("SELECT body FROM factory.execution_manifests WHERE run_id=%s", (winner.lease.run_id,)).fetchone()[0])
+        barrier = threading.Barrier(2)
+
+        def start():
+            barrier.wait()
+            try:
+                return self.runtime_store().start_execution(winner.lease, packet, manifest, WORKER)
+            except FenceError:
+                return "duplicate_rejected"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = list(pool.map(lambda _: start(), range(2)))
+        self.assertEqual(outcomes, ["duplicate_rejected"] * 2)
+        self.service.commit_execution_proposal(winner.lease, packet_digest=winner.packet_digest,
+            sequence=1, event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "retained candidate"},
+            actor=WORKER, idempotency_key="1" * 64)
+        FactoryService(self.store, snapshot_broker=TrustedSnapshotBroker()).finalize_execution(
+            winner.lease, packet_digest=winner.packet_digest, actor=WORKER, idempotency_key="2" * 64)
+        with self.assertRaisesRegex(BudgetError, "unverified capacity exhausted"):
+            self.claim_execution("unverified-next", capabilities=["structured_output"])
+        # New runtime connection cannot bypass or erase the retained reservation.
+        with self.runtime_store()._transaction() as cursor:
+            cursor.execute("SELECT count(*) FROM factory.unverified_slots")
+            self.assertEqual(cursor.fetchone()[0], 1)
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                connection.execute("SELECT factory.unverified_resolve(%s,'expired',%s)",
+                                   (winner.lease.run_id, "a" * 64))
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertFalse(connection.execute("SELECT factory.unverified_resolve(%s,'verified',%s)",
+                                                (winner.lease.run_id, "a" * 64)).fetchone()[0])
+            self.assertTrue(connection.execute("SELECT factory.unverified_resolve(%s,'quarantined',%s)",
+                                               (winner.lease.run_id, "b" * 64)).fetchone()[0])
+            self.assertTrue(connection.execute("SELECT factory.unverified_resolve(%s,'quarantined',%s)",
+                                               (winner.lease.run_id, "b" * 64)).fetchone()[0])
+            self.assertFalse(connection.execute("SELECT factory.unverified_resolve(%s,'expired',%s)",
+                                                (winner.lease.run_id, "c" * 64)).fetchone()[0])
+
+    def test_unverified_generated_artifact_retains_capacity_after_lease_release(self):
+        import psycopg
+        _task, execution = self.claim_execution("unverified-generated", capabilities=["structured_output"])
+        self.service.commit_execution_proposal(execution.lease, packet_digest=execution.packet_digest,
+            sequence=1, event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "retained candidate"},
+            actor=WORKER, idempotency_key="1" * 64)
+        result = FactoryService(self.store, snapshot_broker=TrustedSnapshotBroker()).finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest,
+            actor=WORKER, idempotency_key="2" * 64)
+        with psycopg.connect(DATABASE_URL) as connection:
+            row = connection.execute("""SELECT trim(s.candidate_sha),s.generated_at IS NOT NULL,
+                r.released_at IS NOT NULL,NOT EXISTS(SELECT 1 FROM factory.unverified_resolutions x WHERE x.run_id=s.run_id)
+                FROM factory.unverified_slots s JOIN factory.runs r USING(run_id) WHERE s.run_id=%s""",
+                (execution.lease.run_id,)).fetchone()
+            self.assertEqual(row, (result.exact_head_sha, True, True, True))
 
     def test_runtime_cannot_persist_noncanonical_packet_or_manifest(self):
         import psycopg
@@ -1667,6 +1739,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
+                    (24, "024_unverified_capacity.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1684,7 +1757,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (23, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (24, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -1839,7 +1912,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18, 19, 20, 21, 22, 23],
+                [15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -2213,6 +2286,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
+                    (24, "024_unverified_capacity.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2227,7 +2301,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (23, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (24, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2325,6 +2399,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
+                    (24, "024_unverified_capacity.sql"),
                 ],
             )
             result = FactoryService(
@@ -2349,7 +2424,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (23, 1, True))
+                self.assertEqual(cursor.fetchone(), (24, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -6046,8 +6121,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 23:
-            raise AssertionError("fresh-cluster test requires migrations 001..023")
+        if len(migrations) != 24:
+            raise AssertionError("fresh-cluster test requires migrations 001..024")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -6120,6 +6195,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (21, "021_semantic_repair_child_rejection_reasons.sql"),
                 (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                 (23, "023_factory_v15_decisions.sql"),
+                    (24, "024_unverified_capacity.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())

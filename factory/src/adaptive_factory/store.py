@@ -1312,6 +1312,10 @@ class PostgresFactoryStore:
                     yield cursor
         except (StoreUnavailable, IntegrityError):
             raise
+        except psycopg.errors.RaiseException as exc:
+            if exc.diag.message_primary == "unverified_capacity_exhausted":
+                raise BudgetError("unverified capacity exhausted") from exc
+            raise IntegrityError("database admission rejected") from exc
         except (psycopg.DataError, psycopg.IntegrityError) as exc:
             raise IntegrityError("database integrity violation") from exc
         except (

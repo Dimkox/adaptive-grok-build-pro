@@ -344,12 +344,40 @@ def bootstrap_local(
     return readiness
 
 
+def configure_unverified_limit(owner_url, repository_id, profile_digest, limit):
+    """Explicit operator configuration; runtime has SELECT only on this table."""
+    if (not owner_url or not isinstance(repository_id, str)
+        or not 1 <= len(repository_id.encode("utf-8")) <= 128
+        or not isinstance(profile_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", profile_digest) is None
+        or type(limit) is not int or not 1 <= limit <= 64):
+        raise BootstrapError("bounded repository/profile and unverified limit required")
+    import psycopg
+    with psycopg.connect(owner_url) as connection, connection.transaction():
+        connection.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                           (f"unverified:{repository_id}:{profile_digest}",))
+        connection.execute("""INSERT INTO factory.unverified_limits
+            (repository_id,profile_digest,max_unverified_inflight) VALUES(%s,%s,%s)
+            ON CONFLICT(repository_id,profile_digest) DO UPDATE
+            SET max_unverified_inflight=EXCLUDED.max_unverified_inflight""",
+            (repository_id,profile_digest,limit))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="adaptive-factory-admin")
-    parser.add_argument("command", choices=("migrate", "bootstrap-local"))
+    parser.add_argument("command", choices=("migrate", "bootstrap-local", "unverified-limit"))
+    parser.add_argument("--repository")
+    parser.add_argument("--profile-digest")
+    parser.add_argument("--max-unverified-inflight", type=int)
     args = parser.parse_args(argv)
     owner_url = os.environ.get("FACTORY_MIGRATOR_DATABASE_URL", "")
     artifact_attestor_login = os.environ.get("FACTORY_ARTIFACT_ATTESTOR_LOGIN") or None
+    if args.command == "unverified-limit":
+        configure_unverified_limit(owner_url, args.repository, args.profile_digest,
+                                   args.max_unverified_inflight)
+        print("unverified_limit_configured")
+        return 0
     if args.command == "migrate":
         login = os.environ.get("FACTORY_RUNTIME_LOGIN") or None
         applied = PostgresMigrator(owner_url).apply(
