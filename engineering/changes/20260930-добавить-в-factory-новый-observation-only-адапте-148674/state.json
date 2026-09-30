@@ -1,0 +1,114 @@
+{
+  "change_id": "20260930-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-\u0432-factory-\u043d\u043e\u0432\u044b\u0439-observation-only-\u0430\u0434\u0430\u043f\u0442\u0435-148674",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-qwen-model-rotator",
+      "change_id": "20260930-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-\u0432-factory-\u043d\u043e\u0432\u044b\u0439-observation-only-\u0430\u0434\u0430\u043f\u0442\u0435-148674",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "9fee9c0f219d771da865d951cd8bfe9c1af27d4e",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-30T22:02:47+00:00",
+      "route_id": "14867431127b"
+    },
+    {
+      "branch": "feature/factory-qwen-model-rotator",
+      "change_id": "20260930-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-\u0432-factory-\u043d\u043e\u0432\u044b\u0439-observation-only-\u0430\u0434\u0430\u043f\u0442\u0435-148674",
+      "detached": false,
+      "dirty_product_paths": [
+        "factory/src/adaptive_factory/model_rotator.py",
+        "factory/src/adaptive_factory/resources/model-rotator-registry.v1.json",
+        "factory/tests/test_model_rotator.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [],
+      "head": "9fee9c0f219d771da865d951cd8bfe9c1af27d4e",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-30T22:07:43+00:00",
+      "route_id": "14867431127b"
+    }
+  ],
+  "created_at": "2026-09-30T22:02:47+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-30T22:02:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-30T22:07:24+00:00",
+      "from": "draft",
+      "reason": "closed registry, authority binding, retry boundary and acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-30T22:07:43+00:00",
+      "from": "scoped",
+      "reason": "scope_and_design_approval refreshed against recorded bounded design",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-30T22:07:43+00:00",
+      "from": "approved",
+      "reason": "RED import failure observed; bounded source implementation and focused tests now green",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "human_gates_digest": "382e62bd48b19240e992ee852c87d693886a2b8d975ea7df641072925d77b316",
+  "route_id": "14867431127b",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432 Factory \u043d\u043e\u0432\u044b\u0439 observation-only \u0430\u0434\u0430\u043f\u0442\u0435\u0440 \u0440\u043e\u0442\u0430\u0446\u0438\u0438 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0445 Qwen/OpenRouter \u043c\u043e\u0434\u0435\u043b\u0435\u0439: versioned provider registry, bounded failover/cooldown, token quota observation, deterministic selection, retry and fallback evidence, tenant/fence/budget binding, no credential persistence, no authority bypass, tests; \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a prototype qwen-model-rotator commit b76a09849c132ab62f73bee76f949bd600bc4649",
+  "updated_at": "2026-09-30T22:07:43+00:00"
+}

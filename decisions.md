@@ -882,3 +882,7 @@ Production installer runtime joins the real Ruff/Bandit scope, while changed Fac
 ### 2026-09-30 — Recovery fixtures must obey retained unverified capacity
 
 A synthetic pagination fixture with more packets than the quota must retain explicit owner quarantine receipts, not increase admission limits or equate lease release with artifact verification. Keeping every slot/resolution row while checking pagination preserves both the quota's crash/reconnect invariant and the original recovery behavior; latest-schema fixtures derive the admitted suffix while historical migration hashes stay pinned.
+
+# 2026-09-30 — Treat local model rotators as observation boundaries
+
+When importing a model-rotation prototype, preserve deterministic selection and bounded cooldown as independently implemented behavior, but keep credentials, HTTP, home-directory settings and execution authority outside the adapter. This worked because the resulting source is testable offline, default-off and bound to the Factory tenant/fence/budget identity.

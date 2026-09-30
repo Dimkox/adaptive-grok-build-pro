@@ -1,0 +1,85 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+  "base_fingerprint": "3aa470df371a2a8d5dc00532af5307f8a2f6ecba65d7f8b063beb65a2241f193",
+  "complexity": "high-risk",
+  "created_at": "2026-09-30T22:02:39+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk signal: credential",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "14867431127b",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432 Factory \u043d\u043e\u0432\u044b\u0439 observation-only \u0430\u0434\u0430\u043f\u0442\u0435\u0440 \u0440\u043e\u0442\u0430\u0446\u0438\u0438 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0445 Qwen/OpenRouter \u043c\u043e\u0434\u0435\u043b\u0435\u0439: versioned provider registry, bounded failover/cooldown, token quota observation, deterministic selection, retry and fallback evidence, tenant/fence/budget binding, no credential persistence, no authority bypass, tests; \u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a prototype qwen-model-rotator commit b76a09849c132ab62f73bee76f949bd600bc4649",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

@@ -1,0 +1,31 @@
+{
+  "change_id": "20260930-добавить-в-factory-новый-observation-only-адапте-148674",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260930-добавить-в-factory-новый-observation-only-адапте-148674",
+      "decided_at": "2026-09-30T22:02:50+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested integration of https://github.com/Dimkox/qwen-model-rotator into the Factory on 2026-09-30.",
+      "resource": null,
+      "route_id": "14867431127b",
+      "scope_digest": "de34829467ae62c02cc54288dfb9a44baac01fdaa88139fd270061663c1508d2"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260930-добавить-в-factory-новый-observation-only-адапте-148674",
+      "decided_at": "2026-09-30T22:07:43+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested integrating qwen-model-rotator into Factory; bounded safe design implements that exact approved scope",
+      "resource": null,
+      "route_id": "14867431127b",
+      "scope_digest": "d07c50d325e7b41fb6a6dc3120d900fce910343745c73fc731c9b55316ddbd20"
+    }
+  ],
+  "route_id": "14867431127b",
+  "schema_version": 1
+}

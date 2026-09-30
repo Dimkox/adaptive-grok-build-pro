@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "registry_id": "qwen-free-candidates-20260930",
+  "registry_version": "1.0.0",
+  "provenance": {
+    "repository": "Dimkox/qwen-model-rotator",
+    "commit": "b76a09849c132ab62f73bee76f949bd600bc4649",
+    "observed_at": "2026-09-30T00:00:00Z"
+  },
+  "models": [
+    {"provider_id": "openrouter", "model_id": "qwen/qwen3-coder:free", "free_claim": true, "enabled": true, "priority": 10},
+    {"provider_id": "qwen", "model_id": "qwen3-coder-plus", "free_claim": true, "enabled": false, "priority": 20}
+  ],
+  "policy": {"max_attempts": 2, "max_cooldown_seconds": 600, "token_quota": 1024, "per_attempt_token_limit": 256}
+}

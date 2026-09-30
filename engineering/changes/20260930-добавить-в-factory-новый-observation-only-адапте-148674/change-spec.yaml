@@ -1,0 +1,36 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"A closed versioned registry and deterministic selector bind every observation to tenant, task, run, attempt, fence and budget identities.","evidence":[{"test":"factory/tests/test_model_rotator.py"},{"receipt":"verification"}]},
+    {"id":"AC-002","statement":"Only failures observed before response start may move to another model; authentication, payment and daily-limit failures stop immediately.","evidence":[{"test":"factory/tests/test_model_rotator.py"},{"receipt":"code_review"}]},
+    {"id":"AC-003","statement":"The adapter is default-off, records bounded usage and retry evidence, and never persists or emits credential values.","evidence":[{"test":"factory/tests/test_model_rotator.py"},{"receipt":"security_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260930-добавить-в-factory-новый-observation-only-адапте-148674",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [{"id":"FORBID-001","statement":"The adapter never edits user settings or home directories and never claims live qualification from local tests.","evidence":[{"receipt":"release_review"}]}],
+  "invariants": [{"id":"INV-001","statement":"Model rotation is observation-only and cannot bypass Factory authority, fence or reserved budget boundaries.","evidence":[{"test":"factory/tests/test_model_rotator.py"},{"receipt":"test_review"}]}],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Добавить в Factory новый observation-only адаптер ротации бесплатных Qwen/OpenRouter моделей: versioned provider registry, bounded failover/cooldown, token quota observation, deterministic selection, retry and fallback evidence, tenant/fence/budget binding, no credential persistence, no authority bypass, tests; источник prototype qwen-model-rotator commit b76a09849c132ab62f73bee76f949bd600bc4649",
+    "success_metric": "model_rotator_contract_gate",
+    "target": "all_focused_tests_and_route_reviews_pass_with_live_status_not_run"
+  },
+  "observability": [{"id":"SIG-001","metric":"model_rotation_attempt_observation","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
