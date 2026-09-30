@@ -17,7 +17,8 @@ adds bounded native context, append-only factual decisions (migration 023), pre-
 result envelopes, observation-only prediction validation and an optional authenticated
 [qualification API](factory/contracts/openapi/factory-v15.v1.json). The [operator notes](factory/README.md#factory-v15-fast-linux-candidate)
 describe composition and rollback. U4/macOS is owner-excluded; BB stays default-off
-and `not_run`, FPF/VibeVM `not_evaluated`, M8 inactive and external Trust CI pending.
+and `not_run`. The optional FPF data-only mechanism is implemented but default-off;
+exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Trust CI pending.
 Local synthetic composition is distinct from installed/live acceptance and publication.
 Product VERSION remains 2.0.19; v1.5 identifies the upgrade specification.
 

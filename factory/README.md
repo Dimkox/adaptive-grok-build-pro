@@ -144,3 +144,10 @@ adaptive-factory --token-file /run/adaptive-factory/reader.token qualification T
 
 This surface offers local evidence for human review. It cannot create a Trust CI check,
 signed approval, merge, deployment, model qualification, or accepted-task count.
+
+The FPF integration hook is deliberately default-off: construct
+`FpfRuntimeConfig(enabled=False, ...)` and `open_fpf_runtime` returns `disabled`
+without reading the snapshot. Enabling requires `qualification="supported"` for the
+exact pinned profile and an already admitted tenant-bound `FrozenFpfSnapshot`; the
+module has no network/process fetch path. On regression, disable the profile and use
+the qualified native path on the next attempt, preserving snapshot/read evidence.

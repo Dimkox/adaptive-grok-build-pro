@@ -6,11 +6,12 @@ none of its results confer authority.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 import hashlib
 import json
 import re
 from typing import Iterable, Mapping
+from pathlib import PurePosixPath
 
 from .contracts import ContractError, canonical_digest
 from .v15_contracts import digest, identity, safe_text, sha, redact
@@ -19,6 +20,11 @@ from .brokers import BrokerError
 
 class FpfBlocked(ContractError):
     """Named fail-closed result for a dependent optional capability."""
+
+
+class FrozenDict(dict):
+    def _immutable(self, *args, **kwargs): raise TypeError("frozen_mapping")
+    __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = _immutable
 
 
 def _block(code: str) -> None:
@@ -90,6 +96,10 @@ class ContextBudget:
         values = (prefix_tokens, task_tokens, history_tokens, reference_bytes)
         if any(type(x) is not int or x < 0 for x in values):
             raise ContractError("invalid_budget")
+        if tool_tokens is not None and (type(tool_tokens) is not int or tool_tokens < 0):
+            raise ContractError("invalid_budget")
+        if measured_reference_tokens is not None and (type(measured_reference_tokens) is not int or measured_reference_tokens < 0):
+            raise ContractError("invalid_budget")
         if self.reads >= self.max_reads or reference_bytes > self.max_reference_bytes:
             _block("mandatory_context_budget" if mandatory else "optional_context_budget")
         # Four bytes/token is deliberately only a limiting estimate, never evidence.
@@ -106,9 +116,8 @@ class ContextBudget:
             status = "measured"
         # Unknown tool usage does not consume the whole window when admitting local bytes;
         # it remains explicitly unknown and the known lower bound still must fit.
-        lower_bound = known + (tool_tokens or 0) + (measured_reference_tokens or estimated_ref) + \
-            self.response_reserve_tokens + self.technical_reserve_tokens
-        if lower_bound > self.model_window_tokens:
+        lower_bound = known + (tool_tokens or 0) + (measured_reference_tokens or estimated_ref) + self.response_reserve_tokens + self.technical_reserve_tokens
+        if lower_bound > self.model_window_tokens or conservative > self.model_window_tokens:
             _block("mandatory_context_budget" if mandatory else "optional_context_budget")
         self.reads += 1
         return BudgetUsage(status, exact, conservative, reference_bytes)
@@ -139,19 +148,23 @@ class FrozenFpfSnapshot:
                 raise ContractError("closed_fragment")
             pattern_id = raw["pattern_id"]; identity(pattern_id)
             if pattern_id in normalized: raise ContractError("duplicate_fragment")
-            safe_text(raw["locator"], "locator", 512); _document(raw["text"], "text", 65536)
+            safe_text(raw["locator"], "locator", 512)
+            locator = raw["locator"]; locator_path = PurePosixPath(locator)
+            if locator_path.is_absolute() or ":" in locator or "\\" in locator or any(x in ("", ".", "..") for x in locator.split("/")):
+                raise ContractError("unsafe_locator")
+            _document(raw["text"], "text", 65536)
             digest(raw["sha256"])
             if hashlib.sha256(raw["text"].encode()).hexdigest() != raw["sha256"]:
                 raise ContractError("fragment_digest_mismatch")
             required = tuple(raw["required"]); optional = tuple(raw["optional"])
             for dependency in required + optional: identity(dependency)
-            normalized[pattern_id] = {**raw, "required": required, "optional": optional}
+            normalized[pattern_id] = FrozenDict({**raw, "required": required, "optional": optional})
         facts = {"tenant_id": tenant_id, "repository_id": repository_id,
                  "source_revision": source_revision, "package": package,
                  "package_version": package_version, "license_id": license_id,
                  "generator_id": generator_id,
                  "fragments": {k: dict(normalized[k]) for k in sorted(normalized)}}
-        return cls(**{k: facts[k] for k in facts if k != "fragments"}, fragments=normalized,
+        return cls(**{k: facts[k] for k in facts if k != "fragments"}, fragments=FrozenDict(normalized),
                    snapshot_digest=canonical_digest(facts))
 
 
@@ -197,7 +210,7 @@ class ProgressiveReader:
                 return
             visited.add(pattern_id); transitions += 1; total += len(item["text"].encode())
             if total > self.max_bytes: _block("mandatory_context_budget")
-            ordered.append(dict(item))
+            ordered.append(FrozenDict(dict(item)))
             for dependency in item["required"]: visit(dependency, depth + 1, True)
 
         visit(root, 0, True)
@@ -250,12 +263,14 @@ def verify_projection(source: str, projection: Mapping | str) -> dict:
             "projection_sha256": hashlib.sha256(projected.encode()).hexdigest()}
 
 
-def invalidate_decisions(decisions: Iterable[Mapping], *, changed_ids: set[str]) -> list[dict]:
+def invalidate_decisions(decisions: Iterable[Mapping], *, changed_ids: set[str],
+                         dependency_map_complete: bool = True) -> list[dict]:
     result = []
     for record in decisions:
         item = dict(record); affected = sorted(set(record.get("dependencies", ())) & changed_ids)
-        if affected:
-            item.update(status="stale", stale_reason="dependency_changed", changed_dependencies=affected)
+        if affected or (changed_ids and not dependency_map_complete):
+            item.update(status="stale", stale_reason="dependency_changed" if affected else "bounded_impact_analysis",
+                        changed_dependencies=affected)
         result.append(item)
     return result
 
@@ -277,7 +292,10 @@ def assess_claim(*, criterion_id: str, candidate_sha: str, profile_digest: str,
     evidence_status = "missing"
     evidence_ref = None
     if execution is not None:
-        if (execution.get("candidate_sha") == candidate_sha and
+        if (execution.get("criterion_id") == criterion_id and
+                execution.get("mapped_test") == mapped_test and
+                isinstance(execution.get("evidence_ref"), str) and execution.get("evidence_ref") and
+                execution.get("candidate_sha") == candidate_sha and
                 execution.get("profile_digest") == profile_digest and
                 execution.get("status") in ("pass", "fail")):
             evidence_status = "executed"
@@ -304,7 +322,8 @@ def render_handoff(records: Iterable[Mapping], *, omitted_details: Iterable[str]
         for x in machine
     )
     return {"schema_version": 1, "machine": machine, "human": human,
-            "omitted_details": omitted, "authority_effect": "none"}
+            "omitted_details": omitted,
+            "limitations": [f"omitted:{item}" for item in omitted], "authority_effect": "none"}
 
 
 @dataclass(frozen=True)
@@ -330,18 +349,51 @@ def export_offline(snapshot: FrozenFpfSnapshot, selections: Iterable[SelectionRe
                         "snapshot_digest": selection.snapshot_digest, "reason": selection.reason,
                         "pattern_ids": [x["pattern_id"] for x in selection.fragments],
                         "selection_digest": selection.selection_digest})
-    return {"schema_version": 1, "tenant_id": snapshot.tenant_id,
+    bundle = {"schema_version": 1, "tenant_id": snapshot.tenant_id,
             "repository_id": snapshot.repository_id, "source_revision": snapshot.source_revision,
-            "package": snapshot.package, "snapshot_digest": snapshot.snapshot_digest,
+            "package": snapshot.package, "package_version": snapshot.package_version,
+            "license_id": snapshot.license_id, "generator_id": snapshot.generator_id,
+            "snapshot_digest": snapshot.snapshot_digest,
             "fragments": {k: dict(v) for k, v in snapshot.fragments.items()}, "selections": records,
             "network_required": False}
+    return {**bundle, "bundle_digest": canonical_digest(bundle)}
 
 
-def replay_offline(bundle: Mapping, *, tenant_id: str) -> list[SelectionRevision]:
+def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
+                   expected_package: str, expected_source_revision: str,
+                   expected_snapshot_digest: str) -> list[SelectionRevision]:
+    expected = {"schema_version", "tenant_id", "repository_id", "source_revision", "package",
+                "package_version", "license_id", "generator_id", "snapshot_digest", "fragments",
+                "selections", "network_required", "bundle_digest"}
+    if set(bundle) != expected or bundle.get("schema_version") != 1 or bundle.get("network_required") is not False:
+        _block("offline_snapshot_mismatch")
     if bundle.get("tenant_id") != tenant_id: _block("tenant_mismatch")
+    if (bundle.get("repository_id") != expected_repository or bundle.get("package") != expected_package or
+            bundle.get("source_revision") != expected_source_revision or
+            bundle.get("snapshot_digest") != expected_snapshot_digest):
+        _block("offline_context_mismatch")
+    payload = {k: bundle[k] for k in bundle if k != "bundle_digest"}
+    if canonical_digest(payload) != bundle["bundle_digest"]: _block("offline_snapshot_mismatch")
     fragments = bundle.get("fragments", {})
+    try:
+        rebuilt = FrozenFpfSnapshot.build(
+            tenant_id=bundle["tenant_id"], repository_id=bundle["repository_id"],
+            source_revision=bundle["source_revision"], package=bundle["package"],
+            package_version=bundle["package_version"], license_id=bundle["license_id"],
+            generator_id=bundle["generator_id"], fragments=fragments.values())
+    except (ContractError, TypeError, AttributeError, KeyError):
+        _block("offline_fragment_mismatch")
+    if rebuilt.snapshot_digest != bundle["snapshot_digest"]: _block("offline_snapshot_mismatch")
     result = []
+    previous = None
     for record in bundle.get("selections", ()):
+        if set(record) != {"revision", "previous_digest", "source_revision", "snapshot_digest",
+                          "reason", "pattern_ids", "selection_digest"}:
+            _block("offline_selection_mismatch")
+        if record["revision"] != len(result) + 1 or record["previous_digest"] != previous or \
+                record["source_revision"] != bundle["source_revision"] or \
+                record["snapshot_digest"] != bundle["snapshot_digest"]:
+            _block("offline_selection_mismatch")
         try: selected = tuple(fragments[x] for x in record["pattern_ids"])
         except KeyError: _block("offline_fragment_missing")
         facts = {"revision": record["revision"], "previous_digest": record["previous_digest"],
@@ -350,6 +402,7 @@ def replay_offline(bundle: Mapping, *, tenant_id: str) -> list[SelectionRevision
         if canonical_digest(facts) != record["selection_digest"]: _block("offline_selection_mismatch")
         result.append(SelectionRevision(**{**facts, "fragments": selected},
                                         selection_digest=record["selection_digest"]))
+        previous = record["selection_digest"]
     return result
 
 
@@ -362,25 +415,36 @@ def enforce_reference_boundary(text: str) -> str:
     except ContractError:
         _block("unsafe_reference")
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
-    if _UNSAFE.search(text) and not re.search(r"\b(?:do not|must not|never)\s+fetch\b", text, re.I):
+    benign_removed = re.sub(r"\b(?:do not|must not|never)\s+fetch\s+external\s+URLs?\b", "", text, flags=re.I)
+    if _UNSAFE.search(benign_removed):
         _block("unsafe_reference")
     return text
 
 
 def evaluate_abc(runs: Iterable[Mapping]) -> dict:
-    by_mode = {x.get("mode"): x for x in runs}
+    run_list = list(runs)
+    if len(run_list) != 3: _block("duplicate_experiment_mode")
+    by_mode = {x.get("mode"): x for x in run_list}
     if set(by_mode) != {"A", "B", "C"}: _block("incomplete_experiment")
     values = list(by_mode.values())
-    stable = ("case_ids", "oracle_digest", "model_id", "rules_digest", "budget_digest")
+    stable = ("case_ids", "oracle_digest", "model_id", "rules_digest", "budget_digest",
+              "generator_id", "adapter_version")
     if any(x.get(key) != values[0].get(key) for key in stable for x in values[1:]):
         _block("confounded_experiment")
     if len(values[0]["case_ids"]) != 12 or len(set(values[0]["case_ids"])) != 12:
         _block("invalid_corpus")
+    a, b, c = by_mode["A"], by_mode["B"], by_mode["C"]
+    if b.get("fpf_snapshot_digest") != c.get("fpf_snapshot_digest") or not b.get("fpf_snapshot_digest"):
+        _block("confounded_experiment")
+    for item in values:
+        cost = item.get("cost_micros")
+        if cost is not None and (type(cost) is not int or cost < 0): _block("invalid_cost")
     complete_cost = all(x.get("usage_complete") and x.get("cost_micros") is not None for x in values)
     recommendation = "retain_a"
-    a, b, c = by_mode["A"], by_mode["B"], by_mode["C"]
     def acceptable(candidate, baseline):
-        return candidate.get("critical_failures", 1) == 0 and candidate.get("quality", 0) >= baseline.get("quality", 0)
+        return (candidate.get("critical_failures", 1) == 0 and
+                candidate.get("negative_controls_passed") is True and
+                candidate.get("quality", 0) >= baseline.get("quality", 0))
     if acceptable(b, a): recommendation = "retain_b"
     if recommendation == "retain_b" and acceptable(c, b): recommendation = "retain_c"
     if not complete_cost and recommendation != "retain_a": recommendation = "retain_a"
@@ -401,9 +465,32 @@ def plan_upgrade(*, current_identity: str, candidate_identity: str,
             "auto_update": False}
 
 
+def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, str]) -> dict:
+    required = tuple(plan.get("required_gates", ()))
+    if not required or set(gate_results) != set(required) or any(gate_results[x] != "pass" for x in required):
+        _block("upgrade_gate_incomplete")
+    return {"status": "qualified_candidate", "candidate_identity": plan["candidate_identity"],
+            "gate_results": dict(sorted(gate_results.items())), "authority_effect": "none"}
+
+
 def plan_fallback(*, attempt_profile: str, target_profile: str,
                   mandatory_rules_current: bool, target_qualified: bool) -> dict:
     if not mandatory_rules_current or not target_qualified: _block("fallback_not_safe")
     return {"status": "fallback_planned", "from_profile": attempt_profile,
             "target_profile": target_profile, "apply_to": "next_attempt",
             "preserve_read_trace": True, "authority_effect": "none"}
+
+
+@dataclass(frozen=True)
+class FpfRuntimeConfig:
+    enabled: bool = False
+    profile_id: str = "native-fpf-disabled"
+    qualification: str = "not_evaluated"
+
+
+def open_fpf_runtime(config: FpfRuntimeConfig, snapshot: FrozenFpfSnapshot, *, tenant_id: str):
+    if type(config.enabled) is not bool: raise ContractError("invalid_enabled")
+    identity(config.profile_id)
+    if not config.enabled: return {"status": "disabled", "authority_effect": "none"}
+    if config.qualification != "supported": _block("profile_not_qualified")
+    return ProgressiveReader(snapshot, tenant_id=tenant_id)
