@@ -942,6 +942,31 @@ class PostgresFactoryTests(unittest.TestCase):
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 connection.execute('UPDATE factory.decision_records_v1 SET supersedes=NULL')
 
+    def test_bb_durable_intent_has_one_concurrent_send_owner_and_survives_reconnect(self):
+        import psycopg
+        from concurrent.futures import ThreadPoolExecutor
+        from adaptive_factory.decision_contracts import DecisionRecordV1
+        from factory.tests.test_decision_contracts import decision_facts
+        task = self.submit(source='bb-intent-race').task
+        grant = self.service.claim(owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW)
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt = connection.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s', (grant.run_id,)).fetchone()[0]
+        facts = decision_facts(); key='1'*64
+        facts.update(repository_id=task.repository_id,task_id=grant.task_id,run_id=grant.run_id,
+            attempt_id=str(attempt),fence=grant.fence,decision_id='bb-intent-'+key,
+            decision_kind='qualification',reason_code='bb_intent',
+            facts=[dict(name='operation_key',value=key),dict(name='command_digest',value='2'*64)])
+        record=DecisionRecordV1.from_dict(facts)
+        def claim(_):
+            return PostgresFactoryStore(self.runtime_url).begin_bb_operation(grant,record,WORKER)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            self.assertEqual(sorted(pool.map(claim,range(2))),[False,True])
+        reconnected=PostgresFactoryStore(self.runtime_url)
+        self.assertEqual([r.record_digest for r in reconnected.bb_operation_records(grant,WORKER,key)],[record.record_digest])
+        facts['facts'][1]['value']='3'*64
+        with self.assertRaises(IntegrityError): reconnected.begin_bb_operation(grant,DecisionRecordV1.from_dict(facts),WORKER)
+
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
 

@@ -4079,6 +4079,81 @@ class PostgresFactoryStore:
             self._lock_grant(cursor, grant)
             return self._append_decision_locked(cursor, grant, record, actor)
 
+    def begin_bb_operation(self, grant, record, actor):
+        """Atomic intent claim: only the inserting caller may send the external command."""
+        record = DecisionRecordV1.from_dict(record.to_dict())
+        data = record.to_dict()
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            cursor.execute('SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (data['repository_id'], data['decision_id']))
+            prior = cursor.fetchone()
+            if prior:
+                if prior[0] != record.record_digest: raise IntegrityError('BB operation idempotency conflict')
+                # Revalidate actor/attempt bindings even for a duplicate.
+                self._append_decision_locked(cursor, grant, record, actor)
+                return False
+            self._append_decision_locked(cursor, grant, record, actor)
+            return True
+
+    def bb_operation_records(self, grant, actor, operation_key):
+        if not HEX64.fullmatch(operation_key): raise IntegrityError('invalid BB operation key')
+        with self._transaction() as cursor:
+            row = self._lock_grant(cursor, grant)
+            repository = row[2]
+            if actor.actor_id != grant.owner or 'task:release' not in actor.scopes or ('*' not in actor.repositories and repository not in actor.repositories):
+                raise AuthorityError('BB operation identity mismatch')
+            cursor.execute('''SELECT record FROM factory.decision_records_v1
+                WHERE repository_id=%s AND task_id=%s AND run_id=%s
+                AND record->'facts' @> %s::jsonb ORDER BY created_at,decision_id LIMIT 129''',
+                (repository, grant.task_id, grant.run_id, canonical_json([dict(name='operation_key',value=operation_key)]).decode()))
+            records = cursor.fetchall()
+            if len(records)>128: raise IntegrityError('BB operation event bound exceeded')
+            return [DecisionRecordV1.from_dict(record[0]) for record in records]
+
+    def _lock_bb_usage_provenance(self, cursor, grant, actor):
+        """Late observation only: retained run/fence/intent identity, not new execution authority."""
+        cursor.execute('''SELECT t.repository_id FROM factory.runs r
+            JOIN factory.tasks t ON t.task_id=r.task_id
+            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.role=%s
+            AND r.fence=%s AND r.packet_digest=%s
+            AND EXISTS (SELECT 1 FROM factory.decision_records_v1 d
+                WHERE d.task_id=r.task_id AND d.run_id=r.run_id AND d.record->>'reason_code'='bb_intent')
+            FOR UPDATE OF r,t''',
+            (grant.run_id,grant.task_id,grant.owner,grant.role.value,grant.fence,grant.packet_digest))
+        row=cursor.fetchone()
+        if row is None or actor.actor_id!=grant.owner or 'task:budget' not in actor.scopes or ('*' not in actor.repositories and row[0] not in actor.repositories):
+            raise AuthorityError('BB usage provenance mismatch')
+
+    def observe_bb_usage(self, grant, observation, actor, decision):
+        from .bb_adapter import BBUsageObservationV1
+        observation=BBUsageObservationV1.from_dict(observation.to_dict()); data=observation.to_dict()
+        decision=DecisionRecordV1.from_dict(decision.to_dict())
+        decision_facts={fact['name']:fact['value'] for fact in decision.to_dict()['facts']}
+        if decision.to_dict()['reason_code']!='bb_usage' or any(decision_facts.get(name)!=value for name,value in data.items() if name!='schema_version'):
+            raise IntegrityError('BB usage decision mismatch')
+        result=None; blocked=None
+        with self._transaction() as cursor:
+            self._lock_bb_usage_provenance(cursor,grant,actor)
+            cursor.execute('''SELECT 1 FROM factory.decision_records_v1
+                WHERE task_id=%s AND run_id=%s AND record->>'reason_code'='bb_intent'
+                AND record->'facts' @> %s::jsonb LIMIT 1''',
+                (grant.task_id,grant.run_id,canonical_json([dict(name='binding_digest',value=data['binding_digest'])]).decode()))
+            if cursor.fetchone() is None: raise IntegrityError('BB usage execution binding mismatch')
+            self._append_decision_locked(cursor,grant,decision,actor)
+            # Incomplete/estimated provider facts stay in the same immutable journal, never
+            # transformed into zero-valued billed observations. Legacy components are disjoint.
+            complete=data['cost_status']=='actual' and data['price_table_digest'] is not None and all(data[key] is not None for key in ('input_tokens','output_tokens','reasoning_tokens','cached_input_tokens','cache_write_tokens'))
+            if complete and data['cache_write_tokens']==0:
+                input_tokens=data['input_tokens']-(data['cached_input_tokens'] if data['cache_in_input'] else 0)
+                output_tokens=data['output_tokens']-(data['reasoning_tokens'] if data['reasoning_in_output'] else 0)
+                components=(input_tokens,output_tokens,data['reasoning_tokens'],data['cached_input_tokens'],0)
+                result,blocked=self._observe_usage_locked(cursor,grant,data['provider_request_id'],data['price_table_digest'],
+                    data['confirmed_cost_usd_micros'],sum(components),0,actor,
+                    idempotency_key=canonical_digest(dict(bb_usage_request=data['provider_request_id'],run_id=grant.run_id)),
+                    correlation_id=None,component_values=components,bb_late_observation=True)
+        if blocked: raise BudgetError('BB observed accounting blocked; immutable usage retained')
+        return result
+
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
         deadline_expired: bool = False, correlation_id: str | None = None
@@ -4372,6 +4447,7 @@ class PostgresFactoryStore:
         price_table_digest: str | None, cost: int, tokens: int, output: int,
         actor: Actor, *, idempotency_key: str | None, correlation_id: str | None,
         component_values: tuple[int, int, int, int, int],
+        bb_late_observation: bool = False,
     ) -> tuple[UsageResult | None, str | None]:
         """Record one usage observation using the caller's active transaction."""
         command = {
@@ -4389,7 +4465,10 @@ class PostgresFactoryStore:
             if "error" in prior:
                 return None, "accounting_blocked"
             return UsageResult(prior["observation_id"], prior["created"]), None
-        self._lock_grant(cursor, grant)
+        if bb_late_observation:
+            self._lock_bb_usage_provenance(cursor,grant,actor)
+        else:
+            self._lock_grant(cursor, grant)
         blocked_reason = None
         result = None
         if not isinstance(price_table_digest, str) or not HEX64.fullmatch(price_table_digest):
