@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import re
+import html
 from typing import Iterable, Mapping
 from pathlib import PurePosixPath
 from types import MappingProxyType
@@ -252,12 +253,30 @@ def _semantic_signals(text: str) -> dict:
             "modals": re.findall(r"\b(?:MUST|SHOULD|MAY)\b", text)}
 
 
-def generate_projection(source: str, *, generator_id: str) -> dict:
+def _representation_text(text: str, format: str) -> str:
+    if format == "markdown": return text
+    if format == "xml": return f"<fpf><content>{html.escape(text)}</content></fpf>"
+    raise ContractError("unsupported_projection_format")
+
+
+def _projection_plain(text: str, format: str) -> str:
+    if format == "markdown": return text
+    if format == "xml":
+        match = re.fullmatch(r"<fpf><content>(.*)</content></fpf>", text, re.S)
+        if not match: _block("semantic_projection_format")
+        return html.unescape(match.group(1))
+    _block("semantic_projection_format")
+
+
+def generate_projection(source: str, *, generator_id: str, format: str = "markdown") -> dict:
     _document(source, "source", 262144); identity(generator_id)
-    text = source.replace("\r\n", "\n").strip()
+    plain = source.replace("\r\n", "\n").strip()
+    text = _representation_text(plain, format)
     facts = {"schema_version": 1, "generator_id": generator_id,
              "source_sha256": hashlib.sha256(source.encode()).hexdigest(), "text": text,
-             "signals": _semantic_signals(text)}
+             "format": format, "source_span": [0, len(source)],
+             "semantic_digest": hashlib.sha256(plain.encode()).hexdigest(),
+             "signals": _semantic_signals(plain)}
     return {**facts, "generation_digest": canonical_digest(facts)}
 
 
@@ -265,11 +284,16 @@ def verify_projection(source: str, projection: Mapping | str) -> dict:
     projected = projection["text"] if isinstance(projection, Mapping) else projection
     normalized = source.replace("\r\n", "\n").strip()
     if isinstance(projection, Mapping):
-        required = {"schema_version", "generator_id", "source_sha256", "text", "signals", "generation_digest"}
+        required = {"schema_version", "generator_id", "source_sha256", "text", "format", "source_span",
+                    "semantic_digest", "signals", "generation_digest"}
         unsigned = {k: projection[k] for k in projection if k != "generation_digest"}
         if set(projection) != required or projection.get("source_sha256") != hashlib.sha256(source.encode()).hexdigest() or \
                 canonical_digest(unsigned) != projection.get("generation_digest"):
             _block("semantic_projection_authentication")
+        if projection["source_span"] != [0, len(source)]: _block("semantic_projection_mapping")
+        projected = _projection_plain(projected, projection["format"])
+        if projection["semantic_digest"] != hashlib.sha256(projected.encode()).hexdigest():
+            _block("semantic_projection_mapping")
     if projected != normalized:
         _block("semantic_projection_mapping")
     expected = _semantic_signals(source); observed = _semantic_signals(projected)
@@ -301,7 +325,8 @@ def disable_optional_fpf(active_rules: Mapping) -> dict:
 
 def assess_claim(*, criterion_id: str, candidate_sha: str, profile_digest: str,
                  mapped_test: str | None, execution: Mapping | None,
-                 human_acceptance: bool) -> dict:
+                 human_acceptance: bool, scope: str = "unspecified",
+                 assumptions: Iterable[str] = ()) -> dict:
     identity(criterion_id); sha(candidate_sha); digest(profile_digest)
     if mapped_test is not None: safe_text(mapped_test, "mapped_test", 256)
     evidence_status = "missing"
@@ -315,11 +340,14 @@ def assess_claim(*, criterion_id: str, candidate_sha: str, profile_digest: str,
                 execution.get("status") in ("pass", "fail")):
             evidence_status = "executed"
             evidence_ref = execution.get("evidence_ref")
+    safe_text(scope, "scope", 512); assumption_list = tuple(assumptions)
+    for assumption in assumption_list: identity(assumption)
     return {"criterion_id": criterion_id, "candidate_sha": candidate_sha,
             "profile_digest": profile_digest, "mapping_status": "mapped" if mapped_test else "unmapped",
             "mapped_test": mapped_test, "evidence_status": evidence_status,
             "evidence_ref": evidence_ref,
             "acceptance_status": "accepted" if human_acceptance else "pending",
+            "scope": scope, "assumptions": assumption_list,
             "limitations": [] if evidence_status == "executed" else ["test_not_executed_for_candidate"]}
 
 
@@ -333,7 +361,9 @@ def render_handoff(records: Iterable[Mapping], *, omitted_details: Iterable[str]
             _block("handoff_amplification")
     omitted = tuple(sorted(set(omitted_details)))
     human = "; ".join(
-        f"{x['criterion_id']}: evidence={x['evidence_status']}, acceptance={x['acceptance_status']}"
+        f"{x['criterion_id']}: scope={x['scope']}, assumptions={','.join(x['assumptions']) or 'none'}, "
+        f"evidence={x['evidence_status']}, acceptance={x['acceptance_status']}, "
+        f"limitations={','.join(x['limitations']) or 'none'}"
         for x in machine
     )
     return {"schema_version": 1, "machine": machine, "human": human,
@@ -435,7 +465,9 @@ def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
     return result
 
 
-_UNSAFE = re.compile(r"(?:https?://|\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)", re.I)
+_UNSAFE = re.compile(r"(?:\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)", re.I)
+_URL = re.compile(r"https?://\S+", re.I)
+_FETCH = re.compile(r"\b(?:fetch|retrieve|download|request|connect|curl|open)\b", re.I)
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -444,9 +476,16 @@ def enforce_reference_boundary(text: str) -> str:
     except ContractError:
         _block("unsafe_reference")
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
-    benign_removed = re.sub(r"\b(?:do not|must not|never)\s+fetch\s+external\s+URLs?\b", "", text, flags=re.I)
-    if _UNSAFE.search(benign_removed):
+    if _UNSAFE.search(text):
         _block("unsafe_reference")
+    for match in _URL.finditer(text):
+        prefix = text[max(0, match.start()-96):match.start()]
+        intents = list(_FETCH.finditer(prefix))
+        if intents:
+            intent = intents[-1]
+            lead = prefix[max(0, intent.start()-16):intent.start()]
+            if not re.search(r"(?:do not|must not|never)\s*$", lead, re.I):
+                _block("unsafe_reference")
     return text
 
 
@@ -468,11 +507,12 @@ def evaluate_abc(runs: Iterable[Mapping]) -> dict:
         _block("invalid_mode_backend")
     if b.get("fpf_snapshot_digest") != c.get("fpf_snapshot_digest") or not b.get("fpf_snapshot_digest"):
         _block("confounded_experiment")
-    complete_cost = True; seen_charges = set(); totals = {}
+    required_cost_kinds = {"build", "package", "dynamic_read", "review", "retry", "storage"}
+    complete_cost = True; seen_charges = set(); totals = {}; cost_profiles = {}
     for item in values:
         components = item.get("cost_components")
         if not isinstance(components, list) or not components: _block("invalid_cost")
-        total = 0
+        total = 0; observed_kinds = set(); profile = {}
         for component in components:
             if set(component) != {"charge_id", "kind", "amount_micros", "allocation", "cache_mode"}:
                 _block("invalid_cost")
@@ -483,12 +523,18 @@ def evaluate_abc(runs: Iterable[Mapping]) -> dict:
                     component["allocation"] not in ("one_time", "run", "amortized") or \
                     component["cache_mode"] not in ("cold", "warm", "none"):
                 _block("invalid_cost")
+            observed_kinds.add(component["kind"])
+            profile[component["kind"]] = (component["allocation"], component["cache_mode"])
             amount = component["amount_micros"]
             if amount is None: complete_cost = False
             elif type(amount) is not int or amount < 0: _block("invalid_cost")
             else: total += amount
         totals[item["mode"]] = total if complete_cost else None
-        complete_cost = complete_cost and item.get("usage_complete") is True
+        complete_cost = complete_cost and item.get("usage_complete") is True and observed_kinds == required_cost_kinds
+        cost_profiles[item["mode"]] = profile
+    if all(set(profile) == required_cost_kinds for profile in cost_profiles.values()) and \
+            (cost_profiles["A"] != cost_profiles["B"] or cost_profiles["B"] != cost_profiles["C"]):
+        _block("confounded_cost_profile")
     recommendation = "retain_a"
     def acceptable(candidate, baseline):
         return (candidate.get("critical_failures", 1) == 0 and
@@ -503,27 +549,36 @@ def evaluate_abc(runs: Iterable[Mapping]) -> dict:
 
 
 def plan_upgrade(*, current_identity: str, candidate_identity: str,
+                 candidate_sha: str, profile_digest: str,
                  changed_components: Iterable[str], auto_update: bool) -> dict:
     safe_text(current_identity, "current_identity", 128); safe_text(candidate_identity, "candidate_identity", 128)
+    sha(candidate_sha); digest(profile_digest)
     if auto_update: _block("automatic_update_forbidden")
     changed = tuple(sorted(set(changed_components)))
     for item in changed: identity(item)
     return {"status": "candidate_frozen", "current_identity": current_identity,
             "candidate_identity": candidate_identity, "changed_components": changed,
+            "candidate_sha": candidate_sha, "profile_digest": profile_digest,
             "required_gates": ("source_compatibility", "deterministic_cases", "f26", "independent_review"),
             "auto_update": False}
 
 
-def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, str]) -> dict:
+def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, Mapping], *,
+                    accepted_evidence: Mapping[str, str] | None = None) -> dict:
     required = tuple(plan.get("required_gates", ()))
     candidate = plan.get("candidate_identity")
     if not required or set(gate_results) != set(required):
         _block("upgrade_gate_incomplete")
     for gate in required:
         evidence = gate_results[gate]
-        if (not isinstance(evidence, Mapping) or set(evidence) != {"status", "candidate_identity", "evidence_ref"} or
+        if (not isinstance(evidence, Mapping) or set(evidence) != {"status", "candidate_identity", "candidate_sha",
+                "profile_digest", "execution_id", "evidence_ref", "evidence_digest"} or
                 evidence["status"] != "pass" or evidence["candidate_identity"] != candidate or
-                not isinstance(evidence["evidence_ref"], str) or not evidence["evidence_ref"]):
+                evidence["candidate_sha"] != plan.get("candidate_sha") or
+                evidence["profile_digest"] != plan.get("profile_digest") or
+                not isinstance(evidence["execution_id"], str) or not evidence["execution_id"] or
+                not isinstance(evidence["evidence_ref"], str) or not evidence["evidence_ref"] or
+                accepted_evidence is None or accepted_evidence.get(evidence["evidence_ref"]) != evidence["evidence_digest"]):
             _block("upgrade_gate_incomplete")
     return {"status": "qualified_candidate", "candidate_identity": plan["candidate_identity"],
             "gate_results": dict(sorted(gate_results.items())), "authority_effect": "none"}
