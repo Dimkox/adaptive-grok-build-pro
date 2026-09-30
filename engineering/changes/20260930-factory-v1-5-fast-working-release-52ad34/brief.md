@@ -22,6 +22,7 @@ A runnable Linux factory candidate exposes a deterministic context manifest, fac
 
 - U0-U3 and U5-U7 minimal vertical implementation.
 - Versioned additive contracts and tests.
+- BB-01 as a default-off optional execution/observation backend contract with native fallback; no live activation claim.
 - Native context path; optional FPF/VibeVM only when exact qualification exists.
 - Local verification, independent review, and release-candidate evidence.
 

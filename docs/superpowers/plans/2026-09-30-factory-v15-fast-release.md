@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3 stdlib/dataclasses, FastAPI/Pydantic at existing boundaries, JSON Schema, PostgreSQL forward migrations, unittest/pytest-compatible tests.
 
-**Spec:** `engineering/changes/20260924-factory-unified-upgrade/FACTORY_UNIFIED_UPGRADE_TZ.md`
+**Spec:** `engineering/changes/20260924-factory-unified-upgrade/FACTORY_UNIFIED_UPGRADE_TZ.md` plus `FACTORY_TZ_v1.5_ADDENDUM_BB-01.md`
 
 ## Global Constraints
 
@@ -20,6 +20,7 @@
 - Unknown historical time, cost, acceptance, and prediction facts remain unknown, never zero.
 - All new persisted changes are additive and forward-fixable; feature activation defaults off.
 - The fast release must be runnable and contract-tested, but deferred qualification must remain explicit rather than fabricated as pass.
+- BB is an optional default-off execution/observation backend; the factory remains authority, raw unauthenticated BB interfaces are never exposed, and live BB/Workflows/Orchestra qualification may remain `not_run`.
 
 ## Review Focus
 
@@ -139,3 +140,19 @@
 - [ ] Add failing contract/API tests for honest status composition, missing evidence, U4 exclusion, default-off optional adapters, and non-authoritative local release state.
 - [ ] Implement read-only qualification/API presentation and update operator/bootstrap/state documentation.
 - [ ] Run focused suites, full `python3 scripts/grok_verify.py --mode pr`, route reviews, and release-readiness audit; commit only current evidence.
+
+### Task 7: BB-01 optional backend boundary
+
+**Files:**
+- Create: `engineering/changes/20260924-factory-unified-upgrade/FACTORY_TZ_v1.5_ADDENDUM_BB-01.md`
+- Create: `factory/src/adaptive_factory/bb_contracts.py`
+- Create: `factory/contracts/jsonschema/bb-backend-profile.v1.schema.json`
+- Create: `factory/tests/test_bb_contracts.py`
+
+**Interfaces:**
+- Consumes: factory task/run/attempt/lease/context/policy identities and BB capability observations.
+- Produces: a default-off `BBBackendProfileV1` and lifecycle/effect observation contract; it does not install, activate, or qualify BB.
+
+- [ ] Add failing tests for default-off behavior, identity ownership, idempotency-key conflicts, command/ack/effect separation, unknown stop outcome, finite budgets, and `not_run` qualification.
+- [ ] Implement only the thin strict contract and native fallback; do not expose raw unauthenticated BB API, add a service, or claim live support.
+- [ ] Bind BB-01 into the v1.5 bundle/map/manifest and qualification summary; run focused tests and commit.

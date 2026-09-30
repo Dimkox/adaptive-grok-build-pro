@@ -12,6 +12,7 @@
 - [ ] Given insufficient ML history, prediction reports `not_qualified` and has no authority effect.
 - [ ] Given owner exclusion, all Apple requirements report `excluded_by_owner`, never pass.
 - [ ] Given incomplete external checks or M8 cohort, qualification remains pending/inactive.
+- [ ] Given BB disabled or unqualified, native execution remains available and BB reports `not_run` without listeners or external effects.
 - [ ] Existing contract readers and tests remain green.
 
 ## Failure and edge cases
