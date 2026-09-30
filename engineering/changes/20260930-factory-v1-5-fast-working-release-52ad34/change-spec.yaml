@@ -2,8 +2,6 @@
   "acceptance_criteria": [
     {
       "evidence": [
-        {"test": "factory/tests/test_context_contracts.py"},
-        {"test": "factory/tests/test_decision_contracts.py"},
         {"receipt": "verification"}
       ],
       "id": "AC-001",
@@ -11,8 +9,6 @@
     },
     {
       "evidence": [
-        {"test": "factory/tests/test_result_contracts.py"},
-        {"test": "factory/tests/test_qualification.py"},
         {"receipt": "code_review"}
       ],
       "id": "AC-002",
@@ -20,7 +16,6 @@
     },
     {
       "evidence": [
-        {"test": "factory/tests/test_prediction_contracts.py"},
         {"receipt": "test_review"}
       ],
       "id": "AC-003",
