@@ -878,3 +878,7 @@ The integrated source preview exceeds unchanged architecture delta budgets, so d
 ### 2026-09-30 — Measure actual test-source coverage without broad legacy restyling
 
 Production installer runtime joins the real Ruff/Bandit scope, while changed Factory tests receive a bounded, compile-only scan with explicit observed paths and separate behavioral tests. Failed or absent syntax evidence cannot cover tests, and data resources remain excluded; this closes truthful coverage without executing test code as a scanner or suppressing legacy rules.
+
+### 2026-09-30 — Recovery fixtures must obey retained unverified capacity
+
+A synthetic pagination fixture with more packets than the quota must retain explicit owner quarantine receipts, not increase admission limits or equate lease release with artifact verification. Keeping every slot/resolution row while checking pagination preserves both the quota's crash/reconnect invariant and the original recovery behavior; latest-schema fixtures derive the admitted suffix while historical migration hashes stay pinned.

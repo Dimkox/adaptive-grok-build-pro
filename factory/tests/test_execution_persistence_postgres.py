@@ -1914,7 +1914,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+                [item.version for item in discover_migrations() if item.version >= 15],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -5028,6 +5028,8 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         )
 
     def test_recovery_raw_page_caps_at_100_then_empty_page_wraps(self):
+        import psycopg
+
         runs = []
         for index in range(101):
             _task, execution = self.claim_execution(
@@ -5040,7 +5042,26 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 actor=WORKER,
                 now=NOW,
             )
+            # These fixtures create packets only: no workspace executor or paid
+            # provider is ever launched. The separate owner retains the explicit
+            # simulation disposition rather than weakening quota or deleting rows.
+            evidence = canonical_digest({
+                "fixture": "recovery-raw-page", "run_id": execution.lease.run_id,
+                "observed_stop": "synthetic_executor_never_launched",
+            })
+            with psycopg.connect(DATABASE_URL) as connection:
+                resolved = connection.execute(
+                    "SELECT factory.unverified_resolve(%s,'quarantined',%s)",
+                    (execution.lease.run_id, evidence),
+                ).fetchone()[0]
+                self.assertTrue(resolved)
             runs.append(execution.lease.run_id)
+        with psycopg.connect(DATABASE_URL) as connection:
+            retained = connection.execute(
+                "SELECT count(*) FROM factory.unverified_slots s JOIN factory.unverified_resolutions r USING(run_id) "
+                "WHERE s.run_id=ANY(%s) AND r.disposition='quarantined'", (runs,),
+            ).fetchone()[0]
+            self.assertEqual(retained, 101)
         first = self.store.execution_recovery_candidates(limit=100, cursor=None)
         self.assertEqual((len(first.candidates), first.exhausted), (100, False))
         self.assertEqual(

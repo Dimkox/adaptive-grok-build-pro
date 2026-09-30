@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "tested_head": "16dcbcc3d9c4a5ac715cc78b858f5a8d9d029848",
+  "tree_fingerprint": "025367970e4c1f6914331ea5f4bb581436de2754df0b1ccd8fe3befc1a74843e",
+  "command": "GROK_TEST_WORKERS=8 taskset -c 0-27 python3 scripts/grok_verify.py --mode pr --json",
+  "status": "fail",
+  "local_passing_receipt_created": false,
+  "runtime_log": ".grok-stack/runtime/v15-full-stable.log",
+  "runtime_log_sha256": "e7287e3db94d7802a25019981bc3ba4a37048d554a851227d35200f3cc1d6afe",
+  "source_stability": "pass",
+  "passed_checks": [
+    "git-diff-check", "docs-state-scope", "shared-memory", "change-spec",
+    "secret-scan", "contract-structure", "sql-safety", "ruff", "bandit",
+    "pilot-unittest", "python-unittest", "coverage", "factory-unit",
+    "factory-test-syntax", "source-stability"
+  ],
+  "architecture": {
+    "drift": "pass",
+    "diagrams": "pass",
+    "fitness": "fail",
+    "reason": "aggregate preview exceeds unchanged delta budgets; bounded stacked delivery required"
+  },
+  "governance": "fail_due_to_architecture_fitness",
+  "root_tests": {"passed": 1260, "subtests_passed": 2575, "seconds": 204.43},
+  "pilot_tests": {"passed": 44},
+  "factory_unit_tests": {"passed": 60},
+  "factory_test_syntax": {"compiled_files": 27, "execution": false},
+  "postgres": {
+    "status": "fail",
+    "tests": 951,
+    "seconds": 605.068,
+    "failures": 5,
+    "errors": 1,
+    "capability_skips": 2,
+    "causes": [
+      "latest-schema fixture expectations retained stale versions",
+      "101 synthetic recovery packets retained unverified quota without owner disposition"
+    ],
+    "actual_restart": "NOT_RUN_after_nonzero_discovery"
+  },
+  "followup_focused": {
+    "status": "pass",
+    "tests": 5,
+    "seconds": 108.936,
+    "method_selection": [
+      "ExecutionPersistencePostgresTests.test_schema14_upgrade_rejects_rogue_inbound_capability_member_atomically",
+      "ExecutionPersistencePostgresTests.test_recovery_raw_page_caps_at_100_then_empty_page_wraps",
+      "PostgresFactoryTests.test_schema_008_upgrade_quarantines_legacy_reservation_before_claim",
+      "PostgresFactoryTests.test_schema_012_retry_exhaustion_claim_is_audited_without_advancing_fence",
+      "PostgresFactoryTests.test_shipped_local_bootstrap_provisions_effective_runtime_login"
+    ],
+    "actual_restart": "NOT_RUN_intentionally_excluded_from_focused_diagnostic",
+    "exact_tree_full_verification": "pending_rotator_integration"
+  }
+}
