@@ -112,19 +112,6 @@ class BehaviorImpactSelectionV1(FrozenWire): pass
 class BehaviorComparisonReportV1(FrozenWire): pass
 
 
-class QualificationTrustAuthority(FrozenWire):
-    @classmethod
-    def from_dict(cls, data):
-        closed(data, ("schema_version", "authority_id", "corpus_digest", "baseline_digest", "oracle_id", "enabled_profile_ids"))
-        if data["schema_version"] != 1: raise ContractError("unsupported_version")
-        safe_text(data["authority_id"], "authority_id", 128); digest(data["corpus_digest"]); digest(data["baseline_digest"])
-        safe_text(data["oracle_id"], "oracle_id", 128)
-        profiles = sequence(data["enabled_profile_ids"], maximum=16)
-        if not profiles or len(set(profiles)) != len(profiles): raise ContractError("invalid_authority_profiles")
-        for profile in profiles: safe_text(profile, "profile_id", 128)
-        return cls.freeze(data)
-
-
 @dataclass(frozen=True)
 class ComparatorProfile:
     profile_id: str
@@ -355,19 +342,7 @@ def _percentiles(values):
 
 def run_comparison(profile, variants, config, executor, *, authority=None):
     if not isinstance(profile, ComparatorProfile): raise ContractError("invalid_comparator_profile")
-    if authority is None:
-        return BehaviorComparisonReportV1.freeze(dict(
-            schema_version=1, comparator_profile_id=profile.profile_id, verdict="not_qualified",
-            reason="external_qualification_authority_required", attempts=[], authority_effect="none",
-            production_qualified=False, m8_qualifying_contribution=0,
-        ))
-    if not isinstance(authority, QualificationTrustAuthority): raise ContractError("invalid_qualification_authority")
-    authority_facts = authority.to_dict()
-    if (profile.suite.record_digest != authority_facts["corpus_digest"] or
-            profile.baseline.record_digest != authority_facts["baseline_digest"] or
-            profile.oracle_id != authority_facts["oracle_id"] or
-            profile.profile_id not in authority_facts["enabled_profile_ids"]):
-        raise ContractError("trust_authority_mismatch")
+    if authority is not None: raise ContractError("external_authority_out_of_process")
     if profile.oracle_id != "factory-semantic-oracles-v1": raise ContractError("unknown_oracle_id")
     oracle = _oracle
     suite = profile.suite; baseline = profile.baseline
@@ -439,9 +414,10 @@ def run_comparison(profile, variants, config, executor, *, authority=None):
         elif qualities[right] < qualities[left] - config["maximum_quality_regression_micros"]: comparisons[label] = "fail"
         else: comparisons[label] = "pass"
     gates = dict(benefit=benefit_gate, budgets=budget_gate, completeness=completeness_gate, common_conditions="pass", negative_controls=control_gate, quality=quality_gate)
-    if "fail" in gates.values() or "fail" in comparisons.values(): verdict = "fail"
-    elif "blocked" in gates.values() or "blocked" in comparisons.values(): verdict = "blocked"
-    else: verdict = "pass"
+    if "fail" in gates.values() or "fail" in comparisons.values(): evaluation_outcome = "fail"
+    elif "blocked" in gates.values() or "blocked" in comparisons.values(): evaluation_outcome = "blocked"
+    else: evaluation_outcome = "pass"
+    verdict = "ready_for_external_qualification" if evaluation_outcome == "pass" else "not_qualified"
     distributions = {}
     for mode in _MODES:
         mode_attempts = [attempt for attempt in attempts if attempt["mode"] == mode]
@@ -460,8 +436,11 @@ def run_comparison(profile, variants, config, executor, *, authority=None):
         distributions=distributions, benefit_metrics=metrics,
         totals=dict(attempts=len(attempts), latency_ms=total_latency, input_tokens=known_tokens if tokens_complete else None,
                     known_input_tokens=known_tokens, cost_usd_micros=known_cost if cost_complete else None, known_cost_usd_micros=known_cost),
-        gates=gates, comparisons=comparisons, verdict=verdict, authority_effect="none", production_qualified=False,
-        human_acceptance="pending", m8_qualifying_contribution=0,
+        gates=gates, comparisons=comparisons, evaluation_outcome=evaluation_outcome, verdict=verdict,
+        external_qualification=dict(status="not_run", authority="external_trust_ci_holdout",
+                                    corpus_digest=suite.record_digest, baseline_digest=baseline.record_digest,
+                                    oracle_id=profile.oracle_id, profile_id=profile.profile_id),
+        authority_effect="none", production_qualified=False, human_acceptance="pending", m8_qualifying_contribution=0,
     ))
 
 

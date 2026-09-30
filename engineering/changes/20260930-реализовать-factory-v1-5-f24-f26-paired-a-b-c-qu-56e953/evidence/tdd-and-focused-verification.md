@@ -50,6 +50,8 @@ The second review removed all public digest overrides and required the runner to
 
 The third review correctly rejected repository constants as independent authority. The runner now requires an externally supplied `QualificationTrustAuthority`; absent authority always returns `not_qualified`, while mismatched identities fail closed. Profiles carry only a registry-resolved oracle ID and have no callable or enable switch, domain outputs are exact closed schemas, and distributions use per-attempt corrections plus baseline-relative quality regression rather than replicated aggregates. Final focused plus adjacent observation: `Ran 28 tests — OK`; structure/manifest/state: `Ran 92 tests — OK`.
 
+Final trust-boundary resolution removes even the caller-supplied authority path. Candidate-side code can emit only `ready_for_external_qualification` or `not_qualified`; a forged authority argument is rejected. Exact evidence identities are reported for the separately operated Trust CI/holdout, whose qualification remains **NOT_RUN** in this package and cannot be converted into local `pass`.
+
 ## Wider discovery observation
 
 `PYTHONPATH=factory/src python3 -m unittest discover -s factory/tests` is not the repository's package-aware factory command. It ran 782 tests with 160 skips, seven relative-import collection errors, and one pre-existing frozen landing migration/showcase identity mismatch (`expected 33`, observed current v1.5 migration count `23`). None referenced the new harness paths. This result is retained as a non-passing observation; it is not reported as verification. The authoritative integration gate remains `python3 scripts/grok_verify.py --mode pr` on the final integrated tree.

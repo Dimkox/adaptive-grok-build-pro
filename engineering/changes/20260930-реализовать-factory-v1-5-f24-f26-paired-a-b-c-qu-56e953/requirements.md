@@ -4,7 +4,7 @@
 
 ## Acceptance criteria
 
-- [ ] Exactly four Pump Selector, four factory, and four cross-component/rule-conflict cases require an externally supplied authority binding exact corpus, baseline, closed oracle and profile identities; local fixtures alone are not qualified.
+- [ ] Exactly four Pump Selector, four factory, and four cross-component/rule-conflict cases emit exact corpus, baseline, closed-oracle and profile identities for out-of-process qualification; local code and caller objects can never emit pass.
 - [ ] Wrong source document and wrong curve fail even when the response is structurally valid.
 - [ ] Unknown head/flow/cost/token facts stay unknown and never become numeric zero.
 - [ ] Declared supported units are normalized before domain comparison; unsupported units fail closed.
@@ -15,11 +15,11 @@
 - [ ] Prompt, context, model, tools, tool responses, resources and sanitizer identities are bound and checked on every attempt.
 - [ ] Behavior-impact selection is deterministic and records changed paths/digests, affected capabilities and reason.
 - [ ] Selector recomputes SHA-256 from supplied before/after bytes; a claimed digest or typo label cannot suppress F26.
-- [ ] BB/native observers can reuse the closed comparator profile, which remains disabled by default and uses the same anchored corpus/oracles.
+- [ ] BB/native observers reuse the closed comparator profile and emit candidate evidence only; BB remains disabled and externally unqualified.
 
 ## Failure and edge cases
 
-- Candidate attempts to change corpus/oracle/baseline/thresholds are rejected against the external authority; without it the only result is `not_qualified`.
+- Candidate success is only `ready_for_external_qualification`; any failed/blocked gate is `not_qualified`. External Trust CI/holdout is recorded `NOT_RUN`, never simulated locally.
 - Factory and cross-component domain results use closed exact schemas; extra fields fail.
 - Every declared negative control is executed and must be killed by its expected oracle failure.
 - Infra failure is distinct from property failure; neither counts as pass.

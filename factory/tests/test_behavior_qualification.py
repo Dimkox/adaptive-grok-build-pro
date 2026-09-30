@@ -38,16 +38,6 @@ class BehaviorQualificationTests(unittest.TestCase):
             "C": {**COMMON_PINS, "representation": "fpf", "backend": "vibevm-fixture"},
         }
 
-    def authority(self, module, *profiles):
-        return module.QualificationTrustAuthority.from_dict({
-            "schema_version": 1,
-            "authority_id": "external-test-authority",
-            "corpus_digest": "d57c08cecf33c021e15911cfd3a6b4c96ea198c4b3e34f8b76048399daf51c9a",
-            "baseline_digest": "04c31a27456e78c4b883ea763e1d8511778b1d1dde9f79cbfadc64bc3cfe5612",
-            "oracle_id": "factory-semantic-oracles-v1",
-            "enabled_profile_ids": list(profiles or ("factory-f24-f26-native-v1",)),
-        })
-
     @staticmethod
     def executor(mode, case, attempt):
         expected = case["expected"]
@@ -121,21 +111,24 @@ class BehaviorQualificationTests(unittest.TestCase):
         mutated["cases"][0]["expected"]["domain_result"]["pump_model"] = "candidate-chosen-baseline"
         mutated_suite = module.FrozenQualificationSuite.from_dict(mutated)
         mutated_profile = module.make_comparator_profile("factory-f24-f26-native-v1", mutated_suite, baseline, "factory-semantic-oracles-v1")
-        with self.assertRaisesRegex(ContractError, "trust_authority_mismatch"):
-            module.run_comparison(mutated_profile, self.variants(), self.config(), self.executor,
-                                  authority=self.authority(module))
+        mutated_report = module.run_comparison(mutated_profile, self.variants(), self.config(), self.executor).to_dict()
+        self.assertEqual(mutated_report["verdict"], "ready_for_external_qualification")
+        self.assertEqual(mutated_report["external_qualification"]["status"], "not_run")
+        self.assertNotEqual(mutated_report["corpus_digest"], suite.record_digest)
         changed_baseline = baseline.to_dict(); changed_baseline["accepted_by"] = "candidate"
         changed = module.ImmutableQualificationBaseline.from_dict(changed_baseline, suite)
         changed_profile = module.make_comparator_profile("factory-f24-f26-native-v1", suite, changed, "factory-semantic-oracles-v1")
-        with self.assertRaisesRegex(ContractError, "trust_authority_mismatch"):
-            module.run_comparison(changed_profile, self.variants(), self.config(), self.executor,
-                                  authority=self.authority(module))
+        changed_report = module.run_comparison(changed_profile, self.variants(), self.config(), self.executor).to_dict()
+        self.assertNotEqual(changed_report["baseline_digest"], baseline.record_digest)
+        self.assertEqual(changed_report["external_qualification"]["status"], "not_run")
 
     def test_paired_a_b_c_passes_only_with_complete_common_inputs_and_budgets(self):
         module = self.module()
-        result = module.run_frozen_comparison(self.variants(), self.config(), self.executor, authority=self.authority(module))
+        result = module.run_frozen_comparison(self.variants(), self.config(), self.executor)
         report = result.to_dict()
-        self.assertEqual(report["verdict"], "pass")
+        self.assertEqual(report["verdict"], "ready_for_external_qualification")
+        self.assertEqual(report["evaluation_outcome"], "pass")
+        self.assertEqual(report["external_qualification"]["status"], "not_run")
         self.assertEqual(report["case_ids"], [f"F24-{n:03d}" for n in range(1, 13)])
         self.assertEqual(len(report["attempts"]), 36)
         self.assertEqual(report["comparisons"], {"A_to_B": "pass", "B_to_C": "pass"})
@@ -151,7 +144,7 @@ class BehaviorQualificationTests(unittest.TestCase):
         self.assertTrue(all(item["status"] == "killed" for item in report["negative_control_results"]))
         self.assertEqual(report["authority_effect"], "none")
         self.assertEqual(report["m8_qualifying_contribution"], 0)
-        self.assertEqual(result.record_digest, module.run_frozen_comparison(self.variants(), self.config(), self.executor, authority=self.authority(module)).record_digest)
+        self.assertEqual(result.record_digest, module.run_frozen_comparison(self.variants(), self.config(), self.executor).record_digest)
 
     def test_wrong_document_wrong_curve_unknown_as_zero_and_bad_units_fail_domain_oracle(self):
         module = self.module()
@@ -173,8 +166,9 @@ class BehaviorQualificationTests(unittest.TestCase):
                         result[_field] = _value
                 return result
             with self.subTest(case_id=case_id):
-                report = module.run_frozen_comparison(self.variants(), self.config(), bad, authority=self.authority(module)).to_dict()
-                self.assertEqual(report["verdict"], "fail")
+                report = module.run_frozen_comparison(self.variants(), self.config(), bad).to_dict()
+                self.assertEqual(report["verdict"], "not_qualified")
+                self.assertEqual(report["evaluation_outcome"], "fail")
                 failed = [a for a in report["attempts"] if a["mode"] == "C" and a["case_id"] == case_id]
                 self.assertEqual(failed[0]["oracle_status"], "fail")
                 self.assertEqual(report["comparisons"]["B_to_C"], "fail")
@@ -190,8 +184,8 @@ class BehaviorQualificationTests(unittest.TestCase):
             if mode == "A" and case["case_id"] == "F24-008":
                 result["input_tokens"] = None
             return result
-        report = module.run_frozen_comparison(self.variants(), self.config(), incomplete, authority=self.authority(module)).to_dict()
-        self.assertEqual(report["verdict"], "fail")
+        report = module.run_frozen_comparison(self.variants(), self.config(), incomplete).to_dict()
+        self.assertEqual(report["verdict"], "not_qualified")
         self.assertEqual(report["gates"]["completeness"], "blocked")
         self.assertEqual(report["gates"]["budgets"], "fail")
         self.assertIsNone(report["totals"]["cost_usd_micros"])
@@ -199,13 +193,14 @@ class BehaviorQualificationTests(unittest.TestCase):
 
         too_small = self.config()
         too_small["max_attempts"] = 35
-        blocked = module.run_frozen_comparison(self.variants(), too_small, self.executor, authority=self.authority(module)).to_dict()
-        self.assertEqual(blocked["verdict"], "blocked")
+        blocked = module.run_frozen_comparison(self.variants(), too_small, self.executor).to_dict()
+        self.assertEqual(blocked["verdict"], "not_qualified")
+        self.assertEqual(blocked["evaluation_outcome"], "blocked")
         self.assertEqual(blocked["gates"]["budgets"], "blocked")
 
         disable_cost = self.config(); disable_cost["require_complete_cost"] = False
         with self.assertRaisesRegex(ContractError, "closed_object_required"):
-            module.run_frozen_comparison(self.variants(), disable_cost, self.executor, authority=self.authority(module))
+            module.run_frozen_comparison(self.variants(), disable_cost, self.executor)
 
     def test_no_strict_benefit_cannot_qualify(self):
         module = self.module()
@@ -214,16 +209,16 @@ class BehaviorQualificationTests(unittest.TestCase):
             for field in ("context_bytes", "unique_context_bytes", "reread_bytes", "preparation_cost_usd_micros", "update_cost_usd_micros", "corrections"):
                 result[field] = self.executor("A", case, attempt)[field]
             return result
-        report = module.run_frozen_comparison(self.variants(), self.config(), no_benefit, authority=self.authority(module)).to_dict()
+        report = module.run_frozen_comparison(self.variants(), self.config(), no_benefit).to_dict()
         self.assertEqual(report["gates"]["benefit"], "fail")
-        self.assertEqual(report["verdict"], "fail")
+        self.assertEqual(report["verdict"], "not_qualified")
 
         def context_only(mode, case, attempt):
             result = self.executor(mode, case, attempt)
             result["reread_bytes"] = 200
             result["unique_context_bytes"] = result["context_bytes"] - 200
             return result
-        report = module.run_frozen_comparison(self.variants(), self.config(), context_only, authority=self.authority(module)).to_dict()
+        report = module.run_frozen_comparison(self.variants(), self.config(), context_only).to_dict()
         self.assertEqual(report["gates"]["benefit"], "fail")
 
     def test_common_pin_drift_and_missing_baseline_fail_closed(self):
@@ -231,9 +226,9 @@ class BehaviorQualificationTests(unittest.TestCase):
         variants = self.variants()
         variants["C"]["model"] = "different-model@2"
         with self.assertRaisesRegex(ContractError, "confounded_comparison"):
-            module.run_frozen_comparison(variants, self.config(), self.executor, authority=self.authority(module))
+            module.run_frozen_comparison(variants, self.config(), self.executor)
         with self.assertRaisesRegex(ContractError, "baseline_required"):
-            module.run_frozen_comparison(self.variants(), self.config(), self.executor, baseline=None, authority=self.authority(module))
+            module.run_frozen_comparison(self.variants(), self.config(), self.executor, baseline=None)
 
     def test_impact_selector_runs_behavior_changes_and_skips_only_proven_doc_typo(self):
         module = self.module()
@@ -276,17 +271,19 @@ class BehaviorQualificationTests(unittest.TestCase):
         self.assertEqual(profile.oracle_id, "factory-semantic-oracles-v1")
         bb = module.make_comparator_profile("bb-observation-v1", profile.suite, profile.baseline, profile.oracle_id)
         local = module.run_comparison(bb, self.variants(), self.config(), self.executor).to_dict()
-        self.assertEqual(local["verdict"], "not_qualified")
-        report = module.run_comparison(bb, self.variants(), self.config(), self.executor,
-                                       authority=self.authority(module, "bb-observation-v1")).to_dict()
-        self.assertEqual(report["comparator_profile_id"], "bb-observation-v1")
-        self.assertEqual(report["verdict"], "pass")
+        self.assertEqual(local["verdict"], "ready_for_external_qualification")
+        self.assertEqual(local["external_qualification"]["status"], "not_run")
+        self.assertFalse(local["production_qualified"])
 
-    def test_no_external_authority_never_passes_and_arbitrary_oracle_is_rejected(self):
+    def test_candidate_never_emits_pass_and_forged_authority_is_rejected(self):
         module = self.module()
         report = module.run_frozen_comparison(self.variants(), self.config(), self.executor).to_dict()
-        self.assertEqual(report["verdict"], "not_qualified")
+        self.assertEqual(report["verdict"], "ready_for_external_qualification")
+        self.assertNotEqual(report["verdict"], "pass")
         self.assertEqual(report["authority_effect"], "none")
+        with self.assertRaisesRegex(ContractError, "external_authority_out_of_process"):
+            module.run_frozen_comparison(self.variants(), self.config(), self.executor,
+                                         authority={"forged": True, "verdict": "pass"})
         profile = module.native_comparator_profile()
         with self.assertRaisesRegex(ContractError, "unknown_oracle_id"):
             module.make_comparator_profile("bad", profile.suite, profile.baseline, "caller-lambda")
@@ -298,9 +295,9 @@ class BehaviorQualificationTests(unittest.TestCase):
             if case["case_id"] in ("F24-005", "F24-009"):
                 result["domain_result"]["candidate_extra"] = "smuggle"
             return result
-        report = module.run_frozen_comparison(self.variants(), self.config(), extra,
-                                               authority=self.authority(module)).to_dict()
-        self.assertEqual(report["verdict"], "fail")
+        report = module.run_frozen_comparison(self.variants(), self.config(), extra).to_dict()
+        self.assertEqual(report["verdict"], "not_qualified")
+        self.assertEqual(report["evaluation_outcome"], "fail")
 
 
 if __name__ == "__main__":

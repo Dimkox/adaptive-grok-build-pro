@@ -8,7 +8,7 @@ Factory v1.5 can compose evidence, but has no accepted executable F24/F26 paired
 
 ## Proposed behavior
 
-Add a package-owned deterministic qualification module. Local resources are fixtures only: an externally supplied `QualificationTrustAuthority` must bind their exact corpus, baseline and closed oracle identities plus the enabled profile ID before a pass is possible. Without that authority the result is `not_qualified`. The runner derives impact from hashed text changes, executes isolated attempts, applies semantic oracles and mutants, and performs no external writes.
+Add a package-owned deterministic evidence module. Local resources are fixtures only, and no local or caller-supplied object can produce `pass`. A successful candidate run emits only `ready_for_external_qualification` with exact corpus, baseline, oracle and profile identities; failures emit `not_qualified`. External Trust CI/holdout qualification is out-of-process, remains `NOT_RUN` here, and is the sole qualification authority.
 
 ## Components and boundaries
 
@@ -16,11 +16,11 @@ Add a package-owned deterministic qualification module. Local resources are fixt
 - `pump-selector-qualification-v1.json`: four Pump Selector, four factory and four cross-component/rule-conflict frozen cases.
 - `pump-selector-baseline-v1.json`: separately accepted expected baseline identities and scores.
 - The executor boundary returns observations only. It cannot mutate trusted inputs through the API.
-- `make_comparator_profile` is an additive comparison seam for BB/native observation. A profile contains an `oracle_id`, never a callable or enable flag; only the external authority can enable its exact ID. BB therefore defaults to `not_qualified`.
+- `make_comparator_profile` is an additive comparison seam for BB/native observation. A profile contains a registry-resolved `oracle_id`, never a callable or enable flag. BB may produce candidate evidence, but remains disabled and unqualified until the out-of-process authority evaluates its exact identity.
 
 ## Data flow
 
-Local resources -> external authority identity resolution -> impact selection -> A/B/C executor calls -> closed oracle registry -> completeness/quality/budget gates -> immutable canonical report.
+Local resources -> impact selection -> A/B/C executor calls -> closed oracle registry -> completeness/quality/budget gates -> immutable candidate evidence -> separately operated external Trust CI/holdout.
 
 ## API and event contracts
 
@@ -50,7 +50,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 ## Risks and mitigations
 
-- Fixture gaming: stable IDs, external authority-bound corpus/baseline/oracle identities, exact domain schemas and executable negative controls. Repository constants are not qualification authority.
+- Fixture gaming: stable IDs, reported corpus/baseline/oracle identities, exact domain schemas and executable negative controls. Only the out-of-process holdout can accept them; repository code and caller objects are not qualification authority.
 - Confounded comparison: common-pin equality and declared-factor validation; strict benefit requires both context-load and reread reductions.
 - Cheap-but-wrong candidate: domain/safety gates precede efficiency.
 - Partial execution: exact required case/mode/attempt accounting.

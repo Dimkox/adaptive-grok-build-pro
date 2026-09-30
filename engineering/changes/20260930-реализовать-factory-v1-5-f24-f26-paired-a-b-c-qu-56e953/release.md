@@ -8,6 +8,8 @@ Additive source only; integrate through the parent v1.5 PR. Live provider qualif
 
 No runtime consumer is enabled. Deterministic fixture qualification is the first stage.
 
+External qualification status: **NOT_RUN**. Candidate code cannot invoke, emulate or satisfy the out-of-process Trust CI/holdout authority.
+
 ## Metrics and alerts
 
 Report completeness, critical failures, per-mode quality, attempts, latency and known/unknown cost.
