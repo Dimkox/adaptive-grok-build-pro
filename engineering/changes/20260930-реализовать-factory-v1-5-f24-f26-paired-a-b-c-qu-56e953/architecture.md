@@ -8,12 +8,12 @@ Factory v1.5 can compose evidence, but has no accepted executable F24/F26 paired
 
 ## Proposed behavior
 
-Add a package-owned deterministic qualification module. It loads immutable corpus and baseline resources by pinned SHA-256, selects impact from actual changes, executes injected adapters in isolated logical attempts, applies a Pump Selector oracle, and emits a canonical observation-only report. The runner has no provider implementation and performs no external writes.
+Add a package-owned deterministic qualification module. It loads corpus and baseline resources only when they match independently accepted SHA-256 pins, derives impact from paths and bounded text changes, executes injected adapters in isolated logical attempts, applies the independent oracle and executable mutants, and emits a canonical observation-only report. The runner has no provider implementation and performs no external writes.
 
 ## Components and boundaries
 
 - `behavior_qualification.py`: strict contracts, impact selector, resource loader, Pump oracle, paired runner and gates.
-- `pump-selector-qualification-v1.json`: twelve frozen synthetic domain cases.
+- `pump-selector-qualification-v1.json`: four Pump Selector, four factory and four cross-component/rule-conflict frozen cases.
 - `pump-selector-baseline-v1.json`: separately accepted expected baseline identities and scores.
 - The executor boundary returns observations only. It cannot mutate trusted inputs through the API.
 
@@ -49,7 +49,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 ## Risks and mitigations
 
-- Fixture gaming: stable IDs, pinned bytes and an independently stored baseline.
+- Fixture gaming: stable IDs, independently accepted corpus/baseline digest constants and executable negative controls.
 - Confounded comparison: common-pin equality and declared-factor validation.
 - Cheap-but-wrong candidate: domain/safety gates precede efficiency.
 - Partial execution: exact required case/mode/attempt accounting.

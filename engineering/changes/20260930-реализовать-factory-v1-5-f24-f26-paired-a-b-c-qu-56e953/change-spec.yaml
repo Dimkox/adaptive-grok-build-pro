@@ -1,10 +1,10 @@
 {
   "acceptance_criteria": [
-    {"id":"AC-001","statement":"The frozen Pump Selector corpus contains exactly twelve stable required cases with provenance, snapshot, rule and executable-oracle bindings; wrong-document, wrong-curve, unknown-not-zero and unit-conversion controls are represented.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"AC-001","statement":"The independently digest-pinned corpus contains exactly four Pump Selector, four factory, and four cross-component/rule-conflict required cases with provenance, isolation, forbidden outcomes, rule bindings and executable negative controls.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
     {"id":"AC-002","statement":"A/B/C are evaluated on the same accepted corpus, oracle and common pins; undeclared confounding or a missing immutable baseline fails closed.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
     {"id":"AC-003","statement":"Required omissions, infrastructure failures, critical domain failures, quality regression, incomplete cost, and exceeded attempt/latency/cost budgets cannot become a comparative pass.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
     {"id":"AC-004","statement":"The impact selector requires F26 evaluation for behavior-affecting or unknown changes and skips provider work only for proven non-executable documentation edits.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
-    {"id":"AC-005","statement":"The deterministic report preserves every attempt and unknown numeric facts as null, exposes completeness/quality/budget gates, and grants no merge, deploy, M8 or production authority.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"},{"receipt":"verification"}]}
+    {"id":"AC-005","statement":"The deterministic report preserves every attempt and unknown numeric facts as null, validates prompt/context/tool/resource/sanitizer identities, reports cold/warm benefit metrics and p50/p95 distributions, and grants no merge, deploy, M8 or production authority.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"},{"receipt":"verification"}]}
   ],
   "approvals": {
     "required_scopes": []

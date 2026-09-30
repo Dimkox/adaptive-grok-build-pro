@@ -20,7 +20,7 @@ Describe the observable user or business result.
 
 ### In scope
 
-- Frozen 12-case Pump Selector corpus, immutable accepted baseline, paired A/B/C runner, impact selector, oracle, budgets, gates and deterministic tests.
+- Frozen 12-case corpus (4 Pump Selector, 4 factory, 4 cross-component/rule-conflict), independently pinned accepted baseline, paired A/B/C runner, impact selector, executable oracle controls, benefit metrics, budgets and gates.
 
 ### Out of scope
 

@@ -4,18 +4,21 @@
 
 ## Acceptance criteria
 
-- [ ] Exactly twelve stable Pump Selector cases are loaded from a digest-bound, package-owned corpus.
+- [ ] Exactly four Pump Selector, four factory, and four cross-component/rule-conflict cases are loaded through independently accepted corpus and baseline digest pins.
 - [ ] Wrong source document and wrong curve fail even when the response is structurally valid.
 - [ ] Unknown head/flow/cost/token facts stay unknown and never become numeric zero.
 - [ ] Declared supported units are normalized before domain comparison; unsupported units fail closed.
 - [ ] A/B/C share corpus, oracle, snapshots, tools, model and budgets; only declared representation/backend factors may vary.
 - [ ] Missing baseline, required case, attempt, cost coverage or provider identity prevents comparative pass.
 - [ ] Critical domain/safety failure cannot be offset by latency or cost savings.
+- [ ] Qualification requires strict improvement in the predeclared benefit metric and reports unique/total/reread bytes, preparation/update cost, cold/warm cache totals, corrections, criterion coverage, and p50/p95 latency.
+- [ ] Prompt, context, model, tools, tool responses, resources and sanitizer identities are bound and checked on every attempt.
 - [ ] Behavior-impact selection is deterministic and records changed paths/digests, affected capabilities and reason.
 
 ## Failure and edge cases
 
 - Candidate attempts to change corpus/oracle/baseline/thresholds are rejected by digest and identity checks.
+- Every declared negative control is executed and must be killed by its expected oracle failure.
 - Infra failure is distinct from property failure; neither counts as pass.
 - A proven documentation typo selects deterministic checks without a live provider run.
 - Unknown impact selects the mandatory bounded set, never automatic skip.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "baseline_id": "pump-selector-accepted-baseline-v1",
-  "corpus_digest": "90c0b5f93d6b1747bfbc22c8c8e6834e3eb46d1e8874ad8ec4985ff4825547af",
+  "corpus_digest": "384c86fa02b5e570c353f0423eac956119c45142699e0d9a2dab3114f11d9f1b",
   "oracle_version": "pump-selector-oracle-v1",
   "accepted_by": "factory-owner-fixture-authority",
   "accepted_at": "2026-09-30T00:00:00Z",
