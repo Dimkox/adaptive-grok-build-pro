@@ -94,3 +94,30 @@ Stages are immutable and verified before pointer activation. Ambiguous effects a
 The three files in `runtime/` implement immutable-release installation with separate control and exact landing checkouts. The installer creates default-off release files; credential provisioning and systemd activation are separate operator actions. The observed installed services are described in the dated runtime record. The template selects Qwen Omni for capabilities; actual billed development cost remains unknown.
 
 Historical observation: a separately authorized `qwen-intl` / `qwen-plus` synthetic normalization used 735 input and 117 output units in 8,598 ms on the prior source. That does not establish current-HEAD connectivity or Omni/multimodal acceptance. The user's earlier `data_inspection_failed` is an observed rejection with undetermined trigger. Mocked refusal/SSE and defensive Unicode, path, DOCX and PDF fixtures prove local handling, without identifying live moderation triggers.
+# Factory v1.5 fast Linux candidate
+
+The additive v1.5 modules provide native bounded context, immutable factual decisions,
+pre-model result envelopes, observation artifacts and read-only qualification.
+`FactoryV15QualificationService(existing_factory_service, evidence_reader)` composes
+the existing task access check with detached evidence supplied by the caller.
+Pass it as `qualification_service=` to `create_app` to expose the authenticated
+`GET /v1.5/tasks/{task_id}/qualification`; default composition omits this endpoint.
+The separate [API contract](contracts/openapi/factory-v15.v1.json) preserves v1/v2 readers.
+
+`PostgresFactoryStore.transition_phase(..., decision_record=record)` inserts a factual
+sidecar in the same transaction as the state transition. Migration 023 is additive;
+corrections append `supersedes` records and runtime cannot update/delete them.
+`brokers.reuse_intercepted_tool_result` buffers and sanitizes the complete native
+record before invoking its model consumer. External CLI internal requests remain
+unqualified for this boundary; no raw fallback is supplied. A redacted result is
+partial and cannot establish a semantic pass.
+
+Apple/U4 is `excluded_by_owner`. Prediction availability describes validated
+observation artifacts, with insufficient history `not_qualified`; no trained model,
+live benchmark or ML qualification is claimed. BB/Workflows/Orchestra remain
+default-off and `not_run`; FPF/VibeVM remain `not_evaluated`. Qualification never
+changes M8 (`inactive`), Trust CI (`pending`) or human acceptance (`awaiting_human`).
+The synthetic tests prove local composition, not installed/live factory acceptance.
+Rollback omits the optional composition, retains native v1/v2 behavior and preserves
+decision records for forward recovery. Factory PostgreSQL, L5 SQLite and external
+Trust CI retain separate storage and authority.

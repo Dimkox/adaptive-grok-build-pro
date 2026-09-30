@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-09-30 — Preserve closed factory formats with additive evidence sidecars
+
+Versioned context, decision, tool-result, semantic and prediction sidecars allowed the Linux v1.5 composition to run without mutating closed v1/v2 readers. Captured native model requests and existing API/contract tests verified the boundary while qualification kept missing external/live gates explicit.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

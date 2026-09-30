@@ -21,6 +21,7 @@ flowchart LR
     node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
     node_c10acb5d92ad0ee0["NODE-FACTORY-SEMANTIC-VALIDATION | local_component | independent local semantic validators"]
     node_c3bf47ff1c652923["NODE-FACTORY-SHADOW-HANDOFF | local_component | local factory operators and human reviewers"]
+    node_2db13695fa670021["NODE-FACTORY-V15-EVIDENCE | local_component | local factory operators"]
     node_23f89cd7152cc030["NODE-FACTORY-WORKSPACE-BROKER | local_component | local factory operators"]
   end
   subgraph domain_fa5ae843eb45e375["TD-LOCAL-PREFLIGHT"]
@@ -69,6 +70,7 @@ flowchart LR
   node_fae11f6a95d982dc -->|"EDGE-FACTORY-ADAPTERS-EXECUTION-CORE | data_flow | jsonl"| node_0a087cfaed95a8ad
   node_93915052ae8a2e67 -->|"EDGE-FACTORY-API-CONTROL | control | unix_http"| node_a6c166e55f8e1784
   node_93915052ae8a2e67 -->|"EDGE-FACTORY-API-LANDING-DOGFOOD | control | python_import"| node_340c6123d4df34df
+  node_93915052ae8a2e67 -->|"EDGE-FACTORY-API-V15-EVIDENCE | data_flow | in_process"| node_2db13695fa670021
   node_379217d10ea012c3 -->|"EDGE-FACTORY-AUTONOMY-SHADOW-HANDOFF | dependency | python_import"| node_c3bf47ff1c652923
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql"| node_a77de286f8308fd4

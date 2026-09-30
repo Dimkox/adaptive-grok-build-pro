@@ -1,5 +1,20 @@
 {
   "schema_version": 2,
+  "factory_v15_fast_release": {
+    "route_id": "52ad342010b3",
+    "branch": "feature/factory-v15-fast-release",
+    "change_package": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34",
+    "plan": "docs/superpowers/plans/2026-09-30-factory-v15-fast-release.md",
+    "status": "local_candidate_verification_pending",
+    "apple": "excluded_by_owner",
+    "prediction": "not_qualified",
+    "bb": "not_run",
+    "fpf_vibevm": "not_evaluated",
+    "m8": "inactive",
+    "external_trust": "pending",
+    "operational_activation": false,
+    "next_action": "Complete full exact-tree verification and independent reviews; integrate the separately isolated installer contour, then prepare PR-only delivery and require the App-owned exact-head Trust CI."
+  },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",

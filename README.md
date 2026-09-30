@@ -12,6 +12,15 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
+The [Factory v1.5 fast Linux candidate](engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/brief.md)
+adds bounded native context, append-only factual decisions (migration 023), pre-model
+result envelopes, observation-only prediction validation and an optional authenticated
+[qualification API](factory/contracts/openapi/factory-v15.v1.json). The [operator notes](factory/README.md#factory-v15-fast-linux-candidate)
+describe composition and rollback. U4/macOS is owner-excluded; BB stays default-off
+and `not_run`, FPF/VibeVM `not_evaluated`, M8 inactive and external Trust CI pending.
+Local synthetic composition is distinct from installed/live acceptance and publication.
+Product VERSION remains 2.0.19; v1.5 identifies the upgrade specification.
+
 Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The `v2.0.19` ZIP and sidecar are now delivered in this artifact-child candidate from merged release-sync `3f41be92`, but tag and GitHub Release publication remain pending their separate exact gates.
 
 | Layer | Dated source and runtime observations |

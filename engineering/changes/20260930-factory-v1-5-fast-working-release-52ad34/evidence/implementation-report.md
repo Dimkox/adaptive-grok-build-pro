@@ -9,6 +9,9 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 
 ## Rulings
 
+- Task 6: qualification RED: 3 failures for missing consumer; GREEN: 52 qualification/semantic/API/OpenAPI tests. The optional endpoint delegates repository/task authorization to the existing Factory service before reading evidence. Bound full technical and semantic observations can produce only `ready_for_human`; missing mappings/execution stay `not_evaluated`, and Apple/M8/Trust CI/BB/FPF/VibeVM retain explicit statuses. Current-state docs, typed spec evidence paths, architecture model and generated views are updated.
+- Installer addition was separated by the controller into an independent isolated writer/branch based on 70bc5f9d. No installer code is copied or implemented in this contour; its integration and combined verification remain coordinator-owned.
+
 - Task 7 executed before Task 6 because qualification consumes BB status: BB RED: 3 failures for missing boundary; GREEN: 3 BB tests. Enabled live profiles reject, native remains available; identities/fences/command digests bind replay, acknowledgement remains separate from observed effect/stop. No BB installation, listeners, provider calls, live qualification or Orchestra activation.
 
 - Task 5: prediction RED: 3 failures for missing observation module; GREEN: 7 prediction/result tests. Temporal leakage, split overlap, nonfinite values, incomplete SHAP vectors, digest mismatch, incorrect output space and failed additivity reject. Insufficient history reports `not_qualified`; artifact availability is not model qualification or permission. No ML dependency/runtime was added.

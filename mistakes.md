@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-09-30 — Reusing a token regexp without checking benign identifier boundaries
+
+The existing broker regexp recognized `sk-` inside the benign identifier `task-1`; reusing it for strict sidecar IDs caused a semantic binding test to reject valid input. The root cause was assuming redaction rules for unstructured broker output also fit typed identity admission; the new versioned profile adds a token boundary while preserving legacy broker behavior.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

@@ -2,21 +2,42 @@
   "acceptance_criteria": [
     {
       "evidence": [
-        {"receipt": "verification"}
+        {
+          "receipt": "verification"
+        },
+        {
+          "test": "factory/tests/test_context_contracts.py"
+        },
+        {
+          "test": "factory/tests/test_decision_contracts.py"
+        }
       ],
       "id": "AC-001",
       "statement": "The Linux factory emits bounded versioned context and factual decision records with deterministic identity, complete-or-explicitly-incomplete timing and cost, and no authority escalation."
     },
     {
       "evidence": [
-        {"receipt": "code_review"}
+        {
+          "receipt": "code_review"
+        },
+        {
+          "test": "factory/tests/test_result_contracts.py"
+        },
+        {
+          "test": "factory/tests/test_qualification.py"
+        }
       ],
       "id": "AC-002",
       "statement": "Tool results are sanitized before model reuse and qualification distinguishes implemented core, deferred ML, owner-excluded Apple, inactive M8, and pending external trust."
     },
     {
       "evidence": [
-        {"receipt": "test_review"}
+        {
+          "receipt": "test_review"
+        },
+        {
+          "test": "factory/tests/test_prediction_contracts.py"
+        }
       ],
       "id": "AC-003",
       "statement": "Prediction artifacts remain observation-only, report not_qualified without suitable data, and cannot alter routing, budgets, permissions, checks, or M8."
@@ -28,19 +49,42 @@
   "change_id": "20260930-factory-v1-5-fast-working-release-52ad34",
   "contracts": {
     "events": [],
-    "json_schema": [],
-    "openapi": []
+    "json_schema": [
+      "factory/contracts/jsonschema/context-manifest.v1.schema.json",
+      "factory/contracts/jsonschema/decision-record.v1.schema.json",
+      "factory/contracts/jsonschema/tool-result-envelope.v1.schema.json",
+      "factory/contracts/jsonschema/semantic-execution-evidence.v2.schema.json",
+      "factory/contracts/jsonschema/prediction-observation.v1.schema.json",
+      "factory/contracts/jsonschema/prediction-explanation.v1.schema.json",
+      "factory/contracts/jsonschema/factory-v15-qualification.v1.schema.json",
+      "factory/contracts/jsonschema/bb-backend-profile.v1.schema.json",
+      "factory/contracts/jsonschema/bb-lifecycle-observation.v1.schema.json"
+    ],
+    "openapi": [
+      "factory/contracts/openapi/factory-v15.v1.json"
+    ]
   },
   "forbidden_outcomes": [
     {
-      "evidence": [{"receipt": "code_review"}],
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "test": "factory/tests/test_qualification.py"
+        }
+      ],
       "id": "FORBID-001",
       "statement": "The release never claims Apple acceptance, M8 activation, external Trust CI success, or complete cost when the corresponding evidence is absent."
     }
   ],
   "invariants": [
     {
-      "evidence": [{"receipt": "verification"}],
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ],
       "id": "INV-001",
       "statement": "Existing closed v1/v2 contracts and separate Factory, L5, and Trust CI authority/storage boundaries remain compatible."
     }
@@ -55,7 +99,9 @@
     {
       "id": "SIG-001",
       "metric": "factory_v15_qualification_status",
-      "proves": ["OBJ-001"]
+      "proves": [
+        "OBJ-001"
+      ]
     }
   ],
   "risk": {

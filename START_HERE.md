@@ -22,6 +22,15 @@ Record exact base/head, dirty paths, profile/reason, changed-path digest and all
 
 ## Current project state
 
+Active source work: `feature/factory-v15-fast-release`, route `52ad342010b3`,
+[durable package](engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/brief.md)
+and [implementation plan](docs/superpowers/plans/2026-09-30-factory-v15-fast-release.md).
+Continue this isolated branch for local verification, independent review and PR-only
+delivery. The admitted spec/BB bundle lives under
+`engineering/changes/20260924-factory-unified-upgrade/`. Apple is excluded by owner;
+optional live adapters, M8 and external acceptance remain unqualified/inactive/pending.
+The dated release and runtime history below is preserved as historical evidence.
+
 Snapshot: **2026-09-24**. Repository `main` was observed at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189); fetch refs before assuming it is still the tip.
 
 - **Candidate:** product identity `2.0.19` has a merged release-sync parent `3f41be92161fef451a2dfa7451eb458ce8f022b3` and a separate artifact-child candidate carrying a twice-reproducible ZIP (`4176a872…`) and sidecar (`77057e0b…`). The latest published release remains `v2.0.18`, target `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`, tag object `31d3171f651ea77e29de58d4affc58d008f1c7a5`, ZIP `0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a`; it and `v2.0.17` stay immutable. The `v2.0.19` tag and GitHub Release remain absent until the exact artifact-child merge and delegated publication steps.

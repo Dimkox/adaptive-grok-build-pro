@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:factory-v15-qualification:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repository_id",
+    "task_id",
+    "candidate_sha",
+    "context_digest",
+    "implementation_status",
+    "core_status",
+    "missing_evidence",
+    "evidence_digests",
+    "cost",
+    "prediction_status",
+    "apple_status",
+    "bb_status",
+    "fpf_status",
+    "vibevm_status",
+    "m8_status",
+    "external_trust_status",
+    "human_acceptance",
+    "authority_effect"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "candidate_sha": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "implementation_status": {
+      "const": "implemented"
+    },
+    "core_status": {
+      "enum": [
+        "ready_for_human",
+        "fail",
+        "blocked",
+        "not_evaluated"
+      ]
+    },
+    "missing_evidence": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "evidence_digests": {
+      "type": "array",
+      "maxItems": 512,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_usd_micros",
+        "complete",
+        "total_usd_micros",
+        "unknown_items",
+        "estimated_items"
+      ],
+      "properties": {
+        "known_usd_micros": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "total_usd_micros": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unknown_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_items": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "prediction_status": {
+      "enum": [
+        "not_qualified",
+        "available",
+        "unavailable"
+      ]
+    },
+    "apple_status": {
+      "const": "excluded_by_owner"
+    },
+    "bb_status": {
+      "const": "not_run"
+    },
+    "fpf_status": {
+      "const": "not_evaluated"
+    },
+    "vibevm_status": {
+      "const": "not_evaluated"
+    },
+    "m8_status": {
+      "const": "inactive"
+    },
+    "external_trust_status": {
+      "const": "pending"
+    },
+    "human_acceptance": {
+      "const": "awaiting_human"
+    },
+    "authority_effect": {
+      "const": "none"
+    }
+  }
+}

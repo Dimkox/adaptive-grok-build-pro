@@ -270,6 +270,7 @@ def create_app(
     execution_enabled: bool = True,
     landing_service: LandingApplicationService | None = None,
     landing_only: bool = False,
+    qualification_service=None,
 ) -> FastAPI:
     if landing_only and (service is not None or landing_service is None or execution_enabled):
         raise ValueError("landing-only composition requires only a landing service")
@@ -280,6 +281,19 @@ def create_app(
         docs_url=None,
         redoc_url=None,
     )
+
+    if qualification_service is not None:
+        if landing_only:
+            raise ValueError('v1.5 qualification belongs to the Factory control plane')
+
+        @app.get('/v1.5/tasks/{task_id}/qualification', tags=['qualification'], operation_id='getFactoryV15Qualification')
+        def get_v15_qualification(task_id: str, authorization: str | None = Header(None)):
+            actor = authenticator.authenticate(authorization, 'task:read')
+            task_id = _uuid(task_id, 'task_id')
+            try:
+                return qualification_service.get_qualification(task_id, actor=actor).to_dict()
+            except KeyError as exc:
+                raise HTTPException(404, 'task not found') from exc
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(_request: Request, error: StarletteHTTPException):
