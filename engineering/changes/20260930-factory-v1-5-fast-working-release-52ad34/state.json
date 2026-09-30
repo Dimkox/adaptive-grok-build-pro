@@ -15,6 +15,20 @@
       "note": "draft; implementation not started",
       "observed_at": "2026-09-30T18:29:02+00:00",
       "route_id": "52ad342010b3"
+    },
+    {
+      "branch": "feature/factory-v15-fast-release",
+      "change_id": "20260930-factory-v1-5-fast-working-release-52ad34",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "5fdca6040c92437e7ef8086bc0d33fb16a4ddbd8",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-30T18:34:58+00:00",
+      "route_id": "52ad342010b3"
     }
   ],
   "created_at": "2026-09-30T18:29:02+00:00",
@@ -62,13 +76,19 @@
       "from": "scoped",
       "reason": "owner explicitly directed fast working implementation; no named route human gate",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-30T18:34:58+00:00",
+      "from": "approved",
+      "reason": "route-selected integration_implementer started TDD implementation of approved v1.5 plus BB-01 plan",
+      "to": "implementing"
     }
   ],
   "human_gates": [],
   "human_gates_digest": "8ab307442a21df7e7ce2bc0e96846a584c1b261f871f6ffcf1a638412ad974a5",
   "route_id": "52ad342010b3",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "Factory v1.5 fast working release",
-  "updated_at": "2026-09-30T18:30:40+00:00"
+  "updated_at": "2026-09-30T18:34:58+00:00"
 }

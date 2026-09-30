@@ -70,3 +70,25 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20260930-factory-v1-5-fast-working-release-52ad34",
+  "route_id": "52ad342010b3",
+  "observed_at": "2026-09-30T18:34:58+00:00",
+  "branch": "feature/factory-v15-fast-release",
+  "head": "5fdca6040c92437e7ef8086bc0d33fb16a4ddbd8",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "clean",
+  "dirty_product_paths": [],
+  "note": "implementation started; preserve work before handoff"
+}
+```

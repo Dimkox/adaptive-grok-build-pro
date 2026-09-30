@@ -968,6 +968,20 @@ class PostgresFactoryTests(unittest.TestCase):
         facts['facts'][1]['value']='3'*64
         with self.assertRaises(IntegrityError): reconnected.begin_bb_operation(grant,DecisionRecordV1.from_dict(facts),WORKER)
 
+    def test_bb_shared_factory_budget_race_has_no_double_remaining_allocation(self):
+        from concurrent.futures import ThreadPoolExecutor
+        task=self.submit(source='bb-budget-race').task
+        grant=self.service.claim(owner=WORKER.actor_id,role=RunRole.READER,
+            repositories=(task.repository_id,),lease_seconds=60,actor=WORKER,now=NOW)
+        def reserve(index):
+            try:
+                PostgresFactoryStore(self.runtime_url).reserve_budget(grant,25_000_000,0,1,'a'*64,str(index)*64,WORKER)
+                return 'reserved'
+            except BudgetError: return 'blocked'
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            self.assertEqual(sorted(pool.map(reserve,[1,2])),['blocked','reserved'])
+        self.assertTrue(self.store.readiness()['accounting_consistent'])
+
     def test_bb_late_confirmed_usage_preserves_null_projection_and_one_physical_ledger_entry(self):
         import psycopg
         from adaptive_factory.bb_adapter import BBAdapter, BBExecutionBindingV1
