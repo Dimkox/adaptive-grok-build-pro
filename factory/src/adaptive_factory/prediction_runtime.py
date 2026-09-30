@@ -288,8 +288,56 @@ def _validate_qualified_artifact(artifact):
         raise ContractError('invalid_split')
     for change_id in train_ids + test_ids:
         identity(change_id)
-    if sorted(item.get('change_id') for item in training if isinstance(item, dict)) != sorted(train_ids):
+    cutoff = timestamp(split['at'])
+    row_fields = {'change_id', 'attempt_id', 'repository_id', 'candidate_sha', 'observed_at',
+                  'first_check_started_at', 'outcome_observed_at', 'outcome', 'features', 'partition'}
+    partitions = defaultdict(set)
+    qualified = []
+    excluded = Counter()
+    for item in manifest:
+        if not isinstance(item, dict) or set(item) != row_fields:
+            raise ContractError('invalid_dataset_manifest')
+        identity(item['change_id'])
+        identity(item['attempt_id'])
+        identity(item['repository_id'])
+        sha(item['candidate_sha'])
+        observed = timestamp(item['observed_at'])
+        check_started = timestamp(item['first_check_started_at'])
+        outcome_observed = timestamp(item['outcome_observed_at'])
+        if not observed < check_started <= outcome_observed:
+            raise ContractError('manifest_temporal_leakage')
+        expected_partition = 'train' if outcome_observed < cutoff else 'test'
+        if item['partition'] != expected_partition:
+            raise ContractError('manifest_partition_mismatch')
+        partitions[item['change_id']].add(expected_partition)
+        if len(partitions[item['change_id']]) > 1:
+            raise ContractError('change_split_leakage')
+        if not isinstance(item['features'], dict) or set(item['features']) != set(names):
+            raise ContractError('manifest_feature_mismatch')
+        for name in names:
+            _finite(item['features'][name], name)
+        if item['outcome'] in _PRODUCT_LABELS:
+            qualified.append(item)
+        elif item['outcome'] in _OTHER_LABELS:
+            excluded[item['outcome']] += 1
+        else:
+            raise ContractError('invalid_label_status')
+    first_by_change = {}
+    for item in sorted(qualified, key=lambda value: (value['first_check_started_at'], value['attempt_id'])):
+        first_by_change.setdefault(item['change_id'], item)
+    derived = list(first_by_change.values())
+    expected_training = [item for item in derived if item['partition'] == 'train']
+    expected_holdout = [item for item in derived if item['partition'] == 'test']
+    if training != expected_training:
+        raise ContractError('training_manifest_mismatch')
+    if train_ids != sorted(item['change_id'] for item in expected_training):
         raise ContractError('training_split_mismatch')
+    if test_ids != sorted(item['change_id'] for item in expected_holdout):
+        raise ContractError('holdout_split_mismatch')
+    if artifact.get('excluded_labels') != dict(sorted(excluded.items())):
+        raise ContractError('excluded_label_mismatch')
+    if artifact.get('observed_history_count') != len(derived):
+        raise ContractError('history_count_mismatch')
     preprocessing = artifact.get('preprocessing')
     model = artifact.get('model')
     if not isinstance(preprocessing, dict) or set(preprocessing) != {'schema_version', 'kind', 'means', 'scales'}:
@@ -330,6 +378,8 @@ def _validate_qualified_artifact(artifact):
         raise ContractError('model_bounds_mismatch')
     if type(bounds.get('examples')) is not int or not 1 <= bounds['examples'] <= MAX_EXAMPLES:
         raise ContractError('invalid_bounds')
+    if bounds['examples'] != len(manifest):
+        raise ContractError('manifest_count_mismatch')
     return names
 
 

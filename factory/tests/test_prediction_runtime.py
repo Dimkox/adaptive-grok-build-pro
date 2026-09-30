@@ -174,6 +174,40 @@ class PredictionRuntimeTests(unittest.TestCase):
         unavailable = runtime.predict_or_unavailable(artifact, **args)
         self.assertEqual(unavailable, {'status': 'unavailable', 'reason': 'feature_leakage', 'authority_effect': 'none'})
 
+    def test_fully_resealed_manifest_cannot_lie_about_temporal_partition(self):
+        runtime = self.module()
+        artifact = runtime.train_pilot(self.history(), split_at='2026-08-13T00:00:00Z', required_history=8)
+        target = next(item for item in artifact['dataset_manifest'] if item['partition'] == 'train')
+        target['outcome_observed_at'] = '2026-08-14T10:30:00Z'
+        training = next(item for item in artifact['training_manifest'] if item['change_id'] == target['change_id'])
+        training['outcome_observed_at'] = target['outcome_observed_at']
+        artifact['dataset_digest'] = canonical_digest(artifact['dataset_manifest'])
+        artifact['training_digest'] = canonical_digest(artifact['training_manifest'])
+        self.reseal(artifact)
+        with self.assertRaisesRegex(ContractError, 'manifest_partition_mismatch'):
+            runtime.predict(artifact, **self.prediction_args())
+        self.assertEqual(
+            runtime.predict_or_unavailable(artifact, **self.prediction_args()),
+            {'status': 'unavailable', 'reason': 'manifest_partition_mismatch', 'authority_effect': 'none'},
+        )
+
+    def test_resealed_holdout_and_excluded_accounting_must_match_manifest(self):
+        runtime = self.module()
+        rows = self.history()
+        rows[1]['outcome'] = 'infrastructure_abort'
+        source = runtime.train_pilot(rows, split_at='2026-08-13T00:00:00Z', required_history=8)
+        holdout = copy.deepcopy(source)
+        holdout['split']['test_change_ids'].pop()
+        holdout['split_digest'] = canonical_digest(holdout['split'])
+        self.reseal(holdout)
+        with self.assertRaisesRegex(ContractError, 'holdout_split_mismatch'):
+            runtime.predict(holdout, **self.prediction_args())
+        excluded = copy.deepcopy(source)
+        excluded['excluded_labels']['infrastructure_abort'] = 0
+        self.reseal(excluded)
+        with self.assertRaisesRegex(ContractError, 'excluded_label_mismatch'):
+            runtime.predict(excluded, **self.prediction_args())
+
     def test_metric_fixture_has_known_discrimination_and_calibration(self):
         runtime = self.module()
         self.assertEqual(runtime.binary_metrics([0.0, 1.0], [0.25, 0.75]), {'auc': 1.0, 'brier': 0.0625})
