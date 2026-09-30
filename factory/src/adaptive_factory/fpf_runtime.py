@@ -12,19 +12,15 @@ import json
 import re
 from typing import Iterable, Mapping
 from pathlib import PurePosixPath
+from types import MappingProxyType
 
 from .contracts import ContractError, canonical_digest
-from .v15_contracts import digest, identity, safe_text, sha, redact
+from .v15_contracts import digest, identity, safe_text, sha, redact, path as safe_path
 from .brokers import BrokerError
 
 
 class FpfBlocked(ContractError):
     """Named fail-closed result for a dependent optional capability."""
-
-
-class FrozenDict(dict):
-    def _immutable(self, *args, **kwargs): raise TypeError("frozen_mapping")
-    __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = _immutable
 
 
 def _block(code: str) -> None:
@@ -90,6 +86,13 @@ class ContextBudget:
     max_reads: int
     reads: int = 0
 
+    def __post_init__(self):
+        values = (self.model_window_tokens, self.response_reserve_tokens,
+                  self.technical_reserve_tokens, self.max_reference_bytes, self.max_reads)
+        if any(type(x) is not int or x < 0 for x in values) or self.model_window_tokens <= 0 or \
+                self.max_reads <= 0 or self.response_reserve_tokens + self.technical_reserve_tokens >= self.model_window_tokens:
+            raise ContractError("invalid_budget_configuration")
+
     def admit(self, *, prefix_tokens: int, task_tokens: int, history_tokens: int,
               tool_tokens: int | None, reference_bytes: int,
               measured_reference_tokens: int | None, mandatory: bool) -> BudgetUsage:
@@ -148,23 +151,24 @@ class FrozenFpfSnapshot:
                 raise ContractError("closed_fragment")
             pattern_id = raw["pattern_id"]; identity(pattern_id)
             if pattern_id in normalized: raise ContractError("duplicate_fragment")
-            safe_text(raw["locator"], "locator", 512)
+            safe_path(raw["locator"])
             locator = raw["locator"]; locator_path = PurePosixPath(locator)
             if locator_path.is_absolute() or ":" in locator or "\\" in locator or any(x in ("", ".", "..") for x in locator.split("/")):
                 raise ContractError("unsafe_locator")
             _document(raw["text"], "text", 65536)
+            enforce_reference_boundary(raw["text"])
             digest(raw["sha256"])
             if hashlib.sha256(raw["text"].encode()).hexdigest() != raw["sha256"]:
                 raise ContractError("fragment_digest_mismatch")
             required = tuple(raw["required"]); optional = tuple(raw["optional"])
             for dependency in required + optional: identity(dependency)
-            normalized[pattern_id] = FrozenDict({**raw, "required": required, "optional": optional})
+            normalized[pattern_id] = MappingProxyType({**raw, "required": required, "optional": optional})
         facts = {"tenant_id": tenant_id, "repository_id": repository_id,
                  "source_revision": source_revision, "package": package,
                  "package_version": package_version, "license_id": license_id,
                  "generator_id": generator_id,
                  "fragments": {k: dict(normalized[k]) for k in sorted(normalized)}}
-        return cls(**{k: facts[k] for k in facts if k != "fragments"}, fragments=FrozenDict(normalized),
+        return cls(**{k: facts[k] for k in facts if k != "fragments"}, fragments=MappingProxyType(normalized),
                    snapshot_digest=canonical_digest(facts))
 
 
@@ -210,7 +214,7 @@ class ProgressiveReader:
                 return
             visited.add(pattern_id); transitions += 1; total += len(item["text"].encode())
             if total > self.max_bytes: _block("mandatory_context_budget")
-            ordered.append(FrozenDict(dict(item)))
+            ordered.append(MappingProxyType(dict(item)))
             for dependency in item["required"]: visit(dependency, depth + 1, True)
 
         visit(root, 0, True)
@@ -218,14 +222,16 @@ class ProgressiveReader:
         facts = {"revision": self._revision, "previous_digest": self._previous,
                  "source_revision": self.snapshot.source_revision,
                  "snapshot_digest": self.snapshot.snapshot_digest, "reason": reason,
-                 "fragments": ordered}
+                 "fragments": [dict(item) for item in ordered]}
         result = SelectionRevision(**facts, selection_digest=canonical_digest(facts))
+        result = SelectionRevision(**{**facts, "fragments": tuple(ordered)}, selection_digest=result.selection_digest)
         self._previous = result.selection_digest
         return result
 
 
 def capture_delivery(selection: SelectionRevision, *, consumer_id: str, delivered_text: str) -> dict:
     identity(consumer_id); _document(delivered_text, "delivered_text", 262144)
+    enforce_reference_boundary(delivered_text)
     expected = "\n".join(x["text"] for x in selection.fragments)
     if delivered_text != expected: raise ContractError("delivery_bytes_mismatch")
     return {"schema_version": 1, "status": "delivered", "consumer_id": consumer_id,
@@ -257,6 +263,15 @@ def generate_projection(source: str, *, generator_id: str) -> dict:
 
 def verify_projection(source: str, projection: Mapping | str) -> dict:
     projected = projection["text"] if isinstance(projection, Mapping) else projection
+    normalized = source.replace("\r\n", "\n").strip()
+    if isinstance(projection, Mapping):
+        required = {"schema_version", "generator_id", "source_sha256", "text", "signals", "generation_digest"}
+        unsigned = {k: projection[k] for k in projection if k != "generation_digest"}
+        if set(projection) != required or projection.get("source_sha256") != hashlib.sha256(source.encode()).hexdigest() or \
+                canonical_digest(unsigned) != projection.get("generation_digest"):
+            _block("semantic_projection_authentication")
+    if projected != normalized:
+        _block("semantic_projection_mapping")
     expected = _semantic_signals(source); observed = _semantic_signals(projected)
     if expected != observed: _block("semantic_projection_mismatch")
     return {"status": "verified", "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
@@ -343,12 +358,14 @@ class AdapterCompatibility:
         return "supported"
 
     def qualify_snapshot(self, snapshot: FrozenFpfSnapshot, *, format: str,
-                         progressive: bool, exact_cli: str) -> str:
+                         progressive: bool, exact_cli: str, offline: bool = False) -> str:
         if self.package is None or self.package_version is None:
             return "not_evaluated"
         if snapshot.package != self.package or snapshot.package_version != self.package_version:
             return "not_evaluated"
         if not snapshot.fragments:
+            return "unsupported"
+        if offline and not self.offline_replay:
             return "unsupported"
         return self.qualify(format=format, progressive=progressive, exact_cli=exact_cli)
 
@@ -406,11 +423,11 @@ def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
                 record["source_revision"] != bundle["source_revision"] or \
                 record["snapshot_digest"] != bundle["snapshot_digest"]:
             _block("offline_selection_mismatch")
-        try: selected = tuple(fragments[x] for x in record["pattern_ids"])
+        try: selected = tuple(rebuilt.fragments[x] for x in record["pattern_ids"])
         except KeyError: _block("offline_fragment_missing")
         facts = {"revision": record["revision"], "previous_digest": record["previous_digest"],
                  "source_revision": record["source_revision"], "snapshot_digest": record["snapshot_digest"],
-                 "reason": record["reason"], "fragments": list(selected)}
+                 "reason": record["reason"], "fragments": [dict(item) for item in selected]}
         if canonical_digest(facts) != record["selection_digest"]: _block("offline_selection_mismatch")
         result.append(SelectionRevision(**{**facts, "fragments": selected},
                                         selection_digest=record["selection_digest"]))
@@ -446,12 +463,32 @@ def evaluate_abc(runs: Iterable[Mapping]) -> dict:
     if len(values[0]["case_ids"]) != 12 or len(set(values[0]["case_ids"])) != 12:
         _block("invalid_corpus")
     a, b, c = by_mode["A"], by_mode["B"], by_mode["C"]
+    if {a.get("backend"), b.get("backend"), c.get("backend")} != {"native", "native-fpf", "vibevm-fpf"} or \
+            a.get("backend") != "native" or b.get("backend") != "native-fpf" or c.get("backend") != "vibevm-fpf":
+        _block("invalid_mode_backend")
     if b.get("fpf_snapshot_digest") != c.get("fpf_snapshot_digest") or not b.get("fpf_snapshot_digest"):
         _block("confounded_experiment")
+    complete_cost = True; seen_charges = set(); totals = {}
     for item in values:
-        cost = item.get("cost_micros")
-        if cost is not None and (type(cost) is not int or cost < 0): _block("invalid_cost")
-    complete_cost = all(x.get("usage_complete") and x.get("cost_micros") is not None for x in values)
+        components = item.get("cost_components")
+        if not isinstance(components, list) or not components: _block("invalid_cost")
+        total = 0
+        for component in components:
+            if set(component) != {"charge_id", "kind", "amount_micros", "allocation", "cache_mode"}:
+                _block("invalid_cost")
+            identity(component["charge_id"])
+            if component["charge_id"] in seen_charges: _block("duplicate_cost")
+            seen_charges.add(component["charge_id"])
+            if component["kind"] not in ("build", "package", "dynamic_read", "review", "retry", "storage") or \
+                    component["allocation"] not in ("one_time", "run", "amortized") or \
+                    component["cache_mode"] not in ("cold", "warm", "none"):
+                _block("invalid_cost")
+            amount = component["amount_micros"]
+            if amount is None: complete_cost = False
+            elif type(amount) is not int or amount < 0: _block("invalid_cost")
+            else: total += amount
+        totals[item["mode"]] = total if complete_cost else None
+        complete_cost = complete_cost and item.get("usage_complete") is True
     recommendation = "retain_a"
     def acceptable(candidate, baseline):
         return (candidate.get("critical_failures", 1) == 0 and
@@ -479,15 +516,25 @@ def plan_upgrade(*, current_identity: str, candidate_identity: str,
 
 def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, str]) -> dict:
     required = tuple(plan.get("required_gates", ()))
-    if not required or set(gate_results) != set(required) or any(gate_results[x] != "pass" for x in required):
+    candidate = plan.get("candidate_identity")
+    if not required or set(gate_results) != set(required):
         _block("upgrade_gate_incomplete")
+    for gate in required:
+        evidence = gate_results[gate]
+        if (not isinstance(evidence, Mapping) or set(evidence) != {"status", "candidate_identity", "evidence_ref"} or
+                evidence["status"] != "pass" or evidence["candidate_identity"] != candidate or
+                not isinstance(evidence["evidence_ref"], str) or not evidence["evidence_ref"]):
+            _block("upgrade_gate_incomplete")
     return {"status": "qualified_candidate", "candidate_identity": plan["candidate_identity"],
             "gate_results": dict(sorted(gate_results.items())), "authority_effect": "none"}
 
 
 def plan_fallback(*, attempt_profile: str, target_profile: str,
                   mandatory_rules_current: bool, target_qualified: bool) -> dict:
-    if not mandatory_rules_current or not target_qualified: _block("fallback_not_safe")
+    allowed = {("vibevm_fpf", "native_fpf"), ("vibevm_fpf", "native"), ("native_fpf", "native")}
+    if type(mandatory_rules_current) is not bool or type(target_qualified) is not bool or \
+            not mandatory_rules_current or not target_qualified or (attempt_profile, target_profile) not in allowed:
+        _block("fallback_not_safe")
     return {"status": "fallback_planned", "from_profile": attempt_profile,
             "target_profile": target_profile, "apply_to": "next_attempt",
             "preserve_read_trace": True, "authority_effect": "none"}
