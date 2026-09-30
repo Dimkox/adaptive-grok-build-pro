@@ -359,7 +359,7 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "TRUNCATE factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
+            "TRUNCATE factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
             "factory.semantic_escalations, factory.semantic_child_task_bindings, "
             "factory.semantic_child_proposals, factory.semantic_directives, "
             "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -1125,6 +1125,78 @@ def _assert_durable_recovery(
         )
 
 
+def _exercise_rotator_restart(container_name, container_id, nonce, owner_url, runtime_url, attestor_url):
+    """Retain a synthetic dispatch hold across an additional actual PG restart."""
+    from dataclasses import replace
+    import hashlib
+    from importlib.resources import files
+    import json
+    import psycopg
+    from adaptive_factory.contracts import ContractError, canonical_digest
+    from adaptive_factory.model_rotator import (
+        ModelRotator, PostgresRotationStore, ProviderRegistryV1, RotationBindingV1,
+        TransportResult,
+    )
+
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    _reset_database(owner_url, now)
+    operator = Actor("rotator-restart-operator", "operator", frozenset({"task:submit"}), frozenset({"*"}))
+    worker = Actor("rotator-restart-worker", "worker", frozenset({"task:claim", "task:execute", "task:budget", "task:release"}), frozenset({"probe/repository"}))
+    selection = _selection("workspace:" + "d" * 64)
+    service = FactoryService(PostgresFactoryStore(runtime_url), execution_registry=_registry(selection))
+    task = service.intake(_payload(now, "rotator"), actor=operator, now=now).task
+    execution = service.claim_execution(owner=worker.actor_id, role=RunRole.WRITER,
+        repositories=("probe/repository",), lease_seconds=60, selection=selection, actor=worker, now=now)
+    _require(execution is not None, "rotator restart fixture not claimed")
+    service.reserve_budget(execution.lease, cost_usd_micros=1, token_units=1024, wall_seconds=30,
+        reason_digest="a" * 64, idempotency_key="b" * 64, actor=worker)
+    registry = ProviderRegistryV1.from_dict(json.loads(files("adaptive_factory.resources").joinpath("model-rotator-registry.v1.json").read_text()))
+    grant_digest = canonical_digest({"fixture": "rotator-restart-owner-grant", "request_units": 2})
+    with psycopg.connect(owner_url) as connection:
+        row = connection.execute("SELECT reservation_id,task_id,run_id,token_units,cost_usd_micros,wall_seconds,trim(reason_digest) FROM factory.budget_reservations WHERE run_id=%s", (execution.lease.run_id,)).fetchone()
+        attempt = connection.execute("SELECT attempt_id::text FROM factory.attempts WHERE run_id=%s", (execution.lease.run_id,)).fetchone()[0]
+        connection.execute("INSERT INTO factory.model_rotator_request_grants VALUES(%s,%s,2,%s)", (row[0], registry.registry_digest, grant_digest))
+        connection.execute("UPDATE factory.runs SET lease_expires_at=clock_timestamp()+interval '5 minutes' WHERE run_id=%s", (execution.lease.run_id,))
+    budget_digest = hashlib.sha256("|".join(str(value) for value in (*row, 2, grant_digest)).encode()).hexdigest()
+    binding = RotationBindingV1.from_dict({"schema_version": 1, "tenant_id": task.repository_id,
+        "repository_id": task.repository_id, "task_id": task.task_id, "run_id": execution.lease.run_id,
+        "attempt_id": attempt, "fence": execution.lease.fence, "budget_reservation_id": str(row[0]),
+        "budget_digest": budget_digest, "registry_digest": registry.registry_digest,
+        "operation_id": "restart-rotation-1", "requested_provider_id": "openrouter",
+        "requested_model_id": "qwen/qwen3-coder:free", "remaining_token_units": 1024, "remaining_request_units": 2})
+    requested = canonical_digest({"provider_id": binding.requested_provider_id, "model_id": binding.requested_model_id})
+    store = PostgresRotationStore(runtime_url)
+    claim = store.claim(binding, registry.registry_digest, 0, requested, 100)
+    _require(store.reserve_dispatch(binding.binding_digest, claim["claim_token"], "request", 1), "rotator dispatch hold missing")
+    with psycopg.connect(owner_url) as connection:
+        # Clock-bound fault injection, not a real provider dispatch or human receipt.
+        connection.execute("UPDATE factory.model_rotator_operations SET claim_expires_at=clock_timestamp()-interval '1 second' WHERE binding_digest=%s", (binding.binding_digest,))
+    owner_url, runtime_url, attestor_url = _restart_database(container_name, container_id, nonce, owner_url, runtime_url, attestor_url)
+    recovered = PostgresRotationStore(runtime_url)
+    try:
+        recovered.claim(binding, registry.registry_digest, 0, requested, 101)
+    except ContractError as error:
+        _require(str(error) == "reconciliation_required", "rotator restart returned wrong recovery condition")
+    else:
+        raise RuntimeError("expired rotation claim dispatched after restart")
+    with psycopg.connect(owner_url) as connection:
+        _require(connection.execute("SELECT state FROM factory.model_rotator_operations WHERE binding_digest=%s", (binding.binding_digest,)).fetchone() == ("quarantined",), "rotator quarantine did not persist after reconnect")
+        _require(connection.execute("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting").fetchone() == (1, 0), "restart lost or settled unknown dispatch hold")
+    # The synthetic transport was never called; only this separate owner releases.
+    PostgresRotationStore(owner_url).reconcile(binding.binding_digest, settle=False)
+    next_binding = replace(binding, operation_id="restart-rotation-2")
+    rotator = ModelRotator(registry, recovered, enabled=True)
+    evidence = rotator.execute(next_binding, lambda *args: TransportResult.success(response_digest="e" * 64, input_tokens=2, output_tokens=1), now=102)
+    _require(evidence["status"] == "selected", "rotator_restart_success missing")
+    def forbidden_transport(*args):
+        raise AssertionError("completed rotator replay redispatched")
+    _require(rotator.execute(next_binding, forbidden_transport, now=103) == evidence, "restart replay did not retain exact evidence")
+    with psycopg.connect(owner_url) as connection:
+        _require(connection.execute("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting").fetchone() == (0, 1), "rotator restart settlement was not exact")
+    FactoryService(PostgresFactoryStore(runtime_url)).release(execution.lease, outcome=FailureClass.WORKER_LOST,
+        actor=worker, now=datetime.now(timezone.utc), idempotency_key="f" * 64)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--database-url-env", default="FACTORY_TEST_DATABASE_URL")
@@ -1537,8 +1609,9 @@ def main() -> int:
          runtime_store.verify_audit_chain(task_b.task_id)) == (True, True),
         "replacement/late-fence proof broke the task audit hash chain",
     )
+    _exercise_rotator_restart(container_name, container_id, nonce, owner_url, runtime_url, attestor_url)
     print(
-        "PASS: two PostgreSQL restarts; exact runtime/attestor roles; "
+        "PASS: three PostgreSQL restarts; rotator durable hold/quarantine/owner release/replay; exact runtime/attestor roles; "
         "cancelled+orphaned recovery; ambiguous cleanup fence2 replay; "
         "zero fabricated proposal/result/attestation; higher M4 fence"
     )

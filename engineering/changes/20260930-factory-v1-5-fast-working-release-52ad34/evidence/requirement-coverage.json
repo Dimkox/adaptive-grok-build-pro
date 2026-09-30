@@ -2,7 +2,7 @@
   "schema_version": 1,
   "document_version": "1.5",
   "route_id": "52ad342010b3",
-  "coverage_basis_commit": "917e235d",
+  "coverage_basis_commit": "bd1c5ce9",
   "spec_sha256": "9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9",
   "bb_spec_sha256": "4e18c7db0f82588d2677db6bb551295a2372da3c83a0294c0cdaf57eeab2a774",
   "authority_effect": "none",
@@ -13,6 +13,28 @@
     "Suite references are scoped evidence pointers, not exact-case/live acceptance claims. Final stable-tree verification and independent reviews are still required.",
     "All source-level pending contours are integrated and bound; no deterministic source gap is represented as external NOT_RUN. All acceptance_status fields remain not_evaluated until exact-profile/human gates, not local suite inference."
   ],
+  "owner_scope_additions": {
+    "observation_only_model_rotator": {
+      "status": "implemented_tested",
+      "reviewed_source_head": "c19eca4a",
+      "source_paths": [
+        "factory/src/adaptive_factory/model_rotator.py",
+        "factory/src/adaptive_factory/model_rotator_cli.py",
+        "factory/src/adaptive_factory/resources/027_model_rotator_state.sql",
+        "factory/src/adaptive_factory/resources/model-rotator-registry.v1.json"
+      ],
+      "test_evidence": [
+        {"path": "factory/tests/test_model_rotator.py", "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_model_rotator factory.tests.test_migrations", "execution_status": "focused_pass_48_tests"},
+        {"path": "factory/tests/test_model_rotator_postgres.py", "command": "uv run --project factory python -m unittest -v factory.tests.test_model_rotator_postgres.ModelRotatorPostgresTests", "execution_status": "disposable_postgres_focused_pass_8_tests_8.383s"},
+        {"path": "factory/tests/postgres_restart_probe.py", "command": "uv run --project factory python factory/tests/postgres_restart_probe.py", "execution_status": "disposable_postgres_three_actual_restarts_pass"}
+      ],
+      "acceptance_status": "not_evaluated",
+      "enabled": false,
+      "live_qualification": "NOT_RUN",
+      "authority_effect": "none",
+      "final_stable_verification": "pending_push_first_candidate"
+    }
+  },
   "items": [
     {
       "id": "F01",

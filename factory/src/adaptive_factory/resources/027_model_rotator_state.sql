@@ -53,9 +53,9 @@ BEGIN
     OR p_binding->>'schema_version'<>'1'
     OR p_binding-ARRAY['schema_version','tenant_id','repository_id','task_id','run_id','attempt_id','fence','budget_reservation_id','budget_digest','registry_digest','operation_id','requested_provider_id','requested_model_id','remaining_token_units','remaining_request_units']<>'{}'::jsonb
     OR p_binding->>'registry_digest'<>trim(p_registry) THEN RETURN jsonb_build_object('error','binding_digest_mismatch'); END IF;
-  v_operation=encode(digest(convert_to(p_binding->>'operation_id','UTF8'),'sha256'),'hex');
-  SELECT encode(digest(convert_to(t.repository_id,'UTF8'),'sha256'),'hex'),
-    encode(digest(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8'),'sha256'),'hex'),g.request_units
+  v_operation=encode(sha256(convert_to(p_binding->>'operation_id','UTF8')),'hex');
+  SELECT encode(sha256(convert_to(t.repository_id,'UTF8')),'hex'),
+    encode(sha256(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8')),'hex'),g.request_units
     INTO v_tenant,v_budget,v_request_units FROM factory.tasks t JOIN factory.runs r ON r.run_id=(p_binding->>'run_id')::uuid AND r.task_id=t.task_id
     JOIN factory.attempts a ON a.attempt_id=(p_binding->>'attempt_id')::uuid AND a.task_id=t.task_id AND a.run_id=r.run_id
     JOIN factory.budget_reservations b ON b.reservation_id=(p_binding->>'budget_reservation_id')::uuid AND b.task_id=t.task_id AND b.run_id=r.run_id
@@ -65,7 +65,7 @@ BEGIN
       AND r.fence=t.current_fence AND r.state='leased' AND r.released_at IS NULL AND r.lease_expires_at>clock_timestamp()
       AND b.released_at IS NULL AND g.request_units>=(p_binding->>'remaining_request_units')::bigint FOR UPDATE OF t,r,a,b,g;
   IF NOT FOUND OR v_budget<>p_binding->>'budget_digest' THEN RETURN jsonb_build_object('error','authority_not_granted'); END IF;
-  v_server_digest=encode(digest(convert_to(concat_ws(chr(31),p_binding->>'repository_id',p_binding->>'task_id',p_binding->>'run_id',p_binding->>'attempt_id',p_binding->>'fence',p_binding->>'budget_reservation_id',v_budget,p_registry,p_binding->>'operation_id',p_binding->>'requested_provider_id',p_binding->>'requested_model_id',p_binding->>'remaining_token_units',p_binding->>'remaining_request_units'),'UTF8'),'sha256'),'hex');
+  v_server_digest=encode(sha256(convert_to(concat_ws(chr(31),p_binding->>'repository_id',p_binding->>'task_id',p_binding->>'run_id',p_binding->>'attempt_id',p_binding->>'fence',p_binding->>'budget_reservation_id',v_budget,p_registry,p_binding->>'operation_id',p_binding->>'requested_provider_id',p_binding->>'requested_model_id',p_binding->>'remaining_token_units',p_binding->>'remaining_request_units'),'UTF8')),'hex');
   IF v_server_digest<>p_binding_digest THEN RETURN jsonb_build_object('error','binding_digest_mismatch'); END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('model-rotator:'||v_tenant||':'||trim(p_registry),0));
   SELECT * INTO v_prior FROM factory.model_rotator_operations WHERE operation_digest=v_operation FOR UPDATE;
@@ -90,7 +90,7 @@ BEGIN
     UPDATE factory.model_rotator_operations SET state='quarantined' WHERE tenant_digest=v_tenant AND registry_digest=p_registry AND state='claimed';
     RETURN jsonb_build_object('error','reconciliation_required');
   END IF;
-  v_token=encode(digest(convert_to(p_binding_digest||':'||v_state.version||':'||p_now,'UTF8'),'sha256'),'hex');
+  v_token=encode(sha256(convert_to(p_binding_digest||':'||v_state.version||':'||p_now,'UTF8')),'hex');
   INSERT INTO factory.model_rotator_operations(binding_digest,operation_digest,task_id,run_id,attempt_id,reservation_id,fence,tenant_digest,budget_digest,registry_digest,state_version,claim_token,claim_expires_at,binding_token_limit,binding_request_limit,state)
     VALUES(p_binding_digest,v_operation,(p_binding->>'task_id')::uuid,(p_binding->>'run_id')::uuid,(p_binding->>'attempt_id')::uuid,(p_binding->>'budget_reservation_id')::uuid,(p_binding->>'fence')::bigint,v_tenant,v_budget,p_registry,v_state.version,v_token,clock_timestamp()+interval '30 seconds',(p_binding->>'remaining_token_units')::bigint,(p_binding->>'remaining_request_units')::bigint,'claimed');
   INSERT INTO factory.model_rotator_reservation_accounting(reservation_id,registry_digest) VALUES((p_binding->>'budget_reservation_id')::uuid,p_registry) ON CONFLICT DO NOTHING;
@@ -105,7 +105,7 @@ BEGIN
   IF NOT FOUND OR p_mode NOT IN ('token','request') OR p_units<=0 THEN RETURN false; END IF;
   PERFORM 1 FROM factory.tasks t JOIN factory.runs r ON r.run_id=v_op.run_id AND r.task_id=t.task_id JOIN factory.attempts a ON a.attempt_id=v_op.attempt_id AND a.run_id=r.run_id
     JOIN factory.budget_reservations b ON b.reservation_id=v_op.reservation_id AND b.run_id=r.run_id JOIN factory.model_rotator_request_grants g ON g.reservation_id=b.reservation_id AND g.registry_digest=v_op.registry_digest WHERE t.task_id=v_op.task_id AND t.current_run_id=r.run_id AND t.current_fence=v_op.fence AND r.fence=v_op.fence AND r.state='leased' AND r.released_at IS NULL AND r.lease_expires_at>clock_timestamp() AND b.released_at IS NULL
-      AND encode(digest(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8'),'sha256'),'hex')=v_op.budget_digest FOR UPDATE OF t,r,a,b,g;
+      AND encode(sha256(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8')),'hex')=v_op.budget_digest FOR UPDATE OF t,r,a,b,g;
   IF NOT FOUND THEN RETURN false; END IF;
   SELECT * INTO STRICT v_account FROM factory.model_rotator_reservation_accounting WHERE reservation_id=v_op.reservation_id AND registry_digest=v_op.registry_digest FOR UPDATE;
   SELECT * INTO STRICT v_policy FROM factory.model_rotator_registry_policies WHERE registry_digest=v_op.registry_digest;
@@ -130,7 +130,7 @@ BEGIN
   SELECT * INTO v_op FROM factory.model_rotator_operations WHERE binding_digest=p_binding AND claim_token=p_claim AND state='claimed' AND state_version=p_version AND claim_expires_at>clock_timestamp() FOR UPDATE;
   IF NOT FOUND OR p_evidence IS NULL OR p_cursor<0 OR jsonb_typeof(p_cooldowns)<>'object' THEN RETURN false; END IF;
   PERFORM 1 FROM factory.tasks t JOIN factory.runs r ON r.run_id=v_op.run_id AND r.task_id=t.task_id JOIN factory.attempts a ON a.attempt_id=v_op.attempt_id AND a.run_id=r.run_id JOIN factory.budget_reservations b ON b.reservation_id=v_op.reservation_id AND b.run_id=r.run_id JOIN factory.model_rotator_request_grants g ON g.reservation_id=b.reservation_id AND g.registry_digest=v_op.registry_digest WHERE t.task_id=v_op.task_id AND t.current_run_id=r.run_id AND t.current_fence=v_op.fence AND r.fence=v_op.fence AND r.state='leased' AND r.released_at IS NULL AND r.lease_expires_at>clock_timestamp() AND b.released_at IS NULL
-    AND encode(digest(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8'),'sha256'),'hex')=v_op.budget_digest FOR UPDATE OF t,r,a,b,g;
+    AND encode(sha256(convert_to(concat_ws('|',b.reservation_id,b.task_id,b.run_id,b.token_units,b.cost_usd_micros,b.wall_seconds,b.reason_digest,g.request_units,g.grant_digest),'UTF8')),'hex')=v_op.budget_digest FOR UPDATE OF t,r,a,b,g;
   IF NOT FOUND THEN RETURN false; END IF;
   UPDATE factory.model_rotator_states SET cursor=p_cursor,requested_model_digest=p_evidence->>'next_model_digest',cooldowns=p_cooldowns,
     version=version+1,updated_at=clock_timestamp()

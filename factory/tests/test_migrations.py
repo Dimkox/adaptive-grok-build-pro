@@ -376,11 +376,20 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 27)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 26)
+        self.assertEqual([item.version for item in migrations], list(range(1, 28)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 27)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
+
+    def test_rotator_recovery_is_part_of_the_actual_restart_probe(self):
+        import inspect
+        self.assertIn("_exercise_rotator_restart(", inspect.getsource(postgres_restart_probe.main))
+        helper = getattr(postgres_restart_probe, "_exercise_rotator_restart", None)
+        self.assertTrue(callable(helper))
+        source = inspect.getsource(helper)
+        for expected in ("_restart_database(", "reconciliation_required", "settle=False", "reserve_dispatch", "rotator_restart_success"):
+            self.assertIn(expected, source)
 
     def test_disposable_command_timeout_stops_its_owned_grandchild_before_cleanup(self):
         import os

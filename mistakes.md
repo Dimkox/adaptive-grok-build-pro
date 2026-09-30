@@ -1520,3 +1520,7 @@ The U6 contour started the full verifier before running its route-wide ruff comm
 ### 2026-09-30 — Bound subprocess descendants before reclaiming their database
 
 The expanded PostgreSQL suite exceeded its inherited480s timeout, and terminating only its uv parent left the unittest grandchild executing against reclaimed PostgreSQL/certificate state. An owned process-group timeout regression now proves descendant termination before cleanup, with calibrated600s suite and1500s outer bounds; the first RED fixture also lacked an os import in its cleanup, which was corrected before repeating it. Combining root and Factory pytest paths caused package-name collection collisions, so their focused invocations remain separate.
+
+### 2026-09-30 — An imported TestCase is also a discovery surface
+
+I composed existing fixture methods instead of inheriting its TestCase but imported the class into the new test module, so unittest still discovered its75 predecessor cases there. The root cause was overlooking module-global class discovery, not inheritance; import the fixture module, borrow only named methods and assert the focused module case count before running the database contour.

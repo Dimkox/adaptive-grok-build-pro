@@ -5,7 +5,7 @@
     {"id":"AC-003","statement":"The adapter is default-off, records bounded usage and retry evidence, and never persists or emits credential values.","evidence":[{"test":"factory/tests/test_model_rotator.py"},{"receipt":"security_review"}]}
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": ["architecture", "contract", "data", "security"]
   },
   "change_id": "20260930-добавить-в-factory-новый-observation-only-адапте-148674",
   "contracts": {

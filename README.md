@@ -19,14 +19,17 @@ legacy-packet admission compatibility (migration 026), pre-model result envelope
 observation-only predictor/explainer execution and an optional authenticated
 [qualification API](factory/contracts/openapi/factory-v15.v1.json). The [operator notes](factory/README.md#factory-v15-fast-linux-candidate)
 describe composition and rollback. U4/macOS is owner-excluded; BB stays default-off
+and `not_run`. The optional FPF data-only mechanism is implemented but default-off;
+exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Trust CI pending.
 
 The additive [model-rotation boundary](factory/src/adaptive_factory/model_rotator.py) is
 also default-off. It consumes existing fenced run and budget authority, persists an
 idempotent PostgreSQL claim/cooldown/cursor through migration 027, distinguishes token
 quota (DashScope/Qwen) from request quota (OpenRouter), and emits redacted observation
 evidence only. `adaptive-model-rotator status` is read-only; live qualification is `NOT_RUN`.
-and `not_run`. The optional FPF data-only mechanism is implemented but default-off;
-exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Trust CI pending.
+Actual disposable PostgreSQL tests cover authority, grants, quota races, CAS rollback and
+three restarts including retained rotation holds, quarantine, owner release and replay.
+This is synthetic local evidence, not live provider qualification or merge authority.
 The shared [paired evaluation harness](factory/src/adaptive_factory/behavior_qualification.py),
 [VibeVM package runtime](factory/src/adaptive_factory/vibevm_runtime.py), and
 [generic Linux installer lifecycle](factory/runtime/SETUP_MANAGER.md) are implemented;

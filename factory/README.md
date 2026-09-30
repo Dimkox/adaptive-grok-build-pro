@@ -106,6 +106,11 @@ then leases the operation with per-tenant/registry CAS. Cooldowns and the next c
 restart; expired or ambiguous claims quarantine until explicit settle/release reconciliation.
 Capacity is held before each dispatch and settled cumulatively; evidence identifiers are
 pseudonymous digests, not anonymous data.
+Request capacity requires a separate owner-granted row bound into the budget digest;
+runtime cannot grant requests, mutate state tables, or reconcile its own quarantine.
+The runtime uses the existing bounded least-privilege capability connection. Core
+PostgreSQL SHA-256 needs no extension. Failed expired-claim replay commits quarantine
+before returning its error; owner reconciliation is separate and never inferred from ACK.
 OpenRouter entries use request quota mode and rotate only after a bounded eligible failure;
 Qwen/DashScope entries may use token quota mode. No credential, endpoint, prompt, body,
 header or raw provider error is accepted or stored.
@@ -119,6 +124,12 @@ adaptive-model-rotator status
 It reports `enabled:false` and `live_qualification:NOT_RUN`. Source integration does not
 activate providers, edit `~/.qwen`, start a proxy, kill processes, or enable upstream
 `--yolo` behavior.
+
+Local disposable tests passed eight database authority/recovery scenarios and three
+actual PostgreSQL restarts, including retained holds, quarantine, owner release and exact
+replay. No provider was called, and this is not installed/live acceptance. Rollback retains
+migration027 and its immutable operation/grant/accounting evidence, disables composition,
+and uses forward recovery rather than discarding unknown holds.
 
 The additive v1.5 modules provide native bounded context, immutable factual decisions,
 pre-model result envelopes, observation artifacts and read-only qualification.

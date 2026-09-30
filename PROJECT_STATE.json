@@ -14,8 +14,10 @@
     "external_trust": "pending",
     "operational_activation": false,
     "coverage_matrix": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
-    "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity"],
-    "next_action": "Complete full stable exact-tree verification and independent reviews of the integrated source candidate; prepare PR-only delivery and require App-owned exact-head Trust CI. Publication and installed/live qualification remain separate."
+    "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity", "observation_only_model_rotator"],
+    "model_rotator": "default_off_live_NOT_RUN",
+    "migration_version": 27,
+    "next_action": "Freeze clean candidate and hand exact HEAD to coordinator for explicitly delegated UNVERIFIED branch push first, then full stable verification and independent reviews. Aggregate preview requires bounded dependency stacks and App-owned exact-head Trust CI; no merge/tag/Release is authorized. Installed/live qualification remains separate."
   },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",

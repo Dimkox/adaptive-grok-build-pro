@@ -83,6 +83,18 @@
           "receipt": "test_review"
         }
       ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Default-off model rotation requires existing run/fence/reservation authority plus a separate owner request grant; durable claim/quota/CAS/recovery survives actual PostgreSQL restart without credential/provider effects or worker self-reconciliation.",
+      "evidence": [
+        {"test": "factory/tests/test_model_rotator.py"},
+        {"test": "factory/tests/test_model_rotator_postgres.py"},
+        {"test": "factory/tests/postgres_restart_probe.py"},
+        {"receipt": "verification"},
+        {"receipt": "code_review"},
+        {"receipt": "test_review"}
+      ]
     }
   ],
   "approvals": {

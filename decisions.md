@@ -886,3 +886,7 @@ A synthetic pagination fixture with more packets than the quota must retain expl
 # 2026-09-30 — Treat local model rotators as observation boundaries
 
 When importing a model-rotation prototype, preserve deterministic selection and bounded cooldown as independently implemented behavior, but keep credentials, HTTP, home-directory settings and execution authority outside the adapter. This worked because the resulting source is testable offline, default-off and bound to the Factory tenant/fence/budget identity.
+
+### 2026-09-30 — Exercise actual capability and transaction seams before candidate freeze
+
+Real PostgreSQL integration uncovered NOINHERIT role activation, absent pgcrypto and quarantine rollback despite passing source contracts. Reusing the existing bounded capability connection, core SHA-256 and committing recovery state before delivering its rejection made authority/digest/recovery evidence executable without new dependencies or weaker permissions.
