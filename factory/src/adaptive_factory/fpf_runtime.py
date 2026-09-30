@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 import html
+import unicodedata
 from urllib.parse import urlsplit
 from typing import Iterable, Mapping
 from pathlib import PurePosixPath
@@ -251,6 +252,8 @@ def capture_delivery(selection: SelectionRevision, *, consumer_id: str, delivere
             "selection_digest": selection.selection_digest,
             "delivered_sha256": hashlib.sha256(delivered_text.encode()).hexdigest(),
             "citations": citations, "citation_digest": canonical_digest(citations),
+            "content_type": "non_executable_reference_data", "parse_policy": "none",
+            "consumer_opt_in_required": True,
             "authority_effect": "none"}
 
 
@@ -492,6 +495,11 @@ _NETWORK_COMMAND = re.compile(
     r"(?:^|\s)(?:fetch|retrieve|download|upload|connect|browse|navigate|GET|POST|PUT|PATCH)(?:\s|$)|"
     r"\b(?:requests|urllib(?:\.request)?|httpx|aiohttp)\s*\.\s*(?:get|post|put|patch|delete|request|urlopen)\s*\()",
     re.I)
+_PROCESS_LAUNCH = re.compile(
+    r"(?:\bsubprocess\b|\bos\s*\.\s*system\s*\(|\b(?:exec|eval)\s*\(|"
+    r"\binvoke-(?:webrequest|restmethod)\b|"
+    r"\bpython(?:\d+(?:\.\d+)*)?\s+-m\s+(?:http\.client|urllib(?:\.request)?|requests|httpx|aiohttp)\b|"
+    r"\b(?:curl|wget|ssh|scp|nc)(?:\.exe)?\b)", re.I)
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -500,10 +508,12 @@ def enforce_reference_boundary(text: str) -> str:
     except ContractError:
         _block("unsafe_reference")
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
-    if _UNSAFE.search(text):
+    command_view = unicodedata.normalize("NFKC", text).casefold()
+    if _UNSAFE.search(command_view):
         _block("unsafe_reference")
     command_text = re.sub(r"\b(?:do not|must not|never)\s+fetch\s+external\s+URLs?\b", "", text, flags=re.I)
-    if _NETWORK_COMMAND.search(command_text):
+    command_view = unicodedata.normalize("NFKC", command_text).casefold()
+    if _NETWORK_COMMAND.search(command_view) or _PROCESS_LAUNCH.search(command_view):
         _block("unsafe_reference")
     if _URL.search(text) and not _CITATION_DOCUMENT.fullmatch(text):
         _block("unsafe_reference")

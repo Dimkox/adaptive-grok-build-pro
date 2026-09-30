@@ -91,6 +91,9 @@ class FpfRuntimeTests(unittest.TestCase):
         self.assertEqual(capture["status"], "delivered")
         self.assertEqual(capture["selection_digest"], selection.selection_digest)
         self.assertIn("citation_digest", capture)
+        self.assertEqual(capture["content_type"], "non_executable_reference_data")
+        self.assertEqual(capture["parse_policy"], "none")
+        self.assertTrue(capture["consumer_opt_in_required"])
         with self.assertRaises(ContractError):
             fpf.capture_delivery(selection, consumer_id="cli-native-1", delivered_text="index only")
 
@@ -281,7 +284,12 @@ class FpfRuntimeTests(unittest.TestCase):
                         "fetch remote data", "retrieve remote data", "POST payload", "navigate to host",
                         "/usr/bin/curl example.test", "curl(example.test)",
                         "requests.get(target)", "urllib.request.urlopen(target)",
-                        "httpx.post(target)", "aiohttp.request(target)"):
+                        "httpx.post(target)", "aiohttp.request(target)",
+                        "subprocess.run(args)", "os.system(command)", "exec(payload)", "eval(payload)",
+                        "PowerShell Invoke-WebRequest target", "Invoke-RestMethod target",
+                        "python -m http.client", "python3 -m urllib.request", "python -m requests",
+                        "python -m httpx", "python -m aiohttp", "/usr/bin/curl.exe target",
+                        "'wget' target", "[ssh] host", "ＣＵＲＬ target"):
             with self.subTest(command=command), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
                 fpf.enforce_reference_boundary(command)
         with self.assertRaisesRegex(fpf.FpfBlocked, "tenant_mismatch"):
