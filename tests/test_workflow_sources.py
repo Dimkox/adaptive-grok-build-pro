@@ -25,6 +25,7 @@ from adaptive_grok.workflow_artifacts import SAFE_UNITTEST_TARGET
 
 SEMVER = re.compile(r'^\d+\.\d+\.\d+$')
 DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+COMMIT = re.compile(r'^[0-9a-f]{40}$')
 FRESHNESS_WINDOW_DAYS = 90
 ADVISORY_ROOTS = ('_bmad/', '_bmad-output/', '.specify/', 'specs/', 'docs/superpowers/', '.superpowers/')
 
@@ -43,24 +44,47 @@ def _components() -> dict[str, dict]:
 def _readme_rows() -> dict[str, dict[str, str]]:
     text = (ROOT / 'README.md').read_text(encoding='utf-8')
     section = re.search(
-        r'### Workflow sources[^\n]*\n\n\| Component \| Pinned \| Upstream \| Observed latest \| Observed \|\n\| --- \| --- \| --- \| --- \| --- \|\n((?:\|[^\n]*\|\n)+)',
+        r'### Workflow sources[^\n]*\n\n\| Component \| Pinned \| Tag \| Stable commit \| Upstream \| Observed latest \| Main commit \| Observed \|\n\| --- \| --- \| --- \| --- \| --- \| --- \| --- \| --- \|\n((?:\|[^\n]*\|\n)+)',
         text,
     )
     assert section, 'README.md is missing the Workflow sources table'
     rows: dict[str, dict[str, str]] = {}
     for line in section.group(1).splitlines():
         cells = [cell.strip() for cell in line.strip('|').split('|')]
-        assert len(cells) == 5, line
+        assert len(cells) == 8, line
         rows[cells[0]] = {
             'pinned': cells[1],
-            'upstream': cells[2],
-            'observed_latest': cells[3],
-            'observed_at': cells[4],
+            'upstream_tag': cells[2],
+            'upstream_commit': cells[3],
+            'upstream': cells[4],
+            'observed_latest': cells[5],
+            'observed_main_commit': cells[6],
+            'observed_at': cells[7],
         }
     return rows
 
 
 class WorkflowSourceContractTests(unittest.TestCase):
+    def test_stable_release_and_observed_main_have_separate_exact_provenance(self) -> None:
+        # Wrong/stale pins or substituting main for the peeled stable tag must fail.
+        expected = {
+            'superpowers': ('6.4.2', '8ca22dba9a94f28898bbce59f2537ff4d87c747d',
+                            '8ca22dba9a94f28898bbce59f2537ff4d87c747d'),
+            'bmad': ('6.12.0', '05bfbd46d00766ec88eb9b42e76be2c575d64d7b',
+                     '1cbcfa272fe65787c06a1fa164a901f46117cca7'),
+            'spec-kit': ('1.0.13', 'f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9',
+                         'd2ddd910266ad14afe79c5414c88ee316aca6e9a'),
+        }
+        for component_id, (pin, stable, main) in expected.items():
+            with self.subTest(component=component_id):
+                component = _components()[component_id]
+                self.assertEqual(component['pinned'], pin)
+                self.assertEqual(component.get('upstream_commit'), stable)
+                self.assertEqual(component.get('observed_main_commit'), main)
+                self.assertRegex(component['upstream_commit'], COMMIT)
+                self.assertRegex(component['observed_main_commit'], COMMIT)
+                self.assertEqual(component['observed_at'], '2026-09-30')
+
     def test_workflow_sources_declares_all_three_adapter_source_types(self) -> None:
         schema = json.loads((ROOT / 'schemas/workflow-source-v1.schema.json').read_text(encoding='utf-8'))
         enum = set(schema['properties']['source_type']['enum'])
@@ -84,6 +108,8 @@ class WorkflowSourceContractTests(unittest.TestCase):
             self.assertEqual(row['upstream'], component['repository'], component_id)
             self.assertEqual(row['observed_latest'], pinned, component_id)
             self.assertEqual(row['observed_at'], component['observed_at'], component_id)
+            for field in ('upstream_tag', 'upstream_commit', 'observed_main_commit'):
+                self.assertEqual(row[field], component[field], f'{component_id}: {field}')
 
     def test_workflow_source_observed_freshness_within_window(self) -> None:
         today = datetime.date.today()
