@@ -46,3 +46,11 @@ authoritative integrated full verifier remain coordinator-owned.
   `upstream-inventory.json`.
 - Focused repaired suite: 14 tests pass. Live providers and integrated PostgreSQL remain
   `NOT_RUN`; no verification or review receipt is claimed here.
+
+Second-review repair replaces descriptive authority with independently admitted grant facts
+and a leased/CAS state machine. Canonical wire digests are recomputed in SQL; task, run,
+attempt, repository-derived tenant, fence, live lease and reservation-derived budget digest
+are checked under row locks. Dispatch capacity is held before calls, settled cumulatively on
+completion, and held through ambiguity until explicit `settle` or `release` reconciliation.
+Focused concurrency, crash/quarantine, request-quota and canonical SQL assertions now total
+17 passing tests. PostgreSQL execution still awaits integration immediately after migration 026.

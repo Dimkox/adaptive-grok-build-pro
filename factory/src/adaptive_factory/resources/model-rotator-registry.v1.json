@@ -12,5 +12,5 @@
     {"provider_id": "openrouter", "model_id": "qwen/qwen3-coder:free", "free_claim": null, "quota_mode": "request", "enabled": true, "priority": 10},
     {"provider_id": "qwen", "model_id": "qwen3-coder-plus", "free_claim": null, "quota_mode": "token", "enabled": false, "priority": 20}
   ],
-  "policy": {"max_attempts": 2, "max_cooldown_seconds": 600, "token_quota": 1024, "per_attempt_token_limit": 256}
+  "policy": {"max_attempts": 2, "max_cooldown_seconds": 600, "token_quota": 1024, "request_quota": 20, "per_attempt_token_limit": 256}
 }

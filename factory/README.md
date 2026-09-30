@@ -100,9 +100,12 @@ Historical observation: a separately authorized `qwen-intl` / `qwen-plus` synthe
 ## Default-off model rotation
 
 `model_rotator.py` provides a closed registry and a caller-owned transport boundary.
-Before dispatch, migration 027 atomically validates the current task/run fence, live lease
-and unreleased token reservation, then claims the operation idempotently. Cooldowns and the
-next cursor survive restart; concurrent duplicate claims do not produce a second dispatch.
+Before dispatch, migration 027 recomputes the canonical request digest, derives tenant and
+budget facts from the current task/run/attempt/reservation, validates the fence and live lease,
+then leases the operation with per-tenant/registry CAS. Cooldowns and the next cursor survive
+restart; expired or ambiguous claims quarantine until explicit settle/release reconciliation.
+Capacity is held before each dispatch and settled cumulatively; evidence identifiers are
+pseudonymous digests, not anonymous data.
 OpenRouter entries use request quota mode and rotate only after a bounded eligible failure;
 Qwen/DashScope entries may use token quota mode. No credential, endpoint, prompt, body,
 header or raw provider error is accepted or stored.

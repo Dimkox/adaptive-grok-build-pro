@@ -3,11 +3,13 @@ from pathlib import Path
 import unittest
 from contextlib import redirect_stdout
 import io
+import threading
 
-from adaptive_factory.contracts import ContractError
+from adaptive_factory.contracts import ContractError, canonical_digest
 from adaptive_factory.model_rotator import (
     ModelRotator,
     InMemoryRotationStore,
+    RotationAuthorityGrant,
     ProviderRegistryV1,
     RotationBindingV1,
     TransportResult,
@@ -31,17 +33,17 @@ def registry(**policy):
             {"provider_id": "qwen", "model_id": "qwen-c", "free_claim": None, "quota_mode": "token", "enabled": True, "priority": 30},
         ],
         "policy": {"max_attempts": 3, "max_cooldown_seconds": 600,
-                   "token_quota": 1000, "per_attempt_token_limit": 200, **policy},
+                   "token_quota": 1000, "request_quota": 10, "per_attempt_token_limit": 200, **policy},
     })
 
 
 def binding(reg, **changes):
-    data = dict(schema_version=1, tenant_id="tenant-1", repository_id="owner/project",
+    data = dict(schema_version=1, tenant_id="owner/project", repository_id="owner/project",
                 task_id="task-1", run_id="run-1", attempt_id="attempt-1", fence=7,
                 budget_reservation_id="budget-1", budget_digest="a" * 64,
                 registry_digest=reg.registry_digest, operation_id="operation-1",
                 requested_provider_id="openrouter", requested_model_id="qwen/a:free",
-                remaining_token_units=600)
+                remaining_token_units=600, remaining_request_units=10)
     data.update(changes)
     return RotationBindingV1.from_dict(data)
 
@@ -49,8 +51,16 @@ def binding(reg, **changes):
 def ready_rotator(reg, bind=None, *, enabled=True, store=None):
     store = store or InMemoryRotationStore()
     if bind is not None:
-        store.authorize(bind)
+        authorize(store, bind)
     return ModelRotator(reg, store, enabled=enabled), store
+
+
+def authorize(store, bind):
+    store.authorize(RotationAuthorityGrant.from_authoritative_facts(
+        repository_id=bind.repository_id, task_id=bind.task_id, run_id=bind.run_id,
+        attempt_id=bind.attempt_id, fence=bind.fence, reservation_id=bind.budget_reservation_id,
+        budget_digest=bind.budget_digest, token_capacity=bind.remaining_token_units,
+        request_capacity=bind.remaining_request_units))
 
 
 class ModelRotatorTests(unittest.TestCase):
@@ -135,7 +145,7 @@ class ModelRotatorTests(unittest.TestCase):
             bind = binding(reg); rotator, _ = ready_rotator(reg, bind, enabled=False)
             rotator.execute(bind, lambda *args: calls.append(args), now=100)
         self.assertEqual([], calls)
-        for kwargs in ({"remaining_token_units": 199}, {"registry_digest": "f" * 64},
+        for kwargs in ({"remaining_request_units": -1}, {"registry_digest": "f" * 64},
                        {"fence": 0}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ContractError):
                 bad = binding(reg, **kwargs)
@@ -169,38 +179,39 @@ class ModelRotatorTests(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(ContractError): TransportResult(**case)
 
     def test_store_authority_idempotent_replay_and_concurrent_claim(self):
-        reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); store.authorize(bind)
+        reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); authorize(store,bind)
         rotator=ModelRotator(reg,store,enabled=True); calls=[]
         transport=lambda *a: calls.append(a) or TransportResult.success(response_digest="b"*64,input_tokens=1,output_tokens=1)
         first=rotator.execute(bind,transport,now=100); second=rotator.execute(bind,transport,now=100)
         self.assertEqual(first,second); self.assertEqual(1,len(calls))
-        ungranted=binding(reg,operation_id="operation-2")
+        ungranted=binding(reg,operation_id="operation-2",attempt_id="attempt-2")
         with self.assertRaisesRegex(ContractError,"authority_not_granted"): rotator.execute(ungranted,transport,now=100)
-        conflict=binding(reg,remaining_token_units=500); store.authorize(conflict)
+        conflict=binding(reg,remaining_token_units=500); authorize(store,conflict)
         with self.assertRaisesRegex(ContractError,"idempotency_conflict"): rotator.execute(conflict,transport,now=100)
 
-        bind2=binding(reg,operation_id="operation-3"); store.authorize(bind2)
-        store.claim(bind2,reg.registry_digest,101)
+        bind2=binding(reg,operation_id="operation-3",requested_model_id="qwen/b:free"); authorize(store,bind2)
+        requested=canonical_digest({"provider_id":"openrouter","model_id":"qwen/b:free"})
+        store.claim(bind2,reg.registry_digest,1,requested,101)
         with self.assertRaisesRegex(ContractError,"operation_already_claimed"):
-            store.claim(bind2,reg.registry_digest,101)
+            store.claim(bind2,reg.registry_digest,1,requested,101)
 
     def test_durable_cooldown_is_consumed_and_overrun_stops(self):
-        reg=registry(); store=InMemoryRotationStore(); first=binding(reg); store.authorize(first)
+        reg=registry(); store=InMemoryRotationStore(); first=binding(reg); authorize(store,first)
         rotator=ModelRotator(reg,store,enabled=True); calls=[]
         responses=iter((TransportResult.failure(429,"rate_limit",response_started=False,input_tokens=1,output_tokens=1),
                         TransportResult.success(response_digest="b"*64,input_tokens=1,output_tokens=1)))
         rotator.execute(first,lambda *a: calls.append(a) or next(responses),now=100)
-        second=binding(reg,operation_id="operation-2"); store.authorize(second); calls.clear()
+        second=binding(reg,operation_id="operation-2",requested_provider_id="qwen",requested_model_id="qwen-c"); authorize(store,second); calls.clear()
         rotator.execute(second,lambda *a: calls.append(a) or TransportResult.success(response_digest="c"*64,input_tokens=1,output_tokens=1),now=101)
         self.assertNotEqual("qwen/a:free",calls[0][1])
-        third=binding(reg,operation_id="operation-3"); store.authorize(third)
-        over=rotator.execute(third,lambda *a: TransportResult.success(response_digest="d"*64,input_tokens=201,output_tokens=0),now=102)
+        token_store=InMemoryRotationStore(); third=binding(reg,operation_id="operation-3",requested_provider_id="qwen",requested_model_id="qwen-c"); authorize(token_store,third)
+        over=ModelRotator(reg,token_store,enabled=True).execute(third,lambda *a: TransportResult.success(response_digest="d"*64,input_tokens=201,output_tokens=0),now=102)
         self.assertEqual("needs_human",over["status"]); self.assertTrue(over["attempts"][0]["budget_overrun"])
 
     def test_all_authenticated_cooldowns_produce_no_dispatch(self):
-        reg=registry(); store=InMemoryRotationStore(); first=binding(reg,remaining_token_units=1000); store.authorize(first)
+        reg=registry(); store=InMemoryRotationStore(); first=binding(reg,remaining_token_units=1000); authorize(store,first)
         rotator=ModelRotator(reg,store,enabled=True); rotator.execute(first,lambda *a: TransportResult.failure(503,"unavailable",response_started=False,input_tokens=1,output_tokens=1),now=100)
-        second=binding(reg,operation_id="operation-2",remaining_token_units=1000); store.authorize(second); calls=[]
+        second=binding(reg,operation_id="operation-2",remaining_token_units=1000,requested_provider_id="openrouter",requested_model_id="qwen/a:free"); authorize(store,second); calls=[]
         result=rotator.execute(second,lambda *a: calls.append(a),now=101)
         self.assertEqual([],calls); self.assertEqual("exhausted",result["status"])
 
@@ -213,10 +224,39 @@ class ModelRotatorTests(unittest.TestCase):
 
     def test_migration_027_has_transactional_authority_and_no_payload_columns(self):
         sql=(Path(__file__).parents[1]/"src/adaptive_factory/resources/027_model_rotator_state.sql").read_text()
-        for required in ("pg_advisory_xact_lock","FOR UPDATE","budget_reservations","current_fence","lease_expires_at","operation_already_claimed"):
+        for required in ("pg_advisory_xact_lock","FOR UPDATE","budget_reservations","current_fence","lease_expires_at","operation_already_claimed","p_wire","state_version","claim_expires_at","quarantined","held_token_units","settled_token_units","model_rotator_reconcile_v1"):
             self.assertIn(required,sql)
         for forbidden in ("authorization text","api_key","prompt text","response_body"):
             self.assertNotIn(forbidden,sql.lower())
+
+    def test_real_threads_serialize_one_tenant_registry_claim(self):
+        reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); authorize(store,bind); rotator=ModelRotator(reg,store,enabled=True)
+        entered=threading.Event(); release=threading.Event(); results=[]; errors=[]
+        def transport(*args): entered.set(); release.wait(2); return TransportResult.success(response_digest="e"*64,input_tokens=1,output_tokens=1)
+        first=threading.Thread(target=lambda: results.append(rotator.execute(bind,transport,now=100))); first.start(); self.assertTrue(entered.wait(1))
+        second=threading.Thread(target=lambda: self._capture(errors,lambda: rotator.execute(bind,transport,now=100))); second.start(); second.join(1); release.set(); first.join(2)
+        self.assertEqual(1,len(results)); self.assertEqual(1,len(errors)); self.assertIn("operation_already_claimed",str(errors[0]))
+
+    @staticmethod
+    def _capture(errors,call):
+        try: call()
+        except Exception as exc: errors.append(exc)
+
+    def test_transport_crash_is_durable_quarantine_until_reconciled(self):
+        reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); authorize(store,bind); rotator=ModelRotator(reg,store,enabled=True)
+        result=rotator.execute(bind,lambda *a: (_ for _ in ()).throw(OSError("sentinel-secret-body")),now=100)
+        self.assertEqual("needs_human",result["status"]); self.assertNotIn("sentinel",json.dumps(result))
+        next_binding=binding(reg,operation_id="operation-2"); authorize(store,next_binding)
+        with self.assertRaisesRegex(ContractError,"reconciliation_required"): rotator.execute(next_binding,lambda *a: None,now=101)
+        store.reconcile(result["binding"]["tenant_digest"],reg.registry_digest)
+
+    def test_request_quota_not_token_threshold_and_is_one_per_dispatch(self):
+        reg=registry(); bind=binding(reg,remaining_token_units=0,remaining_request_units=1); store=InMemoryRotationStore(); authorize(store,bind)
+        result=ModelRotator(reg,store,enabled=True).execute(bind,lambda *a: TransportResult.success(response_digest="f"*64,input_tokens=999,output_tokens=999),now=100)
+        self.assertEqual("selected",result["status"]); self.assertFalse(result["attempts"][0]["budget_overrun"])
+        store2=InMemoryRotationStore(); bind2=binding(reg,operation_id="operation-2",remaining_request_units=1); authorize(store2,bind2); calls=[]
+        stopped=ModelRotator(reg,store2,enabled=True).execute(bind2,lambda *a: calls.append(a) or TransportResult.failure(429,"rate_limit",response_started=False,input_tokens=1,output_tokens=1),now=100)
+        self.assertEqual(1,len(calls)); self.assertEqual("stopped",stopped["status"])
 
     def test_operator_surface_is_read_only_and_default_off(self):
         from adaptive_factory.model_rotator_cli import main
