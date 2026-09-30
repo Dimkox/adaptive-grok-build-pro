@@ -14,7 +14,7 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 The [Factory v1.5 fast Linux candidate](engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/brief.md)
 adds bounded native context, append-only factual decisions (migration 023), durable
-unverified-artifact admission (migration 024), pre-model result envelopes,
+unverified-artifact admission (migration 024), durable external BB ownership (migration 025), pre-model result envelopes,
 observation-only predictor/explainer execution and an optional authenticated
 [qualification API](factory/contracts/openapi/factory-v15.v1.json). The [operator notes](factory/README.md#factory-v15-fast-linux-candidate)
 describe composition and rollback. U4/macOS is owner-excluded; BB stays default-off

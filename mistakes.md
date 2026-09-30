@@ -1516,3 +1516,7 @@ I invoked `unittest discover -s factory/tests`, which imported package-relative 
 # 2026-09-30 — Run local lint before the long route verifier
 
 The U6 contour started the full verifier before running its route-wide ruff command, so a formatting failure was discovered only after the long coverage/PostgreSQL phases. Root cause: focused behavioral checks were treated as sufficient preflight; future long verifier runs must be preceded by diff-check, change-spec validation and the selected static checks.
+
+### 2026-09-30 — Bound subprocess descendants before reclaiming their database
+
+The expanded PostgreSQL suite exceeded its inherited480s timeout, and terminating only its uv parent left the unittest grandchild executing against reclaimed PostgreSQL/certificate state. An owned process-group timeout regression now proves descendant termination before cleanup, with calibrated600s suite and1500s outer bounds; the first RED fixture also lacked an os import in its cleanup, which was corrected before repeating it. Combining root and Factory pytest paths caused package-name collection collisions, so their focused invocations remain separate.

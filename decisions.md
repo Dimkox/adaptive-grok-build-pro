@@ -870,3 +870,7 @@ Use immutable content-addressed package objects plus staged generation directori
 ### 2026-09-30 — Bind generic source mechanisms without claiming live BB acceptance
 
 The BB lifecycle/comparator reuse the admitted installer and immutable paired runner, while an explicit synthetic-only switch and native default prevent local fixture success from activating an unqualified upstream daemon. Durable generated-unverified quota is separate from lease capacity and only independent semantic/owner disposition evidence releases it; this preserved crash/reconnect accounting without widening the existing single-writer authority.
+
+### 2026-09-30 — Preserve aggregate preview, deliver bounded dependency contours
+
+The integrated source preview exceeds unchanged architecture delta budgets, so delivery must use separately measured dependency-stacked routes rather than expanding the budgets. BB external identity is claimed durably before transport and released only with owner-retained observed-stop and export evidence; concurrent/reconnect tests prevent a digest-only contract from hiding cross-task ownership collisions.

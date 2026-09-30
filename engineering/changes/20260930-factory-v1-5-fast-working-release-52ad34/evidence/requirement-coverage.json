@@ -3498,10 +3498,18 @@
       "title": "Жизненный цикл, lease и подтверждённая остановка",
       "status": "implemented_tested",
       "source_paths": [
+        "factory/src/adaptive_factory/resources/025_bb_external_identity.sql",
+        "factory/src/adaptive_factory/store.py",
         "factory/src/adaptive_factory/bb_adapter.py",
         "factory/src/adaptive_factory/bb_contracts.py"
       ],
       "test_evidence": [
+        {
+          "path": "factory/tests/test_postgres_integration.py",
+          "command": "focused disposable PostgreSQL: PostgresFactoryTests.test_bb_external_identity_concurrent_claim_reconnect_and_takeover_denial",
+          "scope": "real PostgreSQL concurrent claim, reconnect, cross-task conflict, owner-only observed-stop/export release and quarantine; not live BB",
+          "execution_status": "passed_focused_pending_final_stable_verification"
+        },
         {
           "path": "factory/tests/test_bb_adapter.py",
           "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_adapter",
@@ -4013,10 +4021,18 @@
       "title": "Чужая идентичность",
       "status": "implemented_tested",
       "source_paths": [
+        "factory/src/adaptive_factory/resources/025_bb_external_identity.sql",
+        "factory/src/adaptive_factory/store.py",
         "factory/src/adaptive_factory/bb_adapter.py",
         "factory/src/adaptive_factory/bb_contracts.py"
       ],
       "test_evidence": [
+        {
+          "path": "factory/tests/test_postgres_integration.py",
+          "command": "focused disposable PostgreSQL: PostgresFactoryTests.test_bb_external_identity_concurrent_claim_reconnect_and_takeover_denial",
+          "scope": "real PostgreSQL concurrent claim, reconnect, cross-task conflict, owner-only observed-stop/export release and quarantine; not live BB",
+          "execution_status": "passed_focused_pending_final_stable_verification"
+        },
         {
           "path": "factory/tests/test_bb_adapter.py",
           "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_adapter",
