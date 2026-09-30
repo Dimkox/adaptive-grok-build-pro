@@ -95,6 +95,7 @@ class FactorySettings:
     # env-landing composition change, so positional construction stays compatible.
     landing_state_path: Path | None = None
     landing_live_enabled: bool = False
+    v15_evidence_root: Path | None = None
 
     def validate_landing(self) -> None:
         if type(self.landing_live_enabled) is not bool or self.landing_provider not in LANDING_PROVIDERS:
@@ -192,6 +193,7 @@ class FactorySettings:
             **landing_paths,
             landing_live_enabled=landing_flag == "true",
             landing_provider=landing_provider,
+            v15_evidence_root=Path(os.environ['FACTORY_V15_EVIDENCE_ROOT']) if os.environ.get('FACTORY_V15_EVIDENCE_ROOT') else None,
         )
         result.validate_landing()
         return result

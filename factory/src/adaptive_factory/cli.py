@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     intake.add_argument("file")
     show = sub.add_parser("show")
     show.add_argument("task_id")
+    qualification = sub.add_parser("qualification")
+    qualification.add_argument("task_id", type=lambda value: str(uuid.UUID(value)))
     listing = sub.add_parser("list")
     listing.add_argument("repository_id")
     runs = sub.add_parser("runs")
@@ -95,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
             body = _load(args.file)
             headers["Idempotency-Key"] = body.get("request_id", key)
             response = client.post("/v1/tasks", headers=headers, json=body)
+        elif args.command == "qualification":
+            response = client.get(f"/v1.5/tasks/{args.task_id}/qualification", headers=headers)
         elif args.command == "show":
             response = client.get(f"/v1/tasks/{args.task_id}", headers=headers)
         elif args.command == "list":

@@ -525,7 +525,8 @@ class ServerTests(unittest.TestCase):
                 "landing_output_path",
             ],
         )
-        self.assertEqual(fields[-len(landing_fields):], tuple(landing_fields))
+        self.assertEqual(fields[-len(landing_fields)-1:-1], tuple(landing_fields))
+        self.assertEqual(fields[-1], 'v15_evidence_root')
 
         with patch.dict(
             os.environ,

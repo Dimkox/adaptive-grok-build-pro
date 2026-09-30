@@ -5,6 +5,58 @@ from .decision_contracts import DecisionRecordV1, summarize_cost
 from .prediction_contracts import PredictionObservationV1
 from .result_contracts import ToolResultEnvelopeV1, SemanticExecutionEvidenceV2
 from .v15_contracts import FrozenWire, closed, identity, digest, sha, sequence
+import json
+import os
+from pathlib import Path
+import stat
+from uuid import UUID
+from .settings import SettingsError, read_private_file
+
+
+class FileQualificationEvidenceReader:
+    """Bounded private sidecar reader; never publishes or modifies task authority."""
+    def __init__(self, root):
+        if not isinstance(root, Path) or not root.is_absolute() or '..' in root.parts or root.anchor == '//':
+            raise SettingsError('evidence directory must be absolute and normalized')
+        metadata = root.lstat()
+        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.geteuid() or stat.S_IMODE(metadata.st_mode) & 0o022:
+            raise SettingsError('evidence directory must be owned and non-writable by others')
+        self.root = root
+
+    def __call__(self, task):
+        try:
+            if str(UUID(task.task_id)) != task.task_id: raise ValueError()
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise ContractError('invalid_evidence_task_id') from exc
+        try:
+            raw = read_private_file(self.root / (task.task_id + '.json'), 1_048_576)
+        except SettingsError as exc:
+            if isinstance(exc.__cause__, FileNotFoundError): return {}
+            raise
+        def object_pairs(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result: raise ContractError('duplicate_evidence_key')
+                result[key] = value
+            return result
+        try:
+            bundle = json.loads(raw, object_pairs_hook=object_pairs)
+        except (ValueError, UnicodeError, RecursionError) as exc:
+            raise ContractError('invalid_evidence_json') from exc
+        closed(bundle, ('schema_version', 'repository_id', 'task_id', 'evidence'))
+        if type(bundle['schema_version']) is not int or bundle['schema_version'] != 1:
+            raise ContractError('invalid_evidence_version')
+        if (bundle['repository_id'], bundle['task_id']) != (task.repository_id, task.task_id):
+            raise ContractError('evidence_task_binding_mismatch')
+        evidence = bundle['evidence']
+        if not isinstance(evidence, dict) or set(evidence) - {'context','decisions','result','semantic','technical','prediction','cost_entries','expected_usage_ids'}:
+            raise ContractError('unknown_qualification_evidence')
+        evidence = dict(evidence)
+        for key, parser in (('context', ContextManifestV1), ('result', ToolResultEnvelopeV1), ('prediction', PredictionObservationV1)):
+            if evidence.get(key) is not None: evidence[key] = parser.from_dict(evidence[key])
+        for key, parser in (('decisions', DecisionRecordV1), ('semantic', SemanticExecutionEvidenceV2)):
+            if key in evidence: evidence[key] = [parser.from_dict(item) for item in sequence(evidence[key])]
+        return evidence
 
 
 class FactoryV15QualificationV1(FrozenWire):

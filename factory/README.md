@@ -121,3 +121,25 @@ The synthetic tests prove local composition, not installed/live factory acceptan
 Rollback omits the optional composition, retains native v1/v2 behavior and preserves
 decision records for forward recovery. Factory PostgreSQL, L5 SQLite and external
 Trust CI retain separate storage and authority.
+# File-backed v1.5 qualification
+
+The existing server enables the read-only qualification route only when
+`FACTORY_V15_EVIDENCE_ROOT` names an absolute, owned directory that others cannot write.
+The default is unset: no new route, evidence reads, BB process, or external call.
+Place `<task-uuid>.json` in that directory as an owned regular mode-0600 file. Symlink
+ancestry/files, files larger than 1 MiB, duplicate JSON keys, unknown fields, and mismatched
+task/repository identities fail closed. A missing file reports `not_evaluated`.
+
+The closed file envelope is `{"schema_version":1,"repository_id":"owner/repo",
+"task_id":"<uuid>","evidence":{...}}`. Evidence uses the checked-in v1.5 context,
+decision, result, semantic and prediction wire contracts; `technical` contains
+`candidate_sha`, `result`, `report_digest`. Optional `cost_entries` and
+`expected_usage_ids` preserve unknown/incomplete accounting rather than asserting free work.
+Readers authenticate through the existing Unix-socket control plane:
+
+```sh
+adaptive-factory --token-file /run/adaptive-factory/reader.token qualification TASK_UUID
+```
+
+This surface offers local evidence for human review. It cannot create a Trust CI check,
+signed approval, merge, deployment, model qualification, or accepted-task count.

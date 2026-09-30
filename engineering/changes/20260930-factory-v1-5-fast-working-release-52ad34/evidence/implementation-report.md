@@ -4,6 +4,8 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 
 ## Task ledger
 
+- Runnable qualification: `PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_qualification_files` RED: 4 missing reader/config/CLI errors; GREEN with qualification/server suites: 25 passed. Explicit default-off directory configuration composes the existing authenticated service with a bounded, mode-0600, no-follow reader and normal CLI command. Duplicate keys, traversal, symlinks, repository mismatch and public file permissions reject. The initial serial full verifier was cancelled (exit 143) before completion to add this required runnable path; it is not a pass.
+
 - Task 1: `python3 -m unittest tests.test_factory_v15_bundle -v` RED: bundle missing (1 failure); GREEN: 1 passed. Commit 5e28636e. Spec and BB bytes match exact owner hashes; U4 excluded, optional live qualification not run.
 - Task 2: `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_context_contracts -v` RED: context contract missing (3 failures); GREEN with existing contract suite: 12 passed. Context pins, source content, selection reasons and rules are canonical and bounded. No filesystem/network read or authority grant occurs.
 

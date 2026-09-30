@@ -188,8 +188,7 @@ def build_app(
             )
             if owned_landing is not None:
                 landing_service = owned_landing.service
-        app = create_app(
-            FactoryService(
+        service = FactoryService(
                 store,
                 execution_registry=execution_registry if settings.execution_enabled else None,
                 artifact_broker=artifact_broker if settings.execution_enabled else None,
@@ -198,10 +197,17 @@ def build_app(
                 semantic_store=semantic_store,
                 semantic_validator_store=semantic_validator_store,
                 semantic_adjudicator_store=semantic_adjudicator_store,
-            ),
+            )
+        qualification_service = None
+        if settings.v15_evidence_root is not None:
+            from .qualification import FactoryV15QualificationService, FileQualificationEvidenceReader
+            qualification_service = FactoryV15QualificationService(service, FileQualificationEvidenceReader(settings.v15_evidence_root))
+        app = create_app(
+            service,
             Authenticator(load_actors(settings.actors_file)),
             execution_enabled=settings.execution_enabled,
             landing_service=landing_service,
+            qualification_service=qualification_service,
         )
         if owned_landing is not None:
             previous_lifespan = app.router.lifespan_context
