@@ -472,8 +472,8 @@ def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
 _UNSAFE = re.compile(r"(?:\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)", re.I)
 _URL_TOKEN = r"https?://[^\s]+(?<![.,!?;:)])"
 _URL = re.compile(_URL_TOKEN, re.I)
-_CLAUSE_BOUNDARY = re.compile(r"[.!?;\n]")
-_INERT_CITATION = re.compile(rf"\s*(?:Citation|Reference)\s*:\s*{_URL_TOKEN}\s*", re.I)
+_CITATION_DOCUMENT = re.compile(
+    rf"\s*(?:(?:Citation|Reference)\s*:\s*{_URL_TOKEN}\s*[.!?;]?\s*)+\Z", re.I)
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -484,14 +484,8 @@ def enforce_reference_boundary(text: str) -> str:
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
     if _UNSAFE.search(text):
         _block("unsafe_reference")
-    for match in _URL.finditer(text):
-        before = list(_CLAUSE_BOUNDARY.finditer(text, 0, match.start()))
-        clause_start = before[-1].end() if before else 0
-        after = _CLAUSE_BOUNDARY.search(text, match.end())
-        clause_end = after.start() if after else len(text)
-        clause = text[clause_start:clause_end]
-        if not _INERT_CITATION.fullmatch(clause):
-            _block("unsafe_reference")
+    if _URL.search(text) and not _CITATION_DOCUMENT.fullmatch(text):
+        _block("unsafe_reference")
     return text
 
 
