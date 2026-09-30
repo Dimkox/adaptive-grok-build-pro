@@ -156,3 +156,26 @@
 - [ ] Add failing tests for default-off behavior, identity ownership, idempotency-key conflicts, command/ack/effect separation, unknown stop outcome, finite budgets, and `not_run` qualification.
 - [ ] Implement only the thin strict contract and native fallback; do not expose raw unauthenticated BB API, add a service, or claim live support.
 - [ ] Bind BB-01 into the v1.5 bundle/map/manifest and qualification summary; run focused tests and commit.
+## 2026-09-30 approved scope expansion and integration completion
+
+The owner expanded the initial minimum-slice plan below to every feasible source-level
+v1.5/BB-01 requirement. Historical task wording is retained as the initial design,
+not a current authorization to defer deterministic source gaps. U4 remains excluded;
+only real live provider/host/data/human/external gates remain NOT_RUN.
+
+- [x] Integrate the exact independently reviewed predictor, immutable paired evaluation,
+  FPF, VibeVM, generic Linux installer, consolidated workflow and upstream tails.
+- [x] Add normal private-file qualification configuration/CLI composition.
+- [x] Deliver durable BB identity/idempotency/reconcile/accounting/events/tree control,
+  workflows and pinned discovery/recovery contracts. Default native; no live BB activation.
+- [x] Bind BB payload/comparator to the generic installer and immutable paired runner;
+  test snapshot-byte revalidation, health-gated rollback and data-preserving removal.
+- [x] Implement F07 migration024 durable per-repository/profile max_unverified_inflight:
+  bounded owner configuration, before-writer admission, generated retention after lease
+  release/reconnect, independent candidate verification or owner disposition receipts.
+- [x] Preserve exact admitted TZ bytes and provenance hashes; use exact-path whitespace
+  exemption, never rewrite source documents to satisfy lint.
+- [x] Map all194 F/AC/BB IDs uniquely in machine-readable source coverage, without
+  substituting local suite references for exact-profile or human acceptance.
+- [ ] Run stable full verifier and controller-dispatched independent route reviews.
+- [ ] Prepare source-candidate handoff; PR/Trust CI/publication remain separately gated.

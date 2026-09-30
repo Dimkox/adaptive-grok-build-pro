@@ -10,6 +10,12 @@
         },
         {
           "test": "factory/tests/test_decision_contracts.py"
+        },
+        {
+          "test": "factory/tests/test_unverified_capacity.py"
+        },
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
         }
       ],
       "id": "AC-001",
@@ -28,7 +34,7 @@
         }
       ],
       "id": "AC-002",
-      "statement": "Tool results are sanitized before model reuse and qualification distinguishes implemented core, deferred ML, owner-excluded Apple, inactive M8, and pending external trust."
+      "statement": "Tool results are sanitized before model reuse and qualification distinguishes implemented observation-only prediction, owner-excluded Apple, inactive M8 and pending external trust."
     },
     {
       "evidence": [
@@ -37,10 +43,46 @@
         },
         {
           "test": "factory/tests/test_prediction_contracts.py"
+        },
+        {
+          "test": "factory/tests/test_prediction_runtime.py"
         }
       ],
       "id": "AC-003",
       "statement": "Prediction artifacts remain observation-only, report not_qualified without suitable data, and cannot alter routing, budgets, permissions, checks, or M8."
+    },
+    {
+      "id": "AC-004",
+      "statement": "All194 original F/AC/BB requirements have unique honest source coverage, reviewed source contours compile/run locally, BB recovery/comparator reuse admitted generic boundaries, and local results never imply installed/live acceptance.",
+      "evidence": [
+        {
+          "test": "tests/test_factory_v15_coverage.py"
+        },
+        {
+          "test": "factory/tests/test_bb_integration.py"
+        },
+        {
+          "test": "factory/tests/test_behavior_qualification.py"
+        },
+        {
+          "test": "factory/tests/test_fpf_runtime.py"
+        },
+        {
+          "test": "factory/tests/test_vibevm_runtime.py"
+        },
+        {
+          "test": "factory/tests/test_runtime_installer.py"
+        },
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
     }
   ],
   "approvals": {
@@ -58,7 +100,8 @@
       "factory/contracts/jsonschema/prediction-explanation.v1.schema.json",
       "factory/contracts/jsonschema/factory-v15-qualification.v1.schema.json",
       "factory/contracts/jsonschema/bb-backend-profile.v1.schema.json",
-      "factory/contracts/jsonschema/bb-lifecycle-observation.v1.schema.json"
+      "factory/contracts/jsonschema/bb-lifecycle-observation.v1.schema.json",
+      "factory/contracts/jsonschema/vibevm-generation.v1.schema.json"
     ],
     "openapi": [
       "factory/contracts/openapi/factory-v15.v1.json"
@@ -91,7 +134,7 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Реализовать код фабрики: добавить минимально рабочие U0-U3 и U5-U7 по FACTORY_UNIFIED_UPGRADE_TZ v1.5, исключить U4 macOS решением владельца, добавить версионированные API и event contracts с тестами",
+    "statement": "Implement all feasible source-level Factory upgrade v1.5 and BB-01 contracts/behaviors, integrate reviewed prediction/paired-evaluation/FPF/VibeVM/installer contours, exclude U4 by owner, and retain default-off/native fallback and external authority boundaries.",
     "success_metric": "factory_v15_fast_release_gate",
     "target": "all_new_contract_tests_and_route_verification_reviews_pass_with_u4_excluded"
   },

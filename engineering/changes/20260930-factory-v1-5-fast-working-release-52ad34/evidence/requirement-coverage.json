@@ -2,7 +2,7 @@
   "schema_version": 1,
   "document_version": "1.5",
   "route_id": "52ad342010b3",
-  "coverage_basis_commit": "9e02a8e4",
+  "coverage_basis_commit": "917e235d",
   "spec_sha256": "9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9",
   "bb_spec_sha256": "4e18c7db0f82588d2677db6bb551295a2372da3c83a0294c0cdaf57eeab2a774",
   "authority_effect": "none",
@@ -11,7 +11,7 @@
     "All 194 original items are retained; source implementation, test evidence, runtime qualification, enabled status and human acceptance are distinct.",
     "Pending integration is an unresolved source edge, never external NOT_RUN.",
     "Suite references are scoped evidence pointers, not exact-case/live acceptance claims. Final stable-tree verification and independent reviews are still required.",
-    "BB-R16 payload lifecycle and BB-R17 native comparator are explicit ports awaiting sibling binding."
+    "All source-level pending contours are integrated and bound; no deterministic source gap is represented as external NOT_RUN. All acceptance_status fields remain not_evaluated until exact-profile/human gates, not local suite inference."
   ],
   "items": [
     {
@@ -157,20 +157,28 @@
     {
       "id": "F07",
       "title": "Очередь непроверенной работы — S2, S3",
-      "status": "source_gap",
+      "status": "implemented_tested",
       "source_paths": [
+        "factory/src/adaptive_factory/resources/024_unverified_capacity.sql",
+        "factory/src/adaptive_factory/admin.py",
         "factory/src/adaptive_factory/store.py"
       ],
       "test_evidence": [
         {
-          "path": "factory/tests/test_postgres_integration.py",
-          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_postgres_integration",
+          "path": "factory/tests/test_unverified_capacity.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_unverified_capacity",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_execution_persistence_postgres.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_execution_persistence_postgres",
           "scope": "source-contract regression suite; not exact-profile runtime acceptance",
           "execution_status": "pending_final_stable_verification"
         }
       ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Existing durable capacity/lease accounting is reusable, but no configurable max_unverified_inflight source behavior or test that retains generated-unverified slots after release is present in this tree. This deterministic source gap must be implemented, not external NOT_RUN.",
+      "rationale": "Durable per-repository/profile quota reserves before writer execution and survives lease completion/reconnect. Independent exact-candidate semantic pass or owner-only immutable quarantine/expiry receipt releases it. Default32, bounded1..64; operator configuration is not worker-writable. Focused real-PG quota tests passed; full stable verification remains pending.",
       "integration_contour": null,
       "external_gate": null
     },
@@ -285,22 +293,42 @@
     {
       "id": "F12",
       "title": "Минимальный пилот прогнозирования — S4",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/prediction_runtime.py",
+        "factory/src/adaptive_factory/prediction_contracts.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_prediction_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_prediction_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "predictor",
       "external_gate": null
     },
     {
       "id": "F13",
       "title": "SHAP только для объяснения прогноза — S4",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/prediction_runtime.py",
+        "factory/src/adaptive_factory/prediction_contracts.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_prediction_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_prediction_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "predictor",
       "external_gate": null
     },
@@ -485,11 +513,20 @@
     {
       "id": "F24",
       "title": "Измерение пользы без потери предметной правильности — S6",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -516,11 +553,20 @@
     {
       "id": "F26",
       "title": "Повторяемая проверка поведения перед обновлением агента — S7",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -1804,22 +1850,40 @@
     {
       "id": "AC51",
       "title": "Карточка A получает документ B; 256 точек принадлежат другой кривой.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC52",
       "title": "Unknown заменён нулём или выполнено неверное преобразование единиц.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -1907,22 +1971,40 @@
     {
       "id": "AC56",
       "title": "Парный прогон 12 заранее закреплённых сценариев.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC57",
       "title": "Новая подача дешевле, но пропустила один обязательный инвариант.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -2136,11 +2218,20 @@
     {
       "id": "AC68",
       "title": "Смена model/prompt/context/tools/result-policy/schema против доказанной doc typo; impact неизвестен.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -2181,66 +2272,120 @@
     {
       "id": "AC70",
       "title": "Незаметно изменены corpus, inputs, oracle, thresholds или общие условия.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC71",
       "title": "Кандидат пытается обновить baseline/expected results своим выходом.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC72",
       "title": "Исходного baseline нет.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC73",
       "title": "Required case не исполнен либо завершился infra failure.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC74",
       "title": "Повторы/допуски заранее не заданы, бюджет исчерпан либо цена/confidence неизвестны.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC75",
       "title": "Запускается набор F24 через новый механизм.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -2281,11 +2426,20 @@
     {
       "id": "AC77",
       "title": "Baseline provider недоступен или model identity дрейфовала.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness",
       "external_gate": null
     },
@@ -2462,121 +2616,220 @@
     {
       "id": "AC83",
       "title": "Транзитивный цикл, несовместимые версии или неоднозначный override при подготовке пакетов.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC84",
       "title": "Tag/mirror/cache возвращает другие bytes для frozen package identity.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC85",
       "title": "Воспроизведение в чистой среде без сети и глобального cache из разрешённого сохранённого snapshot; затем удалён обязательный пакет.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC86",
       "title": "Доступная cached версия отозвана либо одинаковые bytes пришли из неразрешённого origin.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC87",
       "title": "Повторная установка/обновление managed boot block; собственные инструкции, дубликаты/повреждённые маркеры и конфликт порядка.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC88",
       "title": "Меняются часы/session ID; отдельно — backend/flags/local dirty specs/условие включения при том же lock.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC89",
       "title": "Пакет содержит lifecycle hook, traversal/symlink escape, XML external entity или превышает unpack bounds.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC90",
       "title": "Импортированная rule URI сломана/сменила revision; scanner не поддерживает язык; есть только relation verifies.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC91",
       "title": "Crash или конкурентное обновление между lock, boot и bindings; затем rollback.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC92",
       "title": "Другой tenant угадывает package/cache key либо меняет общие bytes.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
     {
       "id": "AC93",
       "title": "VibeVM отсутствует/не прошёл qualification; экспорт и переход на native путь.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/vibevm_runtime.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_vibevm_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_vibevm_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "vibevm",
       "external_gate": null
     },
@@ -2594,209 +2847,513 @@
     {
       "id": "AC95",
       "title": "FPF установлен, но micro-задача не имеет относящегося к нему вопроса; затем возникает обоснованная потребность.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC96",
       "title": "Выбранный паттерн зависит от определения/исключения; бюджет не позволяет загрузить необходимую полноту.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC97",
       "title": "Большой каталог и история tools заполняют окно модели; часть usage недоступна.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC98",
       "title": "spec URI неоднозначен/ведёт на отсутствующую цель; семантические ссылки образуют цикл.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC99",
       "title": "Есть индекс/файл, но реальному CLI не передано тело нужного паттерна; затем выполнено корректное progressive чтение.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC100",
       "title": "В Markdown→XML/выдержке потеряны отрицание, условие, строка таблицы, число или значимая связь.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC101",
       "title": "Одинаковый source/generator запускается дважды; затем меняется исходный паттерн.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC102",
       "title": "FPF-чек-лист и найденный тест утверждают готовность, но тест не запускался либо относится к другому объекту/SHA/profile.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC103",
       "title": "После решения изменилось существенное допущение; отдельно обновилась неиспользуемая необязательная справка.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC104",
       "title": "Handoff и краткий отчёт скрывают неопределённость, исключение или меняют «планируется» на «сделано».",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC105",
       "title": "Паттерн FPF предлагает новое обязательное правило; затем ранее активированную проектную норму пытаются убрать отключением FPF.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC106",
       "title": "Настоящий минимальный Core/DPF-срез использует формат или progressive lookup, не поддержанный точной версией нашего adapter/CLI.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC107",
       "title": "После успешной последовательности FPF-чтений недоступны registry, upstream и глобальный cache.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC108",
       "title": "FPF-текст, ошибка loader либо ref просит секрет, внешний fetch, MCP/hook или смену grants.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC109",
       "title": "A/B/C запускаются на разных задачах/версиях FPF/oracle либо C меняет вместе с backend модель и нормы.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC110",
       "title": "Экономия рассчитана без сборки пакетов, динамических чтений, reviewer/retries или при несопоставимых cache modes.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC111",
       "title": "FPF/VibeVM даёт более короткий или дешёвый ответ, но теряет предметное условие/доказательство; либо пользы не найдено.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC112",
       "title": "Вышла новая версия FPF/DPF/VibeVM или изменился selector/generator/parser/значимый delivery profile.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
     {
       "id": "AC113",
       "title": "FPF-пилот не прошёл либо VibeVM отключён; выполняется native recovery.",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_fpf_runtime.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_fpf_runtime",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "fpf-and-qualification-harness",
       "external_gate": null
     },
@@ -3250,22 +3807,55 @@
     {
       "id": "BB-R16",
       "title": "Закреплённые версии и обратимость",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/runtime/setup_manager.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_runtime_installer.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_runtime_installer",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "installer-payload-lifecycle-binding",
       "external_gate": null
     },
     {
       "id": "BB-R17",
       "title": "Сквозная проверка и измеренная польза",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness-bb-comparator-binding",
       "external_gate": null
     },
@@ -4159,11 +4749,28 @@
     {
       "id": "BB-AC30",
       "title": "Удаление окружения",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/runtime/setup_manager.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_runtime_installer.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_runtime_installer",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "installer-payload-lifecycle-binding",
       "external_gate": null
     },
@@ -4204,44 +4811,111 @@
     {
       "id": "BB-AC32",
       "title": "Откат после изменения данных",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/runtime/setup_manager.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_runtime_installer.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_runtime_installer",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "installer-payload-lifecycle-binding",
       "external_gate": null
     },
     {
       "id": "BB-AC33",
       "title": "Подмена и автообновление",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/runtime/setup_manager.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_runtime_installer.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_runtime_installer",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "installer-payload-lifecycle-binding",
       "external_gate": null
     },
     {
       "id": "BB-AC34",
       "title": "Сравнение с native",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/behavior_qualification.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_behavior_qualification.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_behavior_qualification",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "qualification-harness-bb-comparator-binding",
       "external_gate": null
     },
     {
       "id": "BB-AC35",
       "title": "Отключение backend",
-      "status": "implemented_pending_integration",
-      "source_paths": [],
-      "test_evidence": [],
+      "status": "implemented_tested",
+      "source_paths": [
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/runtime/setup_manager.py"
+      ],
+      "test_evidence": [
+        {
+          "path": "factory/tests/test_bb_integration.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_bb_integration",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        },
+        {
+          "path": "factory/tests/test_runtime_installer.py",
+          "command": "PYTHONPATH=factory/src:. python3 -m unittest factory.tests.test_runtime_installer",
+          "scope": "source-contract regression suite; not exact-profile runtime acceptance",
+          "execution_status": "pending_final_stable_verification"
+        }
+      ],
       "acceptance_status": "not_evaluated",
-      "rationale": "Source-level contour is independently implemented or being finished, but its exact reviewed tail and integration binding are not yet in this tree. This is not external NOT_RUN and does not close acceptance.",
+      "rationale": "Reviewed source contour and deterministic integration binding are now in this tree. Tests cover local source behavior, not installed/live profile acceptance; external qualification remains separate.",
       "integration_contour": "installer-payload-lifecycle-binding",
       "external_gate": null
     },

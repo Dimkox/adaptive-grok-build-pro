@@ -145,6 +145,39 @@ adaptive-factory --token-file /run/adaptive-factory/reader.token qualification T
 This surface offers local evidence for human review. It cannot create a Trust CI check,
 signed approval, merge, deployment, model qualification, or accepted-task count.
 
+## Integrated v1.5 source contours and unverified capacity
+
+`prediction_runtime.py` executes bounded temporal baseline/pilot/explainer evaluation
+without changing routing or authority. `behavior_qualification.py` owns the immutable
+paired corpus, baseline, oracle, thresholds and budget accounting; its local verdict
+is never an external pass. `fpf_runtime.py` and `vibevm_runtime.py` implement bounded
+selection/projection/replay and pinned package/lock/offline-cache/atomic-generation
+rollback. They remain default-off/unqualified for any actual selected live profile.
+
+Migration024 reserves one durable unverified slot before each writer execution starts,
+per repository/provider profile. Lease release, worker cancellation and reconnect do
+not erase it. An exact independent semantic pass releases the matching candidate;
+owner-only `factory.unverified_resolve(run_uuid, 'quarantined'|'expired', evidence_sha256)`
+requires an externally retained confirmed-stop/disposition receipt. Runtime cannot call
+that function or write quota/resolution tables. A timeout alone is not a stop receipt.
+The default is32 (not live-calibrated), and operator configuration is bounded1..64:
+
+```sh
+adaptive-factory-admin unverified-limit --repository owner/repo --profile-digest SHA256 --max-unverified-inflight 4
+```
+
+The command uses the existing separate owner connection, never the runtime login.
+Migration backfill is bounded to10000 existing packets and fails atomically above that
+limit until an operator supplies a reviewed bounded migration plan. Keep migration/history
+on rollback and stop writers; do not downgrade to a worker that ignores durable admission.
+
+The [generic installer](../factory/runtime/SETUP_MANAGER.md) owns detached archive
+verification, private roots, immutable versions, health-gated pointers, data-preserving
+removal and compatible rollback. `bb_integration.py` binds it and the shared comparator
+to a synthetic-only BB port; no upstream daemon, listener, provider or live BB workflow
+is installed or activated. Cold private snapshot bundles are verified/reverified, not
+copied from a running upstream database, and divergent external receipts block rollback.
+
 The FPF integration hook is deliberately default-off: construct
 `FpfRuntimeConfig(enabled=False, ...)` and `open_fpf_runtime` returns `disabled`
 without reading the snapshot. Enabling requires `qualification="supported"` for the

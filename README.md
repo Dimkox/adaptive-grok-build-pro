@@ -13,12 +13,17 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 ## Current state
 
 The [Factory v1.5 fast Linux candidate](engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/brief.md)
-adds bounded native context, append-only factual decisions (migration 023), pre-model
-result envelopes, observation-only prediction validation and an optional authenticated
+adds bounded native context, append-only factual decisions (migration 023), durable
+unverified-artifact admission (migration 024), pre-model result envelopes,
+observation-only predictor/explainer execution and an optional authenticated
 [qualification API](factory/contracts/openapi/factory-v15.v1.json). The [operator notes](factory/README.md#factory-v15-fast-linux-candidate)
 describe composition and rollback. U4/macOS is owner-excluded; BB stays default-off
 and `not_run`. The optional FPF data-only mechanism is implemented but default-off;
 exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Trust CI pending.
+The shared [paired evaluation harness](factory/src/adaptive_factory/behavior_qualification.py),
+[VibeVM package runtime](factory/src/adaptive_factory/vibevm_runtime.py), and
+[generic Linux installer lifecycle](factory/runtime/SETUP_MANAGER.md) are implemented;
+BB's synthetic lifecycle/comparator reuse those boundaries without live activation.
 Local synthetic composition is distinct from installed/live acceptance and publication.
 Product VERSION remains 2.0.19; v1.5 identifies the upgrade specification.
 

@@ -13,7 +13,9 @@
     "m8": "inactive",
     "external_trust": "pending",
     "operational_activation": false,
-    "next_action": "Complete full exact-tree verification and independent reviews; integrate the separately isolated installer contour, then prepare PR-only delivery and require the App-owned exact-head Trust CI."
+    "coverage_matrix": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
+    "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity"],
+    "next_action": "Complete full stable exact-tree verification and independent reviews of the integrated source candidate; prepare PR-only delivery and require App-owned exact-head Trust CI. Publication and installed/live qualification remain separate."
   },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
