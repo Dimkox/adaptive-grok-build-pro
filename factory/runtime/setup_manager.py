@@ -256,6 +256,28 @@ class RuntimeAdapter(Protocol):
     def logs(self, release: Path, lines: int, maximum_bytes: int, timeout: int) -> str: ...
 
 
+class UnavailableRuntimeAdapter:
+    """Concrete fail-closed default: no implicit daemon or service authority."""
+
+    def preflight(self, profile: str, timeout: int) -> bool:
+        raise InstallerError("ADAPTER_REQUIRED")
+
+    def start(self, release: Path, timeout: int) -> None:
+        raise InstallerError("ADAPTER_REQUIRED")
+
+    def stop(self, release: Path, timeout: int) -> None:
+        raise InstallerError("ADAPTER_REQUIRED")
+
+    def health(self, release: Path, timeout: int) -> bool:
+        raise InstallerError("ADAPTER_REQUIRED")
+
+    def status(self, release: Path, timeout: int) -> None:
+        return None
+
+    def logs(self, release: Path, lines: int, maximum_bytes: int, timeout: int) -> str:
+        raise InstallerError("ADAPTER_REQUIRED")
+
+
 @dataclass(frozen=True)
 class TransitionEvidence:
     root: str
@@ -291,14 +313,16 @@ def _atomic_json(path: Path, value: dict) -> None:
 class SetupManager:
     def __init__(self, root: Path, adapter: RuntimeAdapter | None = None):
         self.root = _safe_root(root)
-        self.adapter = adapter
+        self.adapter = adapter if adapter is not None else UnavailableRuntimeAdapter()
 
     def _runtime(self, method: str, *args, **kwargs):
-        if self.adapter is None:
-            raise InstallerError("ADAPTER_REQUIRED")
         started = time.monotonic()
         try:
             result = getattr(self.adapter, method)(*args, timeout=30, **kwargs)
+        except InstallerError as exc:
+            if exc.code == "ADAPTER_REQUIRED":
+                raise
+            raise InstallerError("RUNTIME_FAILED") from exc
         except Exception as exc:
             raise InstallerError("RUNTIME_FAILED") from exc
         if time.monotonic() - started > 30:
@@ -572,7 +596,7 @@ class SetupManager:
             return {"schema_version": "factory-status/v1", "root": str(self.root), "phase": "absent", "current": None}
         state = self._state()
         running = None
-        if state["current"] is not None and self.adapter is not None:
+        if state["current"] is not None and not isinstance(self.adapter, UnavailableRuntimeAdapter):
             running = self._runtime("status", self._release(state["current"])[0])
             if type(running) is not bool:
                 raise InstallerError("RUNTIME_FAILED")

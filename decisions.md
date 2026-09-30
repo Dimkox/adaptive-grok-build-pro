@@ -4,6 +4,10 @@
 
 Record peeled stable commits alongside separately observed main commits and exercise exact-revision excerpts through the existing advisory adapters. This updated source currency without changing runtime parsing or promoting BMAD main ticket metadata and Superpowers Spec pointers into authority.
 
+### 2026-09-30 — Inject installer runtime effects
+
+Keep ZIP/manifest verification, immutable staging, health-gated pointers, and recovery in a stdlib Factory policy with injected service effects. This enabled real filesystem/lock/crash tests without importing Liqvera topology or mutating a host; checked same-schema backup transitions keep migration and restore qualification separate.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
