@@ -352,7 +352,7 @@ def assess_claim(*, criterion_id: str, candidate_sha: str, profile_digest: str,
 
 
 def render_handoff(records: Iterable[Mapping], *, omitted_details: Iterable[str] = (),
-                   status_overrides: Mapping[str, str] | None = None) -> dict:
+                   exclusions: Iterable[str] = (), status_overrides: Mapping[str, str] | None = None) -> dict:
     machine = [dict(record) for record in records]
     overrides = status_overrides or {}
     for record in machine:
@@ -360,14 +360,18 @@ def render_handoff(records: Iterable[Mapping], *, omitted_details: Iterable[str]
         if override is not None and override != record["evidence_status"]:
             _block("handoff_amplification")
     omitted = tuple(sorted(set(omitted_details)))
+    excluded = tuple(sorted(set(exclusions)))
+    for item in omitted + excluded: identity(item)
     human = "; ".join(
         f"{x['criterion_id']}: scope={x['scope']}, assumptions={','.join(x['assumptions']) or 'none'}, "
         f"evidence={x['evidence_status']}, acceptance={x['acceptance_status']}, "
         f"limitations={','.join(x['limitations']) or 'none'}"
         for x in machine
     )
+    human += f"; omitted_details={','.join(omitted) or 'none'}; exclusions={','.join(excluded) or 'none'}"
     return {"schema_version": 1, "machine": machine, "human": human,
             "omitted_details": omitted,
+            "exclusions": excluded,
             "limitations": [f"omitted:{item}" for item in omitted], "authority_effect": "none"}
 
 
@@ -467,7 +471,8 @@ def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
 
 _UNSAFE = re.compile(r"(?:\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)", re.I)
 _URL = re.compile(r"https?://\S+", re.I)
-_FETCH = re.compile(r"\b(?:fetch|retrieve|download|request|connect|curl|open)\b", re.I)
+_FETCH = re.compile(r"\b(?:fetch(?:ed|ing)?|retriev(?:e|ed|ing)|download(?:ed|ing)?|request(?:ed|ing)?|connect(?:ed|ing)?|curl|open(?:ed|ing)?)\b", re.I)
+_CLAUSE_BOUNDARY = re.compile(r"[.!?;\n]")
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -479,12 +484,14 @@ def enforce_reference_boundary(text: str) -> str:
     if _UNSAFE.search(text):
         _block("unsafe_reference")
     for match in _URL.finditer(text):
-        prefix = text[max(0, match.start()-96):match.start()]
-        intents = list(_FETCH.finditer(prefix))
-        if intents:
-            intent = intents[-1]
-            lead = prefix[max(0, intent.start()-16):intent.start()]
-            if not re.search(r"(?:do not|must not|never)\s*$", lead, re.I):
+        before = list(_CLAUSE_BOUNDARY.finditer(text, 0, match.start()))
+        clause_start = before[-1].end() if before else 0
+        after = _CLAUSE_BOUNDARY.search(text, match.end())
+        clause_end = after.start() if after else len(text)
+        clause = text[clause_start:clause_end]
+        for intent in _FETCH.finditer(clause):
+            lead = clause[max(0, intent.start()-24):intent.start()]
+            if not re.search(r"(?:do not|must not|never|no)\s+(?:be\s+)?$", lead, re.I):
                 _block("unsafe_reference")
     return text
 
@@ -564,7 +571,7 @@ def plan_upgrade(*, current_identity: str, candidate_identity: str,
 
 
 def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, Mapping], *,
-                    accepted_evidence: Mapping[str, str] | None = None) -> dict:
+                    evidence_resolver=None) -> dict:
     required = tuple(plan.get("required_gates", ()))
     candidate = plan.get("candidate_identity")
     if not required or set(gate_results) != set(required):
@@ -576,9 +583,12 @@ def qualify_upgrade(plan: Mapping, gate_results: Mapping[str, Mapping], *,
                 evidence["status"] != "pass" or evidence["candidate_identity"] != candidate or
                 evidence["candidate_sha"] != plan.get("candidate_sha") or
                 evidence["profile_digest"] != plan.get("profile_digest") or
-                not isinstance(evidence["execution_id"], str) or not evidence["execution_id"] or
-                not isinstance(evidence["evidence_ref"], str) or not evidence["evidence_ref"] or
-                accepted_evidence is None or accepted_evidence.get(evidence["evidence_ref"]) != evidence["evidence_digest"]):
+                not isinstance(evidence["execution_id"], str) or not evidence["execution_id"]):
+            _block("upgrade_gate_incomplete")
+        identity(evidence["execution_id"]); safe_path(evidence["evidence_ref"]); digest(evidence["evidence_digest"])
+        if evidence_resolver is None or evidence_resolver(evidence["evidence_ref"], evidence["evidence_digest"], {
+                "gate": gate, "candidate_identity": candidate, "candidate_sha": plan["candidate_sha"],
+                "profile_digest": plan["profile_digest"], "execution_id": evidence["execution_id"]}) is not True:
             _block("upgrade_gate_incomplete")
     return {"status": "qualified_candidate", "candidate_identity": plan["candidate_identity"],
             "gate_results": dict(sorted(gate_results.items())), "authority_effect": "none"}
