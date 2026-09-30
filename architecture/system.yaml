@@ -1752,6 +1752,7 @@
         "factory/src/adaptive_factory/bb_contracts.py",
         "factory/src/adaptive_factory/bb_adapter.py",
         "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/src/adaptive_factory/bb_integration.py",
         "factory/src/adaptive_factory/qualification.py",
         "factory/src/adaptive_factory/vibevm_runtime.py",
         "factory/contracts/jsonschema/vibevm-generation.v1.schema.json",

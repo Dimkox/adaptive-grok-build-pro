@@ -17,4 +17,4 @@
 
 ## Manual checks
 
-- 
+-

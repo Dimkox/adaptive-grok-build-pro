@@ -124,8 +124,7 @@ def _validate_capability_session(cursor, capability_role: str, label: str) -> No
         FROM pg_roles WHERE rolname=session_user"""
     )
     identity = cursor.fetchone()
-    if identity is None or identity[:7] != (True, False, False, False, False, False, False) \
-            or tuple(identity[7]) != ():
+    if identity is None or identity[:7] != (True, False, False, False, False, False, False) or tuple(identity[7]) != ():
         raise StoreError(f"{label} login is not least privilege")
     if cursor.connection.info.server_version >= 160000:
         cursor.execute(
@@ -152,11 +151,12 @@ def _validate_capability_session(cursor, capability_role: str, label: str) -> No
         (capability_role,),
     )
     capability = cursor.fetchone()
-    expected_config = (
-        ("search_path=factory, pg_catalog",) if capability_role == "factory_runtime" else ()
-    )
-    if capability is None or capability[:7] != (False, False, False, False, False, False, False) \
-            or tuple(capability[7]) != expected_config:
+    expected_config = ("search_path=factory, pg_catalog",) if capability_role == "factory_runtime" else ()
+    if (
+        capability is None
+        or capability[:7] != (False, False, False, False, False, False, False)
+        or tuple(capability[7]) != expected_config
+    ):
         raise StoreError(f"{label} capability role is not isolated")
     cursor.execute(
         """SELECT
@@ -254,9 +254,7 @@ class PostgresArtifactAttestationStore:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
                 cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
-                _validate_capability_session(
-                    cursor, "factory_artifact_attestor", "artifact attestor"
-                )
+                _validate_capability_session(cursor, "factory_artifact_attestor", "artifact attestor")
                 cursor.execute("SET ROLE factory_artifact_attestor")
                 cursor.execute("SET search_path=pg_catalog,factory")
                 cursor.execute("SELECT current_user,current_setting('search_path')")
@@ -316,9 +314,7 @@ class PostgresSemanticCoordinatorStore:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
                 cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
-                _validate_capability_session(
-                    cursor, "factory_semantic_coordinator", "semantic coordinator"
-                )
+                _validate_capability_session(cursor, "factory_semantic_coordinator", "semantic coordinator")
                 cursor.execute("SET ROLE factory_semantic_coordinator")
                 cursor.execute("SET search_path=pg_catalog,factory")
                 cursor.execute("SELECT current_user,current_setting('search_path')")
@@ -369,10 +365,7 @@ class PostgresSemanticCoordinatorStore:
             snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
             terminal = TerminalProposal(**value["terminal_proposal"])
             artifacts = tuple(ArtifactProposal(**item) for item in value["artifact_proposals"])
-            attestations = tuple(
-                ArtifactAttestationV1.from_dict(item)
-                for item in value["artifact_attestations"]
-            )
+            attestations = tuple(ArtifactAttestationV1.from_dict(item) for item in value["artifact_attestations"])
             if (
                 result.task_id != packet.task_id
                 or result.run_id != packet.run_id
@@ -401,9 +394,7 @@ class PostgresSemanticCoordinatorStore:
                 raise
             raise StoreError("stored semantic execution material is corrupt") from exc
 
-    def execution_material(
-        self, task_id: str, workspace_result_digest: str
-    ) -> dict[str, object]:
+    def execution_material(self, task_id: str, workspace_result_digest: str) -> dict[str, object]:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SET statement_timeout='5s'")
             cursor.execute(
@@ -415,8 +406,7 @@ class PostgresSemanticCoordinatorStore:
             raise KeyError(workspace_result_digest)
         result = material["result"]
         if not isinstance(result, WorkspaceResultV1) or (
-            result.task_id != task_id
-            or result.workspace_result_digest != workspace_result_digest
+            result.task_id != task_id or result.workspace_result_digest != workspace_result_digest
         ):
             raise StoreError("requested semantic execution material mismatch")
         return material
@@ -440,9 +430,7 @@ class PostgresSemanticCoordinatorStore:
             raise StoreError("stored semantic subject record is corrupt")
         try:
             binding = SemanticExecutionBindingV1.from_dict(value["binding"])
-            validation_inputs = SemanticValidationInputsV1.from_dict(
-                value["validation_inputs"]
-            )
+            validation_inputs = SemanticValidationInputsV1.from_dict(value["validation_inputs"])
             subject = SemanticSubjectV1.from_dict(value["subject"])
             record = SemanticBridgeResult(binding, validation_inputs, subject)
         except (TypeError, ValueError) as exc:
@@ -452,16 +440,12 @@ class PostgresSemanticCoordinatorStore:
             or value["validation_inputs_digest"] != validation_inputs.digest
             or value["subject_digest"] != subject.digest
             or value["envelope_digest"] != record.envelope_digest
-            or validation_inputs.workspace_result_digest
-            != binding.workspace_result_digest
+            or validation_inputs.workspace_result_digest != binding.workspace_result_digest
             or subject.deterministic_evidence_digest != binding.digest
-            or subject.holdout_evidence_digest
-            != validation_inputs.holdout_evidence_digest
-            or subject.review_evidence_digest
-            != validation_inputs.review_evidence_digest
+            or subject.holdout_evidence_digest != validation_inputs.holdout_evidence_digest
+            or subject.review_evidence_digest != validation_inputs.review_evidence_digest
             or subject.original_writer_id != binding.owner
-            or subject.original_writer_context_digest
-            != validation_inputs.original_writer_context_digest
+            or subject.original_writer_context_digest != validation_inputs.original_writer_context_digest
         ):
             raise StoreError("stored semantic subject digest mismatch")
         return record
@@ -474,9 +458,7 @@ class PostgresSemanticCoordinatorStore:
         idempotency_key: str,
     ) -> SemanticBridgeResult:
         packet = material.get("packet")
-        if not isinstance(packet, TaskPacketV1) or not isinstance(
-            record, SemanticBridgeResult
-        ):
+        if not isinstance(packet, TaskPacketV1) or not isinstance(record, SemanticBridgeResult):
             raise StoreError("semantic publication material is invalid")
         binding_document = {
             "contract": "adaptive-factory.semantic-execution-binding/v1",
@@ -547,9 +529,7 @@ class PostgresSemanticCoordinatorStore:
             raise StoreError("semantic subject publication rejected")
         return record
 
-    def subject_by_digest(
-        self, task_id: str, subject_digest: str
-    ) -> SemanticBridgeResult:
+    def subject_by_digest(self, task_id: str, subject_digest: str) -> SemanticBridgeResult:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SET statement_timeout='5s'")
             cursor.execute(
@@ -559,10 +539,7 @@ class PostgresSemanticCoordinatorStore:
             record = self._record(cursor.fetchone()[0])
         if record is None:
             raise KeyError(subject_digest)
-        if (
-            record.binding.task_id != task_id
-            or record.subject.digest != subject_digest
-        ):
+        if record.binding.task_id != task_id or record.subject.digest != subject_digest:
             raise StoreError("requested semantic subject mismatch")
         return record
 
@@ -573,9 +550,7 @@ class PostgresSemanticCoordinatorStore:
         *,
         idempotency_key: str,
     ) -> dict[str, str]:
-        if not isinstance(subject, SemanticSubjectV1) or not isinstance(
-            validator, ValidatorIdentityV1
-        ):
+        if not isinstance(subject, SemanticSubjectV1) or not isinstance(validator, ValidatorIdentityV1):
             raise StoreError("semantic assignment input is invalid")
         validator.validate_for(subject)
         assignment_document = {
@@ -648,9 +623,7 @@ class PostgresSemanticCoordinatorStore:
             "verdict": verdict.to_dict(),
         }
 
-    def verdict_by_subject(
-        self, task_id: str, subject_digest: str
-    ) -> dict[str, object]:
+    def verdict_by_subject(self, task_id: str, subject_digest: str) -> dict[str, object]:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SET statement_timeout='5s'")
             cursor.execute(
@@ -716,32 +689,24 @@ class PostgresSemanticCoordinatorStore:
                 child is None
                 or directive is None
                 or child.parent_task_id != task_id
-                or child.parent_workspace_result_digest
-                != repair_request.expected_workspace_result_digest
+                or child.parent_workspace_result_digest != repair_request.expected_workspace_result_digest
                 or child.parent_fence != repair_request.expected_fence
                 or child.parent_exact_head_sha != repair_request.expected_head_sha
                 or child.writer_id != repair_request.writer_id
                 or child.context_digest != repair_request.context_digest
                 or child.exact_base_sha != repair_request.expected_base_sha
-                or child.architecture_digest
-                != repair_request.expected_architecture_digest
+                or child.architecture_digest != repair_request.expected_architecture_digest
                 or child.authority_digest != repair_request.expected_authority_digest
                 or child.diff_digest != repair_request.expected_diff_digest
-                or child.previous_child_proposal_digest
-                != repair_request.previous_child_proposal_digest
+                or child.previous_child_proposal_digest != repair_request.previous_child_proposal_digest
                 or directive.exact_head_sha != repair_request.expected_head_sha
             ):
                 raise StoreError("stored semantic repair child binding mismatch")
-        elif (
-            result.escalation is None
-            or result.escalation.request_digest != request_digest
-        ):
+        elif result.escalation is None or result.escalation.request_digest != request_digest:
             raise StoreError("stored semantic repair escalation binding mismatch")
         return result
 
-    def bind_repair_child(
-        self, binding: RepairChildTaskBindingV1
-    ) -> RepairChildTaskBindingV1:
+    def bind_repair_child(self, binding: RepairChildTaskBindingV1) -> RepairChildTaskBindingV1:
         if not isinstance(binding, RepairChildTaskBindingV1):
             raise StoreError("semantic repair child binding is invalid")
         canonical = canonical_json(binding.to_dict()).decode("utf-8")
@@ -764,15 +729,11 @@ class PostgresSemanticCoordinatorStore:
             # Only a store whose schema predates resource 021 can still answer a
             # refusal with a bare SQL NULL. The payload is not at fault there, and
             # calling it malformed would repeat the misdiagnosis #155 removes.
-            raise StoreError(
-                "semantic repair child binding rejected: store_returned_null"
-            )
+            raise StoreError("semantic repair child binding rejected: store_returned_null")
         try:
             persisted = RepairChildTaskBindingV1.from_dict(response)
         except (TypeError, ValueError) as exc:
-            raise StoreError(
-                "semantic repair child binding payload is malformed"
-            ) from exc
+            raise StoreError("semantic repair child binding payload is malformed") from exc
         if persisted != binding or persisted.digest != binding.digest:
             raise StoreError("semantic repair child binding mismatch")
         return persisted
@@ -795,9 +756,7 @@ class _PostgresSemanticRoleStore:
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
                 cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
-                _validate_capability_session(
-                    cursor, self.capability_role, self.capability_label
-                )
+                _validate_capability_session(cursor, self.capability_role, self.capability_label)
                 cursor.execute(f"SET ROLE {self.capability_role}")
                 cursor.execute("SET search_path=pg_catalog,factory")
                 cursor.execute("SELECT current_user,current_setting('search_path')")
@@ -860,9 +819,7 @@ class PostgresSemanticValidatorStore(_PostgresSemanticRoleStore):
                     "finding_digest": value.digest,
                     "identity_digest": value.identity_digest,
                     "canonical": canonical_json(value.to_dict()).decode("utf-8"),
-                    "identity_canonical": canonical_json(
-                        self._identity_document(value)
-                    ).decode("utf-8"),
+                    "identity_canonical": canonical_json(self._identity_document(value)).decode("utf-8"),
                 }
                 for value in finding_values
             ],
@@ -1025,9 +982,7 @@ class PostgresSemanticAdjudicatorStore(_PostgresSemanticRoleStore):
                 coverage_order.append(digest)
                 coverage_values.append(coverage)
                 coverage_by_assignment[assignment_digest] = digest
-            if coverage_order != sorted(coverage_order) or set(coverage_by_assignment) != set(
-                assignment_bodies
-            ):
+            if coverage_order != sorted(coverage_order) or set(coverage_by_assignment) != set(assignment_bodies):
                 raise StoreError("stored semantic coverage set is incomplete")
 
             evidence_set = {
@@ -1055,9 +1010,7 @@ class PostgresSemanticAdjudicatorStore(_PostgresSemanticRoleStore):
                 raise
             raise StoreError("stored semantic adjudication material is corrupt") from exc
 
-    def adjudication_material(
-        self, task_id: str, subject_digest: str
-    ) -> dict[str, object]:
+    def adjudication_material(self, task_id: str, subject_digest: str) -> dict[str, object]:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SET statement_timeout='5s'")
             cursor.execute(
@@ -1118,9 +1071,7 @@ class PostgresSemanticAdjudicatorStore(_PostgresSemanticRoleStore):
                     verdict_canonical,
                 ),
             )
-            response = PostgresSemanticCoordinatorStore._verdict_record(
-                cursor.fetchone()[0]
-            )
+            response = PostgresSemanticCoordinatorStore._verdict_record(cursor.fetchone()[0])
         expected = {
             "verdict_digest": verdict.digest,
             "evidence_set_digest": evidence_set_digest,
@@ -1217,10 +1168,7 @@ class PostgresFactoryStore:
         statement_timeout = statement_timeout or self._MUTATION_STATEMENT_TIMEOUT
         connection = None
         try:
-            options = (
-                f"-c lock_timeout={lock_timeout} "
-                f"-c statement_timeout={statement_timeout}"
-            )
+            options = f"-c lock_timeout={lock_timeout} -c statement_timeout={statement_timeout}"
             connection = psycopg.connect(
                 self.database_url,
                 connect_timeout=connect_timeout,
@@ -1272,8 +1220,7 @@ class PostgresFactoryStore:
         )
         if transaction_timeout is None:
             cursor.execute(
-                "SELECT set_config('lock_timeout',%s,true),"
-                "set_config('statement_timeout',%s,true)",
+                "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
                 bounds,
             )
         else:
@@ -1337,7 +1284,9 @@ class PostgresFactoryStore:
             capacity_consistent = self._capacity_consistent(cursor)
             accounting_consistent = self._accounting_consistent(cursor)
             return {
-                "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
+                "status": "ready"
+                if version == len(discover_migrations()) and capacity_consistent and accounting_consistent
+                else "not_ready",
                 "session_user": session_user,
                 "database_role": role,
                 "schema_version": version,
@@ -1366,9 +1315,7 @@ class PostgresFactoryStore:
             raise StoreError("invalid execution recovery timeout")
         bounded_seconds = min(5.0, float(timeout_seconds))
         connect_timeout = 2
-        statement_milliseconds = max(
-            1, int((bounded_seconds - connect_timeout) * 1000)
-        )
+        statement_milliseconds = max(1, int((bounded_seconds - connect_timeout) * 1000))
         lock_milliseconds = min(500, statement_milliseconds)
         return (
             connect_timeout,
@@ -1384,14 +1331,16 @@ class PostgresFactoryStore:
             values = conninfo_to_dict(self.database_url)
         except Exception as exc:
             raise StoreError("invalid execution recovery database URL") from exc
-        if values.get("service") or not (
-            values.get("host") or values.get("hostaddr")
-        ) or any(
-            value and "," in value
-            for value in (
-                values.get("host", ""),
-                values.get("hostaddr", ""),
-                values.get("port", ""),
+        if (
+            values.get("service")
+            or not (values.get("host") or values.get("hostaddr"))
+            or any(
+                value and "," in value
+                for value in (
+                    values.get("host", ""),
+                    values.get("hostaddr", ""),
+                    values.get("port", ""),
+                )
             )
         ):
             raise StoreError("execution recovery requires a single database host")
@@ -1448,9 +1397,7 @@ class PostgresFactoryStore:
             candidate,
             value["claim_token"],
             value["claim_fence"],
-            datetime.fromisoformat(
-                value["claim_expires_at"].replace("Z", "+00:00")
-            ),
+            datetime.fromisoformat(value["claim_expires_at"].replace("Z", "+00:00")),
             value["transition"],
             value["advances_discovery_cursor"],
         )
@@ -1495,9 +1442,7 @@ class PostgresFactoryStore:
                 }:
                     raise IntegrityError("database recovery cursor shape is invalid")
                 scanned_through = ExecutionRecoveryCursor(
-                    datetime.fromisoformat(
-                        raw_cursor["updated_at"].replace("Z", "+00:00")
-                    ),
+                    datetime.fromisoformat(raw_cursor["updated_at"].replace("Z", "+00:00")),
                     raw_cursor["run_id"],
                 )
             if (
@@ -1506,25 +1451,14 @@ class PostgresFactoryStore:
                 or type(value["exhausted"]) is not bool
             ):
                 raise IntegrityError("database recovery candidates are invalid")
-            candidates = tuple(
-                self._recovery_candidate(candidate)
-                for candidate in value["candidates"]
-            )
-            if (
-                len({candidate.run_id for candidate in candidates})
-                != len(candidates)
-                or len({candidate.manifest_digest for candidate in candidates})
-                != len(candidates)
-            ):
+            candidates = tuple(self._recovery_candidate(candidate) for candidate in value["candidates"])
+            if len({candidate.run_id for candidate in candidates}) != len(candidates) or len(
+                {candidate.manifest_digest for candidate in candidates}
+            ) != len(candidates):
                 raise IntegrityError("database recovery candidates are duplicated")
-            fresh_cursors = tuple(
-                candidate.cursor
-                for candidate in candidates
-                if candidate.source == "fresh"
-            )
+            fresh_cursors = tuple(candidate.cursor for candidate in candidates if candidate.source == "fresh")
             if fresh_cursors != tuple(sorted(fresh_cursors)) or (
-                cursor is not None
-                and any(candidate_cursor <= cursor for candidate_cursor in fresh_cursors)
+                cursor is not None and any(candidate_cursor <= cursor for candidate_cursor in fresh_cursors)
             ):
                 raise IntegrityError("database recovery candidates are unordered")
             return ExecutionRecoveryPage(
@@ -1591,14 +1525,10 @@ class PostgresFactoryStore:
                 "recovery_due",
                 "released",
             }
-            if context is not None and (
-                not isinstance(context, dict) or set(context) != expected_context
-            ):
+            if context is not None and (not isinstance(context, dict) or set(context) != expected_context):
                 raise IntegrityError("database recovery context shape is invalid")
             if context is not None and (
-                context["released"]
-                or context["run_released"]
-                or context["allocation_released"]
+                context["released"] or context["run_released"] or context["allocation_released"]
             ):
                 raise IntegrityError("execution recovery release state is inconsistent")
             if context is not None:
@@ -1619,9 +1549,7 @@ class PostgresFactoryStore:
                     context["owner"],
                     RunRole(context["role"]),
                     context["fence"],
-                    datetime.fromisoformat(
-                        context["expires_at"].replace("Z", "+00:00")
-                    ),
+                    datetime.fromisoformat(context["expires_at"].replace("Z", "+00:00")),
                     context["packet_digest"].strip(),
                 )
                 failure = (
@@ -1667,9 +1595,7 @@ class PostgresFactoryStore:
                 raise IntegrityError("database recovery authority mismatch")
             return claim
 
-    def record_execution_cleanup_success(
-        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
-    ) -> None:
+    def record_execution_cleanup_success(self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0) -> None:
         if not isinstance(claim, ExecutionRecoveryClaim):
             raise StoreError("invalid execution recovery claim")
         self._require_single_host_recovery_url()
@@ -1686,8 +1612,7 @@ class PostgresFactoryStore:
             transaction_timeout=transaction_timeout,
         ) as db:
             db.execute(
-                "SELECT factory.execution_recovery_cleanup_succeeded("
-                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "SELECT factory.execution_recovery_cleanup_succeeded(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     claim.candidate.task_id,
                     claim.candidate.run_id,
@@ -1704,9 +1629,7 @@ class PostgresFactoryStore:
             if not db.fetchone()[0]:
                 raise FenceError("stale execution cleanup claim")
 
-    def record_execution_cleanup_failure(
-        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
-    ) -> None:
+    def record_execution_cleanup_failure(self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0) -> None:
         if not isinstance(claim, ExecutionRecoveryClaim):
             raise StoreError("invalid execution recovery claim")
         self._require_single_host_recovery_url()
@@ -1723,8 +1646,7 @@ class PostgresFactoryStore:
             transaction_timeout=transaction_timeout,
         ) as db:
             db.execute(
-                "SELECT factory.execution_recovery_cleanup_failed("
-                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "SELECT factory.execution_recovery_cleanup_failed(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     claim.candidate.task_id,
                     claim.candidate.run_id,
@@ -1783,12 +1705,15 @@ class PostgresFactoryStore:
 
     def metrics(self) -> dict[str, dict[str, int]]:
         try:
-            with self._connect(
-                connect_timeout=2,
-                lock_timeout="500ms",
-                statement_timeout="3s",
-                transaction_timeout="3s",
-            ) as connection, connection.cursor() as cursor:
+            with (
+                self._connect(
+                    connect_timeout=2,
+                    lock_timeout="500ms",
+                    statement_timeout="3s",
+                    transaction_timeout="3s",
+                ) as connection,
+                connection.cursor() as cursor,
+            ):
                 cursor.execute("SET LOCAL statement_timeout='5s'")
                 cursor.execute("SET LOCAL lock_timeout='500ms'")
                 cursor.execute("SET LOCAL transaction_timeout='3s'")
@@ -1797,37 +1722,73 @@ class PostgresFactoryStore:
                 legacy = snapshot["legacy"]
                 execution = snapshot["execution"]
                 if set(legacy) != {
-                    "singleton", "accepted", "superseded", "queued", "retry", "dead",
-                    "transition_events", "live_leases", "reclaimed", "fence_rejected",
-                    "active_capacity", "cost_reserved_micros", "cost_observed_micros",
-                    "tokens_reserved", "tokens_observed", "wall_reserved_seconds",
-                    "output_observed_bytes", "accounting_blocked", "active_kills",
-                    "reconciliation_runs", "reconciliation_candidates", "repaired",
+                    "singleton",
+                    "accepted",
+                    "superseded",
+                    "queued",
+                    "retry",
+                    "dead",
+                    "transition_events",
+                    "live_leases",
+                    "reclaimed",
+                    "fence_rejected",
+                    "active_capacity",
+                    "cost_reserved_micros",
+                    "cost_observed_micros",
+                    "tokens_reserved",
+                    "tokens_observed",
+                    "wall_reserved_seconds",
+                    "output_observed_bytes",
+                    "accounting_blocked",
+                    "active_kills",
+                    "reconciliation_runs",
+                    "reconciliation_candidates",
+                    "repaired",
                 } or set(execution) != {
-                    "singleton", "execution_claimed", "stage_prepared", "stage_running",
-                    "stage_collecting", "stage_completed", "stage_failed",
-                    "stage_needs_human", "stage_cancelled", "stage_orphaned",
-                    "proposal_note", "proposal_artifact", "proposal_usage",
-                    "proposal_terminal", "recovery_claimed", "recovery_orphaned",
-                    "recovery_cancelled", "cleanup_succeeded", "cleanup_failed",
+                    "singleton",
+                    "execution_claimed",
+                    "stage_prepared",
+                    "stage_running",
+                    "stage_collecting",
+                    "stage_completed",
+                    "stage_failed",
+                    "stage_needs_human",
+                    "stage_cancelled",
+                    "stage_orphaned",
+                    "proposal_note",
+                    "proposal_artifact",
+                    "proposal_usage",
+                    "proposal_terminal",
+                    "recovery_claimed",
+                    "recovery_orphaned",
+                    "recovery_cancelled",
+                    "cleanup_succeeded",
+                    "cleanup_failed",
                 }:
                     raise ValueError("metrics snapshot shape is invalid")
         except Exception as exc:
             raise MetricsUnavailable("metrics snapshot unavailable") from exc
         intake, superseded, queued, retry, dead = (
-            legacy["accepted"], legacy["superseded"], legacy["queued"],
-            legacy["retry"], legacy["dead"],
+            legacy["accepted"],
+            legacy["superseded"],
+            legacy["queued"],
+            legacy["retry"],
+            legacy["dead"],
         )
         transition_events = legacy["transition_events"]
         live_leases, reclaimed, fence_rejected = (
-            legacy["live_leases"], legacy["reclaimed"], legacy["fence_rejected"],
+            legacy["live_leases"],
+            legacy["reclaimed"],
+            legacy["fence_rejected"],
         )
         active_capacity = legacy["active_capacity"]
         reserved_cost, observed_cost = (
-            legacy["cost_reserved_micros"], legacy["cost_observed_micros"],
+            legacy["cost_reserved_micros"],
+            legacy["cost_observed_micros"],
         )
         reserved_tokens, observed_tokens = (
-            legacy["tokens_reserved"], legacy["tokens_observed"],
+            legacy["tokens_reserved"],
+            legacy["tokens_observed"],
         )
         reserved_wall = legacy["wall_reserved_seconds"]
         observed_output = legacy["output_observed_bytes"]
@@ -1838,41 +1799,59 @@ class PostgresFactoryStore:
         execution_claimed = execution["execution_claimed"]
         stage_prepared, stage_running = execution["stage_prepared"], execution["stage_running"]
         stage_collecting, stage_completed = (
-            execution["stage_collecting"], execution["stage_completed"],
+            execution["stage_collecting"],
+            execution["stage_completed"],
         )
         stage_failed = execution["stage_failed"]
         stage_needs_human = execution["stage_needs_human"]
         stage_cancelled, stage_orphaned = (
-            execution["stage_cancelled"], execution["stage_orphaned"],
+            execution["stage_cancelled"],
+            execution["stage_orphaned"],
         )
         proposal_note, proposal_artifact = (
-            execution["proposal_note"], execution["proposal_artifact"],
+            execution["proposal_note"],
+            execution["proposal_artifact"],
         )
         proposal_usage, proposal_terminal = (
-            execution["proposal_usage"], execution["proposal_terminal"],
+            execution["proposal_usage"],
+            execution["proposal_terminal"],
         )
         recovery_claimed, recovery_orphaned, recovery_cancelled = (
-            execution["recovery_claimed"], execution["recovery_orphaned"],
+            execution["recovery_claimed"],
+            execution["recovery_orphaned"],
             execution["recovery_cancelled"],
         )
         cleanup_succeeded, cleanup_failed = (
-            execution["cleanup_succeeded"], execution["cleanup_failed"],
+            execution["cleanup_succeeded"],
+            execution["cleanup_failed"],
         )
         return {
             "factory_intake_and_rejection_outcomes_total": {
-                "accepted": intake, "superseded": superseded, "queued": queued, "retry": retry,
-                "dead": dead, "transition_events": transition_events,
+                "accepted": intake,
+                "superseded": superseded,
+                "queued": queued,
+                "retry": retry,
+                "dead": dead,
+                "transition_events": transition_events,
             },
             "factory_lease_reclaim_and_fence_rejection_total": {
-                "live_leases": live_leases, "reclaimed": reclaimed, "fence_rejected": fence_rejected,
+                "live_leases": live_leases,
+                "reclaimed": reclaimed,
+                "fence_rejected": fence_rejected,
             },
             "factory_capacity_budget_kill_and_reconcile_outcomes_total": {
-                "active_capacity": active_capacity, "cost_reserved_micros": reserved_cost,
-                "cost_observed_micros": observed_cost, "tokens_reserved": reserved_tokens,
-                "tokens_observed": observed_tokens, "wall_reserved_seconds": reserved_wall,
-                "output_observed_bytes": observed_output, "accounting_blocked": blocked,
-                "active_kills": kills, "reconciliation_runs": reconciliation_runs,
-                "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
+                "active_capacity": active_capacity,
+                "cost_reserved_micros": reserved_cost,
+                "cost_observed_micros": observed_cost,
+                "tokens_reserved": reserved_tokens,
+                "tokens_observed": observed_tokens,
+                "wall_reserved_seconds": reserved_wall,
+                "output_observed_bytes": observed_output,
+                "accounting_blocked": blocked,
+                "active_kills": kills,
+                "reconciliation_runs": reconciliation_runs,
+                "reconciliation_candidates": reconciliation_candidates,
+                "repaired": repaired,
             },
             "factory_execution_claim_and_stage_outcomes_total": {
                 "claimed": execution_claimed,
@@ -1925,12 +1904,21 @@ class PostgresFactoryStore:
         return True, row[3], digest
 
     @staticmethod
-    def _record_command(cursor, key: str | None, actor: Actor, action: str, digest: str, correlation: str | None, result: dict) -> None:
+    def _record_command(
+        cursor, key: str | None, actor: Actor, action: str, digest: str, correlation: str | None, result: dict
+    ) -> None:
         if key is None:
             return
         cursor.execute(
             "INSERT INTO factory.command_results(idempotency_key,actor_id,action,request_digest,correlation_id,result) VALUES (%s,%s,%s,%s,%s,%s::jsonb)",
-            (key, actor.actor_id, action, digest, correlation or key, json.dumps(result, sort_keys=True, separators=(",", ":"))),
+            (
+                key,
+                actor.actor_id,
+                action,
+                digest,
+                correlation or key,
+                json.dumps(result, sort_keys=True, separators=(",", ":")),
+            ),
         )
 
     @staticmethod
@@ -2008,9 +1996,7 @@ class PostgresFactoryStore:
                 raise ValueError("invalid shape")
             if type(result["generation"]) is not int or result["generation"] < 1:
                 raise ValueError("invalid generation")
-            if not HEX64.fullmatch(result["intent_digest"]) or not HEX64.fullmatch(
-                result["packet_digest"]
-            ):
+            if not HEX64.fullmatch(result["intent_digest"]) or not HEX64.fullmatch(result["packet_digest"]):
                 raise ValueError("invalid digest")
             deadline = datetime.fromisoformat(result["deadline_at"].replace("Z", "+00:00"))
             if deadline.tzinfo is None:
@@ -2029,8 +2015,15 @@ class PostgresFactoryStore:
         return IntakeResult(task, result["created"])
 
     def _event(
-        self, cursor, task_id: str, actor: Actor, action: str, idempotency_key: str,
-        metadata: dict | None = None, *, mandatory_cleanup: bool = False,
+        self,
+        cursor,
+        task_id: str,
+        actor: Actor,
+        action: str,
+        idempotency_key: str,
+        metadata: dict | None = None,
+        *,
+        mandatory_cleanup: bool = False,
     ) -> None:
         cursor.execute(
             """SELECT t.event_limit,
@@ -2146,10 +2139,7 @@ class PostgresFactoryStore:
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
             )
-            repair_source_candidate = (
-                intake.source_type == "api"
-                and HEX64.fullmatch(intake.source_id) is not None
-            )
+            repair_source_candidate = intake.source_type == "api" and HEX64.fullmatch(intake.source_id) is not None
             repair_intake_status = "ordinary"
             if repair_source_candidate:
                 cursor.execute(
@@ -2169,27 +2159,18 @@ class PostgresFactoryStore:
                 if repair_intake_status == "digest_mismatch":
                     raise StoreError("repair proposal source digest mismatch")
                 if repair_intake_status == "actor_mismatch":
-                    raise StoreError(
-                        "repair proposal source requires the exact repair child broker"
-                    )
+                    raise StoreError("repair proposal source requires the exact repair child broker")
                 if repair_intake_status == "not_pending":
-                    raise StoreError(
-                        "repair child broker source is not a pending proposal"
-                    )
+                    raise StoreError("repair child broker source is not a pending proposal")
                 if repair_intake_status == "head_mismatch":
-                    raise StoreError(
-                        "repair child intake head does not match proposal parent head"
-                    )
+                    raise StoreError("repair child intake head does not match proposal parent head")
                 if repair_intake_status not in {"allowed", "bound"}:
                     if repair_intake_status != "ordinary":
                         raise StoreError("repair child intake is not authorized")
                 if repair_intake_status in {"allowed", "bound"} and (
-                    intake.m0_authority.exact_head_sha
-                    != intake.governance.exact_head_sha
+                    intake.m0_authority.exact_head_sha != intake.governance.exact_head_sha
                 ):
-                    raise StoreError(
-                        "repair child intake head does not match proposal parent head"
-                    )
+                    raise StoreError("repair child intake head does not match proposal parent head")
             if not self._verify_m0_authority(cursor, intake):
                 raise AuthorityError("M0 authority is not trusted for repository/policy/action")
             cursor.execute(
@@ -2226,9 +2207,7 @@ class PostgresFactoryStore:
                     continue
                 cursor.execute("SET LOCAL lock_timeout='500ms'")
                 cursor.execute("SET LOCAL transaction_timeout='3s'")
-                cursor.execute(
-                    "SELECT factory.execution_recovery_cancel_task(%s)", (old_id,)
-                )
+                cursor.execute("SELECT factory.execution_recovery_cancel_task(%s)", (old_id,))
                 execution_projection = cursor.fetchone()[0]
                 if execution_projection not in {
                     "cancelled",
@@ -2245,8 +2224,13 @@ class PostgresFactoryStore:
                     "operation": terminalization.operation.value,
                 }
                 self._event(
-                    cursor, old_id, actor, "superseded", key,
-                    metadata, mandatory_cleanup=True,
+                    cursor,
+                    old_id,
+                    actor,
+                    "superseded",
+                    key,
+                    metadata,
+                    mandatory_cleanup=True,
                 )
                 self._audit(
                     cursor,
@@ -2435,16 +2419,10 @@ class PostgresFactoryStore:
                     grouped[run_id] = []
                     order.append(run_id)
                 grouped[run_id].append(row)
-            if any(
-                len(grouped[run_id]) != 1 or grouped[run_id][0][11] is None
-                for run_id in order
-            ):
+            if any(len(grouped[run_id]) != 1 or grouped[run_id][0][11] is None for run_id in order):
                 raise ValueError("one attempt per run required")
 
-            all_items = tuple(
-                self._run_attempt_snapshot(grouped[run_id][0], task_id)
-                for run_id in order
-            )
+            all_items = tuple(self._run_attempt_snapshot(grouped[run_id][0], task_id) for run_id in order)
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise StoreUnavailable("run attempt history invariant failed") from exc
 
@@ -2463,12 +2441,8 @@ class PostgresFactoryStore:
     ) -> FactoryEventHistoryPageV1:
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be 1..100")
-        if (
-            cursor_sequence is not None
-            and (
-                type(cursor_sequence) is not int
-                or not 0 <= cursor_sequence <= 9_223_372_036_854_775_807
-            )
+        if cursor_sequence is not None and (
+            type(cursor_sequence) is not int or not 0 <= cursor_sequence <= 9_223_372_036_854_775_807
         ):
             raise ValueError("cursor must be nonnegative")
         with self._transaction() as cursor:
@@ -2486,10 +2460,7 @@ class PostgresFactoryStore:
             )
             rows = cursor.fetchall()
         try:
-            all_items = tuple(
-                self._event_snapshot(row, task_id)
-                for row in rows
-            )
+            all_items = tuple(self._event_snapshot(row, task_id) for row in rows)
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise StoreUnavailable("event history invariant failed") from exc
         has_more = len(all_items) > limit
@@ -2539,11 +2510,7 @@ class PostgresFactoryStore:
         attempt_id = cls._history_uuid(row[11])
         attempt_task_id = cls._history_uuid(row[12])
         attempt_run_id = cls._history_uuid(row[13])
-        if (
-            run_task_id != requested_task_id
-            or attempt_task_id != requested_task_id
-            or attempt_run_id != run_id
-        ):
+        if run_task_id != requested_task_id or attempt_task_id != requested_task_id or attempt_run_id != run_id:
             raise ValueError("history identity mismatch")
         fence, attempt_no = row[5], row[14]
         if type(fence) is not int or not 1 <= fence <= 9_223_372_036_854_775_807:
@@ -2551,7 +2518,9 @@ class PostgresFactoryStore:
         if type(attempt_no) is not int or not 1 <= attempt_no <= 3:
             raise ValueError("invalid attempt number")
         failure_evidence = row[15:18]
-        if not (all(value is None for value in failure_evidence) or all(value is not None for value in failure_evidence)):
+        if not (
+            all(value is None for value in failure_evidence) or all(value is not None for value in failure_evidence)
+        ):
             raise ValueError("partial attempt failure evidence")
         failure_class = FailureClass(row[15]) if row[15] is not None else None
         failure_code = cls._history_text(row[16]) if row[16] is not None else None
@@ -2601,30 +2570,23 @@ class PostgresFactoryStore:
         if set(metadata) - allowed:
             raise ValueError("event metadata contains an unknown field")
         if "generation" in metadata and (
-            type(metadata["generation"]) is not int
-            or not 1 <= metadata["generation"] <= 2_147_483_647
+            type(metadata["generation"]) is not int or not 1 <= metadata["generation"] <= 2_147_483_647
         ):
             raise ValueError("invalid event generation")
         if "run_id" in metadata:
             cls._history_uuid(metadata["run_id"])
         if "fence" in metadata and (
-            type(metadata["fence"]) is not int
-            or not 1 <= metadata["fence"] <= 9_223_372_036_854_775_807
+            type(metadata["fence"]) is not int or not 1 <= metadata["fence"] <= 9_223_372_036_854_775_807
         ):
             raise ValueError("invalid event fence")
         if "role" in metadata:
             RunRole(metadata["role"])
         for name, maximum in (("attempts", 3), ("infrastructure_retries", 2)):
-            if name in metadata and (
-                type(metadata[name]) is not int
-                or not 0 <= metadata[name] <= maximum
-            ):
+            if name in metadata and (type(metadata[name]) is not int or not 0 <= metadata[name] <= maximum):
                 raise ValueError(f"invalid event {name}")
         if "replacement_intent_digest" in metadata:
             cls._history_digest(metadata["replacement_intent_digest"])
-        if "accounting_quarantined" in metadata and type(
-            metadata["accounting_quarantined"]
-        ) is not bool:
+        if "accounting_quarantined" in metadata and type(metadata["accounting_quarantined"]) is not bool:
             raise ValueError("invalid accounting quarantine marker")
         for name in ("from_state", "target"):
             if name in metadata:
@@ -2672,7 +2634,20 @@ class PostgresFactoryStore:
                 return False
             previous = "0" * 64
             for row in rows:
-                recorded_previous, recorded_current, stored_task_id, run_id, correlation_id, actor, action, resource, reason, received_at, metadata, digest_version = row
+                (
+                    recorded_previous,
+                    recorded_current,
+                    stored_task_id,
+                    run_id,
+                    correlation_id,
+                    actor,
+                    action,
+                    resource,
+                    reason,
+                    received_at,
+                    metadata,
+                    digest_version,
+                ) = row
                 if recorded_previous.strip() != previous:
                     return False
                 envelope = {
@@ -2709,7 +2684,15 @@ class PostgresFactoryStore:
         )
         return bool(cursor.fetchone()[0])
 
-    def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
+    def claim(
+        self,
+        request,
+        actor: Actor,
+        now: datetime,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> LeaseGrant | None:
         if actor.kind != "worker" or request.owner != actor.actor_id:
             raise StoreError("claim owner must match worker actor")
         with self._transaction() as cursor:
@@ -2725,14 +2708,21 @@ class PostgresFactoryStore:
                 if value is None:
                     return None
                 return LeaseGrant(
-                    value["task_id"], value["run_id"], value["owner"], RunRole(value["role"]), value["fence"],
-                    datetime.fromisoformat(value["expires_at"].replace("Z", "+00:00")), value["packet_digest"]
+                    value["task_id"],
+                    value["run_id"],
+                    value["owner"],
+                    RunRole(value["role"]),
+                    value["fence"],
+                    datetime.fromisoformat(value["expires_at"].replace("Z", "+00:00")),
+                    value["packet_digest"],
                 )
+
             def no_grant() -> None:
                 self._record_command(
                     cursor, idempotency_key, actor, "claim", request_digest, correlation_id, {"grant": None}
                 )
                 return None
+
             if self._is_killed(cursor, request.repositories):
                 return no_grant()
             cursor.execute(
@@ -2840,9 +2830,7 @@ class PostgresFactoryStore:
                 str(task_id),
                 current,
                 TaskStatus.LEASED,
-                TransitionCommand(
-                    "control_plane", TaskStatus.LEASED, TransitionOperation.CLAIM
-                ),
+                TransitionCommand("control_plane", TaskStatus.LEASED, TransitionOperation.CLAIM),
                 current_run_id=str(run_id),
                 current_fence=fence,
             )
@@ -2878,13 +2866,23 @@ class PostgresFactoryStore:
                 str(task_id), str(run_id), request.owner, request.role, fence, expires, packet_digest.strip()
             )
             self._record_command(
-                cursor, idempotency_key, actor, "claim", request_digest, correlation_id,
-                {"grant": {
-                    "task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner,
-                    "role": grant.role.value, "fence": grant.fence,
-                    "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
-                    "packet_digest": grant.packet_digest,
-                }},
+                cursor,
+                idempotency_key,
+                actor,
+                "claim",
+                request_digest,
+                correlation_id,
+                {
+                    "grant": {
+                        "task_id": grant.task_id,
+                        "run_id": grant.run_id,
+                        "owner": grant.owner,
+                        "role": grant.role.value,
+                        "fence": grant.fence,
+                        "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
+                        "packet_digest": grant.packet_digest,
+                    }
+                },
             )
             return grant
 
@@ -3057,8 +3055,12 @@ class PostgresFactoryStore:
         cursor.execute(
             "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
             (
-                grant.task_id, grant.run_id, grant.owner, grant.fence,
-                grant.packet_digest, packet_digest,
+                grant.task_id,
+                grant.run_id,
+                grant.owner,
+                grant.fence,
+                grant.packet_digest,
+                packet_digest,
             ),
         )
         row = cursor.fetchone()
@@ -3125,9 +3127,7 @@ class PostgresFactoryStore:
         event: CanonicalEvent,
         result: dict,
     ):
-        if not isinstance(result, dict) or set(result) != {
-            "proposal_kind", "sequence", "proposal_idempotency_key"
-        }:
+        if not isinstance(result, dict) or set(result) != {"proposal_kind", "sequence", "proposal_idempotency_key"}:
             raise StoreError("persisted execution proposal command is corrupt")
         expected_kind = cls._proposal_kind(event.event_type)
         proposal_digest = result["proposal_idempotency_key"]
@@ -3149,8 +3149,13 @@ class PostgresFactoryStore:
         if isinstance(envelope, str):
             envelope = json.loads(envelope)
         if not isinstance(envelope, dict) or set(envelope) != {
-            "task_id", "run_id", "packet_digest", "producer_sequence", "proposal_kind",
-            "idempotency_key", "body",
+            "task_id",
+            "run_id",
+            "packet_digest",
+            "producer_sequence",
+            "proposal_kind",
+            "idempotency_key",
+            "body",
         }:
             raise StoreError("persisted execution proposal is corrupt")
         task_id = envelope["task_id"]
@@ -3175,9 +3180,7 @@ class PostgresFactoryStore:
             "terminal": TerminalProposal,
         }
         if kind == "usage":
-            classes["usage"] = (
-                UsageProposalV2 if event.protocol_version == PROTOCOL_VERSION_V2 else UsageProposal
-            )
+            classes["usage"] = UsageProposalV2 if event.protocol_version == PROTOCOL_VERSION_V2 else UsageProposal
         proposal_type = classes.get(kind)
         if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
             raise StoreError("persisted execution proposal is corrupt")
@@ -3201,10 +3204,7 @@ class PostgresFactoryStore:
             or proposal.idempotency_key != stored_digest
             or proposal.idempotency_key != proposal_digest
             or proposal_idempotency_key(proposal) != proposal_digest
-            or (
-                isinstance(proposal, TerminalProposal)
-                and proposal.terminal_type != event.event_type
-            )
+            or (isinstance(proposal, TerminalProposal) and proposal.terminal_type != event.event_type)
         ):
             raise StoreError("persisted execution proposal is corrupt")
         return proposal
@@ -3219,11 +3219,7 @@ class PostgresFactoryStore:
     ):
         if idempotency_key is None:
             return None
-        if (
-            actor.kind != "worker"
-            or actor.actor_id != grant.owner
-            or "task:execute" not in actor.scopes
-        ):
+        if actor.kind != "worker" or actor.actor_id != grant.owner or "task:execute" not in actor.scopes:
             raise StoreError("execution proposal replay requires bound worker actor")
         command = self._execution_proposal_command(grant, event)
         with self._transaction() as cursor:
@@ -3232,9 +3228,7 @@ class PostgresFactoryStore:
                 cursor, idempotency_key, actor, "execution_propose", command
             )
             if replay:
-                return self._stored_execution_proposal(
-                    cursor, grant, event, prior
-                )
+                return self._stored_execution_proposal(cursor, grant, event, prior)
             self._proposal_context(cursor, grant, event.packet_digest)
             return None
 
@@ -3329,11 +3323,7 @@ class PostgresFactoryStore:
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ):
-        if (
-            actor.kind != "worker"
-            or actor.actor_id != grant.owner
-            or "task:execute" not in actor.scopes
-        ):
+        if actor.kind != "worker" or actor.actor_id != grant.owner or "task:execute" not in actor.scopes:
             raise StoreError("execution proposal commit requires bound worker actor")
         kinds = {
             NoteProposal: "note",
@@ -3362,10 +3352,7 @@ class PostgresFactoryStore:
             or proposal.sequence != event.sequence
             or proposal.author_role != grant.role.value
             or proposal.idempotency_key != proposal_idempotency_key(proposal)
-            or (
-                isinstance(proposal, TerminalProposal)
-                and proposal.terminal_type != event.event_type
-            )
+            or (isinstance(proposal, TerminalProposal) and proposal.terminal_type != event.event_type)
         ):
             raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
@@ -3377,14 +3364,10 @@ class PostgresFactoryStore:
                 cursor, idempotency_key, actor, "execution_propose", command
             )
             if replay:
-                return self._stored_execution_proposal(
-                    cursor, grant, event, prior
-                )
+                return self._stored_execution_proposal(cursor, grant, event, prior)
             context = self._proposal_context(cursor, grant, event.packet_digest)
             attestation_digest = (
-                proposal.artifact_attestation_digest
-                if isinstance(proposal, ArtifactProposal)
-                else None
+                proposal.artifact_attestation_digest if isinstance(proposal, ArtifactProposal) else None
             )
             try:
                 expected_proposal = ProposalBroker().accept(
@@ -3400,16 +3383,25 @@ class PostgresFactoryStore:
                 raise StoreError("execution proposal does not match event semantics")
             if isinstance(proposal, UsageProposalV2):
                 _usage, blocked_reason = self._observe_usage_locked(
-                    cursor, grant, proposal.provider_call_id, proposal.price_table_digest,
-                    proposal.cost_usd_micros, proposal.total_tokens, proposal.output_bytes, actor,
+                    cursor,
+                    grant,
+                    proposal.provider_call_id,
+                    proposal.price_table_digest,
+                    proposal.cost_usd_micros,
+                    proposal.total_tokens,
+                    proposal.output_bytes,
+                    actor,
                     idempotency_key=(
                         canonical_digest({"usage_observation": idempotency_key})
-                        if idempotency_key is not None else None
+                        if idempotency_key is not None
+                        else None
                     ),
                     correlation_id=correlation_id,
                     component_values=(
-                        proposal.input_tokens, proposal.output_tokens,
-                        proposal.reasoning_tokens, proposal.cached_input_tokens,
+                        proposal.input_tokens,
+                        proposal.output_tokens,
+                        proposal.reasoning_tokens,
+                        proposal.cached_input_tokens,
                         proposal.cache_write_tokens,
                     ),
                 )
@@ -3417,16 +3409,28 @@ class PostgresFactoryStore:
                 cursor.execute(
                     "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                     (
-                        grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
-                        proposal.packet_digest, proposal.sequence, proposal.idempotency_key, kind,
+                        grant.task_id,
+                        grant.run_id,
+                        grant.owner,
+                        grant.fence,
+                        grant.packet_digest,
+                        proposal.packet_digest,
+                        proposal.sequence,
+                        proposal.idempotency_key,
+                        kind,
                         json.dumps(body, sort_keys=True, separators=(",", ":")),
                     ),
                 )
                 if not cursor.fetchone()[0]:
                     raise FenceError("stale execution proposal or fence")
                 self._record_command(
-                    cursor, idempotency_key, actor, "execution_propose", request_digest,
-                    correlation_id, {
+                    cursor,
+                    idempotency_key,
+                    actor,
+                    "execution_propose",
+                    request_digest,
+                    correlation_id,
+                    {
                         "proposal_kind": kind,
                         "sequence": proposal.sequence,
                         "proposal_idempotency_key": proposal.idempotency_key,
@@ -3534,15 +3538,24 @@ class PostgresFactoryStore:
                 ):
                     raise StoreError("workspace result already exists with different facts")
                 self._record_command(
-                    cursor, idempotency_key, actor, "execution_finalize", request_digest,
-                    correlation_id, {"result": result.to_dict()},
+                    cursor,
+                    idempotency_key,
+                    actor,
+                    "execution_finalize",
+                    request_digest,
+                    correlation_id,
+                    {"result": result.to_dict()},
                 )
                 return result
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
-                    grant.task_id, grant.run_id, grant.owner, grant.fence,
-                    grant.packet_digest, packet_digest,
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet_digest,
                 ),
             )
             context = cursor.fetchone()[0]
@@ -3567,14 +3580,10 @@ class PostgresFactoryStore:
                     "workspace_snapshot_digest": snapshot.workspace_snapshot_digest,
                     "terminal_stage": context["terminal_stage"],
                     "terminal_proposal_digest": context["terminal_proposal_digest"],
-                    "artifact_manifest_digest": workspace_evidence_digest(
-                        "artifacts", context["artifact_digests"]
-                    ),
+                    "artifact_manifest_digest": workspace_evidence_digest("artifacts", context["artifact_digests"]),
                     "note_manifest_digest": workspace_evidence_digest("notes", context["note_digests"]),
                     "usage_evidence_digest": workspace_evidence_digest("usage", context["usage_digests"]),
-                    "diagnostics_digest": workspace_evidence_digest(
-                        "diagnostics", context["diagnostic_digests"]
-                    ),
+                    "diagnostics_digest": workspace_evidence_digest("diagnostics", context["diagnostic_digests"]),
                     "m4_status": context["m4_status"],
                     "failure_class": context["failure_class"],
                     "failure_reason": context["failure_reason"],
@@ -3583,8 +3592,13 @@ class PostgresFactoryStore:
             cursor.execute(
                 "SELECT factory.execution_finalize_commit(%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
                 (
-                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
-                    packet_digest, result.workspace_result_digest,
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet_digest,
+                    result.workspace_result_digest,
                     json.dumps(snapshot.to_dict(), sort_keys=True, separators=(",", ":")),
                     json.dumps(result.to_dict(), sort_keys=True, separators=(",", ":")),
                 ),
@@ -3627,8 +3641,13 @@ class PostgresFactoryStore:
                 grant.run_id,
             )
             self._record_command(
-                cursor, idempotency_key, actor, "execution_finalize", request_digest,
-                correlation_id, {"result": result.to_dict()},
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_finalize",
+                request_digest,
+                correlation_id,
+                {"result": result.to_dict()},
             )
             return result
 
@@ -3667,8 +3686,12 @@ class PostgresFactoryStore:
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
-                    grant.task_id, grant.run_id, grant.owner, grant.fence,
-                    grant.packet_digest, packet_digest,
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet_digest,
                 ),
             )
             context = cursor.fetchone()[0]
@@ -3737,7 +3760,9 @@ class PostgresFactoryStore:
         )
         if cursor.fetchone() is None:
             return
-        cursor.execute("UPDATE factory.runs SET state='released',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        cursor.execute(
+            "UPDATE factory.runs SET state='released',released_at=clock_timestamp() WHERE run_id=%s", (run_id,)
+        )
         cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (run_id,))
         cursor.execute("SELECT factory.capacity_release(%s)", (run_id,))
         if not cursor.fetchone()[0]:
@@ -3755,12 +3780,11 @@ class PostgresFactoryStore:
     ) -> TerminalizationResult:
         if target not in {TaskStatus.CANCELLED, TaskStatus.SUPERSEDED}:
             raise StoreError("unsupported terminal transition")
-        terminal = tuple(status.value for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED))
-        operation = (
-            TransitionOperation.CANCEL
-            if target is TaskStatus.CANCELLED
-            else TransitionOperation.SUPERSEDE
+        terminal = tuple(
+            status.value
+            for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED)
         )
+        operation = TransitionOperation.CANCEL if target is TaskStatus.CANCELLED else TransitionOperation.SUPERSEDE
         for _attempt in range(3):
             self._close_active_lease(cursor, task_id)
             cursor.execute(
@@ -3816,7 +3840,9 @@ class PostgresFactoryStore:
         )
         if cursor.fetchone() is None:
             return False
-        cursor.execute("UPDATE factory.runs SET state='expired',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        cursor.execute(
+            "UPDATE factory.runs SET state='expired',released_at=clock_timestamp() WHERE run_id=%s", (run_id,)
+        )
         cursor.execute(
             """UPDATE factory.attempts SET failure_class='worker_lost',failure_code='orphaned_projection',
             failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s""",
@@ -3826,10 +3852,10 @@ class PostgresFactoryStore:
         if not cursor.fetchone()[0]:
             raise StoreError("orphan capacity was not released")
         key = canonical_digest({"action": "reconcile_orphan", "run_id": run_id})
-        self._event(
-            cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id}, mandatory_cleanup=True
+        self._event(cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id}, mandatory_cleanup=True)
+        self._audit(
+            cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id
         )
-        self._audit(cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id)
         return True
 
     def _terminalize_expired_unleased_task(
@@ -3937,12 +3963,37 @@ class PostgresFactoryStore:
             raise FenceError("stale or expired fence")
         return row
 
-    def heartbeat(self, grant: LeaseGrant, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant:
+    def heartbeat(
+        self,
+        grant: LeaseGrant,
+        actor: Actor,
+        now: datetime,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> LeaseGrant:
         with self._transaction() as cursor:
-            command = {"grant": {"task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner, "role": grant.role.value, "fence": grant.fence, "packet_digest": grant.packet_digest}}
+            command = {
+                "grant": {
+                    "task_id": grant.task_id,
+                    "run_id": grant.run_id,
+                    "owner": grant.owner,
+                    "role": grant.role.value,
+                    "fence": grant.fence,
+                    "packet_digest": grant.packet_digest,
+                }
+            }
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "heartbeat", command)
             if replay:
-                return LeaseGrant(grant.task_id, grant.run_id, grant.owner, grant.role, grant.fence, datetime.fromisoformat(prior["expires_at"].replace("Z", "+00:00")), grant.packet_digest)
+                return LeaseGrant(
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.role,
+                    grant.fence,
+                    datetime.fromisoformat(prior["expires_at"].replace("Z", "+00:00")),
+                    grant.packet_digest,
+                )
             self._lock_grant(cursor, grant)
             cursor.execute(
                 "UPDATE factory.runs SET lease_expires_at=LEAST(clock_timestamp()+interval '30 seconds',deadline_at) WHERE run_id=%s RETURNING lease_expires_at",
@@ -3952,7 +4003,15 @@ class PostgresFactoryStore:
             result = LeaseGrant(
                 grant.task_id, grant.run_id, grant.owner, grant.role, grant.fence, expires, grant.packet_digest
             )
-            self._record_command(cursor, idempotency_key, actor, "heartbeat", request_digest, correlation_id, {"expires_at": expires.isoformat().replace("+00:00", "Z")})
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "heartbeat",
+                request_digest,
+                correlation_id,
+                {"expires_at": expires.isoformat().replace("+00:00", "Z")},
+            )
             return result
 
     def transition_phase(
@@ -3980,21 +4039,23 @@ class PostgresFactoryStore:
                 "target": target.value,
             }
             if decision_record is not None:
-                command['decision_digest'] = decision_record.record_digest
+                command["decision_digest"] = decision_record.record_digest
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "transition_phase", command
             )
             if replay:
                 return TaskStatus(prior["status"])
-            task_id, _role, _repository_id, _attempt_no, _retries, task_state = self._lock_grant(
-                cursor, grant
-            )
+            task_id, _role, _repository_id, _attempt_no, _retries, task_state = self._lock_grant(cursor, grant)
             current = TaskStatus(task_state)
             if decision_record is not None:
                 record = DecisionRecordV1.from_dict(decision_record.to_dict())
-                facts = {fact['name']: fact['value'] for fact in record.to_dict()['facts']}
-                if record.to_dict()['decision_kind'] != 'state' or facts.get('from_state') != current.value or facts.get('target') != target.value:
-                    raise IntegrityError('state decision facts mismatch')
+                facts = {fact["name"]: fact["value"] for fact in record.to_dict()["facts"]}
+                if (
+                    record.to_dict()["decision_kind"] != "state"
+                    or facts.get("from_state") != current.value
+                    or facts.get("target") != target.value
+                ):
+                    raise IntegrityError("state decision facts mismatch")
                 self._append_decision_locked(cursor, grant, record, actor)
             operation = TransitionOperation.PHASE
             self._apply_task_transition(
@@ -4051,30 +4112,52 @@ class PostgresFactoryStore:
 
     def _append_decision_locked(self, cursor, grant, record, actor):
         data = record.to_dict()
-        cursor.execute('SELECT repository_id FROM factory.tasks WHERE task_id=%s', (grant.task_id,))
+        cursor.execute("SELECT repository_id FROM factory.tasks WHERE task_id=%s", (grant.task_id,))
         repository = cursor.fetchone()[0]
-        if (data['repository_id'] != repository or data['task_id'] != grant.task_id
-                or data['run_id'] != grant.run_id or data['fence'] != grant.fence
-                or actor.actor_id != grant.owner or 'task:release' not in actor.scopes
-                or ('*' not in actor.repositories and repository not in actor.repositories)):
-            raise AuthorityError('decision identity mismatch')
-        cursor.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s AND task_id=%s', (grant.run_id, grant.task_id))
+        if (
+            data["repository_id"] != repository
+            or data["task_id"] != grant.task_id
+            or data["run_id"] != grant.run_id
+            or data["fence"] != grant.fence
+            or actor.actor_id != grant.owner
+            or "task:release" not in actor.scopes
+            or ("*" not in actor.repositories and repository not in actor.repositories)
+        ):
+            raise AuthorityError("decision identity mismatch")
+        cursor.execute(
+            "SELECT attempt_id FROM factory.attempts WHERE run_id=%s AND task_id=%s", (grant.run_id, grant.task_id)
+        )
         attempt = cursor.fetchone()
-        if attempt is None or str(attempt[0]) != data['attempt_id']:
-            raise IntegrityError('decision attempt mismatch')
-        if data['supersedes'] is not None:
-            cursor.execute('SELECT task_id,run_id FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (repository, data['supersedes']))
+        if attempt is None or str(attempt[0]) != data["attempt_id"]:
+            raise IntegrityError("decision attempt mismatch")
+        if data["supersedes"] is not None:
+            cursor.execute(
+                "SELECT task_id,run_id FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s",
+                (repository, data["supersedes"]),
+            )
             prior = cursor.fetchone()
             if prior is None or str(prior[0]) != grant.task_id or str(prior[1]) != grant.run_id:
-                raise IntegrityError('decision supersession mismatch')
-        cursor.execute('''INSERT INTO factory.decision_records_v1
+                raise IntegrityError("decision supersession mismatch")
+        cursor.execute(
+            """INSERT INTO factory.decision_records_v1
             (repository_id,decision_id,task_id,run_id,record_digest,record,supersedes)
-            VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s) ON CONFLICT DO NOTHING''',
-            (repository, data['decision_id'], grant.task_id, grant.run_id, record.record_digest,
-             canonical_json(data).decode(), data['supersedes']))
-        cursor.execute('SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (repository, data['decision_id']))
+            VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s) ON CONFLICT DO NOTHING""",
+            (
+                repository,
+                data["decision_id"],
+                grant.task_id,
+                grant.run_id,
+                record.record_digest,
+                canonical_json(data).decode(),
+                data["supersedes"],
+            ),
+        )
+        cursor.execute(
+            "SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s",
+            (repository, data["decision_id"]),
+        )
         if cursor.fetchone()[0] != record.record_digest:
-            raise IntegrityError('decision idempotency conflict')
+            raise IntegrityError("decision idempotency conflict")
         return record.record_digest
 
     def append_decision(self, grant, record, actor):
@@ -4085,103 +4168,190 @@ class PostgresFactoryStore:
 
     def begin_bb_operation(self, grant, record, actor):
         """Atomic intent claim: only the inserting caller may send the external command."""
-        return self._begin_bb_operation(grant,record,actor)
+        return self._begin_bb_operation(grant, record, actor)
 
     def begin_bb_workflow_operation(self, grant, record, actor, limits):
         from .bb_profiles import BBWorkflowSnapshotV1
-        limits=BBWorkflowSnapshotV1.from_dict(limits)
-        return self._begin_bb_operation(grant,record,actor,workflow=limits)
+
+        limits = BBWorkflowSnapshotV1.from_dict(limits)
+        return self._begin_bb_operation(grant, record, actor, workflow=limits)
 
     def _begin_bb_operation(self, grant, record, actor, *, workflow=None):
         record = DecisionRecordV1.from_dict(record.to_dict())
         data = record.to_dict()
         with self._transaction() as cursor:
             self._lock_grant(cursor, grant)
-            cursor.execute('SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (data['repository_id'], data['decision_id']))
+            cursor.execute(
+                "SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s",
+                (data["repository_id"], data["decision_id"]),
+            )
             prior = cursor.fetchone()
             if prior:
-                if prior[0] != record.record_digest: raise IntegrityError('BB operation idempotency conflict')
+                if prior[0] != record.record_digest:
+                    raise IntegrityError("BB operation idempotency conflict")
                 # Revalidate actor/attempt bindings even for a duplicate.
                 self._append_decision_locked(cursor, grant, record, actor)
                 return False
             if workflow is not None:
-                facts={fact['name']:fact['value'] for fact in data['facts']}
-                limits=workflow.to_dict()
-                if data['reason_code']!='bb_intent' or facts.get('workflow_digest')!=workflow.record_digest or type(facts.get('cost_usd_micros')) is not int or facts['cost_usd_micros']<0:
-                    raise IntegrityError('BB workflow intent mismatch')
-                cursor.execute('''SELECT record FROM factory.decision_records_v1
+                facts = {fact["name"]: fact["value"] for fact in data["facts"]}
+                limits = workflow.to_dict()
+                if (
+                    data["reason_code"] != "bb_intent"
+                    or facts.get("workflow_digest") != workflow.record_digest
+                    or type(facts.get("cost_usd_micros")) is not int
+                    or facts["cost_usd_micros"] < 0
+                ):
+                    raise IntegrityError("BB workflow intent mismatch")
+                cursor.execute(
+                    """SELECT record FROM factory.decision_records_v1
                     WHERE task_id=%s AND run_id=%s AND record->>'reason_code'='bb_intent'
-                    AND record->'facts' @> %s::jsonb LIMIT 129''',
-                    (grant.task_id,grant.run_id,canonical_json([dict(name='workflow_digest',value=workflow.record_digest)]).decode()))
-                records=cursor.fetchall()
-                costs=sum(next(fact['value'] for fact in record[0]['facts'] if fact['name']=='cost_usd_micros') for record in records)
-                if len(records)>=min(128,limits['max_physical_attempts']) or costs+facts['cost_usd_micros']>limits['max_cost_usd_micros']:
-                    raise BudgetError('BB workflow attempts or cumulative budget exhausted')
+                    AND record->'facts' @> %s::jsonb LIMIT 129""",
+                    (
+                        grant.task_id,
+                        grant.run_id,
+                        canonical_json([dict(name="workflow_digest", value=workflow.record_digest)]).decode(),
+                    ),
+                )
+                records = cursor.fetchall()
+                costs = sum(
+                    next(fact["value"] for fact in record[0]["facts"] if fact["name"] == "cost_usd_micros")
+                    for record in records
+                )
+                if (
+                    len(records) >= min(128, limits["max_physical_attempts"])
+                    or costs + facts["cost_usd_micros"] > limits["max_cost_usd_micros"]
+                ):
+                    raise BudgetError("BB workflow attempts or cumulative budget exhausted")
             self._append_decision_locked(cursor, grant, record, actor)
             return True
 
     def bb_operation_records(self, grant, actor, operation_key):
-        if not HEX64.fullmatch(operation_key): raise IntegrityError('invalid BB operation key')
+        if not HEX64.fullmatch(operation_key):
+            raise IntegrityError("invalid BB operation key")
         with self._transaction() as cursor:
             row = self._lock_grant(cursor, grant)
             repository = row[2]
-            if actor.actor_id != grant.owner or 'task:release' not in actor.scopes or ('*' not in actor.repositories and repository not in actor.repositories):
-                raise AuthorityError('BB operation identity mismatch')
-            cursor.execute('''SELECT record FROM factory.decision_records_v1
+            if (
+                actor.actor_id != grant.owner
+                or "task:release" not in actor.scopes
+                or ("*" not in actor.repositories and repository not in actor.repositories)
+            ):
+                raise AuthorityError("BB operation identity mismatch")
+            cursor.execute(
+                """SELECT record FROM factory.decision_records_v1
                 WHERE repository_id=%s AND task_id=%s AND run_id=%s
-                AND record->'facts' @> %s::jsonb ORDER BY created_at,decision_id LIMIT 129''',
-                (repository, grant.task_id, grant.run_id, canonical_json([dict(name='operation_key',value=operation_key)]).decode()))
+                AND record->'facts' @> %s::jsonb ORDER BY created_at,decision_id LIMIT 129""",
+                (
+                    repository,
+                    grant.task_id,
+                    grant.run_id,
+                    canonical_json([dict(name="operation_key", value=operation_key)]).decode(),
+                ),
+            )
             records = cursor.fetchall()
-            if len(records)>128: raise IntegrityError('BB operation event bound exceeded')
+            if len(records) > 128:
+                raise IntegrityError("BB operation event bound exceeded")
             return [DecisionRecordV1.from_dict(record[0]) for record in records]
 
     def _lock_bb_usage_provenance(self, cursor, grant, actor):
         """Late observation only: retained run/fence/intent identity, not new execution authority."""
-        cursor.execute('''SELECT t.repository_id FROM factory.runs r
+        cursor.execute(
+            """SELECT t.repository_id FROM factory.runs r
             JOIN factory.tasks t ON t.task_id=r.task_id
             WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.role=%s
             AND r.fence=%s AND r.packet_digest=%s
             AND EXISTS (SELECT 1 FROM factory.decision_records_v1 d
                 WHERE d.task_id=r.task_id AND d.run_id=r.run_id AND d.record->>'reason_code'='bb_intent')
-            FOR UPDATE OF r,t''',
-            (grant.run_id,grant.task_id,grant.owner,grant.role.value,grant.fence,grant.packet_digest))
-        row=cursor.fetchone()
-        if row is None or actor.actor_id!=grant.owner or 'task:budget' not in actor.scopes or ('*' not in actor.repositories and row[0] not in actor.repositories):
-            raise AuthorityError('BB usage provenance mismatch')
+            FOR UPDATE OF r,t""",
+            (grant.run_id, grant.task_id, grant.owner, grant.role.value, grant.fence, grant.packet_digest),
+        )
+        row = cursor.fetchone()
+        if (
+            row is None
+            or actor.actor_id != grant.owner
+            or "task:budget" not in actor.scopes
+            or ("*" not in actor.repositories and row[0] not in actor.repositories)
+        ):
+            raise AuthorityError("BB usage provenance mismatch")
 
     def observe_bb_usage(self, grant, observation, actor, decision):
         from .bb_adapter import BBUsageObservationV1
-        observation=BBUsageObservationV1.from_dict(observation.to_dict()); data=observation.to_dict()
-        decision=DecisionRecordV1.from_dict(decision.to_dict())
-        decision_facts={fact['name']:fact['value'] for fact in decision.to_dict()['facts']}
-        if decision.to_dict()['reason_code']!='bb_usage' or any(decision_facts.get(name)!=value for name,value in data.items() if name!='schema_version'):
-            raise IntegrityError('BB usage decision mismatch')
-        result=None; blocked=None
+
+        observation = BBUsageObservationV1.from_dict(observation.to_dict())
+        data = observation.to_dict()
+        decision = DecisionRecordV1.from_dict(decision.to_dict())
+        decision_facts = {fact["name"]: fact["value"] for fact in decision.to_dict()["facts"]}
+        if decision.to_dict()["reason_code"] != "bb_usage" or any(
+            decision_facts.get(name) != value for name, value in data.items() if name != "schema_version"
+        ):
+            raise IntegrityError("BB usage decision mismatch")
+        result = None
+        blocked = None
         with self._transaction() as cursor:
-            self._lock_bb_usage_provenance(cursor,grant,actor)
-            cursor.execute('''SELECT 1 FROM factory.decision_records_v1
+            self._lock_bb_usage_provenance(cursor, grant, actor)
+            cursor.execute(
+                """SELECT 1 FROM factory.decision_records_v1
                 WHERE task_id=%s AND run_id=%s AND record->>'reason_code'='bb_intent'
-                AND record->'facts' @> %s::jsonb LIMIT 1''',
-                (grant.task_id,grant.run_id,canonical_json([dict(name='binding_digest',value=data['binding_digest'])]).decode()))
-            if cursor.fetchone() is None: raise IntegrityError('BB usage execution binding mismatch')
-            self._append_decision_locked(cursor,grant,decision,actor)
+                AND record->'facts' @> %s::jsonb LIMIT 1""",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    canonical_json([dict(name="binding_digest", value=data["binding_digest"])]).decode(),
+                ),
+            )
+            if cursor.fetchone() is None:
+                raise IntegrityError("BB usage execution binding mismatch")
+            self._append_decision_locked(cursor, grant, decision, actor)
             # Incomplete/estimated provider facts stay in the same immutable journal, never
             # transformed into zero-valued billed observations. Legacy components are disjoint.
-            complete=data['cost_status']=='actual' and data['price_table_digest'] is not None and all(data[key] is not None for key in ('input_tokens','output_tokens','reasoning_tokens','cached_input_tokens','cache_write_tokens'))
-            if complete and data['cache_write_tokens']==0:
-                input_tokens=data['input_tokens']-(data['cached_input_tokens'] if data['cache_in_input'] else 0)
-                output_tokens=data['output_tokens']-(data['reasoning_tokens'] if data['reasoning_in_output'] else 0)
-                components=(input_tokens,output_tokens,data['reasoning_tokens'],data['cached_input_tokens'],0)
-                result,blocked=self._observe_usage_locked(cursor,grant,data['provider_request_id'],data['price_table_digest'],
-                    data['confirmed_cost_usd_micros'],sum(components),0,actor,
-                    idempotency_key=canonical_digest(dict(bb_usage_request=data['provider_request_id'],run_id=grant.run_id)),
-                    correlation_id=None,component_values=components,bb_late_observation=True)
-        if blocked: raise BudgetError('BB observed accounting blocked; immutable usage retained')
+            complete = (
+                data["cost_status"] == "actual"
+                and data["price_table_digest"] is not None
+                and all(
+                    data[key] is not None
+                    for key in (
+                        "input_tokens",
+                        "output_tokens",
+                        "reasoning_tokens",
+                        "cached_input_tokens",
+                        "cache_write_tokens",
+                    )
+                )
+            )
+            if complete and data["cache_write_tokens"] == 0:
+                input_tokens = data["input_tokens"] - (data["cached_input_tokens"] if data["cache_in_input"] else 0)
+                output_tokens = data["output_tokens"] - (data["reasoning_tokens"] if data["reasoning_in_output"] else 0)
+                components = (input_tokens, output_tokens, data["reasoning_tokens"], data["cached_input_tokens"], 0)
+                result, blocked = self._observe_usage_locked(
+                    cursor,
+                    grant,
+                    data["provider_request_id"],
+                    data["price_table_digest"],
+                    data["confirmed_cost_usd_micros"],
+                    sum(components),
+                    0,
+                    actor,
+                    idempotency_key=canonical_digest(
+                        dict(bb_usage_request=data["provider_request_id"], run_id=grant.run_id)
+                    ),
+                    correlation_id=None,
+                    component_values=components,
+                    bb_late_observation=True,
+                )
+        if blocked:
+            raise BudgetError("BB observed accounting blocked; immutable usage retained")
         return result
 
     def _release_locked(
-        self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
-        deadline_expired: bool = False, correlation_id: str | None = None
+        self,
+        cursor,
+        grant: LeaseGrant,
+        outcome: str | FailureClass,
+        actor: Actor,
+        *,
+        allow_expired: bool = False,
+        deadline_expired: bool = False,
+        correlation_id: str | None = None,
     ) -> TaskStatus:
         cursor.execute("SELECT repository_id FROM factory.tasks WHERE task_id=%s", (grant.task_id,))
         repository = cursor.fetchone()
@@ -4297,9 +4467,7 @@ class PostgresFactoryStore:
                 }
             )
             audit_reason = "deadline_expired"
-        self._event(
-            cursor, str(task_id), actor, "released", key, event_metadata, mandatory_cleanup=True
-        )
+        self._event(cursor, str(task_id), actor, "released", key, event_metadata, mandatory_cleanup=True)
         self._audit(
             cursor,
             str(task_id),
@@ -4340,7 +4508,16 @@ class PostgresFactoryStore:
             (f"{milliseconds}ms",),
         )
 
-    def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> TaskStatus:
+    def release(
+        self,
+        grant: LeaseGrant,
+        outcome: str | FailureClass,
+        actor: Actor,
+        now: datetime,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> TaskStatus:
         with self._transaction() as cursor:
             outcome_value = outcome.value if isinstance(outcome, FailureClass) else outcome
             command = {"task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence, "outcome": outcome_value}
@@ -4348,12 +4525,22 @@ class PostgresFactoryStore:
             if replay:
                 return TaskStatus(prior["status"])
             result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
-            self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
+            self._record_command(
+                cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value}
+            )
             return result
 
     def reserve_budget(
-        self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor,
-        *, correlation_id: str | None = None,
+        self,
+        grant: LeaseGrant,
+        cost: int,
+        tokens: int,
+        wall: int,
+        reason_digest: str,
+        key: str,
+        actor: Actor,
+        *,
+        correlation_id: str | None = None,
     ) -> str:
         if (
             any(type(value) is not int or value < 0 for value in (cost, tokens, wall))
@@ -4363,8 +4550,12 @@ class PostgresFactoryStore:
             raise BudgetError("invalid budget evidence")
         with self._transaction() as cursor:
             command = {
-                "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
-                "cost_usd_micros": cost, "token_units": tokens, "wall_seconds": wall,
+                "task_id": grant.task_id,
+                "run_id": grant.run_id,
+                "fence": grant.fence,
+                "cost_usd_micros": cost,
+                "token_units": tokens,
+                "wall_seconds": wall,
                 "reason_digest": reason_digest,
             }
             replay, prior, request_digest = self._command_replay(cursor, key, actor, "reserve_budget", command)
@@ -4379,12 +4570,24 @@ class PostgresFactoryStore:
             duplicate = cursor.fetchone()
             if duplicate:
                 expected = (grant.task_id, grant.run_id, cost, tokens, wall, reason_digest)
-                actual = (str(duplicate[1]), str(duplicate[2]), duplicate[3], duplicate[4], duplicate[5], duplicate[6].strip())
+                actual = (
+                    str(duplicate[1]),
+                    str(duplicate[2]),
+                    duplicate[3],
+                    duplicate[4],
+                    duplicate[5],
+                    duplicate[6].strip(),
+                )
                 if actual != expected:
                     raise StoreError("idempotency key reused with different budget request")
                 reservation_id = str(duplicate[0])
                 self._record_command(
-                    cursor, key, actor, "reserve_budget", request_digest, correlation_id,
+                    cursor,
+                    key,
+                    actor,
+                    "reserve_budget",
+                    request_digest,
+                    correlation_id,
                     {"reservation_id": reservation_id},
                 )
                 return reservation_id
@@ -4392,7 +4595,17 @@ class PostgresFactoryStore:
                 "SELECT cost_limit_micros,token_limit,wall_limit_seconds,cost_reserved_micros,cost_observed_micros,tokens_reserved,tokens_observed,wall_reserved_seconds,accounting_blocked FROM factory.tasks WHERE task_id=%s FOR UPDATE",
                 (grant.task_id,),
             )
-            cost_limit, token_limit, wall_limit, reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall, blocked = cursor.fetchone()
+            (
+                cost_limit,
+                token_limit,
+                wall_limit,
+                reserved_cost,
+                observed_cost,
+                reserved_tokens,
+                observed_tokens,
+                reserved_wall,
+                blocked,
+            ) = cursor.fetchone()
             if (
                 blocked
                 or reserved_cost + observed_cost + cost > cost_limit
@@ -4413,7 +4626,12 @@ class PostgresFactoryStore:
                 )
             result = str(row[0] if row else reservation_id)
             self._record_command(
-                cursor, key, actor, "reserve_budget", request_digest, correlation_id,
+                cursor,
+                key,
+                actor,
+                "reserve_budget",
+                request_digest,
+                correlation_id,
                 {"reservation_id": result},
             )
             return result
@@ -4458,9 +4676,17 @@ class PostgresFactoryStore:
             component_values = (0, 0, 0, 0, 0)
         with self._transaction() as cursor:
             result, blocked_reason = self._observe_usage_locked(
-                cursor, grant, provider_call_id, price_table_digest, cost, tokens,
-                output, actor, idempotency_key=idempotency_key,
-                correlation_id=correlation_id, component_values=component_values,
+                cursor,
+                grant,
+                provider_call_id,
+                price_table_digest,
+                cost,
+                tokens,
+                output,
+                actor,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+                component_values=component_values,
             )
         if blocked_reason:
             raise BudgetError("accounting blocked")
@@ -4468,30 +4694,44 @@ class PostgresFactoryStore:
         return result
 
     def _observe_usage_locked(
-        self, cursor, grant: LeaseGrant, provider_call_id: str,
-        price_table_digest: str | None, cost: int, tokens: int, output: int,
-        actor: Actor, *, idempotency_key: str | None, correlation_id: str | None,
+        self,
+        cursor,
+        grant: LeaseGrant,
+        provider_call_id: str,
+        price_table_digest: str | None,
+        cost: int,
+        tokens: int,
+        output: int,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+        correlation_id: str | None,
         component_values: tuple[int, int, int, int, int],
         bb_late_observation: bool = False,
     ) -> tuple[UsageResult | None, str | None]:
         """Record one usage observation using the caller's active transaction."""
         command = {
-            "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
-            "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
-            "cost_usd_micros": cost, "token_units": tokens, "output_bytes": output,
-            "input_tokens": component_values[0], "output_tokens": component_values[1],
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "fence": grant.fence,
+            "provider_call_id": provider_call_id,
+            "price_table_digest": price_table_digest,
+            "cost_usd_micros": cost,
+            "token_units": tokens,
+            "output_bytes": output,
+            "input_tokens": component_values[0],
+            "output_tokens": component_values[1],
             "reasoning_tokens": component_values[2],
-            "cached_input_tokens": component_values[3], "cache_write_tokens": component_values[4],
+            "cached_input_tokens": component_values[3],
+            "cache_write_tokens": component_values[4],
         }
-        replay, prior, request_digest = self._command_replay(
-            cursor, idempotency_key, actor, "observe_usage", command
-        )
+        replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "observe_usage", command)
         if replay:
             if "error" in prior:
                 return None, "accounting_blocked"
             return UsageResult(prior["observation_id"], prior["created"]), None
         if bb_late_observation:
-            self._lock_bb_usage_provenance(cursor,grant,actor)
+            self._lock_bb_usage_provenance(cursor, grant, actor)
         else:
             self._lock_grant(cursor, grant)
         blocked_reason = None
@@ -4508,8 +4748,15 @@ class PostgresFactoryStore:
             duplicate = cursor.fetchone()
             if duplicate:
                 if (
-                    duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4],
-                    duplicate[5], duplicate[6], duplicate[7], duplicate[8], duplicate[9],
+                    duplicate[1].strip(),
+                    duplicate[2],
+                    duplicate[3],
+                    duplicate[4],
+                    duplicate[5],
+                    duplicate[6],
+                    duplicate[7],
+                    duplicate[8],
+                    duplicate[9],
                 ) != (price_table_digest, cost, tokens, output, *component_values):
                     raise StoreError("provider call id reused with different usage evidence")
                 result = UsageResult(str(duplicate[0]), False)
@@ -4535,9 +4782,14 @@ class PostgresFactoryStore:
                     FROM factory.tasks t WHERE task_id=%s FOR UPDATE""",
                     (grant.task_id,),
                 )
-                cost_limit, token_limit, output_limit, observed_cost, observed_tokens, observed_output = cursor.fetchone()
-                if (observed_cost + cost > cost_limit or observed_tokens + tokens > token_limit
-                        or observed_output + output > output_limit):
+                cost_limit, token_limit, output_limit, observed_cost, observed_tokens, observed_output = (
+                    cursor.fetchone()
+                )
+                if (
+                    observed_cost + cost > cost_limit
+                    or observed_tokens + tokens > token_limit
+                    or observed_output + output > output_limit
+                ):
                     blocked_reason = "usage_limit_exceeded"
                 else:
                     observation_id = uuid.uuid4()
@@ -4546,8 +4798,17 @@ class PostgresFactoryStore:
                         (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,token_units,output_bytes,
                          input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens)
                         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                        (observation_id, grant.task_id, grant.run_id, provider_call_id,
-                         price_table_digest, cost, tokens, output, *component_values),
+                        (
+                            observation_id,
+                            grant.task_id,
+                            grant.run_id,
+                            provider_call_id,
+                            price_table_digest,
+                            cost,
+                            tokens,
+                            output,
+                            *component_values,
+                        ),
                     )
                     cursor.execute(
                         "UPDATE factory.tasks SET cost_observed_micros=cost_observed_micros+%s,tokens_observed=tokens_observed+%s WHERE task_id=%s",
@@ -4559,20 +4820,50 @@ class PostgresFactoryStore:
                 "UPDATE factory.tasks SET accounting_blocked=true,updated_at=clock_timestamp() WHERE task_id=%s",
                 (grant.task_id,),
             )
-            key = canonical_digest(
-                {"action": "accounting_blocked", "run_id": grant.run_id, "reason": blocked_reason}
+            key = canonical_digest({"action": "accounting_blocked", "run_id": grant.run_id, "reason": blocked_reason})
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "accounting_blocked",
+                f"run:{grant.run_id}",
+                blocked_reason,
+                correlation_id or key,
+                run_id=grant.run_id,
             )
-            self._audit(cursor, grant.task_id, actor, "accounting_blocked", f"run:{grant.run_id}",
-                        blocked_reason, correlation_id or key, run_id=grant.run_id)
-            self._record_command(cursor, idempotency_key, actor, "observe_usage", request_digest,
-                                 correlation_id, {"error": "accounting blocked"})
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "observe_usage",
+                request_digest,
+                correlation_id,
+                {"error": "accounting blocked"},
+            )
         else:
             assert result is not None
-            self._record_command(cursor, idempotency_key, actor, "observe_usage", request_digest,
-                                 correlation_id, {"observation_id": result.observation_id, "created": result.created})
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "observe_usage",
+                request_digest,
+                correlation_id,
+                {"observation_id": result.observation_id, "created": result.created},
+            )
         return result, blocked_reason
 
-    def set_kill(self, scope: str, enabled: bool, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> bool:
+    def set_kill(
+        self,
+        scope: str,
+        enabled: bool,
+        reason: str,
+        key: str,
+        actor: Actor,
+        now: datetime,
+        *,
+        correlation_id: str | None = None,
+    ) -> bool:
         if scope != "global" and not scope.startswith("repository:"):
             raise StoreError("invalid kill scope")
         if not HEX64.fullmatch(key) or not reason or len(reason) > 128:
@@ -4591,7 +4882,16 @@ class PostgresFactoryStore:
             self._record_command(cursor, key, actor, "set_kill", request_digest, correlation_id, {"enabled": actual})
             return actual
 
-    def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> ReconcileResult:
+    def reconcile(
+        self,
+        actor: Actor,
+        now: datetime,
+        limit: int,
+        cursor_id: str | None,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> ReconcileResult:
         import psycopg
 
         deadline = time.monotonic() + self._RECONCILIATION_TIMEOUT_SECONDS
@@ -4669,7 +4969,9 @@ class PostgresFactoryStore:
                         task_row = cursor.fetchone()
                         if task_row is None:
                             raise StoreError("reconciliation task is missing")
-                        repair_count, repair_limit, state, current_run_id, current_fence, task_deadline_expired = task_row
+                        repair_count, repair_limit, state, current_run_id, current_fence, task_deadline_expired = (
+                            task_row
+                        )
                         grant = LeaseGrant(
                             str(task_id), str(run_id), owner, RunRole(role), fence, expires, packet.strip()
                         )
@@ -4705,9 +5007,7 @@ class PostgresFactoryStore:
                                     (task_id,),
                                 )
                             repaired += 1
-                        elif self._close_orphan_run(
-                            cursor, str(run_id), str(task_id), role, repository_id, actor
-                        ):
+                        elif self._close_orphan_run(cursor, str(run_id), str(task_id), role, repository_id, actor):
                             self._terminalize_expired_unleased_task(
                                 cursor,
                                 str(task_id),
@@ -4729,7 +5029,15 @@ class PostgresFactoryStore:
                 (repaired, last, reconciliation_id),
             )
             result = ReconcileResult(len(rows), repaired, last)
-            self._record_command(cursor, idempotency_key, actor, "reconcile", request_digest, correlation_id, {"candidates": result.candidates, "repaired": result.repaired, "cursor": result.cursor})
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "reconcile",
+                request_digest,
+                correlation_id,
+                {"candidates": result.candidates, "repaired": result.repaired, "cursor": result.cursor},
+            )
         return result
 
     def cancel(
@@ -4755,9 +5063,7 @@ class PostgresFactoryStore:
             if terminalization.changed:
                 cursor.execute("SET LOCAL lock_timeout='500ms'")
                 cursor.execute("SET LOCAL transaction_timeout='3s'")
-                cursor.execute(
-                    "SELECT factory.execution_recovery_cancel_task(%s)", (task_id,)
-                )
+                cursor.execute("SELECT factory.execution_recovery_cancel_task(%s)", (task_id,))
                 execution_projection = cursor.fetchone()[0]
                 if execution_projection not in {
                     "cancelled",
@@ -4772,9 +5078,7 @@ class PostgresFactoryStore:
                     "target": TaskStatus.CANCELLED.value,
                     "operation": terminalization.operation.value,
                 }
-                self._event(
-                    cursor, task_id, actor, "cancelled", key, metadata, mandatory_cleanup=True
-                )
+                self._event(cursor, task_id, actor, "cancelled", key, metadata, mandatory_cleanup=True)
                 self._audit(
                     cursor,
                     task_id,

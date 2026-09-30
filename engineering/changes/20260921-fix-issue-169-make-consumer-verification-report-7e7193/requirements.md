@@ -8,7 +8,7 @@
 
 ## Failure and edge cases
 
-- 
+-
 
 ## Governance context
 

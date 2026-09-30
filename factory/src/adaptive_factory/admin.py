@@ -73,15 +73,8 @@ def provision_artifact_attestor_login(
     *,
     runtime_login: str | None = None,
 ) -> None:
-    if (
-        not owner_url
-        or not LOGIN_NAME.fullmatch(login)
-        or not 16 <= len(password) <= 1024
-        or login == runtime_login
-    ):
-        raise BootstrapError(
-            "distinct bounded artifact attestor login and password are required"
-        )
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024 or login == runtime_login:
+        raise BootstrapError("distinct bounded artifact attestor login and password are required")
     import psycopg
     from psycopg import sql
 
@@ -109,15 +102,9 @@ def provision_artifact_attestor_login(
                 )
             else:
                 cursor.execute(
-                    sql.SQL("ALTER ROLE {} PASSWORD {}").format(
-                        sql.Identifier(login), sql.Literal(password)
-                    )
+                    sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password))
                 )
-            cursor.execute(
-                sql.SQL("GRANT factory_artifact_attestor TO {}").format(
-                    sql.Identifier(login)
-                )
-            )
+            cursor.execute(sql.SQL("GRANT factory_artifact_attestor TO {}").format(sql.Identifier(login)))
             validate_factory_role_boundary(
                 cursor,
                 expected_runtime_login=runtime_login,
@@ -154,9 +141,7 @@ def _validate_semantic_capability_role(cursor, role: str, label: str) -> None:
         raise BootstrapError(f"{label} capability role has unsafe membership")
 
 
-def _grant_and_validate_semantic_membership(
-    cursor, login: str, role: str, label: str
-) -> None:
+def _grant_and_validate_semantic_membership(cursor, login: str, role: str, label: str) -> None:
     from psycopg import sql
 
     cursor.execute(
@@ -206,19 +191,14 @@ def _provision_semantic_login(
         existing = cursor.fetchone()
         if existing is None:
             cursor.execute(
-                sql.SQL(
-                    "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}"
-                ).format(sql.Identifier(login), sql.Literal(password))
-            )
-        elif existing[:7] != (True, False, False, False, False, False, False) \
-                or tuple(existing[7]) != ():
-            raise BootstrapError(f"existing {label} login has unsafe attributes")
-        else:
-            cursor.execute(
-                sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+                sql.SQL("CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}").format(
                     sql.Identifier(login), sql.Literal(password)
                 )
             )
+        elif existing[:7] != (True, False, False, False, False, False, False) or tuple(existing[7]) != ():
+            raise BootstrapError(f"existing {label} login has unsafe attributes")
+        else:
+            cursor.execute(sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password)))
         _validate_semantic_capability_role(cursor, role, label)
         for forbidden_role in (
             "factory_runtime",
@@ -235,9 +215,7 @@ def _provision_semantic_login(
         _grant_and_validate_semantic_membership(cursor, login, role, label)
 
 
-def provision_semantic_coordinator_login(
-    owner_url: str, login: str, password: str
-) -> None:
+def provision_semantic_coordinator_login(owner_url: str, login: str, password: str) -> None:
     _provision_semantic_login(
         owner_url,
         login,
@@ -247,9 +225,7 @@ def provision_semantic_coordinator_login(
     )
 
 
-def provision_semantic_validator_login(
-    owner_url: str, login: str, password: str
-) -> None:
+def provision_semantic_validator_login(owner_url: str, login: str, password: str) -> None:
     _provision_semantic_login(
         owner_url,
         login,
@@ -259,9 +235,7 @@ def provision_semantic_validator_login(
     )
 
 
-def provision_semantic_adjudicator_login(
-    owner_url: str, login: str, password: str
-) -> None:
+def provision_semantic_adjudicator_login(owner_url: str, login: str, password: str) -> None:
     _provision_semantic_login(
         owner_url,
         login,
@@ -330,38 +304,42 @@ def bootstrap_local(
     ):
         raise BootstrapError("runtime readiness validation failed")
     if artifact_attestor_login is not None:
-        attestor_readiness = PostgresArtifactAttestationStore(
-            artifact_attestor_url
-        ).readiness()
+        attestor_readiness = PostgresArtifactAttestationStore(artifact_attestor_url).readiness()
         if attestor_readiness != {
             "session_user": artifact_attestor_login,
             "database_role": "factory_artifact_attestor",
         }:
             raise BootstrapError("artifact attestor readiness validation failed")
-        readiness["artifact_attestor_database_role"] = attestor_readiness[
-            "database_role"
-        ]
+        readiness["artifact_attestor_database_role"] = attestor_readiness["database_role"]
     return readiness
 
 
 def configure_unverified_limit(owner_url, repository_id, profile_digest, limit):
     """Explicit operator configuration; runtime has SELECT only on this table."""
-    if (not owner_url or not isinstance(repository_id, str)
+    if (
+        not owner_url
+        or not isinstance(repository_id, str)
         or not 1 <= len(repository_id.encode("utf-8")) <= 128
         or not isinstance(profile_digest, str)
         or re.fullmatch(r"[0-9a-f]{64}", profile_digest) is None
-        or type(limit) is not int or not 1 <= limit <= 64):
+        or type(limit) is not int
+        or not 1 <= limit <= 64
+    ):
         raise BootstrapError("bounded repository/profile and unverified limit required")
     import psycopg
+
     with psycopg.connect(owner_url) as connection, connection.transaction():
         connection.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-        connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
-                           (f"unverified:{repository_id}:{profile_digest}",))
-        connection.execute("""INSERT INTO factory.unverified_limits
+        connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (f"unverified:{repository_id}:{profile_digest}",)
+        )
+        connection.execute(
+            """INSERT INTO factory.unverified_limits
             (repository_id,profile_digest,max_unverified_inflight) VALUES(%s,%s,%s)
             ON CONFLICT(repository_id,profile_digest) DO UPDATE
             SET max_unverified_inflight=EXCLUDED.max_unverified_inflight""",
-            (repository_id,profile_digest,limit))
+            (repository_id, profile_digest, limit),
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -374,8 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     owner_url = os.environ.get("FACTORY_MIGRATOR_DATABASE_URL", "")
     artifact_attestor_login = os.environ.get("FACTORY_ARTIFACT_ATTESTOR_LOGIN") or None
     if args.command == "unverified-limit":
-        configure_unverified_limit(owner_url, args.repository, args.profile_digest,
-                                   args.max_unverified_inflight)
+        configure_unverified_limit(owner_url, args.repository, args.profile_digest, args.max_unverified_inflight)
         print("unverified_limit_configured")
         return 0
     if args.command == "migrate":
@@ -395,14 +372,12 @@ def main(argv: list[str] | None = None) -> int:
         password,
         runtime_url,
         artifact_attestor_login=artifact_attestor_login,
-        artifact_attestor_password=(
-            os.environ.get("FACTORY_ARTIFACT_ATTESTOR_PASSWORD") or None
-        ),
-        artifact_attestor_url=(
-            os.environ.get("FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL") or None
-        ),
+        artifact_attestor_password=(os.environ.get("FACTORY_ARTIFACT_ATTESTOR_PASSWORD") or None),
+        artifact_attestor_url=(os.environ.get("FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL") or None),
     )
-    print(f"status={readiness['status']} schema_version={readiness['schema_version']} role={readiness['database_role']}")
+    print(
+        f"status={readiness['status']} schema_version={readiness['schema_version']} role={readiness['database_role']}"
+    )
     return 0
 
 

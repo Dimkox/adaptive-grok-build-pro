@@ -174,6 +174,10 @@ class BBAdapterTests(unittest.TestCase):
         data['snapshots']['workflow']=workflow.record_digest
         module=importlib.import_module('adaptive_factory.bb_adapter'); binding=module.BBExecutionBindingV1.from_dict(data)
         seed=DecisionRecordV1.from_dict(decision_facts()); now=datetime(2026,9,30,12,tzinfo=timezone.utc)
+        from dataclasses import replace
+        with self.assertRaisesRegex(ContractError, 'bb_implement_requires_writer'):
+            adapter.submit_workflow(workflow,'implement',binding,replace(grant,role=RunRole.READER),actor,seed,
+                operation_id='reader-implement',cost_usd_micros=50,token_units=10,now=now)
         adapter.submit_workflow(workflow,'implement',binding,grant,actor,seed,operation_id='call-1',cost_usd_micros=50,token_units=10,now=now)
         with self.assertRaises(ContractError): adapter.submit_workflow(workflow,'test',binding,grant,actor,seed,operation_id='call-2',cost_usd_micros=50,token_units=10,now=now)
         self.assertEqual(transport.calls,['submit'])

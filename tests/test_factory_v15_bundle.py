@@ -12,6 +12,11 @@ class FactoryV15BundleTests(unittest.TestCase):
         self.assertTrue((BUNDLE / 'delivery-manifest.json').is_file(), 'v1.5 bundle missing')
         manifest = json.loads((BUNDLE / 'delivery-manifest.json').read_text())
         self.assertEqual(manifest['document_version'], '1.5')
+        attributes = (BUNDLE.parents[2] / '.gitattributes').read_text().splitlines()
+        self.assertEqual([line for line in attributes if line and not line.startswith('#')], [
+            'engineering/changes/20260924-factory-unified-upgrade/FACTORY_UNIFIED_UPGRADE_TZ.md whitespace=-blank-at-eol',
+            'engineering/changes/20260924-factory-unified-upgrade/FACTORY_TZ_v1.5_ADDENDUM_BB-01.md whitespace=-blank-at-eol',
+        ])
         for name, digest in manifest['sha256'].items():
             self.assertEqual(hashlib.sha256((BUNDLE / name).read_bytes()).hexdigest(), digest)
         self.assertEqual(manifest['sha256']['FACTORY_UNIFIED_UPGRADE_TZ.md'], '9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9')
