@@ -1,0 +1,35 @@
+{
+  "acceptance_criteria": [
+    {"evidence": [{"receipt": "verification"}], "id": "AC-001", "statement": "Workflow source metadata binds each supported stable release and separately observed main head to exact immutable commits and current documentation."},
+    {"evidence": [{"receipt": "code_review"}, {"receipt": "test_review"}], "id": "AC-002", "statement": "Named parser samples cover current supported shapes while previous documents remain readable and advisory-only."}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260930-refresh-workflow-upstream-versions-and-commits-8ba78f",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [{"evidence": [{"receipt": "code_review"}], "id": "FORBID-001", "statement": "An observed floating main commit is never represented as a stable release or install/authority target."}],
+  "invariants": [{"evidence": [{"receipt": "verification"}], "id": "INV-001", "statement": "Imported workflow documents remain advisory and cannot create route, governance, approval, receipt, or merge authority."}],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Реализовать новые advisory workflow source pins и parser samples для Superpowers 6.4.2, BMAD current main и Spec Kit 1.0.13 с exact upstream commit provenance и обратным чтением старых документов",
+    "success_metric": "workflow_source_currency_gate",
+    "target": "all_three_sources_exactly_bound_and_current_parser_tests_pass"
+  },
+  "observability": [{"id": "SIG-001", "metric": "workflow_source_currency_status", "proves": ["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
