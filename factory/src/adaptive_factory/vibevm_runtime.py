@@ -31,7 +31,13 @@ def _scope(value: str, field: str) -> str:
         raise VibeVMError(f"invalid_{field}")
     if value.startswith(("/", ".")) or ".." in value.split("/"):
         raise VibeVMError(f"invalid_{field}")
-    return value.replace("/", "_")
+    return value.encode("utf-8").hex()
+
+
+def _generation_id(value: str) -> str:
+    if not isinstance(value, str) or len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+        raise VibeVMError("invalid_generation_id")
+    return value
 
 
 def reconcile_boot_block(owner_text: str, managed_text: str) -> str:
@@ -123,8 +129,9 @@ class VibeVMStore:
         for name in sorted(by_name):
             visit(name)
         locked = [{key: by_name[name][key] for key in ("name", "version", "sha256", "origin", "dependencies", "qualified", "revoked")} for name in order]
-        return {"schema_version": 1, "packages": locked, "overrides": sorted(overrides),
-                "graph_digest": hashlib.sha256(_canonical(locked)).hexdigest()}
+        override_list = sorted(overrides)
+        return {"schema_version": 1, "packages": locked, "overrides": override_list,
+                "graph_digest": hashlib.sha256(_canonical({"packages": locked, "overrides": override_list})).hexdigest()}
 
     def object_path(self, digest: str) -> Path:
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
@@ -165,7 +172,8 @@ class VibeVMStore:
     def replay(self, lock, *, historical_audit=False):
         if set(lock) != {"schema_version", "packages", "overrides", "graph_digest"} or lock["schema_version"] != 1:
             raise VibeVMError("invalid_lock")
-        if hashlib.sha256(_canonical(lock["packages"])).hexdigest() != lock["graph_digest"]:
+        locked_graph = {"packages": lock["packages"], "overrides": lock["overrides"]}
+        if hashlib.sha256(_canonical(locked_graph)).hexdigest() != lock["graph_digest"]:
             raise VibeVMError("lock_digest_mismatch")
         result = {}
         for item in lock.get("packages", []):
@@ -186,6 +194,11 @@ class VibeVMStore:
 
     def semantic_identity(self, lock, configuration, *, observed_at=None):
         semantic = {"lock": lock, "configuration": configuration}
+        return hashlib.sha256(_canonical(semantic)).hexdigest()
+
+    def generation_identity(self, lock, configuration, boot_owner_text, boot_block, bindings):
+        semantic = {"lock": lock, "configuration": configuration, "boot_owner_text": boot_owner_text,
+                    "boot_block": boot_block, "bindings": bindings}
         return hashlib.sha256(_canonical(semantic)).hexdigest()
 
     @staticmethod
@@ -211,13 +224,16 @@ class VibeVMStore:
         members = archive.infolist()
         if len(members) > self.max_files:
             raise VibeVMError("file_count_exceeded")
-        total = 0
+        total = 0; seen = set()
         for member in members:
             path = PurePosixPath(member.filename)
             if path.is_absolute() or not path.parts or any(part in ("", ".", "..") for part in path.parts):
                 raise VibeVMError("path_escape")
             if len(path.parts) > self.max_depth:
                 raise VibeVMError("path_depth_exceeded")
+            if member.filename in seen:
+                raise VibeVMError(f"duplicate_member:{member.filename}")
+            seen.add(member.filename)
             mode = member.external_attr >> 16
             file_type = stat.S_IFMT(mode)
             if stat.S_ISLNK(mode) or file_type not in (0, stat.S_IFREG, stat.S_IFDIR):
@@ -235,6 +251,8 @@ class VibeVMStore:
             data = archive.read(member)
             if len(data) != member.file_size:
                 raise VibeVMError("archive_size_mismatch")
+            if path.suffix.lower() == ".xml" and (b"<!DOCTYPE" in data.upper() or b"<!ENTITY" in data.upper()):
+                raise VibeVMError(f"xml_external_entity_forbidden:{member.filename}")
             target.write_bytes(data); target.chmod(0o400)
 
     def publish(self, lock, *, boot_owner_text, boot_block, bindings, configuration,
@@ -247,7 +265,7 @@ class VibeVMStore:
         if expected_active is not None and current != expected_active:
             raise VibeVMError("generation_conflict")
         payloads = self.replay(lock)
-        generation_id = self.semantic_identity(lock, configuration)
+        generation_id = self.generation_identity(lock, configuration, boot_owner_text, boot_block, bindings)
         self.generations.mkdir(parents=True, exist_ok=True, mode=0o700)
         final = self.generations / generation_id
         staging = Path(tempfile.mkdtemp(prefix=".generation-", dir=self.generations))
@@ -260,6 +278,10 @@ class VibeVMStore:
             for binding in bindings:
                 if set(binding) != {"criterion_id", "rule_id", "revision", "source_digest", "status"} or binding["status"] != "mapped":
                     raise VibeVMError("invalid_binding")
+                for field in ("criterion_id", "rule_id", "revision"):
+                    _scope(binding[field], field)
+                if len(binding["source_digest"]) != 64 or any(character not in "0123456789abcdef" for character in binding["source_digest"]):
+                    raise VibeVMError("invalid_binding")
                 normalized_bindings.append(dict(binding))
             sources = []
             for source in sorted(projection.rglob("*")):
@@ -267,12 +289,19 @@ class VibeVMStore:
                     sources.append({"path": source.relative_to(projection).as_posix(),
                                     "content": source.read_text(encoding="utf-8"),
                                     "sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
+            source_digests = {source["sha256"] for source in sources}
+            for binding in normalized_bindings:
+                if binding["source_digest"] not in source_digests:
+                    raise VibeVMError(f"binding_source_missing:{binding['rule_id']}")
             native = {"schema_version": 1, "generation_id": generation_id, "lock": lock,
                       "bindings": normalized_bindings, "sources": sources, "authority_effect": "none"}
             (staging / "boot.md").write_text(reconcile_boot_block(boot_owner_text, boot_block), encoding="utf-8")
             (staging / "lock.json").write_bytes(_canonical(lock) + b"\n")
             (staging / "native-export.json").write_bytes(_canonical(native) + b"\n")
-            (staging / "status.json").write_bytes(_canonical({"qualified": True, "revoked": False}) + b"\n")
+            status_value = {"qualified": True, "revoked": False,
+                            "safety_known": configuration.get("safety_known", True),
+                            "mandatory_rules_complete": configuration.get("mandatory_rules_complete", True)}
+            (staging / "status.json").write_bytes(_canonical(status_value) + b"\n")
             if final.exists():
                 shutil.rmtree(staging)
             else:
@@ -306,33 +335,51 @@ class VibeVMStore:
         return value
 
     def export_native(self, generation_id):
+        _generation_id(generation_id)
         path = self.generations / generation_id / "native-export.json"
         if not path.is_file():
             raise VibeVMError("generation_missing")
         return json.loads(path.read_text(encoding="utf-8"))
 
     def open_snapshot(self, generation_id):
+        _generation_id(generation_id)
         value = json.loads(json.dumps(self.export_native(generation_id)))
         return Snapshot(generation_id, MappingProxyType(value))
 
     def set_generation_status(self, generation_id, *, qualified, revoked=False):
+        _generation_id(generation_id)
         directory = self.generations / generation_id
         if not directory.is_dir():
             raise VibeVMError("generation_missing")
-        (directory / "status.json").write_bytes(_canonical({"qualified": bool(qualified), "revoked": bool(revoked)}) + b"\n")
-
-    def rollback(self, generation_id):
-        directory = self.generations / generation_id
-        if not directory.is_dir():
-            raise VibeVMError("rollback_target_missing")
-        status_value = json.loads((directory / "status.json").read_text(encoding="utf-8"))
-        if status_value.get("revoked"):
-            raise VibeVMError("rollback_target_revoked")
-        if not status_value.get("qualified"):
-            raise VibeVMError("rollback_target_unqualified")
         lock_path = self.root / ".generation.lock"
         with lock_path.open("a+b") as update_lock:
             fcntl.flock(update_lock, fcntl.LOCK_EX)
+            status_path = directory / "status.json"
+            status_value = json.loads(status_path.read_text(encoding="utf-8"))
+            status_value.update({"qualified": bool(qualified), "revoked": bool(revoked)})
+            descriptor, temporary = tempfile.mkstemp(prefix=".status-", dir=directory)
+            try:
+                with os.fdopen(descriptor, "wb") as output:
+                    output.write(_canonical(status_value) + b"\n"); output.flush(); os.fsync(output.fileno())
+                os.replace(temporary, status_path)
+            finally:
+                Path(temporary).unlink(missing_ok=True)
+            if revoked and self.active_generation() == generation_id:
+                self.active_path.unlink()
+
+    def rollback(self, generation_id):
+        _generation_id(generation_id)
+        directory = self.generations / generation_id
+        if not directory.is_dir():
+            raise VibeVMError("rollback_target_missing")
+        lock_path = self.root / ".generation.lock"
+        with lock_path.open("a+b") as update_lock:
+            fcntl.flock(update_lock, fcntl.LOCK_EX)
+            status_value = json.loads((directory / "status.json").read_text(encoding="utf-8"))
+            if status_value.get("revoked"):
+                raise VibeVMError("rollback_target_revoked")
+            if not status_value.get("qualified"):
+                raise VibeVMError("rollback_target_unqualified")
             descriptor, pointer = tempfile.mkstemp(prefix=".rollback-", dir=self.root)
             try:
                 with os.fdopen(descriptor, "w", encoding="utf-8") as output:
@@ -343,6 +390,29 @@ class VibeVMStore:
         return self.open_snapshot(generation_id)
 
     def native_fallback(self, generation_id, *, adapter_available):
+        _generation_id(generation_id)
+        status_value = json.loads((self.generations / generation_id / "status.json").read_text(encoding="utf-8"))
+        if status_value.get("revoked"):
+            raise VibeVMError("fallback_target_revoked")
+        if not status_value.get("qualified"):
+            raise VibeVMError("fallback_target_unqualified")
+        if not status_value.get("safety_known"):
+            raise VibeVMError("fallback_safety_unknown")
+        if not status_value.get("mandatory_rules_complete"):
+            raise VibeVMError("fallback_mandatory_rules_missing")
         exported = self.export_native(generation_id)
         return {"generation_id": generation_id, "backend": "vibevm" if adapter_available else "native",
                 "native_export": exported}
+
+    def recover(self):
+        """Remove interrupted staging directories without touching immutable generations."""
+        if not self.generations.is_dir():
+            return 0
+        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        removed = 0
+        with (self.root / ".generation.lock").open("a+b") as update_lock:
+            fcntl.flock(update_lock, fcntl.LOCK_EX)
+            for candidate in self.generations.iterdir():
+                if candidate.is_dir() and candidate.name.startswith(".generation-"):
+                    shutil.rmtree(candidate); removed += 1
+        return removed
