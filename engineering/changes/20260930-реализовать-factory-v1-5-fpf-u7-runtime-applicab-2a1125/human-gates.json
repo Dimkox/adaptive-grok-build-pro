@@ -1,0 +1,31 @@
+{
+  "change_id": "20260930-реализовать-factory-v1-5-fpf-u7-runtime-applicab-2a1125",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260930-реализовать-factory-v1-5-fpf-u7-runtime-applicab-2a1125",
+      "decided_at": "2026-09-30T19:41:10+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User explicitly requested full source-level implementation of all v1.5 and addendum requirements before release candidate on 2026-09-30.",
+      "resource": null,
+      "route_id": "2a112560eee9",
+      "scope_digest": "5405a41233d06585b14063d6d84ae250eefe1890c40aeff052b010970c14a742"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20260930-реализовать-factory-v1-5-fpf-u7-runtime-applicab-2a1125",
+      "decided_at": "2026-09-30T19:48:41+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "2026-09-30 user explicitly requested full source-level implementation of all v1.5 requirements/additions through release candidate; this bounded AC95-AC113 child design implements that approved scope",
+      "resource": null,
+      "route_id": "2a112560eee9",
+      "scope_digest": "5405085456a0bed8220e811ff2c9495d8cf73985c27745e9d8245c37bda1a2a0"
+    }
+  ],
+  "route_id": "2a112560eee9",
+  "schema_version": 1
+}

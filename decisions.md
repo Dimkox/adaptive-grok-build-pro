@@ -858,3 +858,6 @@ The review of head `a08060c1` showed "prose" is not a directory property: `docs/
 ### 2026-09-30 — Keep F24/F26 fixtures immutable and the runner authority-free
 
 Bind the twelve Pump Selector cases and accepted baseline as separate digest-checked package resources, then pass detached case copies to injected executors. This makes wrong-document/curve, unknown-to-zero, unit, completeness, quality and budget controls deterministic without giving benchmark output permission to rewrite its oracle or activate a runtime profile.
+### 2026-09-30 — Keep FPF as a frozen data-only sidecar
+
+Implementing selection, bounded reads, projection, replay and evaluation in one I/O-free module preserved native execution and existing authority boundaries. Exact live package and CLI qualification remains separate, so deterministic mechanism evidence cannot be mistaken for upstream or production acceptance.

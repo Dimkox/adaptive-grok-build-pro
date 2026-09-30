@@ -1,0 +1,93 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+  "base_fingerprint": "a96196b4f1a3ec3c9a4061b9a072c2e1c8cb2580d4a3c242732265e3c3dccfda",
+  "complexity": "high-risk",
+  "created_at": "2026-09-30T19:40:34+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "matched_keywords": {
+    "security": [
+      "security"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=security,api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "2a112560eee9",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "\u0420\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c Factory v1.5 FPF U7 runtime: applicability selector, progressive dependency-complete reader, context budgeter, URI resolver, semantic projection, decision invalidation, adapter, offline snapshots, security boundary, A/B/C evaluation, upgrade fallback and deterministic tests",
+  "task_domains": [
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "general_implementer"
+}
