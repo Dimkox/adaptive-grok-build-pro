@@ -224,7 +224,7 @@ class ModelRotatorTests(unittest.TestCase):
 
     def test_migration_027_has_transactional_authority_and_no_payload_columns(self):
         sql=(Path(__file__).parents[1]/"src/adaptive_factory/resources/027_model_rotator_state.sql").read_text()
-        for required in ("pg_advisory_xact_lock","FOR UPDATE","budget_reservations","current_fence","lease_expires_at","operation_already_claimed","p_wire","state_version","claim_expires_at","quarantined","held_token_units","settled_token_units","model_rotator_reconcile_v1"):
+        for required in ("pg_advisory_xact_lock","FOR UPDATE","budget_reservations","current_fence","lease_expires_at","operation_already_claimed","p_wire","state_version","claim_expires_at","quarantined","held_token_units","settled_token_units","model_rotator_reconcile_v1","model_rotator_request_grants","p_binding->>'schema_version'<>'1'","RAISE EXCEPTION"):
             self.assertIn(required,sql)
         for forbidden in ("authorization text","api_key","prompt text","response_body"):
             self.assertNotIn(forbidden,sql.lower())
@@ -232,7 +232,10 @@ class ModelRotatorTests(unittest.TestCase):
         self.assertNotRegex(sql,r"GRANT\s+(?:SELECT,)?\s*(?:INSERT|UPDATE|DELETE).+factory_runtime")
         runtime_grants=[line for line in sql.splitlines() if "TO factory_runtime" in line]
         self.assertFalse(any("model_rotator_reconcile_v1" in line for line in runtime_grants))
+        self.assertFalse(any("model_rotator_request_grants" in line for line in runtime_grants))
         self.assertIn("model_rotator_safe_status",sql)
+        finish=sql[sql.index("CREATE FUNCTION factory.model_rotator_finish_v1"):sql.index("CREATE FUNCTION factory.model_rotator_reconcile_v1")]
+        self.assertLess(finish.index("model_rotator_states SET cursor"),finish.index("model_rotator_reservation_accounting SET held_token_units"))
 
     def test_bundled_registry_cursor_stays_with_enabled_tuple_across_two_operations(self):
         raw=json.loads((Path(__file__).parents[1]/"src/adaptive_factory/resources/model-rotator-registry.v1.json").read_text())
