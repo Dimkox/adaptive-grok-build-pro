@@ -12,6 +12,7 @@
 ## Failure and edge cases
 
 - Mixed attempts for one change are collapsed before splitting; a change cannot train and test.
+- Temporal assignment uses label availability (`outcome_observed_at`), never the earlier feature snapshot time.
 - Infrastructure abort, pending, and unavailable are counted but never coerced to product pass/fail.
 - Late features, unknown feature schemas, excessive examples/features/iterations, non-finite values, and one-class training data fail closed.
 
@@ -27,5 +28,6 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 - Security: offline numeric inputs only; no payloads, credentials, network, subprocess, or external writes.
 - Reliability: canonical hashing and fixed arithmetic make identical inputs byte-reproducible.
+- Integrity: inference revalidates outer and component digests, closed shapes, finite parameters, positive scales, and exact train-background binding before arithmetic.
 - Performance: hard limits bound examples, features, and training iterations.
 - Observability: artifact includes counts, split/model digests, baseline/model metrics, and project portability.
