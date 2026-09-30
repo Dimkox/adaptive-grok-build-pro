@@ -1,8 +1,8 @@
 {
   "acceptance_criteria": [
-    {"id":"AC-083-088","statement":"Resolution is deterministic and fail-closed for cycles, constraints, overrides, digest/origin/revocation, offline replay, managed boot blocks and semantic identity.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
-    {"id":"AC-089-090","statement":"Materialization is data-only, bounded against archive escapes and resource abuse, and exported rule bindings remain explicit claims rather than executed evidence.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
-    {"id":"AC-091-093","statement":"Generation publication and rollback are atomic, caches are tenant/repository scoped, and native export/fallback preserves canonical content without changing an in-flight snapshot.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
+    {"id":"AC-001","statement":"Resolution is deterministic and fail-closed for cycles, constraints, overrides, digest/origin/revocation, offline replay, managed boot blocks and semantic identity.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
+    {"id":"AC-002","statement":"Materialization is data-only, bounded against archive escapes and resource abuse, and exported rule bindings remain explicit claims rather than executed evidence.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
+    {"id":"AC-003","statement":"Generation publication and rollback are atomic, caches are tenant/repository scoped, and native export/fallback preserves canonical content without changing an in-flight snapshot.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
   ],
   "approvals": {
     "required_scopes": []
