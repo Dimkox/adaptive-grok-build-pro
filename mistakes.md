@@ -1513,3 +1513,6 @@ on a stable tree; this run was retained as failing diagnostic evidence, not repo
 ### 2026-09-30 — Use package-aware factory discovery
 
 I invoked `unittest discover -s factory/tests`, which imported package-relative test modules as top-level modules and produced seven false collection errors. The root cause was bypassing the repository's package-aware test entrypoint; focused checks must use `factory.tests.*`, while the authoritative broad run remains `scripts/grok_verify.py --mode pr`.
+# 2026-09-30 — Run local lint before the long route verifier
+
+The U6 contour started the full verifier before running its route-wide ruff command, so a formatting failure was discovered only after the long coverage/PostgreSQL phases. Root cause: focused behavioral checks were treated as sufficient preflight; future long verifier runs must be preceded by diff-check, change-spec validation and the selected static checks.
