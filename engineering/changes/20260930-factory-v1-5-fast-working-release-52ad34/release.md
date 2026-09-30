@@ -4,6 +4,13 @@
 
 PR-only source candidate. Deployment, merge, tag, and publication remain separate human-owned operations.
 
+The aggregate integration branch is a preview, not a budget-eligible delivery PR.
+Use the measured candidate in evidence/stacked-delivery-plan.json to create independently
+routed, semantically integrated, exact-base-verified dependency contours; remeasure every
+actual delta and split further if needed. Existing budget limits remain unchanged.
+Integrated-preview risk is red with architecture/contract/data/security approval scopes.
+These declarations are not approvals; future stacked routes derive their own scopes.
+
 ## Feature flags / staged rollout
 
 Native core available after contract verification; optional package adapters and prediction influence remain off. Apple is excluded.

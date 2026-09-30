@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "tested_head": "9fee9c0f219d771da865d951cd8bfe9c1af27d4e",
+  "tree_fingerprint": "3aa470df371a2a8d5dc00532af5307f8a2f6ecba65d7f8b063beb65a2241f193",
+  "created_at": "2026-09-30T21:55:08+00:00",
+  "command": "GROK_TEST_WORKERS=auto taskset -c 0-27 python3 scripts/grok_verify.py --mode pr --json",
+  "status": "fail",
+  "local_passing_receipt_created": false,
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:5713b407818dbb6c2d1acfcb0b0d9661c32e1153,pr-target:5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "docs-state-scope",
+      "status": "pass",
+      "summary": "profile=full-pr-suite; evidence=verification:full-pr-suite; reason=out-of-scope-or-invalid-paths; paths=0; skipped=none",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "shared-memory",
+      "status": "pass",
+      "summary": "shared-memory entries preserved; targets=route:5713b407818dbb6c2d1acfcb0b0d9661c32e1153,pr-target:5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "10 specs checked; exempt=False",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "architecture",
+      "status": "fail",
+      "summary": "drift=pass; fitness=fail; diagrams=pass",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "governance",
+      "status": "fail",
+      "summary": "governance requires a complete successful architecture check",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "13 contracts checked",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "ruff",
+        "check",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        "tests",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "bandit",
+        "-c",
+        "bandit.yaml",
+        "-q",
+        "-r",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "50db11fee72c2ab1f2d8f4afe8c18d08565abc7c8c6ff7d485d2cbc11603e1d9",
+      "run_summaries": []
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "pilot/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c10663445baf3dfaead485d26f160888bd4b8bcbb731f1bd3cc5af1e95fb42ed",
+      "run_summaries": [
+        "Ran 44 tests in 1.620s"
+      ]
+    },
+    {
+      "name": "python-unittest",
+      "status": "fail",
+      "summary": "pytest-xdist workers=28 exit=1 seconds=156.270",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-c",
+        "/dev/null",
+        "-p",
+        "xdist.plugin",
+        "-p",
+        "no:cacheprovider",
+        "--import-mode=prepend",
+        "--rootdir=.",
+        "-o",
+        "python_files=test*.py",
+        "-q",
+        "-n",
+        "28",
+        "--dist=worksteal",
+        "--max-worker-restart=0",
+        "--durations=20",
+        "-ra",
+        "-p",
+        "pytest_cov.plugin",
+        "--cov",
+        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v15-fast-release/.coveragerc",
+        "--cov-report=term",
+        "tests"
+      ],
+      "stdout_sha256": "34e4f75d5c34740750b9dc0a4ad40690ea555d073057e6f66fd6a4fc2136afbe",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": [
+        "4 failed, 1253 passed, 2 warnings, 2571 subtests passed in 155.75s (0:02:35)"
+      ]
+    },
+    {
+      "name": "coverage",
+      "status": "fail",
+      "summary": "pytest-xdist workers=28 exit=1 seconds=1.957",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "coverage",
+        "report",
+        "--rcfile=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v15-fast-release/.coveragerc"
+      ],
+      "stdout_sha256": "b0792e9ecb75c579adcf136cced35d99f157057d0af045a8537f0c691e1df86e",
+      "stderr_sha256": "20c2e89817f4688b16cc29da1eaefa97f270fac31f05524eb9bcd64576167ee3",
+      "run_summaries": []
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "factory.tests.test_contracts",
+        "factory.tests.test_state",
+        "factory.tests.test_migrations",
+        "factory.tests.test_service"
+      ],
+      "stdout_sha256": "3ed3441fede0594600c682a016f8057ce42ddc3f37fc881358bfd592990f2f1f",
+      "stderr_sha256": "9c4e025e5720397662826b42c929b8b428c896d83b981485cd308f9ec566aedb",
+      "run_summaries": [
+        "Ran 60 tests in 0.663s"
+      ]
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "fail",
+      "summary": "exit=1",
+      "command": [
+        "/usr/bin/python3",
+        "factory/tests/run_disposable_exit.py"
+      ],
+      "stdout_sha256": "90ab6c4380553c41bf46494a246f2ec9bad9256b19a38a41d2e9c41e19096083",
+      "stderr_sha256": "df1a34f73377e4e6f7720019c324532162cb9dafa86b8fa7fa1ca19c49c00e74",
+      "run_summaries": []
+    },
+    {
+      "name": "product-coverage",
+      "status": "fail",
+      "summary": "28 changed consumer files were not scanned",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable",
+      "command": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_summaries": []
+    }
+  ]
+}

@@ -874,3 +874,7 @@ The BB lifecycle/comparator reuse the admitted installer and immutable paired ru
 ### 2026-09-30 — Preserve aggregate preview, deliver bounded dependency contours
 
 The integrated source preview exceeds unchanged architecture delta budgets, so delivery must use separately measured dependency-stacked routes rather than expanding the budgets. BB external identity is claimed durably before transport and released only with owner-retained observed-stop and export evidence; concurrent/reconnect tests prevent a digest-only contract from hiding cross-task ownership collisions.
+
+### 2026-09-30 — Measure actual test-source coverage without broad legacy restyling
+
+Production installer runtime joins the real Ruff/Bandit scope, while changed Factory tests receive a bounded, compile-only scan with explicit observed paths and separate behavioral tests. Failed or absent syntax evidence cannot cover tests, and data resources remain excluded; this closes truthful coverage without executing test code as a scanner or suppressing legacy rules.

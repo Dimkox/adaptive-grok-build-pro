@@ -1,0 +1,2211 @@
+{
+  "schema_version": 1,
+  "preview_head": "cf7411511c8fe26135763f2eeae00a95e9437d9d",
+  "preview_branch": "feature/factory-v15-fast-release",
+  "status": "measured_candidate_not_instantiated_additional_fixture_split_required",
+  "delivery_authorized": false,
+  "budgets_changed": false,
+  "ruling": "Preserve aggregate preview; deliver bounded dependency contours. No push, PR, merge or release publication in this task.",
+  "methodology": {
+    "authority": "unchanged architecture/rules.yaml code_budgets",
+    "implementation": "adaptive_grok.architecture_diff.diff_architecture/read_diff_file plus architecture_fitness._matches/_COMPLEXITY_NODES",
+    "bytes": "sum max(base_size,head_size) for each changed artifact in rule",
+    "lines": "sum added+deleted lines",
+    "complexity": "entire changed Python artifact's declared complexity nodes, not only newly added nodes",
+    "slices": "Path slices are conservative final-path measurements, not actual branch/base receipts. Shared-file semantic hunks and every supporting architecture/spec/test/doc path must be admitted and remeasured on the eventual stage branch."
+  },
+  "aggregate_rejection": {
+    "base": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+    "governed_bytes": 2461977,
+    "governed_ast": 6743,
+    "factory_bytes": 1835586,
+    "factory_ast": 3701,
+    "source_bytes": 618299,
+    "source_lines": 6734,
+    "source_ast": 2474,
+    "test_bytes": 1107700,
+    "test_ast": 962,
+    "reason": "aggregate delta requires stacked delivery, not a functional product defect"
+  },
+  "coarse_rejections": [
+    {
+      "contour": "core_all",
+      "head": "15798a05",
+      "source_bytes": 391224,
+      "source_ast": 1447,
+      "test_bytes": 879779,
+      "test_ast": 653
+    },
+    {
+      "contour": "core_bb_qualification",
+      "base": "9a120f18",
+      "head": "15798a05",
+      "factory_bytes": 1150237,
+      "factory_ast": 1726,
+      "source_ast": 1218
+    },
+    {
+      "contour": "BB_binding",
+      "reason": "formatting all source modules plus new binding exceeds source budget",
+      "measurements": {
+        "contour": "BB_binding",
+        "base": "f12eaa3ef5e3cbff4a67518c099eafa81425c9e5",
+        "head": "917e235df909a4073a62ff8aa8203959666d3ea6",
+        "budgets": [
+          {
+            "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "actual": {
+              "max_changed_bytes": 524609,
+              "max_changed_lines": 5349,
+              "max_ast_complexity": 1577
+            },
+            "limits": {
+              "max_changed_bytes": 1300000,
+              "max_changed_lines": 24000,
+              "max_ast_complexity": 5000
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+            "actual": {
+              "max_changed_bytes": 91251,
+              "max_changed_lines": 1,
+              "max_ast_complexity": 0
+            },
+            "limits": {
+              "max_changed_bytes": 1000000,
+              "max_changed_lines": 10820,
+              "max_ast_complexity": 5000
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-CHANGE",
+            "actual": {
+              "max_changed_bytes": 433358,
+              "max_changed_lines": 5348,
+              "max_ast_complexity": 1577
+            },
+            "limits": {
+              "max_changed_bytes": 1150000,
+              "max_changed_lines": 22000,
+              "max_ast_complexity": 1700
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+            "actual": {
+              "max_changed_bytes": 392944,
+              "max_changed_lines": 5192,
+              "max_ast_complexity": 1551
+            },
+            "limits": {
+              "max_changed_bytes": 375000,
+              "max_changed_lines": 5500,
+              "max_ast_complexity": 1150
+            },
+            "exceeded": [
+              "max_changed_bytes",
+              "max_ast_complexity"
+            ]
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+            "actual": {
+              "max_changed_bytes": 40414,
+              "max_changed_lines": 156,
+              "max_ast_complexity": 26
+            },
+            "limits": {
+              "max_changed_bytes": 775000,
+              "max_changed_lines": 7500,
+              "max_ast_complexity": 600
+            },
+            "exceeded": []
+          }
+        ]
+      }
+    },
+    {
+      "contour": "BB_identity_and_harness",
+      "reason": "identity and harness touch oversized combined test inventory",
+      "measurements": {
+        "contour": "BB_identity_and_harness",
+        "base": "51cc89ddb4e2388f04ddd7b4e2a45e4232c3e4bf",
+        "head": "6a9d9b157e0cd7b9ada40df05309d65de74e7ecf",
+        "budgets": [
+          {
+            "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "actual": {
+              "max_changed_bytes": 1159105,
+              "max_changed_lines": 867,
+              "max_ast_complexity": 1938
+            },
+            "limits": {
+              "max_changed_bytes": 1300000,
+              "max_changed_lines": 24000,
+              "max_ast_complexity": 5000
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+            "actual": {
+              "max_changed_bytes": 89644,
+              "max_changed_lines": 2,
+              "max_ast_complexity": 477
+            },
+            "limits": {
+              "max_changed_bytes": 1000000,
+              "max_changed_lines": 10820,
+              "max_ast_complexity": 5000
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-CHANGE",
+            "actual": {
+              "max_changed_bytes": 1069461,
+              "max_changed_lines": 865,
+              "max_ast_complexity": 1461
+            },
+            "limits": {
+              "max_changed_bytes": 1150000,
+              "max_changed_lines": 22000,
+              "max_ast_complexity": 1700
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+            "actual": {
+              "max_changed_bytes": 258859,
+              "max_changed_lines": 178,
+              "max_ast_complexity": 782
+            },
+            "limits": {
+              "max_changed_bytes": 375000,
+              "max_changed_lines": 5500,
+              "max_ast_complexity": 1150
+            },
+            "exceeded": []
+          },
+          {
+            "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+            "actual": {
+              "max_changed_bytes": 810602,
+              "max_changed_lines": 687,
+              "max_ast_complexity": 679
+            },
+            "limits": {
+              "max_changed_bytes": 775000,
+              "max_changed_lines": 7500,
+              "max_ast_complexity": 600
+            },
+            "exceeded": [
+              "max_changed_bytes",
+              "max_ast_complexity"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "stages": [
+    {
+      "id": "01-repairs-upstream",
+      "measurement_ids": [
+        "repair_consolidation",
+        "upstream"
+      ],
+      "depends_on": [],
+      "status": "candidate_not_instantiated",
+      "note": "Port omitted hook hunk and issue169 typed metadata correction here. Upper-bound sum remains bounded; upstream has no governed paths.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "02-native-context-decision",
+      "measurement_ids": [
+        "core_context_decision"
+      ],
+      "depends_on": [
+        "01-repairs-upstream"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Includes exact owner bundle and migration023. Historical test bytes are755378/775000; remeasure after repair base.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "03-envelope-prediction-contracts",
+      "measurement_ids": [],
+      "depends_on": [
+        "02-native-context-decision"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Measured historical70bc5f9d..9a120f18: governed67090 bytes/233 complexity; source39019/209; tests20092/24. Port source formatting at original admission.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "04-qualification-native-BB",
+      "measurement_ids": [
+        "core_qualification"
+      ],
+      "depends_on": [
+        "03-envelope-prediction-contracts"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "05-durable-BB",
+      "measurement_ids": [
+        "core_BB_durable"
+      ],
+      "depends_on": [
+        "04-qualification-native-BB"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "06-BB-profiles",
+      "measurement_ids": [
+        "core_BB_profiles"
+      ],
+      "depends_on": [
+        "05-durable-BB"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "07-unverified-capacity",
+      "measurement_ids": [
+        "F07"
+      ],
+      "depends_on": [
+        "06-BB-profiles"
+      ],
+      "status": "requires_combined_024_026_and_fixture_preparation",
+      "note": "Superseded standalone024 plan: coherent024-026 bundle requires another bounded fixture-preparation route; see schema_dependency_correction.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "08-predictor-harness",
+      "measurement_ids": [
+        "predictor",
+        "harness"
+      ],
+      "depends_on": [
+        "06-BB-profiles"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Upper-bound sum passes all metrics; requires exact combined-stage measurement. Local verdict never pass; external holdout NOT_RUN.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "09-VibeVM-FPF",
+      "measurement_ids": [
+        "vibevm",
+        "vibevm_docs_tail",
+        "fpf"
+      ],
+      "depends_on": [
+        "08-predictor-harness"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Upper-bound sum passes metrics. Include FPF URL_PATTERN/scopes corrections and VibeVM final spec fixes at admission.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "10-installer",
+      "measurement_ids": [
+        "installer"
+      ],
+      "depends_on": [
+        "09-VibeVM-FPF"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Include runtime-shaped scanner fixture splits and truthful loopback model at admission; no activation.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "11-control-format",
+      "measurement_ids": [
+        "BB_binding_control_format"
+      ],
+      "depends_on": [
+        "07-unverified-capacity"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Mechanical final-source format must be ported as appropriate, not copied wholesale before later source exists.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "12-optional-format",
+      "measurement_ids": [
+        "BB_binding_optional_format"
+      ],
+      "depends_on": [
+        "09-VibeVM-FPF"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Separate from control formatting to remain below1150 source AST cap.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "13-BB-payload-comparator",
+      "measurement_ids": [
+        "BB_binding_lifecycle"
+      ],
+      "depends_on": [
+        "10-installer",
+        "08-predictor-harness",
+        "11-control-format",
+        "12-optional-format"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Bind generic installer/shared comparator only after dependencies. Supporting test_semantic_bridge/test_unverified_capacity and exact attributes join appropriate measured stages.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "14-PG-harness-lifecycle",
+      "measurement_ids": [
+        "PG_harness_only"
+      ],
+      "depends_on": [
+        "07-unverified-capacity"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Port owned descendant teardown+regression before expanded final suite. Shared test_migrations regression hunks stage here; schema discovery edits stage with migration025. Do not advance actual-restart schema tuple until its migration exists.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "15-BB-external-identity",
+      "measurement_ids": [
+        "BB_identity_only"
+      ],
+      "depends_on": [
+        "13-BB-payload-comparator",
+        "14-PG-harness-lifecycle"
+      ],
+      "status": "combine_with_schema_bundle_after_fixture_preparation",
+      "note": "Ownership schema25 and forward guard26 must be combined with24 after bounded fixture prep, not appended after a known failing24-only delivery.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    },
+    {
+      "id": "16-release-evidence-docs",
+      "measurement_ids": [
+        "final_repairs"
+      ],
+      "depends_on": [
+        "15-BB-external-identity"
+      ],
+      "status": "candidate_not_instantiated",
+      "note": "Distribute product corrections to earliest dependent stage; final README/state/194matrix/report/architecture/spec evidence describes actual tree. Final clean verification after independent reports; no release publication.",
+      "requires": [
+        "new_controller_admitted_route_and_exact_base",
+        "single_writer_semantic_integration",
+        "exact_delta_budget_remeasurement",
+        "full_local_verification",
+        "independent_route_reviews",
+        "exact_SHA_external_Trust_CI",
+        "required_external_signed_approval_scopes"
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "contour": "core_qualification",
+      "base": "9a120f187658f494812b43deab68f1475c80084e",
+      "head": "4fc494ef28cd9697a05aff7137cc05c30a1a3409",
+      "path_filter": null,
+      "measurement": "exact commit delta",
+      "paths": [
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "architecture/generated/container.mmd",
+        "architecture/generated/data-flow.mmd",
+        "architecture/generated/deployment.mmd",
+        "architecture/generated/trust-boundary.mmd",
+        "architecture/system.yaml",
+        "decisions.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/change-spec.yaml",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/implementation-report.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/tasks.md",
+        "factory/README.md",
+        "factory/contracts/jsonschema/bb-backend-profile.v1.schema.json",
+        "factory/contracts/jsonschema/bb-lifecycle-observation.v1.schema.json",
+        "factory/contracts/jsonschema/factory-v15-qualification.v1.schema.json",
+        "factory/contracts/openapi/factory-v15.v1.json",
+        "factory/src/adaptive_factory/api.py",
+        "factory/src/adaptive_factory/bb_contracts.py",
+        "factory/src/adaptive_factory/cli.py",
+        "factory/src/adaptive_factory/decision_contracts.py",
+        "factory/src/adaptive_factory/qualification.py",
+        "factory/src/adaptive_factory/server.py",
+        "factory/src/adaptive_factory/settings.py",
+        "factory/tests/test_bb_contracts.py",
+        "factory/tests/test_decision_contracts.py",
+        "factory/tests/test_qualification.py",
+        "factory/tests/test_qualification_files.py",
+        "factory/tests/test_semantic_contracts.py",
+        "factory/tests/test_server.py",
+        "mistakes.md"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 325266,
+            "max_changed_lines": 1262,
+            "max_ast_complexity": 455
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 123142,
+            "max_changed_lines": 156,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 202124,
+            "max_changed_lines": 1106,
+            "max_ast_complexity": 455
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+          "actual": {
+            "max_changed_bytes": 14322,
+            "max_changed_lines": 599,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 285000,
+            "max_changed_lines": 8500,
+            "max_ast_complexity": 1
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 103537,
+            "max_changed_lines": 245,
+            "max_ast_complexity": 418
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 60996,
+            "max_changed_lines": 213,
+            "max_ast_complexity": 37
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "core_BB_durable",
+      "base": "4fc494ef28cd9697a05aff7137cc05c30a1a3409",
+      "head": "f8aaa64fdf60ffece53f806e5cd79a44876c34c5",
+      "path_filter": null,
+      "measurement": "exact commit delta",
+      "paths": [
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/implementation-report.md",
+        "factory/src/adaptive_factory/bb_adapter.py",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_bb_adapter.py",
+        "factory/tests/test_postgres_integration.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 613671,
+            "max_changed_lines": 530,
+            "max_ast_complexity": 1005
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 613671,
+            "max_changed_lines": 530,
+            "max_ast_complexity": 1005
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 233996,
+            "max_changed_lines": 344,
+            "max_ast_complexity": 753
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 379675,
+            "max_changed_lines": 186,
+            "max_ast_complexity": 252
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "core_BB_profiles",
+      "base": "f8aaa64fdf60ffece53f806e5cd79a44876c34c5",
+      "head": "15798a05e4a5990e505007ed822bfcb020a23761",
+      "path_filter": null,
+      "measurement": "exact commit delta",
+      "paths": [
+        "architecture/system.yaml",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/README.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/implementation-report.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/state.json",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/tasks.md",
+        "factory/src/adaptive_factory/bb_adapter.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_bb_adapter.py",
+        "factory/tests/test_bb_profiles.py",
+        "factory/tests/test_execution_persistence_postgres.py",
+        "factory/tests/test_landing_api.py",
+        "factory/tests/test_postgres_integration.py",
+        "factory/tests/test_semantic_bridge.py",
+        "mistakes.md",
+        "tests/test_factory_v15_coverage.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 1038796,
+            "max_changed_lines": 295,
+            "max_ast_complexity": 1271
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 90683,
+            "max_changed_lines": 2,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 948113,
+            "max_changed_lines": 293,
+            "max_ast_complexity": 1271
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 243962,
+            "max_changed_lines": 143,
+            "max_ast_complexity": 800
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 704151,
+            "max_changed_lines": 150,
+            "max_ast_complexity": 471
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "core_context_decision",
+      "base": "5713b407818dbb6c2d1acfcb0b0d9661c32e1153",
+      "head": "70bc5f9da041e7e27f8a6ba0b2592347198d24fb",
+      "path_filter": null,
+      "measurement": "exact commit delta",
+      "paths": [
+        "docs/superpowers/plans/2026-09-30-factory-v15-fast-release.md",
+        "engineering/changes/20260924-factory-unified-upgrade/FACTORY_TZ_v1.5_ADDENDUM_BB-01.md",
+        "engineering/changes/20260924-factory-unified-upgrade/FACTORY_UNIFIED_UPGRADE_TZ.md",
+        "engineering/changes/20260924-factory-unified-upgrade/FACTORY_UPDATE_HANDOFF.md",
+        "engineering/changes/20260924-factory-unified-upgrade/delivery-manifest.json",
+        "engineering/changes/20260924-factory-unified-upgrade/implementation-map.json",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/architecture.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/brief.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/change-spec.yaml",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/README.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/implementation-report.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/release.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/requirements.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/rollback.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/route.json",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/state.json",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/tasks.md",
+        "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/test-plan.md",
+        "factory/contracts/jsonschema/context-manifest.v1.schema.json",
+        "factory/contracts/jsonschema/decision-record.v1.schema.json",
+        "factory/src/adaptive_factory/context_contracts.py",
+        "factory/src/adaptive_factory/decision_contracts.py",
+        "factory/src/adaptive_factory/resources/023_factory_v15_decisions.sql",
+        "factory/src/adaptive_factory/store.py",
+        "factory/src/adaptive_factory/v15_contracts.py",
+        "factory/tests/postgres_restart_probe.py",
+        "factory/tests/test_context_contracts.py",
+        "factory/tests/test_decision_contracts.py",
+        "factory/tests/test_execution_persistence_postgres.py",
+        "factory/tests/test_migrations.py",
+        "factory/tests/test_postgres_integration.py",
+        "mistakes.md",
+        "tests/test_factory_v15_bundle.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 984225,
+            "max_changed_lines": 877,
+            "max_ast_complexity": 1256
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 984225,
+            "max_changed_lines": 877,
+            "max_ast_complexity": 1256
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+          "actual": {
+            "max_changed_bytes": 8614,
+            "max_changed_lines": 414,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 285000,
+            "max_changed_lines": 8500,
+            "max_ast_complexity": 1
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 220233,
+            "max_changed_lines": 280,
+            "max_ast_complexity": 688
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 755378,
+            "max_changed_lines": 183,
+            "max_ast_complexity": 568
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "repair_consolidation",
+      "base": "15798a05e4a5990e505007ed822bfcb020a23761",
+      "head": "1d11ba0262cd0eda93446a1418fa549844f38a30",
+      "path_filter": null,
+      "measurement": "exact commit delta",
+      "paths": [
+        ".agents/skills/adaptive-delivery/SKILL.md",
+        ".grok-stack/adaptive_grok/_policy_legacy.py",
+        ".grok-stack/adaptive_grok/change.py",
+        ".grok-stack/adaptive_grok/citations.py",
+        ".grok-stack/adaptive_grok/doctor.py",
+        ".grok-stack/adaptive_grok/git_audit.py",
+        ".grok-stack/adaptive_grok/human_gates.py",
+        ".grok-stack/adaptive_grok/receipts.py",
+        ".grok-stack/adaptive_grok/spec.py",
+        ".grok-stack/adaptive_grok/state.py",
+        ".grok-stack/adaptive_grok/util.py",
+        ".grok-stack/adaptive_grok/verification.py",
+        ".grok-stack/adaptive_grok/verification_scope.py",
+        ".grok-stack/config/managed.json",
+        ".grok-stack/templates/change/requirements.md",
+        ".grok/skills/adaptive-delivery/SKILL.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/architecture.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/brief.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/change-spec.yaml",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/README.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/analysis-architect.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/analysis-docs_researcher.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/analysis-integration_architect.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/analysis-repo_explorer.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/initial-status.txt",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/issue169.json",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/pr174-delivery.json",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/prior-design-consumer-coverage.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/evidence/prior-design-provenance.json",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/release.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/requirements.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/rollback.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/route.json",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/state.json",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/tasks.md",
+        "engineering/changes/20260921-fix-issue-169-make-consumer-verification-report-7e7193/test-plan.md",
+        "engineering/changes/20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7/evidence/next-gap.md",
+        "engineering/changes/20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7/evidence/review-code-542949a9.md",
+        "engineering/changes/20260924-bind-cited-identifiers-to-real-receipts-issue-20-64a3e7/evidence/review-test-542949a9.md",
+        "engineering/changes/20260924-bind-git-push-grants-to-the-repository-the-push-4c905d/evidence/next-gap.md",
+        "engineering/changes/20260924-bind-git-push-grants-to-the-repository-the-push-4c905d/evidence/review-code-a72243cf.md",
+        "engineering/changes/20260924-bind-git-push-grants-to-the-repository-the-push-4c905d/evidence/review-test-a72243cf.md",
+        "engineering/changes/20260924-grok-doctor-read-only-git-delivery-audit-for-unp-44931c/evidence/next-gap.md",
+        "engineering/changes/20260924-grok-doctor-read-only-git-delivery-audit-for-unp-44931c/evidence/review-code-ba7bf3f5.md",
+        "engineering/changes/20260924-grok-doctor-read-only-git-delivery-audit-for-unp-44931c/evidence/review-test-ba7bf3f5.md",
+        "engineering/changes/20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300/evidence/next-gap.md",
+        "engineering/changes/20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300/evidence/review-code-890ec02b.md",
+        "engineering/changes/20260924-reclaim-leaked-disposable-postgresql-runs-at-har-725300/evidence/review-test-890ec02b.md",
+        "engineering/changes/20260924-reject-unsafe-change-package-paths-issue-53-cba934/evidence/next-gap.md",
+        "engineering/changes/20260924-reject-unsafe-change-package-paths-issue-53-cba934/evidence/review-code-e3924257.md",
+        "engineering/changes/20260924-reject-unsafe-change-package-paths-issue-53-cba934/evidence/review-test-e3924257.md",
+        "engineering/changes/20260924-rule-on-issue-55-pin-the-route-absent-human-gate-e05fa2/evidence/review-code-00d7fbec.md",
+        "engineering/changes/20260924-rule-on-issue-55-pin-the-route-absent-human-gate-e05fa2/evidence/review-test-00d7fbec.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/architecture.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/brief.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/change-spec.yaml",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/README.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/analysis-architect.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/analysis-docs_researcher.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/analysis-integration_architect.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/analysis-repo_explorer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/economics.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/implementation-general_implementer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/repair-e824fb15-general_implementer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-code-e824fb15-FAIL.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-code-identity-fix.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-code_reviewer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-release-e824fb15-FAIL.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-release_reviewer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-security-e824fb15-FAIL.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-security_reviewer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-test-e824fb15-FAIL.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-test-identity-fix.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/evidence/review-test_reviewer.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/human-gates.json",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/release.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/requirements.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/rollback.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/route.json",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/state.json",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/tasks.md",
+        "engineering/changes/20260925-fix-github-issue-218-locally-deliver-the-verifie-566746/test-plan.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/architecture.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/brief.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/change-spec.yaml",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/README.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/next-gap.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/red-green.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/review-code-69585da2.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/review-fail-disposition-20260926.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/evidence/review-test-69585da2.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/release.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/requirements.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/rollback.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/route.json",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/state.json",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/tasks.md",
+        "engineering/changes/20260925-reject-unsatisfiable-expectation-set-members-in-113055/test-plan.md",
+        "factory/README.md",
+        "factory/src/adaptive_factory/landing_live_executors.py",
+        "factory/tests/run_disposable_exit.py",
+        "factory/tests/test_landing_live_executors.py",
+        "factory/tests/test_migrations.py",
+        "schemas/change-spec-v1.schema.json",
+        "schemas/change-spec.schema.json",
+        "scripts/grok_change.py",
+        "scripts/grok_citations.py",
+        "scripts/grok_doctor.py",
+        "scripts/grok_review.py",
+        "scripts/grok_spec.py",
+        "scripts/grok_verify.py",
+        "scripts/install_into.py",
+        "tests/test_change_path_safety.py",
+        "tests/test_change_spec.py",
+        "tests/test_citation_identifiers.py",
+        "tests/test_consumer_product_coverage.py",
+        "tests/test_disposable_exit_reclaim.py",
+        "tests/test_git_delivery_audit.py",
+        "tests/test_human_gates.py",
+        "tests/test_push_repository_binding.py",
+        "tests/test_spec_expectation_sets.py",
+        "tests/test_verification_doctor.py",
+        "tests/test_verification_scope.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 689785,
+            "max_changed_lines": 5275,
+            "max_ast_complexity": 3410
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 500376,
+            "max_changed_lines": 4504,
+            "max_ast_complexity": 3042
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 189409,
+            "max_changed_lines": 771,
+            "max_ast_complexity": 368
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 36882,
+            "max_changed_lines": 73,
+            "max_ast_complexity": 173
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 128944,
+            "max_changed_lines": 693,
+            "max_ast_complexity": 195
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "BB_binding_control_format",
+      "base": "f12eaa3ef5e3cbff4a67518c099eafa81425c9e5",
+      "head": "917e235df909a4073a62ff8aa8203959666d3ea6",
+      "path_filter": [
+        "admin.py",
+        "store.py",
+        "context_contracts.py",
+        "decision_contracts.py",
+        "result_contracts.py",
+        "v15_contracts.py"
+      ],
+      "measurement": "conservative final-path slice; semantic split must be remeasured on new branch",
+      "paths": [
+        "factory/src/adaptive_factory/admin.py",
+        "factory/src/adaptive_factory/context_contracts.py",
+        "factory/src/adaptive_factory/decision_contracts.py",
+        "factory/src/adaptive_factory/result_contracts.py",
+        "factory/src/adaptive_factory/store.py",
+        "factory/src/adaptive_factory/v15_contracts.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 257337,
+            "max_changed_lines": 1891,
+            "max_ast_complexity": 828
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 257337,
+            "max_changed_lines": 1891,
+            "max_ast_complexity": 828
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 257337,
+            "max_changed_lines": 1891,
+            "max_ast_complexity": 828
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "BB_binding_lifecycle",
+      "base": "f12eaa3ef5e3cbff4a67518c099eafa81425c9e5",
+      "head": "917e235df909a4073a62ff8aa8203959666d3ea6",
+      "path_filter": [
+        "bb_adapter.py",
+        "bb_contracts.py",
+        "bb_integration.py",
+        "bb_profiles.py",
+        "test_bb_adapter.py",
+        "test_bb_integration.py"
+      ],
+      "measurement": "conservative final-path slice; semantic split must be remeasured on new branch",
+      "paths": [
+        "factory/src/adaptive_factory/bb_adapter.py",
+        "factory/src/adaptive_factory/bb_contracts.py",
+        "factory/src/adaptive_factory/bb_integration.py",
+        "factory/src/adaptive_factory/bb_profiles.py",
+        "factory/tests/test_bb_adapter.py",
+        "factory/tests/test_bb_integration.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 68425,
+            "max_changed_lines": 1451,
+            "max_ast_complexity": 209
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 68425,
+            "max_changed_lines": 1451,
+            "max_ast_complexity": 209
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 48408,
+            "max_changed_lines": 1316,
+            "max_ast_complexity": 195
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 20017,
+            "max_changed_lines": 135,
+            "max_ast_complexity": 14
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "BB_binding_optional_format",
+      "base": "f12eaa3ef5e3cbff4a67518c099eafa81425c9e5",
+      "head": "917e235df909a4073a62ff8aa8203959666d3ea6",
+      "path_filter": [
+        "behavior_qualification.py",
+        "fpf_runtime.py",
+        "prediction_contracts.py",
+        "qualification.py"
+      ],
+      "measurement": "conservative final-path slice; semantic split must be remeasured on new branch",
+      "paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py",
+        "factory/src/adaptive_factory/fpf_runtime.py",
+        "factory/src/adaptive_factory/prediction_contracts.py",
+        "factory/src/adaptive_factory/qualification.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 87199,
+            "max_changed_lines": 1985,
+            "max_ast_complexity": 528
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 87199,
+            "max_changed_lines": 1985,
+            "max_ast_complexity": 528
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 87199,
+            "max_changed_lines": 1985,
+            "max_ast_complexity": 528
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "BB_identity_only",
+      "base": "51cc89ddb4e2388f04ddd7b4e2a45e4232c3e4bf",
+      "head": "6a9d9b157e0cd7b9ada40df05309d65de74e7ecf",
+      "path_filter": [
+        "bb_adapter.py",
+        "store.py",
+        "025_bb_external_identity.sql",
+        "test_bb_adapter.py",
+        "test_bb_identity.py",
+        "test_execution_persistence_postgres.py",
+        "test_postgres_integration.py",
+        "test_migrations.py"
+      ],
+      "measurement": "conservative final-path slice; semantic split must be remeasured on new branch",
+      "paths": [
+        "factory/src/adaptive_factory/bb_adapter.py",
+        "factory/src/adaptive_factory/resources/025_bb_external_identity.sql",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_bb_adapter.py",
+        "factory/tests/test_bb_identity.py",
+        "factory/tests/test_execution_persistence_postgres.py",
+        "factory/tests/test_migrations.py",
+        "factory/tests/test_postgres_integration.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 983590,
+            "max_changed_lines": 835,
+            "max_ast_complexity": 1295
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 983590,
+            "max_changed_lines": 835,
+            "max_ast_complexity": 1295
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 258859,
+            "max_changed_lines": 178,
+            "max_ast_complexity": 782
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 724731,
+            "max_changed_lines": 657,
+            "max_ast_complexity": 513
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "PG_harness_only",
+      "base": "51cc89ddb4e2388f04ddd7b4e2a45e4232c3e4bf",
+      "head": "6a9d9b157e0cd7b9ada40df05309d65de74e7ecf",
+      "path_filter": [
+        "verification.py",
+        "run_disposable_exit.py",
+        "postgres_restart_probe.py",
+        "test_migrations.py"
+      ],
+      "measurement": "conservative final-path slice; semantic split must be remeasured on new branch",
+      "paths": [
+        ".grok-stack/adaptive_grok/verification.py",
+        "factory/tests/postgres_restart_probe.py",
+        "factory/tests/run_disposable_exit.py",
+        "factory/tests/test_migrations.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 222337,
+            "max_changed_lines": 68,
+            "max_ast_complexity": 701
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 89644,
+            "max_changed_lines": 2,
+            "max_ast_complexity": 477
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 132693,
+            "max_changed_lines": 66,
+            "max_ast_complexity": 224
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 132693,
+            "max_changed_lines": 66,
+            "max_ast_complexity": 224
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "predictor",
+      "base": "1d11ba0262cd0eda93446a1418fa549844f38a30",
+      "head": "9e6a164bff28c9109d8542fb219ee49278299a9e",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 129455,
+            "max_changed_lines": 660,
+            "max_ast_complexity": 198
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 90745,
+            "max_changed_lines": 1,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 38710,
+            "max_changed_lines": 659,
+            "max_ast_complexity": 198
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 25867,
+            "max_changed_lines": 441,
+            "max_ast_complexity": 180
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 12843,
+            "max_changed_lines": 218,
+            "max_ast_complexity": 18
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "upstream",
+      "base": "9e6a164bff28c9109d8542fb219ee49278299a9e",
+      "head": "b64c12f8e427ab7d91d48784f76051906ff6ec90",
+      "budgets": []
+    },
+    {
+      "contour": "harness",
+      "base": "b64c12f8e427ab7d91d48784f76051906ff6ec90",
+      "head": "ebf7eda2780be8ca65c01bacbe3def53b829481d",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 56407,
+            "max_changed_lines": 780,
+            "max_ast_complexity": 269
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 56407,
+            "max_changed_lines": 780,
+            "max_ast_complexity": 269
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 39225,
+            "max_changed_lines": 476,
+            "max_ast_complexity": 239
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 17182,
+            "max_changed_lines": 304,
+            "max_ast_complexity": 30
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "fpf",
+      "base": "ebf7eda2780be8ca65c01bacbe3def53b829481d",
+      "head": "877a0ea7a3541057df56250382dc3d765ef17fce",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 90114,
+            "max_changed_lines": 1092,
+            "max_ast_complexity": 248
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 90114,
+            "max_changed_lines": 1092,
+            "max_ast_complexity": 248
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 34888,
+            "max_changed_lines": 650,
+            "max_ast_complexity": 205
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 31163,
+            "max_changed_lines": 435,
+            "max_ast_complexity": 43
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "vibevm",
+      "base": "877a0ea7a3541057df56250382dc3d765ef17fce",
+      "head": "9bb9dfb02c8de52408f0d9ab75cfaf625e30be45",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 190467,
+            "max_changed_lines": 880,
+            "max_ast_complexity": 202
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 91193,
+            "max_changed_lines": 11,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 99274,
+            "max_changed_lines": 869,
+            "max_ast_complexity": 202
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+          "actual": {
+            "max_changed_bytes": 989,
+            "max_changed_lines": 28,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 285000,
+            "max_changed_lines": 8500,
+            "max_ast_complexity": 1
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 23908,
+            "max_changed_lines": 457,
+            "max_ast_complexity": 152
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 74377,
+            "max_changed_lines": 384,
+            "max_ast_complexity": 50
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "installer",
+      "base": "9bb9dfb02c8de52408f0d9ab75cfaf625e30be45",
+      "head": "5f920d76faeaaab049e1329deae0ec0f2f4cc962",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 82732,
+            "max_changed_lines": 1656,
+            "max_ast_complexity": 293
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 82732,
+            "max_changed_lines": 1656,
+            "max_ast_complexity": 293
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 31292,
+            "max_changed_lines": 638,
+            "max_ast_complexity": 28
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "vibevm_docs_tail",
+      "base": "5f920d76faeaaab049e1329deae0ec0f2f4cc962",
+      "head": "41185a333f357cf9ff0807ca92821ccbe3a58940",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 51330,
+            "max_changed_lines": 700,
+            "max_ast_complexity": 172
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 51330,
+            "max_changed_lines": 700,
+            "max_ast_complexity": 172
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 25191,
+            "max_changed_lines": 178,
+            "max_ast_complexity": 152
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 26139,
+            "max_changed_lines": 522,
+            "max_ast_complexity": 20
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "F07",
+      "base": "41185a333f357cf9ff0807ca92821ccbe3a58940",
+      "head": "f12eaa3ef5e3cbff4a67518c099eafa81425c9e5",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 999018,
+            "max_changed_lines": 296,
+            "max_ast_complexity": 1259
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 999018,
+            "max_changed_lines": 296,
+            "max_ast_complexity": 1259
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 238267,
+            "max_changed_lines": 158,
+            "max_ast_complexity": 695
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 760751,
+            "max_changed_lines": 138,
+            "max_ast_complexity": 564
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "final_repairs",
+      "base": "6a9d9b157e0cd7b9ada40df05309d65de74e7ecf",
+      "head": "e2fc7ab9500e72848f3295ba4f68fb70b58e1753",
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 189103,
+            "max_changed_lines": 64,
+            "max_ast_complexity": 233
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 120269,
+            "max_changed_lines": 54,
+            "max_ast_complexity": 0
+          },
+          "limits": {
+            "max_changed_bytes": 1000000,
+            "max_changed_lines": 10820,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 68834,
+            "max_changed_lines": 10,
+            "max_ast_complexity": 233
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 37534,
+            "max_changed_lines": 6,
+            "max_ast_complexity": 205
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 31300,
+            "max_changed_lines": 4,
+            "max_ast_complexity": 28
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    },
+    {
+      "contour": "schema_control_024_026",
+      "base": "41185a333f357cf9ff0807ca92821ccbe3a58940",
+      "head": "cf7411511c8fe26135763f2eeae00a95e9437d9d",
+      "path_filter": [
+        "admin.py",
+        "store.py",
+        "bb_adapter.py",
+        "024_unverified_capacity.sql",
+        "025_bb_external_identity.sql",
+        "026_unverified_legacy_packet_guard.sql",
+        "test_bb_adapter.py",
+        "test_bb_identity.py",
+        "test_migrations.py",
+        "test_execution_persistence_postgres.py",
+        "test_postgres_integration.py",
+        "test_unverified_capacity.py"
+      ],
+      "measurement": "conservative final-path slice; stage also needs coherent schema-version restart-probe hunks and supporting declarations remeasured",
+      "paths": [
+        "factory/src/adaptive_factory/admin.py",
+        "factory/src/adaptive_factory/bb_adapter.py",
+        "factory/src/adaptive_factory/resources/024_unverified_capacity.sql",
+        "factory/src/adaptive_factory/resources/025_bb_external_identity.sql",
+        "factory/src/adaptive_factory/resources/026_unverified_legacy_packet_guard.sql",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests/test_bb_adapter.py",
+        "factory/tests/test_bb_identity.py",
+        "factory/tests/test_execution_persistence_postgres.py",
+        "factory/tests/test_migrations.py",
+        "factory/tests/test_postgres_integration.py",
+        "factory/tests/test_unverified_capacity.py"
+      ],
+      "budgets": [
+        {
+          "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+          "actual": {
+            "max_changed_bytes": 1010985,
+            "max_changed_lines": 3260,
+            "max_ast_complexity": 1346
+          },
+          "limits": {
+            "max_changed_bytes": 1300000,
+            "max_changed_lines": 24000,
+            "max_ast_complexity": 5000
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-CHANGE",
+          "actual": {
+            "max_changed_bytes": 1010985,
+            "max_changed_lines": 3260,
+            "max_ast_complexity": 1346
+          },
+          "limits": {
+            "max_changed_bytes": 1150000,
+            "max_changed_lines": 22000,
+            "max_ast_complexity": 1700
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+          "actual": {
+            "max_changed_bytes": 282683,
+            "max_changed_lines": 2456,
+            "max_ast_complexity": 827
+          },
+          "limits": {
+            "max_changed_bytes": 375000,
+            "max_changed_lines": 5500,
+            "max_ast_complexity": 1150
+          },
+          "exceeded": []
+        },
+        {
+          "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+          "actual": {
+            "max_changed_bytes": 728302,
+            "max_changed_lines": 804,
+            "max_ast_complexity": 519
+          },
+          "limits": {
+            "max_changed_bytes": 775000,
+            "max_changed_lines": 7500,
+            "max_ast_complexity": 600
+          },
+          "exceeded": []
+        }
+      ]
+    }
+  ],
+  "residual_gates": [
+    "schema024-026 full test footprint exceeds775000 bytes by12014; additional fixture-preparation split not yet instantiated or verified",
+    "candidate stages not created; route/base-budget measurements and all supporting paths still required",
+    "aggregate preview budget failure cannot issue a passing local receipt",
+    "real BB/provider/host/human and external holdout qualifications NOT_RUN",
+    "U4 macOS excluded_by_owner",
+    "publication requires later explicit authority"
+  ],
+  "integrated_preview_risk": {
+    "tier": "red",
+    "required_scopes": [
+      "architecture",
+      "contract",
+      "data",
+      "security"
+    ],
+    "approvals_generated": false,
+    "stacked_routes": "independently derive each route risk/scopes; these are integrated-preview declarations only"
+  },
+  "schema_dependency_correction": {
+    "must_bundle": "024-026 must be coherently delivered:024 legacy-role bug fixed forward by026;026 needs contiguous025",
+    "source_budget": {
+      "bytes": 282683,
+      "ast": 827
+    },
+    "tests_without_restart_probe": {
+      "bytes": 728302,
+      "ast": 519
+    },
+    "required_restart_probe": {
+      "bytes": 58712,
+      "ast": 68
+    },
+    "complete_test_upper_bound": {
+      "bytes": 787014,
+      "ast": 587,
+      "byte_limit": 775000,
+      "exceeds_bytes": 12014
+    },
+    "action": "Additional independently verified fixture-preparation stage required before schema bundle; semantically stage future-compatible helpers/discovery, then remeasure complete actual delta. No schema stage is finalized as passing."
+  }
+}

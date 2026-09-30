@@ -86,7 +86,7 @@
     }
   ],
   "approvals": {
-    "required_scopes": []
+    "required_scopes": ["architecture", "contract", "data", "security"]
   },
   "change_id": "20260930-factory-v1-5-fast-working-release-52ad34",
   "contracts": {
@@ -152,7 +152,7 @@
       "api",
       "event"
     ],
-    "tier": "yellow"
+    "tier": "red"
   },
   "rollback": {
     "maximum_steps": 1,
