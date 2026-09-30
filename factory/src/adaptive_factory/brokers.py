@@ -52,6 +52,12 @@ class BrokerError(ValueError):
         self.code = code
 
 
+def reuse_intercepted_tool_result(payload, *, model, sinks=(), **profile):
+    """Native pre-model seam. External CLI profiles require their own qualification."""
+    from .result_contracts import reuse_tool_result
+    return reuse_tool_result(payload, model=model, sinks=sinks, **profile)
+
+
 @dataclass(frozen=True)
 class ProposalContext:
     task_id: str

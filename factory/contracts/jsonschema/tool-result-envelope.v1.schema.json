@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:tool-result-envelope.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile",
+    "channel",
+    "outcome",
+    "reason_code",
+    "completeness",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "channel": {
+      "enum": [
+        "structured",
+        "stdout",
+        "stderr",
+        "error",
+        "stream",
+        "attachment",
+        "cache",
+        "resume"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "allow",
+        "redacted",
+        "rejected",
+        "unavailable"
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "completeness": {
+      "enum": [
+        "full",
+        "partial",
+        "missing"
+      ]
+    },
+    "payload": {
+      "type": [
+        "string",
+        "object",
+        "array",
+        "number",
+        "boolean",
+        "null"
+      ]
+    }
+  }
+}

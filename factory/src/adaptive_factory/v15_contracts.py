@@ -6,7 +6,22 @@ import re
 from collections.abc import Mapping
 
 from .contracts import ContractError, HEX40, HEX64, _hex, _id, _text, _time, canonical_json, canonical_digest
-from .brokers import BrokerError, _redact
+from .brokers import BrokerError, _SECRET, _PEM_BLOCK, _PEM_MARKER, _AUTHORIZATION, _BEARER
+
+
+_BOUNDARY_SECRET = re.compile(_SECRET.pattern.replace('(?i)(?:sk-', '(?i)(?<![A-Za-z0-9_-])(?:sk-', 1))
+
+
+def redact(value, maximum):
+    if not isinstance(value, str) or len(value.encode('utf-8')) > maximum:
+        raise BrokerError('text_too_large')
+    clean = _PEM_BLOCK.sub('[REDACTED]', value)
+    if _PEM_MARKER.search(clean): raise BrokerError('secret_content')
+    clean = _AUTHORIZATION.sub('[REDACTED]', clean)
+    clean = _BEARER.sub('[REDACTED]', clean)
+    clean = _BOUNDARY_SECRET.sub('[REDACTED]', clean)
+    if len(clean.encode('utf-8')) > maximum: raise BrokerError('text_too_large')
+    return clean
 
 
 def closed(data, fields):
@@ -34,7 +49,7 @@ def sequence(value, maximum=128):
 def safe_text(value, name, maximum=4096):
     _text(value, name, maximum)
     try:
-        if _redact(value, maximum) != value:
+        if redact(value, maximum) != value:
             raise ContractError('secret_content')
     except BrokerError as exc:
         raise ContractError('unsafe_content') from exc

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:semantic-execution-evidence.v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repository_id",
+    "task_id",
+    "candidate_sha",
+    "context_digest",
+    "criterion_id",
+    "rule_id",
+    "rule_revision",
+    "command",
+    "selector",
+    "result",
+    "tool_result_digest",
+    "report_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "candidate_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "criterion_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rule_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rule_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "selector": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "result": {
+      "enum": [
+        "pass",
+        "fail",
+        "blocked",
+        "not_evaluated"
+      ]
+    },
+    "tool_result_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "report_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

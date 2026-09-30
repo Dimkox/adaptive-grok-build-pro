@@ -118,6 +118,10 @@ class SemanticContractTests(unittest.TestCase):
             "repair-directive.v1.schema.json",
         }
         names = semantic_names | failover_names | {
+            "context-manifest.v1.schema.json",
+            "decision-record.v1.schema.json",
+            "tool-result-envelope.v1.schema.json",
+            "semantic-execution-evidence.v2.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",
