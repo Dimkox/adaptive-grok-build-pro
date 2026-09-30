@@ -16,8 +16,8 @@
     "coverage_matrix": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
     "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity", "observation_only_model_rotator"],
     "model_rotator": "default_off_live_NOT_RUN",
-    "migration_version": 27,
-    "next_action": "Freeze clean candidate and hand exact HEAD to coordinator for explicitly delegated UNVERIFIED branch push first, then full stable verification and independent reviews. Aggregate preview requires bounded dependency stacks and App-owned exact-head Trust CI; no merge/tag/Release is authorized. Installed/live qualification remains separate."
+    "migration_version": 28,
+    "next_action": "Commit the additive migration028 RC hardening, then hand exact HEAD to coordinator for a fresh explicitly delegated UNVERIFIED branch push before full stable verification and independent reviews. Aggregate preview requires bounded dependency stacks and App-owned exact-head Trust CI; no merge/tag/Release is authorized. Installed/live qualification remains separate."
   },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",

@@ -83,10 +83,12 @@ class ModelRotatorTests(unittest.TestCase):
         reg = registry(); rotator, _ = ready_rotator(reg)
         bind = binding(reg)
         self.assertEqual(("openrouter", "qwen/a:free"), rotator.select(bind, {}, now=100))
-        cooldowns = {"openrouter/qwen/a:free": 200,
-                     "openrouter/qwen/b:free": 150}
+        cooldowns = {
+            canonical_digest({"provider_id": "openrouter", "model_id": "qwen/a:free"}): 200,
+            canonical_digest({"provider_id": "openrouter", "model_id": "qwen/b:free"}): 150,
+        }
         self.assertEqual(("qwen", "qwen-c"), rotator.select(bind, cooldowns, now=100))
-        cooldowns["qwen/qwen-c"] = 101
+        cooldowns[canonical_digest({"provider_id": "qwen", "model_id": "qwen-c"})] = 101
         self.assertIsNone(rotator.select(bind, cooldowns, now=100))
         self.assertEqual(("qwen", "qwen-c"), rotator.select(bind, cooldowns, now=101))
 

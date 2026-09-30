@@ -521,11 +521,18 @@ class PostgresRotationStore:
     def quarantine(self, binding_digest, claim_token, evidence):
         import json
 
+        persisted = {
+            "evidence_digest": evidence["evidence_digest"],
+            "outcome_digest": canonical_digest({
+                "status": evidence["status"],
+                "state_version": evidence["state_version"],
+            }),
+        }
         with self._cursor() as cursor:
             cursor.execute("SET LOCAL ROLE factory_runtime")
             cursor.execute(
                 "SELECT factory.model_rotator_quarantine_v1(%s,%s,%s::jsonb)",
-                (binding_digest, claim_token, json.dumps(evidence)),
+                (binding_digest, claim_token, json.dumps(persisted)),
             )
             if cursor.fetchone()[0] is not True:
                 raise ContractError("stale_rotation_claim")
@@ -541,11 +548,15 @@ class PostgresRotationStore:
     def finish(self, binding_digest, claim_token, evidence, cooldowns, cursor_value, version):
         import json
 
+        persisted = {
+            "evidence_digest": evidence["evidence_digest"],
+            "next_model_digest": evidence["next_model_digest"],
+        }
         with self._cursor() as cursor:
             cursor.execute("SET LOCAL ROLE factory_runtime")
             cursor.execute(
                 "SELECT factory.model_rotator_finish_v1(%s,%s,%s::jsonb,%s::jsonb,%s,%s)",
-                (binding_digest, claim_token, json.dumps(evidence), json.dumps(cooldowns), cursor_value, version),
+                (binding_digest, claim_token, json.dumps(persisted), json.dumps(cooldowns), cursor_value, version),
             )
             if cursor.fetchone()[0] is not True:
                 raise ContractError("stale_rotation_claim")
@@ -577,7 +588,8 @@ class ModelRotator:
         self._validate(binding)
         integer(now, "now", 0)
         for m in self._ordered(binding, cursor):
-            until = cooldowns.get(f"{m.provider_id}/{m.model_id}", 0)
+            cooldown_key = canonical_digest({"provider_id": m.provider_id, "model_id": m.model_id})
+            until = cooldowns.get(cooldown_key, 0)
             integer(until, "cooldown_until", 0)
             if now >= until:
                 return m.provider_id, m.model_id
@@ -609,7 +621,7 @@ class ModelRotator:
         for m in self._ordered(binding, cursor):
             if len(attempts) >= self.registry.policy.max_attempts:
                 break
-            key = f"{m.provider_id}/{m.model_id}"
+            key = canonical_digest({"provider_id": m.provider_id, "model_id": m.model_id})
             if now < cooldowns.get(key, 0):
                 continue
             reserve_units = self.registry.policy.per_attempt_token_limit if m.quota_mode == "token" else 1

@@ -890,3 +890,6 @@ When importing a model-rotation prototype, preserve deterministic selection and 
 ### 2026-09-30 — Exercise actual capability and transaction seams before candidate freeze
 
 Real PostgreSQL integration uncovered NOINHERIT role activation, absent pgcrypto and quarantine rollback despite passing source contracts. Reusing the existing bounded capability connection, core SHA-256 and committing recovery state before delivering its rejection made authority/digest/recovery evidence executable without new dependencies or weaker permissions.
+## 2026-09-30 — Keep rotator persistence digest-only behind additive wrappers
+
+Migration 028 preserves the published migration-027 bytes and replaces its exposed SQL names with closed SECURITY DEFINER wrappers while revoking direct access to the renamed bodies. Digest-keyed cooldowns and two-field digest evidence retain restart/idempotency authority without accepting provider names, errors, payloads, or arbitrary JSON into durable state.

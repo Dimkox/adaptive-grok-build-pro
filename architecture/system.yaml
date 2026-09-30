@@ -1878,6 +1878,8 @@
         "factory/src/adaptive_factory/admin.py",
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/migrations.py",
+        "factory/src/adaptive_factory/model_rotator.py",
+        "factory/src/adaptive_factory/model_rotator_cli.py",
         "factory/src/adaptive_factory/models.py",
         "factory/src/adaptive_factory/recovery.py",
         "factory/src/adaptive_factory/service.py",

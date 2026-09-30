@@ -114,6 +114,10 @@ before returning its error; owner reconciliation is separate and never inferred 
 OpenRouter entries use request quota mode and rotate only after a bounded eligible failure;
 Qwen/DashScope entries may use token quota mode. No credential, endpoint, prompt, body,
 header or raw provider error is accepted or stored.
+Migration 028 is an additive wrapper hardening layer: migration 027 remains immutable,
+all direct SQL entrypoints reject NULL/invalid values, private predecessor bodies lose
+runtime EXECUTE, cooldown keys are model digests, and persisted completion/quarantine
+evidence is a closed digest-only record.
 
 The installed inspection command is deliberately read-only:
 
@@ -125,10 +129,10 @@ It reports `enabled:false` and `live_qualification:NOT_RUN`. Source integration 
 activate providers, edit `~/.qwen`, start a proxy, kill processes, or enable upstream
 `--yolo` behavior.
 
-Local disposable tests passed eight database authority/recovery scenarios and three
+Local disposable tests passed nine database authority/recovery scenarios and three
 actual PostgreSQL restarts, including retained holds, quarantine, owner release and exact
 replay. No provider was called, and this is not installed/live acceptance. Rollback retains
-migration027 and its immutable operation/grant/accounting evidence, disables composition,
+migrations027-028 and their immutable operation/grant/accounting evidence, disables composition,
 and uses forward recovery rather than discarding unknown holds.
 
 The additive v1.5 modules provide native bounded context, immutable factual decisions,

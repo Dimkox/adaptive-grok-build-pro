@@ -376,11 +376,18 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 28)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 27)
+        self.assertEqual([item.version for item in migrations], list(range(1, 29)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 28)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
+
+        migration_027 = migrations[26]
+        self.assertEqual(migration_027.name, "027_model_rotator_state.sql")
+        self.assertEqual(
+            migration_027.sha256,
+            "d61ef73f75b1c775d859f034c9bffc94616af159d887ade5e2e8588d308274d5",
+        )
 
     def test_rotator_recovery_is_part_of_the_actual_restart_probe(self):
         import inspect

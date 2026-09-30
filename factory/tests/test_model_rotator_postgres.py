@@ -111,6 +111,48 @@ class ModelRotatorPostgresTests(unittest.TestCase):
                 with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                     connection.execute(query, ("a" * 64,) if "%s" in query else ())
 
+    def test_runtime_entrypoints_reject_null_invalid_and_open_persistence_shapes(self):
+        import psycopg
+
+        _, bind, store = self.binding()
+        claim = self.claim(store, bind)
+        token = claim["claim_token"]
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET LOCAL ROLE factory_runtime")
+            self.assertEqual(connection.execute(
+                "SELECT factory.model_rotator_reserve_v1(%s,%s,NULL,1), "
+                "factory.model_rotator_reserve_v1(%s,%s,'request',NULL)",
+                (bind.binding_digest, token, bind.binding_digest, token),
+            ).fetchone(), (False, False))
+            self.assertEqual(connection.execute(
+                "SELECT factory.model_rotator_finish_v1(%s,%s,%s::jsonb,%s::jsonb,0,0), "
+                "factory.model_rotator_quarantine_v1(%s,%s,%s::jsonb), "
+                "factory.model_rotator_finish_v1(%s,%s,'[]'::jsonb,'[]'::jsonb,0,0)",
+                (
+                    bind.binding_digest, token,
+                    json.dumps({"evidence_digest": "a" * 64, "next_model_digest": "b" * 64, "secret": "no"}),
+                    json.dumps({"raw/provider": 123}), bind.binding_digest, token,
+                    json.dumps({"evidence_digest": "a" * 64, "outcome_digest": "b" * 64, "secret": "no"}),
+                    bind.binding_digest, token,
+                ),
+            ).fetchone(), (False, False, False))
+            malformed = dict(bind.to_dict(), task_id="not-a-uuid")
+            result = connection.execute(
+                "SELECT factory.model_rotator_claim_v1(%s::jsonb,%s,%s,%s,0,%s,100)",
+                (json.dumps(malformed), json.dumps(malformed), bind.binding_digest,
+                 bind.registry_digest, self.requested_digest(bind)),
+            ).fetchone()[0]
+            self.assertEqual(result, {"error": "binding_digest_mismatch"})
+            scalar_result = connection.execute(
+                "SELECT factory.model_rotator_claim_v1('[]'::jsonb,'[]',%s,%s,0,%s,100)",
+                (bind.binding_digest, bind.registry_digest, self.requested_digest(bind)),
+            ).fetchone()[0]
+            self.assertEqual(scalar_result, {"error": "binding_digest_mismatch"})
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT factory.model_rotator_reconcile_v1(NULL,NULL)"
+            ).fetchone(), (False,))
+
     def test_python_sql_digest_parity_wire_independence_and_authority_join(self):
         import psycopg
         registry, bind, store = self.binding()
@@ -189,7 +231,9 @@ class ModelRotatorPostgresTests(unittest.TestCase):
         )
         self.assertFalse(store.reserve_dispatch(bind.binding_digest, claim["claim_token"], "request", 1))
         with self.assertRaisesRegex(ContractError, "stale_rotation_claim"):
-            store.finish(bind.binding_digest, claim["claim_token"], {"next_model_digest": self.requested_digest(bind)}, {}, 0, 0)
+            store.finish(bind.binding_digest, claim["claim_token"], {
+                "next_model_digest": self.requested_digest(bind), "evidence_digest": "e" * 64,
+            }, {}, 0, 0)
         self.assertEqual(self.owner_row("SELECT state,evidence FROM factory.model_rotator_operations"), ("claimed", None))
         self.assertEqual(self.owner_row("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting"), (0, 0))
 
@@ -200,14 +244,22 @@ class ModelRotatorPostgresTests(unittest.TestCase):
         token = claim["claim_token"]
         self.assertTrue(store.reserve_dispatch(bind.binding_digest, token, "request", 1))
         self.owner_row("UPDATE factory.model_rotator_states SET version=1 RETURNING version")
-        evidence = {"next_model_digest": self.requested_digest(bind), "fixture": "confirmed-synthetic-response"}
+        evidence = {
+            "next_model_digest": self.requested_digest(bind),
+            "evidence_digest": "e" * 64,
+            "status": "selected",
+            "state_version": 0,
+        }
         with self.assertRaises(psycopg.errors.SerializationFailure):
             store.finish(bind.binding_digest, token, evidence, {}, 0, 0)
         self.assertEqual(self.owner_row("SELECT state,evidence FROM factory.model_rotator_operations"), ("claimed", None))
         self.assertEqual(self.owner_row("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting"), (1, 0))
         self.owner_row("UPDATE factory.model_rotator_states SET version=0 RETURNING version")
         store.finish(bind.binding_digest, token, evidence, {}, 0, 0)
-        self.assertEqual(self.claim(PostgresRotationStore(self.runtime_url), bind), {"replay": evidence})
+        self.assertEqual(self.claim(PostgresRotationStore(self.runtime_url), bind), {"replay": {
+            "evidence_digest": "e" * 64,
+            "next_model_digest": self.requested_digest(bind),
+        }})
         self.assertEqual(self.owner_row("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting"), (0, 1))
 
     def test_bundled_registry_two_operations_reconnect_and_owner_settlement(self):
@@ -222,6 +274,8 @@ class ModelRotatorPostgresTests(unittest.TestCase):
         third = replace(bind, operation_id="rotator-op-3")
         claim = self.claim(store, third)
         self.assertTrue(store.reserve_dispatch(third.binding_digest, claim["claim_token"], "request", 1))
-        store.quarantine(third.binding_digest, claim["claim_token"], {"fixture": "ambiguous-synthetic-dispatch"})
+        store.quarantine(third.binding_digest, claim["claim_token"], {
+            "evidence_digest": "f" * 64, "status": "needs_human", "state_version": claim["version"],
+        })
         PostgresRotationStore(DATABASE_URL).reconcile(third.binding_digest, settle=True)
         self.assertEqual(self.owner_row("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting"), (0, 3))

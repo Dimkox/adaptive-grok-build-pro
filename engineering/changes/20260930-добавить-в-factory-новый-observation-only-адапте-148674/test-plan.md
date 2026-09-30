@@ -17,5 +17,3 @@
 - Static analysis:
 
 ## Manual checks
-
-- 

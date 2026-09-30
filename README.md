@@ -24,9 +24,11 @@ exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Tr
 
 The additive [model-rotation boundary](factory/src/adaptive_factory/model_rotator.py) is
 also default-off. It consumes existing fenced run and budget authority, persists an
-idempotent PostgreSQL claim/cooldown/cursor through migration 027, distinguishes token
+idempotent PostgreSQL claim/cooldown/cursor through migrations 027-028, distinguishes token
 quota (DashScope/Qwen) from request quota (OpenRouter), and emits redacted observation
-evidence only. `adaptive-model-rotator status` is read-only; live qualification is `NOT_RUN`.
+evidence only. Migration 028 preserves 027 byte-for-byte while closing direct-call NULL,
+shape and ACL gaps; only digest-keyed cooldowns and closed digest evidence persist.
+`adaptive-model-rotator status` is read-only; live qualification is `NOT_RUN`.
 Actual disposable PostgreSQL tests cover authority, grants, quota races, CAS rollback and
 three restarts including retained rotation holds, quarantine, owner release and replay.
 This is synthetic local evidence, not live provider qualification or merge authority.

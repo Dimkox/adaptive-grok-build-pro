@@ -1524,3 +1524,6 @@ The expanded PostgreSQL suite exceeded its inherited480s timeout, and terminatin
 ### 2026-09-30 — An imported TestCase is also a discovery surface
 
 I composed existing fixture methods instead of inheriting its TestCase but imported the class into the new test module, so unittest still discovered its75 predecessor cases there. The root cause was overlooking module-global class discovery, not inheritance; import the fixture module, borrow only named methods and assert the focused module case count before running the database contour.
+## 2026-09-30 — Verify PostgreSQL built-ins against the target image
+
+The first migration-028 real-PG run failed because I assumed `jsonb_object_length(jsonb)` existed after only static inspection. PostgreSQL 17 evidence showed it does not; closed object cardinality now uses bounded `jsonb_object_keys`, and direct scalar/NULL tests execute on the disposable target before the RC is committed.
