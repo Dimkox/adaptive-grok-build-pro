@@ -455,6 +455,166 @@ class InstallerTests(unittest.TestCase):
             self.manager.install(**self.package("2.0.0", schema=2))
         self.assertEqual(self.manager.status()["data_schema"], 1)
 
+    def test_initial_journal_crash_can_retry_only_the_pristine_partial_topology(self):
+        from unittest.mock import patch
+        package = self.package()
+        original = setup._atomic_json
+
+        def crash_initial_state(path, value):
+            if path.name == "install.json":
+                raise KeyboardInterrupt("power loss before initial journal")
+            return original(path, value)
+
+        with patch.object(setup, "_atomic_json", side_effect=crash_initial_state):
+            with self.assertRaises(KeyboardInterrupt):
+                self.manager.install(**package)
+        self.assertTrue((self.root / "state").is_dir())
+        self.assertFalse((self.root / "state/install.json").exists())
+        before = self.root.stat().st_mtime_ns
+        setup.preflight(self.root)
+        self.assertEqual(self.root.stat().st_mtime_ns, before)
+        identity = self.manager.install(**package)
+        self.assertEqual(self.manager.status()["current"], identity)
+
+    def test_partial_initialization_with_persistent_data_or_unknown_files_fails_closed(self):
+        self.root.mkdir(mode=0o700)
+        (self.root / "state").mkdir(mode=0o700)
+        (self.root / "data").mkdir(mode=0o700)
+        (self.root / "data/keep").write_text("real data, not pristine")
+        with self.assertRaises(setup.InstallerError):
+            self.manager.install(**self.package())
+        self.assertEqual((self.root / "data/keep").read_text(), "real data, not pristine")
+        self.assertFalse((self.root / "state/install.json").exists())
+        self.assertEqual(self.runtime.events, [])
+
+    def test_each_empty_initialization_prefix_can_reconcile_before_install(self):
+        package = self.package()
+        for count in range(len(setup.DIRECTORIES) + 1):
+            with self.subTest(count=count):
+                root = self.parent / ("partial-" + str(count))
+                root.mkdir(mode=0o700)
+                for name in setup.DIRECTORIES[:count]:
+                    (root / name).mkdir(mode=0o700)
+                manager = setup.SetupManager(root, self.runtime)
+                manager.reconcile()
+                self.assertEqual(manager.status()["phase"], "stopped")
+                identity = manager.install(**package)
+                self.assertEqual(manager.status()["current"], identity)
+
+    def test_corrupt_retained_transition_record_blocks_further_effects(self):
+        self.install()
+        path = self.root / "state/install.json"
+        state = json.loads(path.read_text())
+        state["last_transition"]["health"] = False
+        path.write_text(json.dumps(state))
+        before = list(self.runtime.events)
+        with self.assertRaises(setup.InstallerError):
+            self.manager.stop()
+        self.assertEqual(self.runtime.events, before)
+
+    def test_missing_operation_identity_fails_as_closed_json_error(self):
+        from contextlib import redirect_stdout
+        self.install()
+        path = self.root / "state/install.json"
+        state = json.loads(path.read_text())
+        state["operation"] = {"candidate": state["current"], "prior": state["current"]}
+        path.write_text(json.dumps(state))
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(setup.main(["status", "--root", str(self.root)]), 1)
+        self.assertEqual(json.loads(output.getvalue())["error"], "INVALID_STATE")
+
+    def test_update_keeps_bounded_last_success_backup_compatibility_and_health_evidence(self):
+        first, _ = self.install()
+        package = self.package("2.0.0")
+        second = setup.verify_release(**package).identity
+        evidence = self.evidence(second, first)
+        self.manager.update(**package, evidence=evidence)
+        state = json.loads((self.root / "state/install.json").read_text())
+        self.assertIsNone(state["operation"])
+        retained = state["last_transition"]
+        self.assertRegex(retained["id"], r"^[0-9a-f]{32}$")
+        self.assertEqual(retained["prior"], first)
+        self.assertEqual(retained["candidate"], second)
+        self.assertEqual(retained["backup"], {"path": "backups/verified.snapshot", "sha256": evidence.backup_sha256})
+        self.assertEqual(retained["compatibility"], "same-schema")
+        self.assertIs(retained["health"], True)
+        self.assertIs(retained["runtime_preflight"], True)
+        self.assertEqual(retained["schema_prior"], 1)
+        self.assertEqual(retained["schema_candidate"], 1)
+        self.assertLess(len(json.dumps(retained)), 4096)
+        self.manager.stop()
+        self.manager.start()
+        self.assertEqual(self.manager.status()["last_transition"], retained)
+
+    def test_interrupted_update_reconciles_with_the_original_operation_and_backup_record(self):
+        from unittest.mock import patch
+        first, _ = self.install()
+        package = self.package("2.0.0")
+        second = setup.verify_release(**package).identity
+        evidence = self.evidence(second, first)
+        original = self.manager._save
+
+        def crash_final_state(state, phase, **fields):
+            if phase == "ready":
+                raise KeyboardInterrupt("power loss before final success")
+            return original(state, phase, **fields)
+
+        with patch.object(self.manager, "_save", side_effect=crash_final_state):
+            with self.assertRaises(KeyboardInterrupt):
+                self.manager.update(**package, evidence=evidence)
+        pending = self.manager.status()["operation"]
+        self.manager.reconcile()
+        retained = self.manager.status()["last_transition"]
+        self.assertEqual(retained["id"], pending["id"])
+        self.assertEqual(retained["backup"]["sha256"], evidence.backup_sha256)
+        self.assertIs(retained["health"], True)
+
+    def test_interrupted_purge_never_replays_deletion(self):
+        from unittest.mock import patch
+        self.install()
+        (self.root / "data/keep").write_text("survives incomplete purge")
+        token = self.manager.purge_token()
+        with patch.object(setup.shutil, "rmtree", side_effect=KeyboardInterrupt("power loss during purge")):
+            with self.assertRaises(KeyboardInterrupt):
+                self.manager.remove(purge=True, token=token)
+        self.assertEqual(self.manager.status()["phase"], "purging")
+        with self.assertRaises(setup.InstallerError) as error:
+            self.manager.reconcile()
+        self.assertEqual(error.exception.code, "RECOVERY_REQUIRED")
+        self.assertEqual((self.root / "data/keep").read_text(), "survives incomplete purge")
+
+    def test_cli_update_and_reverse_have_no_implicit_adapter_or_backup_authority(self):
+        from contextlib import redirect_stdout
+        first, _ = self.install()
+        package = self.package("2.0.0")
+        arguments = ["--root", str(self.root), "--archive", str(package["archive"]),
+                     "--manifest", str(package["manifest"]), "--archive-sha256", package["archive_sha256"],
+                     "--manifest-sha256", package["manifest_sha256"]]
+        before = (self.root / "state/install.json").read_bytes()
+        for argv, expected in ((["update"] + arguments, "ADAPTER_REQUIRED"),
+                               (["reverse", "--root", str(self.root), "--release", first], "BACKUP_COMPATIBILITY_REQUIRED")):
+            output = io.StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(setup.main(argv), 1)
+            self.assertEqual(json.loads(output.getvalue())["error"], expected)
+            self.assertEqual((self.root / "state/install.json").read_bytes(), before)
+
+    def test_durable_provenance_pins_upstream_identity_and_explicit_authorization_scope(self):
+        path = MODULE.with_name("setup_manager.provenance.json")
+        self.assertTrue(path.is_file(), "durable provenance record is missing")
+        record = json.loads(path.read_text())
+        self.assertEqual(record["upstream_commit"], "e3df6833e8916d01f55028e63d4db1632a805a75")
+        self.assertEqual(record["reference_sha256"], {
+            "scripts/verify-liqvera-installer.py": "72e22cda1930d859be8093e3ec875ae5e673c842a41da849644147ae6b9fb207",
+            "installer/lib/runtime.py": "8ffdc2be7c350fb1d529beeaa9de6326e9942bc9edf520ce194f87372de7a8f4",
+            "installer/lib/lifecycle.py": "0fb33e0405f02784a871569a785f92e8d7acc2978c2effd400a507ce926d054b",
+        })
+        self.assertEqual(record["authorization"]["date"], "2026-09-30")
+        self.assertEqual(record["authorization"]["authority"], "explicit-user-direction-recorded-by-coordinator")
+        self.assertIn("Factory Linux setup manager", record["authorization"]["scope"])
+        self.assertIs(record["upstream_open_license_claim"], False)
+
     def test_cli_status_and_error_are_json_and_cli_has_no_activation_adapter(self):
         from contextlib import redirect_stdout
         output = io.StringIO()

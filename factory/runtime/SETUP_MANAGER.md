@@ -64,12 +64,23 @@ lines, PEM blocks, and nonprinting control sequences.
 The dedicated root is UID-owned `0700` with safe ancestry; its parent must exist.
 Read-only Linux preflight checks available memory/disk and optional loopback port
 conflicts (checks do not reserve ports). Occupied roots need matching install state.
+An interrupted first initialization may contain only an exact UID-owned `0700`
+subset of the six empty managed directories and an empty private state lock. This
+pristine topology can be retried or reconciled; unknown entries, data bytes, links,
+unsafe modes, and temporary journal files require explicit investigation. Recovery
+checks the topology again under lock before writing the initial journal.
 Root privacy is the trust boundary; hostile same-UID/root processes are outside it.
 Use a local filesystem supporting flock, atomic rename, and fsync.
 
 `state/install.json` (`factory-install/v1`) records root, generation, phase,
 current/previous digests, retained schema, operation ID/candidate/prior. The lock
 uses nonblocking flock; journal/pointer transitions use atomic writes and fsync.
+The optional additive `last_transition` field retains one bounded last successful
+version transition: original operation ID/kind/prior/candidate, backup relative
+path/digest, prior/candidate schemas and compatibility decision, runtime-preflight
+and health observations, and completion generation. Restart/stop/removal preserve
+this record. It is observed workflow evidence, not signed human approval or proof
+that a retained backup still exists; each new transition rechecks actual backup bytes.
 `current` is a relative `releases/<digest>` symlink switched only after health.
 Status separates persisted phase from observed `running` (`null` without adapter).
 
@@ -103,6 +114,13 @@ The upstream tree has **no root open-source license**. Owner-directed transfer i
 recorded in the change package; it makes no upstream open-license claim. This newly
 written Factory code contains no Liqvera service/config/image/Compose/Caddy/migration
 payload. A real runtime adapter remains separate scoped work.
+
+The checked-in [`setup_manager.provenance.json`](setup_manager.provenance.json)
+pins the upstream SHA/reference hashes and records the owner's 2026-09-30 direction:
+“https://github.com/Dimkox/liqvera отсюда прототип инсталлера забери”. Its scope is
+inspection/selective prototype safety-pattern reuse, not a license grant, signed
+security approval, or host operation. No temporary inspection checkout is needed to
+understand this record.
 
 `python3 -m unittest factory.tests.test_runtime_installer` uses private temporary
 roots, real ZIP/digest/lock/journal behavior, and an injected in-memory runtime.

@@ -6,6 +6,38 @@ Initial implementation commit: `4c30bd1ddbcb321cd54a95187129f957553963af`.
 The following documentation/default-adapter commit is identified by Git history;
 this report deliberately does not embed its own commit identity.
 
+## Independent-review corrections
+
+The code reviewer found an initial-journal crash window and loss of successful
+transition evidence after clearing the active operation. Added RED probes produced
+one provenance failure and four errors: initial retry failed, successful/reconciled
+updates lacked `last_transition`, and interrupted purge status attempted to validate
+the partially removed immutable release. Corrections now resume only an exact
+empty UID/private managed-directory topology, initialize under the durable lock,
+retain one bounded last-success record, and expose unknown runtime status during
+removal/purge. Operation identity survives prepare/start/health/switch/reconciliation;
+the record retains checked backup relative path/digest, schema compatibility and
+preflight/health observations without claiming human approval. Stops/restarts/removal
+preserve it. Legacy v1 state remains readable; a legacy interrupted switch without
+the new transition evidence fails closed.
+
+Latest corrected focused run: `taskset -c 0-27 python3 -m unittest
+factory.tests.test_runtime_installer` => **41 passed**, 2.690 seconds. Ruff/Bandit
+and `git diff --check` pass. The test reviewer requested additional provenance,
+interrupted purge, and fail-closed CLI update/reverse checks; all are included.
+An additional RED state-corruption probe showed a missing operation ID escaped the
+CLI as `KeyError`; it now returns the closed JSON `INVALID_STATE` error.
+Current full verification/re-review remains coordinator work, not an inferred pass.
+
+The durable `factory/runtime/setup_manager.provenance.json` records explicit user
+direction on **2026-09-30** as reported by the coordinator:
+“https://github.com/Dimkox/liqvera отсюда прототип инсталлера забери”. The authorized
+scope is inspecting/selectively reusing installer prototype safety patterns for
+Factory, excluding upstream product payload. This is a durable session-direction
+record, not a license grant or signed security approval. The exact upstream SHA and
+reference hashes below are also pinned there and mechanically checked by the suite;
+future readers need no temporary checkout to establish the recorded provenance.
+
 ## Delivered source
 
 - `factory/runtime/setup_manager.py`: stdlib ZIP/manifest verifier, Linux preflight,
