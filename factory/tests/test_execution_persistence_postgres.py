@@ -323,7 +323,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.semantic_recovery_records, "
+                "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, "
                 "factory.semantic_escalations, factory.semantic_child_task_bindings, "
                 "factory.semantic_child_proposals, factory.semantic_directives, "
                 "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -6043,8 +6043,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 22:
-            raise AssertionError("fresh-cluster test requires migrations 001..022")
+        if len(migrations) != 23:
+            raise AssertionError("fresh-cluster test requires migrations 001..023")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")

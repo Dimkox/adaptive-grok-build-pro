@@ -359,7 +359,7 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "TRUNCATE factory.semantic_recovery_records, "
+            "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, "
             "factory.semantic_escalations, factory.semantic_child_task_bindings, "
             "factory.semantic_child_proposals, factory.semantic_directives, "
             "factory.semantic_verdicts, factory.semantic_coverage, "

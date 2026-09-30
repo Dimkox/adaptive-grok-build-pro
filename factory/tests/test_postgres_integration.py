@@ -218,7 +218,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -911,6 +911,36 @@ class PostgresFactoryTests(unittest.TestCase):
             self.service.list_task_runs(task.task_id, limit=1, cursor=None, actor=denied)
         with self.assertRaises(AuthorizationError):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
+
+    def test_v15_phase_decision_is_atomic_idempotent_and_append_only(self):
+        import psycopg
+        from adaptive_factory.decision_contracts import DecisionRecordV1
+        from factory.tests.test_decision_contracts import decision_facts
+
+        task = self.submit(source='v15-decision').task
+        grant = self.service.claim(owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW)
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt = connection.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s', (grant.run_id,)).fetchone()[0]
+        facts = decision_facts()
+        facts.update(repository_id=task.repository_id, task_id=grant.task_id, run_id=grant.run_id,
+                     attempt_id=str(attempt), fence=grant.fence)
+        record = DecisionRecordV1.from_dict(facts)
+        self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW, decision_record=record)
+        self.assertEqual(self.store.append_decision(grant, record, WORKER), record.record_digest)
+        facts['facts'] = [dict(name='from_state', value='analyzing'), dict(name='target', value='implementing')]
+        conflicting = DecisionRecordV1.from_dict(facts)
+        with self.assertRaises(IntegrityError):
+            self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW, decision_record=conflicting)
+        self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.ANALYZING)
+        facts.update(decision_id='decision-2', supersedes='decision-1')
+        correction = DecisionRecordV1.from_dict(facts)
+        self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW, decision_record=correction)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute('SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=%s', (task.task_id,)).fetchone()[0], 2)
+        with psycopg.connect(self.runtime_url) as connection:
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                connection.execute('UPDATE factory.decision_records_v1 SET supersedes=NULL')
 
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
@@ -5093,7 +5123,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 22)
+        self.assertEqual(result["schema_version"], 23)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

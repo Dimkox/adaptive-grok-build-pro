@@ -10,6 +10,7 @@ import time
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
+from .decision_contracts import DecisionRecordV1
 from .brokers import (
     ArtifactProposal,
     BrokerError,
@@ -3959,6 +3960,7 @@ class PostgresFactoryStore:
         *,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        decision_record: DecisionRecordV1 | None = None,
     ) -> TaskStatus:
         del now
         with self._transaction() as cursor:
@@ -3973,6 +3975,8 @@ class PostgresFactoryStore:
                 },
                 "target": target.value,
             }
+            if decision_record is not None:
+                command['decision_digest'] = decision_record.record_digest
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "transition_phase", command
             )
@@ -3982,6 +3986,12 @@ class PostgresFactoryStore:
                 cursor, grant
             )
             current = TaskStatus(task_state)
+            if decision_record is not None:
+                record = DecisionRecordV1.from_dict(decision_record.to_dict())
+                facts = {fact['name']: fact['value'] for fact in record.to_dict()['facts']}
+                if record.to_dict()['decision_kind'] != 'state' or facts.get('from_state') != current.value or facts.get('target') != target.value:
+                    raise IntegrityError('state decision facts mismatch')
+                self._append_decision_locked(cursor, grant, record, actor)
             operation = TransitionOperation.PHASE
             self._apply_task_transition(
                 cursor,
@@ -4034,6 +4044,40 @@ class PostgresFactoryStore:
                 {"status": target.value},
             )
             return target
+
+    def _append_decision_locked(self, cursor, grant, record, actor):
+        data = record.to_dict()
+        cursor.execute('SELECT repository_id FROM factory.tasks WHERE task_id=%s', (grant.task_id,))
+        repository = cursor.fetchone()[0]
+        if (data['repository_id'] != repository or data['task_id'] != grant.task_id
+                or data['run_id'] != grant.run_id or data['fence'] != grant.fence
+                or actor.actor_id != grant.owner or 'task:release' not in actor.scopes
+                or ('*' not in actor.repositories and repository not in actor.repositories)):
+            raise AuthorityError('decision identity mismatch')
+        cursor.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s AND task_id=%s', (grant.run_id, grant.task_id))
+        attempt = cursor.fetchone()
+        if attempt is None or str(attempt[0]) != data['attempt_id']:
+            raise IntegrityError('decision attempt mismatch')
+        if data['supersedes'] is not None:
+            cursor.execute('SELECT task_id,run_id FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (repository, data['supersedes']))
+            prior = cursor.fetchone()
+            if prior is None or str(prior[0]) != grant.task_id or str(prior[1]) != grant.run_id:
+                raise IntegrityError('decision supersession mismatch')
+        cursor.execute('''INSERT INTO factory.decision_records_v1
+            (repository_id,decision_id,task_id,run_id,record_digest,record,supersedes)
+            VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s) ON CONFLICT DO NOTHING''',
+            (repository, data['decision_id'], grant.task_id, grant.run_id, record.record_digest,
+             canonical_json(data).decode(), data['supersedes']))
+        cursor.execute('SELECT record_digest FROM factory.decision_records_v1 WHERE repository_id=%s AND decision_id=%s', (repository, data['decision_id']))
+        if cursor.fetchone()[0] != record.record_digest:
+            raise IntegrityError('decision idempotency conflict')
+        return record.record_digest
+
+    def append_decision(self, grant, record, actor):
+        record = DecisionRecordV1.from_dict(record.to_dict())
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            return self._append_decision_locked(cursor, grant, record, actor)
 
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,

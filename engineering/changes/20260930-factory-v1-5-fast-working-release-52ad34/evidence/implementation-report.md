@@ -9,6 +9,8 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 
 ## Rulings
 
+- Task 3: decision unit RED after correcting a wrong store class import: 4 failures for missing decision module; GREEN: 32 decision/migration tests. Existing migration-022 tests are pinned to their historical prefix rather than assuming no future migration. PostgreSQL test is capability-skipped until the disposable exit runner supplies a database; no live pass claimed yet. Store phase transition accepts an optional idempotent factual record in the same transaction; old command payloads stay unchanged when absent.
+
 - Retain native sidecars for the fast release. Exact external source/package/binary/license qualification is absent, so FPF/VibeVM/BB remain default-off and not evaluated/not run. No install, listeners or external effects.
 - Integration review and exact-head external Trust CI are coordinator-owned gates and cannot be fabricated by the implementation owner.
 

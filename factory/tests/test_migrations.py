@@ -370,8 +370,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 23)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 22)
+        self.assertEqual([item.version for item in migrations], list(range(1, 24)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 23)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -863,7 +863,7 @@ class RepairPlanMigrationTests(unittest.TestCase):
     )
 
     def plan_migration(self):
-        migrations = discover_migrations()
+        migrations = tuple(m for m in discover_migrations() if m.version <= 22)
         self.assertEqual(migrations[-1].version, 22)
         self.assertEqual(migrations[-1].name,
                          "022_semantic_repair_plan_rejection_reasons.sql")
