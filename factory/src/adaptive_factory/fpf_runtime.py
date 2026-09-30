@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 import html
+from urllib.parse import urlsplit, parse_qsl
 from typing import Iterable, Mapping
 from pathlib import PurePosixPath
 from types import MappingProxyType
@@ -474,6 +475,10 @@ _URL_TOKEN = r"https?://[^\s]+(?<![.,!?;:)])"
 _URL = re.compile(_URL_TOKEN, re.I)
 _CITATION_DOCUMENT = re.compile(
     rf"\s*(?:(?:Citation|Reference)\s*:\s*{_URL_TOKEN}\s*[.!?;]?\s*)+\Z", re.I)
+_NETWORK_COMMAND = re.compile(
+    r"(?:^|\s)(?:curl|wget|ssh|scp|nc|fetch|retrieve|download|upload|connect|browse|navigate|GET|POST|PUT|PATCH)(?:\s|$)", re.I)
+_SENSITIVE_QUERY_KEYS = {"token", "key", "api_key", "apikey", "secret", "password", "passwd",
+                         "credential", "credentials", "access_token", "auth", "authorization", "signature"}
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -484,8 +489,18 @@ def enforce_reference_boundary(text: str) -> str:
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
     if _UNSAFE.search(text):
         _block("unsafe_reference")
+    if _NETWORK_COMMAND.search(text):
+        _block("unsafe_reference")
     if _URL.search(text) and not _CITATION_DOCUMENT.fullmatch(text):
         _block("unsafe_reference")
+    for match in _URL.finditer(text):
+        parsed = urlsplit(match.group(0))
+        if parsed.username is not None or parsed.password is not None or "@" in parsed.netloc:
+            _block("unsafe_reference")
+        for key, _value in parse_qsl(parsed.query, keep_blank_values=True):
+            normalized_key = key.strip().lower().replace("-", "_")
+            if normalized_key in _SENSITIVE_QUERY_KEYS:
+                _block("unsafe_reference")
     return text
 
 

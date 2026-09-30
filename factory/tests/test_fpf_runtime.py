@@ -227,8 +227,8 @@ class FpfRuntimeTests(unittest.TestCase):
                      "Authorization: Bearer abcdefghijklmnop"):
             with self.subTest(text=text), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
                 fpf.enforce_reference_boundary(text)
-        self.assertEqual(fpf.enforce_reference_boundary("Example: do not fetch external URLs."),
-                         "Example: do not fetch external URLs.")
+        with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
+            fpf.enforce_reference_boundary("Example: do not fetch external URLs.")
         self.assertEqual(fpf.enforce_reference_boundary("Citation: https://example.test/spec"),
                          "Citation: https://example.test/spec")
         with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
@@ -267,6 +267,16 @@ class FpfRuntimeTests(unittest.TestCase):
                 fpf.enforce_reference_boundary(text)
         citations = "Citation: https://example.test/one.\nReference: https://example.test/two;"
         self.assertEqual(fpf.enforce_reference_boundary(citations), citations)
+        for text in ("Citation: https://user:pass@example.test/spec",
+                     "Reference: https://example.test/spec?token=abc",
+                     "Citation: https://example.test/spec?api_key=abc",
+                     "Reference: https://example.test/spec?credential=abc"):
+            with self.subTest(text=text), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
+                fpf.enforce_reference_boundary(text)
+        for command in ("curl example.test", "wget payload", "ssh host", "scp a b", "nc host 80",
+                        "fetch remote data", "retrieve remote data", "POST payload", "navigate to host"):
+            with self.subTest(command=command), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
+                fpf.enforce_reference_boundary(command)
         with self.assertRaisesRegex(fpf.FpfBlocked, "tenant_mismatch"):
             fpf.ProgressiveReader(self.snapshot(), tenant_id="other")
         with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
