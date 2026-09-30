@@ -1,0 +1,99 @@
+{
+  "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-factory-v1-5-f24-f26-paired-a-b-c-qu-56e953",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/v15-qualification-harness",
+      "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-factory-v1-5-f24-f26-paired-a-b-c-qu-56e953",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "edf09469748c60b31a4b6f7669d1a9e35210071e",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-30T19:41:00+00:00",
+      "route_id": "56e953283101"
+    },
+    {
+      "branch": "feature/v15-qualification-harness",
+      "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-factory-v1-5-f24-f26-paired-a-b-c-qu-56e953",
+      "detached": false,
+      "dirty_product_paths": [
+        "factory/src/adaptive_factory/behavior_qualification.py",
+        "factory/src/adaptive_factory/resources/pump-selector-baseline-v1.json",
+        "factory/src/adaptive_factory/resources/pump-selector-qualification-v1.json",
+        "factory/tests/test_behavior_qualification.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [],
+      "head": "edf09469748c60b31a4b6f7669d1a9e35210071e",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-30T19:48:19+00:00",
+      "route_id": "56e953283101"
+    }
+  ],
+  "created_at": "2026-09-30T19:41:00+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-30T19:41:00+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-30T19:43:11+00:00",
+      "from": "draft",
+      "reason": "F24/F26 contracts, deterministic Pump oracle, budgets and fail-closed acceptance criteria frozen",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-30T19:43:12+00:00",
+      "from": "scoped",
+      "reason": "route has no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-30T19:48:19+00:00",
+      "from": "approved",
+      "reason": "RED observed; deterministic twelve-case harness and resources implemented; focused suite green",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "8275aa6cbbb8ce5c5f92f3df408409f8aa2fa1a4cfce33ce4ae949556c6a9f4d",
+  "route_id": "56e953283101",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "\u0420\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c Factory v1.5 F24 F26 paired A/B/C qualification harness: frozen 12-case corpus, Pump Selector fixtures/oracle, behavior impact selector, immutable baseline, thresholds, budgets and deterministic tests",
+  "updated_at": "2026-09-30T19:48:19+00:00"
+}

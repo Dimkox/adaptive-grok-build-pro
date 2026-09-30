@@ -1,0 +1,44 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"The frozen Pump Selector corpus contains exactly twelve stable required cases with provenance, snapshot, rule and executable-oracle bindings; wrong-document, wrong-curve, unknown-not-zero and unit-conversion controls are represented.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"AC-002","statement":"A/B/C are evaluated on the same accepted corpus, oracle and common pins; undeclared confounding or a missing immutable baseline fails closed.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"AC-003","statement":"Required omissions, infrastructure failures, critical domain failures, quality regression, incomplete cost, and exceeded attempt/latency/cost budgets cannot become a comparative pass.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"AC-004","statement":"The impact selector requires F26 evaluation for behavior-affecting or unknown changes and skips provider work only for proven non-executable documentation edits.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"AC-005","statement":"The deterministic report preserves every attempt and unknown numeric facts as null, exposes completeness/quality/budget gates, and grants no merge, deploy, M8 or production authority.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"},{"receipt":"verification"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260930-реализовать-factory-v1-5-f24-f26-paired-a-b-c-qu-56e953",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Candidate output must never rewrite corpus, oracle, thresholds or baseline.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"FORBID-002","statement":"Unknown values must not be coerced to measured zero and lower cost must not compensate for a domain or safety failure.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"All three modes use the exact same twelve case identities and accepted oracle version.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]},
+    {"id":"INV-002","statement":"Qualification evidence is observation-only and has authority_effect none.","evidence":[{"test":"factory/tests/test_behavior_qualification.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Реализовать Factory v1.5 F24 F26 paired A/B/C qualification harness: frozen 12-case corpus, Pump Selector fixtures/oracle, behavior impact selector, immutable baseline, thresholds, budgets and deterministic tests",
+    "success_metric": "A deterministic 12-case A/B/C run exercises all gates and its negative controls fail closed.",
+    "target": "Factory v1.5 F24/F26 source qualification harness"
+  },
+  "observability": [{"id":"SIG-001","metric":"report gate statuses, per-mode attempts, completeness, quality, budgets and immutable input digests","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -854,3 +854,7 @@ When a predecessor merges, first restack the continuation branch and bind its ro
 ### 2026-09-24 — Admit by content role, never by directory (corrects the entry above)
 
 The review of head `a08060c1` showed "prose" is not a directory property: `docs/bitrix-local-AGENTS.md` is installed verbatim as `local/AGENTS.md` into every consumer Bitrix install (executed product), and `**/evidence/historical-*` bytes are pinned to a literal sha256 by `tests/test_history.py` (declared immutable). Both are now refused by their own reason codes, documentation prefixes are directory-shaped only, and every remaining admitted class is bound by a module the lane itself runs — `tests/test_workflow_sources.py` and `tests/test_repo_router.py` joined the trio for that reason, so the lane runs five modules (~14 s) and skips three named checks including the discovery runner it replaced.
+
+### 2026-09-30 — Keep F24/F26 fixtures immutable and the runner authority-free
+
+Bind the twelve Pump Selector cases and accepted baseline as separate digest-checked package resources, then pass detached case copies to injected executors. This makes wrong-document/curve, unknown-to-zero, unit, completeness, quality and budget controls deterministic without giving benchmark output permission to rewrite its oracle or activate a runtime profile.

@@ -1502,3 +1502,7 @@ I started `grok_verify` and then wrote the change plan into the same worktree, w
 Starting a broad unittest discovery while a new test file was in its RED interval allowed
 that diagnostic process to import an intentionally missing module. Keep final verification
 on a stable tree; this run was retained as failing diagnostic evidence, not reported green.
+
+### 2026-09-30 — Use package-aware factory discovery
+
+I invoked `unittest discover -s factory/tests`, which imported package-relative test modules as top-level modules and produced seven false collection errors. The root cause was bypassing the repository's package-aware test entrypoint; focused checks must use `factory.tests.*`, while the authoritative broad run remains `scripts/grok_verify.py --mode pr`.
