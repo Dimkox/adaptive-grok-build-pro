@@ -242,13 +242,15 @@ Machine-readable local pins: `.grok-stack/config/toolchain.json` (its `workflow_
 
 ### Workflow sources (advisory parsers — not installed by this stack)
 
-| Component | Pinned | Upstream | Observed latest | Observed |
-| --- | --- | --- | --- | --- |
-| Superpowers | 6.3.0 | obra/superpowers | 6.3.0 | 2026-09-15 |
-| BMAD Method | 6.12.0 | bmad-code-org/BMAD-METHOD | 6.12.0 | 2026-09-15 |
-| GitHub Spec Kit | 1.0.7 | github/spec-kit | 1.0.7 | 2026-09-15 |
+| Component | Pinned | Tag | Stable commit | Upstream | Observed latest | Main commit | Observed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Superpowers | 6.4.2 | v6.4.2 | 8ca22dba9a94f28898bbce59f2537ff4d87c747d | obra/superpowers | 6.4.2 | 8ca22dba9a94f28898bbce59f2537ff4d87c747d | 2026-09-30 |
+| BMAD Method | 6.12.0 | v6.12.0 | 05bfbd46d00766ec88eb9b42e76be2c575d64d7b | bmad-code-org/BMAD-METHOD | 6.12.0 | 1cbcfa272fe65787c06a1fa164a901f46117cca7 | 2026-09-30 |
+| GitHub Spec Kit | 1.0.13 | v1.0.13 | f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9 | github/spec-kit | 1.0.13 | d2ddd910266ad14afe79c5414c88ee316aca6e9a | 2026-09-30 |
 
 These rows are dated currency observations for the workflow artifact adapters, not install targets; `tests/test_workflow_sources.py` keeps them bound to `.grok-stack/config/toolchain.json` and to named parser tests. Accepted document shapes and the known-unparsed list are defined in the [upstream format amendment](docs/superpowers/specs/2026-09-15-workflow-artifact-adapters-upstream-amendment.md).
+
+Stable commits are the peeled release tags; main commits are separate observations, not release pins. Exact-revision sample provenance lives in the [September 30 refresh](engineering/changes/20260930-refresh-workflow-upstream-versions-and-commits-8ba78f/evidence/upstream-provenance.md). Superpowers 6.4.2 plan `Spec` pointers and interfaces stay opaque advisory text. BMAD main's ticket metadata loads as advisory context without native task or status inference; stable 6.12.0 story parsing and older supported formats remain covered.
 
 ## Install into a project
 

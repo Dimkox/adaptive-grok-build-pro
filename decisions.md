@@ -1,5 +1,9 @@
 # Decisions
 
+### 2026-09-30 — Keep stable workflow pins separate from main observations
+
+Record peeled stable commits alongside separately observed main commits and exercise exact-revision excerpts through the existing advisory adapters. This updated source currency without changing runtime parsing or promoting BMAD main ticket metadata and Superpowers Spec pointers into authority.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
