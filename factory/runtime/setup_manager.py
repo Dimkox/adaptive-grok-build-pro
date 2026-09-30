@@ -209,6 +209,22 @@ def _safe_root(root: Path) -> Path:
     return root
 
 
+def _pristine_initialization(root: Path) -> bool:
+    """Only an exact empty, private subset of our topology is replayable."""
+    for entry in root.iterdir():
+        info = entry.lstat()
+        if (entry.name not in DIRECTORIES or not stat.S_ISDIR(info.st_mode)
+                or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700):
+            return False
+        for child in entry.iterdir():
+            metadata = child.lstat()
+            if (entry.name != "state" or child.name != "lock" or not stat.S_ISREG(metadata.st_mode)
+                    or metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600
+                    or metadata.st_nlink != 1 or metadata.st_size != 0):
+                return False
+    return True
+
+
 def preflight(root: Path, *, platform_name: str | None = None, minimum_free_bytes: int = MAX_TOTAL_BYTES,
               minimum_memory_bytes: int = 128 * 1024 * 1024, ports: tuple[int, ...] = ()) -> dict:
     """Read-only host checks. No package manager, privilege escalation, or daemon calls."""
@@ -216,9 +232,14 @@ def preflight(root: Path, *, platform_name: str | None = None, minimum_free_byte
     if (platform_name or platform.system()) != "Linux" or not hasattr(os, "O_NOFOLLOW"):
         raise InstallerError("UNSUPPORTED_HOST")
     if root.exists() and any(root.iterdir()):
-        state = _json(_read(root / "state/install.json", MAX_JSON_BYTES))
-        if state.get("schema_version") != "factory-install/v1" or state.get("root") != str(root):
-            raise InstallerError("UNSAFE_INSTALLATION")
+        if (root / "state").exists():
+            _safe_root(root / "state")
+        if (root / "state/install.json").exists():
+            state = _json(_read(root / "state/install.json", MAX_JSON_BYTES))
+            if state.get("schema_version") != "factory-install/v1" or state.get("root") != str(root):
+                raise InstallerError("UNSAFE_INSTALLATION")
+        elif not _pristine_initialization(root):
+            raise InstallerError("RECONCILIATION_REQUIRED")
     ancestor = root
     while not ancestor.exists():
         ancestor = ancestor.parent
@@ -286,6 +307,40 @@ class TransitionEvidence:
     data_schema: int
     backup: Path
     backup_sha256: str
+
+
+def _validate_transition(value: dict, *, completed: bool = False) -> None:
+    required = {"id", "candidate", "prior", "kind", "backup", "schema_prior", "schema_candidate",
+                "compatibility", "runtime_preflight", "health"}
+    if completed:
+        required.add("completed_generation")
+    if (not isinstance(value, dict) or set(value) != required
+            or not isinstance(value["id"], str) or not re.fullmatch(r"[0-9a-f]{32}", value["id"])
+            or value["kind"] not in {"install", "update", "reverse", "restart"}
+            or type(value["schema_candidate"]) is not int or not 0 <= value["schema_candidate"] <= 1000000
+            or value["schema_prior"] is not None and (type(value["schema_prior"]) is not int
+                                                       or not 0 <= value["schema_prior"] <= 1000000)
+            or value["runtime_preflight"] is not True or type(value["health"]) is not bool):
+        raise InstallerError("INVALID_STATE")
+    _hex(value["candidate"])
+    if value["prior"] is not None:
+        _hex(value["prior"])
+    expected = "new-empty-installation" if value["schema_prior"] is None else "same-schema"
+    if (value["compatibility"] != expected or expected == "same-schema"
+            and value["schema_prior"] != value["schema_candidate"]):
+        raise InstallerError("INVALID_STATE")
+    backup = value["backup"]
+    if backup is not None:
+        if (not isinstance(backup, dict) or set(backup) != {"path", "sha256"}
+                or not isinstance(backup["path"], str) or len(backup["path"]) > 512
+                or not backup["path"].startswith("backups/") or ".." in Path(backup["path"]).parts):
+            raise InstallerError("INVALID_STATE")
+        _hex(backup["sha256"])
+    if value["kind"] in {"update", "reverse"} and backup is None:
+        raise InstallerError("INVALID_STATE")
+    if completed and (value["health"] is not True or type(value["completed_generation"]) is not int
+                      or value["completed_generation"] < 1):
+        raise InstallerError("INVALID_STATE")
 
 
 def _sync_directory(path: Path) -> None:
@@ -358,8 +413,9 @@ class SetupManager:
         self._tree()
         path = self.root / "state/install.json"
         value = _json(_read(path, MAX_JSON_BYTES))
+        value.setdefault("last_transition", None)  # Existing v1 state remains readable.
         if (set(value) != {"schema_version", "root", "generation", "phase", "current", "previous",
-                           "data_schema", "operation"}
+                           "data_schema", "operation", "last_transition"}
                 or value["schema_version"] != "factory-install/v1" or value["root"] != str(self.root)
                 or type(value["generation"]) is not int or value["generation"] < 0
                 or not isinstance(value["phase"], str) or value["phase"] not in PHASES
@@ -371,12 +427,16 @@ class SetupManager:
                 _hex(value[key])
         operation = value["operation"]
         if operation is not None:
-            if (not isinstance(operation, dict) or set(operation) != {"id", "candidate", "prior"}
-                    or not isinstance(operation["id"], str) or not re.fullmatch(r"[0-9a-f]{32}", operation["id"])):
+            if (not isinstance(operation, dict)
+                    or not isinstance(operation.get("id"), str) or not re.fullmatch(r"[0-9a-f]{32}", operation["id"])):
                 raise InstallerError("INVALID_STATE")
+            if set(operation) != {"id", "candidate", "prior"}:
+                _validate_transition(operation)
             _hex(operation["candidate"])
             if operation["prior"] is not None:
                 _hex(operation["prior"])
+        if value["last_transition"] is not None:
+            _validate_transition(value["last_transition"], completed=True)
         actual = self._pointer()
         if value["phase"] in TERMINAL and actual != value["current"]:
             raise InstallerError("RECONCILIATION_REQUIRED")
@@ -399,23 +459,18 @@ class SetupManager:
         _atomic_json(self.root / "state/install.json", state)
 
     @contextmanager
-    def _lock(self, *, create=False):
+    def _lock(self, *, create=False, recover_initial=False):
         _safe_root(self.root)
         if not self.root.exists():
             if not create or not self.root.parent.exists():
                 raise InstallerError("INSTALLATION_ABSENT")
             self.root.mkdir(mode=0o700)
             _sync_directory(self.root.parent)
-        if not (self.root / "state/install.json").exists():
-            if not create or any(self.root.iterdir()):
+        initial = not (self.root / "state/install.json").exists()
+        if initial:
+            if not (create or recover_initial) or not _pristine_initialization(self.root):
                 raise InstallerError("RECONCILIATION_REQUIRED")
-            for directory in DIRECTORIES:
-                (self.root / directory).mkdir(mode=0o700)
-            _atomic_json(self.root / "state/install.json", {
-                "schema_version": "factory-install/v1", "root": str(self.root), "generation": 0,
-                "phase": "stopped", "current": None, "previous": None, "data_schema": None, "operation": None,
-            })
-            _sync_directory(self.root)
+            (self.root / "state").mkdir(mode=0o700, exist_ok=True)
         self._tree()
         descriptor = os.open(self.root / "state/lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
         try:
@@ -423,6 +478,18 @@ class SetupManager:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as exc:
                 raise InstallerError("INSTALLATION_LOCKED") from exc
+            if initial:
+                # Recheck after acquiring the durable lock; no data/unknown bytes are adopted.
+                if not _pristine_initialization(self.root):
+                    raise InstallerError("RECONCILIATION_REQUIRED")
+                for directory in DIRECTORIES:
+                    (self.root / directory).mkdir(mode=0o700, exist_ok=True)
+                _atomic_json(self.root / "state/install.json", {
+                    "schema_version": "factory-install/v1", "root": str(self.root), "generation": 0,
+                    "phase": "stopped", "current": None, "previous": None, "data_schema": None,
+                    "operation": None, "last_transition": None,
+                })
+                _sync_directory(self.root)
             state = self._state()
             yield state
         finally:
@@ -508,7 +575,7 @@ class SetupManager:
         os.replace(temporary, self.root / "current")
         _sync_directory(self.root)
 
-    def _evidence(self, state: dict, identity: str, manifest: dict, evidence: TransitionEvidence | None) -> None:
+    def _evidence(self, state: dict, identity: str, manifest: dict, evidence: TransitionEvidence | None) -> dict:
         if (not isinstance(evidence, TransitionEvidence) or evidence.root != str(self.root)
                 or evidence.prior != state["current"] or evidence.candidate != identity
                 or type(evidence.data_schema) is not int or evidence.data_schema != state["data_schema"]
@@ -521,17 +588,39 @@ class SetupManager:
         _hex(evidence.backup_sha256)
         if _digest(_read(backup, MAX_BACKUP_BYTES)) != evidence.backup_sha256:
             raise InstallerError("BACKUP_COMPATIBILITY_REQUIRED")
+        relative = str(backup.relative_to(self.root))
+        if len(relative) > 512:
+            raise InstallerError("BACKUP_COMPATIBILITY_REQUIRED")
+        return {"path": relative, "sha256": evidence.backup_sha256}
 
-    def _activate(self, state: dict, identity: str, path: Path, manifest: dict) -> str:
+    def _operation(self, state: dict, identity: str, manifest: dict, kind: str, backup: dict | None = None) -> dict:
+        value = {"id": secrets.token_hex(16), "candidate": identity, "prior": state["current"], "kind": kind,
+                 "backup": backup, "schema_prior": state["data_schema"], "schema_candidate": manifest["data_schema"],
+                 "compatibility": "new-empty-installation" if state["data_schema"] is None else "same-schema",
+                 "runtime_preflight": True, "health": False}
+        _validate_transition(value)
+        return value
+
+    def _last_success(self, state: dict, operation: dict) -> dict | None:
+        if operation["candidate"] == operation["prior"]:
+            return state["last_transition"]
+        value = dict(operation, health=True, completed_generation=state["generation"] + 1)
+        _validate_transition(value, completed=True)
+        return value
+
+    def _activate(self, state: dict, identity: str, path: Path, manifest: dict,
+                  *, kind: str = "restart", backup: dict | None = None) -> str:
         prior = state["current"]
         previous = state["previous"] if prior == identity else prior
-        operation = {"id": secrets.token_hex(16), "candidate": identity, "prior": prior}
+        operation = state["operation"] if state["phase"] == "prepared" else self._operation(
+            state, identity, manifest, kind, backup)
         self._save(state, "starting", operation=operation)
         try:
             self._runtime("start", path)
             if self._runtime("health", path) is not True:
                 raise InstallerError("HEALTH_FAILED")
-            self._save(state, "healthy")
+            operation["health"] = True
+            self._save(state, "healthy", operation=operation)
             self._switch(identity)
             self._save(state, "switched", current=identity, previous=previous, data_schema=manifest["data_schema"])
         except Exception:
@@ -546,7 +635,7 @@ class SetupManager:
         if prior is not None and prior != identity:
             prior_path, _ = self._release(prior)
             self._runtime("stop", prior_path)
-        self._save(state, "ready", operation=None)
+        self._save(state, "ready", operation=None, last_transition=self._last_success(state, operation))
         return identity
 
     def install(self, **artifact) -> str:
@@ -561,8 +650,7 @@ class SetupManager:
                 return release.identity
             if state["current"] is not None or state["data_schema"] is not None:
                 raise InstallerError("UPDATE_REQUIRED")
-            self._save(state, "prepared", operation={"id": secrets.token_hex(16),
-                       "candidate": release.identity, "prior": None})
+            self._save(state, "prepared", operation=self._operation(state, release.identity, release.manifest, "install"))
             path = self._stage(release)
             return self._activate(state, release.identity, path, release.manifest)
 
@@ -576,9 +664,8 @@ class SetupManager:
             if state["current"] == release.identity:
                 self._release(release.identity)
                 return release.identity
-            self._evidence(state, release.identity, release.manifest, evidence)
-            self._save(state, "prepared", operation={"id": secrets.token_hex(16),
-                       "candidate": release.identity, "prior": state["current"]})
+            backup = self._evidence(state, release.identity, release.manifest, evidence)
+            self._save(state, "prepared", operation=self._operation(state, release.identity, release.manifest, "update", backup))
             return self._activate(state, release.identity, self._stage(release), release.manifest)
 
     def reverse(self, identity: str, *, evidence: TransitionEvidence | None = None) -> str:
@@ -586,17 +673,18 @@ class SetupManager:
         with self._lock() as state:
             self._idle(state)
             path, manifest = self._release(identity)
-            self._evidence(state, identity, manifest, evidence)
+            backup = self._evidence(state, identity, manifest, evidence)
             if self._runtime("preflight", manifest["profile"]) is not True:
                 raise InstallerError("RUNTIME_UNAVAILABLE")
-            return self._activate(state, identity, path, manifest)
+            return self._activate(state, identity, path, manifest, kind="reverse", backup=backup)
 
     def status(self) -> dict:
         if not self.root.exists():
             return {"schema_version": "factory-status/v1", "root": str(self.root), "phase": "absent", "current": None}
         state = self._state()
         running = None
-        if state["current"] is not None and not isinstance(self.adapter, UnavailableRuntimeAdapter):
+        if (state["current"] is not None and state["phase"] not in {"purging", "removing"}
+                and not isinstance(self.adapter, UnavailableRuntimeAdapter)):
             running = self._runtime("status", self._release(state["current"])[0])
             if type(running) is not bool:
                 raise InstallerError("RUNTIME_FAILED")
@@ -685,7 +773,7 @@ class SetupManager:
                            data_schema=None if purge else state["data_schema"])
 
     def reconcile(self) -> None:
-        with self._lock() as state:
+        with self._lock(recover_initial=True) as state:
             if state["phase"] in TERMINAL:
                 return
             if state["phase"] == "purging":
@@ -707,6 +795,8 @@ class SetupManager:
             current = self._pointer()
             candidate, prior = operation["candidate"], operation["prior"]
             if current == candidate and state["phase"] in {"healthy", "switched", "starting"}:
+                if current != prior and set(operation) == {"id", "candidate", "prior"}:
+                    raise InstallerError("RECOVERY_REQUIRED")
                 path, manifest = self._release(candidate)
                 if self._runtime("health", path) is not True:
                     raise InstallerError("RECOVERY_REQUIRED")
@@ -714,7 +804,8 @@ class SetupManager:
                     self._runtime("stop", self._release(prior)[0])
                 previous = state["previous"] if prior == candidate else prior
                 self._save(state, "ready", current=candidate, previous=previous,
-                           data_schema=manifest["data_schema"], operation=None)
+                           data_schema=manifest["data_schema"], operation=None,
+                           last_transition=self._last_success(state, operation))
             elif current == prior:
                 path = self.root / "releases" / candidate
                 if path.exists():

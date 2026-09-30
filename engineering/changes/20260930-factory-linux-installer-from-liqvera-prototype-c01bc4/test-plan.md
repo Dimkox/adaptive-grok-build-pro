@@ -12,7 +12,7 @@
 ## Automated checks
 
 Implemented focused command: `python3 -m unittest factory.tests.test_runtime_installer`
-(31 tests). Observed RED/GREEN cycles and coverage boundary matrix are recorded in
+(41 tests after independent-review corrections). Observed RED/GREEN cycles and coverage boundary matrix are recorded in
 `evidence/implementation-report.md`; immutable crash/lock behaviors use real files.
 
 - Unit: manifest, archive, path, state, token, transition helpers.

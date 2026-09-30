@@ -8,6 +8,10 @@ A first BMAD main fixture put a full 40-character commit after `main@` in `sourc
 
 The full verifier separately checks `base..HEAD`, so repairing whitespace only in the working tree did not repair the earlier change-package HEAD used by that check. All suites passed but the range check failed; commit the coherent repair before invoking the final verifier and distinguish historical suite results from current exact-head evidence.
 
+### 2026-09-30 — Persist initialization recovery and completed transition evidence
+
+Creating the managed directories before the initial journal made a power-loss retry look like an unknown occupied installation, while clearing successful operation state discarded backup/health evidence. Recover only the exact empty private initialization topology under lock and retain one validated bounded last-success transition after clearing the active journal.
+
 ### 2026-09-30 — Use literal narrow anchors for documentation patches
 
 Two large documentation patches failed because their shared-memory tail anchor was retyped with different quoting. Read and match a short literal heading before patching; splitting independent file edits avoids blocking otherwise valid documentation updates on one mismatched context.
