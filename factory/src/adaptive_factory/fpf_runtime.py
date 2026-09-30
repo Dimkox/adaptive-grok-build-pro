@@ -471,8 +471,10 @@ def replay_offline(bundle: Mapping, *, tenant_id: str, expected_repository: str,
 
 _UNSAFE = re.compile(r"(?:\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)", re.I)
 _URL = re.compile(r"https?://\S+", re.I)
-_FETCH = re.compile(r"\b(?:fetch(?:ed|ing)?|retriev(?:e|ed|ing)|download(?:ed|ing)?|request(?:ed|ing)?|connect(?:ed|ing)?|curl|open(?:ed|ing)?)\b", re.I)
 _CLAUSE_BOUNDARY = re.compile(r"[.!?;\n]")
+_INERT_CITATION = re.compile(r"\s*(?:Citation|Reference)\s*:\s*https?://\S+\s*", re.I)
+_NEGATED_URL_PREFIX = re.compile(r"\s*(?:do not|must not|never)\s+[A-Za-z]+(?:\s+[A-Za-z]+){0,2}\s+https?://\S+\s*", re.I)
+_NEGATED_URL_SUFFIX = re.compile(r"\s*https?://\S+\s+(?:must not|should not|do not|never)\s+(?:be\s+)?[A-Za-z]+\s*", re.I)
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -489,10 +491,9 @@ def enforce_reference_boundary(text: str) -> str:
         after = _CLAUSE_BOUNDARY.search(text, match.end())
         clause_end = after.start() if after else len(text)
         clause = text[clause_start:clause_end]
-        for intent in _FETCH.finditer(clause):
-            lead = clause[max(0, intent.start()-24):intent.start()]
-            if not re.search(r"(?:do not|must not|never|no)\s+(?:be\s+)?$", lead, re.I):
-                _block("unsafe_reference")
+        if not (_INERT_CITATION.fullmatch(clause) or _NEGATED_URL_PREFIX.fullmatch(clause) or
+                _NEGATED_URL_SUFFIX.fullmatch(clause)):
+            _block("unsafe_reference")
     return text
 
 

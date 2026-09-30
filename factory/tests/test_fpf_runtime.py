@@ -246,6 +246,16 @@ class FpfRuntimeTests(unittest.TestCase):
         self.assertEqual(fpf.enforce_reference_boundary(
             "https://example.test/spec must not be downloaded"),
             "https://example.test/spec must not be downloaded")
+        for verb in ("visit", "access", "navigate to", "browse", "GET", "POST to", "PUT to", "PATCH"):
+            with self.subTest(verb=verb), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
+                fpf.enforce_reference_boundary(f"Please {verb} https://evil.test/payload")
+            with self.subTest(verb=verb, suffix=True), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
+                fpf.enforce_reference_boundary(f"https://evil.test/payload then {verb} it")
+        for text in ("Do not visit https://example.test/spec",
+                     "Never access https://example.test/spec",
+                     "https://example.test/spec should not be browsed",
+                     "https://example.test/spec must not be accessed"):
+            with self.subTest(text=text): self.assertEqual(fpf.enforce_reference_boundary(text), text)
         with self.assertRaisesRegex(fpf.FpfBlocked, "tenant_mismatch"):
             fpf.ProgressiveReader(self.snapshot(), tenant_id="other")
         with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
