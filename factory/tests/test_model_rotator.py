@@ -228,6 +228,21 @@ class ModelRotatorTests(unittest.TestCase):
             self.assertIn(required,sql)
         for forbidden in ("authorization text","api_key","prompt text","response_body"):
             self.assertNotIn(forbidden,sql.lower())
+        self.assertNotIn("SECURITY INVOKER",sql)
+        self.assertNotRegex(sql,r"GRANT\s+(?:SELECT,)?\s*(?:INSERT|UPDATE|DELETE).+factory_runtime")
+        runtime_grants=[line for line in sql.splitlines() if "TO factory_runtime" in line]
+        self.assertFalse(any("model_rotator_reconcile_v1" in line for line in runtime_grants))
+        self.assertIn("model_rotator_safe_status",sql)
+
+    def test_bundled_registry_cursor_stays_with_enabled_tuple_across_two_operations(self):
+        raw=json.loads((Path(__file__).parents[1]/"src/adaptive_factory/resources/model-rotator-registry.v1.json").read_text())
+        reg=ProviderRegistryV1.from_dict(raw); store=InMemoryRotationStore(); calls=[]
+        def make(operation):
+            return binding(reg,operation_id=operation,requested_provider_id="openrouter",requested_model_id="qwen/qwen3-coder:free")
+        for operation in ("bundle-1","bundle-2"):
+            bind=make(operation); authorize(store,bind)
+            ModelRotator(reg,store,enabled=True).execute(bind,lambda p,m,l: calls.append((p,m)) or TransportResult.success(response_digest="a"*64,input_tokens=1,output_tokens=1),now=100)
+        self.assertEqual([("openrouter","qwen/qwen3-coder:free")]*2,calls)
 
     def test_real_threads_serialize_one_tenant_registry_claim(self):
         reg=registry(); bind=binding(reg); store=InMemoryRotationStore(); authorize(store,bind); rotator=ModelRotator(reg,store,enabled=True)

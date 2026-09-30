@@ -1,7 +1,7 @@
 """Durable, authority-bound model rotation; no credential or host-settings access."""
 from __future__ import annotations
 from dataclasses import dataclass
-import re, threading
+import hashlib, re, threading
 from typing import Mapping
 from .contracts import ContractError, HEX40, HEX64, _hex, _id, _text, _time, canonical_digest, canonical_json
 from .v15_contracts import integer
@@ -66,7 +66,9 @@ class RotationBindingV1:
         return cls(**data)
     def to_dict(self): return {name:getattr(self,name) for name in self.__dataclass_fields__}
     @property
-    def binding_digest(self): return canonical_digest(self.to_dict())
+    def binding_digest(self):
+        fields=(self.repository_id,self.task_id,self.run_id,self.attempt_id,str(self.fence),self.budget_reservation_id,self.budget_digest,self.registry_digest,self.operation_id,self.requested_provider_id,self.requested_model_id,str(self.remaining_token_units),str(self.remaining_request_units))
+        return hashlib.sha256("\x1f".join(fields).encode()).hexdigest()
 @dataclass(frozen=True)
 class RotationAuthorityGrant:
     tenant_digest:str; repository_id:str; task_id:str; run_id:str; attempt_id:str; fence:int; reservation_id:str; budget_digest:str; token_capacity:int; request_capacity:int
@@ -115,21 +117,21 @@ class InMemoryRotationStore:
             self._operations[operation]=digest
             if digest in self._results: return {"replay":self._results[digest]}
             key=(grant.tenant_digest,registry_digest); state=self._state.get(key)
-            if state is None: state={"cooldowns":{},"cursor":requested_cursor,"requested_digest":requested_digest,"version":0,"quarantined":False,"held_token":0,"settled_token":0,"held_request":0,"settled_request":0}; self._state[key]=state
+            if state is None: state={"cooldowns":{},"cursor":requested_cursor,"requested_digest":requested_digest,"version":0,"quarantined":False}; self._state[key]=state
             if state["quarantined"]: raise ContractError("reconciliation_required")
             if state["cursor"]!=requested_cursor or state["requested_digest"]!=requested_digest: raise ContractError("requested_cursor_mismatch")
-            active=next((c for c in self._claims.values() if c["key"]==key),None)
+            active_item=next(((d,c) for d,c in self._claims.items() if c["key"]==key),None)
+            active=active_item[1] if active_item else None
             if active:
                 if active["expires_at"]>now: raise ContractError("operation_already_claimed")
-                state["quarantined"]=True; raise ContractError("reconciliation_required")
+                state["quarantined"]=True; self._quarantine[active_item[0]]=active; del self._claims[active_item[0]]; raise ContractError("reconciliation_required")
             token=canonical_digest({"binding":digest,"version":state["version"],"now":now}); self._claims[digest]={"token":token,"key":key,"version":state["version"],"expires_at":now+30,"reserved_token":0,"reserved_request":0,"grant":grant}
             return {"replay":None,"claim_token":token,"cooldowns":dict(state["cooldowns"]),"cursor":state["cursor"],"version":state["version"]}
     def reserve_dispatch(self,binding_digest,claim_token,quota_mode,token_units):
         with self._lock:
             claim=self._claims.get(binding_digest)
             if claim is None or claim["token"]!=claim_token: raise ContractError("stale_rotation_claim")
-            grant=claim["grant"]
-            state=self._state[claim["key"]]
+            grant=claim["grant"]; state=self._state.setdefault(("reservation",grant.reservation_id),{"held_token":0,"settled_token":0,"held_request":0,"settled_request":0})
             if quota_mode=="token":
                 if state["held_token"]+state["settled_token"]+token_units>grant.token_capacity: return False
                 claim["reserved_token"]+=token_units; state["held_token"]+=token_units
@@ -147,8 +149,9 @@ class InMemoryRotationStore:
             key=(tenant_digest,registry_digest); state=self._state[key]
             for digest,claim in list(self._quarantine.items()):
                 if claim["key"]!=key: continue
-                state["held_token"]-=claim["reserved_token"]; state["held_request"]-=claim["reserved_request"]
-                if settle: state["settled_token"]+=claim["reserved_token"]; state["settled_request"]+=claim["reserved_request"]
+                ledger=self._state[("reservation",claim["grant"].reservation_id)]
+                ledger["held_token"]-=claim["reserved_token"]; ledger["held_request"]-=claim["reserved_request"]
+                if settle: ledger["settled_token"]+=claim["reserved_token"]; ledger["settled_request"]+=claim["reserved_request"]
                 del self._quarantine[digest]
             state["quarantined"]=False
     def finish(self,binding_digest,claim_token,evidence,cooldowns,cursor,version):
@@ -157,8 +160,9 @@ class InMemoryRotationStore:
             if claim is None or claim["token"]!=claim_token or claim["version"]!=version: raise ContractError("stale_rotation_claim")
             state=self._state[claim["key"]]
             if state["version"]!=version: raise ContractError("state_version_conflict")
-            state["held_token"]-=claim["reserved_token"]; state["settled_token"]+=claim["reserved_token"]
-            state["held_request"]-=claim["reserved_request"]; state["settled_request"]+=claim["reserved_request"]
+            ledger=self._state[("reservation",claim["grant"].reservation_id)]
+            ledger["held_token"]-=claim["reserved_token"]; ledger["settled_token"]+=claim["reserved_token"]
+            ledger["held_request"]-=claim["reserved_request"]; ledger["settled_request"]+=claim["reserved_request"]
             state.update(cooldowns=dict(cooldowns),cursor=cursor,requested_digest=evidence["next_model_digest"],version=version+1); self._results[binding_digest]=evidence; del self._claims[binding_digest]
 
 class PostgresRotationStore:
@@ -242,7 +246,7 @@ class ModelRotator:
             if not result.ok and result.category in _RETRYABLE and not result.response_started: cooldowns[key]=now+self.registry.policy.max_cooldown_seconds
             attempts.append({"ordinal":len(attempts)+1,"provider_id":m.provider_id,"model_id":m.model_id,"binding_digest":binding.binding_digest,"status_code":result.status_code,"category":result.category,"response_started":result.response_started,"response_digest":result.response_digest,"usage_input_units":result.input_tokens,"usage_output_units":result.output_tokens,"budget_overrun":overrun,"cooldown_until":cooldowns.get(key)})
             if overrun or used is None or (result.response_started and not result.ok): status="needs_human"; ambiguous=True; break
-            if result.ok: status="selected"; selected={"provider_id":m.provider_id,"model_id":m.model_id}; next_cursor=(self.registry.models.index(m)+1)%len(self.registry.models); break
+            if result.ok: status="selected"; selected={"provider_id":m.provider_id,"model_id":m.model_id}; next_cursor=(enabled.index(m)+1)%len(enabled); break
             if result.status_code in {401,402} or result.category in _TERMINAL: status="stopped"; break
         public={"tenant_digest":canonical_digest(binding.tenant_id),"repository_digest":canonical_digest(binding.repository_id),"task_digest":canonical_digest(binding.task_id),"run_digest":canonical_digest(binding.run_id),"attempt_digest":canonical_digest(binding.attempt_id),"fence":binding.fence,"budget_reservation_digest":canonical_digest(binding.budget_reservation_id),"budget_digest":binding.budget_digest,"operation_digest":canonical_digest(binding.operation_id)}
         next_model=enabled[next_cursor%len(enabled)]

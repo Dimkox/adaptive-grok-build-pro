@@ -54,3 +54,12 @@ are checked under row locks. Dispatch capacity is held before calls, settled cum
 completion, and held through ambiguity until explicit `settle` or `release` reconciliation.
 Focused concurrency, crash/quarantine, request-quota and canonical SQL assertions now total
 17 passing tests. PostgreSQL execution still awaits integration immediately after migration 026.
+
+Third-review repair removes all runtime table mutation grants. Runtime receives only narrow
+`SECURITY DEFINER` claim/reserve/finish/quarantine functions and a safe pseudonymous status
+view; only the independent migrator/reconciliation authority may settle or release quarantine.
+Every reserve and finish rechecks task/run/attempt/fence/live lease/reservation and the
+server-derived budget digest. Capacity accounting is reservation-scoped, binding limits are
+persisted, claims are leased, and expired same-operation claims atomically quarantine before
+independent reconciliation. The enabled-only cursor is covered against the bundled registry.
+Focused suite: 18 passing tests; integrated PostgreSQL remains conditional on migration 026.
