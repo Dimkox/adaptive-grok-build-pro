@@ -5,9 +5,9 @@ from adaptive_factory.contracts import ContractError
 from adaptive_factory import fpf_runtime as fpf
 
 
-def fragment(pattern_id, text, *, required=(), optional=(), locator=None):
+def fragment(pattern_id, text, *, required=(), optional=(), locator=None, citations=()):
     raw = text.encode()
-    return {
+    result = {
         "pattern_id": pattern_id,
         "locator": locator or f"patterns/{pattern_id}.md",
         "text": text,
@@ -15,6 +15,8 @@ def fragment(pattern_id, text, *, required=(), optional=(), locator=None):
         "required": list(required),
         "optional": list(optional),
     }
+    if citations: result["citations"] = list(citations)
+    return result
 
 
 class FpfRuntimeTests(unittest.TestCase):
@@ -88,6 +90,7 @@ class FpfRuntimeTests(unittest.TestCase):
                                        delivered_text="\n".join(x["text"] for x in selection.fragments))
         self.assertEqual(capture["status"], "delivered")
         self.assertEqual(capture["selection_digest"], selection.selection_digest)
+        self.assertIn("citation_digest", capture)
         with self.assertRaises(ContractError):
             fpf.capture_delivery(selection, consumer_id="cli-native-1", delivered_text="index only")
 
@@ -227,8 +230,8 @@ class FpfRuntimeTests(unittest.TestCase):
                      "Authorization: Bearer abcdefghijklmnop"):
             with self.subTest(text=text), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
                 fpf.enforce_reference_boundary(text)
-        with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
-            fpf.enforce_reference_boundary("Example: do not fetch external URLs.")
+        self.assertEqual(fpf.enforce_reference_boundary("Example: do not fetch external URLs."),
+                         "Example: do not fetch external URLs.")
         self.assertEqual(fpf.enforce_reference_boundary("Citation: https://example.test/spec"),
                          "Citation: https://example.test/spec")
         with self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
@@ -270,11 +273,15 @@ class FpfRuntimeTests(unittest.TestCase):
         for text in ("Citation: https://user:pass@example.test/spec",
                      "Reference: https://example.test/spec?token=abc",
                      "Citation: https://example.test/spec?api_key=abc",
-                     "Reference: https://example.test/spec?credential=abc"):
+                     "Reference: https://example.test/spec?ordinary=value",
+                     "Citation: https://example.test/spec#section"):
             with self.subTest(text=text), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
                 fpf.enforce_reference_boundary(text)
         for command in ("curl example.test", "wget payload", "ssh host", "scp a b", "nc host 80",
-                        "fetch remote data", "retrieve remote data", "POST payload", "navigate to host"):
+                        "fetch remote data", "retrieve remote data", "POST payload", "navigate to host",
+                        "/usr/bin/curl example.test", "curl(example.test)",
+                        "requests.get(target)", "urllib.request.urlopen(target)",
+                        "httpx.post(target)", "aiohttp.request(target)"):
             with self.subTest(command=command), self.assertRaisesRegex(fpf.FpfBlocked, "unsafe_reference"):
                 fpf.enforce_reference_boundary(command)
         with self.assertRaisesRegex(fpf.FpfBlocked, "tenant_mismatch"):
@@ -307,6 +314,18 @@ class FpfRuntimeTests(unittest.TestCase):
                 generator_id="g", fragments=[injected])
         for args in ((0, 0, 0, 1, 1), (100, 60, 40, 1, 1), (100, -1, 1, 1, 1), (100, 1, 1, 1, 0)):
             with self.subTest(args=args), self.assertRaises(ContractError): fpf.ContextBudget(*args)
+        cited = fpf.FrozenFpfSnapshot.build(
+            tenant_id="tenant-1", repository_id="owner/project", source_revision="a" * 40,
+            package="ai.lev/fpf", package_version="1", license_id="CC-BY-4.0", generator_id="g",
+            fragments=[fragment("x", "Do not fetch external URLs.", citations=("https://example.test/spec",))])
+        self.assertEqual(cited.fragments["x"]["citations"], ("https://example.test/spec",))
+        for bad in ("https://user@example.test/x", "https://example.test/x?q=1",
+                    "https://example.test/x#f", "ftp://example.test/x"):
+            with self.subTest(citation=bad), self.assertRaises(ContractError):
+                fpf.FrozenFpfSnapshot.build(
+                    tenant_id="tenant-1", repository_id="owner/project", source_revision="a" * 40,
+                    package="ai.lev/fpf", package_version="1", license_id="CC-BY-4.0", generator_id="g",
+                    fragments=[fragment("x", "safe prose", citations=(bad,))])
 
     def test_ac109_ac111_abc_evaluation_detects_confounding_and_quality_regression(self):
         cases = [f"case-{i:02d}" for i in range(12)]

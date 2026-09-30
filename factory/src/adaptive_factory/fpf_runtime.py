@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 import html
-from urllib.parse import urlsplit, parse_qsl
+from urllib.parse import urlsplit
 from typing import Iterable, Mapping
 from pathlib import PurePosixPath
 from types import MappingProxyType
@@ -149,7 +149,8 @@ class FrozenFpfSnapshot:
         sha(source_revision)
         normalized = {}
         for raw in fragments:
-            if set(raw) != {"pattern_id", "locator", "text", "sha256", "required", "optional"}:
+            base_fields = {"pattern_id", "locator", "text", "sha256", "required", "optional"}
+            if set(raw) not in (base_fields, base_fields | {"citations"}):
                 raise ContractError("closed_fragment")
             pattern_id = raw["pattern_id"]; identity(pattern_id)
             if pattern_id in normalized: raise ContractError("duplicate_fragment")
@@ -159,12 +160,21 @@ class FrozenFpfSnapshot:
                 raise ContractError("unsafe_locator")
             _document(raw["text"], "text", 65536)
             enforce_reference_boundary(raw["text"])
+            if _URL.search(raw["text"]): _block("url_in_fragment_text")
             digest(raw["sha256"])
             if hashlib.sha256(raw["text"].encode()).hexdigest() != raw["sha256"]:
                 raise ContractError("fragment_digest_mismatch")
             required = tuple(raw["required"]); optional = tuple(raw["optional"])
             for dependency in required + optional: identity(dependency)
-            normalized[pattern_id] = MappingProxyType({**raw, "required": required, "optional": optional})
+            citations = tuple(raw.get("citations", ()))
+            for citation in citations:
+                if not isinstance(citation, str): raise ContractError("invalid_citation")
+                parsed = urlsplit(citation)
+                if parsed.scheme not in ("http", "https") or not parsed.hostname or parsed.username is not None or \
+                        parsed.password is not None or "@" in parsed.netloc or parsed.query or parsed.fragment:
+                    raise ContractError("invalid_citation")
+            normalized[pattern_id] = MappingProxyType({**raw, "required": required, "optional": optional,
+                                                       "citations": citations})
         facts = {"tenant_id": tenant_id, "repository_id": repository_id,
                  "source_revision": source_revision, "package": package,
                  "package_version": package_version, "license_id": license_id,
@@ -236,9 +246,11 @@ def capture_delivery(selection: SelectionRevision, *, consumer_id: str, delivere
     enforce_reference_boundary(delivered_text)
     expected = "\n".join(x["text"] for x in selection.fragments)
     if delivered_text != expected: raise ContractError("delivery_bytes_mismatch")
+    citations = [citation for fragment in selection.fragments for citation in fragment.get("citations", ())]
     return {"schema_version": 1, "status": "delivered", "consumer_id": consumer_id,
             "selection_digest": selection.selection_digest,
             "delivered_sha256": hashlib.sha256(delivered_text.encode()).hexdigest(),
+            "citations": citations, "citation_digest": canonical_digest(citations),
             "authority_effect": "none"}
 
 
@@ -476,9 +488,10 @@ _URL = re.compile(_URL_TOKEN, re.I)
 _CITATION_DOCUMENT = re.compile(
     rf"\s*(?:(?:Citation|Reference)\s*:\s*{_URL_TOKEN}\s*[.!?;]?\s*)+\Z", re.I)
 _NETWORK_COMMAND = re.compile(
-    r"(?:^|\s)(?:curl|wget|ssh|scp|nc|fetch|retrieve|download|upload|connect|browse|navigate|GET|POST|PUT|PATCH)(?:\s|$)", re.I)
-_SENSITIVE_QUERY_KEYS = {"token", "key", "api_key", "apikey", "secret", "password", "passwd",
-                         "credential", "credentials", "access_token", "auth", "authorization", "signature"}
+    r"(?:(?:^|[\s/])(?:curl|wget|ssh|scp|nc)(?=\s|\(|$)|"
+    r"(?:^|\s)(?:fetch|retrieve|download|upload|connect|browse|navigate|GET|POST|PUT|PATCH)(?:\s|$)|"
+    r"\b(?:requests|urllib(?:\.request)?|httpx|aiohttp)\s*\.\s*(?:get|post|put|patch|delete|request|urlopen)\s*\()",
+    re.I)
 
 
 def enforce_reference_boundary(text: str) -> str:
@@ -489,7 +502,8 @@ def enforce_reference_boundary(text: str) -> str:
     # A negated example is inert reference data, while imperative/exfiltration text blocks.
     if _UNSAFE.search(text):
         _block("unsafe_reference")
-    if _NETWORK_COMMAND.search(text):
+    command_text = re.sub(r"\b(?:do not|must not|never)\s+fetch\s+external\s+URLs?\b", "", text, flags=re.I)
+    if _NETWORK_COMMAND.search(command_text):
         _block("unsafe_reference")
     if _URL.search(text) and not _CITATION_DOCUMENT.fullmatch(text):
         _block("unsafe_reference")
@@ -497,10 +511,8 @@ def enforce_reference_boundary(text: str) -> str:
         parsed = urlsplit(match.group(0))
         if parsed.username is not None or parsed.password is not None or "@" in parsed.netloc:
             _block("unsafe_reference")
-        for key, _value in parse_qsl(parsed.query, keep_blank_values=True):
-            normalized_key = key.strip().lower().replace("-", "_")
-            if normalized_key in _SENSITIVE_QUERY_KEYS:
-                _block("unsafe_reference")
+        if parsed.query or parsed.fragment:
+            _block("unsafe_reference")
     return text
 
 
