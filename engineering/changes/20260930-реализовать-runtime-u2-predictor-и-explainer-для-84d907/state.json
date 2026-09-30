@@ -1,0 +1,97 @@
+{
+  "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-runtime-u2-predictor-\u0438-explainer-\u0434\u043b\u044f-84d907",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/v15-predictor-explainer",
+      "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-runtime-u2-predictor-\u0438-explainer-\u0434\u043b\u044f-84d907",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "edf09469748c60b31a4b6f7669d1a9e35210071e",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-30T19:41:00+00:00",
+      "route_id": "84d90716f9f1"
+    },
+    {
+      "branch": "feature/v15-predictor-explainer",
+      "change_id": "20260930-\u0440\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c-runtime-u2-predictor-\u0438-explainer-\u0434\u043b\u044f-84d907",
+      "detached": false,
+      "dirty_product_paths": [
+        "factory/src/adaptive_factory/prediction_runtime.py",
+        "factory/tests/test_prediction_runtime.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [],
+      "head": "edf09469748c60b31a4b6f7669d1a9e35210071e",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-09-30T19:45:27+00:00",
+      "route_id": "84d90716f9f1"
+    }
+  ],
+  "created_at": "2026-09-30T19:41:00+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-30T19:41:00+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-30T19:43:07+00:00",
+      "from": "draft",
+      "reason": "F12/F13 criteria and bounded observation-only design recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-30T19:43:07+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; user requested implementation",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-30T19:45:27+00:00",
+      "from": "approved",
+      "reason": "RED import failure observed; bounded runtime implemented and focused suites green",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "7590da80dfa261c386b47124348f57b939db7e060e919d3a03dbe1b70b45c9c4",
+  "route_id": "84d90716f9f1",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "\u0420\u0435\u0430\u043b\u0438\u0437\u043e\u0432\u0430\u0442\u044c runtime U2 predictor \u0438 explainer \u0434\u043b\u044f Factory v1.5: data assembly, bounded training/prediction pilot, versioned model artifact, SHAP-style observation-only explanation, deterministic tests; \u0431\u0435\u0437 authority effect",
+  "updated_at": "2026-09-30T19:45:27+00:00"
+}

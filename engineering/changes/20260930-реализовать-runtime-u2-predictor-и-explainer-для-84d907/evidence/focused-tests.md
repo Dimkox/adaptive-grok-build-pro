@@ -1,0 +1,7 @@
+# Focused verification
+
+- RED: `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_prediction_runtime` failed with five import errors because `adaptive_factory.prediction_runtime` did not exist.
+- GREEN: prediction runtime + contract + qualification + semantic contract modules: 20 tests passed.
+- GREEN: route's existing core Factory unit set (`contracts`, `state`, `migrations`, `service`): 60 tests passed.
+- A raw `unittest discover -s factory/tests` invocation was also attempted but is not the repository runner: seven relative-import collection errors and the branch-preexisting frozen migration-count mismatch were observed. This result is not reported as product verification; the PR verifier uses package-qualified modules.
+- Full `grok_verify --mode pr` was run on `ee37aa12584ba636eaa12128570fc5378578b8d3`. It correctly selected full scope and passed contract structure, SQL safety, pilot tests, coverage, factory unit, secret scan, and source stability. It failed partly on inherited v1.5 branch state (owner-supplied Markdown trailing whitespace, frozen migration count, factory disposable exit), and identified three contour-local defects: missing architecture ownership plus ruff and Bandit findings. The latter three were repaired before handoff; full integration verification remains the parent contour's frozen-tree responsibility after cherry-pick.
