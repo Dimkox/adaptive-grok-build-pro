@@ -5108,6 +5108,22 @@ class PostgresFactoryTests(unittest.TestCase):
                         blocker.close()
         self.assertEqual(outcomes, {name: "StoreUnavailable" for name, *_rest in operations})
 
+    def test_legacy_minimal_execution_packet_never_reserves_writer_capacity(self):
+        import psycopg
+
+        task = self.submit(source="legacy-minimal-packet").task
+        grant = self.service.claim(owner="legacy-reader", role=RunRole.READER,
+                                   repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO factory.execution_packets "
+                "(packet_digest,task_id,run_id,legacy_packet_digest,provider_id,body) "
+                "VALUES (%s,%s,%s,%s,'legacy-provider','{}'::jsonb)",
+                ("e" * 64, task.task_id, grant.run_id, grant.packet_digest),
+            )
+            cursor.execute("SELECT count(*) FROM factory.unverified_slots WHERE run_id=%s", (grant.run_id,))
+            self.assertEqual(cursor.fetchone()[0], 0)
+
     def test_representative_hot_queries_use_task_scoped_indexes(self):
         import psycopg
 

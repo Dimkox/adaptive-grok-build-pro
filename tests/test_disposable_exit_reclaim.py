@@ -356,6 +356,25 @@ class CreationTimeParsingTests(unittest.TestCase):
 
 
 class OwnedFromCreationTests(unittest.TestCase):
+    def test_removal_timeout_still_checks_absence_or_reports_unproven_cleanup(self):
+        import subprocess
+
+        for observation, expected in [
+            (_Result(returncode=1, stderr=f'Error: No such object: {OLD_ID}'), None),
+            (_Result(stdout='[]'), 'survived removal'),
+            (_Result(returncode=1, stderr='daemon unavailable'), 'not proven'),
+            (subprocess.TimeoutExpired(['docker', 'inspect'], 15), 'not proven'),
+        ]:
+            with self.subTest(expected=expected), patch.object(harness, '_verify_ownership', return_value='ours'), patch.object(
+                harness.subprocess, 'run', side_effect=[subprocess.TimeoutExpired(['docker', 'rm'], 30), observation]
+            ) as run:
+                if expected is None:
+                    harness._remove_bound_container(OLD_ID, EXIT_1, NONCE_1, minted=True)
+                else:
+                    with self.assertRaisesRegex(RuntimeError, expected):
+                        harness._remove_bound_container(OLD_ID, EXIT_1, NONCE_1, minted=True)
+                self.assertEqual(run.call_args_list[-1].args[0], ['docker', 'inspect', OLD_ID])
+
     def test_only_a_full_container_id_counts_as_minted(self) -> None:
         self.assertEqual(harness._minted_container_id(f'  {OLD_ID}\n'), OLD_ID)
         self.assertIsNone(harness._minted_container_id('a1b2c3d4e5f6'))

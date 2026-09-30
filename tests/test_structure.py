@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 ROOT_ENTRIES = frozenset(
     {
-        ".agents", ".coveragerc", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
+        ".agents", ".coveragerc", ".gitattributes", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
         "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",

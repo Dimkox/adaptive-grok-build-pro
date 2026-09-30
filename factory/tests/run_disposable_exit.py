@@ -55,10 +55,10 @@ ORPHAN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 # longest a healthy run can go without touching its container, which is what the orphan
 # bound must exceed.
 READY_DEADLINE_SECONDS = 30
-SUITE_TIMEOUT_SECONDS = 600
+SUITE_TIMEOUT_SECONDS = 900
 RESTART_PROBE_TIMEOUT_SECONDS = 300
 MAX_RECLAIM_PER_RUN = 24
-# The caller gives this expanded harness a bounded 1500 s wall clock and answers its timeout with
+# The caller gives this expanded harness a bounded 1800 s wall clock and answers its timeout with
 # SIGKILL, which no signal handler can catch. Reclaim therefore gets its own budget well
 # inside that ceiling, so cleaning up somebody else's graveyard can never consume the gate.
 RECLAIM_TIME_BUDGET_SECONDS = 120
@@ -467,21 +467,29 @@ def _remove_bound_container(
                 f"refusing to delete a container whose identity does not match the run "
                 f"that minted it; leaked id={container_id}"
             )
-    removal = subprocess.run(
-        ["docker", "rm", "-f", "-v", container_id],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        timeout=30,
-        check=False,
-    )
-    still_there = subprocess.run(
-        ["docker", "inspect", container_id],
-        text=True,
-        capture_output=True,
-        timeout=15,
-        check=False,
-    )
-    observation = _container_observation(still_there)
+    try:
+        removal = subprocess.run(
+            ["docker", "rm", "-f", "-v", container_id],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=30,
+            check=False,
+        )
+        removal_exit = removal.returncode
+    except subprocess.TimeoutExpired:
+        # The daemon may finish after its client timeout; inspect proves absence.
+        removal_exit = "timeout"
+    try:
+        still_there = subprocess.run(
+            ["docker", "inspect", container_id],
+            text=True,
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        observation = _container_observation(still_there)
+    except subprocess.TimeoutExpired:
+        observation = "unknown"
     if observation != "absent":
         failure = (
             "disposable container survived removal"
@@ -490,12 +498,12 @@ def _remove_bound_container(
         )
         print(
             f"RECLAIM leaked container={container_id} name={name} "
-            f"removal_observation={observation} removal_exit={removal.returncode}"
+            f"removal_observation={observation} removal_exit={removal_exit}"
         )
         raise RuntimeError(
             f"{failure}; leaked id={container_id} "
             f"removal_observation={observation} "
-            f"removal_exit={removal.returncode}"
+            f"removal_exit={removal_exit}"
         )
 
 

@@ -25,6 +25,38 @@ def _sample(checks: list[dict[str, str]]) -> dict[str, object]:
 
 
 class ConsumerCoverageVerdictTests(unittest.TestCase):
+    def test_factory_runtime_and_tests_have_real_lint_coverage_without_scanning_fixtures_as_secrets(self):
+        from adaptive_grok import verification
+
+        files = ['factory/runtime/setup_manager.py', 'factory/tests/test_runtime_installer.py']
+        syntax = verification._factory_test_syntax(ROOT, files)
+        self.assertEqual(syntax.status, 'pass')
+        self.assertEqual(verification._unscanned_consumer_files(ROOT, files, [syntax]), [])
+        self.assertIn(files[1], verification._unscanned_consumer_files(ROOT, files, []))
+        with patch.object(verification, 'command_exists', return_value=True), patch.object(
+            verification, '_command_check', return_value=CheckResult('lint', 'pass', 'exit=0')
+        ) as execute:
+            verification._ruff(ROOT)
+            self.assertIn('factory/runtime', execute.call_args.args[2])
+            self.assertNotIn('factory/tests', execute.call_args.args[2])
+            verification._bandit(ROOT)
+            self.assertIn('factory/runtime', execute.call_args.args[2])
+            self.assertNotIn('factory/tests', execute.call_args.args[2])
+
+    def test_factory_syntax_failure_or_nonpython_resource_never_claims_scanned_source(self):
+        import tempfile
+        from adaptive_grok import verification
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tests = root / 'factory' / 'tests'
+            tests.mkdir(parents=True)
+            (tests / 'invalid.py').write_text('def broken(:\n', encoding='utf-8')
+            files = ['factory/tests/invalid.py', 'factory/tests/fixture.json']
+            check = verification._factory_test_syntax(root, files)
+            self.assertEqual(check.status, 'fail')
+            self.assertEqual(verification._unscanned_consumer_files(root, files, [check]), [files[0]])
+
     def test_skip_only_report_or_unscanned_consumer_file_does_not_summarize_as_pass(self) -> None:
         skip_only = _sample([
             {'name': 'ruff', 'status': 'skip', 'summary': 'no python quality paths'},

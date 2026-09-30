@@ -71,7 +71,7 @@ class MigrationTests(unittest.TestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
-        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 600)
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 900)
         self.assertNotIn("--preflight-only", commands[2])
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(
@@ -376,8 +376,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 26)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 25)
+        self.assertEqual([item.version for item in migrations], list(range(1, 27)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 26)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())

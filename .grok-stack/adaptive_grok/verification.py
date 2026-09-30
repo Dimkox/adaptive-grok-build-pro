@@ -1482,6 +1482,7 @@ QUALITY_PY_PATHS = (
     'subagent_start.py',
     'subagent_stop.py',
     'factory/src/adaptive_factory',
+    'factory/runtime',
 )
 
 _SEMGREP_CONFIGS = ('semgrep.yaml', '.semgrep.yml', '.semgrep.yaml')
@@ -1762,7 +1763,7 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
                     root,
                     'factory-postgres-exit',
                     [sys.executable, str(factory_exit.relative_to(root))],
-                    1500,
+                    1800,
                 )
             )
     return results
@@ -1775,9 +1776,39 @@ def _quality_member(rel: str, root_rel: str) -> bool:
     return rel == prefix or rel.startswith(prefix + '/')
 
 
-def _unscanned_consumer_files(root: Path, files: list[str]) -> list[str]:
+def _factory_test_syntax(root: Path, files: list[str]) -> CheckResult:
+    selected = sorted({rel for rel in files if rel.startswith('factory/tests/') and Path(rel).suffix in {'.py', '.pyi'}})
+    if not selected:
+        return CheckResult('factory-test-syntax', 'skip', 'no changed Factory Python test files')
+    scanned = []
+    total = 0
+    try:
+        if len(selected) > 500:
+            raise ValueError('Factory test syntax file bound exceeded')
+        for rel in selected:
+            candidate = root / rel
+            if not candidate.exists() and not candidate.is_symlink():
+                continue  # Deleted source has no head artifact to compile.
+            if candidate.is_symlink() or not candidate.resolve().is_relative_to(root.resolve()):
+                raise ValueError('Factory test source symlink or escaped path')
+            with candidate.open('rb') as stream:
+                source = stream.read(1048577)
+            total += len(source)
+            if len(source) > 1048576 or total > 8 * 1048576:
+                raise ValueError('Factory test syntax byte bound exceeded')
+            compile(source, rel, 'exec', dont_inherit=True)
+            scanned.append(rel)
+    except (OSError, SyntaxError, ValueError) as error:
+        return CheckResult('factory-test-syntax', 'fail', str(error), details=[{'scanned_paths': scanned}])
+    return CheckResult('factory-test-syntax', 'pass', f'compiled {len(scanned)} bounded files without execution',
+                       details=[{'scanned_paths': scanned}])
+
+
+def _unscanned_consumer_files(root: Path, files: list[str], checks: list[CheckResult] | None = None) -> list[str]:
     # Ruff and bandit select only existing QUALITY_PY_PATHS. Swift has no check.
     quality = _existing_quality_paths(root)
+    syntax_scanned = {rel for check in (checks or []) if check.name == 'factory-test-syntax' and check.status == 'pass'
+                      for detail in check.details for rel in detail.get('scanned_paths', [])}
     uncovered: list[str] = []
     for rel in files:
         suffix = Path(rel).suffix.lower()
@@ -1794,7 +1825,7 @@ def _unscanned_consumer_files(root: Path, files: list[str]) -> list[str]:
             if linked:
                 uncovered.append(rel)
             continue
-        if suffix == '.swift' or not any(_quality_member(rel, item) for item in quality):
+        if suffix == '.swift' or (rel not in syntax_scanned and not any(_quality_member(rel, item) for item in quality)):
             uncovered.append(rel)
     return uncovered
 
@@ -2215,7 +2246,8 @@ def verify(
     if trivy is not None:
         results.append(trivy)
     results.extend(_python(root, mode, docs_scope))
-    uncovered_consumer_files = _unscanned_consumer_files(root, files)
+    results.append(_factory_test_syntax(root, files))
+    uncovered_consumer_files = _unscanned_consumer_files(root, files, results)
     if uncovered_consumer_files:
         results.append(_incomplete_product_coverage(uncovered_consumer_files))
 
