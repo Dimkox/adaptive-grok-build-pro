@@ -1,0 +1,68 @@
+from copy import deepcopy
+import hashlib
+import importlib
+import importlib.util
+import unittest
+
+from adaptive_factory.contracts import ContractError
+
+
+def context_facts():
+    def source(path, kind):
+        content = 'safe project fact'
+        return dict(path=path, kind=kind, content=content,
+                    sha256=hashlib.sha256(content.encode()).hexdigest(), reason='affected_path')
+    return dict(schema_version=1, builder_version='native-1', tenant_id='tenant-1',
+                repository_id='owner/project', source_snapshot=dict(base_sha='1'*40,
+                head_sha='2'*40, dirty_fingerprint='3'*64), change_id='change-1',
+                route_id='route-1', change_spec_digest='4'*64,
+                observed_at='2026-09-30T12:00:00Z',
+                mandatory_sources=[source('AGENTS.md', 'instruction')],
+                selected_sources=[source('src/b.py', 'source'), source('src/a.py', 'source')],
+                rule_bindings=[dict(criterion_id='AC-001', rule_id='RULE-1', revision='1',
+                repository_id='owner/project', source_digest='5'*64, status='active')])
+
+
+class ContextContractTests(unittest.TestCase):
+    def contract(self):
+        self.assertIsNotNone(importlib.util.find_spec('adaptive_factory.context_contracts'), 'context contract missing')
+        return importlib.import_module('adaptive_factory.context_contracts').ContextManifestV1
+
+    def test_semantic_identity_is_order_and_timestamp_independent(self):
+        cls = self.contract()
+        facts = context_facts()
+        first = cls.from_dict(facts)
+        facts['selected_sources'].reverse()
+        facts['observed_at'] = '2026-09-30T13:00:00Z'
+        self.assertEqual(first.context_digest, cls.from_dict(facts).context_digest)
+        facts['source_snapshot']['dirty_fingerprint'] = '6'*64
+        self.assertNotEqual(first.context_digest, cls.from_dict(facts).context_digest)
+        self.assertEqual(first.to_dict()['selected_sources'][0]['path'], 'src/a.py')
+
+    def test_unsafe_unknown_cross_repository_and_oversized_context_fails_closed(self):
+        cls = self.contract()
+        changes = [dict(extra=True), dict(schema_version=True), dict(tenant_id='other')]
+        for change in changes:
+            facts = context_facts(); facts.update(change)
+            with self.assertRaises(ContractError):
+                cls.from_dict(facts, expected_tenant='tenant-1', expected_repository='owner/project')
+        for path in ('../x', '/tmp/x', 'a//b', 'a/./b', '.env', 'keys/private.pem', 'a\\b'):
+            facts = context_facts(); facts['selected_sources'][0]['path'] = path
+            with self.subTest(path=path), self.assertRaises(ContractError): cls.from_dict(facts)
+        for mutation in ('repository', 'digest', 'duplicate', 'bytes', 'entries', 'secret', 'rule'):
+            facts = context_facts()
+            if mutation == 'repository': facts['rule_bindings'][0]['repository_id'] = 'other/project'
+            if mutation == 'digest': facts['selected_sources'][0]['sha256'] = '0'*64
+            if mutation == 'duplicate': facts['selected_sources'].append(deepcopy(facts['selected_sources'][0]))
+            if mutation == 'bytes': facts['selected_sources'][0]['content'] = 'x'*4097
+            if mutation == 'entries': facts['selected_sources'] *= 129
+            if mutation == 'secret': facts['selected_sources'][0]['content'] = 'password=synthetic-secret'
+            if mutation == 'rule': facts['rule_bindings'][0]['status'] = 'approved'
+            with self.subTest(mutation=mutation), self.assertRaises(ContractError): cls.from_dict(facts)
+
+    def test_input_and_export_mutation_cannot_change_frozen_identity(self):
+        cls = self.contract(); facts = context_facts(); manifest = cls.from_dict(facts)
+        digest = manifest.context_digest
+        facts['selected_sources'][0]['content'] = 'changed'
+        exported = manifest.to_dict(); exported['selected_sources'][0]['content'] = 'changed'
+        self.assertEqual(manifest.context_digest, digest)
