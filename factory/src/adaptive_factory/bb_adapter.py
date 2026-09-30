@@ -124,15 +124,17 @@ class BBAdapter:
         return BBLifecycleObservationV1.from_dict(dict(schema_version=1,operation_id=operation_id,
             command_digest=command_digest,**{key:data[key] for key in ('repository_id','task_id','run_id','attempt_id','fence','context_digest','policy_digest')},**result))
 
-    def _command(self,operation,binding,grant,actor,seed,*,operation_id,now,cost=0,tokens=0):
+    def _command(self,operation,binding,grant,actor,seed,*,operation_id,now,cost=0,tokens=0,workflow=None,step=None):
         data,facts=self._validate(binding,grant,actor,seed,now)
         if operation not in self.transport.capabilities(): raise ContractError('bb_operation_unsupported')
         integer(cost,'cost',0,self.profile['max_cost_usd_micros']); integer(tokens,'tokens')
         if operation=='submit' and 'task:budget' not in actor.scopes: raise ContractError('bb_budget_denied')
         key=self._operation_key(binding,operation_id)
-        command_digest=canonical_digest(dict(operation=operation,binding_digest=binding.record_digest,cost=cost,tokens=tokens))
-        intent=self._record(facts,key,'intent',dict(command_digest=command_digest,operation=operation,binding_digest=binding.record_digest))
-        fresh=self.store.begin_bb_operation(grant,intent,actor)
+        command_digest=canonical_digest(dict(operation=operation,binding_digest=binding.record_digest,cost=cost,tokens=tokens,workflow_digest=workflow.record_digest if workflow else None,step=step))
+        intent_facts=dict(command_digest=command_digest,operation=operation,binding_digest=binding.record_digest,cost_usd_micros=cost)
+        if workflow: intent_facts.update(workflow_digest=workflow.record_digest,step=step)
+        intent=self._record(facts,key,'intent',intent_facts)
+        fresh=(self.store.begin_bb_workflow_operation(grant,intent,actor,workflow.to_dict()) if workflow else self.store.begin_bb_operation(grant,intent,actor))
         if not fresh:
             records=self.store.bb_operation_records(grant,actor,key)
             for record in reversed(records):
@@ -146,7 +148,7 @@ class BBAdapter:
         timeout=min(self.profile['stop_seconds'] if operation in ('stop','pause') else self.profile['wall_seconds'],int((min(grant.expires_at,timestamp(data['lease_deadline']))-now).total_seconds()))
         if timeout <= 0: raise ContractError('bb_lease_expired')
         try:
-            result=self.transport.command(operation,binding,dict(operation_id=operation_id,command_digest=command_digest),timeout_seconds=timeout)
+            result=self.transport.command(operation,binding,dict(operation_id=operation_id,command_digest=command_digest,workflow_digest=workflow.record_digest if workflow else None,step=step),timeout_seconds=timeout)
         except (TimeoutError,ConnectionError):
             result=dict(acknowledged=False,effect_outcome='unknown',stop_outcome='unknown',evidence_digest=None)
         observation=self._observation(data,operation_id,command_digest,result)
@@ -155,6 +157,14 @@ class BBAdapter:
 
     def submit(self,binding,grant,actor,seed,*,operation_id,cost_usd_micros,token_units,now):
         return self._command('submit',binding,grant,actor,seed,operation_id=operation_id,now=now,cost=cost_usd_micros,tokens=token_units)
+
+    def submit_workflow(self,workflow,step,binding,grant,actor,seed,*,operation_id,cost_usd_micros,token_units,now):
+        from .bb_profiles import BBWorkflowSnapshotV1
+        workflow=BBWorkflowSnapshotV1.from_dict(workflow.to_dict()); data=workflow.to_dict(); bound=binding.to_dict()
+        if (bound['snapshots']['workflow']!=workflow.record_digest or bound['profile_digest']!=data['provider_profile_digest'] or step not in data['steps'] or
+            data['max_agents']>self.profile['max_agents'] or data['max_depth']>self.profile['max_depth'] or data['max_cost_usd_micros']>self.profile['max_cost_usd_micros'] or data['wall_seconds']>self.profile['wall_seconds']): raise ContractError('bb_workflow_snapshot_mismatch')
+        if step=='review' and grant.role.value!='reader': raise ContractError('bb_review_requires_independent_reader')
+        return self._command('submit',binding,grant,actor,seed,operation_id=operation_id,now=now,cost=cost_usd_micros,tokens=token_units,workflow=workflow,step=step)
 
     def stop(self,binding,grant,actor,seed,*,operation_id,now):
         return self._command('stop',binding,grant,actor,seed,operation_id=operation_id,now=now)

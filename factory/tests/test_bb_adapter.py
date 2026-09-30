@@ -40,6 +40,10 @@ class Journal:
     def observe_usage(self,*args,**kwargs): self.usages.append(args)
     def observe_bb_usage(self,grant,record,actor,decision):
         self.usages.append(record); return self.begin_bb_operation(grant,decision,actor)
+    def begin_bb_workflow_operation(self,grant,record,actor,limits):
+        if record.to_dict()['decision_id'] not in self.records and sum(r.to_dict()['reason_code']=='bb_intent' for r in self.records.values())>=limits['max_physical_attempts']:
+            raise ContractError('workflow_exhausted')
+        return self.begin_bb_operation(grant,record,actor)
 
 
 class Transport:
@@ -159,3 +163,17 @@ class BBAdapterTests(unittest.TestCase):
         record=next(iter(journal.records.values())).to_dict()
         facts={f['name']:f['value'] for f in record['facts']}
         self.assertIsNone(facts['cache_write_tokens']); self.assertIsNone(facts['confirmed_cost_usd_micros'])
+
+    def test_workflow_attempt_limits_are_claimed_durably_not_reset_by_recreation(self):
+        from adaptive_factory.bb_profiles import BBWorkflowSnapshotV1
+        workflow=BBWorkflowSnapshotV1.from_dict(dict(schema_version=1,workflow_id='flow-1',script_digest='1'*64,
+            schema_digest='2'*64,provider_profile_digest='5'*64,steps=['implement','test','review'],max_agents=1,
+            max_depth=1,max_physical_attempts=1,max_notifications=1,retry_owner='factory',max_cost_usd_micros=100,
+            wall_seconds=60,orchestra_enabled=False,orchestra_plugin_digest=None))
+        adapter,binding,grant,actor,journal,transport=self.setup_adapter(); data=binding.to_dict()
+        data['snapshots']['workflow']=workflow.record_digest
+        module=importlib.import_module('adaptive_factory.bb_adapter'); binding=module.BBExecutionBindingV1.from_dict(data)
+        seed=DecisionRecordV1.from_dict(decision_facts()); now=datetime(2026,9,30,12,tzinfo=timezone.utc)
+        adapter.submit_workflow(workflow,'implement',binding,grant,actor,seed,operation_id='call-1',cost_usd_micros=50,token_units=10,now=now)
+        with self.assertRaises(ContractError): adapter.submit_workflow(workflow,'test',binding,grant,actor,seed,operation_id='call-2',cost_usd_micros=50,token_units=10,now=now)
+        self.assertEqual(transport.calls,['submit'])

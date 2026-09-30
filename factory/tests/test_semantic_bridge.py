@@ -149,6 +149,15 @@ class SemanticBridgeTests(unittest.TestCase):
 
     def test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields(self):
         expected = {
+            "tool-result-envelope.v1.schema.json",
+            "decision-record.v1.schema.json",
+            "prediction-observation.v1.schema.json",
+            "semantic-execution-evidence.v2.schema.json",
+            "context-manifest.v1.schema.json",
+            "bb-backend-profile.v1.schema.json",
+            "prediction-explanation.v1.schema.json",
+            "factory-v15-qualification.v1.schema.json",
+            "bb-lifecycle-observation.v1.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",

@@ -1666,6 +1666,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
+                    (23, "023_factory_v15_decisions.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1683,7 +1684,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (22, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (23, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -1838,7 +1839,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18, 19, 20, 21, 22],
+                [15, 16, 17, 18, 19, 20, 21, 22, 23],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -2211,6 +2212,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
+                    (23, "023_factory_v15_decisions.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2225,7 +2227,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (22, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (23, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2322,6 +2324,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (20, "020_execution_v2_priced_usage.sql"),
                     (21, "021_semantic_repair_child_rejection_reasons.sql"),
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
+                    (23, "023_factory_v15_decisions.sql"),
                 ],
             )
             result = FactoryService(
@@ -2346,7 +2349,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (22, 1, True))
+                self.assertEqual(cursor.fetchone(), (23, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -6116,6 +6119,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (20, "020_execution_v2_priced_usage.sql"),
                 (21, "021_semantic_repair_child_rejection_reasons.sql"),
                 (22, "022_semantic_repair_plan_rejection_reasons.sql"),
+                (23, "023_factory_v15_decisions.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())
@@ -6176,7 +6180,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 22)
+                self.assertEqual(cursor.fetchone()[0], 23)
 
 if __name__ == "__main__":
     unittest.main()

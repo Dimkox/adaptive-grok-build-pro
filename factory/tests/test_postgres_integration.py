@@ -40,6 +40,7 @@ from adaptive_factory.state import TransitionDecision
 from adaptive_factory.store import (
     BudgetError,
     FenceError,
+    IntegrityError,
     PostgresFactoryStore,
     PostgresSemanticAdjudicatorStore,
     PostgresSemanticCoordinatorStore,
@@ -966,6 +967,39 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual([r.record_digest for r in reconnected.bb_operation_records(grant,WORKER,key)],[record.record_digest])
         facts['facts'][1]['value']='3'*64
         with self.assertRaises(IntegrityError): reconnected.begin_bb_operation(grant,DecisionRecordV1.from_dict(facts),WORKER)
+
+    def test_bb_late_confirmed_usage_preserves_null_projection_and_one_physical_ledger_entry(self):
+        import psycopg
+        from adaptive_factory.bb_adapter import BBAdapter, BBExecutionBindingV1
+        from adaptive_factory.decision_contracts import DecisionRecordV1
+        from factory.tests.test_bb_adapter import binding_facts, Transport
+        from factory.tests.test_bb_contracts import bb_profile
+        from factory.tests.test_decision_contracts import decision_facts
+        task=self.submit(source='bb-late-usage').task
+        grant=self.service.claim(owner=WORKER.actor_id,role=RunRole.READER,
+            repositories=(task.repository_id,),lease_seconds=60,actor=WORKER,now=NOW)
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt=str(connection.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s',(grant.run_id,)).fetchone()[0])
+        facts=decision_facts(); data=binding_facts()
+        identity=dict(repository_id=task.repository_id,task_id=grant.task_id,run_id=grant.run_id,attempt_id=attempt,fence=grant.fence)
+        facts.update(identity); data.update(identity,lease_deadline=grant.expires_at.isoformat().replace('+00:00','Z'))
+        binding=BBExecutionBindingV1.from_dict(data); seed=DecisionRecordV1.from_dict(facts)
+        adapter=BBAdapter(self.store,Transport(),bb_profile(),synthetic=True)
+        adapter.submit(binding,grant,WORKER,seed,operation_id='bb-call-1',cost_usd_micros=100,token_units=120,now=NOW)
+        self.service.cancel(task.task_id,reason='bb-cancel',idempotency_key='8'*64,actor=OPERATOR,now=NOW)
+        usage=dict(schema_version=1,provider_request_id='bb-request-1',provider='fixture',model='fixture-v1',
+            binding_digest=binding.record_digest,input_tokens=100,output_tokens=20,reasoning_tokens=10,
+            cached_input_tokens=50,cache_write_tokens=0,missing_reason='provider_reported_cost_unavailable',
+            provider_cost_usd_micros=None,calculated_cost_usd_micros=100,confirmed_cost_usd_micros=100,
+            price_table_digest='2'*64,usage_source='billing',cost_status='actual',reasoning_in_output=True,cache_in_input=True)
+        first=adapter.ingest_usage(binding,grant,WORKER,seed,usage,now=grant.expires_at)
+        again=adapter.ingest_usage(binding,grant,WORKER,seed,usage,now=grant.expires_at)
+        self.assertTrue(first.created); self.assertFalse(again.created)
+        with psycopg.connect(DATABASE_URL) as connection:
+            row=connection.execute('SELECT state,cost_observed_micros,tokens_observed FROM factory.tasks WHERE task_id=%s',(task.task_id,)).fetchone()
+            self.assertEqual(row,('cancelled',100,120))
+            self.assertEqual(connection.execute('SELECT count(*) FROM factory.usage_observations WHERE run_id=%s',(grant.run_id,)).fetchone()[0],1)
+        self.assertTrue(self.store.readiness()['accounting_consistent'])
 
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
@@ -4162,7 +4196,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4453,7 +4487,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], "ready", 22, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], "ready", 23, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),

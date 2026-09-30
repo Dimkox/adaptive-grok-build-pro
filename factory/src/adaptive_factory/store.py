@@ -4081,6 +4081,14 @@ class PostgresFactoryStore:
 
     def begin_bb_operation(self, grant, record, actor):
         """Atomic intent claim: only the inserting caller may send the external command."""
+        return self._begin_bb_operation(grant,record,actor)
+
+    def begin_bb_workflow_operation(self, grant, record, actor, limits):
+        from .bb_profiles import BBWorkflowSnapshotV1
+        limits=BBWorkflowSnapshotV1.from_dict(limits)
+        return self._begin_bb_operation(grant,record,actor,workflow=limits)
+
+    def _begin_bb_operation(self, grant, record, actor, *, workflow=None):
         record = DecisionRecordV1.from_dict(record.to_dict())
         data = record.to_dict()
         with self._transaction() as cursor:
@@ -4092,6 +4100,19 @@ class PostgresFactoryStore:
                 # Revalidate actor/attempt bindings even for a duplicate.
                 self._append_decision_locked(cursor, grant, record, actor)
                 return False
+            if workflow is not None:
+                facts={fact['name']:fact['value'] for fact in data['facts']}
+                limits=workflow.to_dict()
+                if data['reason_code']!='bb_intent' or facts.get('workflow_digest')!=workflow.record_digest or type(facts.get('cost_usd_micros')) is not int or facts['cost_usd_micros']<0:
+                    raise IntegrityError('BB workflow intent mismatch')
+                cursor.execute('''SELECT record FROM factory.decision_records_v1
+                    WHERE task_id=%s AND run_id=%s AND record->>'reason_code'='bb_intent'
+                    AND record->'facts' @> %s::jsonb LIMIT 129''',
+                    (grant.task_id,grant.run_id,canonical_json([dict(name='workflow_digest',value=workflow.record_digest)]).decode()))
+                records=cursor.fetchall()
+                costs=sum(next(fact['value'] for fact in record[0]['facts'] if fact['name']=='cost_usd_micros') for record in records)
+                if len(records)>=min(128,limits['max_physical_attempts']) or costs+facts['cost_usd_micros']>limits['max_cost_usd_micros']:
+                    raise BudgetError('BB workflow attempts or cumulative budget exhausted')
             self._append_decision_locked(cursor, grant, record, actor)
             return True
 

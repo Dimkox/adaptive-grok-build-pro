@@ -1490,3 +1490,8 @@ The coordinator initially generalized a historical Git-bound component-reuse dec
 # 2026-09-30 — Do not mutate a worktree during baseline verification
 
 I started `grok_verify` and then wrote the change plan into the same worktree, which made the in-flight exact-tree result unusable. The root cause was treating a long baseline command and planning writes as independent work even though verification fingerprints repository state; stop or finish the verifier before any repository mutation.
+# 2026-09-30 v1.5 disposable-test discovery
+
+Starting a broad unittest discovery while a new test file was in its RED interval allowed
+that diagnostic process to import an intentionally missing module. Keep final verification
+on a stable tree; this run was retained as failing diagnostic evidence, not reported green.
