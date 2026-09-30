@@ -1,5 +1,32 @@
 {
-  "acceptance_criteria": [],
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {"test": "factory/tests/test_context_contracts.py"},
+        {"test": "factory/tests/test_decision_contracts.py"},
+        {"receipt": "verification"}
+      ],
+      "id": "AC-001",
+      "statement": "The Linux factory emits bounded versioned context and factual decision records with deterministic identity, complete-or-explicitly-incomplete timing and cost, and no authority escalation."
+    },
+    {
+      "evidence": [
+        {"test": "factory/tests/test_result_contracts.py"},
+        {"test": "factory/tests/test_qualification.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "AC-002",
+      "statement": "Tool results are sanitized before model reuse and qualification distinguishes implemented core, deferred ML, owner-excluded Apple, inactive M8, and pending external trust."
+    },
+    {
+      "evidence": [
+        {"test": "factory/tests/test_prediction_contracts.py"},
+        {"receipt": "test_review"}
+      ],
+      "id": "AC-003",
+      "statement": "Prediction artifacts remain observation-only, report not_qualified without suitable data, and cannot alter routing, budgets, permissions, checks, or M8."
+    }
+  ],
   "approvals": {
     "required_scopes": []
   },
@@ -9,15 +36,33 @@
     "json_schema": [],
     "openapi": []
   },
-  "forbidden_outcomes": [],
-  "invariants": [],
+  "forbidden_outcomes": [
+    {
+      "evidence": [{"receipt": "code_review"}],
+      "id": "FORBID-001",
+      "statement": "The release never claims Apple acceptance, M8 activation, external Trust CI success, or complete cost when the corresponding evidence is absent."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [{"receipt": "verification"}],
+      "id": "INV-001",
+      "statement": "Existing closed v1/v2 contracts and separate Factory, L5, and Trust CI authority/storage boundaries remain compatible."
+    }
+  ],
   "objective": {
     "id": "OBJ-001",
     "statement": "Реализовать код фабрики: добавить минимально рабочие U0-U3 и U5-U7 по FACTORY_UNIFIED_UPGRADE_TZ v1.5, исключить U4 macOS решением владельца, добавить версионированные API и event contracts с тестами",
-    "success_metric": "UNKNOWN",
-    "target": "UNKNOWN"
+    "success_metric": "factory_v15_fast_release_gate",
+    "target": "all_new_contract_tests_and_route_verification_reviews_pass_with_u4_excluded"
   },
-  "observability": [],
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "factory_v15_qualification_status",
+      "proves": ["OBJ-001"]
+    }
+  ],
   "risk": {
     "domains": [
       "api",
