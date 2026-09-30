@@ -257,6 +257,10 @@ class BBAdapter:
             raise ContractError("bb_delegation_exceeded")
         if sum(child["budget_usd_micros"] for child in data["children"]) > self.profile["max_cost_usd_micros"]:
             raise ContractError("bb_child_budget_exceeded")
+        if observation_only:
+            self.store.verify_bb_binding(binding, grant, actor)
+        else:
+            self.store.claim_bb_binding(binding, grant, actor)
         return data, facts
 
     @staticmethod

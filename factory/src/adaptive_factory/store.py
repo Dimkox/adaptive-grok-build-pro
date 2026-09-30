@@ -1262,7 +1262,7 @@ class PostgresFactoryStore:
         except psycopg.errors.RaiseException as exc:
             if exc.diag.message_primary == "unverified_capacity_exhausted":
                 raise BudgetError("unverified capacity exhausted") from exc
-            raise IntegrityError("database admission rejected") from exc
+            raise
         except (psycopg.DataError, psycopg.IntegrityError) as exc:
             raise IntegrityError("database integrity violation") from exc
         except (
@@ -4160,6 +4160,56 @@ class PostgresFactoryStore:
             raise IntegrityError("decision idempotency conflict")
         return record.record_digest
 
+    def claim_bb_binding(self, binding, grant, actor):
+        from .bb_adapter import BBExecutionBindingV1
+
+        binding = BBExecutionBindingV1.from_dict(binding.to_dict())
+        data = binding.to_dict()
+        if (
+            (data["task_id"], data["run_id"], data["fence"]) != (grant.task_id, grant.run_id, grant.fence)
+            or actor.actor_id != grant.owner
+            or "task:release" not in actor.scopes
+            or not ({"*", data["repository_id"]} & actor.repositories)
+        ):
+            raise AuthorityError("BB external identity actor/binding denied")
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.bb_claim_external(%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    binding.record_digest,
+                    canonical_json(data).decode(),
+                ),
+            )
+            outcome = cursor.fetchone()[0]
+            if outcome not in ("claimed", "replayed"):
+                raise IntegrityError("BB external identity conflict or rejected claim")
+            return outcome == "claimed"
+
+    def verify_bb_binding(self, binding, grant, actor):
+        data = binding.to_dict()
+        if (
+            actor.actor_id != grant.owner
+            or "task:release" not in actor.scopes
+            or not ({"*", data["repository_id"]} & actor.repositories)
+        ):
+            raise AuthorityError("BB external identity actor denied")
+        with self._transaction() as cursor:
+            cursor.execute(
+                """SELECT binding FROM factory.bb_external_bindings
+                WHERE binding_digest=%s AND task_id=%s AND run_id=%s AND attempt_id=%s AND fence=%s""",
+                (binding.record_digest, grant.task_id, grant.run_id, data["attempt_id"], grant.fence),
+            )
+            row = cursor.fetchone()
+            if row is None or row[0] != data:
+                raise IntegrityError("BB retained external identity mismatch")
+            return row[0]
+
     def append_decision(self, grant, record, actor):
         record = DecisionRecordV1.from_dict(record.to_dict())
         with self._transaction() as cursor:
@@ -4729,7 +4779,7 @@ class PostgresFactoryStore:
         if replay:
             if "error" in prior:
                 return None, "accounting_blocked"
-            return UsageResult(prior["observation_id"], prior["created"]), None
+            return UsageResult(prior["observation_id"], False if bb_late_observation else prior["created"]), None
         if bb_late_observation:
             self._lock_bb_usage_provenance(cursor, grant, actor)
         else:

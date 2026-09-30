@@ -323,7 +323,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
+                "TRUNCATE factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
                 "factory.semantic_escalations, factory.semantic_child_task_bindings, "
                 "factory.semantic_child_proposals, factory.semantic_directives, "
                 "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -1740,6 +1740,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
                     (24, "024_unverified_capacity.sql"),
+                    (25, "025_bb_external_identity.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1757,7 +1758,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (24, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (25, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -1912,7 +1913,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+                [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -2287,6 +2288,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
                     (24, "024_unverified_capacity.sql"),
+                    (25, "025_bb_external_identity.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2301,7 +2303,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (24, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (25, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2400,6 +2402,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                     (23, "023_factory_v15_decisions.sql"),
                     (24, "024_unverified_capacity.sql"),
+                    (25, "025_bb_external_identity.sql"),
                 ],
             )
             result = FactoryService(
@@ -2424,7 +2427,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (24, 1, True))
+                self.assertEqual(cursor.fetchone(), (25, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -6121,8 +6124,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 24:
-            raise AssertionError("fresh-cluster test requires migrations 001..024")
+        if len(migrations) != 25:
+            raise AssertionError("fresh-cluster test requires migrations 001..025")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -6196,6 +6199,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (22, "022_semantic_repair_plan_rejection_reasons.sql"),
                 (23, "023_factory_v15_decisions.sql"),
                     (24, "024_unverified_capacity.sql"),
+                    (25, "025_bb_external_identity.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())

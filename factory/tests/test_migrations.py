@@ -71,7 +71,7 @@ class MigrationTests(unittest.TestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
-        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 480)
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 600)
         self.assertNotIn("--preflight-only", commands[2])
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(
@@ -376,11 +376,41 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 25)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 24)
+        self.assertEqual([item.version for item in migrations], list(range(1, 26)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 25)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
+
+    def test_disposable_command_timeout_stops_its_owned_grandchild_before_cleanup(self):
+        import os
+        import signal
+        import subprocess
+        import sys
+        import time
+        import tempfile
+        from pathlib import Path
+        from factory.tests import run_disposable_exit as harness
+        with tempfile.TemporaryDirectory() as directory:
+            pid_path=Path(directory)/'child.pid'
+            program=("import subprocess,sys,time; from pathlib import Path; "
+                "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']); "
+                f"Path({str(pid_path)!r}).write_text(str(p.pid)); time.sleep(60)")
+            child=None
+            try:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    harness._run([sys.executable,'-c',program],timeout=0.5)
+                child=int(pid_path.read_text())
+                def executing():
+                    path=Path('/proc')/str(child)/'stat'
+                    return path.exists() and path.read_text().rsplit(')',1)[1].split()[0]!='Z'
+                deadline=time.monotonic()+2
+                while executing() and time.monotonic()<deadline:
+                    time.sleep(0.05)
+                self.assertFalse(executing(), 'timeout must stop owned descendants before deleting their DB/venv')
+            finally:
+                if child is not None and executing():
+                    os.kill(child,signal.SIGTERM)
 
     def test_matching_applied_migrations_are_idempotent(self):
         migrations = discover_migrations()

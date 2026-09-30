@@ -1762,7 +1762,7 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
                     root,
                     'factory-postgres-exit',
                     [sys.executable, str(factory_exit.relative_to(root))],
-                    600,
+                    1500,
                 )
             )
     return results

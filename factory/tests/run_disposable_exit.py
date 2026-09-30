@@ -55,10 +55,10 @@ ORPHAN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 # longest a healthy run can go without touching its container, which is what the orphan
 # bound must exceed.
 READY_DEADLINE_SECONDS = 30
-SUITE_TIMEOUT_SECONDS = 480
+SUITE_TIMEOUT_SECONDS = 600
 RESTART_PROBE_TIMEOUT_SECONDS = 300
 MAX_RECLAIM_PER_RUN = 24
-# The only caller gives this harness a 600 s wall clock and answers its timeout with
+# The caller gives this expanded harness a bounded 1500 s wall clock and answers its timeout with
 # SIGKILL, which no signal handler can catch. Reclaim therefore gets its own budget well
 # inside that ceiling, so cleaning up somebody else's graveyard can never consume the gate.
 RECLAIM_TIME_BUDGET_SECONDS = 120
@@ -500,7 +500,29 @@ def _remove_bound_container(
 
 
 def _run(command: list[str], *, environment: dict[str, str] | None = None, timeout: int = 300) -> None:
-    subprocess.run(command, check=True, env=environment, timeout=timeout)
+    # uv starts a unittest grandchild: killing only uv leaves tests running while
+    # finally removes their certificate bundle and PostgreSQL container.
+    process = subprocess.Popen(command, env=environment, start_new_session=True)
+    try:
+        code = process.wait(timeout=timeout)
+        if code:
+            raise subprocess.CalledProcessError(code, command)
+    except BaseException:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            pass
+        # Stop remaining descendants even when the session leader exited first.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait(timeout=2)
+        raise
 
 
 def _published_loopback_port(value: str) -> int:

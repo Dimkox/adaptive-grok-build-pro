@@ -219,7 +219,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -967,6 +967,50 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual([r.record_digest for r in reconnected.bb_operation_records(grant,WORKER,key)],[record.record_digest])
         facts['facts'][1]['value']='3'*64
         with self.assertRaises(IntegrityError): reconnected.begin_bb_operation(grant,DecisionRecordV1.from_dict(facts),WORKER)
+
+    def test_bb_external_identity_concurrent_claim_reconnect_and_takeover_denial(self):
+        import psycopg
+        from concurrent.futures import ThreadPoolExecutor
+        from adaptive_factory.bb_adapter import BBExecutionBindingV1
+        from factory.tests.test_bb_adapter import binding_facts
+        def prepare(source):
+            task=self.submit(source=source).task
+            grant=self.service.claim(owner=WORKER.actor_id,role=RunRole.READER,
+                repositories=(task.repository_id,),lease_seconds=60,actor=WORKER,now=NOW)
+            with psycopg.connect(DATABASE_URL) as connection:
+                attempt=str(connection.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s',(grant.run_id,)).fetchone()[0])
+            data=binding_facts(); data.update(repository_id=task.repository_id,task_id=grant.task_id,run_id=grant.run_id,
+                attempt_id=attempt,fence=grant.fence,lease_deadline=grant.expires_at.isoformat().replace('+00:00','Z'))
+            return BBExecutionBindingV1.from_dict(data),grant
+        binding,grant=prepare('bb-external-first')
+        def claim(_):
+            return PostgresFactoryStore(self.runtime_url).claim_bb_binding(binding,grant,WORKER)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            self.assertEqual(sorted(pool.map(claim,range(2))),[False,True])
+        reconnected=PostgresFactoryStore(self.runtime_url)
+        self.assertEqual(reconnected.verify_bb_binding(binding,grant,WORKER),binding.to_dict())
+        other,other_grant=prepare('bb-external-other')
+        with self.assertRaisesRegex(IntegrityError,'external identity conflict'):
+            reconnected.claim_bb_binding(other,other_grant,WORKER)
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute('SET ROLE factory_runtime')
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                connection.execute("SELECT factory.bb_resolve_external(%s,'released',%s,%s)",
+                    (binding.record_digest,'a'*64,'b'*64))
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertFalse(connection.execute("SELECT factory.bb_resolve_external(%s,'released',NULL,%s)",
+                (binding.record_digest,'b'*64)).fetchone()[0])
+            self.assertTrue(connection.execute("SELECT factory.bb_resolve_external(%s,'released',%s,%s)",
+                (binding.record_digest,'a'*64,'b'*64)).fetchone()[0])
+        self.assertTrue(reconnected.claim_bb_binding(other,other_grant,WORKER))
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute('SELECT count(*) FROM factory.bb_external_bindings').fetchone()[0],2)
+            self.assertEqual(connection.execute('SELECT count(*) FROM factory.bb_external_binding_receipts').fetchone()[0],1)
+            self.assertTrue(connection.execute("SELECT factory.bb_resolve_external(%s,'quarantined',%s,%s)",
+                (other.record_digest,'c'*64,'d'*64)).fetchone()[0])
+        third,third_grant=prepare('bb-external-third')
+        with self.assertRaisesRegex(IntegrityError,'external identity conflict'):
+            reconnected.claim_bb_binding(third,third_grant,WORKER)
 
     def test_bb_shared_factory_budget_race_has_no_double_remaining_allocation(self):
         from concurrent.futures import ThreadPoolExecutor
@@ -4210,7 +4254,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4501,7 +4545,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], "ready", 23, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "ready", 25, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
