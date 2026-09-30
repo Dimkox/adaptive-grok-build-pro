@@ -1353,6 +1353,7 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(
             set(semantic_records),
             {
+                "CONTRACT-FACTORY-V15-SEMANTIC-EXECUTION-EVIDENCE",
                 "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
                 "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
                 "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",

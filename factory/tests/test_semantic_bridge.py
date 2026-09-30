@@ -158,6 +158,15 @@ class SemanticBridgeTests(unittest.TestCase):
             "prediction-explanation.v1.schema.json",
             "factory-v15-qualification.v1.schema.json",
             "bb-lifecycle-observation.v1.schema.json",
+            "context-manifest.v1.schema.json",
+            "decision-record.v1.schema.json",
+            "semantic-execution-evidence.v2.schema.json",
+            "prediction-observation.v1.schema.json",
+            "prediction-explanation.v1.schema.json",
+            "factory-v15-qualification.v1.schema.json",
+            "bb-backend-profile.v1.schema.json",
+            "bb-lifecycle-observation.v1.schema.json",
+            "tool-result-envelope.v1.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",
@@ -185,6 +194,7 @@ class SemanticBridgeTests(unittest.TestCase):
             "shadow-outcome.v1.schema.json",
             "shadow-task-evidence.v1.schema.json",
             "static-landing-spec.v1.schema.json",
+            "vibevm-generation.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
         versions = {

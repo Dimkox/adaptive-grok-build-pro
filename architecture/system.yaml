@@ -3,6 +3,14 @@
   "contracts": [
     {
       "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-V15-VIBEVM-GENERATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/vibevm-generation.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
       "id": "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/context-manifest.v1.schema.json",
@@ -1731,6 +1739,7 @@
         "CONTRACT-FACTORY-V15-FACTORY-V15-QUALIFICATION",
         "CONTRACT-FACTORY-V15-BB-BACKEND-PROFILE",
         "CONTRACT-FACTORY-V15-BB-LIFECYCLE-OBSERVATION",
+        "CONTRACT-FACTORY-V15-VIBEVM-GENERATION",
         "CONTRACT-FACTORY-V15-OPENAPI"
       ],
       "repository_paths": [
@@ -1744,6 +1753,8 @@
         "factory/src/adaptive_factory/bb_adapter.py",
         "factory/src/adaptive_factory/bb_profiles.py",
         "factory/src/adaptive_factory/qualification.py",
+        "factory/src/adaptive_factory/vibevm_runtime.py",
+        "factory/contracts/jsonschema/vibevm-generation.v1.schema.json",
         "factory/contracts/jsonschema/context-manifest.v1.schema.json",
         "factory/contracts/jsonschema/decision-record.v1.schema.json",
         "factory/contracts/jsonschema/tool-result-envelope.v1.schema.json",

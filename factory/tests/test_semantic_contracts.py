@@ -142,6 +142,7 @@ class SemanticContractTests(unittest.TestCase):
             "shadow-outcome.v1.schema.json",
             "shadow-task-evidence.v1.schema.json",
             "static-landing-spec.v1.schema.json",
+            "vibevm-generation.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
         versions = {name: 1 for name in semantic_names | failover_names}

@@ -1,0 +1,74 @@
+{
+  "change_id": "20260930-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-\u043d\u043e\u0432\u0443\u044e-\u043b\u043e\u043a\u0430\u043b\u044c\u043d\u0443\u044e-\u0444\u0443\u043d\u043a\u0446\u0438\u044e-vibevm-u6-\u0434\u0435\u0442\u0435\u0440-b5b3c6",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/v15-vibevm-runtime",
+      "change_id": "20260930-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-\u043d\u043e\u0432\u0443\u044e-\u043b\u043e\u043a\u0430\u043b\u044c\u043d\u0443\u044e-\u0444\u0443\u043d\u043a\u0446\u0438\u044e-vibevm-u6-\u0434\u0435\u0442\u0435\u0440-b5b3c6",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "edf09469748c60b31a4b6f7669d1a9e35210071e",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-09-30T19:41:01+00:00",
+      "route_id": "b5b3c683e6c1"
+    }
+  ],
+  "created_at": "2026-09-30T19:41:01+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-09-30T19:41:01+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-30T19:43:10+00:00",
+      "from": "draft",
+      "reason": "AC83-93 scope and bounded design recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-30T19:43:10+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; additive default-off local adapter",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "169c004f94fd9d08b850caa61da3974ff5db35c2b257bb6d09311f1db7024dc0",
+  "route_id": "b5b3c683e6c1",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u0443\u044e \u043b\u043e\u043a\u0430\u043b\u044c\u043d\u0443\u044e \u0444\u0443\u043d\u043a\u0446\u0438\u044e VibeVM U6: \u0434\u0435\u0442\u0435\u0440\u043c\u0438\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0439 package graph resolver, lock cache offline replay, bounded unpack projection, boot checks, atomic generations, scoped caches, export fallback \u0438 \u0442\u0435\u0441\u0442\u044b",
+  "updated_at": "2026-09-30T19:43:10+00:00"
+}

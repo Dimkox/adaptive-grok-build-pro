@@ -861,3 +861,6 @@ Bind the twelve Pump Selector cases and accepted baseline as separate digest-che
 ### 2026-09-30 — Keep FPF as a frozen data-only sidecar
 
 Implementing selection, bounded reads, projection, replay and evaluation in one I/O-free module preserved native execution and existing authority boundaries. Exact live package and CLI qualification remains separate, so deterministic mechanism evidence cannot be mistaken for upstream or production acceptance.
+# 2026-09-30 — U6 generation publication
+
+Use immutable content-addressed package objects plus staged generation directories and a locked compare-and-swap pointer, because this keeps crash recovery and concurrent publication from exposing a mixed manifest/lock/boot/bindings state. Preserve a canonical native export inside every generation so adapter failure does not make project-owned rules vendor-dependent.

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.invalid/contracts/vibevm-generation.v1.schema.json",
+  "title": "VibeVM native generation export v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generation_id", "lock", "bindings", "sources", "authority_effect"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generation_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "lock": {"type": "object"},
+    "bindings": {"type": "array", "items": {"type": "object"}},
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "content", "sha256"],
+        "properties": {
+          "path": {"type": "string"},
+          "content": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "authority_effect": {"const": "none"}
+  }
+}

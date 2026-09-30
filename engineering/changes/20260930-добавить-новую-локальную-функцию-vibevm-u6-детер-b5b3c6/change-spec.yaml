@@ -1,0 +1,40 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-083-088","statement":"Resolution is deterministic and fail-closed for cycles, constraints, overrides, digest/origin/revocation, offline replay, managed boot blocks and semantic identity.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
+    {"id":"AC-089-090","statement":"Materialization is data-only, bounded against archive escapes and resource abuse, and exported rule bindings remain explicit claims rather than executed evidence.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]},
+    {"id":"AC-091-093","statement":"Generation publication and rollback are atomic, caches are tenant/repository scoped, and native export/fallback preserves canonical content without changing an in-flight snapshot.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260930-добавить-новую-локальную-функцию-vibevm-u6-детер-b5b3c6",
+  "contracts": {
+    "events": [],
+    "json_schema": ["factory/contracts/jsonschema/vibevm-generation.v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Package import never executes lifecycle hooks, fetches from the network, crosses a tenant/repository cache boundary, silently substitutes latest, or grants authority.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Native factory operation remains available when the optional VibeVM adapter is absent or unqualified.","evidence":[{"test":"factory/tests/test_vibevm_runtime.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Добавить новую локальную функцию VibeVM U6: детерминированный package graph resolver, lock cache offline replay, bounded unpack projection, boot checks, atomic generations, scoped caches, export fallback и тесты",
+    "success_metric": "vibevm_u6_ac83_93",
+    "target": "all focused AC83-93 filesystem and contract tests pass"
+  },
+  "observability": [{"id":"SIG-001","metric":"vibevm_generation_status","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
