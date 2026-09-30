@@ -1,5 +1,14 @@
 {
-  "acceptance_criteria": [],
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Changed consumer Python or Swift product files without applicable analyzer coverage cannot yield a passing product-coverage result.",
+      "evidence": [
+        {"test": "tests/test_consumer_product_coverage.py"},
+        {"receipt": "verification"}
+      ]
+    }
+  ],
   "approvals": {
     "required_scopes": []
   },
@@ -14,8 +23,8 @@
   "objective": {
     "id": "OBJ-001",
     "statement": "Fix issue #169: make consumer verification report truthful product coverage when installed lint configuration selects no product files or the consumer language has no applicable check. Preserve existing pass/fail report and receipt compatibility, optional irrelevant skips, consumer-owned configuration, and exact external merge authority. Analyze the bounded inventory, actual analyzer scope and missing-tool behavior first; coordinate with separately delivered Swift detection and verifier lifecycle/doctor changes before overlapping source edits. Do not run native build tools or install dependencies merely to detect a language. Source-only repair in an isolated pull request.",
-    "success_metric": "UNKNOWN",
-    "target": "UNKNOWN"
+    "success_metric": "truthful_consumer_product_coverage",
+    "target": "tests_test_consumer_product_coverage_pass"
   },
   "observability": [],
   "risk": {

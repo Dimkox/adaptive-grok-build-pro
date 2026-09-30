@@ -596,6 +596,52 @@
         "mode": "fail_closed",
         "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
         "terminal_action": "reject",
+        "timeout_ms": 1000
+      },
+      "from": "NODE-FACTORY-LOCAL-API",
+      "id": "EDGE-FACTORY-INSTALLER-LOOPBACK-PREFLIGHT",
+      "network_policy": "local_only",
+      "protocol": "tcp",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LOCAL-API",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 1000
+      },
+      "from": "NODE-FACTORY-CONTROL",
+      "id": "EDGE-FACTORY-INSTALLER-TEST-LOOPBACK-PROBE",
+      "network_policy": "local_only",
+      "protocol": "tcp",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LOCAL-API",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
         "timeout_ms": 5000
       },
       "from": "NODE-FACTORY-LOCAL-API",
@@ -1811,7 +1857,7 @@
         "evidence": "source_described",
         "kind": "python_process",
         "lifecycle": "on_demand",
-        "network": "none"
+        "network": "local_only"
       },
       "secrets": [
         "SECRET-FACTORY-TOKEN"

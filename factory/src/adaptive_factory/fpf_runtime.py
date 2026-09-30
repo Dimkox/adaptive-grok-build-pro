@@ -730,9 +730,9 @@ _UNSAFE = re.compile(
     r"(?:\b(?:read|open|load)\s+\.env\b|\btool\s+grants?\b|\b(?:change|grant|elevate)\b.{0,20}\b(?:grant|permission|authority)\b|\bcall\s+MCP\b|Authorization\s*:|Bearer\s+\S+)",
     re.I,
 )
-_URL_TOKEN = r"https?://[^\s]+(?<![.,!?;:)])"
-_URL = re.compile(_URL_TOKEN, re.I)
-_CITATION_DOCUMENT = re.compile(rf"\s*(?:(?:Citation|Reference)\s*:\s*{_URL_TOKEN}\s*[.!?;]?\s*)+\Z", re.I)
+_URL_PATTERN = r"https?://[^\s]+(?<![.,!?;:)])"
+_URL = re.compile(_URL_PATTERN, re.I)
+_CITATION_DOCUMENT = re.compile(rf"\s*(?:(?:Citation|Reference)\s*:\s*{_URL_PATTERN}\s*[.!?;]?\s*)+\Z", re.I)
 _NETWORK_COMMAND = re.compile(
     r"(?:(?:^|[\s/])(?:curl|wget|ssh|scp|nc)(?=\s|\(|$)|"
     r"(?:^|\s)(?:fetch|retrieve|download|upload|connect|browse|navigate|GET|POST|PUT|PATCH)(?:\s|$)|"

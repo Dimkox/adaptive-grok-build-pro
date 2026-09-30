@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +15,8 @@ if str(STACK) not in sys.path:
     sys.path.insert(0, str(STACK))
 
 from adaptive_grok._policy_legacy import (
+    COMMAND_ROOT_ALIASES,
+    _literal_shell_tokens,
     _unwrap_execution_wrappers,
     analyze_command_authority,
 )
@@ -66,7 +67,7 @@ def root_from(payload: dict[str, Any]) -> Path:
 
 
 _SESSION_ROOT_ALIASES = ('cwd', 'workspaceRoot', 'workspace_root')
-_COMMAND_ROOT_ALIASES = ('workdir', 'cwd', 'working_directory', 'workingDirectory')
+_COMMAND_ROOT_ALIASES = COMMAND_ROOT_ALIASES
 
 
 @dataclass(frozen=True)
@@ -175,13 +176,12 @@ def _has_unsafe_dispatcher_composition(words: list[str]) -> bool:
 
 def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str]:
     aliases: dict[str, str] = {}
-    try:
-        words = shlex.split(command)
-    except ValueError:
+    words = _literal_shell_tokens(command)
+    if words is None:
         return {'shell': '<ambiguous>'}
     expects_command = True
     for word in words:
-        if word in {'&&', '||', ';', '|'}:
+        if word in {'&&', '||', ';', '|', '&'}:
             expects_command = True
             continue
         if not expects_command:

@@ -51,6 +51,8 @@ flowchart LR
   node_0a087cfaed95a8ad -->|"EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION | data_flow | json"| node_c10acb5d92ad0ee0
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-API | control | unix_http"| node_93915052ae8a2e67
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-CONTRACTS | control | in_process"| node_340c6123d4df34df
+  node_93915052ae8a2e67 -->|"EDGE-FACTORY-INSTALLER-LOOPBACK-PREFLIGHT | control | tcp"| node_93915052ae8a2e67
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-INSTALLER-TEST-LOOPBACK-PROBE | control | tcp"| node_93915052ae8a2e67
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-EXECUTORS | dependency | python_import"| node_340c6123d4df34df
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-MODELS | control | https"| node_6716118911fde778
   node_21b552fdfa11f1c2 -->|"EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad

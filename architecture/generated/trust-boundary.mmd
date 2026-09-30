@@ -80,6 +80,8 @@ flowchart LR
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-API | control | unix_http"| node_93915052ae8a2e67
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-CONTRACTS | control | in_process"| node_340c6123d4df34df
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-SQLITE | control | in_process"| node_7c8192807445a8a6
+  node_93915052ae8a2e67 -->|"EDGE-FACTORY-INSTALLER-LOOPBACK-PREFLIGHT | control | tcp"| node_93915052ae8a2e67
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-INSTALLER-TEST-LOOPBACK-PROBE | control | tcp"| node_93915052ae8a2e67
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-EXECUTORS | dependency | python_import"| node_340c6123d4df34df
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-MODELS | control | https"| node_6716118911fde778
   node_340c6123d4df34df -->|"EDGE-FACTORY-LANDING-SQLITE | data_flow | sqlite"| node_7c8192807445a8a6
