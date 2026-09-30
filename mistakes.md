@@ -3,6 +3,13 @@
 ## 2026-09-30 — Reusing a token regexp without checking benign identifier boundaries
 
 The existing broker regexp recognized `sk-` inside the benign identifier `task-1`; reusing it for strict sidecar IDs caused a semantic binding test to reject valid input. The root cause was assuming redaction rules for unstructured broker output also fit typed identity admission; the new versioned profile adds a token boundary while preserving legacy broker behavior.
+### 2026-09-30 — Respect bounded source-version labels in characterization fixtures
+
+A first BMAD main fixture put a full 40-character commit after `main@` in `source_version`, overlooking the existing 32-character manifest bound. The load correctly failed; use a bounded `main@sha12` label and keep the full immutable commit in provenance rather than expanding the runtime contract.
+
+### 2026-09-30 — Commit repairs before checking an exact Git range
+
+The full verifier separately checks `base..HEAD`, so repairing whitespace only in the working tree did not repair the earlier change-package HEAD used by that check. All suites passed but the range check failed; commit the coherent repair before invoking the final verifier and distinguish historical suite results from current exact-head evidence.
 
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.

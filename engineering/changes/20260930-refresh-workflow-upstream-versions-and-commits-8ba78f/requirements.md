@@ -4,15 +4,17 @@
 
 ## Acceptance criteria
 
-- [ ] Config and README agree on stable tag/version, peeled 40-hex commit, observed main 40-hex SHA, and 2026-09-30 observation date.
-- [ ] Supported stable pins are Superpowers 6.4.2, BMAD 6.12.0, and Spec Kit 1.0.13.
-- [ ] Named tests parse exact-revision upstream-shaped samples and preserve old-format parsing.
-- [ ] BMAD main remains an observation, not a fabricated semver release.
-- [ ] Imported artifacts remain bounded advisory candidates with no authority effect.
+- [x] Config and README agree on stable tag/version, peeled 40-hex commit, observed main 40-hex SHA, and 2026-09-30 observation date.
+- [x] Supported stable pins are Superpowers 6.4.2, BMAD 6.12.0, and Spec Kit 1.0.13.
+- [x] Named tests parse exact-revision upstream-shaped samples and preserve old-format parsing.
+- [x] BMAD main remains an observation, not a fabricated semver release.
+- [x] Imported artifacts remain bounded advisory candidates with no authority effect.
 
 ## Failure and edge cases
 
-- 
+- Superpowers plan pointers are not followed; missing referenced specs do not grant authority.
+- BMAD main ticket shapes without native task rows load without inferred tasks or terminal status.
+- The existing 32-character source-version bound remains intact; exact commits live in provenance.
 
 ## Governance context
 

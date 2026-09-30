@@ -647,6 +647,135 @@ class CurrentUpstreamFormatTests(unittest.TestCase):
             entries.append({"source_type": source_type, "source_version": version, "role": role, "path": path})
         return _write_manifest(root, entries)
 
+    def test_superpowers_v642_spec_pointer_and_interfaces_stay_opaque_advisory(self) -> None:
+        # Assembled verbatim excerpts: obra/superpowers @
+        # 8ca22dba9a94f28898bbce59f2537ff4d87c747d, skills/writing-plans/SKILL.md.
+        # A parser that follows Spec pointers or invents tasks from plan checkboxes fails.
+        content = """# [Feature Name] Implementation Plan
+
+**Spec:** [path to the spec/design doc this plan implements — the plan
+argues from the spec, so the spec travels with it; executors read both]
+
+### Task N: [Component Name]
+
+**Interfaces:**
+- Consumes: [what this task uses from earlier tasks — exact signatures]
+- Produces: [what later tasks rely on — exact function names, parameter
+  and return types. A task's implementer sees only their own task; this
+  block is how they learn the names and types neighboring tasks use.]
+
+- [ ] **Step 1: Write the failing test**
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = self._docs(root, [
+                ("superpowers", "plan", "docs/superpowers/plans/current.md", content)
+            ], "6.4.2")
+            bundle = self.artifacts.load_source_manifest(root, manifest)
+            self.assertEqual(len(bundle.sources), 1)
+            self.assertEqual(self.artifacts._native_framework_tasks(bundle.sources[0]), [])
+            candidates = self.artifacts.adapt_sources(bundle)
+            self.assertTrue(candidates)
+            self.assertTrue(all(not c["authority"] and not c["receipt_eligible"] for c in candidates))
+            self.assertEqual(self.artifacts._advanced_status_hints(bundle), set())
+
+    def test_spec_kit_v1013_exact_task_rows_preserve_phase_dependencies(self) -> None:
+        # Assembled verbatim excerpts: github/spec-kit @
+        # f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9, templates/tasks-template.md.
+        # Dropping [P]/[US1] rows or phase dependencies changes the observable graph.
+        content = """# Tasks: [FEATURE NAME]
+
+## Phase 1: Setup (Shared Infrastructure)
+- [ ] T001 Create project structure per implementation plan
+- [ ] T002 Initialize [language] project with [framework] dependencies
+- [ ] T003 [P] Configure linting and formatting tools
+
+## Phase 2: Foundational (Blocking Prerequisites)
+- [ ] T004 Setup database schema and migrations framework
+- [ ] T005 [P] Implement authentication/authorization framework
+
+## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
+- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = self._docs(root, [
+                ("spec-kit", "tasks", "specs/001-current/tasks.md", content)
+            ], "1.0.13")
+            bundle = self.artifacts.load_source_manifest(root, manifest)
+            tasks = self.artifacts._native_framework_tasks(bundle.sources[0])
+            self.assertEqual([t["key"] for t in tasks],
+                             ["t001", "t002", "t003", "t004", "t005", "t010", "t011"])
+            self.assertEqual([t["depends_on"] for t in tasks], [
+                [], ["t001"], [], ["t001", "t002", "t003"],
+                ["t001", "t002", "t003"], ["t004", "t005"], ["t004", "t005"]
+            ])
+            candidates = self.artifacts.adapt_sources(bundle)
+            self.assertTrue(all(not c["authority"] and not c["receipt_eligible"] for c in candidates))
+
+    def test_bmad_observed_main_ticket_shape_remains_advisory_without_native_tasks(self) -> None:
+        # Verbatim example excerpt: bmad-code-org/BMAD-METHOD @
+        # 1cbcfa272fe65787c06a1fa164a901f46117cca7, skills/bmad-ticket/assets/story-template.md.
+        # Main is an observation, not stable 6.12.0; arbitrary ticket metadata is no status authority.
+        content = """---
+id: 4
+type: story
+title: "A shopper applies a discount code and sees the new total"
+parent: epic-cart-rules
+covers: [R2, R3]
+after: [3]
+refined: true
+hitl: false
+risk: medium
+---
+
+# A shopper applies a discount code and sees the new total
+
+## Description
+
+A shopper with items in the cart enters a discount code, and the cart total updates to show the discount before tax. An invalid or expired code tells them why it was refused and leaves the total as it was.
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = self._docs(root, [
+                ("bmad", "stories", "_bmad-output/stories/current.md", content)
+            ], "main@1cbcfa272fe6")
+            bundle = self.artifacts.load_source_manifest(root, manifest)
+            self.assertEqual(self.artifacts._native_framework_tasks(bundle.sources[0]), [])
+            self.assertEqual(self.artifacts._advanced_status_hints(bundle), set())
+            candidates = self.artifacts.adapt_sources(bundle)
+            self.assertTrue(candidates)
+            self.assertTrue(all(not c["authority"] and not c["receipt_eligible"] for c in candidates))
+
+    def test_bmad_v612_exact_template_tasks_preserve_nested_subtasks(self) -> None:
+        # bmad-code-org/BMAD-METHOD @ 05bfbd46d00766ec88eb9b42e76be2c575d64d7b,
+        # src/bmm-skills/v6-shims/bmad-create-story/template.md.
+        # Heading placeholders are instantiated; status and task excerpts are verbatim.
+        content = """# Story 1.1: Template sample
+
+Status: ready-for-dev
+
+## Tasks / Subtasks
+
+- [ ] Task 1 (AC: #)
+  - [ ] Subtask 1.1
+- [ ] Task 2 (AC: #)
+  - [ ] Subtask 2.1
+"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = self._docs(root, [
+                ("bmad", "stories", "_bmad-output/stories/stable.md", content)
+            ], "6.12.0")
+            bundle = self.artifacts.load_source_manifest(root, manifest)
+            tasks = self.artifacts._native_framework_tasks(bundle.sources[0])
+            self.assertEqual([t["key"] for t in tasks],
+                             ["story-1-1-001", "story-1-1-002", "story-1-1-003", "story-1-1-004"])
+            self.assertEqual([t["depends_on"] for t in tasks],
+                             [[], ["story-1-1-001"], ["story-1-1-002"], ["story-1-1-003"]])
+            self.assertEqual(self.artifacts._advanced_status_hints(bundle), set())
+
     def test_spec_kit_emphasis_loads_but_yaml_authority_fails_closed(self) -> None:
         emphasis = (
             "# Specification: Authentication\n"

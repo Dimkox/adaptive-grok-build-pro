@@ -3,6 +3,9 @@
 ## 2026-09-30 — Preserve closed factory formats with additive evidence sidecars
 
 Versioned context, decision, tool-result, semantic and prediction sidecars allowed the Linux v1.5 composition to run without mutating closed v1/v2 readers. Captured native model requests and existing API/contract tests verified the boundary while qualification kept missing external/live gates explicit.
+### 2026-09-30 — Keep stable workflow pins separate from main observations
+
+Record peeled stable commits alongside separately observed main commits and exercise exact-revision excerpts through the existing advisory adapters. This updated source currency without changing runtime parsing or promoting BMAD main ticket metadata and Superpowers Spec pointers into authority.
 
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
