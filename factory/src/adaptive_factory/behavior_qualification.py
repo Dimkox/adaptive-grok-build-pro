@@ -11,8 +11,6 @@ from .contracts import ContractError, canonical_digest
 from .v15_contracts import FrozenWire, closed, digest, integer, safe_text, sequence, sha, timestamp
 
 
-ACCEPTED_CORPUS_DIGEST = "d57c08cecf33c021e15911cfd3a6b4c96ea198c4b3e34f8b76048399daf51c9a"
-ACCEPTED_BASELINE_DIGEST = "04c31a27456e78c4b883ea763e1d8511778b1d1dde9f79cbfadc64bc3cfe5612"
 _SUITE_RESOURCE = "pump-selector-qualification-v1.json"
 _BASELINE_RESOURCE = "pump-selector-baseline-v1.json"
 _MODES = ("A", "B", "C")
@@ -61,8 +59,6 @@ def _same(left, right, tolerance=1e-6):
 class FrozenQualificationSuite(FrozenWire):
     @classmethod
     def from_dict(cls, data):
-        if canonical_digest(data) != ACCEPTED_CORPUS_DIGEST:
-            raise ContractError("corpus_digest_mismatch")
         closed(data, ("schema_version", "suite_id", "oracle_version", "cases"))
         if data["schema_version"] != 1:
             raise ContractError("unsupported_version")
@@ -99,8 +95,6 @@ class FrozenQualificationSuite(FrozenWire):
 class ImmutableQualificationBaseline(FrozenWire):
     @classmethod
     def from_dict(cls, data, suite):
-        if canonical_digest(data) != ACCEPTED_BASELINE_DIGEST:
-            raise ContractError("baseline_digest_mismatch")
         closed(data, ("schema_version", "baseline_id", "corpus_digest", "oracle_version", "accepted_by",
                       "accepted_at", "mode_quality_micros", "authority_effect"))
         if data["schema_version"] != 1:
@@ -118,26 +112,38 @@ class BehaviorImpactSelectionV1(FrozenWire): pass
 class BehaviorComparisonReportV1(FrozenWire): pass
 
 
+class QualificationTrustAuthority(FrozenWire):
+    @classmethod
+    def from_dict(cls, data):
+        closed(data, ("schema_version", "authority_id", "corpus_digest", "baseline_digest", "oracle_id", "enabled_profile_ids"))
+        if data["schema_version"] != 1: raise ContractError("unsupported_version")
+        safe_text(data["authority_id"], "authority_id", 128); digest(data["corpus_digest"]); digest(data["baseline_digest"])
+        safe_text(data["oracle_id"], "oracle_id", 128)
+        profiles = sequence(data["enabled_profile_ids"], maximum=16)
+        if not profiles or len(set(profiles)) != len(profiles): raise ContractError("invalid_authority_profiles")
+        for profile in profiles: safe_text(profile, "profile_id", 128)
+        return cls.freeze(data)
+
+
 @dataclass(frozen=True)
 class ComparatorProfile:
     profile_id: str
     suite: FrozenQualificationSuite
     baseline: ImmutableQualificationBaseline
-    oracle: object
-    enabled: bool = False
+    oracle_id: str
 
 
-def make_comparator_profile(profile_id, suite, baseline, oracle, *, enabled=False):
+def make_comparator_profile(profile_id, suite, baseline, oracle_id):
     safe_text(profile_id, "profile_id", 128)
-    if not isinstance(suite, FrozenQualificationSuite) or not isinstance(baseline, ImmutableQualificationBaseline) or not callable(oracle):
+    if not isinstance(suite, FrozenQualificationSuite) or not isinstance(baseline, ImmutableQualificationBaseline):
         raise ContractError("invalid_comparator_profile")
-    if type(enabled) is not bool: raise ContractError("invalid_comparator_profile")
-    return ComparatorProfile(profile_id, suite, baseline, oracle, enabled)
+    if oracle_id != "factory-semantic-oracles-v1": raise ContractError("unknown_oracle_id")
+    return ComparatorProfile(profile_id, suite, baseline, oracle_id)
 
 
 def native_comparator_profile():
     suite = load_frozen_suite(); baseline = load_immutable_baseline(suite)
-    return make_comparator_profile("factory-f24-f26-native-v1", suite, baseline, _oracle, enabled=True)
+    return make_comparator_profile("factory-f24-f26-native-v1", suite, baseline, "factory-semantic-oracles-v1")
 
 
 def load_frozen_suite():
@@ -243,9 +249,20 @@ def _domain_failures(case, observed):
     if not isinstance(observed, dict): return ["invalid_domain_result"]
     expected = case["expected"]["domain_result"]
     oracle = case["oracle"]; failures = []
+    schemas = {
+        "pump_selection": {"decision", "source_document_id", "pump_model", "flow", "flow_unit", "head", "head_unit", "curve"},
+        "factory_lifecycle": {"from_state", "to_state", "evidence_complete", "fence"},
+        "factory_routing": {"route_id", "write_agent", "allowed_agents"},
+        "factory_recovery": {"action", "duplicate_external_effect", "checkpoint"},
+        "factory_unknown": {"decision", "observed_cost_usd_micros", "reason"},
+        "cross_rule_conflict": {"decision", "conflicting_rules", "reason"},
+        "cross_context": {"decision", "context_status", "required_revision"},
+        "cross_authority": {"authority_effect", "external_actions"},
+        "cross_handoff": {"accepted_criteria", "limitations", "status"},
+    }
+    if oracle not in schemas: return ["unsupported_domain_oracle"]
+    if set(observed) != schemas[oracle]: return ["invalid_" + oracle + "_result"]
     if oracle == "pump_selection":
-        required = {"decision", "source_document_id", "pump_model", "flow", "flow_unit", "head", "head_unit", "curve"}
-        if set(observed) != required: return ["invalid_pump_result"]
         try: flow = _normalize(observed["flow"], observed["flow_unit"], "flow"); head = _normalize(observed["head"], observed["head_unit"], "head")
         except ContractError: return ["unsupported_units"]
         for field, reason in (("decision", "wrong_decision"), ("source_document_id", "wrong_document"), ("pump_model", "wrong_pump_model")):
@@ -280,7 +297,6 @@ def _domain_failures(case, observed):
     elif oracle == "cross_handoff":
         if observed.get("accepted_criteria") != expected["accepted_criteria"]: failures.append("handoff_incomplete")
         if observed.get("limitations") != expected["limitations"] or observed.get("status") != "ready_for_review": failures.append("wrong_handoff_status")
-    else: failures.append("unsupported_domain_oracle")
     return failures
 
 
@@ -337,14 +353,23 @@ def _percentiles(values):
     return {"p50": pick(.50), "p95": pick(.95)}
 
 
-def run_comparison(profile, variants, config, executor):
+def run_comparison(profile, variants, config, executor, *, authority=None):
     if not isinstance(profile, ComparatorProfile): raise ContractError("invalid_comparator_profile")
-    if not profile.enabled: raise ContractError("profile_disabled")
-    # Re-read and revalidate the exact built-in anchors on every invocation. A
-    # profile cannot substitute candidate-authored bytes for these resources.
-    anchored_suite = load_frozen_suite(); anchored_baseline = load_immutable_baseline(anchored_suite)
-    if profile.suite.record_digest != anchored_suite.record_digest or profile.baseline.record_digest != anchored_baseline.record_digest:
-        raise ContractError("profile_anchor_mismatch")
+    if authority is None:
+        return BehaviorComparisonReportV1.freeze(dict(
+            schema_version=1, comparator_profile_id=profile.profile_id, verdict="not_qualified",
+            reason="external_qualification_authority_required", attempts=[], authority_effect="none",
+            production_qualified=False, m8_qualifying_contribution=0,
+        ))
+    if not isinstance(authority, QualificationTrustAuthority): raise ContractError("invalid_qualification_authority")
+    authority_facts = authority.to_dict()
+    if (profile.suite.record_digest != authority_facts["corpus_digest"] or
+            profile.baseline.record_digest != authority_facts["baseline_digest"] or
+            profile.oracle_id != authority_facts["oracle_id"] or
+            profile.profile_id not in authority_facts["enabled_profile_ids"]):
+        raise ContractError("trust_authority_mismatch")
+    if profile.oracle_id != "factory-semantic-oracles-v1": raise ContractError("unknown_oracle_id")
+    oracle = _oracle
     suite = profile.suite; baseline = profile.baseline
     facts = suite.to_dict(); baseline_facts = baseline.to_dict()
     _validate_config(config); common_digest = _validate_variants(variants, config, facts["oracle_version"])
@@ -357,7 +382,7 @@ def run_comparison(profile, variants, config, executor):
     for mode in (() if preflight_blocked else _MODES):
         for case in facts["cases"]:
             for repetition in range(1, config["repetitions"] + 1):
-                try: result = executor(mode, deepcopy(case), repetition); status, failures = profile.oracle(case, result, variants[mode])
+                try: result = executor(mode, deepcopy(case), repetition); status, failures = oracle(case, result, variants[mode])
                 except Exception: result = {"status": "infra_failure"}; status, failures = "blocked", ["executor_exception"]
                 if status == "pass":
                     quality_passes[mode] += 1; good.setdefault(case["case_id"], (deepcopy(result), variants[mode]))
@@ -380,13 +405,14 @@ def run_comparison(profile, variants, config, executor):
                 attempts.append(dict(mode=mode, case_id=case["case_id"], attempt=repetition, execution_status=result.get("status", "invalid"),
                                      oracle_status=status, failures=failures, latency_ms=latency if type(latency) is int else None,
                                      cost_usd_micros=cost if type(cost) is int else None, input_tokens=tokens if type(tokens) is int else None,
+                                     corrections=result.get("corrections") if type(result.get("corrections")) is int else None,
                                      actual_model=result.get("actual_model"), tool_version=result.get("tool_version")))
     controls = []
     for case in facts["cases"]:
         if case["case_id"] not in good: continue
         result, variant = good[case["case_id"]]
         for control in case["negative_controls"]:
-            status, failures = profile.oracle(case, _mutate(result, control["mutation"]), variant)
+            status, failures = oracle(case, _mutate(result, control["mutation"]), variant)
             killed = status == "fail" and control["expected_failure"] in failures
             controls.append(dict(case_id=case["case_id"], control_id=control["control_id"], expected_failure=control["expected_failure"],
                                  observed_failures=failures, status="killed" if killed else "survived"))
@@ -423,8 +449,8 @@ def run_comparison(profile, variants, config, executor):
             "latency_ms": _percentiles([a["latency_ms"] for a in mode_attempts if a["latency_ms"] is not None]) if mode_attempts else None,
             "input_tokens": _percentiles([a["input_tokens"] for a in mode_attempts if a["input_tokens"] is not None]) if mode_attempts else None,
             "cost_usd_micros": _percentiles([a["cost_usd_micros"] for a in mode_attempts if a["cost_usd_micros"] is not None]) if mode_attempts else None,
-            "corrections": _percentiles([metrics[mode]["corrections"] // max(1, len(mode_attempts))] * len(mode_attempts)) if mode_attempts else None,
-            "quality_regression_micros": _percentiles([0 if a["oracle_status"] == "pass" else 1_000_000 for a in mode_attempts]) if mode_attempts else None,
+            "corrections": _percentiles([a["corrections"] for a in mode_attempts if a["corrections"] is not None]) if mode_attempts else None,
+            "quality_regression_micros": _percentiles([max(0, baseline_facts["mode_quality_micros"][mode] - (1_000_000 if a["oracle_status"] == "pass" else 0)) for a in mode_attempts]) if mode_attempts else None,
         }
     return BehaviorComparisonReportV1.freeze(dict(
         schema_version=1, comparator_profile_id=profile.profile_id, suite_id=facts["suite_id"], corpus_digest=suite.record_digest, baseline_id=baseline_facts["baseline_id"],
@@ -439,9 +465,9 @@ def run_comparison(profile, variants, config, executor):
     ))
 
 
-def run_frozen_comparison(variants, config, executor, *, suite=None, baseline=_DEFAULT_BASELINE):
+def run_frozen_comparison(variants, config, executor, *, suite=None, baseline=_DEFAULT_BASELINE, authority=None):
     if baseline is None: raise ContractError("baseline_required")
     profile = native_comparator_profile()
-    if suite is not None and suite.record_digest != profile.suite.record_digest: raise ContractError("profile_anchor_mismatch")
-    if baseline is not _DEFAULT_BASELINE and baseline.record_digest != profile.baseline.record_digest: raise ContractError("profile_anchor_mismatch")
-    return run_comparison(profile, variants, config, executor)
+    if suite is not None: profile = make_comparator_profile(profile.profile_id, suite, profile.baseline, profile.oracle_id)
+    if baseline is not _DEFAULT_BASELINE: profile = make_comparator_profile(profile.profile_id, profile.suite, baseline, profile.oracle_id)
+    return run_comparison(profile, variants, config, executor, authority=authority)

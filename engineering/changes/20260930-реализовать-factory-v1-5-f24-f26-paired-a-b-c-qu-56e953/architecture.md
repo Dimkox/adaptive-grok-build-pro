@@ -8,7 +8,7 @@ Factory v1.5 can compose evidence, but has no accepted executable F24/F26 paired
 
 ## Proposed behavior
 
-Add a package-owned deterministic qualification module. It loads corpus and baseline resources only when they match independently accepted SHA-256 pins, derives impact from paths and bounded text changes, executes injected adapters in isolated logical attempts, applies the independent oracle and executable mutants, and emits a canonical observation-only report. The runner has no provider implementation and performs no external writes.
+Add a package-owned deterministic qualification module. Local resources are fixtures only: an externally supplied `QualificationTrustAuthority` must bind their exact corpus, baseline and closed oracle identities plus the enabled profile ID before a pass is possible. Without that authority the result is `not_qualified`. The runner derives impact from hashed text changes, executes isolated attempts, applies semantic oracles and mutants, and performs no external writes.
 
 ## Components and boundaries
 
@@ -16,11 +16,11 @@ Add a package-owned deterministic qualification module. It loads corpus and base
 - `pump-selector-qualification-v1.json`: four Pump Selector, four factory and four cross-component/rule-conflict frozen cases.
 - `pump-selector-baseline-v1.json`: separately accepted expected baseline identities and scores.
 - The executor boundary returns observations only. It cannot mutate trusted inputs through the API.
-- `make_comparator_profile` is an additive comparison seam for BB/native observation. Profiles default disabled, reuse the anchored corpus/oracles, and cannot grant merge, deploy or production authority.
+- `make_comparator_profile` is an additive comparison seam for BB/native observation. A profile contains an `oracle_id`, never a callable or enable flag; only the external authority can enable its exact ID. BB therefore defaults to `not_qualified`.
 
 ## Data flow
 
-Pinned resources -> digest verification -> impact selection -> A/B/C executor calls -> independent oracle -> completeness/quality/budget gates -> immutable canonical report.
+Local resources -> external authority identity resolution -> impact selection -> A/B/C executor calls -> closed oracle registry -> completeness/quality/budget gates -> immutable canonical report.
 
 ## API and event contracts
 
@@ -50,7 +50,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 
 ## Risks and mitigations
 
-- Fixture gaming: stable IDs, independently accepted corpus/baseline digest constants and executable negative controls.
+- Fixture gaming: stable IDs, external authority-bound corpus/baseline/oracle identities, exact domain schemas and executable negative controls. Repository constants are not qualification authority.
 - Confounded comparison: common-pin equality and declared-factor validation; strict benefit requires both context-load and reread reductions.
 - Cheap-but-wrong candidate: domain/safety gates precede efficiency.
 - Partial execution: exact required case/mode/attempt accounting.

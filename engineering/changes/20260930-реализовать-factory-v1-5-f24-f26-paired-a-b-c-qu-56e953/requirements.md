@@ -4,7 +4,7 @@
 
 ## Acceptance criteria
 
-- [ ] Exactly four Pump Selector, four factory, and four cross-component/rule-conflict cases are loaded through independently accepted corpus and baseline digest pins.
+- [ ] Exactly four Pump Selector, four factory, and four cross-component/rule-conflict cases require an externally supplied authority binding exact corpus, baseline, closed oracle and profile identities; local fixtures alone are not qualified.
 - [ ] Wrong source document and wrong curve fail even when the response is structurally valid.
 - [ ] Unknown head/flow/cost/token facts stay unknown and never become numeric zero.
 - [ ] Declared supported units are normalized before domain comparison; unsupported units fail closed.
@@ -19,7 +19,8 @@
 
 ## Failure and edge cases
 
-- Candidate attempts to change corpus/oracle/baseline/thresholds are rejected by digest and identity checks.
+- Candidate attempts to change corpus/oracle/baseline/thresholds are rejected against the external authority; without it the only result is `not_qualified`.
+- Factory and cross-component domain results use closed exact schemas; extra fields fail.
 - Every declared negative control is executed and must be killed by its expected oracle failure.
 - Infra failure is distinct from property failure; neither counts as pass.
 - A proven documentation typo selects deterministic checks without a live provider run.
