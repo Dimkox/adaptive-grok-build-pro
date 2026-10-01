@@ -34,6 +34,12 @@
 - Focused actual restart probe: passed with two real PostgreSQL restarts, exact
   runtime/attestor roles, exact decision digest/cardinality and idempotent replay.
 - `git diff --check` and Python compilation of the restart probe passed.
+- Full-harness regression red: the isolated restart preflight failed before database
+  access because `postgres_restart_probe.py` imported the discovered contract test,
+  which in turn required root-only `tests.json_schema_subset`. Green: the shared
+  factual fixture now lives in dependency-free `factory/tests/decision_fixtures.py`;
+  the exact disposable harness completed 820 tests with 2 skips, two PostgreSQL
+  restarts, capability-role checks and restart/reconciliation PASS.
 
 ## Architecture-budget repair
 

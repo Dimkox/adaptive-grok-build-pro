@@ -9,7 +9,7 @@ from adaptive_factory.contracts import canonical_digest, canonical_json
 from adaptive_factory.decision_contracts import DecisionRecordV1
 from adaptive_factory.models import FailureClass, RunRole, TaskStatus
 from adaptive_factory.store import PostgresFactoryStore, StoreError
-from factory.tests.decision_contract_cases import decision_facts
+from factory.tests.decision_fixtures import decision_facts
 
 
 def assert_v15_decision_persistence(case, *, database_url, worker, now, psycopg):

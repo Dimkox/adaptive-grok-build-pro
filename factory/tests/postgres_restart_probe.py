@@ -27,7 +27,7 @@ from adaptive_factory.admin import (
     provision_runtime_login,
 )
 from adaptive_factory.decision_contracts import DecisionRecordV1
-from factory.tests.decision_contract_cases import decision_facts
+from factory.tests.decision_fixtures import decision_facts
 from adaptive_factory.execution_contracts import ExecutionSelectionV1
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.models import (
