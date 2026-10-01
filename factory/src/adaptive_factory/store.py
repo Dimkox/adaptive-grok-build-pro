@@ -3967,6 +3967,11 @@ class PostgresFactoryStore:
     ) -> TaskStatus:
         del now
         with self._transaction() as cursor:
+            if idempotency_key is not None:
+                cursor.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                    (idempotency_key,),
+                )
             decision_time = None
             if decision_record is not None:
                 normalized = decision_record.to_dict()

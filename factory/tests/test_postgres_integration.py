@@ -939,8 +939,11 @@ class PostgresFactoryTests(unittest.TestCase):
                      rule_id='FACTORY-STATE-TRANSITION', evidence_refs=[])
         record = DecisionRecordV1.from_dict(facts)
         key = '9' * 64
-        self.service.transition_phase(grant, target=TaskStatus.ANALYZING, actor=WORKER,
-            now=NOW, idempotency_key=key, decision_record=record)
+        call = partial(self.service.transition_phase, grant, target=TaskStatus.ANALYZING,
+            actor=WORKER, now=NOW, idempotency_key=key, decision_record=record)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            self.assertEqual(tuple(pool.map(lambda _: call(), range(2))),
+                             (TaskStatus.ANALYZING,) * 2)
         self.assertEqual(self.store.transition_phase(
             grant, TaskStatus.ANALYZING, WORKER, NOW,
             idempotency_key=key, decision_record=record), TaskStatus.ANALYZING)
@@ -959,7 +962,13 @@ class PostgresFactoryTests(unittest.TestCase):
         self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW,
                                     idempotency_key='7' * 64, decision_record=fix)
         with psycopg.connect(DATABASE_URL) as connection:
-            self.assertEqual(connection.execute('SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=%s', (task.task_id,)).fetchone()[0], 2)
+            saved = connection.execute("SELECT record FROM factory.decision_records_v1 WHERE decision_id='decision-2'").fetchone()[0]
+            for field, value in (('schema_version', '1'), ('fence', '1')):
+                bad = dict(saved); bad[field] = value
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    connection.execute('SELECT factory._append_decision_v1(%s,%s,%s,%s)',
+                        (canonical_json(bad).decode(), canonical_digest(bad), grant.run_id, grant.fence))
+                connection.rollback()
         with psycopg.connect(self.runtime_url) as db:
             db.execute('SET ROLE factory_runtime')
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
@@ -970,14 +979,6 @@ class PostgresFactoryTests(unittest.TestCase):
                     'SELECT factory._append_decision_v1(%s,%s,%s,%s)',
                     ('{}', '0' * 64, grant.run_id, grant.fence))
             db.rollback(); db.execute('SET ROLE factory_runtime')
-            saved = db.execute("SELECT record FROM factory.decision_records_v1 WHERE decision_id='decision-2'").fetchone()[0]
-            for field, value in (('schema_version', '1'), ('fence', '1')):
-                bad = dict(saved); bad[field] = value
-                with self.assertRaises(psycopg.errors.RaiseException):
-                    db.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
-                        (canonical_json(bad).decode(), canonical_digest(bad),
-                         grant.run_id, grant.fence, '7' * 64, fix.record_digest))
-                db.rollback(); db.execute('SET ROLE factory_runtime')
             forged = dict(saved); forged['decision_id'] = 'direct-forgery'
             with self.assertRaises(psycopg.errors.RaiseException):
                 db.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
