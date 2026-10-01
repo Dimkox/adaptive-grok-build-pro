@@ -25,7 +25,11 @@ _MODELS = (
 _REPOSITORY = "https://github.com/Dimkox/qwen-model-rotator"
 _COMMIT = "fbcb200e8a4bcff19a24fc0e4ccafb1b37615fe8"
 _TREE_SHA1 = "b4951988bce3d1b5aadef15bf51e7df4ab5c025e"
-_ARCHIVE_SHA256 = "b2dc6e18653111adb83085430ba8af3e7d909092c2528830f4276fb8a8de917d"
+_ARCHIVE_KIND = "github_api_tarball"
+_ARCHIVE_URL = f"https://api.github.com/repos/Dimkox/qwen-model-rotator/tarball/{_COMMIT}"
+# SHA-256 of the exact response bytes fetched from _ARCHIVE_URL, not of a
+# locally regenerated ``git archive`` (whose representation is different).
+_ARCHIVE_SHA256 = "eda8e75c6093e02cb83a4a08c2f3f483d841b255049d7cc2714f77e14de9f236"
 _MODELS_FILE_SHA256 = "cf2e502a8af917d77bd6710d1eb3a68377f72c0c9e839c3479a5ed19c4d21b20"
 
 
@@ -34,6 +38,8 @@ class RotatorUpstream:
     repository: str
     commit: str
     tree_sha1: str
+    archive_kind: str
+    archive_url: str
     archive_sha256: str
     models_file: str
     models_file_sha256: str
@@ -43,6 +49,8 @@ class RotatorUpstream:
             "repository": self.repository,
             "commit": self.commit,
             "tree_sha1": self.tree_sha1,
+            "archive_kind": self.archive_kind,
+            "archive_url": self.archive_url,
             "archive_sha256": self.archive_sha256,
             "models_file": self.models_file,
             "models_file_sha256": self.models_file_sha256,
@@ -53,6 +61,8 @@ _UPSTREAM = RotatorUpstream(
     repository=_REPOSITORY,
     commit=_COMMIT,
     tree_sha1=_TREE_SHA1,
+    archive_kind=_ARCHIVE_KIND,
+    archive_url=_ARCHIVE_URL,
     archive_sha256=_ARCHIVE_SHA256,
     models_file="models.txt",
     models_file_sha256=_MODELS_FILE_SHA256,

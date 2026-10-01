@@ -3,6 +3,10 @@ from __future__ import annotations
 import dataclasses
 import hashlib
 import json
+import os
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -33,7 +37,12 @@ def test_registry_is_default_off_and_pins_exact_upstream_provenance() -> None:
     assert registry.upstream.repository == "https://github.com/Dimkox/qwen-model-rotator"
     assert registry.upstream.commit == "fbcb200e8a4bcff19a24fc0e4ccafb1b37615fe8"
     assert registry.upstream.tree_sha1 == "b4951988bce3d1b5aadef15bf51e7df4ab5c025e"
-    assert registry.upstream.archive_sha256 == "b2dc6e18653111adb83085430ba8af3e7d909092c2528830f4276fb8a8de917d"
+    assert registry.upstream.archive_kind == "github_api_tarball"
+    assert registry.upstream.archive_url == (
+        "https://api.github.com/repos/Dimkox/qwen-model-rotator/tarball/"
+        "fbcb200e8a4bcff19a24fc0e4ccafb1b37615fe8"
+    )
+    assert registry.upstream.archive_sha256 == "eda8e75c6093e02cb83a4a08c2f3f483d841b255049d7cc2714f77e14de9f236"
     assert registry.upstream.models_file_sha256 == "cf2e502a8af917d77bd6710d1eb3a68377f72c0c9e839c3479a5ed19c4d21b20"
 
 
@@ -56,6 +65,50 @@ def test_registry_digest_binds_version_strategy_models_and_provenance() -> None:
         json.dumps(mutated, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest() != registry.registry_digest
     assert dataclasses.replace(registry.upstream, tree_sha1="0" * 40) != registry.upstream
+
+
+def test_literal_payload_and_digest_are_independent_golden_evidence() -> None:
+    expected = {
+        "schema_version": "model-rotator-registry.v1",
+        "enabled": False,
+        "provider": "openrouter",
+        "dashscope_enabled": False,
+        "free_claim": None,
+        "selection_strategy": "best_first",
+        "selection_strategy_version": "best_first.v1",
+        "models": list(EXPECTED_MODELS),
+        "upstream": {
+            "repository": "https://github.com/Dimkox/qwen-model-rotator",
+            "commit": "fbcb200e8a4bcff19a24fc0e4ccafb1b37615fe8",
+            "tree_sha1": "b4951988bce3d1b5aadef15bf51e7df4ab5c025e",
+            "archive_kind": "github_api_tarball",
+            "archive_url": (
+                "https://api.github.com/repos/Dimkox/qwen-model-rotator/tarball/"
+                "fbcb200e8a4bcff19a24fc0e4ccafb1b37615fe8"
+            ),
+            "archive_sha256": "eda8e75c6093e02cb83a4a08c2f3f483d841b255049d7cc2714f77e14de9f236",
+            "models_file": "models.txt",
+            "models_file_sha256": "cf2e502a8af917d77bd6710d1eb3a68377f72c0c9e839c3479a5ed19c4d21b20",
+        },
+    }
+
+    assert DEFAULT_MODEL_ROTATOR_REGISTRY.to_dict() == {
+        **expected,
+        "registry_digest": "fe0bc56510116153d8a614be8330f913a7a2df6e90d5f5dca26436bef6e2773e",
+    }
+    for field in ("archive_sha256", "models_file_sha256", "tree_sha1"):
+        mutated = json.loads(json.dumps(expected))
+        mutated["upstream"][field] = "0" * len(mutated["upstream"][field])
+        mutated_digest = hashlib.sha256(
+            json.dumps(mutated, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest()
+        assert mutated_digest != DEFAULT_MODEL_ROTATOR_REGISTRY.registry_digest
+    removed = json.loads(json.dumps(expected))
+    del removed["upstream"]["archive_sha256"]
+    removed_digest = hashlib.sha256(
+        json.dumps(removed, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
+    assert removed_digest != DEFAULT_MODEL_ROTATOR_REGISTRY.registry_digest
 
 
 def test_weak_and_dashscope_models_are_not_admitted() -> None:
@@ -171,3 +224,53 @@ def test_selection_is_pure_and_has_no_runtime_interfaces() -> None:
         "save",
     ):
         assert not hasattr(registry, forbidden_attribute)
+
+
+def test_clean_import_cannot_open_socket_spawn_or_write_settings_or_environment(tmp_path: Path) -> None:
+    guard = tmp_path / "guard.py"
+    guard.write_text(
+        """
+import builtins
+import os
+from pathlib import Path
+import socket
+import subprocess
+
+def deny(*args, **kwargs):
+    raise AssertionError("import attempted a forbidden side effect")
+
+socket.socket = deny
+subprocess.Popen = deny
+Path.write_text = deny
+Path.write_bytes = deny
+Path.touch = deny
+os.putenv = deny
+os.unsetenv = deny
+
+class GuardedEnvironment(dict):
+    def __setitem__(self, key, value): deny()
+    def __delitem__(self, key): deny()
+    def clear(self): deny()
+    def pop(self, key, default=None): deny()
+    def popitem(self): deny()
+    def setdefault(self, key, default=None): deny()
+    def update(self, *args, **kwargs): deny()
+
+os.environ = GuardedEnvironment(os.environ)
+from adaptive_factory.model_rotator_registry import DEFAULT_MODEL_ROTATOR_REGISTRY
+assert DEFAULT_MODEL_ROTATOR_REGISTRY.enabled is False
+"""
+    )
+    env = dict(os.environ)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+
+    completed = subprocess.run(
+        [sys.executable, str(guard)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert completed.returncode == 0, completed.stderr
