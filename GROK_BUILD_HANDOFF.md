@@ -300,7 +300,7 @@ Each condition above held when P0 closed and PR #2 carried the final evidence; t
 
 ## Next actions (observed 2026-09-24)
 
-1. Continue from [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). `v2.0.18` remains published and immutable; the `v2.0.19` release-sync parent is merged at `3f41be92161fef451a2dfa7451eb458ce8f022b3`, and the separate artifact-child carries its ZIP+sidecar. Preserve every published release's bytes and tag.
+1. Continue from [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). `v2.0.18` remains published and immutable; `v2.0.19` release-sync and artifact bytes are preserved historical candidate evidence. The current source RC is `v2.1.0`, whose distinct artifact remains pending reproducible rebuild after exact source acceptance. Preserve every published release's bytes and tag, and never rename historical candidate bytes.
 2. Source `main` was observed at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` after PR #189. The twenty post-publication landings are recorded in the candidate state. Runtime defaults remain off; future external actions need their own exact authority.
 3. Establish the next unmet product outcome: a full external pilot with maintainer acceptance. M8 cohort/activation and general M9 qualification remain separate gates. L5 `artifact_ready` does not establish factory publication, hosting or those milestone outcomes.
 4. The next release chain is the artifact-child PR from merged release-sync PR #189. PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193 are recorded as dated source landings; the exact App-owned check and fresh grants are required at each protected boundary.

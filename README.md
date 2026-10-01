@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.0.19
+# Adaptive Grok Build Pro v2.1.0
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
@@ -12,7 +12,7 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.0.19 candidate** (unified Factory RC). The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The previously built `v2.0.19` ZIP and sidecar remain preserved as historical candidate bytes but predate this unified source tree and therefore **must not** be published as this RC. A new artifact child, exact-head verification, PR merge, tag and GitHub Release remain separate downstream gates.
+Identity: **2.1.0 candidate** (unified Factory RC). The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The previously built `v2.0.19` ZIP and sidecar remain preserved as historical candidate bytes but predate this unified source tree and therefore **must not** be renamed or published as this RC. The `v2.1.0` artifact is pending a fresh reproducible rebuild after exact source acceptance; exact-head verification, PR merge, tag and GitHub Release remain separate downstream gates.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |

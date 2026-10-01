@@ -4,12 +4,12 @@
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-  "product_version": "2.0.19",
+  "product_version": "2.1.0",
   "latest_published_release": "v2.0.18",
   "factory_v15_unified_rc": {
     "status": "assembled_unverified_release_candidate",
     "branch": "feature/factory-v15-unified-rc",
-    "version": "2.0.19",
+    "version": "2.1.0",
     "specification": "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
     "addendum": "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md",
     "reviewed_core_head": "3a82f61b1ff4912571b39bd0bdceadd105149a58",
@@ -43,7 +43,7 @@
     "pull_request": null,
     "checked_head": null,
     "merge_commit": null,
-    "artifact_status": "historical v2.0.19 candidate bytes predate this unified source and require replacement",
+    "artifact_status": "v2.1.0 artifact pending reproducible rebuild after exact source acceptance; historical v2.0.19 bytes remain unchanged",
     "next_action": "Run serialized full local verification and independent review on the committed union, push the exact RC branch, open a PR, then require the App-owned exact-SHA Trust CI check. Build/publish new artifacts only after that source delivery."
   },
   "bootstrap_entrypoint": "START_HERE.md",
@@ -1210,12 +1210,12 @@
     }
   },
   "local_candidate": {
-    "version": "2.0.19",
-    "status": "artifact_bytes_delivered",
-    "route_id": "0ea34220576f",
-    "branch": "release/v2.0.19-candidate-20260922",
-    "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "source_base": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
+    "version": "2.1.0",
+    "status": "source_rc_pending_artifact_rebuild",
+    "route_id": "52ad342010b3",
+    "branch": "feature/factory-v15-unified-rc",
+    "change_package": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34",
+    "source_base": "3a82f61b1ff4912571b39bd0bdceadd105149a58",
     "reviewed_product_head": null,
     "reviewed_product_tree": null,
     "source_gate_status": "pending_final_tree",
@@ -1224,30 +1224,30 @@
     "merge_commit": null,
     "tree": null,
     "pull_request": null,
-    "artifact_status": "pending_tag_and_release",
-    "predecessor_record": "The published v2.0.18 candidate remains the immutable published_release record; earlier releases remain under prior_published_releases.",
+    "artifact_status": "pending_unpublished_artifact_child",
+    "predecessor_record": "The published v2.0.18 release remains immutable. The delivered v2.0.19 ZIP and sidecar are preserved as historical candidate bytes and are not renamed or reused for v2.1.0.",
     "artifact_child": {
       "identity": "A",
-      "source_parent": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-      "source_parent_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
+      "source_parent": null,
+      "source_parent_tree": null,
       "commit": null,
       "tree": null,
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.19.zip",
-        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.1.0.zip",
+        "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
       ],
-      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "status": "built_byte_reproducible_twice",
-      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; the child's own identities — merge_commit, tree, checked_head and pull_request — stay null because the child cannot self-record them.",
-      "zip_source_note": "The archive was built from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
+      "zip_sha256": null,
+      "sidecar_sha256": null,
+      "status": "pending_reproducible_rebuild",
+      "requirement": "Build twice from the exact accepted and merged v2.1.0 source parent, then deliver a distinct ZIP and sidecar through an artifact-only child. Do not rename or reuse historical v2.0.19 bytes.",
+      "zip_source_note": "No v2.1.0 artifact exists yet; source parent, tree and digests remain null until exact source acceptance and reproducible rebuild."
     },
     "published": false,
     "published_at": null,
     "external_effect": false,
     "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "Artifact bytes (ZIP + sidecar, 14301716 bytes, built twice byte-identically in private 0700 staging from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3) are delivered into the repository tree. \"Delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect and no operational activation. published, external_effect and operational_activation remain false, and merge_commit/tree stay null because the child cannot self-record them; the tag and the Release bind to this pull request's merged commit under their own exact delegated grants."
+    "notes": "The v2.1.0 source RC is assembled but unverified. Artifact bytes, tag and GitHub Release do not exist; production activation and external effects remain false. Historical v2.0.19 bytes stay unchanged and cannot be promoted as v2.1.0."
   },
   "delivered_non_milestone_work": [
     {
@@ -1272,32 +1272,32 @@
     }
   ],
   "active_delivery": {
-    "route_id": "0ea34220576f",
-    "branch": "release/v2.0.19-candidate-20260922",
+    "route_id": "52ad342010b3",
+    "branch": "feature/factory-v15-unified-rc",
     "pull_request": null,
-    "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "status": "release_sync_pending",
+    "change_package": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34",
+    "status": "unified_source_rc_pending_verification",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Merge the v2.0.19 artifact-child PR on its exact-head App check, then tag v2.0.19 at that merged commit and publish the GitHub Release with both assets; each separate action requires its named delegated grant and no deployment is implied.",
+    "next_action": "Verify and review the exact v2.1.0 source RC, deliver it through a checked PR, then build a fresh reproducible artifact child from the accepted merge. Tag and GitHub Release remain later separately delegated actions; no deployment is implied.",
     "local_source_gate": {
-      "status": "passed_for_artifact_source_parent",
-      "artifact_head": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
-      "record_scope": "The artifact bytes were built twice from the exact merged v2.0.19 release-sync parent; the artifact-child head still requires its own local verifier and App-owned exact-head check."
+      "status": "pending_exact_source_acceptance",
+      "artifact_head": null,
+      "artifact_tree": null,
+      "record_scope": "No v2.1.0 artifact source parent is accepted yet. Historical v2.0.19 provenance remains separate and unchanged."
     },
     "package_handoff": {
-      "status": "artifact_bytes_delivered_pending_artifact_pr",
+      "status": "pending_reproducible_rebuild",
       "artifact_child": null,
-      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
+      "artifact_tree": null,
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.19.zip",
-        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.1.0.zip",
+        "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
       ],
-      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "release": "v2.0.19",
+      "zip_sha256": null,
+      "sidecar_sha256": null,
+      "release": "v2.1.0",
       "tag_target": null
     },
     "repository_delivery": {
@@ -1306,12 +1306,12 @@
       "checked_head": null,
       "merge_commit": null,
       "tree": null,
-      "release": "v2.0.19",
+      "release": "v2.1.0",
       "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
       "check_run_id": null,
       "attestation_id": null,
       "operational_activation": false,
-      "record_scope": "The v2.0.19 release-sync parent is merged, and artifact bytes are delivered in a separate candidate; no artifact-child repository merge, tag or GitHub Release publication has occurred yet."
+      "record_scope": "The v2.1.0 unified source RC is not yet merged and has no artifact child, tag or GitHub Release."
     },
     "integrated_stack": {
       "status": "delivered_to_main",

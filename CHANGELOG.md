@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0 — 2026-10-01 (candidate, unpublished)
+
+The unified Factory-v1.5 RC combines the reviewed core and additive payload contours, with U4/macOS excluded, Windows fail-closed, all result channels unavailable and production activation disabled. The historical `v2.0.19` ZIP and sidecar remain preserved unchanged; a new `v2.1.0` artifact is pending a reproducible rebuild from the exact accepted source.
+
 ## 2.0.19 — 2026-09-24 (candidate, unpublished)
 
 Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. The release-sync parent is merged and the ZIP+sidecar are delivered by the separate artifact-child candidate; tag and GitHub Release remain pending their exact protected steps.

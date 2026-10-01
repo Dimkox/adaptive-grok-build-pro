@@ -114,7 +114,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.19")
+        self.assertEqual(state["product_version"], "2.1.0")
         self.assertEqual(state["latest_published_release"], "v2.0.18")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
@@ -416,37 +416,37 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[4]["tree"], RELEASE_TREE)
         self.assertEqual(prior[4]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
-        self.assertEqual(local["version"], "2.0.19")
-        self.assertEqual(local["status"], "artifact_bytes_delivered")
-        self.assertEqual(local["route_id"], "0ea34220576f")
-        self.assertEqual(local["branch"], "release/v2.0.19-candidate-20260922")
+        self.assertEqual(local["version"], "2.1.0")
+        self.assertEqual(local["status"], "source_rc_pending_artifact_rebuild")
+        self.assertEqual(local["route_id"], "52ad342010b3")
+        self.assertEqual(local["branch"], "feature/factory-v15-unified-rc")
         self.assertIsNone(local["pull_request"])
         self.assertEqual(
             local["change_package"],
-            "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+            "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34",
         )
-        self.assertEqual(local["artifact_status"], "pending_tag_and_release")
+        self.assertEqual(local["artifact_status"], "pending_unpublished_artifact_child")
         self.assertFalse(local["published"])
         self.assertIsNone(local["published_at"])
         self.assertFalse(local["external_effect"])
         self.assertIsNone(local["external_effect_scope"])
         self.assertFalse(local["operational_activation"])
-        self.assertEqual(local["artifact_child"]["zip_sha256"], V2019_ZIP_SHA256)
-        self.assertEqual(local["artifact_child"]["sidecar_sha256"], V2019_SIDECAR_SHA256)
+        self.assertIsNone(local["artifact_child"]["zip_sha256"])
+        self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
         for key in ("reviewed_product_head", "reviewed_product_tree", "checked_head", "merge_commit", "tree"):
             self.assertIsNone(local[key], f"pending candidate must not name {key}")
-        self.assertEqual(local["artifact_child"]["source_parent"], OBSERVED_MAIN_SHA)
-        self.assertEqual(local["artifact_child"]["source_parent_tree"], V2019_ARTIFACT_TREE)
+        self.assertIsNone(local["artifact_child"]["source_parent"])
+        self.assertIsNone(local["artifact_child"]["source_parent_tree"])
         for key in ("commit", "tree"):
             self.assertIsNone(local["artifact_child"][key], f"artifact child must not self-record {key}")
-        self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(local["artifact_child"]["status"], "built_byte_reproducible_twice")
+        self.assertEqual(local["source_base"], "3a82f61b1ff4912571b39bd0bdceadd105149a58")
+        self.assertEqual(local["artifact_child"]["status"], "pending_reproducible_rebuild")
         self.assertTrue(local["artifact_child"]["zip_source_note"])
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [
-                "packages/adaptive-grok-build-pro-v2.0.19.zip",
-                "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+                "packages/adaptive-grok-build-pro-v2.1.0.zip",
+                "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
             ],
         )
         self.assertEqual(local["artifact_child"]["identity"], "A")
@@ -500,8 +500,12 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         current = self.state["current_unreleased_change"]
         delivery = self.state["active_delivery"]
-        for key in ("route_id", "branch", "change_package", "next_action"):
-            self.assertEqual(delivery[key], current[key])
+        self.assertEqual(delivery["route_id"], "52ad342010b3")
+        self.assertEqual(delivery["branch"], "feature/factory-v15-unified-rc")
+        self.assertEqual(
+            delivery["change_package"],
+            "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34",
+        )
         self.assertEqual(current["source_base"], OBSERVED_MAIN_SHA)
         self.assertEqual(current["status"], "release_sync_authored")
         self.assertEqual(
@@ -510,12 +514,12 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(current["route_id"], "0ea34220576f")
         self.assertEqual(current["target_version"], "2.0.19")
-        self.assertEqual(delivery["status"], "release_sync_pending")
+        self.assertEqual(delivery["status"], "unified_source_rc_pending_verification")
         self.assertEqual(
-            delivery["local_source_gate"]["status"], "passed_for_artifact_source_parent"
+            delivery["local_source_gate"]["status"], "pending_exact_source_acceptance"
         )
-        self.assertEqual(delivery["local_source_gate"]["artifact_head"], OBSERVED_MAIN_SHA)
-        self.assertEqual(delivery["local_source_gate"]["artifact_tree"], V2019_ARTIFACT_TREE)
+        self.assertIsNone(delivery["local_source_gate"]["artifact_head"])
+        self.assertIsNone(delivery["local_source_gate"]["artifact_tree"])
         self.assertIsNone(delivery["repository_delivery"]["checked_head"])
         self.assertIsNone(delivery["repository_delivery"]["pull_request"])
         self.assertIsNone(delivery["package_handoff"]["tag_target"])
