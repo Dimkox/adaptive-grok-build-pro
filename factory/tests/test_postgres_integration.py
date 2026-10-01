@@ -913,21 +913,6 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
 
-    def test_v15_decision_persistence(self):
-        import psycopg
-
-        from tests.factory_v15_decision_postgres import (
-            assert_v15_decision_persistence,
-        )
-
-        assert_v15_decision_persistence(
-            self,
-            database_url=DATABASE_URL,
-            worker=WORKER,
-            now=NOW,
-            psycopg=psycopg,
-        )
-
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
 

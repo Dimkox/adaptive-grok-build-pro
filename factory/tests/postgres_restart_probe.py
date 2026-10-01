@@ -27,6 +27,7 @@ from adaptive_factory.admin import (
     provision_runtime_login,
 )
 from adaptive_factory.decision_contracts import DecisionRecordV1
+from factory.tests.decision_contract_cases import decision_facts
 from adaptive_factory.execution_contracts import ExecutionSelectionV1
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.models import (
@@ -461,36 +462,16 @@ def _canonical_restart_decision(
     spec_digest: str,
 ) -> DecisionRecordV1:
     unavailable = "cc37cbe49cbf74f722413d345a76197162a263353554ae3eb463da8fc249c14d"
-    return DecisionRecordV1.from_dict(
-        {
-            "schema_version": 1,
-            "decision_id": "restart-probe-phase-decision",
-            "repository_id": repository_id,
-            "task_id": task_id,
-            "run_id": run_id,
-            "attempt_id": attempt_id,
-            "fence": fence,
-            "observed_at": observed_at.isoformat().replace("+00:00", "Z"),
-            "decision_kind": "state",
-            "rule_id": "FACTORY-STATE-TRANSITION",
-            "rule_version": "1",
-            "facts": [
-                {"name": "from_state", "value": "leased"},
-                {"name": "target", "value": "analyzing"},
-            ],
-            "outcome": "observed",
-            "reason_code": "restart_probe_phase_started",
-            "base_sha": base_sha,
-            "head_sha": head_sha,
-            "context_digest": unavailable,
-            "spec_digest": spec_digest,
-            "profile_digest": unavailable,
-            "evidence_refs": [],
-            "constraints": ["scope_bound"],
-            "next_step": "verify",
-            "supersedes": None,
-        }
+    facts = decision_facts()
+    facts.update(
+        decision_id="restart-probe-phase-decision", repository_id=repository_id,
+        task_id=task_id, run_id=run_id, attempt_id=attempt_id, fence=fence,
+        observed_at=observed_at.isoformat().replace("+00:00", "Z"),
+        rule_id="FACTORY-STATE-TRANSITION", reason_code="restart_probe_phase_started",
+        base_sha=base_sha, head_sha=head_sha, context_digest=unavailable,
+        spec_digest=spec_digest, profile_digest=unavailable, evidence_refs=[],
     )
+    return DecisionRecordV1.from_dict(facts)
 
 
 def _decision_snapshot(
@@ -514,6 +495,18 @@ def _decision_snapshot(
         "restart decision digest no longer matches its canonical record",
     )
     return digest_value, dict(record), cardinality
+
+
+def _assert_decision_replay(control, database_url, task, grant, worker, now, key, record, snapshot):
+    current = _decision_snapshot(database_url, task.repository_id, record.to_dict()["decision_id"])
+    _require(current == snapshot, "restart changed the exact decision record")
+    replay = control.transition_phase(
+        grant, target=TaskStatus.ANALYZING, actor=worker, now=now,
+        idempotency_key=key, decision_record=record,
+    )
+    replayed = _decision_snapshot(database_url, task.repository_id, record.to_dict()["decision_id"])
+    _require(replay is TaskStatus.ANALYZING and replayed == snapshot,
+             "restart decision replay was not exact and idempotent")
 
 
 def _selection(workspace_handle: str) -> ExecutionSelectionV1:
@@ -1402,29 +1395,9 @@ def main() -> int:
     runtime_store = _assert_capability_roles(
         owner_url, runtime_url, attestor_url, runtime_login, attestor_login
     )
-    _require(
-        _decision_snapshot(
-            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
-        )
-        == decision_snapshot,
-        "first restart changed the exact decision record",
-    )
-    _require(
-        FactoryService(runtime_store).transition_phase(
-            grant_decision,
-            target=TaskStatus.ANALYZING,
-            actor=worker_b,
-            now=now,
-            idempotency_key=decision_key,
-            decision_record=restart_decision,
-        )
-        is TaskStatus.ANALYZING
-        and _decision_snapshot(
-            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
-        )
-        == decision_snapshot,
-        "first restart decision replay was not exact and idempotent",
-    )
+    _assert_decision_replay(FactoryService(runtime_store), owner_url, task_decision,
+                            grant_decision, worker_b, now, decision_key,
+                            restart_decision, decision_snapshot)
     identity_first = _database_identity(owner_url)
     _require(
         (identity_first[0] > identity_before[0], identity_first[1:] == identity_before[1:]) == (True, True),
@@ -1508,29 +1481,9 @@ def main() -> int:
     runtime_store = _assert_capability_roles(
         owner_url, runtime_url, attestor_url, runtime_login, attestor_login
     )
-    _require(
-        _decision_snapshot(
-            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
-        )
-        == decision_snapshot,
-        "second restart changed the exact decision record",
-    )
-    _require(
-        FactoryService(runtime_store).transition_phase(
-            grant_decision,
-            target=TaskStatus.ANALYZING,
-            actor=worker_b,
-            now=now,
-            idempotency_key=decision_key,
-            decision_record=restart_decision,
-        )
-        is TaskStatus.ANALYZING
-        and _decision_snapshot(
-            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
-        )
-        == decision_snapshot,
-        "second restart decision replay was not exact and idempotent",
-    )
+    _assert_decision_replay(FactoryService(runtime_store), owner_url, task_decision,
+                            grant_decision, worker_b, now, decision_key,
+                            restart_decision, decision_snapshot)
     identity_second = _database_identity(owner_url)
     _require(
         (identity_second[0] > identity_first[0], identity_second[1:] == identity_before[1:]) == (True, True),

@@ -116,6 +116,18 @@ class DecisionContractTests(unittest.TestCase):
         prediction["decision_kind"] = "prediction"
         DecisionRecordV1.from_dict(prediction)
 
+    def test_identity_uuids_are_canonical(self):
+        for field in ("task_id", "run_id", "attempt_id"):
+            for value in (
+                "not-a-uuid",
+                "00000000-0000-0000-0000-00000000000A",
+                "{00000000-0000-0000-0000-000000000001}",
+            ):
+                candidate = decision_facts()
+                candidate[field] = value
+                with self.subTest(field=field, value=value), self.assertRaises(ContractError):
+                    DecisionRecordV1.from_dict(candidate)
+
     def test_collection_boundaries(self):
         facts = decision_facts()
         dup_fact = deepcopy(facts)

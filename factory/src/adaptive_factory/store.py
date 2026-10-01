@@ -2077,7 +2077,7 @@ class PostgresFactoryStore:
         metadata: dict | None = None,
         run_id: str | None = None,
         received_at: datetime | None = None,
-    ) -> None:
+    ) -> datetime:
         cursor.execute("SELECT last_digest FROM factory.audit_heads WHERE task_id=%s FOR UPDATE", (task_id,))
         row = cursor.fetchone()
         previous = row[0].strip() if row else "0" * 64

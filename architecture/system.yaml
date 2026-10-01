@@ -1695,7 +1695,8 @@
         "factory/src/adaptive_factory/state.py",
         "factory/src/adaptive_factory/store.py",
         "factory/src/adaptive_factory/v15_contracts.py",
-        "factory/tests"
+        "factory/tests",
+        "tests/test_factory_v15_decisions.py"
       ],
       "runtime": {
         "evidence": "source_described",
