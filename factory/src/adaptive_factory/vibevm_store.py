@@ -168,23 +168,26 @@ class VibeVMStore:
             self._closed = True
 
     def _pin(self, path: Path, code: str, descriptor=None) -> Path:
+        registered = False
         try:
-            value = path.lstat()
-        except FileNotFoundError:
-            raise VibeVMStoreError(f"{code}_missing") from None
-        if not stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode) or value.st_uid != os.geteuid() or value.st_mode & 0o022:
-            raise VibeVMStoreError(f"{code}_unsafe")
-        descriptor = self._open_path(path) if descriptor is None else descriptor
-        try:
+            try:
+                value = path.lstat()
+            except FileNotFoundError:
+                raise VibeVMStoreError(f"{code}_missing") from None
+            if (not stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode)
+                    or value.st_uid != os.geteuid() or value.st_mode & 0o022):
+                raise VibeVMStoreError(f"{code}_unsafe")
+            descriptor = self._open_path(path) if descriptor is None else descriptor
             opened = os.fstat(descriptor)
             if (opened.st_dev, opened.st_ino) != (value.st_dev, value.st_ino):
                 raise VibeVMStoreError("store_path_changed")
-        except Exception:
-            os.close(descriptor)
-            raise
-        self._pins.append((path, value.st_dev, value.st_ino, value.st_uid))
-        self._fds[path] = descriptor
-        return path
+            self._pins.append((path, value.st_dev, value.st_ino, value.st_uid))
+            self._fds[path] = descriptor
+            registered = True
+            return path
+        finally:
+            if descriptor is not None and not registered:
+                os.close(descriptor)
 
     @staticmethod
     def _open_path(path: Path) -> int:

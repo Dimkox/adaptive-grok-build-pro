@@ -299,6 +299,25 @@ class VibeVMStoreTests(unittest.TestCase):
         )
         self.assertEqual(descriptor_count(), before_failure)
 
+        disappearing = self.base / "disappearing"
+        disappearing.mkdir(mode=0o700)
+        original_lstat = Path.lstat
+
+        def disappear_after_open(path):
+            if path == disappearing / "tenants":
+                raise FileNotFoundError(path)
+            return original_lstat(path)
+
+        before_disappearance = descriptor_count()
+        with mock.patch("adaptive_factory.vibevm_store.Path.lstat", new=disappear_after_open):
+            self.assert_code(
+                "store_path_missing",
+                lambda: VibeVMStore(
+                    disappearing, tenant_id="tenant", repository_id="repo", registry=self.registry
+                ),
+            )
+        self.assertEqual(descriptor_count(), before_disappearance)
+
         payload = archive([("rule.md", "ok")])
         item = package("leak", "1", payload)
         lock = self.lock(item)
