@@ -19,3 +19,11 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 ## Rollout and rollback
 
 Default-off API composition; enable only in existing authenticated factory composition after qualification. Additive migrations preserve history; rollback disables the sidecar surface and preserves records for forward correction.
+
+## Unified RC assembly — 2026-10-01
+
+The isolated branch `feature/factory-v15-unified-rc` starts from reviewed core head `3a82f61b1ff4912571b39bd0bdceadd105149a58`. It applies the payload range after `aa53f300d506736e61b36f627f8f12172ce8fbce` through aggregate head `29342400e3025c97d1cdc873b2682328680c5a56` in source order. One `architecture/system.yaml` conflict was resolved as a strict additive union of the existing result-admission contract and the two prediction contracts; migrations `023`/`024`/`025` remained byte-identical and payload integration added no SQL.
+
+Included payload contours are BB-01 contracts, pinned qwen-model-rotator registry, bounded prediction artifacts, offline FPF snapshot selection, Linux-only VibeVM store, advisory Superpowers/BMAD/Spec Kit refresh, and the opt-in Liqvera-derived Linux installer boundary. Root specification bytes match the owner working-tree inputs at SHA-256 `9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9` and `4e18c7db0f82588d2677db6bb551295a2372da3c83a0294c0cdaf57eeab2a774`.
+
+Limitations remain deliberate: U4/macOS is excluded by owner decision, Windows fails closed, all seven result channels remain `unavailable`, the dispatcher is dormant, optional adapters are default-off, and neither production activation nor package publication occurs. The previously built `v2.0.19` package bytes predate this source union and must be replaced only after source acceptance. The controller owns serialized full verification and independent exact-head review after this committed assembly.

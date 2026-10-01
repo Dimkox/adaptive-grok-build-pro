@@ -12,16 +12,18 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The `v2.0.19` ZIP and sidecar are now delivered in this artifact-child candidate from merged release-sync `3f41be92`, but tag and GitHub Release publication remain pending their separate exact gates.
+Identity: **2.0.19 candidate** (unified Factory RC). The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The previously built `v2.0.19` ZIP and sidecar remain preserved as historical candidate bytes but predate this unified source tree and therefore **must not** be published as this RC. A new artifact child, exact-head verification, PR merge, tag and GitHub Release remain separate downstream gates.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |
-| Repository source | `main` observed on September 24 at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189), after twenty post-`v2.0.18` landings recorded in `PROJECT_STATE.json`; the artifact-child candidate carries the ZIP+sidecar built from that exact tree. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
+| Repository source | This isolated RC composes reviewed Factory-v1.5 core head `3a82f61b1ff4912571b39bd0bdceadd105149a58` with payload aggregate `29342400e3025c97d1cdc873b2682328680c5a56`. `main` remains the dated September 24 observation `3f41be92161fef451a2dfa7451eb458ce8f022b3` in `PROJECT_STATE.json`; published tag `v2.0.18` stays immutable at `e7d0f72`. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
 
 The post-release source line through PR #193 is recorded by the merged `v2.0.19` release-sync PR #189. Its durable [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) keep source verification, artifact provenance and publication separate. Tagging and GitHub Release publication remain downstream of the artifact-child exact check and merge.
+
+The unified Factory scope is defined by [`FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md`](FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md) plus [`FACTORY_TZ_v1.5_ADDENDUM_BB-01.md`](FACTORY_TZ_v1.5_ADDENDUM_BB-01.md). This RC includes the minimal U0–U3 and U5–U7 source contours, the default-off BB contracts, pinned offline FPF/VibeVM and model-rotator data boundaries, refreshed advisory workflow pins, and the opt-in Linux installer adapter. Owner decision excludes U4/macOS; Windows remains fail-closed. All seven result channels remain explicitly `unavailable`, the dispatcher is dormant, and no production service/provider/package adapter is activated or qualified by repository delivery.
 
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 
@@ -80,9 +82,11 @@ The profile, its reason code, the exact admitted paths and each skipped check ar
 8. [QUICKSTART.md](QUICKSTART.md)
 9. [`trust-ci/README.md`](trust-ci/README.md)
 10. [`factory/README.md`](factory/README.md)
-11. [delivered design-partner pilot package](engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6/brief.md)
-12. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
-13. This README’s [map](#map) and [executable architecture](#executable-architecture)
+11. [`FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md`](FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md)
+12. [`FACTORY_TZ_v1.5_ADDENDUM_BB-01.md`](FACTORY_TZ_v1.5_ADDENDUM_BB-01.md)
+13. [delivered design-partner pilot package](engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6/brief.md)
+14. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
+15. This README’s [map](#map) and [executable architecture](#executable-architecture)
 
 ## How work runs
 
@@ -94,6 +98,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 
 - [START_HERE.md](START_HERE.md) — zero-context agent/human entrypoint
 - [PROJECT_STATE.json](PROJECT_STATE.json) — machine-readable milestone handoff
+- [Factory v1.5 unified specification](FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md) and [BB-01 addendum](FACTORY_TZ_v1.5_ADDENDUM_BB-01.md) — RC scope and acceptance source
 - [AGENTS.md](AGENTS.md)
 - [decisions.md](decisions.md)
 - [mistakes.md](mistakes.md)

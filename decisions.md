@@ -867,3 +867,7 @@ Keep V1 package resolution, admission, replay, safe projection and boot reconcil
 ## 2026-10-01 — Keep process sockets outside the installer inventory
 
 Put per-release UDS files in an explicitly configured private runtime directory while retaining the full release/PID binding in durable installer state. This avoids both AF_UNIX path-length failures and false installer-tamper findings from a live socket inside the managed tree.
+
+## 2026-10-01 — Assemble the unified RC from reviewed linear inputs
+
+Start the release-candidate union from reviewed core head `3a82f61b1ff4912571b39bd0bdceadd105149a58` and apply the ordered payload aggregate through `29342400e3025c97d1cdc873b2682328680c5a56`, resolving shared architecture/docs/tests only as additive unions. This preserves each contour's reviewed implementation while keeping migrations `023`–`025` unchanged and leaves one final serialized verification target.

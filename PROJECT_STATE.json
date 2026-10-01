@@ -6,6 +6,46 @@
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.0.19",
   "latest_published_release": "v2.0.18",
+  "factory_v15_unified_rc": {
+    "status": "assembled_unverified_release_candidate",
+    "branch": "feature/factory-v15-unified-rc",
+    "version": "2.0.19",
+    "specification": "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
+    "addendum": "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md",
+    "reviewed_core_head": "3a82f61b1ff4912571b39bd0bdceadd105149a58",
+    "payload_parent": "aa53f300d506736e61b36f627f8f12172ce8fbce",
+    "payload_aggregate_head": "29342400e3025c97d1cdc873b2682328680c5a56",
+    "included_contours": [
+      "U0-U3 core contracts, persistence, result admission and dormant dispatcher foundation",
+      "U5 prediction observation and explanation boundary",
+      "U6 project context, FPF snapshot and VibeVM package-store boundaries",
+      "U7 result-channel contracts and BB-01 default-off contracts",
+      "pinned qwen-model-rotator registry",
+      "Superpowers 6.4.2, BMAD 6.12.0 and Spec Kit 1.0.13 advisory pins",
+      "opt-in Ubuntu 24.04 x86_64 CPython 3.12 offline installer adapter"
+    ],
+    "excluded": [
+      "U4/macOS by explicit owner decision"
+    ],
+    "fail_closed": [
+      "Windows installer/runtime profiles",
+      "all seven result channels",
+      "dispatcher production activation",
+      "unqualified external adapters and providers"
+    ],
+    "migrations": [
+      "023_factory_v15_decisions.sql",
+      "024_factory_v15_result_outbox.sql",
+      "025_factory_v15_result_dispatch.sql"
+    ],
+    "production_activation": false,
+    "published": false,
+    "pull_request": null,
+    "checked_head": null,
+    "merge_commit": null,
+    "artifact_status": "historical v2.0.19 candidate bytes predate this unified source and require replacement",
+    "next_action": "Run serialized full local verification and independent review on the committed union, push the exact RC branch, open a PR, then require the App-owned exact-SHA Trust CI check. Build/publish new artifacts only after that source delivery."
+  },
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
