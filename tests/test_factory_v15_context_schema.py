@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import unittest
 
-from tests.json_schema_subset import SubsetValidator
+from tests.json_schema_subset import SchemaDefinitionError, SubsetValidator
 
 
 ROOT = Path(__file__).parents[1]
@@ -51,6 +51,22 @@ def context_facts():
 
 
 class ContextManifestSchemaTests(unittest.TestCase):
+    def test_schema_preflight_rejects_malformed_unused_branches_and_annotations(
+        self,
+    ) -> None:
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        malformed_branch = deepcopy(schema)
+        malformed_branch["properties"]["source_snapshot"]["properties"][
+            "dirty_fingerprint"
+        ]["anyOf"].append(7)
+        with self.assertRaises(SchemaDefinitionError):
+            SubsetValidator(malformed_branch)
+
+        malformed_format = deepcopy(schema)
+        malformed_format["properties"]["observed_at"]["format"] = 7
+        with self.assertRaises(SchemaDefinitionError):
+            SubsetValidator(malformed_format)
+
     def test_draft_2020_12_schema_is_structural_and_python_is_mandatory_admission(
         self,
     ) -> None:

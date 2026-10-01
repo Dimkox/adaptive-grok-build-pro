@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -52,6 +53,203 @@ class SubsetValidator:
         if not isinstance(schema, (Mapping, bool)):
             raise SchemaDefinitionError("root schema must be an object or boolean")
         self._root = schema
+        self._preflight_schema(schema, "$", set())
+
+    def _preflight_schema(
+        self,
+        schema: Mapping[str, Any] | bool,
+        path: str,
+        active_nodes: set[int],
+    ) -> None:
+        if isinstance(schema, bool):
+            return
+        if not isinstance(schema, Mapping):
+            raise SchemaDefinitionError(f"{path}: schema must be an object or boolean")
+        node_id = id(schema)
+        if node_id in active_nodes:
+            raise SchemaDefinitionError(f"{path}: cyclic in-memory schema object")
+        active_nodes.add(node_id)
+        try:
+            unsupported = set(schema) - self._SUPPORTED_KEYWORDS
+            if unsupported:
+                names = ", ".join(sorted(unsupported))
+                raise SchemaDefinitionError(
+                    f"{path}: unsupported schema keyword(s): {names}"
+                )
+
+            for keyword in ("$schema", "$id", "$ref", "format"):
+                if keyword in schema and not isinstance(schema[keyword], str):
+                    raise SchemaDefinitionError(f"{path}: {keyword} must be a string")
+
+            if "x-admission" in schema:
+                annotation = schema["x-admission"]
+                if not isinstance(annotation, Mapping):
+                    raise SchemaDefinitionError(
+                        f"{path}: x-admission must be an object annotation"
+                    )
+                self._preflight_json_value(annotation, f"{path}.x-admission", set())
+
+            for keyword in ("$defs", "properties"):
+                if keyword not in schema:
+                    continue
+                children = schema[keyword]
+                if not isinstance(children, Mapping):
+                    raise SchemaDefinitionError(f"{path}: {keyword} must be an object")
+                for name, child in children.items():
+                    if not isinstance(name, str):
+                        raise SchemaDefinitionError(
+                            f"{path}: {keyword} names must be strings"
+                        )
+                    self._preflight_schema(
+                        child, f"{path}.{keyword}.{name}", active_nodes
+                    )
+
+            if "components" in schema:
+                components = schema["components"]
+                if not isinstance(components, Mapping):
+                    raise SchemaDefinitionError(f"{path}: components must be an object")
+                schemas = components.get("schemas")
+                if schemas is not None:
+                    if not isinstance(schemas, Mapping):
+                        raise SchemaDefinitionError(
+                            f"{path}: components/schemas must be an object"
+                        )
+                    for name, child in schemas.items():
+                        if not isinstance(name, str):
+                            raise SchemaDefinitionError(
+                                f"{path}: component schema names must be strings"
+                            )
+                        self._preflight_schema(
+                            child, f"{path}.components.schemas.{name}", active_nodes
+                        )
+
+            for keyword in ("anyOf", "oneOf"):
+                if keyword not in schema:
+                    continue
+                variants = schema[keyword]
+                if not isinstance(variants, list) or not variants:
+                    raise SchemaDefinitionError(
+                        f"{path}: {keyword} must be a non-empty array"
+                    )
+                for index, variant in enumerate(variants):
+                    self._preflight_schema(
+                        variant, f"{path}.{keyword}[{index}]", active_nodes
+                    )
+
+            if "items" in schema:
+                self._preflight_schema(schema["items"], f"{path}.items", active_nodes)
+
+            if "additionalProperties" in schema:
+                additional = schema["additionalProperties"]
+                if not isinstance(additional, (Mapping, bool)):
+                    raise SchemaDefinitionError(
+                        f"{path}: additionalProperties must be boolean or a schema"
+                    )
+                self._preflight_schema(
+                    additional, f"{path}.additionalProperties", active_nodes
+                )
+
+            if "type" in schema:
+                expected = schema["type"]
+                if isinstance(expected, str):
+                    expected_types = (expected,)
+                elif (
+                    isinstance(expected, Sequence)
+                    and not isinstance(expected, (str, bytes))
+                    and expected
+                    and all(isinstance(item, str) for item in expected)
+                ):
+                    expected_types = tuple(expected)
+                else:
+                    raise SchemaDefinitionError(
+                        f"{path}: type must be a string or non-empty string array"
+                    )
+                unsupported_types = set(expected_types) - self._SUPPORTED_TYPES
+                if unsupported_types:
+                    names = ", ".join(sorted(unsupported_types))
+                    raise SchemaDefinitionError(
+                        f"{path}: unsupported JSON type(s): {names}"
+                    )
+
+            if "required" in schema:
+                required = schema["required"]
+                if (
+                    not isinstance(required, list)
+                    or not all(isinstance(name, str) for name in required)
+                    or len(set(required)) != len(required)
+                ):
+                    raise SchemaDefinitionError(
+                        f"{path}: required must be a unique string array"
+                    )
+
+            if "enum" in schema:
+                choices = schema["enum"]
+                if not isinstance(choices, list) or not choices:
+                    raise SchemaDefinitionError(f"{path}: enum must be a non-empty array")
+                self._preflight_json_value(choices, f"{path}.enum", set())
+            if "const" in schema:
+                self._preflight_json_value(schema["const"], f"{path}.const", set())
+
+            if "pattern" in schema:
+                pattern = schema["pattern"]
+                if not isinstance(pattern, str):
+                    raise SchemaDefinitionError(f"{path}: pattern must be a string")
+                try:
+                    re.compile(pattern)
+                except re.error as exc:
+                    raise SchemaDefinitionError(
+                        f"{path}: invalid pattern: {exc}"
+                    ) from exc
+
+            for keyword in ("minLength", "maxLength", "minItems", "maxItems"):
+                self._nonnegative_integer_keyword(schema, keyword, path)
+
+            if "uniqueItems" in schema and not isinstance(schema["uniqueItems"], bool):
+                raise SchemaDefinitionError(f"{path}: uniqueItems must be boolean")
+
+            for keyword in ("minimum", "maximum"):
+                if keyword in schema and (
+                    not isinstance(schema[keyword], (int, float))
+                    or isinstance(schema[keyword], bool)
+                    or not math.isfinite(schema[keyword])
+                ):
+                    raise SchemaDefinitionError(f"{path}: {keyword} must be numeric")
+        finally:
+            active_nodes.remove(node_id)
+
+    def _preflight_json_value(
+        self, value: Any, path: str, active_nodes: set[int]
+    ) -> None:
+        if value is None or isinstance(value, (str, bool, int)):
+            return
+        if isinstance(value, float):
+            if math.isfinite(value):
+                return
+            raise SchemaDefinitionError(f"{path}: non-finite number is not JSON-safe")
+        if isinstance(value, (list, Mapping)):
+            node_id = id(value)
+            if node_id in active_nodes:
+                raise SchemaDefinitionError(f"{path}: cyclic value is not JSON-safe")
+            active_nodes.add(node_id)
+            try:
+                if isinstance(value, list):
+                    for index, item in enumerate(value):
+                        self._preflight_json_value(
+                            item, f"{path}[{index}]", active_nodes
+                        )
+                else:
+                    for name, item in value.items():
+                        if not isinstance(name, str):
+                            raise SchemaDefinitionError(
+                                f"{path}: JSON object keys must be strings"
+                            )
+                        self._preflight_json_value(
+                            item, f"{path}.{name}", active_nodes
+                        )
+            finally:
+                active_nodes.remove(node_id)
+            return
+        raise SchemaDefinitionError(f"{path}: value is not JSON-safe")
 
     def validate(self, instance: Any) -> None:
         self._validate(instance, self._root, "$", frozenset())
