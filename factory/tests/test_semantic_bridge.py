@@ -149,6 +149,7 @@ class SemanticBridgeTests(unittest.TestCase):
 
     def test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields(self):
         expected = {
+            "context-manifest.v1.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",
