@@ -10,6 +10,13 @@ Code and test review reports perform bounded, change-relevant mutation probes in
 
 Reviewers return the complete report to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists all reports here, then reruns final verification and records fresh fingerprint-bound receipts for the tree containing those reports.
 
+## Current RC evidence
+
+- `verification-35b90f29.json` records the exact-head full verifier: every executable/static check passed except aggregate architecture `code_budget` and governance's dependency on it. It is deliberately a FAIL/non-mergeable report, not a local receipt.
+- `code-review-35b90f29.md` and `test-review-35b90f29.md` are PASS reviews of the exact source head, including migration036's bounded RC reconciliation. They do not override the aggregate blocker.
+- `stacked-delivery-plan.json` is the architect's 20-contour linear projected DAG. Projected contours are not measured branches; the next action is to instantiate, measure and verify contour 01, then proceed linearly.
+- External BB/provider/installed-host qualification remains `NOT_RUN`; FPF/VibeVM remain default-off/not evaluated for live use; U4/macOS is excluded by owner.
+
 Each report must include:
 
 - source identity: HEAD and candidate tree fingerprint;

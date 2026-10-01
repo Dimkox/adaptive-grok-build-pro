@@ -39,7 +39,7 @@ BB's synthetic lifecycle/comparator reuse those boundaries without live activati
 Local synthetic composition is distinct from installed/live acceptance and publication.
 Product VERSION remains 2.0.19; v1.5 identifies the upgrade specification.
 
-Identity: **2.0.19 published baseline**, released **2026-09-24** at commit `cb9af4073ba6c3d515145164d771c75ebdfa3224`. This branch is newer, unpublished Factory v1.5 source through migration 031. It is a local release candidate, not a published release or live qualification.
+Identity: **2.0.19 published baseline**, released **2026-09-24** at commit `cb9af4073ba6c3d515145164d771c75ebdfa3224`. This branch is newer, unpublished Factory v1.5 source through migration 036 at source head `35b90f29`, equal to its observed remote feature ref. Functional checks pass, including Factory 1005/1005 and three PostgreSQL restarts, but aggregate architecture `code_budget` and dependent governance fail. It is a non-mergeable preview, not a published release or live qualification. The next step is to instantiate and measure the recorded 20-contour linear delivery DAG.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |

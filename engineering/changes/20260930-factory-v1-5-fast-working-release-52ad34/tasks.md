@@ -20,6 +20,8 @@
 - [x] Add migration029 without changing027/028: enforce native JSON child types/ranges and exact predecessor ACLs; RED accepted string/null shapes, GREEN real-PG10 with zero-mutation/accounting proof.
 - [x] Add concrete native pre-model context ingestion and migration030: atomically bind the exact context sidecar and versioned rounds/tool budget to execution start; persist exhaustion facts/blocker digests; forward atomic decision records.
 - [x] Add migration031 forward correction: validate inner context/digests and live run authority server-side, correct `owner_id`, expose authenticated worker context retrieval, and wire durable analysis-budget consumption.
-- [ ] Freeze clean candidate and hand exact HEAD to coordinator for explicitly delegated UNVERIFIED branch push before full verification/reviews; no merge/tag/Release authorization.
-- [ ] Run selected quality profiles and complete independent reviews.
-- [ ] Bind evidence to the final tree fingerprint and prepare the PR-only release report.
+- [x] Freeze and push exact source head `35b90f29` to the remote feature branch; this is source transport, not merge authority.
+- [x] Run the full profile and independent code/test reviews: functional checks PASS, but aggregate architecture/governance FAIL and prevent merge readiness.
+- [x] Bind the source evidence to fingerprint `c5495b8d…8e42` and record the truthful non-mergeable RC report.
+- [ ] Instantiate the projected 20-contour linear stack from contour 01; measure and verify every real parent→child delta before advancing.
+- [ ] Deliver each bounded contour through its own PR, exact-SHA App-owned Trust CI and required signed approvals.

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "head": "35b90f296befff5ba2a2ca21951dde172ffd4508",
+  "remote_branch_head": "35b90f296befff5ba2a2ca21951dde172ffd4508",
+  "tree_fingerprint": "c5495b8d3529b94e88e8ca0ff2423a00cf9269904ab24b753ac1d6945bbf8e42",
+  "command": "GROK_TEST_WORKERS=8 taskset -c 0-27 python3 scripts/grok_verify.py --mode pr --json",
+  "status": "fail",
+  "merge_ready": false,
+  "passing_checks": ["git-diff-check", "docs-state-scope", "shared-memory", "change-spec", "secret-scan", "contract-structure", "sql-safety", "ruff", "bandit", "pilot-unittest", "python-unittest", "coverage", "factory-unit", "factory-postgres-exit", "factory-test-syntax", "source-stability"],
+  "failing_checks": {
+    "architecture": "drift and diagrams pass; unchanged aggregate code_budget limits reject the monolithic preview",
+    "governance": "dependent failure because architecture fitness is not complete"
+  },
+  "factory_postgres": {"tests": 1005, "passed": 1005, "conditional_skips": 2, "actual_postgresql_restarts": 3},
+  "limits": ["Exact-head local evidence, not a passing verification receipt.", "External App-owned Trust CI and signed approvals were not run.", "Live BB/provider/host qualification is NOT_RUN; U4/macOS is owner-excluded."]
+}

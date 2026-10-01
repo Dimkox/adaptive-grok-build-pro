@@ -2,7 +2,7 @@
   "schema_version": 1,
   "document_version": "1.5",
   "route_id": "52ad342010b3",
-  "coverage_basis_commit": "bd1c5ce9",
+  "coverage_basis_commit": "35b90f296befff5ba2a2ca21951dde172ffd4508",
   "spec_sha256": "9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9",
   "bb_spec_sha256": "4e18c7db0f82588d2677db6bb551295a2372da3c83a0294c0cdaf57eeab2a774",
   "authority_effect": "none",
@@ -10,8 +10,8 @@
   "notes": [
     "All 194 original items are retained; source implementation, test evidence, runtime qualification, enabled status and human acceptance are distinct.",
     "Pending integration is an unresolved source edge, never external NOT_RUN.",
-    "Suite references are scoped evidence pointers, not exact-case/live acceptance claims. Final stable-tree verification and independent reviews are still required.",
-    "All source-level pending contours are integrated and bound; no deterministic source gap is represented as external NOT_RUN. All acceptance_status fields remain not_evaluated until exact-profile/human gates, not local suite inference."
+    "Suite references are scoped evidence pointers, not exact-case/live acceptance claims. Exact-head functional verification and reviews pass, while aggregate architecture/governance remains failed and non-mergeable.",
+    "Native/v1.5 source through additive migration036 is integrated. External BB/provider/host execution remains NOT_RUN, FPF/VibeVM live qualification remains not_evaluated, M8 is inactive, and U4/macOS is owner-excluded."
   ],
   "owner_scope_additions": {
     "observation_only_model_rotator": {
@@ -32,7 +32,7 @@
       "enabled": false,
       "live_qualification": "NOT_RUN",
       "authority_effect": "none",
-      "final_stable_verification": "pending_push_first_candidate"
+      "final_stable_verification": "exact_head_functional_pass_aggregate_architecture_fail"
     }
   },
   "items": [

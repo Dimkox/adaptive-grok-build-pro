@@ -37,23 +37,29 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "verification",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "fail",
+        "recorded_at": "2026-10-01T04:20:00+00:00",
+        "reference": "evidence/verification-35b90f29.json"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-10-01T04:20:00+00:00",
+        "reference": "evidence/code-review-35b90f29.md"
       },
       {
         "id": "test_review",
         "kind": "receipt",
-        "reason": "implementation not started",
         "receipt_kind": "test_review",
-        "status": "not_run"
+        "status": "recorded",
+        "outcome": "pass",
+        "recorded_at": "2026-10-01T04:20:00+00:00",
+        "reference": "evidence/test-review-35b90f29.md"
       }
     ],
     "schema_version": 1
@@ -88,7 +94,7 @@
   "human_gates_digest": "8ab307442a21df7e7ce2bc0e96846a584c1b261f871f6ffcf1a638412ad974a5",
   "route_id": "52ad342010b3",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "Factory v1.5 fast working release",
-  "updated_at": "2026-09-30T18:34:58+00:00"
+  "updated_at": "2026-10-01T04:20:00+00:00"
 }
