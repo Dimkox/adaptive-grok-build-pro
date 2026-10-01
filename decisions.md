@@ -893,3 +893,7 @@ Real PostgreSQL integration uncovered NOINHERIT role activation, absent pgcrypto
 ## 2026-09-30 — Keep rotator persistence digest-only behind additive wrappers
 
 Migration 028 preserves the published migration-027 bytes and replaces its exposed SQL names with closed SECURITY DEFINER wrappers while revoking direct access to the renamed bodies. Digest-keyed cooldowns and two-field digest evidence retain restart/idempotency authority without accepting provider names, errors, payloads, or arbitrary JSON into durable state.
+
+### 2026-10-01 — Admit optional v1.5 runtimes only through exact private bindings
+
+Binding tenant, repository, exact head, absolute artifact path and SHA-256 in one closed mode-0600 operator file kept FPF, VibeVM and prediction default-off without inferring authority from repository contents. Persisting the immutable twelve-case suite as `not_evaluated` until factual execution preserved useful composition while preventing configuration or artifact presence from becoming qualification.
