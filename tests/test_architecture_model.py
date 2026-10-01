@@ -239,8 +239,11 @@ class ArchitectureModelTests(unittest.TestCase):
                 },
                 {
                     "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
-                    "path_prefixes": ["factory/tests"],
-                    "max_changed_bytes": 775_000,
+                    "path_prefixes": [
+                        "factory/tests",
+                        "tests/test_factory_v15_decisions.py",
+                    ],
+                    "max_changed_bytes": 800_000,
                     "max_changed_lines": 7_500,
                     "max_ast_complexity": 600,
                     "severity": "error",

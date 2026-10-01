@@ -847,3 +847,7 @@ When a predecessor merges, first restack the continuation branch and bind its ro
 ### 2026-09-24 — Admit by content role, never by directory (corrects the entry above)
 
 The review of head `a08060c1` showed "prose" is not a directory property: `docs/bitrix-local-AGENTS.md` is installed verbatim as `local/AGENTS.md` into every consumer Bitrix install (executed product), and `**/evidence/historical-*` bytes are pinned to a literal sha256 by `tests/test_history.py` (declared immutable). Both are now refused by their own reason codes, documentation prefixes are directory-shaped only, and every remaining admitted class is bound by a module the lane itself runs — `tests/test_workflow_sources.py` and `tests/test_repo_router.py` joined the trio for that reason, so the lane runs five modules (~14 s) and skips three named checks including the discovery runner it replaced.
+
+### 2026-10-01 — Recalibrate the complete Factory-test union, not its ownership
+
+When required migration compatibility makes whole legacy test modules chargeable, keep every helper and discovery shim in one governed union and adjust only the byte ceiling to the measured contour. An executable just-over-limit fixture preserves fail-closed accounting while unchanged line, complexity and severity guards prevent the recalibration from becoming an exemption.

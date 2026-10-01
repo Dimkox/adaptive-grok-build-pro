@@ -16,6 +16,8 @@
 - Contract: JSON Schema structural validation plus native semantic admission.
 - E2E: full `grok_verify.py --mode pr` on the final tree.
 - Static analysis: route-selected ruff, bandit, architecture and governance checks.
+- Architecture regression: Factory test files and the exact root decision shim are
+  summed into one budget, and a synthetic 800001-byte union fails closed.
 
 ## Manual checks
 

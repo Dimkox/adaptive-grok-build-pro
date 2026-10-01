@@ -46,6 +46,9 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 - Preserve the bounded durable state-decision slice; do not inflate it into full U2/U3.
 - Keep schema structural and Python admission semantic, with executable parity tests.
 - Migration 023 is forward-only after application; never edit or down-migrate it.
+- Keep Factory tests and the exact root discovery shim in one 800000-byte union
+  budget; the recalibration is bounded to the measured migration-023 contour and
+  retains the existing line, AST-complexity and error-severity guards.
 
 ## Risks and mitigations
 
@@ -53,3 +56,5 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 - Restart loss: seed and verify exact digest/cardinality across two PostgreSQL restarts.
 - Old-base contamination: replay exactly `fa49dc35..5c06cc14` onto `01b089fc` and compare patch IDs/diff inventory.
 - Rollback mismatch: retain schema-23-capable code and disable the optional seam, or restore a separate compatible database.
+- Governance rollback: revert the 800000-byte policy and its dependent PR2 test
+  contour together; reverting only the policy recreates a known deterministic gate failure.

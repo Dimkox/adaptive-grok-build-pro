@@ -9,3 +9,7 @@
 
 Implementation-owner focused checks are complete. The coordinator owns the full
 PR verifier, independent reviews and final fingerprint-bound receipts.
+
+- [x] Return all decision assertions to the governed Factory test contour.
+- [x] Add root/factory discovery, UUID and PostgreSQL rollback/supersession regressions.
+- [x] Recalibrate the union byte budget to 800000 with an executable 800001-byte rejection.

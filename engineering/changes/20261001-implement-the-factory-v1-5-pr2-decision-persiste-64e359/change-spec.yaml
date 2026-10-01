@@ -5,7 +5,8 @@
     {"id":"AC-003","statement":"Exact request and decision replay is stable and idempotent; the same key with a different decision conflicts under serialized concurrency.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
     {"id":"AC-004","statement":"Decision history is append-only; corrections use same-repository/task/run supersession and survive two PostgreSQL restarts with the same digest and cardinality.","evidence":[{"test":"factory/tests/postgres_restart_probe.py"},{"test":"factory/tests/test_postgres_integration.py"}]},
     {"id":"AC-005","statement":"Timing and cost helpers preserve unknown and incomplete values and avoid overlapping wall-time double counting; durable accounting integration is explicitly deferred.","evidence":[{"test":"factory/tests/test_decision_contracts.py"}]},
-    {"id":"AC-006","statement":"Migration 023 is additive and forward-only, existing v1/v2 and legacy transition callers remain compatible, and the final exact tree passes full verification plus independent code/test review.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
+    {"id":"AC-006","statement":"Migration 023 is additive and forward-only, existing v1/v2 and legacy transition callers remain compatible, and the final exact tree passes full verification plus independent code/test review.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]},
+    {"id":"AC-007","statement":"Factory tests and the exact root decision discovery shim share one 800000-byte fail-closed budget while line, AST-complexity and error-severity guards remain unchanged.","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_architecture_fitness.py"}]}
   ],
   "approvals": {
     "required_scopes": []
