@@ -960,40 +960,37 @@ class PostgresFactoryTests(unittest.TestCase):
                                     idempotency_key='7' * 64, decision_record=fix)
         with psycopg.connect(DATABASE_URL) as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=%s', (task.task_id,)).fetchone()[0], 2)
-        with psycopg.connect(self.runtime_url) as connection:
-            connection.execute('SET ROLE factory_runtime')
+        with psycopg.connect(self.runtime_url) as db:
+            db.execute('SET ROLE factory_runtime')
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
-                connection.execute("""INSERT INTO factory.decision_records_v1
-                    (repository_id,decision_id,task_id,run_id,record_digest,record)
-                    VALUES ('forged','forged',%s,%s,%s,'{}')""",
-                    (task.task_id, grant.run_id, '0' * 64))
-            connection.rollback()
-            connection.execute('SET ROLE factory_runtime')
+                db.execute('INSERT INTO factory.decision_records_v1 DEFAULT VALUES')
+            db.rollback(); db.execute('SET ROLE factory_runtime')
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
-                connection.execute(
+                db.execute(
                     'SELECT factory._append_decision_v1(%s,%s,%s,%s)',
                     ('{}', '0' * 64, grant.run_id, grant.fence))
-            connection.rollback()
-            connection.execute('SET ROLE factory_runtime')
-            persisted = connection.execute("SELECT record FROM factory.decision_records_v1 WHERE decision_id='decision-2'").fetchone()[0]
-            malformed = dict(persisted)
-            malformed['decision_id'] = 'parser-bypass'
-            malformed['facts'].append(dict(malformed['facts'][0]))
-            wire = canonical_json(malformed).decode()
+            db.rollback(); db.execute('SET ROLE factory_runtime')
+            saved = db.execute("SELECT record FROM factory.decision_records_v1 WHERE decision_id='decision-2'").fetchone()[0]
+            for field, value in (('schema_version', '1'), ('fence', '1')):
+                bad = dict(saved); bad[field] = value
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    db.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
+                        (canonical_json(bad).decode(), canonical_digest(bad),
+                         grant.run_id, grant.fence, '7' * 64, fix.record_digest))
+                db.rollback(); db.execute('SET ROLE factory_runtime')
+            forged = dict(saved); forged['decision_id'] = 'direct-forgery'
             with self.assertRaises(psycopg.errors.RaiseException):
-                connection.execute(
-                    'SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
-                    (wire, canonical_digest(malformed), grant.run_id,
+                db.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
+                    (canonical_json(forged).decode(), canonical_digest(forged), grant.run_id,
                      grant.fence, '7' * 64, fix.record_digest))
-            connection.rollback()
-            connection.execute('SET ROLE factory_runtime')
-            bad_wire = ' ' + canonical_json(persisted).decode()
+            db.rollback(); db.execute('SET ROLE factory_runtime')
+            bad_wire = ' ' + canonical_json(saved).decode()
             with self.assertRaises(psycopg.errors.RaiseException):
-                connection.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
+                db.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
                     (bad_wire, hashlib.sha256(bad_wire.encode()).hexdigest(), grant.run_id,
                      grant.fence, '7' * 64, fix.record_digest))
 
-        class FailingDecisionAuditStore(PostgresFactoryStore):
+        class FailingStore(PostgresFactoryStore):
             def _audit(self, *args, **kwargs):
                 if args[3] == 'phase_transition':
                     raise StoreError('injected decision audit failure')
@@ -1003,11 +1000,11 @@ class PostgresFactoryTests(unittest.TestCase):
         failed.update(decision_id='rollback-decision', supersedes='decision-2',
             facts=[dict(name='from_state', value='implementing'),
                    dict(name='target', value='verifying')])
-        failed_record = DecisionRecordV1.from_dict(failed)
+        rec = DecisionRecordV1.from_dict(failed)
         with self.assertRaisesRegex(StoreError, 'decision audit'):
-            FailingDecisionAuditStore(self.runtime_url).transition_phase(
+            FailingStore(self.runtime_url).transition_phase(
                 grant, TaskStatus.VERIFYING, WORKER, NOW,
-                idempotency_key='8' * 64, decision_record=failed_record)
+                idempotency_key='8' * 64, decision_record=rec)
         with psycopg.connect(DATABASE_URL) as connection:
             self.assertEqual(connection.execute("""SELECT t.state,
                 (SELECT count(*) FROM factory.task_events WHERE task_id=t.task_id AND action='phase_transitioned'),
