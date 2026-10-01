@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import re
 import traceback
 import unittest
@@ -41,6 +42,30 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_restart_probe_reset_truncates_result_tables_before_referenced_rows(self):
+        source = inspect.getsource(postgres_restart_probe._reset_database)
+        truncate = source[source.index('"TRUNCATE factory.') : source.index(' RESTART IDENTITY"')]
+        result_tables = (
+            "factory.next_model_request_outbox_v1",
+            "factory.result_admission_commands_v1",
+            "factory.result_sources_v1",
+        )
+        for table in result_tables:
+            self.assertEqual(truncate.count(table), 1)
+        self.assertLess(
+            truncate.index("factory.next_model_request_outbox_v1"),
+            truncate.index("factory.execution_packets"),
+        )
+        self.assertLess(
+            truncate.index("factory.result_admission_commands_v1"),
+            truncate.index("factory.decision_records_v1"),
+        )
+        self.assertLess(
+            truncate.index("factory.result_sources_v1"),
+            truncate.index("factory.execution_packets"),
+        )
+        self.assertNotIn("CASCADE", truncate.upper())
+
     def test_result_admission_is_definer_only_immutable_and_dormant_until_qualification(self):
         migration = discover_migrations()[-2]
         self.assertEqual((migration.version, migration.name), (24, "024_factory_v15_result_outbox.sql"))
