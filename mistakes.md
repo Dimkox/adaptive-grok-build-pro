@@ -1502,3 +1502,7 @@ The coordinator initially generalized a historical Git-bound component-reuse dec
 # 2026-09-30 — Do not mutate a worktree during baseline verification
 
 I started `grok_verify` and then wrote the change plan into the same worktree, which made the in-flight exact-tree result unusable. The root cause was treating a long baseline command and planning writes as independent work even though verification fingerprints repository state; stop or finish the verifier before any repository mutation.
+
+### 2026-10-01 — Selected the wrong delegated-grant scope for an RC branch push
+
+The first `grok_approve.py` call paired `git-push-branch` with the generic `external-write` scope, which the helper correctly rejected even though the existing standing branch-push delegation allowed the subsequent push. A retry from the nested worktree then failed because machine-local active-route state is not shared there. Check the helper's action-to-scope contract and invoke it only from a contour with valid route state; a failed helper call must never be presented as the authority for an operation.
