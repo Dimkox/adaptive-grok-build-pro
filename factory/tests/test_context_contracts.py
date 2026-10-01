@@ -98,6 +98,14 @@ class ContextContractTests(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(ContractError):
                 cls.from_dict(facts)
 
+    def test_expected_repository_rejects_consistently_cross_repository_context(self):
+        cls = self.contract()
+        facts = context_facts()
+        facts["repository_id"] = "other/project"
+        facts["rule_bindings"][0]["repository_id"] = "other/project"
+        with self.assertRaisesRegex(ContractError, "repository_mismatch"):
+            cls.from_dict(facts, expected_repository="owner/project")
+
     def test_input_and_export_mutation_cannot_change_frozen_identity(self):
         cls = self.contract()
         facts = context_facts()
