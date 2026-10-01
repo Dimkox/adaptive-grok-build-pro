@@ -5,7 +5,7 @@ Sole writer: integration_implementer. Isolated branch: feature/factory-v15-fast-
 ## Task ledger
 
 - Task 1: `python3 -m unittest tests.test_factory_v15_bundle -v` RED: bundle missing (1 failure); GREEN: 1 passed. Commit 5e28636e. Spec and BB bytes match exact owner hashes; U4 excluded, optional live qualification not run.
-- Task 2: `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_context_contracts -v` RED: context contract missing (3 failures); GREEN with existing contract suite: 12 passed. Context pins, source content, selection reasons and rules are canonical and bounded. No filesystem/network read or authority grant occurs.
+- Task 2: `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_context_contracts -v` RED: context contract missing (3 failures); GREEN with existing contract suite. The JSON Schema checks the closed structural wire shape; mandatory `ContextManifestV1.from_dict` admission separately enforces UTF-8 byte bounds, secret detection, paths, digests, and rule/source linkage. No filesystem/network read or authority grant occurs.
 
 ## Rulings
 

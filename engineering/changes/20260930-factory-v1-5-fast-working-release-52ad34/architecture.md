@@ -26,6 +26,8 @@ Route/source/rules -> context manifest -> execution/broker result envelope -> se
 
 New schemas are versioned sidecars. Existing execution v1/v2 event meanings and closed enums do not change.
 
+The public context-manifest JSON Schema is a structural consumer contract, not standalone admission. Every schema-valid manifest must also pass `ContextManifestV1.from_dict`, which enforces UTF-8 byte bounds, secret detection, safe paths, content digests, and exact rule/source linkage.
+
 ## Governance context
 
 Canonical governance JSON under `governance/` remains separately reviewed authority. Any rule, example, debt, or digest named here is non-authoritative context until the verifier rederives current governance evidence.
