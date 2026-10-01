@@ -16,8 +16,8 @@
     "coverage_matrix": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
     "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity", "observation_only_model_rotator"],
     "model_rotator": "default_off_live_NOT_RUN",
-    "migration_version": 30,
-    "next_action": "Verify the exact migration030/native-execution candidate, then re-measure an acyclic budget-safe delivery stack. The aggregate monolithic branch is not a deliverable while architecture budgets remain red; do not fabricate a stack. App-owned exact-head Trust CI and independent reviews remain required, and installed/live qualification is separate."
+    "migration_version": 31,
+    "next_action": "Verify the exact migration031/native-execution candidate, then re-measure an acyclic budget-safe delivery stack. The aggregate monolithic branch is not a deliverable while architecture budgets remain red; do not fabricate a stack. App-owned exact-head Trust CI and independent reviews remain required, and installed/live qualification is separate."
   },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",

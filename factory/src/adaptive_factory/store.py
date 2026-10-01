@@ -3028,6 +3028,15 @@ class PostgresFactoryStore:
             )
             return cursor.fetchone()[0]
 
+    def native_execution_context(self, grant: LeaseGrant, packet_digest: str):
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.execution_native_context(%s,%s,%s,%s,%s)",
+                (grant.task_id, grant.run_id, grant.owner, grant.fence, packet_digest),
+            )
+            return cursor.fetchone()[0]
+
     def advance_execution(
         self,
         grant: LeaseGrant,

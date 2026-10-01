@@ -1,13 +1,14 @@
 """Concrete pre-model context consumer for the existing execution claim path."""
 
 from dataclasses import dataclass
-import json
 from pathlib import Path
+import hashlib
+import subprocess
+from datetime import datetime, timezone
 
 from .context_contracts import ContextManifestV1
 from .contracts import ContractError, canonical_digest
 from .execution_contracts import TaskPacketV1
-from .settings import read_private_file
 from .v15_contracts import closed, integer, version
 
 
@@ -78,41 +79,56 @@ class NativeContextSidecarV1:
         }
 
 
-class FileNativeContextSource:
-    """Read one operator-admitted exact packet context from a private directory."""
+class RepositoryNativeContextSource:
+    """Build context directly from the packet's exact trusted Git snapshot."""
 
     def __init__(self, root: Path):
         if not isinstance(root, Path) or not root.is_absolute():
             raise ContractError("context_source_required")
+        if not (root / ".git").exists():
+            raise ContractError("context_repository_required")
         self._root = root
 
     def read(self, packet: TaskPacketV1) -> ContextManifestV1:
         try:
-            data = json.loads(read_private_file(self._root / f"{packet.packet_digest}.json", 262_144))
-        except (OSError, ValueError, UnicodeDecodeError) as exc:
+            ancestry = subprocess.run(
+                ["git", "-C", str(self._root), "merge-base", "--is-ancestor",
+                 packet.authority.exact_base_sha, packet.authority.exact_head_sha],
+                check=False, capture_output=True, timeout=5,
+            )
+            if ancestry.returncode != 0:
+                raise ContractError("context_base_mismatch")
+            raw_content = subprocess.run(
+                ["git", "-C", str(self._root), "show", f"{packet.authority.exact_head_sha}:AGENTS.md"],
+                check=True, capture_output=True, timeout=5,
+            ).stdout.decode("utf-8")
+        except (OSError, subprocess.SubprocessError, UnicodeDecodeError) as exc:
             raise ContractError("context_source_unavailable") from exc
-        manifest = ContextManifestV1.from_dict(
-            data, expected_tenant=packet.repository_id, expected_repository=packet.repository_id
-        )
-        facts = manifest.to_dict()
-        if facts["source_snapshot"]["base_sha"] != packet.authority.exact_base_sha:
-            raise ContractError("context_base_mismatch")
-        if facts["source_snapshot"]["head_sha"] != packet.authority.exact_head_sha:
-            raise ContractError("context_head_mismatch")
-        if facts["change_id"] != packet.authority.change_id:
-            raise ContractError("context_change_mismatch")
-        if facts["route_id"] != packet.authority.route_id:
-            raise ContractError("context_route_mismatch")
-        if facts["change_spec_digest"] != packet.authority.spec_digest:
-            raise ContractError("context_spec_mismatch")
-        return manifest
+        content = " ".join(raw_content.splitlines())
+        while len(content.encode("utf-8")) > 4096:
+            content = content[:-1]
+        entry = {
+            "path": "AGENTS.md", "kind": "instruction", "content": content,
+            "sha256": hashlib.sha256(content.encode()).hexdigest(), "reason": "mandatory",
+        }
+        return ContextManifestV1.from_dict({
+            "schema_version": 1, "builder_version": "native-git-1",
+            "tenant_id": packet.repository_id, "repository_id": packet.repository_id,
+            "source_snapshot": {"base_sha": packet.authority.exact_base_sha,
+                                "head_sha": packet.authority.exact_head_sha,
+                                "dirty_fingerprint": None},
+            "change_id": packet.authority.change_id, "route_id": packet.authority.route_id,
+            "change_spec_digest": packet.authority.spec_digest,
+            "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "mandatory_sources": [entry], "selected_sources": [], "rule_bindings": [],
+        }, expected_tenant=packet.repository_id, expected_repository=packet.repository_id)
 
 
 class NativeExecutionConsumer:
     """Build the exact pre-model sidecar consumed by a qualified execution profile."""
 
-    def __init__(self, source: FileNativeContextSource, budget: AnalysisBudgetV1):
-        if not isinstance(source, FileNativeContextSource):
+    def __init__(self, source: RepositoryNativeContextSource, budget: AnalysisBudgetV1):
+        if not isinstance(source, RepositoryNativeContextSource):
             raise ContractError("native_executor_required")
         if not isinstance(budget, AnalysisBudgetV1):
             raise ContractError("analysis_budget_required")

@@ -1,6 +1,5 @@
-import hashlib
-import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -9,33 +8,33 @@ from adaptive_factory.execution_contracts import TaskPacketV1
 from factory.tests.test_execution_contracts import valid_packet
 
 
-def context(packet):
-    content = "trusted exact repository rule"
-    return {
-        "schema_version": 1, "builder_version": "native-1", "tenant_id": packet.repository_id,
-        "repository_id": packet.repository_id,
-        "source_snapshot": {"base_sha": packet.authority.exact_base_sha,
-                            "head_sha": packet.authority.exact_head_sha, "dirty_fingerprint": None},
-        "change_id": packet.authority.change_id, "route_id": packet.authority.route_id,
-        "change_spec_digest": packet.authority.spec_digest, "observed_at": "2026-10-01T00:00:00Z",
-        "mandatory_sources": [{"path": "AGENTS.md", "kind": "instruction", "content": content,
-                               "sha256": hashlib.sha256(content.encode()).hexdigest(), "reason": "mandatory"}],
-        "selected_sources": [], "rule_bindings": [],
-    }
-
-
 class NativeExecutionTests(unittest.TestCase):
-    def test_file_source_builds_packet_bound_sidecar_and_budget(self):
+    @staticmethod
+    def repository(root):
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+        subprocess.run(["git", "-C", str(root), "config", "user.name", "test"], check=True)
+        subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"], check=True)
+        (root / "AGENTS.md").write_text("trusted exact repository rule", encoding="utf-8")
+        subprocess.run(["git", "-C", str(root), "add", "AGENTS.md"], check=True)
+        subprocess.run(["git", "-C", str(root), "commit", "-qm", "base"], check=True)
+        base = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+        (root / "AGENTS.md").write_text("trusted exact repository rule\nhead", encoding="utf-8")
+        subprocess.run(["git", "-C", str(root), "commit", "-qam", "head"], check=True)
+        head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+        facts = valid_packet()
+        facts["authority"]["exact_base_sha"] = base
+        facts["authority"]["exact_head_sha"] = head
+        return TaskPacketV1.from_dict(facts)
+
+    def test_repository_source_builds_packet_bound_sidecar_and_budget(self):
         from adaptive_factory.native_execution import (
-            AnalysisBudgetV1, FileNativeContextSource, NativeExecutionConsumer,
+            AnalysisBudgetV1, RepositoryNativeContextSource, NativeExecutionConsumer,
         )
-        packet = TaskPacketV1.from_dict(valid_packet())
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); root.chmod(0o700)
-            document = root / f"{packet.packet_digest}.json"
-            document.write_text(json.dumps(context(packet)), encoding="utf-8"); document.chmod(0o600)
+            root = Path(directory)
+            packet = self.repository(root)
             consumer = NativeExecutionConsumer(
-                FileNativeContextSource(root),
+                RepositoryNativeContextSource(root),
                 AnalysisBudgetV1.from_dict({"schema_version": 1, "max_rounds": 3, "max_tool_operations": 12}),
             )
             sidecar = consumer.prepare(packet)
@@ -46,20 +45,21 @@ class NativeExecutionTests(unittest.TestCase):
 
     def test_source_rejects_handcrafted_cross_bound_context_and_missing_executor(self):
         from adaptive_factory.native_execution import (
-            AnalysisBudgetV1, FileNativeContextSource, NativeExecutionConsumer,
+            AnalysisBudgetV1, RepositoryNativeContextSource, NativeExecutionConsumer,
         )
-        packet = TaskPacketV1.from_dict(valid_packet())
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); root.chmod(0o700)
+            root = Path(directory)
+            root.chmod(0o700)
             with self.assertRaises(ContractError):
                 NativeExecutionConsumer(None, AnalysisBudgetV1.from_dict(
                     {"schema_version": 1, "max_rounds": 1, "max_tool_operations": 1}
                 ))
-            facts = context(packet); facts["source_snapshot"]["head_sha"] = "f" * 40
-            document = root / f"{packet.packet_digest}.json"
-            document.write_text(json.dumps(facts), encoding="utf-8"); document.chmod(0o600)
-            with self.assertRaisesRegex(ContractError, "context_head_mismatch"):
+            packet = self.repository(root)
+            forged = packet.to_dict()
+            forged["authority"]["exact_base_sha"] = "f" * 40
+            forged.pop("packet_digest")
+            with self.assertRaisesRegex(ContractError, "context_base_mismatch"):
                 NativeExecutionConsumer(
-                    FileNativeContextSource(root),
+                    RepositoryNativeContextSource(root),
                     AnalysisBudgetV1.from_dict({"schema_version": 1, "max_rounds": 1, "max_tool_operations": 1}),
-                ).prepare(packet)
+                ).prepare(TaskPacketV1.from_dict(forged))

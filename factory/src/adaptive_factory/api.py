@@ -826,6 +826,26 @@ def create_app(
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
+    @app.post("/v1/execution/native-context", tags=["execution"])
+    def native_execution_context(payload: dict, authorization: str | None = Header(None)):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        payload = _closed(payload, {"grant", "packet_digest"})
+        return {"context": service.native_execution_context(
+            _grant(payload["grant"]), packet_digest=_digest(payload["packet_digest"], "packet_digest"), actor=actor
+        )}
+
+    @app.post("/v1/execution/analysis-budget", tags=["execution"])
+    def consume_analysis_budget(payload: dict, authorization: str | None = Header(None)):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        payload = _closed(payload, {"grant", "packet_digest", "rounds", "tool_operations", "facts_digest", "blocker_digest"})
+        return {"budget": service.consume_analysis_budget(
+            _grant(payload["grant"]), packet_digest=_digest(payload["packet_digest"], "packet_digest"),
+            rounds=_integer(payload["rounds"], "rounds", 0, 64),
+            tool_operations=_integer(payload["tool_operations"], "tool_operations", 0, 10000),
+            facts_digest=(None if payload["facts_digest"] is None else _digest(payload["facts_digest"], "facts_digest")),
+            blocker_digest=(None if payload["blocker_digest"] is None else _digest(payload["blocker_digest"], "blocker_digest")), actor=actor,
+        )}
+
     @app.post("/v2/execution/stages", tags=["execution"])
     @app.post("/v1/execution/stages", tags=["execution"])
     def advance_execution(
@@ -1385,6 +1405,8 @@ def create_app(
     if not execution_enabled:
         execution_paths = {
             "/v1/execution/claims",
+            "/v1/execution/native-context",
+            "/v1/execution/analysis-budget",
             "/v1/execution/stages",
             "/v1/execution/notes",
             "/v1/execution/artifacts",

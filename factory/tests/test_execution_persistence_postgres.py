@@ -2,6 +2,7 @@ from dataclasses import asdict, replace
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 import json
+import hashlib
 import os
 import threading
 import time
@@ -323,7 +324,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
+                "TRUNCATE factory.execution_analysis_budgets, factory.execution_native_contexts, factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
                 "factory.semantic_escalations, factory.semantic_child_task_bindings, "
                 "factory.semantic_child_proposals, factory.semantic_directives, "
                 "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -727,6 +728,68 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 "source": "trusted_workspace_broker",
             }
         )
+
+    def test_native_context_delivery_and_budget_are_fenced_and_durable(self):
+        import psycopg
+
+        _task, execution = self.claim_execution("native-context", capabilities=["structured_output"])
+        content = "trusted exact repository rule"
+        context = {
+            "schema_version": 1, "builder_version": "native-git-1",
+            "tenant_id": "owner/repository", "repository_id": "owner/repository",
+            "source_snapshot": {"base_sha": "1" * 40, "head_sha": "3" * 40, "dirty_fingerprint": None},
+            "change_id": "20260831-m4-control-plane", "route_id": "b7f288f1e81e",
+            "change_spec_digest": "a" * 64, "observed_at": "2026-10-01T00:00:00Z",
+            "mandatory_sources": [{"path": "AGENTS.md", "kind": "instruction", "content": content,
+                                   "sha256": hashlib.sha256(content.encode()).hexdigest(), "reason": "mandatory"}],
+            "selected_sources": [], "rule_bindings": [],
+        }
+        context_without_time = {key: value for key, value in context.items() if key != "observed_at"}
+        sidecar = {
+            "schema_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "packet_digest": execution.packet_digest,
+            "fence": execution.lease.fence, "repository_id": "owner/repository",
+            "context_digest": canonical_digest(context_without_time), "context_manifest": context,
+            "analysis_budget": {"schema_version": 1, "max_rounds": 1, "max_tool_operations": 1},
+        }
+        sidecar["sidecar_digest"] = canonical_digest(sidecar)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute("SET LOCAL ROLE factory_runtime")
+            forged = json.loads(json.dumps(sidecar))
+            forged["context_manifest"]["repository_id"] = "other/project"
+            forged_context = {key: value for key, value in forged["context_manifest"].items() if key != "observed_at"}
+            forged["context_digest"] = canonical_digest(forged_context)
+            forged.pop("sidecar_digest")
+            forged["sidecar_digest"] = canonical_digest(forged)
+            self.assertFalse(connection.execute(
+                "SELECT factory.execution_record_native_sidecar(%s::jsonb)",
+                (json.dumps(forged),),
+            ).fetchone()[0])
+            self.assertTrue(connection.execute(
+                "SELECT factory.execution_record_native_sidecar(%s::jsonb)",
+                (json.dumps(sidecar),),
+            ).fetchone()[0])
+        service = FactoryService(self.runtime_store())
+        self.assertEqual(
+            service.native_execution_context(execution.lease, packet_digest=execution.packet_digest, actor=WORKER),
+            sidecar,
+        )
+        accepted = service.consume_analysis_budget(
+            execution.lease, packet_digest=execution.packet_digest, rounds=1,
+            tool_operations=1, facts_digest=None, blocker_digest=None, actor=WORKER,
+        )
+        self.assertEqual((accepted["accepted"], accepted["status"]), (True, "active"))
+        exhausted = service.consume_analysis_budget(
+            execution.lease, packet_digest=execution.packet_digest, rounds=1,
+            tool_operations=0, facts_digest="e" * 64, blocker_digest="f" * 64, actor=WORKER,
+        )
+        self.assertEqual((exhausted["accepted"], exhausted["status"]), (False, "exhausted"))
+        with psycopg.connect(DATABASE_URL) as connection:
+            row = connection.execute(
+                "SELECT status,facts_digest,blocker_digest FROM factory.execution_analysis_budgets WHERE run_id=%s",
+                (execution.lease.run_id,),
+            ).fetchone()
+        self.assertEqual(row, ("exhausted", "e" * 64, "f" * 64))
 
     def test_unverified_capacity_race_reconnect_and_owner_only_resolution(self):
         import psycopg
@@ -1744,7 +1807,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
-                    (30, "030_native_execution_context.sql"),
+                    (31, "031_native_execution_delivery.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1762,7 +1825,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (30, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (31, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -2296,7 +2359,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
-                    (30, "030_native_execution_context.sql"),
+                    (31, "031_native_execution_delivery.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2311,7 +2374,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (30, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (31, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2414,7 +2477,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
-                    (30, "030_native_execution_context.sql"),
+                    (31, "031_native_execution_delivery.sql"),
                 ],
             )
             result = FactoryService(
@@ -2439,7 +2502,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (30, 1, True))
+                self.assertEqual(cursor.fetchone(), (31, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 

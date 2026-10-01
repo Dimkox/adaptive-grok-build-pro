@@ -932,6 +932,13 @@ class FactoryService:
             grant, packet_digest, rounds, tool_operations, facts_digest, blocker_digest
         ))
 
+    def native_execution_context(self, grant: LeaseGrant, *, packet_digest: str, actor: Actor):
+        self._require_grant_actor(grant, actor, "task:execute")
+        result = self._fenced(lambda: self.store.native_execution_context(grant, packet_digest))
+        if result is None:
+            raise ExecutionContractError("native_context_unavailable")
+        return result
+
     def reserve_budget(
         self,
         grant: LeaseGrant,

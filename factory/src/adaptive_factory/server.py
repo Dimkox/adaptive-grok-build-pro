@@ -13,7 +13,7 @@ from .api import TEXT_ID, Authenticator, create_app
 from .landing_server import compose_server_landing
 from .migrations import discover_migrations
 from .models import Actor
-from .native_execution import AnalysisBudgetV1, FileNativeContextSource, NativeExecutionConsumer
+from .native_execution import AnalysisBudgetV1, RepositoryNativeContextSource, NativeExecutionConsumer
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
 from .store import (
@@ -135,7 +135,7 @@ def build_app(
     settings.validate_landing()
     if settings.execution_enabled and native_execution_consumer is None and settings.native_context_root is not None:
         native_execution_consumer = NativeExecutionConsumer(
-            FileNativeContextSource(settings.native_context_root),
+            RepositoryNativeContextSource(settings.native_context_root),
             AnalysisBudgetV1.from_dict({
                 "schema_version": 1,
                 "max_rounds": settings.analysis_max_rounds,

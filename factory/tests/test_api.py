@@ -139,6 +139,14 @@ class FakeService:
         self.calls.append(("advance_execution", args, kwargs))
         return kwargs["stage"]
 
+    def native_execution_context(self, *args, **kwargs):
+        self.calls.append(("native_execution_context", args, kwargs))
+        return {"schema_version": 1, "context_digest": "c" * 64}
+
+    def consume_analysis_budget(self, *args, **kwargs):
+        self.calls.append(("consume_analysis_budget", args, kwargs))
+        return {"accepted": True, "status": "active", "used_rounds": 1, "used_tool_operations": 1}
+
     def commit_execution_proposal(self, *args, **kwargs):
         self.calls.append(("commit_execution_proposal", args, kwargs))
         return self._proposal(args[0], **kwargs)
@@ -343,6 +351,26 @@ class ApiTests(unittest.TestCase):
             json=payload,
         )
         self.assertEqual(response.status_code, 201, response.text)
+
+    def test_authenticated_worker_reads_native_context_and_consumes_bound_budget(self):
+        token = "execution-native-context-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor}), execution_enabled=True))
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002", "owner": "worker-01",
+            "role": "writer", "fence": 7, "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        headers = {"Authorization": f"Bearer {token}"}
+        context = client.post("/v1/execution/native-context", headers=headers,
+                              json={"grant": grant, "packet_digest": "d" * 64})
+        self.assertEqual((context.status_code, context.json()["context"]["context_digest"]), (200, "c" * 64))
+        budget = client.post("/v1/execution/analysis-budget", headers=headers, json={
+            "grant": grant, "packet_digest": "d" * 64, "rounds": 1, "tool_operations": 1,
+            "facts_digest": None, "blocker_digest": None,
+        })
+        self.assertEqual((budget.status_code, budget.json()["budget"]["status"]), (200, "active"))
 
     def test_all_execution_request_identities_reject_secret_shapes_before_service(self):
         token = "execution-" + "identity-credential"

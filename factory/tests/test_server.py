@@ -456,7 +456,7 @@ class ServerTests(unittest.TestCase):
         self.assertTrue({"/health/live", "/health/ready", "/v1/tasks"} <= paths)
         self.assertFalse(any(path and path.startswith("/v1/execution/") for path in paths))
 
-    def test_enabled_app_registers_exactly_six_execution_routes(self):
+    def test_enabled_app_registers_exactly_eight_execution_routes(self):
         class Service:
             pass
 
@@ -477,6 +477,8 @@ class ServerTests(unittest.TestCase):
             paths,
             {
                 "/v1/execution/claims",
+                "/v1/execution/native-context",
+                "/v1/execution/analysis-budget",
                 "/v1/execution/stages",
                 "/v1/execution/notes",
                 "/v1/execution/artifacts",

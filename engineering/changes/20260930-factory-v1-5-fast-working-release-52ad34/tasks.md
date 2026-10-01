@@ -19,6 +19,7 @@
 - [x] Add migration028 without changing migration027: close NULL/invalid direct SQL calls, predecessor ACLs, cooldown keys and persisted evidence; focused real-PG9 plus stale-upgrade3 PASS.
 - [x] Add migration029 without changing027/028: enforce native JSON child types/ranges and exact predecessor ACLs; RED accepted string/null shapes, GREEN real-PG10 with zero-mutation/accounting proof.
 - [x] Add concrete native pre-model context ingestion and migration030: atomically bind the exact context sidecar and versioned rounds/tool budget to execution start; persist exhaustion facts/blocker digests; forward atomic decision records.
+- [x] Add migration031 forward correction: validate inner context/digests and live run authority server-side, correct `owner_id`, expose authenticated worker context retrieval, and wire durable analysis-budget consumption.
 - [ ] Freeze clean candidate and hand exact HEAD to coordinator for explicitly delegated UNVERIFIED branch push before full verification/reviews; no merge/tag/Release authorization.
 - [ ] Run selected quality profiles and complete independent reviews.
 - [ ] Bind evidence to the final tree fingerprint and prepare the PR-only release report.

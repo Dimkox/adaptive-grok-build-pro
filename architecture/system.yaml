@@ -1881,6 +1881,7 @@
         "factory/src/adaptive_factory/model_rotator.py",
         "factory/src/adaptive_factory/model_rotator_cli.py",
         "factory/src/adaptive_factory/models.py",
+        "factory/src/adaptive_factory/native_execution.py",
         "factory/src/adaptive_factory/recovery.py",
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
