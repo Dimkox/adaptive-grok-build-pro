@@ -122,6 +122,14 @@
       "version": "1"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/context-manifest.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
       "kind": "json_schema",
@@ -1659,7 +1667,9 @@
       "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-CONTROL",
       "owner": "local factory operators",
-      "public_contracts": [],
+      "public_contracts": [
+        "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST"
+      ],
       "repository_paths": [
         "factory/.gitignore",
         "factory/README.md",
