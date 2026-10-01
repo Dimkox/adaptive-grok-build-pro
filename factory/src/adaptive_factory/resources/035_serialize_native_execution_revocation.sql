@@ -1,4 +1,43 @@
 -- Serialize direct runtime reads and budget mutations with lease release and kill publication.
+CREATE TABLE factory.migration_checksum_reconciliations (
+  version integer PRIMARY KEY CHECK (version IN (31,34)),
+  previous_checksum char(64) NOT NULL CHECK (previous_checksum ~ '^[0-9a-f]{64}$'),
+  current_checksum char(64) NOT NULL CHECK (current_checksum ~ '^[0-9a-f]{64}$'),
+  canonicalizer integer NOT NULL CHECK (canonicalizer=35),
+  reconciled_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  CHECK (previous_checksum<>current_checksum)
+);
+
+DO $$
+DECLARE
+  v31 factory.schema_migrations%ROWTYPE;
+  v34 factory.schema_migrations%ROWTYPE;
+  current31 constant text := '23e2d280a391a174b020055a7a4aeaf06207d5f3c157666ac4b5f24473dbfa90';
+  current34 constant text := '3701115497d6614f0a3f7e41bf318e4e3f995768b298691a704115207cfc9913';
+  legacy31 constant text := '33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7';
+  legacy34 constant text := 'e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347';
+BEGIN
+  SELECT * INTO STRICT v31 FROM factory.schema_migrations WHERE version=31;
+  SELECT * INTO STRICT v34 FROM factory.schema_migrations WHERE version=34;
+  IF v31.name<>'031_native_execution_delivery.sql'
+    OR v31.sha256 NOT IN (legacy31,current31)
+    OR v34.name<>'034_native_execution_live_grants.sql'
+    OR v34.sha256 NOT IN (legacy34,current34)
+  THEN RAISE EXCEPTION 'migration 035 refuses unrecognized RC checksum history'; END IF;
+
+  INSERT INTO factory.migration_checksum_reconciliations
+    (version,previous_checksum,current_checksum,canonicalizer)
+  SELECT version,sha256,
+    CASE version WHEN 31 THEN current31 ELSE current34 END,35
+  FROM factory.schema_migrations
+  WHERE (version=31 AND sha256=legacy31) OR (version=34 AND sha256=legacy34);
+
+  UPDATE factory.schema_migrations SET sha256=current31
+  WHERE version=31 AND name='031_native_execution_delivery.sql' AND sha256=legacy31;
+  UPDATE factory.schema_migrations SET sha256=current34
+  WHERE version=34 AND name='034_native_execution_live_grants.sql' AND sha256=legacy34;
+END $$;
+
 CREATE OR REPLACE FUNCTION factory.execution_consume_analysis_budget(
   p_task uuid,p_run uuid,p_owner text,p_fence bigint,p_packet char(64),
   p_rounds integer,p_tools integer,p_facts char(64),p_blocker char(64)
@@ -91,3 +130,7 @@ GRANT EXECUTE ON FUNCTION
   factory.execution_consume_analysis_budget(uuid,uuid,text,bigint,char,integer,integer,char,char),
   factory.execution_native_context(uuid,uuid,text,bigint,char)
 TO factory_runtime;
+
+REVOKE ALL ON factory.migration_checksum_reconciliations
+FROM PUBLIC,factory_runtime,factory_migrator;
+GRANT SELECT ON factory.migration_checksum_reconciliations TO factory_audit_reader;

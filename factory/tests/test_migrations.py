@@ -488,6 +488,59 @@ class MigrationTests(unittest.TestCase):
         applied = [AppliedMigration(item.version, item.name, item.sha256) for item in migrations[:2]]
         self.assertEqual(plan_migrations(migrations, applied), migrations[2:])
 
+    def test_rc_checksum_bridge_is_exact_bounded_and_requires_unapplied_035(self):
+        migrations = discover_migrations()
+
+        def history(stop, legacy=()):
+            return tuple(
+                AppliedMigration(
+                    item.version,
+                    item.name,
+                    {
+                        31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
+                        34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+                    }.get(item.version, item.sha256) if item.version in legacy else item.sha256,
+                )
+                for item in migrations[:stop]
+            )
+
+        for stop, legacy in ((31, (31,)), (34, (31,)), (34, (34,)), (34, (31, 34))):
+            with self.subTest(stop=stop, legacy=legacy):
+                pending = plan_migrations(migrations, history(stop, legacy))
+                self.assertEqual(
+                    [item.version for item in pending],
+                    list(range(stop + 1, 36)),
+                )
+                self.assertEqual(pending[-1].version, 35)
+
+        for version in (31, 34):
+            arbitrary = list(history(34))
+            item = arbitrary[version - 1]
+            arbitrary[version - 1] = AppliedMigration(item.version, item.name, "f" * 64)
+            with self.subTest(arbitrary=version), self.assertRaises(MigrationError):
+                plan_migrations(migrations, arbitrary)
+
+        renamed = list(history(34, (31,)))
+        old31 = renamed[30]
+        renamed[30] = AppliedMigration(old31.version, "031_other.sql", old31.sha256)
+        with self.assertRaises(MigrationError):
+            plan_migrations(migrations, renamed)
+        with self.assertRaises(MigrationError):
+            plan_migrations(migrations[:34], history(31, (31,)))
+        altered_package = list(migrations)
+        current35 = altered_package[34]
+        altered_package[34] = type(current35)(
+            current35.version,
+            "035_other.sql",
+            current35.sha256,
+            current35.sql,
+        )
+        with self.assertRaises(MigrationError):
+            plan_migrations(altered_package, history(31, (31,)))
+
+        with self.assertRaises(MigrationError):
+            plan_migrations(migrations, history(35, (31, 34)))
+
     @staticmethod
     def _function_text(sql, signature):
         marker = f"FUNCTION factory.{signature}("

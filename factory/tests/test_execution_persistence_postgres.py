@@ -841,6 +841,146 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      execution.lease.fence, execution.packet_digest, "e" * 64, "f" * 64),
                 )
 
+    def test_rc_checksum_bridge_real_postgres_matrix_is_atomic_and_one_shot(self):
+        import psycopg
+
+        packaged = discover_migrations()
+        legacy = {
+            31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
+            34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+        }
+
+        def prefix(label, stop, legacy_versions=()):
+            database_url, admin_url = self.create_schema14_database(label)
+            with psycopg.connect(database_url) as connection:
+                for migration in packaged[14:stop]:
+                    connection.execute(migration.sql)
+                    connection.execute(
+                        "INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)",
+                        (migration.version, migration.name, migration.sha256),
+                    )
+                for version in legacy_versions:
+                    connection.execute(
+                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                        (legacy[version], version),
+                    )
+            return database_url, admin_url
+
+        def history(database_url):
+            with psycopg.connect(database_url) as connection:
+                return connection.execute(
+                    "SELECT version,name,sha256 FROM factory.schema_migrations ORDER BY version"
+                ).fetchall()
+
+        self.assertEqual(len(PostgresMigrator(DATABASE_URL).status()), 35)
+        self.assertEqual(self.migrate(DATABASE_URL), ())
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM factory.migration_checksum_reconciliations"
+            ).fetchone()[0], 0)
+
+        for label, stop, legacy_versions in (
+            ("rc_fresh", 34, ()),
+            ("rc_old_old", 34, (31, 34)),
+            ("rc_old_current", 34, (31,)),
+            ("rc_current_old", 34, (34,)),
+            ("rc_stopped31", 31, (31,)),
+        ):
+            with self.subTest(label=label):
+                database_url, admin_url = prefix(label, stop, legacy_versions)
+                try:
+                    applied = self.migrate(database_url)
+                    self.assertEqual(
+                        [item.version for item in applied], list(range(stop + 1, 36))
+                    )
+                    rows = history(database_url)
+                    self.assertEqual(rows[30][2], packaged[30].sha256)
+                    self.assertEqual(rows[33][2], packaged[33].sha256)
+                    with psycopg.connect(database_url) as connection:
+                        evidence = connection.execute(
+                            """SELECT version,previous_checksum,current_checksum,canonicalizer
+                            FROM factory.migration_checksum_reconciliations ORDER BY version"""
+                        ).fetchall()
+                    self.assertEqual([row[0] for row in evidence], list(legacy_versions))
+                    self.assertTrue(all(
+                        row[1] == legacy[row[0]]
+                        and row[2] == packaged[row[0] - 1].sha256
+                        and row[3] == 35
+                        for row in evidence
+                    ))
+                    self.assertEqual(self.migrate(database_url), ())
+                finally:
+                    self.drop_disposable_database(database_url, admin_url)
+
+        for version in (31, 34):
+            database_url, admin_url = prefix(f"rc_drift_{version}", 34)
+            try:
+                with psycopg.connect(database_url) as connection:
+                    connection.execute(
+                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                        ("f" * 64, version),
+                    )
+                before = history(database_url)
+                with self.assertRaises(MigrationError):
+                    self.migrate(database_url)
+                self.assertEqual(history(database_url), before)
+            finally:
+                self.drop_disposable_database(database_url, admin_url)
+
+        database_url, admin_url = prefix("rc_after35", 34, (31, 34))
+        try:
+            self.migrate(database_url)
+            for version in (31, 34):
+                with psycopg.connect(database_url) as connection:
+                    connection.execute(
+                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                        (legacy[version], version),
+                    )
+                before = history(database_url)
+                with self.assertRaises(MigrationError):
+                    self.migrate(database_url)
+                self.assertEqual(history(database_url), before)
+                with psycopg.connect(database_url) as connection:
+                    connection.execute(
+                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
+                        (packaged[version - 1].sha256, version),
+                    )
+        finally:
+            self.drop_disposable_database(database_url, admin_url)
+
+        database_url, admin_url = prefix("rc_rollback", 34, (31, 34))
+        try:
+            with psycopg.connect(database_url) as connection:
+                before_function = connection.execute(
+                    "SELECT pg_get_functiondef('factory.execution_native_context(uuid,uuid,text,bigint,character)'::regprocedure)"
+                ).fetchone()[0]
+                connection.execute("""CREATE FUNCTION factory.reject_035() RETURNS trigger
+                    LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected 035 failure'; END $$""")
+                connection.execute("""CREATE TRIGGER reject_035 BEFORE INSERT ON factory.schema_migrations
+                    FOR EACH ROW WHEN (NEW.version=35) EXECUTE FUNCTION factory.reject_035()""")
+            before = history(database_url)
+            with self.assertRaisesRegex(psycopg.errors.RaiseException, "injected 035 failure"):
+                self.migrate(database_url)
+            self.assertEqual(history(database_url), before)
+            with psycopg.connect(database_url) as connection:
+                self.assertIsNone(connection.execute(
+                    "SELECT to_regclass('factory.migration_checksum_reconciliations')"
+                ).fetchone()[0])
+                self.assertEqual(connection.execute(
+                    "SELECT pg_get_functiondef('factory.execution_native_context(uuid,uuid,text,bigint,character)'::regprocedure)"
+                ).fetchone()[0], before_function)
+        finally:
+            self.drop_disposable_database(database_url, admin_url)
+
+        database_url, admin_url = prefix("rc_concurrent", 34, (31, 34))
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                outcomes = list(pool.map(lambda _: self.migrate(database_url), range(2)))
+            self.assertEqual(sorted(len(item) for item in outcomes), [0, 1])
+            self.assertEqual(self.migrate(database_url), ())
+        finally:
+            self.drop_disposable_database(database_url, admin_url)
+
     def _assert_runtime_native_functions_reject(self, execution):
         import psycopg
 

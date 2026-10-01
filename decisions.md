@@ -901,3 +901,7 @@ Binding tenant, repository, exact head, absolute artifact path and SHA-256 in on
 ### 2026-10-01 — Serialize runtime consumption with every revocation authority
 
 Locking authoritative run/task rows before a shared lock on the complete kill-head table gives release, existing kills, and first-time repository kills one deterministic order before budget mutation. Real PostgreSQL tests observe the exact server-side lock wait and prove a committed release or kill leaves usage unchanged.
+
+### 2026-10-01 — Reconcile only named pre-release migration checksums
+
+The RC bridge admits only the two known 031/034 checksums while the exact migration035 canonicalizer is still pending, then records and rewrites them in the same advisory transaction as migration035. This preserves strict drift rejection after 035 and for every unrelated checksum without requiring destructive migration SQL.

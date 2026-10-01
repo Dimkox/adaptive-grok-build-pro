@@ -20,6 +20,11 @@ FACTORY_GROUP_ROLES = (
 )
 SAFE_GROUP_ATTRIBUTES = (False, False, False, False, False, False, False)
 SAFE_LOGIN_ATTRIBUTES = (True, False, False, False, False, False, False)
+RC_CHECKSUM_CANONICALIZER_VERSION = 35
+RC_LEGACY_CHECKSUMS = {
+    31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
+    34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+}
 
 
 class MigrationError(RuntimeError):
@@ -73,8 +78,28 @@ def plan_migrations(available: Iterable[Migration], applied: Iterable[AppliedMig
         raise MigrationError("applied migration history is non-contiguous")
     if len(applied) > len(available):
         raise MigrationError("applied migration is missing from package")
+    canonicalizer_available = (
+        len(available) >= RC_CHECKSUM_CANONICALIZER_VERSION
+        and available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].version
+        == RC_CHECKSUM_CANONICALIZER_VERSION
+        and available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].name
+        == "035_serialize_native_execution_revocation.sql"
+    )
+    canonicalizer_unapplied = len(applied) < RC_CHECKSUM_CANONICALIZER_VERSION
     for recorded, packaged in zip(applied, available):
-        if (recorded.version, recorded.name, recorded.sha256) != (packaged.version, packaged.name, packaged.sha256):
+        exact = (recorded.version, recorded.name, recorded.sha256) == (
+            packaged.version,
+            packaged.name,
+            packaged.sha256,
+        )
+        legacy_rc = (
+            canonicalizer_available
+            and canonicalizer_unapplied
+            and recorded.version == packaged.version
+            and recorded.name == packaged.name
+            and recorded.sha256 == RC_LEGACY_CHECKSUMS.get(recorded.version)
+        )
+        if not exact and not legacy_rc:
             raise MigrationError(f"migration drift at version {recorded.version}")
     return available[len(applied) :]
 
