@@ -99,6 +99,7 @@ class FactorySettings:
     native_context_root: Path | None = None
     analysis_max_rounds: int = 4
     analysis_max_tool_operations: int = 64
+    v15_runtime_config_path: Path | None = None
 
     def validate_landing(self) -> None:
         if type(self.landing_live_enabled) is not bool or self.landing_provider not in LANDING_PROVIDERS:
@@ -200,6 +201,10 @@ class FactorySettings:
             native_context_root=Path(os.environ['FACTORY_NATIVE_CONTEXT_ROOT']) if os.environ.get('FACTORY_NATIVE_CONTEXT_ROOT') else None,
             analysis_max_rounds=int(os.environ.get('FACTORY_ANALYSIS_MAX_ROUNDS', '4')),
             analysis_max_tool_operations=int(os.environ.get('FACTORY_ANALYSIS_MAX_TOOL_OPERATIONS', '64')),
+            v15_runtime_config_path=(
+                Path(os.environ['FACTORY_V15_RUNTIME_CONFIG'])
+                if os.environ.get('FACTORY_V15_RUNTIME_CONFIG') else None
+            ),
         )
         result.validate_landing()
         return result

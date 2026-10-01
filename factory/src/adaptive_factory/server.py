@@ -16,6 +16,7 @@ from .models import Actor
 from .native_execution import AnalysisBudgetV1, RepositoryNativeContextSource, NativeExecutionConsumer
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
+from .v15_runtime_config import load_v15_runtime_config
 from .store import (
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
@@ -133,6 +134,10 @@ def build_app(
     native_execution_consumer=None,
 ):
     settings.validate_landing()
+    v15_runtime_config = (
+        load_v15_runtime_config(settings.v15_runtime_config_path)
+        if settings.v15_runtime_config_path is not None else None
+    )
     if settings.execution_enabled and native_execution_consumer is None and settings.native_context_root is not None:
         native_execution_consumer = NativeExecutionConsumer(
             RepositoryNativeContextSource(settings.native_context_root),
@@ -223,6 +228,8 @@ def build_app(
             landing_service=landing_service,
             qualification_service=qualification_service,
         )
+        if hasattr(app, "state"):
+            app.state.v15_runtime_config = v15_runtime_config
         if owned_landing is not None:
             previous_lifespan = app.router.lifespan_context
 
