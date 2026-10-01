@@ -70,7 +70,7 @@
 
 **Files:**
 - Create: `factory/src/adaptive_factory/decision_contracts.py`
-- Create: `factory/contracts/jsonschema/decision-record.v1.schema.json`
+- Create: `factory/contracts/v15/decision-record.v1.schema.json`
 - Create: `factory/tests/test_decision_contracts.py`
 - Modify: `factory/src/adaptive_factory/store.py`
 - Create: next available `factory/src/adaptive_factory/resources/0xx_factory_v15_decisions.sql`

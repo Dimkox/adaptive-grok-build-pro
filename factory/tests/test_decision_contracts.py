@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 import unittest
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from adaptive_factory.contracts import ContractError
 from adaptive_factory.decision_contracts import DecisionRecordV1, summarize_cost, summarize_timing
 from adaptive_factory.migrations import discover_migrations
 from adaptive_factory.store import PostgresFactoryStore
+from tests.json_schema_subset import SubsetValidator
 
 
 def decision_facts():
@@ -40,6 +42,57 @@ def decision_facts():
 
 
 class DecisionContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.schema = json.loads(
+            Path("factory/contracts/v15/decision-record.v1.schema.json").read_text()
+        )
+        cls.validator = SubsetValidator(cls.schema)
+
+    def test_json_schema_is_closed_and_accepts_the_structural_contract(self):
+        candidate = decision_facts()
+        self.validator.validate(candidate)
+
+        mutations = []
+        missing = deepcopy(candidate)
+        del missing["decision_id"]
+        mutations.append(missing)
+        extra = deepcopy(candidate)
+        extra["unexpected"] = True
+        mutations.append(extra)
+        nested_extra = deepcopy(candidate)
+        nested_extra["facts"][0]["unexpected"] = True
+        mutations.append(nested_extra)
+        wrong_kind = deepcopy(candidate)
+        wrong_kind["decision_kind"] = "authority"
+        mutations.append(wrong_kind)
+        bad_digest = deepcopy(candidate)
+        bad_digest["context_digest"] = "not-a-digest"
+        mutations.append(bad_digest)
+
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                self.assertFalse(self.validator.is_valid(mutation))
+
+    def test_schema_documents_runtime_only_semantic_admission(self):
+        runtime_only = set(self.schema["x-admission"]["runtime_only"])
+        self.assertGreaterEqual(
+            runtime_only,
+            {"safe_fact_text", "no_self_supersession", "unique_fact_names"},
+        )
+
+        secret = decision_facts()
+        secret["facts"][0]["value"] = "password=synthetic-secret"
+        self.validator.validate(secret)
+        with self.assertRaises(ContractError):
+            DecisionRecordV1.from_dict(secret)
+
+        self_superseding = decision_facts()
+        self_superseding["supersedes"] = self_superseding["decision_id"]
+        self.validator.validate(self_superseding)
+        with self.assertRaises(ContractError):
+            DecisionRecordV1.from_dict(self_superseding)
+
     def test_record_boundaries(self):
         facts = decision_facts()
         record = DecisionRecordV1.from_dict(facts)

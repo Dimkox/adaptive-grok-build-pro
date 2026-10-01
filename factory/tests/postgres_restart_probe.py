@@ -26,6 +26,7 @@ from adaptive_factory.admin import (
     provision_artifact_attestor_login,
     provision_runtime_login,
 )
+from adaptive_factory.decision_contracts import DecisionRecordV1
 from adaptive_factory.execution_contracts import ExecutionSelectionV1
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.models import (
@@ -445,6 +446,74 @@ def _payload(now: datetime, label: str) -> dict[str, object]:
             "semantic_repairs": 3,
         },
     }
+
+
+def _canonical_restart_decision(
+    *,
+    repository_id: str,
+    task_id: str,
+    run_id: str,
+    attempt_id: str,
+    fence: int,
+    observed_at: datetime,
+    base_sha: str,
+    head_sha: str,
+    spec_digest: str,
+) -> DecisionRecordV1:
+    unavailable = "cc37cbe49cbf74f722413d345a76197162a263353554ae3eb463da8fc249c14d"
+    return DecisionRecordV1.from_dict(
+        {
+            "schema_version": 1,
+            "decision_id": "restart-probe-phase-decision",
+            "repository_id": repository_id,
+            "task_id": task_id,
+            "run_id": run_id,
+            "attempt_id": attempt_id,
+            "fence": fence,
+            "observed_at": observed_at.isoformat().replace("+00:00", "Z"),
+            "decision_kind": "state",
+            "rule_id": "FACTORY-STATE-TRANSITION",
+            "rule_version": "1",
+            "facts": [
+                {"name": "from_state", "value": "leased"},
+                {"name": "target", "value": "analyzing"},
+            ],
+            "outcome": "observed",
+            "reason_code": "restart_probe_phase_started",
+            "base_sha": base_sha,
+            "head_sha": head_sha,
+            "context_digest": unavailable,
+            "spec_digest": spec_digest,
+            "profile_digest": unavailable,
+            "evidence_refs": [],
+            "constraints": ["scope_bound"],
+            "next_step": "verify",
+            "supersedes": None,
+        }
+    )
+
+
+def _decision_snapshot(
+    database_url: str, repository_id: str, decision_id: str
+) -> tuple[str, dict[str, object], int]:
+    import psycopg
+
+    with psycopg.connect(database_url) as connection:
+        row = connection.execute(
+            "SELECT trim(record_digest),record,"
+            "(SELECT count(*) FROM factory.decision_records_v1) "
+            "FROM factory.decision_records_v1 "
+            "WHERE repository_id=%s AND decision_id=%s",
+            (repository_id, decision_id),
+        ).fetchone()
+    _require(row is not None, "restart decision disappeared")
+    digest_value, record, cardinality = row
+    _require(cardinality == 1, "restart decision cardinality changed")
+    _require(
+        DecisionRecordV1.from_dict(record).record_digest == digest_value,
+        "restart decision digest no longer matches its canonical record",
+    )
+    return digest_value, dict(record), cardinality
 
 
 def _selection(workspace_handle: str) -> ExecutionSelectionV1:
@@ -1200,7 +1269,7 @@ def main() -> int:
     worker_b = Actor(
         "restart-worker-b",
         "worker",
-        frozenset({"task:claim", "task:execute", "task:heartbeat"}),
+        frozenset({"task:claim", "task:execute", "task:heartbeat", "task:release"}),
         frozenset({"probe/repository"}),
     )
     control = FactoryService(runtime_store)
@@ -1245,6 +1314,60 @@ def main() -> int:
     )
     _require(execution_b is not None, "orphaned execution was not claimed")
 
+    task_decision = control.intake(
+        _payload(now, "decision"), actor=operator, now=now
+    ).task
+    grant_decision = control.claim(
+        owner=worker_b.actor_id,
+        role=RunRole.READER,
+        repositories=("probe/repository",),
+        lease_seconds=300,
+        actor=worker_b,
+        now=now,
+        idempotency_key="4" * 64,
+    )
+    _require(grant_decision is not None, "decision probe task was not claimed")
+
+    import psycopg
+
+    with psycopg.connect(owner_url) as connection:
+        attempt_id, base_sha, spec_digest, head_sha = connection.execute(
+            "SELECT attempt.attempt_id,intent.exact_base_sha,intent.spec_digest,"
+            "intent.body->'m0_authority'->>'exact_head_sha' "
+            "FROM factory.attempts attempt "
+            "JOIN factory.tasks task USING(task_id) "
+            "JOIN factory.accepted_intents intent USING(intent_id) "
+            "WHERE attempt.run_id=%s",
+            (grant_decision.run_id,),
+        ).fetchone()
+    restart_decision = _canonical_restart_decision(
+        repository_id=task_decision.repository_id,
+        task_id=grant_decision.task_id,
+        run_id=grant_decision.run_id,
+        attempt_id=str(attempt_id),
+        fence=grant_decision.fence,
+        observed_at=now,
+        base_sha=base_sha,
+        head_sha=head_sha,
+        spec_digest=spec_digest,
+    )
+    decision_key = "0" * 64
+    _require(
+        control.transition_phase(
+            grant_decision,
+            target=TaskStatus.ANALYZING,
+            actor=worker_b,
+            now=now,
+            idempotency_key=decision_key,
+            decision_record=restart_decision,
+        )
+        is TaskStatus.ANALYZING,
+        "restart decision did not commit its phase transition",
+    )
+    decision_snapshot = _decision_snapshot(
+        owner_url, task_decision.repository_id, "restart-probe-phase-decision"
+    )
+
     handle_a = WorkspaceHandle(
         execution_a.lease.task_id,
         execution_a.lease.run_id,
@@ -1258,8 +1381,6 @@ def main() -> int:
     workspace_backend = WorkspaceBackend()
     workspace_backend.register(handle_a)
     workspace_backend.register(handle_b)
-
-    import psycopg
 
     with psycopg.connect(owner_url) as connection:
         connection.execute(
@@ -1280,6 +1401,29 @@ def main() -> int:
     )
     runtime_store = _assert_capability_roles(
         owner_url, runtime_url, attestor_url, runtime_login, attestor_login
+    )
+    _require(
+        _decision_snapshot(
+            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
+        )
+        == decision_snapshot,
+        "first restart changed the exact decision record",
+    )
+    _require(
+        FactoryService(runtime_store).transition_phase(
+            grant_decision,
+            target=TaskStatus.ANALYZING,
+            actor=worker_b,
+            now=now,
+            idempotency_key=decision_key,
+            decision_record=restart_decision,
+        )
+        is TaskStatus.ANALYZING
+        and _decision_snapshot(
+            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
+        )
+        == decision_snapshot,
+        "first restart decision replay was not exact and idempotent",
     )
     identity_first = _database_identity(owner_url)
     _require(
@@ -1364,6 +1508,29 @@ def main() -> int:
     runtime_store = _assert_capability_roles(
         owner_url, runtime_url, attestor_url, runtime_login, attestor_login
     )
+    _require(
+        _decision_snapshot(
+            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
+        )
+        == decision_snapshot,
+        "second restart changed the exact decision record",
+    )
+    _require(
+        FactoryService(runtime_store).transition_phase(
+            grant_decision,
+            target=TaskStatus.ANALYZING,
+            actor=worker_b,
+            now=now,
+            idempotency_key=decision_key,
+            decision_record=restart_decision,
+        )
+        is TaskStatus.ANALYZING
+        and _decision_snapshot(
+            owner_url, task_decision.repository_id, "restart-probe-phase-decision"
+        )
+        == decision_snapshot,
+        "second restart decision replay was not exact and idempotent",
+    )
     identity_second = _database_identity(owner_url)
     _require(
         (identity_second[0] > identity_first[0], identity_second[1:] == identity_before[1:]) == (True, True),
@@ -1373,6 +1540,17 @@ def main() -> int:
         (_late_fence_state(owner_url, run_ids), _legacy_metrics(owner_url))
         == (first_phase_state, first_phase_legacy),
         "second restart mutated the exact first-phase recovery state",
+    )
+    cancelled_decision_task = FactoryService(runtime_store).cancel(
+        task_decision.task_id,
+        reason="restart decision durability verified",
+        idempotency_key="6" * 64,
+        actor=operator,
+        now=now,
+    )
+    _require(
+        cancelled_decision_task.status is TaskStatus.CANCELLED,
+        "decision probe task did not release its bounded capacity",
     )
     second_releaser = AmbiguousWorkspaceReleaser(workspace_backend)
     second = ExecutionRecovery(runtime_store, second_releaser, operator).reconcile(

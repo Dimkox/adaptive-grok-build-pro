@@ -1186,7 +1186,19 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         class FailingPhaseAuditStore(PostgresFactoryStore):
-            def _audit(self, cursor, task_id, actor, action, resource, reason, correlation_id, metadata=None, run_id=None):
+            def _audit(
+                self,
+                cursor,
+                task_id,
+                actor,
+                action,
+                resource,
+                reason,
+                correlation_id,
+                metadata=None,
+                run_id=None,
+                received_at=None,
+            ):
                 if action == "phase_transition":
                     raise StoreError("injected post-mutation audit failure")
                 return super()._audit(
@@ -1199,6 +1211,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     correlation_id,
                     metadata,
                     run_id,
+                    received_at,
                 )
 
         task = self.submit(source="phase-post-mutation-rollback").task

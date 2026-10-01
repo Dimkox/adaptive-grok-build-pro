@@ -1,6 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:adaptive-factory:decision-record:v1",
+  "x-admission": {
+    "boundary": "This schema validates the portable structural wire contract. DecisionRecordV1.from_dict applies the narrower native semantic admission before persistence.",
+    "runtime_only": [
+      "safe_fact_text",
+      "no_self_supersession",
+      "unique_fact_names",
+      "unique_evidence_refs",
+      "unique_constraints",
+      "canonical_uuid_and_timestamp",
+      "repository_task_run_attempt_fence_binding",
+      "supported_persistence_source"
+    ]
+  },
   "type": "object",
   "additionalProperties": false,
   "required": [

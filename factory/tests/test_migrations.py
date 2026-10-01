@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime, timezone
 import re
 import traceback
 import unittest
@@ -41,6 +42,25 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_restart_probe_builds_one_canonical_bound_decision(self):
+        record = postgres_restart_probe._canonical_restart_decision(
+            repository_id="probe/repository",
+            task_id="00000000-0000-0000-0000-000000000001",
+            run_id="00000000-0000-0000-0000-000000000002",
+            attempt_id="00000000-0000-0000-0000-000000000003",
+            fence=1,
+            observed_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            base_sha="1" * 40,
+            head_sha="3" * 40,
+            spec_digest="a" * 64,
+        )
+        self.assertEqual(record.to_dict()["facts"], [
+            {"name": "from_state", "value": "leased"},
+            {"name": "target", "value": "analyzing"},
+        ])
+        self.assertEqual(record.to_dict()["evidence_refs"], [])
+        self.assertEqual(len(record.record_digest), 64)
+
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
