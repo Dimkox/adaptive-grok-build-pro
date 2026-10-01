@@ -202,7 +202,10 @@ class PredictionExplanationV1(FrozenWire):
         if names != {feature["name"] for feature in facts["features"]}:
             raise ContractError("incomplete_vector")
         validated_contributions.sort(key=lambda item: item[0])
-        total = math.fsum([base_value, *(item[1] for item in validated_contributions)])
+        try:
+            total = math.fsum([base_value, *(item[1] for item in validated_contributions)])
+        except (OverflowError, ValueError) as exc:
+            raise ContractError("nonadditive_explanation") from exc
         if abs(total - facts["predicted_value"]) > tolerance:
             raise ContractError("nonadditive_explanation")
         if data["authority_effect"] != "none":

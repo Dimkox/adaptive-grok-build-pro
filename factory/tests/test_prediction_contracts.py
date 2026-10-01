@@ -190,6 +190,29 @@ class PredictionContractTests(unittest.TestCase):
         ]
         self.assertEqual(records[0].record_digest, records[1].record_digest)
 
+    def test_additivity_overflow_fails_closed_as_unavailable_explanation(self):
+        module = self.module()
+        prediction = module.PredictionObservationV1.from_dict(
+            prediction_facts(
+                observed_history_count=100,
+                predicted_value=1.0,
+                features=[
+                    {"name": "a_large", "value": 1, "observed_at": "2026-09-30T11:58:00Z"},
+                    {"name": "b_large", "value": 1, "observed_at": "2026-09-30T11:58:00Z"},
+                ],
+            )
+        )
+        explanation = explanation_facts(
+            prediction,
+            base_value=0.0,
+            contributions=[
+                {"name": "a_large", "value": 1e308},
+                {"name": "b_large", "value": 1e308},
+            ],
+        )
+        with self.assertRaisesRegex(ContractError, "^nonadditive_explanation$"):
+            module.PredictionExplanationV1.from_dict(explanation, prediction=prediction)
+
     def test_replay_index_accepts_same_canonical_body_and_rejects_identity_reuse(self):
         module = self.module()
         replay = module.PredictionReplayIndex(max_entries=2)
