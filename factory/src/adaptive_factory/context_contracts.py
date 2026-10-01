@@ -41,6 +41,7 @@ class ContextManifestV1(FrozenWire):
         digest(data["change_spec_digest"])
         timestamp(data["observed_at"])
         seen = set()
+        admitted_sources = {}
         total = 0
         normalized = dict(data)
         for group in ("mandatory_sources", "selected_sources"):
@@ -48,10 +49,24 @@ class ContextManifestV1(FrozenWire):
             if group == "mandatory_sources" and not entries:
                 raise ContractError("mandatory_context_missing")
             for entry in entries:
-                closed(entry, ("path", "kind", "content", "sha256", "reason"))
+                closed(
+                    entry,
+                    (
+                        "path",
+                        "kind",
+                        "content",
+                        "sha256",
+                        "reason",
+                        "applicable_scope",
+                        "mode",
+                    ),
+                )
                 path(entry["path"])
                 digest(entry["sha256"])
                 identity(entry["reason"])
+                identity(entry["applicable_scope"])
+                if entry["mode"] not in ("full", "verified_extract"):
+                    raise ContractError("invalid_source_mode")
                 if entry["kind"] not in ("instruction", "rule", "contract", "source", "navigation"):
                     raise ContractError("invalid_source_kind")
                 safe_text(entry["content"], "content")
@@ -60,6 +75,13 @@ class ContextManifestV1(FrozenWire):
                 if entry["path"] in seen:
                     raise ContractError("duplicate_source")
                 seen.add(entry["path"])
+                admitted_sources.setdefault(entry["sha256"], set()).add(
+                    (
+                        entry["path"],
+                        entry["applicable_scope"],
+                        entry["mode"],
+                    )
+                )
                 total += len(entry["content"].encode())
             normalized[group] = sorted(entries, key=lambda e: e["path"])
         if len(seen) > 128 or total > 262144:
@@ -67,14 +89,36 @@ class ContextManifestV1(FrozenWire):
         bindings = sequence(data["rule_bindings"])
         seen = set()
         for binding in bindings:
-            closed(binding, ("criterion_id", "rule_id", "revision", "repository_id", "source_digest", "status"))
-            for key in ("criterion_id", "rule_id", "revision", "repository_id"):
+            closed(
+                binding,
+                (
+                    "criterion_id",
+                    "rule_id",
+                    "revision",
+                    "repository_id",
+                    "source_digest",
+                    "source_path",
+                    "applicable_scope",
+                    "mode",
+                    "status",
+                ),
+            )
+            for key in ("criterion_id", "rule_id", "revision", "repository_id", "applicable_scope"):
                 identity(binding[key])
             digest(binding["source_digest"])
+            path(binding["source_path"])
             if binding["repository_id"] != data["repository_id"]:
                 raise ContractError("repository_mismatch")
             if binding["status"] != "active":
                 raise ContractError("rule_not_active")
+            if binding["mode"] not in ("full", "verified_extract"):
+                raise ContractError("invalid_source_mode")
+            if (
+                binding["source_path"],
+                binding["applicable_scope"],
+                binding["mode"],
+            ) not in admitted_sources.get(binding["source_digest"], set()):
+                raise ContractError("source_binding_mismatch")
             key = (binding["criterion_id"], binding["rule_id"])
             if key in seen:
                 raise ContractError("duplicate_rule_binding")
