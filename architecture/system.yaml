@@ -1696,7 +1696,7 @@
     {
       "data_classification": "DATA-FACTORY-INTENT",
       "id": "NODE-FACTORY-LOCAL-API",
-      "owner": "unqualified dormant foundation; local factory operators",
+      "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
@@ -1847,7 +1847,7 @@
     {
       "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-RESULT-DISPATCHER",
-      "owner": "local factory operators",
+      "owner": "unqualified dormant foundation; local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2",
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2"
