@@ -1793,21 +1793,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
                 [
-                    (15, "015_execution_canonical_persistence.sql"),
-                    (16, "016_contract_execution_canonical_persistence.sql"),
-                    (17, "017_execution_recovery_topology.sql"),
-                    (18, "018_semantic_validation_bridge.sql"),
-                    (19, "019_usage_token_components.sql"),
-                    (20, "020_execution_v2_priced_usage.sql"),
-                    (21, "021_semantic_repair_child_rejection_reasons.sql"),
-                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
-                    (23, "023_factory_v15_decisions.sql"),
-                    (24, "024_unverified_capacity.sql"),
-                    (25, "025_bb_external_identity.sql"),
-                    (26, "026_unverified_legacy_packet_guard.sql"),
-                    (27, "027_model_rotator_state.sql"),
-                    (28, "028_model_rotator_closed_inputs.sql"),
-                    (31, "031_native_execution_delivery.sql"),
+                    (item.version, item.name)
+                    for item in discover_migrations()
+                    if item.version >= 15
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1825,7 +1813,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (31, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (len(discover_migrations()), 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -2347,19 +2335,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
                 [
-                    (17, "017_execution_recovery_topology.sql"),
-                    (18, "018_semantic_validation_bridge.sql"),
-                    (19, "019_usage_token_components.sql"),
-                    (20, "020_execution_v2_priced_usage.sql"),
-                    (21, "021_semantic_repair_child_rejection_reasons.sql"),
-                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
-                    (23, "023_factory_v15_decisions.sql"),
-                    (24, "024_unverified_capacity.sql"),
-                    (25, "025_bb_external_identity.sql"),
-                    (26, "026_unverified_legacy_packet_guard.sql"),
-                    (27, "027_model_rotator_state.sql"),
-                    (28, "028_model_rotator_closed_inputs.sql"),
-                    (31, "031_native_execution_delivery.sql"),
+                    (item.version, item.name)
+                    for item in discover_migrations()
+                    if item.version >= 17
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2374,7 +2352,10 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (31, 1, 1, 1, 1, True))
+                self.assertEqual(
+                    cursor.fetchone(),
+                    (len(discover_migrations()), 1, 1, 1, 1, True),
+                )
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2463,21 +2444,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
                 [
-                    (15, "015_execution_canonical_persistence.sql"),
-                    (16, "016_contract_execution_canonical_persistence.sql"),
-                    (17, "017_execution_recovery_topology.sql"),
-                    (18, "018_semantic_validation_bridge.sql"),
-                    (19, "019_usage_token_components.sql"),
-                    (20, "020_execution_v2_priced_usage.sql"),
-                    (21, "021_semantic_repair_child_rejection_reasons.sql"),
-                    (22, "022_semantic_repair_plan_rejection_reasons.sql"),
-                    (23, "023_factory_v15_decisions.sql"),
-                    (24, "024_unverified_capacity.sql"),
-                    (25, "025_bb_external_identity.sql"),
-                    (26, "026_unverified_legacy_packet_guard.sql"),
-                    (27, "027_model_rotator_state.sql"),
-                    (28, "028_model_rotator_closed_inputs.sql"),
-                    (31, "031_native_execution_delivery.sql"),
+                    (item.version, item.name)
+                    for item in discover_migrations()
+                    if item.version >= 15
                 ],
             )
             result = FactoryService(
@@ -2502,7 +2471,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (31, 1, True))
+                self.assertEqual(
+                    cursor.fetchone(), (len(discover_migrations()), 1, True)
+                )
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
