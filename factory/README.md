@@ -109,6 +109,16 @@ members, lifecycle hooks, XML DTD/entity declarations, and configured file,
 depth, and expanded-byte overflows fail closed. Interrupted staging directories
 can be removed with `reconcile()` without selecting a generation.
 
+The caller must inject an owner-controlled package registry. Locks contain only
+immutable package coordinates/graph facts; resolve, admission, and every replay
+recheck those facts plus current qualification/revocation against that registry,
+so a caller-recomputed lock digest is not authority. The store root must already
+exist as an owner-pinned, non-symlink directory that is not group/world writable.
+Every tenant/repository component is created and reopened with `O_NOFOLLOW` and
+inode-pinned for the store lifetime. A generation is activated only after its
+exact manifest and regular-file tree verify; object, generation, and active
+pointer publication fsync their parent directory.
+
 The reviewed optional upstream adapter provenance is
 `Dimkox/vibevm` branch `feat/factory-context-data-only`, commit
 `0b63caa86e80ff670dc2a62ff529079b91d08e4d`, tree
