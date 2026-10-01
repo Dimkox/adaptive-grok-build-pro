@@ -2361,8 +2361,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 service = FactoryService(store)
 
                 def intake_then_commit():
-                    result = service.intake(payload, actor=OPERATOR, now=NOW)
-                    return result, time.monotonic()
+                    return service.intake(payload, actor=OPERATOR, now=NOW)
 
                 def revoke_then_commit():
                     with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -2372,7 +2371,13 @@ class PostgresFactoryTests(unittest.TestCase):
                             ),
                             (identity,),
                         )
-                    return time.monotonic()
+                    with psycopg.connect(DATABASE_URL) as evidence_connection:
+                        return evidence_connection.execute(
+                            sql.SQL("SELECT revoked_at FROM factory.{} WHERE {}=%s").format(
+                                sql.Identifier(table), sql.Identifier(key_column)
+                            ),
+                            (identity,),
+                        ).fetchone()[0]
 
                 with ThreadPoolExecutor(max_workers=2) as pool:
                     intake_future = pool.submit(intake_then_commit)
@@ -2385,11 +2390,20 @@ class PostgresFactoryTests(unittest.TestCase):
                         revocation_blocked = True
                     finally:
                         store.resume.set()
-                    accepted, intake_committed_at = intake_future.result(timeout=5)
+                    accepted = intake_future.result(timeout=5)
                     revoked_at = revoke_future.result(timeout=5)
                 self.assertTrue(revocation_blocked)
                 self.assertTrue(accepted.created)
-                self.assertLessEqual(intake_committed_at, revoked_at)
+                with psycopg.connect(DATABASE_URL) as connection:
+                    committed = connection.execute(
+                        """SELECT intent.accepted_at,task.created_at
+                        FROM factory.tasks task JOIN factory.accepted_intents intent
+                          ON intent.intent_id=task.intent_id
+                        WHERE task.task_id=%s""",
+                        (accepted.task.task_id,),
+                    ).fetchone()
+                self.assertIsNotNone(committed)
+                self.assertLessEqual(max(committed), revoked_at)
                 later = {
                     **payload,
                     "request_id": f"{payload['request_id']}-later",
