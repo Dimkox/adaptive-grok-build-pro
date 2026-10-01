@@ -33,47 +33,23 @@ ALTER TABLE factory.next_model_request_outbox_v1
     observation_digest IS NULL OR observation_digest ~ '^[0-9a-f]{64}$'
   );
 
--- Only this E2E-qualified channel can enter the dispatcher. All other channels remain dormant.
-CREATE FUNCTION factory.enqueue_native_tool_result_v1() RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path=pg_catalog,pg_temp
-AS $$
-DECLARE v_request char(64);
-BEGIN
-  IF NEW.outcome IN ('allow','redacted') AND NEW.envelope->>'channel'='native_tool_result' THEN
-    v_request:=factory.execution_contract_hash(NULL,
-      factory.execution_canonical_json(jsonb_build_object(
-        'contract','next-model-request/v1','envelope_digest',trim(NEW.envelope_digest))));
-    INSERT INTO factory.next_model_request_outbox_v1(
-      request_digest,envelope_digest,task_id,run_id,attempt_id,operation_id,observation_deadline
-    ) VALUES (
-      v_request,NEW.envelope_digest,NEW.task_id,NEW.run_id,NEW.attempt_id,
-      'factory-result:'||trim(v_request),clock_timestamp()+interval '5 minutes'
-    ) ON CONFLICT DO NOTHING;
-  END IF;
-  RETURN NEW;
-END $$;
-REVOKE ALL ON FUNCTION factory.enqueue_native_tool_result_v1() FROM PUBLIC;
-CREATE TRIGGER enqueue_native_tool_result_v1
-AFTER INSERT ON factory.result_sources_v1
-FOR EACH ROW EXECUTE FUNCTION factory.enqueue_native_tool_result_v1();
+-- Qualification remains unavailable until a real native callback/interceptor exists. The
+-- dispatcher is therefore dormant and only consumes rows written by that future boundary.
 
--- Upgrade rows admitted while 024 intentionally kept every channel dormant.
-INSERT INTO factory.next_model_request_outbox_v1(
-  request_digest,envelope_digest,task_id,run_id,attempt_id,operation_id,observation_deadline,created_at
-)
-SELECT request_digest,envelope_digest,task_id,run_id,attempt_id,
-  'factory-result:'||trim(request_digest),admitted_at+interval '5 minutes',admitted_at
-FROM (
-  SELECT factory.execution_contract_hash(NULL,
-      factory.execution_canonical_json(jsonb_build_object(
-        'contract','next-model-request/v1','envelope_digest',trim(envelope_digest)))) AS request_digest,
-    envelope_digest,task_id,run_id,attempt_id,admitted_at,outcome,envelope
-  FROM factory.result_sources_v1
-) qualified
-WHERE outcome IN ('allow','redacted') AND envelope->>'channel'='native_tool_result'
-ON CONFLICT DO NOTHING;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='factory_result_dispatcher') THEN
+    CREATE ROLE factory_result_dispatcher NOLOGIN NOINHERIT;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_roles WHERE rolname='factory_result_dispatcher' AND
+      (rolcanlogin OR rolinherit OR rolsuper OR rolcreaterole OR rolcreatedb OR rolreplication OR rolbypassrls)
+  ) OR EXISTS (
+    SELECT 1 FROM pg_auth_members m
+    JOIN pg_roles parent ON parent.oid=m.roleid JOIN pg_roles member ON member.oid=m.member
+    WHERE parent.rolname='factory_result_dispatcher' OR member.rolname='factory_result_dispatcher'
+  ) THEN RAISE EXCEPTION 'unsafe factory result dispatcher role'; END IF;
+END $$;
+GRANT USAGE ON SCHEMA factory TO factory_result_dispatcher;
 
 CREATE INDEX next_model_request_outbox_v1_dispatchable
   ON factory.next_model_request_outbox_v1(available_at,created_at,request_digest)
@@ -176,24 +152,38 @@ BEGIN
   THEN RAISE EXCEPTION 'invalid dispatch reconciliation'; END IF;
   WITH expired AS (
     SELECT request_digest,dispatch_phase FROM factory.next_model_request_outbox_v1
-    WHERE dispatch_phase IN ('claimed','sending','unknown') AND claim_expires_at<=clock_timestamp()
-    ORDER BY claim_expires_at,request_digest FOR UPDATE SKIP LOCKED LIMIT p_limit
+    WHERE dispatch_phase IN ('pending','claimed','sending','unknown') AND (
+      (claim_expires_at IS NOT NULL AND claim_expires_at<=clock_timestamp())
+      OR ((claim_expires_at IS NULL OR claim_expires_at<=clock_timestamp()) AND
+          (observation_deadline<=clock_timestamp() OR dispatch_attempts>=100))
+    )
+    ORDER BY COALESCE(claim_expires_at,observation_deadline),request_digest
+    FOR UPDATE SKIP LOCKED LIMIT p_limit
   ), repaired AS (
     UPDATE factory.next_model_request_outbox_v1 o SET
-      state=CASE WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'claimed' END,
-      dispatch_phase=CASE WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'unknown' END,
-      reason_code=CASE WHEN e.dispatch_phase='sending' THEN 'post_outcome_ambiguous' ELSE o.reason_code END,
+      state=CASE
+        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'failed'
+        WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'claimed' END,
+      dispatch_phase=CASE
+        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'failed'
+        WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'unknown' END,
+      reason_code=CASE
+        WHEN o.observation_deadline<=clock_timestamp() THEN 'observation_deadline_exceeded'
+        WHEN o.dispatch_attempts>=100 THEN 'dispatch_attempts_exhausted'
+        WHEN e.dispatch_phase='sending' THEN 'post_outcome_ambiguous' ELSE o.reason_code END,
+      observed_at=CASE WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100
+        THEN clock_timestamp() ELSE o.observed_at END,
       available_at=clock_timestamp(),claim_token=NULL,dispatcher_id=NULL,claim_expires_at=NULL
     FROM expired e WHERE o.request_digest=e.request_digest RETURNING 1
   ) SELECT count(*) INTO v_count FROM repaired;
   RETURN v_count;
 END $$;
 
-REVOKE ALL ON FUNCTION factory.claim_model_requests_v1(text,integer,integer) FROM PUBLIC;
-REVOKE ALL ON FUNCTION factory.start_model_request_dispatch_v1(char(64),text,char(64)) FROM PUBLIC;
-REVOKE ALL ON FUNCTION factory.record_model_request_dispatch_v1(char(64),text,char(64),text,text,char(64)) FROM PUBLIC;
-REVOKE ALL ON FUNCTION factory.reconcile_model_requests_v1(text,integer) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION factory.claim_model_requests_v1(text,integer,integer) TO factory_runtime;
-GRANT EXECUTE ON FUNCTION factory.start_model_request_dispatch_v1(char(64),text,char(64)) TO factory_runtime;
-GRANT EXECUTE ON FUNCTION factory.record_model_request_dispatch_v1(char(64),text,char(64),text,text,char(64)) TO factory_runtime;
-GRANT EXECUTE ON FUNCTION factory.reconcile_model_requests_v1(text,integer) TO factory_runtime;
+REVOKE ALL ON FUNCTION factory.claim_model_requests_v1(text,integer,integer) FROM PUBLIC,factory_runtime;
+REVOKE ALL ON FUNCTION factory.start_model_request_dispatch_v1(char(64),text,char(64)) FROM PUBLIC,factory_runtime;
+REVOKE ALL ON FUNCTION factory.record_model_request_dispatch_v1(char(64),text,char(64),text,text,char(64)) FROM PUBLIC,factory_runtime;
+REVOKE ALL ON FUNCTION factory.reconcile_model_requests_v1(text,integer) FROM PUBLIC,factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.claim_model_requests_v1(text,integer,integer) TO factory_result_dispatcher;
+GRANT EXECUTE ON FUNCTION factory.start_model_request_dispatch_v1(char(64),text,char(64)) TO factory_result_dispatcher;
+GRANT EXECUTE ON FUNCTION factory.record_model_request_dispatch_v1(char(64),text,char(64),text,text,char(64)) TO factory_result_dispatcher;
+GRANT EXECUTE ON FUNCTION factory.reconcile_model_requests_v1(text,integer) TO factory_result_dispatcher;

@@ -120,19 +120,11 @@ class ResultChannelQualificationV2:
         closed(data, {"channel", "status", "interception_point", "limitation"})
         if data["channel"] not in RESULT_CHANNELS:
             raise ContractError("invalid_channel")
-        if data["channel"] == "native_tool_result":
-            if data["status"] != "qualified":
-                raise ContractError("channel_qualification_missing")
-            if data["interception_point"] != "factory.result-admission/native-tool-result/v1":
-                raise ContractError("unproved_interception_point")
-            if data["limitation"] != "default_off_authenticated_uds":
-                raise ContractError("qualification_limitation_mismatch")
-        else:
-            if data["status"] != "unavailable":
-                raise ContractError("channel_not_qualified")
-            if data["interception_point"] is not None:
-                raise ContractError("unproved_interception_point")
-            safe_text(data["limitation"], "limitation", 128)
+        if data["status"] != "unavailable":
+            raise ContractError("channel_not_qualified")
+        if data["interception_point"] is not None:
+            raise ContractError("unproved_interception_point")
+        safe_text(data["limitation"], "limitation", 128)
         return cls(**data)
 
     def to_dict(self) -> dict[str, str | None]:
@@ -143,14 +135,7 @@ class ResultChannelQualificationV2:
 
 
 RESULT_CHANNEL_QUALIFICATION_V2 = tuple(
-    ResultChannelQualificationV2.from_dict({
-        **row.to_dict(),
-        **({
-            "status": "qualified",
-            "interception_point": "factory.result-admission/native-tool-result/v1",
-            "limitation": "default_off_authenticated_uds",
-        } if row.channel == "native_tool_result" else {}),
-    })
+    ResultChannelQualificationV2.from_dict(row.to_dict())
     for row in RESULT_CHANNEL_QUALIFICATION
 )
 

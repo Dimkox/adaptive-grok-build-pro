@@ -6,6 +6,15 @@
   "minItems": 7,
   "maxItems": 7,
   "uniqueItems": true,
+  "allOf": [
+    {"contains": {"properties": {"channel": {"const": "native_tool_result"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "synthetic_child_report"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "attachment"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "artifact_cache"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "resume"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "external_cli"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "unknown"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1}
+  ],
   "items": {
     "type": "object",
     "additionalProperties": false,
@@ -16,18 +25,8 @@
       "interception_point": {"type": ["string", "null"], "maxLength": 128},
       "limitation": {"type": "string", "minLength": 1, "maxLength": 128}
     },
-    "allOf": [
-      {
-        "if": {"properties": {"channel": {"const": "native_tool_result"}}, "required": ["channel"]},
-        "then": {"properties": {
-          "status": {"const": "qualified"},
-          "interception_point": {"const": "factory.result-admission/native-tool-result/v1"},
-          "limitation": {"const": "default_off_authenticated_uds"}
-        }},
-        "else": {"properties": {
-          "status": {"const": "unavailable"}, "interception_point": {"type": "null"}
-        }}
-      }
-    ]
+    "allOf": [{"properties": {
+      "status": {"const": "unavailable"}, "interception_point": {"type": "null"}
+    }}]
   }
 }

@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import os
 import re
 from pathlib import Path
+import stat
 from typing import Mapping
 
 import httpx
+
+from .contracts import canonical_digest
 
 
 
@@ -81,6 +86,37 @@ class UdsModelRequestClient:
         self._token = token
         self._timeout = float(timeout_seconds)
         self._transport = transport
+        self._socket_identity = self._validate_socket()
+
+    def _validate_socket(self) -> tuple[int, int]:
+        effective_uid = os.geteuid()
+        parents = tuple(reversed(self._socket_path.parents))
+        try:
+            for index, parent in enumerate(parents):
+                metadata = parent.lstat()
+                mode = stat.S_IMODE(metadata.st_mode)
+                root_sticky = metadata.st_uid == 0 and bool(metadata.st_mode & stat.S_ISVTX)
+                if (
+                    not stat.S_ISDIR(metadata.st_mode)
+                    or metadata.st_uid not in {0, effective_uid}
+                    or (mode & 0o022 and not root_sticky)
+                    or (index == len(parents) - 1 and (metadata.st_uid != effective_uid or mode & 0o022))
+                ):
+                    raise ValueError("model request socket ancestry is not trusted")
+            metadata = self._socket_path.lstat()
+        except OSError as exc:
+            raise ValueError("model request socket identity is not trusted") from exc
+        if (
+            not stat.S_ISSOCK(metadata.st_mode)
+            or metadata.st_uid != effective_uid
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+        ):
+            raise ValueError("model request socket identity is not trusted")
+        return metadata.st_dev, metadata.st_ino
+
+    def _revalidate_socket(self) -> None:
+        if self._validate_socket() != self._socket_identity:
+            raise ValueError("model request socket identity changed")
 
     def _client(self) -> httpx.Client:
         transport = self._transport or httpx.HTTPTransport(uds=str(self._socket_path), retries=0)
@@ -94,28 +130,69 @@ class UdsModelRequestClient:
         }
 
     @staticmethod
-    def _outcome(response: httpx.Response, *, observation: bool) -> DispatchOutcome:
-        if response.status_code >= 500:
+    def _postcondition_digest(claim: DispatchClaim) -> str:
+        return canonical_digest({
+            "contract": "next-model-result-postcondition/v1",
+            "operation_id": claim.operation_id,
+            "request_digest": claim.request_digest,
+            "envelope_digest": claim.envelope_digest,
+        })
+
+    @classmethod
+    def _outcome(
+        cls, status_code: int, raw: bytes, claim: DispatchClaim, *, observation: bool
+    ) -> DispatchOutcome:
+        if status_code >= 500:
             return DispatchOutcome("unknown", "observation_unavailable" if observation else "post_outcome_ambiguous", None)
-        if response.status_code >= 400:
+        if status_code >= 400:
             return DispatchOutcome("failed", "recipient_rejected", None)
         try:
-            body = response.json()
-        except ValueError:
+            body = json.loads(raw)
+        except (UnicodeDecodeError, ValueError):
             return DispatchOutcome("unknown", "invalid_observation", None)
-        if not isinstance(body, dict) or set(body) - {"status", "observation_digest", "reason_code"}:
+        allowed = {
+            "status", "operation_id", "request_digest", "envelope_digest",
+            "postcondition_digest", "reason_code",
+        }
+        if (
+            not isinstance(body, dict)
+            or set(body) - allowed
+            or body.get("operation_id") != claim.operation_id
+            or body.get("request_digest") != claim.request_digest
+            or body.get("envelope_digest") != claim.envelope_digest
+        ):
             return DispatchOutcome("unknown", "invalid_observation", None)
         status = body.get("status")
-        digest = body.get("observation_digest")
+        digest = body.get("postcondition_digest")
         if status == "delivered":
-            if isinstance(digest, str) and HEX64.fullmatch(digest):
+            if digest == cls._postcondition_digest(claim):
                 return DispatchOutcome("delivered", "observed", digest)
             return DispatchOutcome("unknown", "invalid_observation", None)
         if status == "failed":
-            if digest is not None and (not isinstance(digest, str) or not HEX64.fullmatch(digest)):
+            if digest is not None:
                 return DispatchOutcome("unknown", "invalid_observation", None)
-            return DispatchOutcome("failed", "effect_failed", digest)
+            return DispatchOutcome("failed", "effect_failed", None)
         return DispatchOutcome("unknown", "observation_pending", None)
+
+    def _request(self, method: str, path: str, claim: DispatchClaim, **kwargs) -> DispatchOutcome:
+        self._revalidate_socket()
+        try:
+            with self._client() as client, client.stream(
+                method, path, headers=self._headers(claim), **kwargs
+            ) as response:
+                raw = bytearray()
+                for chunk in response.iter_bytes():
+                    if len(raw) + len(chunk) > 65_536:
+                        return DispatchOutcome("unknown", "invalid_observation", None)
+                    raw.extend(chunk)
+                self._revalidate_socket()
+                return self._outcome(
+                    response.status_code, bytes(raw), claim, observation=method == "GET"
+                )
+        except httpx.HTTPError:
+            return DispatchOutcome(
+                "unknown", "observation_unavailable" if method == "GET" else "post_outcome_ambiguous", None
+            )
 
     def dispatch(self, claim: DispatchClaim) -> DispatchOutcome:
         body = {
@@ -127,25 +204,13 @@ class UdsModelRequestClient:
             "attempt_id": claim.attempt_id,
             "result_envelope": dict(claim.payload),
         }
-        try:
-            with self._client() as client:
-                response = client.post("/v1/model-requests", headers=self._headers(claim), json=body)
-        except httpx.HTTPError:
-            return DispatchOutcome("unknown", "post_outcome_ambiguous", None)
-        outcome = self._outcome(response, observation=False)
+        outcome = self._request("POST", "/v1/model-requests", claim, json=body)
         if outcome.state == "delivered":
             return DispatchOutcome("delivered", "accepted", outcome.observation_digest)
         return outcome
 
     def observe(self, claim: DispatchClaim) -> DispatchOutcome:
-        try:
-            with self._client() as client:
-                response = client.get(
-                    f"/v1/model-requests/{claim.operation_id}", headers=self._headers(claim)
-                )
-        except httpx.HTTPError:
-            return DispatchOutcome("unknown", "observation_unavailable", None)
-        return self._outcome(response, observation=True)
+        return self._request("GET", f"/v1/model-requests/{claim.operation_id}", claim)
 
 
 class ResultDispatcher:

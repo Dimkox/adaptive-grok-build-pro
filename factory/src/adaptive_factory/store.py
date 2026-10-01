@@ -1145,6 +1145,8 @@ class PostgresFactoryStore:
     _CONNECT_TIMEOUT_SECONDS = 5
     _MUTATION_LOCK_TIMEOUT = "5s"
     _MUTATION_STATEMENT_TIMEOUT = "5s"
+    _CAPABILITY_ROLE = "factory_runtime"
+    _CAPABILITY_LABEL = "runtime"
     _RECONCILIATION_TIMEOUT_SECONDS = 5.0
     _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.1
 
@@ -1245,12 +1247,19 @@ class PostgresFactoryStore:
                     )
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
-                _validate_capability_session(cursor, "factory_runtime", "runtime")
-                cursor.execute("SET ROLE factory_runtime")
+                _validate_capability_session(
+                    cursor, self._CAPABILITY_ROLE, self._CAPABILITY_LABEL
+                )
+                if self._CAPABILITY_ROLE == "factory_runtime":
+                    cursor.execute("SET ROLE factory_runtime")
+                elif self._CAPABILITY_ROLE == "factory_result_dispatcher":
+                    cursor.execute("SET ROLE factory_result_dispatcher")
+                else:
+                    raise StoreError("unknown database capability")
                 cursor.execute("SET search_path=pg_catalog,factory")
                 cursor.execute("SELECT current_user,current_setting('search_path')")
-                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
-                    raise StoreError("runtime capability unavailable")
+                if cursor.fetchone() != (self._CAPABILITY_ROLE, "pg_catalog, factory"):
+                    raise StoreError(f"{self._CAPABILITY_LABEL} capability unavailable")
         except (
             psycopg.InterfaceError,
             psycopg.OperationalError,
@@ -4362,10 +4371,7 @@ class PostgresFactoryStore:
             value["envelope_digest"] != record.record_digest
             or type(value["created"]) is not bool
             or type(value["outbox_created"]) is not bool
-            or value["outbox_created"] is not (
-                record.channel == "native_tool_result"
-                and record.outcome in {"allow", "redacted"}
-            )
+            or value["outbox_created"] is not False
         ):
             raise StoreError("stored result admission binding mismatch")
         return ResultAdmission(**value)
@@ -4884,3 +4890,10 @@ class PostgresFactoryStore:
                 )
             self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
             return self._get_task(cursor, task_id)
+
+
+class PostgresResultDispatcherStore(PostgresFactoryStore):
+    """Database interface whose login can assume only the dispatcher capability."""
+
+    _CAPABILITY_ROLE = "factory_result_dispatcher"
+    _CAPABILITY_LABEL = "result dispatcher"

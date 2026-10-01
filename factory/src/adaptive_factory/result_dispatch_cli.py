@@ -6,7 +6,7 @@ import time
 
 from .result_dispatch import ResultDispatcher, UdsModelRequestClient
 from .settings import FactorySettings, SettingsError, read_token_file
-from .store import PostgresFactoryStore
+from .store import PostgresResultDispatcherStore
 
 
 class ResultDispatchCliError(RuntimeError):
@@ -39,7 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args(argv)
     settings = FactorySettings.from_environment()
-    dispatcher = compose_result_dispatcher(settings, PostgresFactoryStore(settings.database_url))
+    dispatcher = compose_result_dispatcher(
+        settings, PostgresResultDispatcherStore(settings.result_dispatch_database_url)
+    )
     if args.once:
         dispatcher.run_once()
         return 0

@@ -29,7 +29,7 @@ class ResultDispatchServerTests(unittest.TestCase):
             settings = self.settings(root)
             with self.assertRaisesRegex(ResultDispatchCliError, "disabled"):
                 compose_result_dispatcher(settings, object())
-            with self.assertRaisesRegex(SettingsError, "requires socket and token"):
+            with self.assertRaisesRegex(SettingsError, "requires database, socket and token"):
                 replace(settings, result_dispatch_enabled=True).validate_result_dispatch()
 
     def test_enabled_dispatcher_reads_private_token_and_builds_bounded_runtime(self):
@@ -41,6 +41,7 @@ class ResultDispatchServerTests(unittest.TestCase):
             settings = replace(
                 self.settings(root),
                 result_dispatch_enabled=True,
+                result_dispatch_database_url="postgresql://dispatcher",
                 result_dispatch_socket_path=root / "model.sock",
                 result_dispatch_token_file=token,
                 result_dispatcher_id="dispatcher-a",
@@ -49,7 +50,10 @@ class ResultDispatchServerTests(unittest.TestCase):
                 result_dispatch_poll_seconds=0.2,
                 result_dispatch_timeout_seconds=0.5,
             )
-            dispatcher = compose_result_dispatcher(settings, object())
+            with patch(
+                "adaptive_factory.result_dispatch_cli.UdsModelRequestClient", return_value=object()
+            ):
+                dispatcher = compose_result_dispatcher(settings, object())
             self.assertEqual(
                 (
                     dispatcher.dispatcher_id, dispatcher.batch_size,
@@ -66,6 +70,7 @@ class ResultDispatchServerTests(unittest.TestCase):
             token.chmod(0o644)
             settings = replace(
                 self.settings(root), result_dispatch_enabled=True,
+                result_dispatch_database_url="postgresql://dispatcher",
                 result_dispatch_socket_path=root / "model.sock",
                 result_dispatch_token_file=token,
             )
@@ -85,6 +90,7 @@ class ResultDispatchServerTests(unittest.TestCase):
         enabled = {
             **base,
             "FACTORY_RESULT_DISPATCH_ENABLED": "true",
+            "FACTORY_RESULT_DISPATCH_DATABASE_URL": "postgresql://dispatcher",
             "FACTORY_RESULT_DISPATCH_SOCKET_PATH": "/run/model/control.sock",
             "FACTORY_RESULT_DISPATCH_TOKEN_FILE": "/run/secrets/model-token",
             "FACTORY_RESULT_DISPATCH_BATCH_SIZE": "4",
@@ -107,7 +113,7 @@ class ResultDispatchServerTests(unittest.TestCase):
         dispatcher = unittest.mock.Mock()
         with (
             patch("adaptive_factory.result_dispatch_cli.FactorySettings.from_environment"),
-            patch("adaptive_factory.result_dispatch_cli.PostgresFactoryStore"),
+            patch("adaptive_factory.result_dispatch_cli.PostgresResultDispatcherStore"),
             patch("adaptive_factory.result_dispatch_cli.compose_result_dispatcher", return_value=dispatcher),
         ):
             self.assertEqual(main(["--once"]), 0)

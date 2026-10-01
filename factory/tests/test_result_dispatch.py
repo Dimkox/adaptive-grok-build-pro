@@ -6,6 +6,7 @@ import socketserver
 import tempfile
 import threading
 import unittest
+from adaptive_factory.contracts import canonical_digest
 
 from adaptive_factory.result_dispatch import (
     DispatchClaim,
@@ -130,6 +131,7 @@ class UdsModelRequestClientTests(unittest.TestCase):
                 responder(self, request_line, headers, body)
 
         server = socketserver.UnixStreamServer(str(path), Handler)
+        path.chmod(0o600)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         self.addCleanup(thread.join, 2)
@@ -138,12 +140,27 @@ class UdsModelRequestClientTests(unittest.TestCase):
         self.addCleanup(root.cleanup)
         return path
 
+    @staticmethod
+    def _delivered(item):
+        return {
+            "status": "delivered",
+            "operation_id": item.operation_id,
+            "request_digest": item.request_digest,
+            "envelope_digest": item.envelope_digest,
+            "postcondition_digest": canonical_digest({
+                "contract": "next-model-result-postcondition/v1",
+                "operation_id": item.operation_id,
+                "request_digest": item.request_digest,
+                "envelope_digest": item.envelope_digest,
+            }),
+        }
+
     def test_real_uds_post_is_authenticated_and_bound_to_operation(self):
         seen = []
 
         def respond(handler, line, headers, body):
             seen.append((line, headers, json.loads(body)))
-            payload = json.dumps({"status": "delivered", "observation_digest": "d" * 64}).encode()
+            payload = json.dumps(self._delivered(claim())).encode()
             handler.wfile.write(
                 b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
                 + str(len(payload)).encode() + b"\r\n\r\n" + payload
@@ -152,7 +169,10 @@ class UdsModelRequestClientTests(unittest.TestCase):
         path = self._serve(respond)
         outcome = UdsModelRequestClient(path, "secret-token-value", timeout_seconds=1).dispatch(claim())
 
-        self.assertEqual(outcome, DispatchOutcome("delivered", "accepted", "d" * 64))
+        self.assertEqual(
+            outcome,
+            DispatchOutcome("delivered", "accepted", self._delivered(claim())["postcondition_digest"]),
+        )
         line, headers, body = seen[0]
         self.assertEqual(line, "POST /v1/model-requests HTTP/1.1\r\n")
         self.assertEqual(headers["authorization"], "Bearer secret-token-value")
@@ -168,10 +188,9 @@ class UdsModelRequestClientTests(unittest.TestCase):
             calls.append(request)
             raise httpx.ReadTimeout("lost response", request=request)
 
-        client = UdsModelRequestClient(
-            Path("/run/unused.sock"), "secret-token-value", timeout_seconds=1,
-            transport=httpx.MockTransport(transport),
-        )
+        path = self._serve(lambda *_: None)
+        client = UdsModelRequestClient(path, "secret-token-value", timeout_seconds=1,
+                                       transport=httpx.MockTransport(transport))
         outcome = client.dispatch(claim())
 
         self.assertEqual(outcome, DispatchOutcome("unknown", "post_outcome_ambiguous", None))
@@ -182,12 +201,15 @@ class UdsModelRequestClientTests(unittest.TestCase):
 
         def transport(request):
             methods.append(request.method)
-            return httpx.Response(200, json={"status": "unknown"})
+            return httpx.Response(200, json={
+                "status": "unknown", "operation_id": claim().operation_id,
+                "request_digest": claim().request_digest,
+                "envelope_digest": claim().envelope_digest,
+            })
 
-        client = UdsModelRequestClient(
-            Path("/run/unused.sock"), "secret-token-value", timeout_seconds=1,
-            transport=httpx.MockTransport(transport),
-        )
+        path = self._serve(lambda *_: None)
+        client = UdsModelRequestClient(path, "secret-token-value", timeout_seconds=1,
+                                       transport=httpx.MockTransport(transport))
         outcome = client.observe(claim("unknown"))
         self.assertEqual(outcome, DispatchOutcome("unknown", "observation_pending", None))
         self.assertEqual(methods, ["GET"])
@@ -198,23 +220,29 @@ class UdsModelRequestClientTests(unittest.TestCase):
             (503, DispatchOutcome("unknown", "post_outcome_ambiguous", None)),
         ):
             with self.subTest(status=status):
+                path = self._serve(lambda *_: None)
                 client = UdsModelRequestClient(
-                    Path("/run/unused.sock"), "secret-token-value", timeout_seconds=1,
+                    path, "secret-token-value", timeout_seconds=1,
                     transport=httpx.MockTransport(lambda request: httpx.Response(status)),
                 )
                 self.assertEqual(client.dispatch(claim()), expected)
 
     def test_delivered_response_requires_exact_observation_digest(self):
+        valid = self._delivered(claim())
         for payload in (
             {"status": "delivered"},
-            {"status": "delivered", "observation_digest": "x" * 64},
-            {"status": "delivered", "observation_digest": "d" * 64, "extra": True},
-            {"status": "failed", "observation_digest": "x" * 64},
+            {**valid, "operation_id": "factory-result:" + "f" * 64},
+            {**valid, "request_digest": "f" * 64},
+            {**valid, "envelope_digest": "f" * 64},
+            {**valid, "postcondition_digest": "f" * 64},
+            {**valid, "extra": True},
+            {**valid, "status": "failed"},
             ["delivered"],
         ):
             with self.subTest(payload=payload):
+                path = self._serve(lambda *_: None)
                 client = UdsModelRequestClient(
-                    Path("/run/unused.sock"), "secret-token-value", timeout_seconds=1,
+                    path, "secret-token-value", timeout_seconds=1,
                     transport=httpx.MockTransport(
                         lambda request, payload=payload: httpx.Response(200, json=payload)
                     ),
@@ -223,6 +251,63 @@ class UdsModelRequestClientTests(unittest.TestCase):
                     client.dispatch(claim()),
                     DispatchOutcome("unknown", "invalid_observation", None),
                 )
+
+    def test_response_body_is_bounded_before_json_decode(self):
+        path = self._serve(lambda *_: None)
+        client = UdsModelRequestClient(
+            path, "secret-token-value", timeout_seconds=1,
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(200, content=b"{" + b" " * 65_536 + b"}")
+            ),
+        )
+        self.assertEqual(
+            client.dispatch(claim()), DispatchOutcome("unknown", "invalid_observation", None)
+        )
+
+    def test_failed_response_with_digest_is_recorded_unknown_without_stranding_claim(self):
+        item = claim()
+        path = self._serve(lambda *_: None)
+        payload = {
+            **self._delivered(item), "status": "failed",
+        }
+        client = UdsModelRequestClient(
+            path, "secret-token-value", timeout_seconds=1,
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json=payload)),
+        )
+        store = _Store((item,))
+        ResultDispatcher(store, client, dispatcher_id=item.dispatcher_id).run_once()
+        self.assertEqual(
+            store.calls[-1],
+            ("record", item, DispatchOutcome("unknown", "invalid_observation", None)),
+        )
+
+    def test_socket_identity_is_revalidated_before_bearer_use(self):
+        path = self._serve(lambda *_: None)
+        client = UdsModelRequestClient(
+            path, "secret-token-value", timeout_seconds=1,
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json={})),
+        )
+        path.chmod(0o666)
+        with self.assertRaisesRegex(ValueError, "socket identity"):
+            client.dispatch(claim())
+
+    def test_untrusted_socket_ancestry_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            root.chmod(0o777)
+            path = root / "model.sock"
+            server = socketserver.UnixStreamServer(str(path), socketserver.StreamRequestHandler)
+            self.addCleanup(server.server_close)
+            path.chmod(0o600)
+            with self.assertRaisesRegex(ValueError, "socket"):
+                UdsModelRequestClient(path, "secret-token-value", timeout_seconds=1)
+
+    def test_missing_socket_fails_as_closed_configuration_error(self):
+        with self.assertRaisesRegex(ValueError, "socket identity"):
+            UdsModelRequestClient(
+                Path("/run/adaptive-factory/missing-model.sock"),
+                "secret-token-value", timeout_seconds=1,
+            )
 
 
 if __name__ == "__main__":

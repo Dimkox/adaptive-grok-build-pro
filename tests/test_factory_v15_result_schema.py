@@ -75,13 +75,20 @@ def test_result_schemas_are_structural_and_semantic_admission_is_mandatory():
     Draft202012Validator.check_schema(qualification_v2_schema)
     qualification_v2 = result_channel_qualification_v2_wire()
     assert not list(Draft202012Validator(qualification_v2_schema).iter_errors(qualification_v2))
-    assert result_channel_qualification_v2_from_wire(qualification_v2)[0].status == "qualified"
-    assert all(row["status"] == "unavailable" for row in qualification_v2[1:])
+    assert all(row.status == "unavailable" for row in result_channel_qualification_v2_from_wire(qualification_v2))
     forged_v2 = deepcopy(qualification_v2)
+    forged_v2[0]["status"] = "qualified"
     forged_v2[0]["interception_point"] = "fake.callback"
     assert list(Draft202012Validator(qualification_v2_schema).iter_errors(forged_v2))
-    with pytest.raises(ContractError, match="unproved_interception_point"):
+    with pytest.raises(ContractError, match="channel_not_qualified"):
         result_channel_qualification_v2_from_wire(forged_v2)
+    for malformed in (
+        qualification_v2[:-1],
+        [*qualification_v2[:-1], {**qualification_v2[0], "limitation": "duplicate"}],
+    ):
+        assert list(Draft202012Validator(qualification_v2_schema).iter_errors(malformed))
+        with pytest.raises(ContractError, match="qualification_channel_set"):
+            result_channel_qualification_v2_from_wire(malformed)
 
     def require_closed(schema):
         assert schema["additionalProperties"] is False

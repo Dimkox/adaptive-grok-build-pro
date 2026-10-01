@@ -53,7 +53,7 @@ class MigrationTests(unittest.TestCase):
         function_body = lowered.split("create function factory.admit_result_v1", 1)[1]
         self.assertNotIn("insert into factory.next_model_request_outbox_v1", function_body)
 
-    def test_result_dispatch_migration_is_fenced_definer_only_and_native_only(self):
+    def test_result_dispatch_migration_is_fenced_dormant_and_least_privilege(self):
         migration = discover_migrations()[-1]
         self.assertEqual(
             (migration.version, migration.name),
@@ -66,8 +66,12 @@ class MigrationTests(unittest.TestCase):
         ):
             self.assertIn(f"security definer", lowered)
             self.assertIn(f"revoke all on function factory.{name}", lowered)
-        self.assertIn("new.envelope->>'channel'='native_tool_result'", lowered)
-        self.assertNotIn("synthetic_child_report' then", lowered)
+        self.assertIn("create role factory_result_dispatcher nologin noinherit", lowered)
+        self.assertNotIn("create trigger enqueue_native_tool_result", lowered)
+        self.assertNotIn("grant execute on function factory.claim_model_requests_v1(text,integer,integer) to factory_runtime", lowered)
+        self.assertIn("to factory_result_dispatcher", lowered)
+        self.assertIn("observation_deadline_exceeded", lowered)
+        self.assertIn("dispatch_attempts_exhausted", lowered)
         self.assertIn("post_outcome_ambiguous", lowered)
 
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):

@@ -96,6 +96,7 @@ class FactorySettings:
     landing_state_path: Path | None = None
     landing_live_enabled: bool = False
     result_dispatch_enabled: bool = False
+    result_dispatch_database_url: str | None = None
     result_dispatch_socket_path: Path | None = None
     result_dispatch_token_file: Path | None = None
     result_dispatcher_id: str = "factory-result-dispatcher"
@@ -163,9 +164,10 @@ class FactorySettings:
         ):
             raise SettingsError("invalid result dispatch timeout")
         if self.result_dispatch_enabled and (
-            self.result_dispatch_socket_path is None or self.result_dispatch_token_file is None
+            not self.result_dispatch_database_url
+            or self.result_dispatch_socket_path is None or self.result_dispatch_token_file is None
         ):
-            raise SettingsError("enabled result dispatch requires socket and token file")
+            raise SettingsError("enabled result dispatch requires database, socket and token")
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -249,6 +251,7 @@ class FactorySettings:
             landing_live_enabled=landing_flag == "true",
             landing_provider=landing_provider,
             result_dispatch_enabled=dispatch_flag == "true",
+            result_dispatch_database_url=os.environ.get("FACTORY_RESULT_DISPATCH_DATABASE_URL"),
             result_dispatch_socket_path=Path(dispatch_socket) if dispatch_socket else None,
             result_dispatch_token_file=Path(dispatch_token) if dispatch_token else None,
             result_dispatcher_id=os.environ.get(
