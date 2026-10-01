@@ -35,6 +35,20 @@
   runtime/attestor roles, exact decision digest/cardinality and idempotent replay.
 - `git diff --check` and Python compilation of the restart probe passed.
 
+## Architecture-budget repair
+
+The full verifier exposed `FIT-BOUNDED-FACTORY-TEST-CHANGE` at 784386 bytes
+against the 775000-byte limit. The rule measures the complete size of every
+changed test file, so embedding decision-only cases in the 370KB PostgreSQL
+module and a new 7KB factory test module was the first incorrect state.
+
+Behavioral assertions now live in reusable, non-discovered root helpers while
+the route-owned factory modules retain small discovery/call shims. This keeps
+the same schema, replay, concurrency, rollback, privilege and PostgreSQL checks
+without weakening the architecture budget or schema discovery. The worktree
+fitness command passes; the focused decision contract set and exact disposable
+PostgreSQL decision test also pass after the move.
+
 ## Scope and residual risk
 
 This is the bounded U2 decision-persistence foundation only. Generic decision
