@@ -1,4 +1,5 @@
 import hashlib
+import inspect
 import re
 import traceback
 import unittest
@@ -41,6 +42,15 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_restart_reset_is_fk_closed_for_latest_native_and_v15_children(self):
+        tables = postgres_restart_probe.RESET_TABLES
+        self.assertLess(tables.index("execution_analysis_budgets"), tables.index("execution_native_contexts"))
+        self.assertLess(tables.index("execution_native_contexts"), tables.index("runs"))
+        self.assertLess(tables.index("v15_runtime_evaluations"), tables.index("tasks"))
+        source = inspect.getsource(postgres_restart_probe._reset_database)
+        self.assertIn("_assert_reset_fk_closure", source)
+        self.assertNotIn("CASCADE", source)
+
     def test_v15_runtime_evaluation_migration_is_additive_and_capability_scoped(self):
         migration = discover_migrations()[-2]
         self.assertEqual((migration.version, migration.name), (32, "032_v15_runtime_evaluations.sql"))

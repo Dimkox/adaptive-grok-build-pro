@@ -344,8 +344,51 @@ def _assert_capability_roles(
     return runtime
 
 
+RESET_TABLES = (
+    "execution_analysis_budgets", "execution_native_contexts", "v15_runtime_evaluations",
+    "model_rotator_operations", "model_rotator_reservation_accounting",
+    "model_rotator_request_grants", "model_rotator_states",
+    "bb_external_binding_receipts", "bb_external_bindings",
+    "unverified_resolutions", "unverified_slots", "unverified_limits",
+    "decision_records_v1", "semantic_recovery_records", "semantic_escalations",
+    "semantic_child_task_bindings", "semantic_child_proposals", "semantic_directives",
+    "semantic_verdicts", "semantic_coverage", "semantic_findings", "semantic_assignments",
+    "semantic_metric_events", "semantic_command_results", "semantic_subjects",
+    "execution_recovery_outcomes", "execution_recovery_claims", "execution_recovery_jobs",
+    "workspace_results", "execution_artifact_attestations", "execution_proposals",
+    "execution_stage_events", "execution_manifests", "execution_packets",
+    "audit_log", "audit_heads", "task_events", "command_results", "metric_counters",
+    "budget_reservations", "usage_observations", "capacity_allocations", "attempts",
+    "runs", "lease_sequences", "kill_switches", "reconciliation_runs", "tasks",
+    "accepted_intents", "intake_identities", "m0_authority_observations",
+    "m0_bootstrap_exceptions",
+)
+
+
+def _assert_reset_fk_closure(cursor) -> None:
+    cursor.execute(
+        """SELECT child.relname,parent.relname
+        FROM pg_constraint constraint_record
+        JOIN pg_class child ON child.oid=constraint_record.conrelid
+        JOIN pg_namespace child_namespace ON child_namespace.oid=child.relnamespace
+        JOIN pg_class parent ON parent.oid=constraint_record.confrelid
+        JOIN pg_namespace parent_namespace ON parent_namespace.oid=parent.relnamespace
+        WHERE constraint_record.contype='f' AND child_namespace.nspname='factory'
+          AND parent_namespace.nspname='factory'"""
+    )
+    reset = set(RESET_TABLES)
+    omitted = sorted(
+        (child, parent)
+        for child, parent in cursor.fetchall()
+        if parent in reset and child not in reset
+    )
+    if omitted:
+        raise RuntimeError(f"restart reset omits FK children: {omitted}")
+
+
 def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
     import psycopg
+    from psycopg import sql
 
     observation = (
         uuid.uuid4(),
@@ -358,26 +401,13 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
         "06ecf1c875bc" + "9" * 52,
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+        _assert_reset_fk_closure(cursor)
         cursor.execute(
-            "TRUNCATE factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
-            "factory.semantic_escalations, factory.semantic_child_task_bindings, "
-            "factory.semantic_child_proposals, factory.semantic_directives, "
-            "factory.semantic_verdicts, factory.semantic_coverage, "
-            "factory.semantic_findings, factory.semantic_assignments, "
-            "factory.semantic_metric_events, factory.semantic_command_results, "
-            "factory.semantic_subjects, factory.execution_recovery_outcomes, "
-            "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
-            "factory.workspace_results, factory.execution_artifact_attestations, "
-            "factory.execution_proposals, factory.execution_stage_events, "
-            "factory.execution_manifests, factory.execution_packets, "
-            "factory.audit_log, factory.audit_heads, factory.task_events, "
-            "factory.command_results, factory.metric_counters, "
-            "factory.budget_reservations, factory.usage_observations, "
-            "factory.capacity_allocations, factory.attempts, factory.runs, "
-            "factory.lease_sequences, factory.kill_switches, "
-            "factory.reconciliation_runs, factory.tasks, factory.accepted_intents, "
-            "factory.intake_identities, factory.m0_authority_observations, "
-            "factory.m0_bootstrap_exceptions RESTART IDENTITY"
+            sql.SQL("TRUNCATE {} RESTART IDENTITY").format(
+                sql.SQL(", ").join(
+                    sql.Identifier("factory", table) for table in RESET_TABLES
+                )
+            )
         )
         cursor.execute("TRUNCATE factory.kill_switch_heads")
         cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
