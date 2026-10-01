@@ -204,6 +204,7 @@ class ServerTests(unittest.TestCase):
                 execution_registry=execution_registry,
                 artifact_broker=artifact_broker,
                 snapshot_broker=snapshot_broker,
+                native_execution_consumer=Mock(prepare=Mock()),
             )
 
         runtime_store.assert_called_once_with(settings.database_url)
@@ -312,6 +313,7 @@ class ServerTests(unittest.TestCase):
                             execution_registry=execution_registry,
                             artifact_broker=artifact_broker,
                             snapshot_broker=snapshot_broker,
+                            native_execution_consumer=Mock(prepare=Mock()),
                         )
                     load.assert_not_called()
 
@@ -327,6 +329,7 @@ class ServerTests(unittest.TestCase):
             "execution_registry": Mock(resolve=Mock()),
             "artifact_broker": Mock(attest_artifact=Mock()),
             "snapshot_broker": Mock(snapshot=Mock()),
+            "native_execution_consumer": Mock(prepare=Mock()),
         }
         for missing in tuple(valid):
             dependencies = {**valid, missing: None}
@@ -525,8 +528,9 @@ class ServerTests(unittest.TestCase):
                 "landing_output_path",
             ],
         )
-        self.assertEqual(fields[-len(landing_fields)-1:-1], tuple(landing_fields))
-        self.assertEqual(fields[-1], 'v15_evidence_root')
+        start = fields.index("landing_quarantine_path")
+        self.assertEqual(fields[start:start + len(landing_fields)], tuple(landing_fields))
+        self.assertEqual(fields[start + len(landing_fields)], 'v15_evidence_root')
 
         with patch.dict(
             os.environ,

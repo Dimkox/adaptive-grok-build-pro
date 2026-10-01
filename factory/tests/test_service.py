@@ -55,8 +55,8 @@ class RecordingStore:
         self.calls.append(("release", outcome))
         return TaskStatus.RETRY
 
-    def transition_phase(self, grant, target, actor, now, **_kwargs):
-        self.calls.append(("transition", grant.run_id, target, actor.actor_id))
+    def transition_phase(self, grant, target, actor, now, **kwargs):
+        self.calls.append(("transition", grant.run_id, target, actor.actor_id, kwargs.get("decision_record")))
         return target
 
     def reconcile(self, *args, **kwargs):
@@ -280,11 +280,12 @@ class ServiceTests(unittest.TestCase):
             now=NOW,
             idempotency_key="c" * 64,
             correlation_id="phase-correlation",
+            decision_record={"schema_version": 1, "decision": "continue"},
         )
         self.assertEqual(result, TaskStatus.ANALYZING)
         self.assertEqual(
             store.calls[-1],
-            ("transition", "run-1", TaskStatus.ANALYZING, "worker"),
+            ("transition", "run-1", TaskStatus.ANALYZING, "worker", {"schema_version": 1, "decision": "continue"}),
         )
         with self.assertRaises(ValueError):
             service.transition_phase(

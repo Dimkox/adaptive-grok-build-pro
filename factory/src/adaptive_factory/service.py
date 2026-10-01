@@ -82,6 +82,7 @@ class FactoryService:
         semantic_validator_store=None,
         semantic_adjudicator_store=None,
         repair_child_broker=None,
+        native_execution_consumer=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
@@ -92,6 +93,7 @@ class FactoryService:
         self.semantic_validator_store = semantic_validator_store
         self.semantic_adjudicator_store = semantic_adjudicator_store
         self.repair_child_broker = repair_child_broker
+        self.native_execution_consumer = native_execution_consumer
 
     def readiness(self):
         return self.store.readiness()
@@ -499,6 +501,10 @@ class FactoryService:
                 },
             )
             manifest = RunManifestV1.from_packet(packet, deadline=material["deadline"])
+            sidecar = (
+                self.native_execution_consumer.prepare(packet)
+                if self.native_execution_consumer is not None else None
+            )
             start_key = (
                 canonical_digest(
                     {"command": idempotency_key, "phase": "execution_start", "packet_digest": packet.packet_digest}
@@ -512,6 +518,7 @@ class FactoryService:
                     packet,
                     manifest,
                     actor,
+                    native_sidecar=sidecar,
                     idempotency_key=start_key,
                     correlation_id=correlation_id,
                 )
@@ -892,6 +899,7 @@ class FactoryService:
         now: datetime,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        decision_record=None,
     ) -> TaskStatus:
         self._require_grant_actor(grant, actor, "task:release")
         if not isinstance(target, TaskStatus) or target not in {
@@ -907,10 +915,22 @@ class FactoryService:
                 target,
                 actor,
                 now,
+                decision_record=decision_record,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
         )
+
+    def consume_analysis_budget(
+        self, grant: LeaseGrant, *, packet_digest: str, rounds: int, tool_operations: int,
+        facts_digest: str | None, blocker_digest: str | None, actor: Actor,
+    ):
+        self._require_grant_actor(grant, actor, "task:execute")
+        if type(rounds) is not int or type(tool_operations) is not int or rounds < 0 or tool_operations < 0:
+            raise ValueError("analysis consumption must be non-negative integers")
+        return self._fenced(lambda: self.store.consume_analysis_budget(
+            grant, packet_digest, rounds, tool_operations, facts_digest, blocker_digest
+        ))
 
     def reserve_budget(
         self,

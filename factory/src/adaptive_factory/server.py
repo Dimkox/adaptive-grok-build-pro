@@ -13,6 +13,7 @@ from .api import TEXT_ID, Authenticator, create_app
 from .landing_server import compose_server_landing
 from .migrations import discover_migrations
 from .models import Actor
+from .native_execution import AnalysisBudgetV1, FileNativeContextSource, NativeExecutionConsumer
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
 from .store import (
@@ -129,8 +130,18 @@ def build_app(
     artifact_broker=None,
     snapshot_broker=None,
     landing_service=None,
+    native_execution_consumer=None,
 ):
     settings.validate_landing()
+    if settings.execution_enabled and native_execution_consumer is None and settings.native_context_root is not None:
+        native_execution_consumer = NativeExecutionConsumer(
+            FileNativeContextSource(settings.native_context_root),
+            AnalysisBudgetV1.from_dict({
+                "schema_version": 1,
+                "max_rounds": settings.analysis_max_rounds,
+                "max_tool_operations": settings.analysis_max_tool_operations,
+            }),
+        )
     if settings.execution_enabled and (
         execution_registry is None
         or not callable(getattr(execution_registry, "resolve", None))
@@ -138,6 +149,8 @@ def build_app(
         or not callable(getattr(artifact_broker, "attest_artifact", None))
         or snapshot_broker is None
         or not callable(getattr(snapshot_broker, "snapshot", None))
+        or native_execution_consumer is None
+        or not callable(getattr(native_execution_consumer, "prepare", None))
     ):
         raise ServerError("trusted execution dependencies are unavailable")
 
@@ -194,6 +207,7 @@ def build_app(
                 artifact_broker=artifact_broker if settings.execution_enabled else None,
                 artifact_attestation_store=attestation_store,
                 snapshot_broker=snapshot_broker if settings.execution_enabled else None,
+                native_execution_consumer=(native_execution_consumer if settings.execution_enabled else None),
                 semantic_store=semantic_store,
                 semantic_validator_store=semantic_validator_store,
                 semantic_adjudicator_store=semantic_adjudicator_store,

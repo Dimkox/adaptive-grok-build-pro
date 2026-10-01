@@ -116,6 +116,7 @@ class FakeExecutionStore:
         from adaptive_factory.models import ExecutionGrant
         return ExecutionGrant(grant, packet.packet_digest, manifest.manifest_digest, manifest.workspace_handle, manifest.provider_id, ExecutionStage.PREPARED)
 
+
     def release(self, grant, outcome, actor, now, **kwargs):
         self.calls.append(("release", grant, outcome, actor, now, kwargs))
         return TaskStatus.RETRY if outcome is FailureClass.DATABASE_UNAVAILABLE else TaskStatus.NEEDS_HUMAN
@@ -211,6 +212,16 @@ class FakeExecutionStore:
         return self.finalized.get(idempotency_key)
 
 
+class FakeNativeExecutionConsumer:
+    def __init__(self):
+        self.packets = []
+        self.sidecar = type("Sidecar", (), {"to_dict": lambda self: {"schema_version": 1}})()
+
+    def prepare(self, packet):
+        self.packets.append(packet)
+        return self.sidecar
+
+
 class UnavailableSnapshotBroker:
     def snapshot(self, _request, *, timeout_seconds):
         return WorkspaceSnapshotUnavailable()
@@ -279,7 +290,8 @@ class ExecutionServiceTests(unittest.TestCase):
 
     def test_explicit_execution_claim_preserves_legacy_digest_and_persists_manifest(self):
         store = FakeExecutionStore()
-        result = FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+        consumer = FakeNativeExecutionConsumer()
+        result = FactoryService(store, execution_registry=trusted_registry(), native_execution_consumer=consumer).claim_execution(
             owner=WORKER.actor_id,
             role=RunRole.WRITER,
             repositories=("owner/repository",),
@@ -295,6 +307,8 @@ class ExecutionServiceTests(unittest.TestCase):
         self.assertEqual(result.provider_id, "codex")
         self.assertEqual(result.stage, ExecutionStage.PREPARED)
         self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "material", "start"))
+        self.assertEqual(len(consumer.packets), 1)
+        self.assertIs(store.calls[-1][-1]["native_sidecar"], consumer.sidecar)
 
     def test_reader_selection_cannot_request_write_capabilities(self):
         store = FakeExecutionStore()

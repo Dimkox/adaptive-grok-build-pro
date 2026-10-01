@@ -2927,6 +2927,7 @@ class PostgresFactoryStore:
         manifest,
         actor: Actor,
         *,
+        native_sidecar=None,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ) -> ExecutionGrant:
@@ -2969,6 +2970,13 @@ class PostgresFactoryStore:
             )
             if not cursor.fetchone()[0]:
                 raise FenceError("stale or expired fence")
+            if native_sidecar is not None:
+                cursor.execute(
+                    "SELECT factory.execution_record_native_sidecar(%s::jsonb)",
+                    (json.dumps(native_sidecar.to_dict(), sort_keys=True, separators=(",", ":")),),
+                )
+                if not cursor.fetchone()[0]:
+                    raise FenceError("native execution sidecar rejected")
             result = ExecutionGrant(
                 grant,
                 packet.packet_digest,
@@ -3005,6 +3013,20 @@ class PostgresFactoryStore:
                 grant.run_id,
             )
             return result
+
+    def consume_analysis_budget(
+        self, grant: LeaseGrant, packet_digest: str, rounds: int, tool_operations: int,
+        facts_digest: str | None, blocker_digest: str | None,
+    ):
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.execution_consume_analysis_budget(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (grant.task_id, grant.run_id, grant.owner, grant.fence, packet_digest,
+                 rounds, tool_operations, facts_digest, blocker_digest),
+            )
+            return cursor.fetchone()[0]
 
     def advance_execution(
         self,
