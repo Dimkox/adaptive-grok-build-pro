@@ -1,4 +1,6 @@
 from copy import deepcopy
+import json
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -40,6 +42,53 @@ def decision_facts():
 
 
 class DecisionContractTests(unittest.TestCase):
+    def test_schema_and_parser_reject_closed_missing_and_malformed_records(self):
+        schema = Path("factory/contracts/v15/decision-record.v1.schema.json")
+        valid = decision_facts()
+        self.assertEqual(
+            subprocess.run(
+                ["jsonschema", str(schema)], input=json.dumps(valid), text=True,
+                capture_output=True,
+            ).returncode,
+            0,
+        )
+        mutations = []
+        for name, mutate in (
+            ("unknown", lambda value: value.update(unexpected=True)),
+            ("missing", lambda value: value.pop("reason_code")),
+            ("digest", lambda value: value.update(context_digest="f" * 63)),
+            ("scalar", lambda value: value.update(fence=True)),
+        ):
+            candidate = deepcopy(valid)
+            mutate(candidate)
+            mutations.append((name, candidate))
+        for name, candidate in mutations:
+            with self.subTest(name=name):
+                self.assertNotEqual(
+                    subprocess.run(
+                        ["jsonschema", str(schema)], input=json.dumps(candidate), text=True,
+                        capture_output=True,
+                    ).returncode,
+                    0,
+                )
+                with self.assertRaises(ContractError):
+                    DecisionRecordV1.from_dict(candidate)
+
+    def test_parser_rejects_unsafe_refs_timestamps_digests_and_scalars(self):
+        for name, key, value in (
+            ("unsafe_ref", "evidence_refs", ["../report.json"]),
+            ("secret_ref", "evidence_refs", ["keys/operator.pem"]),
+            ("invalid_timestamp", "observed_at", "not-a-time"),
+            ("invalid_digest", "profile_digest", "g" * 64),
+            ("invalid_spec_digest", "spec_digest", "g" * 64),
+            ("invalid_sha", "base_sha", "A" * 40),
+            ("invalid_fact_scalar", "facts", [{"name": "risk", "value": 1.5}]),
+        ):
+            candidate = decision_facts()
+            candidate[key] = value
+            with self.subTest(name=name), self.assertRaises(ContractError):
+                DecisionRecordV1.from_dict(candidate)
+
     def test_record_boundaries(self):
         facts = decision_facts()
         record = DecisionRecordV1.from_dict(facts)
@@ -105,6 +154,54 @@ class DecisionContractTests(unittest.TestCase):
                 [dict(entry, amount_usd_micros=-1)], expected_usage_ids=["call-1"]
             )
 
+    def test_cost_completeness_and_mutation_matrix(self):
+        actual = dict(usage_id="call-1", source="provider", currency="USD",
+                      pricing_version="p1", amount_usd_micros=120, status="actual")
+        unknown = dict(actual, usage_id="call-2", pricing_version=None,
+                       amount_usd_micros=None, status="unknown")
+        estimated = dict(actual, usage_id="call-2", amount_usd_micros=30,
+                         status="estimated")
+        self.assertEqual(
+            summarize_cost([actual, unknown], expected_usage_ids=["call-1", "call-2"]),
+            dict(known_usd_micros=120, complete=False, total_usd_micros=None,
+                 unknown_items=1, estimated_items=0),
+        )
+        self.assertEqual(
+            summarize_cost([actual, estimated], expected_usage_ids=["call-1", "call-2"]),
+            dict(known_usd_micros=150, complete=False, total_usd_micros=None,
+                 unknown_items=0, estimated_items=1),
+        )
+        self.assertEqual(
+            summarize_cost([actual], expected_usage_ids=["call-1", "call-2"])["unknown_items"],
+            1,
+        )
+        self.assertEqual(
+            summarize_cost(
+                [dict(actual, amount_usd_micros=2**63 - 1)],
+                expected_usage_ids=["call-1"],
+            )["total_usd_micros"],
+            2**63 - 1,
+        )
+        invalid = (
+            (actual, actual),
+            (dict(actual, currency="EUR"),),
+            (dict(actual, status="projected"),),
+            (dict(actual, pricing_version=None),),
+            (dict(actual, pricing_version=7),),
+            (dict(unknown, amount_usd_micros=0),),
+            (dict(actual, amount_usd_micros=True),),
+            (dict(actual, amount_usd_micros=2**63),),
+        )
+        for index, entries in enumerate(invalid):
+            with self.subTest(index=index), self.assertRaises(ContractError):
+                summarize_cost(list(entries), expected_usage_ids=["call-1"])
+
+        with self.assertRaises(ContractError):
+            summarize_cost(
+                [actual, dict(actual, usage_id="call-2", amount_usd_micros=2**63 - 1)],
+                expected_usage_ids=["call-1", "call-2"],
+            )
+
     def test_timing_boundaries(self):
         intervals = [
             dict(
@@ -129,6 +226,34 @@ class DecisionContractTests(unittest.TestCase):
                 human_seconds=None,
             ),
         )
+
+    def test_timing_acceptance_human_and_mutation_matrix(self):
+        interval = dict(phase="analysis", start="2026-09-30T12:00:02Z",
+                        end="2026-09-30T12:00:08Z")
+        self.assertEqual(
+            summarize_timing(
+                "2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [interval],
+                accepted_at="2026-09-30T12:00:01Z", human_seconds=3,
+            ),
+            dict(age_seconds=10, accepted_seconds=1, observed_wall_seconds=6,
+                 resource_seconds=6, human_seconds=3),
+        )
+        invalid = (
+            ("2026-09-30T12:00:10Z", "2026-09-30T12:00:00Z", [], None, None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [dict(interval, start="2026-09-30T11:59:59Z")], None, None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [dict(interval, end="2026-09-30T12:00:11Z")], None, None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [dict(interval, start=interval["end"], end=interval["start"])], None, None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [], "2026-09-30T11:59:59Z", None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [], "2026-09-30T12:00:11Z", None),
+            ("bad-time", "2026-09-30T12:00:10Z", [], None, None),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [], None, True),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [], None, -1),
+            ("2026-09-30T12:00:00Z", "2026-09-30T12:00:10Z", [], None, 2**63),
+        )
+        for index, (admitted, observed, intervals, accepted, human) in enumerate(invalid):
+            with self.subTest(index=index), self.assertRaises(ContractError):
+                summarize_timing(admitted, observed, intervals,
+                                 accepted_at=accepted, human_seconds=human)
 
     def test_persistence_seam(self):
         versions = {migration.version for migration in discover_migrations()}
