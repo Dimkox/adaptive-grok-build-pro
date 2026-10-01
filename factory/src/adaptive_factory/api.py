@@ -826,7 +826,11 @@ def create_app(
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
-    @app.post("/v1/execution/native-context", tags=["execution"])
+    @app.post(
+        "/v1/execution/native-context",
+        tags=["execution"],
+        operation_id="getNativeExecutionContext",
+    )
     def native_execution_context(payload: dict, authorization: str | None = Header(None)):
         actor = authenticator.authenticate(authorization, "task:execute")
         payload = _closed(payload, {"grant", "packet_digest"})
@@ -834,7 +838,11 @@ def create_app(
             _grant(payload["grant"]), packet_digest=_digest(payload["packet_digest"], "packet_digest"), actor=actor
         )}
 
-    @app.post("/v1/execution/analysis-budget", tags=["execution"])
+    @app.post(
+        "/v1/execution/analysis-budget",
+        tags=["execution"],
+        operation_id="consumeAnalysisBudget",
+    )
     def consume_analysis_budget(payload: dict, authorization: str | None = Header(None)):
         actor = authenticator.authenticate(authorization, "task:execute")
         payload = _closed(payload, {"grant", "packet_digest", "rounds", "tool_operations", "facts_digest", "blocker_digest"})

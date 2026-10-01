@@ -58,6 +58,10 @@ EXPECTED_SEMANTIC_OPERATIONS = {
     ("/v1/semantic/subjects/{subject_digest}/verdict", "get"): "getSemanticVerdict",
 }
 EXPECTED_OPERATIONS = EXPECTED_CONTROL_OPERATIONS | EXPECTED_SEMANTIC_OPERATIONS
+EXPECTED_RUNTIME_EXECUTION_ADDITIONS = {
+    ("/v1/execution/native-context", "post"): "getNativeExecutionContext",
+    ("/v1/execution/analysis-budget", "post"): "consumeAnalysisBudget",
+}
 EXPECTED_LANDING_OPERATIONS = {
     ("/v1/landing-inputs", "post"): "submitLandingInput",
     ("/v1/landing-jobs/{job_id}", "get"): "getLandingJob",
@@ -242,9 +246,26 @@ class CheckedOpenApiContractTests(unittest.TestCase):
             runtime,
             set(EXPECTED_OPERATIONS).union(
                 set(EXPECTED_LANDING_OPERATIONS),
+                set(EXPECTED_RUNTIME_EXECUTION_ADDITIONS),
                 *(set(items) for items in execution_operations)
             ),
         )
+        runtime_ids = {
+            (route.path, method.lower()): route.operation_id
+            for route in app.routes
+            for method in getattr(route, "methods", ())
+            if (route.path, method.lower()) in EXPECTED_RUNTIME_EXECUTION_ADDITIONS
+        }
+        self.assertEqual(runtime_ids, EXPECTED_RUNTIME_EXECUTION_ADDITIONS)
+        existing_ids = set(observed.values()).union(
+            *(
+                {operation.get("operationId") for operation in items.values()}
+                for items in execution_operations
+            )
+        )
+        added_ids = list(runtime_ids.values())
+        self.assertEqual(len(set(added_ids)), len(added_ids))
+        self.assertTrue(existing_ids.isdisjoint(added_ids))
 
     def test_landing_openapi_operation_ids_match_the_always_visible_runtime_routes(self):
         contract = {

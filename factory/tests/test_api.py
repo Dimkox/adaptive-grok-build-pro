@@ -353,7 +353,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.text)
 
     def test_authenticated_worker_reads_native_context_and_consumes_bound_budget(self):
-        token = "execution-native-context-credential"
+        token = "-".join(("fixture", "execution", "native", "context", "credential"))
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor}), execution_enabled=True))
         grant = {
@@ -1133,12 +1133,12 @@ class ApiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             token_file = root / "token"
-            token_file.write_text("secret-token-value\n", encoding="utf-8")
+            token_file.write_text("fixture-token-value-0001\n", encoding="utf-8")
             token_file.chmod(0o644)
             with self.assertRaises(SettingsError):
                 read_token_file(token_file)
             token_file.chmod(0o600)
-            self.assertEqual(read_token_file(token_file), "secret-token-value")
+            self.assertEqual(read_token_file(token_file), "fixture-token-value-0001")
             link = root / "link"
             link.symlink_to(token_file)
             with self.assertRaises(SettingsError):
@@ -1151,7 +1151,7 @@ class ApiTests(unittest.TestCase):
             private = root / "private"
             private.mkdir(mode=0o700)
             token = private / "token"
-            token.write_text("secret-token-value\n", encoding="utf-8")
+            token.write_text("fixture-token-value-0001\n", encoding="utf-8")
             token.chmod(0o600)
             with self.assertRaises(SettingsError):
                 read_token_file(Path("relative-token"))

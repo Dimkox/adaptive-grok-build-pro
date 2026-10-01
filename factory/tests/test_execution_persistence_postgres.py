@@ -324,7 +324,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.execution_analysis_budgets, factory.execution_native_contexts, factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
+                "TRUNCATE factory.v15_runtime_evaluations, factory.execution_analysis_budgets, factory.execution_native_contexts, factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, "
                 "factory.semantic_escalations, factory.semantic_child_task_bindings, "
                 "factory.semantic_child_proposals, factory.semantic_directives, "
                 "factory.semantic_verdicts, factory.semantic_coverage, "
