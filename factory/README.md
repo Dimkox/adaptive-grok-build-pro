@@ -120,6 +120,9 @@ store lifetime; object, generation and pointer I/O uses those descriptors rather
 than resolving the caller-visible path again. A generation is activated only after its
 exact manifest and regular-file tree verify; object, generation, and active
 pointer publication fsync their parent directory.
+Use the store as a context manager or call its idempotent `close()` when its
+lifetime ends; constructor rollback and the finalizer close all retained
+descriptors on failure paths as well.
 
 The reviewed optional upstream adapter provenance is
 `Dimkox/vibevm` branch `feat/factory-context-data-only`, commit

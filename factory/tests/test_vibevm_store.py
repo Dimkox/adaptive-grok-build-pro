@@ -68,6 +68,7 @@ class VibeVMStoreTests(unittest.TestCase):
                                  registry=self.registry)
 
     def tearDown(self):
+        self.store.close()
         self.temp.cleanup()
 
     def trust(self, item):
@@ -272,6 +273,42 @@ class VibeVMStoreTests(unittest.TestCase):
         self.registry.callback = swap_objects
         self.assert_code("store_path_changed", lambda: self.store.replay(lock))
         self.assertEqual(list(outside.iterdir()), [])
+
+    def test_descriptor_lifecycle_close_constructor_rollback_and_hostile_replay_are_bounded(self):
+        def descriptor_count():
+            return len(list(Path("/proc/self/fd").iterdir()))
+
+        baseline = descriptor_count()
+        with VibeVMStore(self.base, tenant_id="context", repository_id="repo", registry=self.registry) as scoped:
+            self.assertGreater(descriptor_count(), baseline)
+            self.assertIsNone(scoped.active_generation())
+        self.assertEqual(descriptor_count(), baseline)
+        scoped.close()
+        self.assert_code("store_closed", scoped.active_generation)
+        self.assert_code("store_closed", lambda: scoped.object_path("0" * 64))
+
+        unsafe = self.base / "partial"
+        unsafe.mkdir(mode=0o700)
+        outside = self.base / "partial-outside"
+        outside.mkdir(mode=0o700)
+        (unsafe / "tenants").symlink_to(outside, target_is_directory=True)
+        before_failure = descriptor_count()
+        self.assert_code(
+            "store_path_unsafe",
+            lambda: VibeVMStore(unsafe, tenant_id="tenant", repository_id="repo", registry=self.registry),
+        )
+        self.assertEqual(descriptor_count(), before_failure)
+
+        payload = archive([("rule.md", "ok")])
+        item = package("leak", "1", payload)
+        lock = self.lock(item)
+        object_path = self.store.admit(item, payload)
+        hardlink = self.base / "object-hardlink"
+        os.link(object_path, hardlink)
+        before_replays = descriptor_count()
+        for _ in range(100):
+            self.assert_code("object_authority_mismatch:leak@1", lambda: self.store.replay(lock))
+        self.assertEqual(descriptor_count(), before_replays)
 
     def test_restart_and_tenant_repository_symlink_isolation(self):
         payload = archive([("rule.md", "ok")])

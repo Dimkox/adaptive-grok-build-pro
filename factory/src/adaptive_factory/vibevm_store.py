@@ -123,18 +123,49 @@ class VibeVMStore:
         if max_files < 1 or max_bytes < 1 or max_depth < 1 or not hasattr(registry, "get_package"):
             raise VibeVMStoreError("invalid_configuration")
         base = Path(root).absolute()
-        self._pins, self._fds = [], {}
-        self._pin(base, "store_root")
-        tenant, repository = _scope(tenant_id, "tenant_id"), _scope(repository_id, "repository_id")
-        tenant_root = self._child(base, "tenants")
-        tenant_path = self._child(tenant_root, tenant)
-        repositories = self._child(tenant_path, "repositories")
-        self.root = self._child(repositories, repository)
-        self.objects = self._child(self.root, "objects")
-        self.generations = self._child(self.root, "generations")
-        self.active_path = self.root / "active"
-        self.registry = registry
-        self.max_files, self.max_bytes, self.max_depth = max_files, max_bytes, max_depth
+        self._pins, self._fds, self._closed = [], {}, False
+        try:
+            self._pin(base, "store_root")
+            tenant, repository = _scope(tenant_id, "tenant_id"), _scope(repository_id, "repository_id")
+            tenant_root = self._child(base, "tenants")
+            tenant_path = self._child(tenant_root, tenant)
+            repositories = self._child(tenant_path, "repositories")
+            self.root = self._child(repositories, repository)
+            self.objects = self._child(self.root, "objects")
+            self.generations = self._child(self.root, "generations")
+            self.active_path = self.root / "active"
+            self.registry = registry
+            self.max_files, self.max_bytes, self.max_depth = max_files, max_bytes, max_depth
+        except Exception:
+            self.close()
+            raise
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        descriptors = tuple(set(self._fds.values()))
+        self._fds.clear()
+        self._pins.clear()
+        for descriptor in descriptors:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+
+    def __enter__(self):
+        self._check_paths()
+        return self
+
+    def __exit__(self, _exception_type, _exception, _traceback):
+        self.close()
+        return False
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            self._closed = True
 
     def _pin(self, path: Path, code: str, descriptor=None) -> Path:
         try:
@@ -185,6 +216,8 @@ class VibeVMStore:
         return Path(f"/proc/self/fd/{self._fds[path]}")
 
     def _check_paths(self) -> None:
+        if self._closed:
+            raise VibeVMStoreError("store_closed")
         for path, device, inode, owner in self._pins:
             try:
                 value = os.fstat(self._fds[path])
@@ -259,22 +292,28 @@ class VibeVMStore:
         return {"schema_version": 1, **graph, "graph_digest": _digest(_canonical(graph))}
 
     def object_path(self, digest: str) -> Path:
+        self._check_paths()
         if not _valid_digest(digest):
             raise VibeVMStoreError("invalid_digest")
         return self.objects / digest
 
     def _read_object(self, digest: str, coordinate: str) -> bytes:
+        descriptor = None
         try:
             descriptor = os.open(digest, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=self._fds[self.objects])
             value = os.fstat(descriptor)
             if not stat.S_ISREG(value.st_mode) or value.st_uid != os.geteuid() or value.st_nlink != 1:
                 raise VibeVMStoreError(f"object_authority_mismatch:{coordinate}")
             with os.fdopen(descriptor, "rb") as source:
+                descriptor = None
                 return source.read()
         except FileNotFoundError:
             raise VibeVMStoreError(f"missing_package:{coordinate}") from None
         except OSError as error:
             raise VibeVMStoreError(f"object_authority_mismatch:{coordinate}") from error
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
 
     def admit(self, item, payload: bytes) -> Path:
         self._check_paths()
@@ -447,12 +486,15 @@ class VibeVMStore:
         return entries
 
     def _validate_generation(self, identity: str) -> None:
+        descriptor = None
         try:
             descriptor = os.open(identity, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
                                  dir_fd=self._fds[self.generations])
             metadata = os.fstat(descriptor)
             visible = os.stat(identity, dir_fd=self._fds[self.generations], follow_symlinks=False)
         except OSError as error:
+            if descriptor is not None:
+                os.close(descriptor)
             raise VibeVMStoreError("generation_manifest_mismatch") from error
         if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.geteuid()
                 or (metadata.st_dev, metadata.st_ino) != (visible.st_dev, visible.st_ino)):
@@ -483,11 +525,14 @@ class VibeVMStore:
             raise VibeVMStoreError("generation_manifest_mismatch")
 
     def _locked_root(self):
+        descriptor = None
         try:
             descriptor = os.open(".generation.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600,
                                  dir_fd=self._fds[self.root])
             value = os.fstat(descriptor)
         except OSError as error:
+            if descriptor is not None:
+                os.close(descriptor)
             raise VibeVMStoreError("generation_lock_unsafe") from error
         if not stat.S_ISREG(value.st_mode) or value.st_uid != os.geteuid() or value.st_nlink != 1:
             os.close(descriptor)
