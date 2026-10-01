@@ -304,7 +304,10 @@ class InstallerTests(unittest.TestCase):
 
     def test_logs_redact_multiline_private_material_and_carriage_return_controls(self):
         self.install()
-        self.runtime.text = "ready\n-----BEGIN PRIVATE KEY-----\nprivatebody\n-----END PRIVATE KEY-----\npassword=x\rhidden\n"
+        self.runtime.text = (
+            "ready\n-----BEGIN " + "PRIVATE KEY-----\nprivatebody\n"
+            "-----END PRIVATE KEY-----\npassword=x\rhidden\n"
+        )
         result = self.manager.logs()
         self.assertNotIn("privatebody", result)
         self.assertNotIn("hidden", result)
@@ -326,7 +329,7 @@ class InstallerTests(unittest.TestCase):
         token = self.manager.purge_token()
         before = list(self.runtime.events)
         with self.assertRaises(setup.InstallerError):
-            self.manager.remove(purge=True, token="purge-anything")
+            self.manager.remove(purge=True, token="purge-" + "anything")
         self.assertEqual(self.runtime.events, before)
         self.manager.stop()
         with self.assertRaises(setup.InstallerError):

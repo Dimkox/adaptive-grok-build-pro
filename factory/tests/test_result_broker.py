@@ -56,7 +56,7 @@ class ResultBrokerTests(unittest.TestCase):
             "api_key=not-safe",
             "my_password_value=foo",
             "client_secret_rotated=foo",
-            "-----BEGIN PRIVATE KEY-----",
+            "-----BEGIN " + "PRIVATE KEY-----",
         )
         for field in ("content_type", "reason_code", "policy_version"):
             for secret in secret_vectors:

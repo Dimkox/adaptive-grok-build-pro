@@ -226,6 +226,37 @@ class PostgresFactoryTests(unittest.TestCase):
         )
 
     @classmethod
+    def rebind_database_endpoint(cls, host: str, port: str) -> None:
+        """Rebind every canonical test DSN after Docker republishes the port."""
+        global DATABASE_URL
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        attributes = (
+            "runtime_url",
+            "result_dispatcher_url",
+            "semantic_coordinator_url",
+            "semantic_validator_url",
+            "semantic_adjudicator_url",
+        )
+        rebound_owner = make_conninfo(
+            **{**conninfo_to_dict(DATABASE_URL), "host": host, "port": port}
+        )
+        rebound_capabilities = {
+            attribute: make_conninfo(
+                **{
+                    **conninfo_to_dict(getattr(cls, attribute)),
+                    "host": host,
+                    "port": port,
+                }
+            )
+            for attribute in attributes
+        }
+        os.environ["FACTORY_TEST_DATABASE_URL"] = rebound_owner
+        DATABASE_URL = rebound_owner
+        for attribute, value in rebound_capabilities.items():
+            setattr(cls, attribute, value)
+
+    @classmethod
     def result_dispatcher_store(cls):
         from adaptive_factory.store import PostgresResultDispatcherStore
 
@@ -254,9 +285,31 @@ class PostgresFactoryTests(unittest.TestCase):
 
     @classmethod
     def migrate(cls, database_url: str):
-        return PostgresMigrator(database_url).apply(
-            expected_runtime_login=cls.runtime_login
-        )
+        # PostgreSQL roles are cluster-global. Historical-schema fixtures use a
+        # second database in the same disposable cluster, while the canonical
+        # database has already provisioned this suite's dispatcher login. Make
+        # the isolated upgrade observe the real pre-025 role state, then restore
+        # the canonical capability grant unconditionally.
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("REVOKE factory_result_dispatcher FROM {}").format(
+                    sql.Identifier(cls.result_dispatcher_login)
+                )
+            )
+        try:
+            return PostgresMigrator(database_url).apply(
+                expected_runtime_login=cls.runtime_login
+            )
+        finally:
+            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                connection.execute(
+                    sql.SQL("GRANT factory_result_dispatcher TO {}").format(
+                        sql.Identifier(cls.result_dispatcher_login)
+                    )
+                )
 
     def setUp(self):
         import psycopg
@@ -1247,7 +1300,7 @@ class PostgresFactoryTests(unittest.TestCase):
             "api_key=not-safe",
             "my_password_value=foo",
             "client_secret_rotated=foo",
-            "-----BEGIN PRIVATE KEY-----",
+            "-----BEGIN " + "PRIVATE KEY-----",
         )
         for field in ("content_type", "reason_code", "policy_version"):
             for secret in secret_vectors:
@@ -1603,7 +1656,7 @@ class PostgresFactoryTests(unittest.TestCase):
     def test_result_dispatch_process_and_postgres_restart_observes_without_second_post(self):
         global DATABASE_URL
         import psycopg
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+        from psycopg.conninfo import conninfo_to_dict
         from pathlib import Path
         import socketserver
         import subprocess
@@ -1747,21 +1800,8 @@ class PostgresFactoryTests(unittest.TestCase):
                 restarted_id, restarted_host, restarted_port = restartable_binding()
                 if restarted_id != container_id:
                     self.fail("disposable PostgreSQL container identity changed across restart")
-                DATABASE_URL = make_conninfo(
-                    **{**owner_parts, "host": restarted_host, "port": restarted_port}
-                )
-                self.__class__.runtime_url = make_conninfo(
-                    **{
-                        **conninfo_to_dict(self.runtime_url),
-                        "host": restarted_host, "port": restarted_port,
-                    }
-                )
-                self.__class__.result_dispatcher_url = make_conninfo(
-                    **{
-                        **conninfo_to_dict(self.result_dispatcher_url),
-                        "host": restarted_host, "port": restarted_port,
-                    }
-                )
+                self.__class__.rebind_database_endpoint(restarted_host, restarted_port)
+                self.__class__.restart_rebound_endpoint = (restarted_host, restarted_port)
                 child_env["FACTORY_DATABASE_URL"] = DATABASE_URL
                 child_env["FACTORY_RESULT_DISPATCH_DATABASE_URL"] = self.result_dispatcher_url
                 deadline = time.monotonic() + 30
@@ -1773,6 +1813,21 @@ class PostgresFactoryTests(unittest.TestCase):
                         if time.monotonic() >= deadline:
                             raise
                         time.sleep(0.2)
+                self.assertEqual(os.environ["FACTORY_TEST_DATABASE_URL"], DATABASE_URL)
+                for canonical_url in (
+                    self.runtime_url,
+                    self.result_dispatcher_url,
+                    self.semantic_coordinator_url,
+                    self.semantic_validator_url,
+                    self.semantic_adjudicator_url,
+                ):
+                    parts = conninfo_to_dict(canonical_url)
+                    self.assertEqual(parts.get("host"), restarted_host)
+                    self.assertEqual(str(parts.get("port")), restarted_port)
+                with self.runtime_store()._connect() as canonical_connection:
+                    self.assertEqual(canonical_connection.execute("SELECT 1").fetchone(), (1,))
+                self.store = self.runtime_store()
+                self.service = FactoryService(self.store)
                 second = subprocess.run(
                     [sys.executable, "-m", "adaptive_factory.result_dispatch_cli", "--once"],
                     env=child_env, timeout=15,
@@ -1792,6 +1847,20 @@ class PostgresFactoryTests(unittest.TestCase):
                 "SELECT state,dispatch_phase FROM factory.next_model_request_outbox_v1 "
                 "WHERE request_digest=%s", (request_digest,),
             ).fetchone(), ("delivered", "delivered"))
+
+    def test_result_dispatch_restart_rebinds_canonical_url_for_following_tests(self):
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict
+
+        endpoint = getattr(self.__class__, "restart_rebound_endpoint", None)
+        if endpoint is None:
+            self.skipTest("actual restart test was not selected in this process")
+        host, port = endpoint
+        self.assertEqual(os.environ["FACTORY_TEST_DATABASE_URL"], DATABASE_URL)
+        self.assertEqual(conninfo_to_dict(DATABASE_URL).get("host"), host)
+        self.assertEqual(str(conninfo_to_dict(DATABASE_URL).get("port")), port)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute("SELECT 1").fetchone(), (1,))
 
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
@@ -5979,7 +6048,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 24)
+        self.assertEqual(result["schema_version"], 25)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

@@ -1,14 +1,95 @@
 from copy import deepcopy
+from datetime import datetime
 import json
 from pathlib import Path
+import re
 import unittest
-
-from jsonschema import Draft202012Validator
 
 from adaptive_factory.contracts import ContractError
 
 
 SCHEMAS = Path(__file__).parents[1] / "contracts" / "jsonschema"
+
+
+def schema_errors(schema, value):
+    """Validate the closed JSON-Schema subset used by the two prediction contracts."""
+    errors = []
+
+    def check(node, instance, path="$", root=schema):
+        reference = node.get("$ref")
+        if reference is not None:
+            prefix = "#/$defs/"
+            if not isinstance(reference, str) or not reference.startswith(prefix):
+                errors.append(f"{path}: unsupported reference")
+                return
+            target = root.get("$defs", {}).get(reference[len(prefix):])
+            if not isinstance(target, dict):
+                errors.append(f"{path}: missing reference")
+                return
+            check(target, instance, path, root)
+            return
+        expected = node.get("type")
+        if expected is not None:
+            expected = (expected,) if isinstance(expected, str) else tuple(expected)
+            matches = {
+                "object": lambda item: isinstance(item, dict),
+                "array": lambda item: isinstance(item, list),
+                "string": lambda item: isinstance(item, str),
+                "integer": lambda item: isinstance(item, int) and not isinstance(item, bool),
+                "number": lambda item: isinstance(item, (int, float)) and not isinstance(item, bool),
+                "null": lambda item: item is None,
+            }
+            if not any(kind in matches and matches[kind](instance) for kind in expected):
+                errors.append(f"{path}: wrong type")
+                return
+        if "const" in node and instance != node["const"]:
+            errors.append(f"{path}: const")
+        if "enum" in node and instance not in node["enum"]:
+            errors.append(f"{path}: enum")
+        if isinstance(instance, str):
+            if len(instance) < node.get("minLength", 0) or len(instance) > node.get("maxLength", len(instance)):
+                errors.append(f"{path}: length")
+            if "pattern" in node and re.fullmatch(node["pattern"], instance) is None:
+                errors.append(f"{path}: pattern")
+            if node.get("format") == "date-time":
+                try:
+                    parsed = datetime.fromisoformat(instance.replace("Z", "+00:00"))
+                    if parsed.tzinfo is None:
+                        raise ValueError
+                except (TypeError, ValueError):
+                    errors.append(f"{path}: date-time")
+        if isinstance(instance, (int, float)) and not isinstance(instance, bool):
+            if "minimum" in node and instance < node["minimum"]:
+                errors.append(f"{path}: minimum")
+            if "maximum" in node and instance > node["maximum"]:
+                errors.append(f"{path}: maximum")
+        if isinstance(instance, list):
+            if len(instance) < node.get("minItems", 0) or len(instance) > node.get("maxItems", len(instance)):
+                errors.append(f"{path}: items")
+            if node.get("uniqueItems") and len({json.dumps(item, sort_keys=True) for item in instance}) != len(instance):
+                errors.append(f"{path}: unique")
+            for index, item in enumerate(instance):
+                check(node.get("items", {}), item, f"{path}[{index}]", root)
+        if isinstance(instance, dict):
+            properties = node.get("properties", {})
+            required = set(node.get("required", ()))
+            if missing := required - set(instance):
+                errors.append(f"{path}: missing {sorted(missing)}")
+            if node.get("additionalProperties") is False and (extras := set(instance) - set(properties)):
+                errors.append(f"{path}: extra {sorted(extras)}")
+            for key in set(instance) & set(properties):
+                check(properties[key], instance[key], f"{path}.{key}", root)
+
+    check(schema, value)
+    return errors
+
+
+def assert_prediction_schema_definition(testcase, schema):
+    testcase.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+    testcase.assertEqual(schema["type"], "object")
+    testcase.assertFalse(schema["additionalProperties"])
+    testcase.assertEqual(set(schema["required"]), set(schema["properties"]))
+    testcase.assertEqual(set(schema["$defs"]), {"identity", "digest"} | ({"sha"} if "candidate_sha" in schema["properties"] else set()))
 
 
 def prediction_facts(**changes):
@@ -351,10 +432,10 @@ class PredictionContractTests(unittest.TestCase):
         for name, example in examples.items():
             with self.subTest(name=name):
                 schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
-                Draft202012Validator.check_schema(schema)
+                assert_prediction_schema_definition(self, schema)
                 self.assertFalse(schema["additionalProperties"])
                 self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
-                Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER).validate(example)
+                self.assertEqual(schema_errors(schema, example), [])
 
     def test_field_complete_parser_mutation_matrix_fails_closed(self):
         module = self.module()
@@ -398,7 +479,6 @@ class PredictionContractTests(unittest.TestCase):
     def test_schema_and_parser_reject_missing_extra_types_bounds_and_nested_shapes(self):
         module = self.module()
         schema = json.loads((SCHEMAS / "prediction-observation.v1.schema.json").read_text(encoding="utf-8"))
-        validator = Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER)
         cases = []
         missing = prediction_facts()
         missing.pop("model_digest")
@@ -414,7 +494,7 @@ class PredictionContractTests(unittest.TestCase):
         cases.append(("nested_missing", nested_missing))
         for name, payload in cases:
             with self.subTest(name=name):
-                self.assertTrue(list(validator.iter_errors(payload)))
+                self.assertTrue(schema_errors(schema, payload))
                 with self.assertRaises((ContractError, KeyError)):
                     module.PredictionObservationV1.from_dict(payload)
 
@@ -445,7 +525,6 @@ class PredictionContractTests(unittest.TestCase):
                 )
 
         schema = json.loads((SCHEMAS / "prediction-explanation.v1.schema.json").read_text(encoding="utf-8"))
-        validator = Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER)
         missing = explanation_facts(prediction)
         missing.pop("background_dataset_digest")
         nested = explanation_facts(prediction)
@@ -459,6 +538,6 @@ class PredictionContractTests(unittest.TestCase):
         )
         for payload in cases:
             with self.subTest(payload=payload):
-                self.assertTrue(list(validator.iter_errors(payload)))
+                self.assertTrue(schema_errors(schema, payload))
                 with self.assertRaises((ContractError, KeyError)):
                     module.PredictionExplanationV1.from_dict(payload, prediction=prediction)

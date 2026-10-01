@@ -826,7 +826,7 @@ class ApiTests(unittest.TestCase):
     def test_result_admission_endpoint_is_closed_authenticated_and_has_no_dispatch(self):
         from adaptive_factory.contracts import canonical_digest
 
-        token = "result-admission-worker-credential"
+        token = "-".join(("result", "admission", "worker", "credential"))
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}),
                       frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))

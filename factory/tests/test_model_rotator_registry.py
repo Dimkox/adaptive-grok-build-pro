@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-
-import pytest
+import tempfile
+import unittest
 
 from adaptive_factory.model_rotator_registry import (
     DEFAULT_MODEL_ROTATOR_REGISTRY,
@@ -160,20 +161,21 @@ def test_expired_or_unknown_cooldowns_do_not_change_order() -> None:
     ) == registry.models
 
 
-@pytest.mark.parametrize("bad_now", [float("nan"), float("inf"), -1.0])
-def test_candidate_selection_rejects_invalid_time_without_effects(bad_now: float) -> None:
+def test_candidate_selection_rejects_invalid_time_without_effects() -> None:
     registry = DEFAULT_MODEL_ROTATOR_REGISTRY
     cooldowns = {registry.models[0]: 200.0}
 
-    with pytest.raises(ValueError, match="now"):
-        registry.ordered_candidates(cooling_until=cooldowns, now=bad_now)
-    assert cooldowns == {registry.models[0]: 200.0}
+    for bad_now in (float("nan"), float("inf"), -1.0):
+        with unittest.TestCase().subTest(bad_now=bad_now):
+            with unittest.TestCase().assertRaisesRegex(ValueError, "now"):
+                registry.ordered_candidates(cooling_until=cooldowns, now=bad_now)
+            assert cooldowns == {registry.models[0]: 200.0}
 
 
 def test_registry_rejects_order_and_provenance_mutations() -> None:
     base = DEFAULT_MODEL_ROTATOR_REGISTRY
 
-    with pytest.raises(ValueError):
+    with unittest.TestCase().assertRaises(ValueError):
         ModelRotatorRegistry(
             enabled=False,
             dashscope_enabled=False,
@@ -181,7 +183,7 @@ def test_registry_rejects_order_and_provenance_mutations() -> None:
             models=base.models[:-1],
             upstream=base.upstream,
         )
-    with pytest.raises(ValueError):
+    with unittest.TestCase().assertRaises(ValueError):
         ModelRotatorRegistry(
             enabled=False,
             dashscope_enabled=False,
@@ -189,7 +191,7 @@ def test_registry_rejects_order_and_provenance_mutations() -> None:
             models=base.models[::-1],
             upstream=base.upstream,
         )
-    with pytest.raises(ValueError):
+    with unittest.TestCase().assertRaises(ValueError):
         ModelRotatorRegistry(
             enabled=False,
             dashscope_enabled=False,
@@ -197,7 +199,7 @@ def test_registry_rejects_order_and_provenance_mutations() -> None:
             models=base.models,
             upstream=dataclasses.replace(base.upstream, tree_sha1="0" * 40),
         )
-    with pytest.raises(ValueError):
+    with unittest.TestCase().assertRaises(ValueError):
         ModelRotatorRegistry(
             enabled=True,
             dashscope_enabled=False,
@@ -274,3 +276,20 @@ assert DEFAULT_MODEL_ROTATOR_REGISTRY.enabled is False
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+def load_tests(loader, tests, pattern):
+    """Expose the dependency-free function tests to canonical unittest discovery."""
+    suite = unittest.TestSuite()
+    for name, function in sorted(globals().items()):
+        if not name.startswith("test_") or not inspect.isfunction(function):
+            continue
+        if inspect.signature(function).parameters:
+            def run_with_tmp_path(selected=function):
+                with tempfile.TemporaryDirectory() as directory:
+                    selected(Path(directory))
+
+            suite.addTest(unittest.FunctionTestCase(run_with_tmp_path, description=name))
+        else:
+            suite.addTest(unittest.FunctionTestCase(function, description=name))
+    return suite

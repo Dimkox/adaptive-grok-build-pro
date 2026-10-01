@@ -1,8 +1,8 @@
 # Factory v1.5 implementation handoff
 
-Document version: 1.5. Spec SHA-256: `9f6c704114f72f8ad7d2c36cc967e1f242761ac3ac8c2b8015928541231076e9`.
+Document version: 1.5. Spec SHA-256: `dfe7142400d7a8372e5909574bf9a37bdf6bf0cc6b6ed4febfbe9e467eb60f80`.
 
-Implementation-map SHA-256: `f4d0635489d3cf6aa1cffa1c258a45afcb615ea0c51c9d639d2164d95105d113`.
+Implementation-map SHA-256: `f8cff15a43646d51699df7a6e1ad3917e8b138274699f1b6e823903d3d7c25d9`.
 
 Owner authorized the Linux fast vertical U0–U3/U5–U7 and explicitly excluded U4/macOS. Canonical spec bytes and BB-01 bytes are preserved; this handoff records the narrower release scope without rewriting the spec. Native context remains the runnable core. FPF/VibeVM and BB stay default-off, unqualified, and have no authority effect. Exact package/binary/license pins remain unavailable and block their live qualification. M8 contribution is zero and activation is No.
 
