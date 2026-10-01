@@ -892,6 +892,7 @@ class FactoryService:
         now: datetime,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        decision_record=None,
     ) -> TaskStatus:
         self._require_grant_actor(grant, actor, "task:release")
         if not isinstance(target, TaskStatus) or target not in {
@@ -907,6 +908,7 @@ class FactoryService:
                 target,
                 actor,
                 now,
+                decision_record=decision_record,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )

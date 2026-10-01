@@ -131,6 +131,14 @@
     },
     {
       "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-V15-DECISION-RECORD",
+      "kind": "json_schema",
+      "path": "factory/contracts/v15/decision-record.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
@@ -1668,7 +1676,8 @@
       "id": "NODE-FACTORY-CONTROL",
       "owner": "local factory operators",
       "public_contracts": [
-        "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST"
+        "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
+        "CONTRACT-FACTORY-V15-DECISION-RECORD"
       ],
       "repository_paths": [
         "factory/.gitignore",
@@ -1678,6 +1687,7 @@
         "factory/src/adaptive_factory/admin.py",
         "factory/src/adaptive_factory/context_contracts.py",
         "factory/src/adaptive_factory/contracts.py",
+        "factory/src/adaptive_factory/decision_contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
         "factory/src/adaptive_factory/recovery.py",
