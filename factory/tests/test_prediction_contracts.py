@@ -121,11 +121,68 @@ class PredictionContractTests(unittest.TestCase):
             "missing_candidate_change": {"test_change_ids": ["other-1"]},
             "late_train": {"train_before": "2026-09-30T00:00:00Z"},
             "label": {"label_status": "pass"},
+            "late_product_outcome": {"label_status": "product_failure"},
             "nan": {"features": [{"name": "changed_lines", "value": float("nan"), "observed_at": "2026-09-30T11:58:00Z"}]},
         }
         for name, mutation in mutations.items():
             with self.subTest(name=name), self.assertRaises(ContractError):
                 module.PredictionObservationV1.from_dict(prediction_facts(**mutation))
+
+    def test_unordered_set_like_inputs_are_canonicalized_without_mutating_callers(self):
+        module = self.module()
+        facts = prediction_facts(
+            train_change_ids=["old-2", "old-1"],
+            test_change_ids=["other-1", "change-1"],
+            features=[
+                {"name": "z_feature", "value": 2, "observed_at": "2026-09-30T11:58:00Z"},
+                {"name": "a_feature", "value": 1, "observed_at": "2026-09-30T11:57:00Z"},
+            ],
+            observed_history_count=100,
+            predicted_value=0.7,
+        )
+        original = deepcopy(facts)
+        prediction = module.PredictionObservationV1.from_dict(facts)
+        self.assertEqual(facts, original)
+        self.assertEqual(prediction.to_dict()["train_change_ids"], ["old-1", "old-2"])
+        self.assertEqual(prediction.to_dict()["test_change_ids"], ["change-1", "other-1"])
+        self.assertEqual([item["name"] for item in prediction.to_dict()["features"]], ["a_feature", "z_feature"])
+        reordered = deepcopy(facts)
+        reordered["train_change_ids"].reverse()
+        reordered["test_change_ids"].reverse()
+        reordered["features"].reverse()
+        self.assertEqual(prediction.record_digest, module.PredictionObservationV1.from_dict(reordered).record_digest)
+
+        explanation = explanation_facts(
+            prediction,
+            base_value=0.2,
+            contributions=[{"name": "z_feature", "value": 0.3}, {"name": "a_feature", "value": 0.2}],
+        )
+        first = module.PredictionExplanationV1.from_dict(explanation, prediction=prediction)
+        reordered_explanation = deepcopy(explanation)
+        reordered_explanation["contributions"].reverse()
+        second = module.PredictionExplanationV1.from_dict(reordered_explanation, prediction=prediction)
+        self.assertEqual(first.record_digest, second.record_digest)
+        self.assertEqual([item["name"] for item in first.to_dict()["contributions"]], ["a_feature", "z_feature"])
+
+    def test_replay_index_accepts_same_canonical_body_and_rejects_identity_reuse(self):
+        module = self.module()
+        replay = module.PredictionReplayIndex()
+        first = module.PredictionObservationV1.from_dict(
+            prediction_facts(train_change_ids=["old-2", "old-1"])
+        )
+        same = module.PredictionObservationV1.from_dict(
+            prediction_facts(train_change_ids=["old-1", "old-2"])
+        )
+        self.assertIs(first, replay.admit(first))
+        self.assertIs(same, replay.admit(same))
+        with self.assertRaisesRegex(ContractError, "prediction_replay_conflict"):
+            replay.admit(module.PredictionObservationV1.from_dict(prediction_facts(context_digest="f" * 64)))
+        with self.assertRaisesRegex(ContractError, "prediction_replay_conflict"):
+            replay.admit(
+                module.PredictionObservationV1.from_dict(
+                    prediction_facts(repository_id="other/project", candidate_sha="f" * 40)
+                )
+            )
 
     def test_prediction_digest_is_deterministic_and_every_binding_changes_it(self):
         module = self.module()
@@ -151,7 +208,7 @@ class PredictionContractTests(unittest.TestCase):
             module.PredictionExplanationV1.from_dict(explanation_facts(unavailable), prediction=unavailable)
 
         prediction = module.PredictionObservationV1.from_dict(
-            prediction_facts(observed_history_count=100, label_status="product_failure", predicted_value=0.7)
+            prediction_facts(observed_history_count=100, predicted_value=0.7)
         )
         explanation = explanation_facts(prediction)
         parsed = module.PredictionExplanationV1.from_dict(explanation, prediction=prediction)
@@ -179,7 +236,7 @@ class PredictionContractTests(unittest.TestCase):
             "prediction-observation.v1.schema.json": prediction.to_dict(),
             "prediction-explanation.v1.schema.json": explanation_facts(
                 module.PredictionObservationV1.from_dict(
-                    prediction_facts(observed_history_count=100, label_status="product_pass", predicted_value=0.7)
+                    prediction_facts(observed_history_count=100, predicted_value=0.7)
                 )
             ),
         }
@@ -191,3 +248,109 @@ class PredictionContractTests(unittest.TestCase):
                 self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
                 Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER).validate(example)
 
+    def test_field_complete_parser_mutation_matrix_fails_closed(self):
+        module = self.module()
+        invalid = {
+            "prediction_id": "bad id",
+            "repository_id": "",
+            "change_id": "bad id",
+            "candidate_sha": "f" * 39,
+            "context_digest": "f" * 63,
+            "spec_digest": "f" * 63,
+            "profile_digest": "f" * 63,
+            "feature_schema_version": "bad version",
+            "feature_schema_digest": "f" * 63,
+            "dataset_version": "bad version",
+            "dataset_digest": "f" * 63,
+            "split_digest": "f" * 63,
+            "model_version": "bad version",
+            "model_digest": "f" * 63,
+            "preprocessing_version": "bad version",
+            "preprocessing_digest": "f" * 63,
+            "deterministic_evidence_digest": "f" * 63,
+            "seed": -1,
+            "predicted_at": "not-a-time",
+            "first_check_started_at": "not-a-time",
+            "train_before": "not-a-time",
+            "test_after": "not-a-time",
+            "train_change_ids": "old-1",
+            "test_change_ids": [],
+            "features": [],
+            "required_history_count": 0,
+            "observed_history_count": -1,
+            "label_status": "product_pass",
+            "predicted_value": float("inf"),
+            "output_space": "percent",
+            "authority_effect": "route",
+        }
+        for key, value in invalid.items():
+            with self.subTest(key=key), self.assertRaises(ContractError):
+                module.PredictionObservationV1.from_dict(prediction_facts(**{key: value}))
+
+    def test_schema_and_parser_reject_missing_extra_types_bounds_and_nested_shapes(self):
+        module = self.module()
+        schema = json.loads((SCHEMAS / "prediction-observation.v1.schema.json").read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER)
+        cases = []
+        missing = prediction_facts()
+        missing.pop("model_digest")
+        cases.append(("missing", missing))
+        cases.append(("extra", prediction_facts(unexpected=True)))
+        cases.append(("type", prediction_facts(seed=True)))
+        cases.append(("bound", prediction_facts(seed=2**32)))
+        nested_extra = prediction_facts()
+        nested_extra["features"][0]["unexpected"] = True
+        cases.append(("nested_extra", nested_extra))
+        nested_missing = prediction_facts()
+        nested_missing["features"][0].pop("observed_at")
+        cases.append(("nested_missing", nested_missing))
+        for name, payload in cases:
+            with self.subTest(name=name):
+                self.assertTrue(list(validator.iter_errors(payload)))
+                with self.assertRaises((ContractError, KeyError)):
+                    module.PredictionObservationV1.from_dict(payload)
+
+    def test_explanation_field_matrix_and_schema_parser_structural_parity(self):
+        module = self.module()
+        prediction = module.PredictionObservationV1.from_dict(
+            prediction_facts(observed_history_count=100, predicted_value=0.7)
+        )
+        invalid = {
+            "prediction_digest": "f" * 63,
+            "model_version": "bad version",
+            "model_digest": "f" * 63,
+            "background_dataset_version": "bad version",
+            "background_dataset_digest": "f" * 63,
+            "explainer_version": "bad version",
+            "explainer_options_digest": "f" * 63,
+            "deterministic_evidence_digest": "f" * 63,
+            "output_space": "percent",
+            "base_value": float("nan"),
+            "contributions": [{"name": "changed_lines", "value": float("inf")}],
+            "tolerance": -1,
+            "authority_effect": "route",
+        }
+        for key, value in invalid.items():
+            with self.subTest(key=key), self.assertRaises(ContractError):
+                module.PredictionExplanationV1.from_dict(
+                    explanation_facts(prediction, **{key: value}), prediction=prediction
+                )
+
+        schema = json.loads((SCHEMAS / "prediction-explanation.v1.schema.json").read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER)
+        missing = explanation_facts(prediction)
+        missing.pop("background_dataset_digest")
+        nested = explanation_facts(prediction)
+        nested["contributions"][0]["unexpected"] = True
+        cases = (
+            missing,
+            explanation_facts(prediction, unexpected=True),
+            explanation_facts(prediction, tolerance="small"),
+            explanation_facts(prediction, tolerance=0.000002),
+            nested,
+        )
+        for payload in cases:
+            with self.subTest(payload=payload):
+                self.assertTrue(list(validator.iter_errors(payload)))
+                with self.assertRaises((ContractError, KeyError)):
+                    module.PredictionExplanationV1.from_dict(payload, prediction=prediction)

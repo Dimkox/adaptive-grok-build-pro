@@ -87,6 +87,7 @@ class PredictionObservationV1(FrozenWire):
         if not train_before <= test_after <= predicted_at < first_check_started_at:
             raise ContractError("temporal_leakage")
 
+        normalized = dict(data)
         partitions = []
         for key in ("train_change_ids", "test_change_ids"):
             values = sequence(data[key], 1024)
@@ -95,6 +96,7 @@ class PredictionObservationV1(FrozenWire):
             if len(set(values)) != len(values):
                 raise ContractError("duplicate_split_identity")
             partitions.append(set(values))
+            normalized[key] = sorted(values)
         if partitions[0] & partitions[1] or data["change_id"] not in partitions[1]:
             raise ContractError("split_leakage")
 
@@ -110,16 +112,11 @@ class PredictionObservationV1(FrozenWire):
                 raise ContractError("feature_leakage")
         if not feature_names:
             raise ContractError("empty_feature_snapshot")
+        normalized["features"] = sorted(data["features"], key=lambda feature: feature["name"])
 
         integer(data["required_history_count"], "required_history_count", 1, 1_000_000)
         integer(data["observed_history_count"], "observed_history_count", 0, 1_000_000)
-        if data["label_status"] not in (
-            "unknown",
-            "product_failure",
-            "product_pass",
-            "infrastructure_abort",
-            "pending",
-        ):
+        if data["label_status"] not in ("unknown", "pending"):
             raise ContractError("invalid_label_status")
         if data["output_space"] not in ("probability", "log_odds"):
             raise ContractError("invalid_output_space")
@@ -129,7 +126,7 @@ class PredictionObservationV1(FrozenWire):
                 raise ContractError("invalid_probability")
         if data["authority_effect"] != "none":
             raise ContractError("invalid_authority_effect")
-        return cls.freeze(data)
+        return cls.freeze(normalized)
 
     @property
     def status(self):
@@ -207,4 +204,21 @@ class PredictionExplanationV1(FrozenWire):
             raise ContractError("nonadditive_explanation")
         if data["authority_effect"] != "none":
             raise ContractError("invalid_authority_effect")
-        return cls.freeze(data)
+        normalized = dict(data)
+        normalized["contributions"] = sorted(data["contributions"], key=lambda item: item["name"])
+        return cls.freeze(normalized)
+
+
+class PredictionReplayIndex:
+    """Process-local validator for an append-only store's prediction-id replay rule."""
+
+    def __init__(self):
+        self._digests = {}
+
+    def admit(self, prediction):
+        admitted = PredictionObservationV1.from_dict(prediction.to_dict())
+        prediction_id = admitted.to_dict()["prediction_id"]
+        previous = self._digests.setdefault(prediction_id, admitted.record_digest)
+        if previous != admitted.record_digest:
+            raise ContractError("prediction_replay_conflict", prediction_id)
+        return prediction

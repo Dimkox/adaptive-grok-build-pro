@@ -53,13 +53,13 @@
     },
     "required_history_count": {"type": "integer", "minimum": 1, "maximum": 1000000},
     "observed_history_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
-    "label_status": {"enum": ["unknown", "product_failure", "product_pass", "infrastructure_abort", "pending"]},
+    "label_status": {"enum": ["unknown", "pending"]},
     "predicted_value": {"type": ["number", "null"]},
     "output_space": {"enum": ["probability", "log_odds"]},
     "authority_effect": {"const": "none"}
   },
   "$defs": {
-    "identity": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]*$"},
+    "identity": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"},
     "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
   }
