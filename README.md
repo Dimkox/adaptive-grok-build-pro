@@ -4,7 +4,7 @@ MIT-licensed tooling for task-routed AI-assisted development, external verificat
 
 ## Repository startup baseline
 
-**Step zero, before all other startup work:** [measure resources](AGENTS.md#mandatory-startup-algorithm-measure-then-dispatch)—physical/online logical CPUs, process affinity, effective cpuset and finite cgroup quotas; try a bounded child-only affinity expansion when appropriate, derive verified effective capacity and record the snapshot. Only then inspect backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel, spreading eligible heavy work across that capacity. Isolated writer ownership comes next, followed by verification/delivery gates. Remeasure every startup: the September 26 observation of **14 physical / 28 logical CPUs**, with default affinity exposing 22 and a verified `taskset -c 0-27` child exposing 28, is not a permanent guarantee.
+**Step zero, before all other startup work:** [measure resources](AGENTS.md#agent-spawn-startup-conditions)—physical/online logical CPUs, process affinity, effective cpuset and finite cgroup quotas; try a bounded child-only affinity expansion when appropriate, derive verified effective capacity and record the snapshot. Only then inspect backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel, spreading eligible heavy work across that capacity. Isolated writer ownership comes next, followed by verification/delivery gates. Remeasure every startup: the September 26 observation of **14 physical / 28 logical CPUs**, with default affinity exposing 22 and a verified `taskset -c 0-27` child exposing 28, is not a permanent guarantee.
 
 The second mandatory step, before verification-heavy work, is the merged [fail-closed scope selector](#verification-scope-selection). Its closed focused inventory admits named docs/state paths, tracked `packages/**` release bytes, and exactly five binding test modules: `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`, `tests/test_workflow_sources.py` and `tests/test_repo_router.py`. Only that inventory may skip coverage/full discovery/PostgreSQL; all other executable changes, non-admitted paths or ambiguous inventories require full verification.
 
@@ -24,7 +24,7 @@ exact FPF/VibeVM profiles remain `not_evaluated`. M8 is inactive and external Tr
 
 The additive [model-rotation boundary](factory/src/adaptive_factory/model_rotator.py) is
 also default-off. It consumes existing fenced run and budget authority, persists an
-idempotent PostgreSQL claim/cooldown/cursor through migrations 027-028, distinguishes token
+idempotent PostgreSQL claim/cooldown/cursor through migrations 027-029, distinguishes token
 quota (DashScope/Qwen) from request quota (OpenRouter), and emits redacted observation
 evidence only. Migration 028 preserves 027 byte-for-byte while closing direct-call NULL,
 shape and ACL gaps; only digest-keyed cooldowns and closed digest evidence persist.
@@ -39,7 +39,7 @@ BB's synthetic lifecycle/comparator reuse those boundaries without live activati
 Local synthetic composition is distinct from installed/live acceptance and publication.
 Product VERSION remains 2.0.19; v1.5 identifies the upgrade specification.
 
-Identity: **2.0.19 candidate**. The latest published release remains [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published **2026-09-16T13:52:24Z** from the merged artifact-child commit `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its tag, ZIP and sidecar are immutable. The `v2.0.19` ZIP and sidecar are now delivered in this artifact-child candidate from merged release-sync `3f41be92`, but tag and GitHub Release publication remain pending their separate exact gates.
+Identity: **2.0.19 published baseline**, released **2026-09-24** at commit `cb9af4073ba6c3d515145164d771c75ebdfa3224`. This branch is newer, unpublished Factory v1.5 source through migration 030. It is a local release candidate, not a published release or live qualification.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |

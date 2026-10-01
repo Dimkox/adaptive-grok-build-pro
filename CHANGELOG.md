@@ -1,8 +1,12 @@
 # Changelog
 
-## 2.0.19 — 2026-09-24 (candidate, unpublished)
+## Unreleased — Factory v1.5 source candidate
 
-Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. The release-sync parent is merged and the ZIP+sidecar are delivered by the separate artifact-child candidate; tag and GitHub Release remain pending their exact protected steps.
+- Add migrations 029-030 for strict native rotator JSON validation, exact pre-model context persistence, and a fenced bounded analysis budget. This source candidate is newer than published v2.0.19 and has no live-provider acceptance.
+
+## 2.0.19 — 2026-09-24
+
+Twenty pull requests merged after `v2.0.18`; the published tag is bound to artifact-child commit `cb9af4073ba6c3d515145164d771c75ebdfa3224` and its immutable ZIP+sidecar.
 
 - Carries the release-successor, architecture, verification, installer, landing, routing, evidence, schema, package-diagnostics, merge-gate and factory-fix repairs through PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193.
 - Binds candidate identity and source provenance to release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3`, whose source parent is protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486`; the earlier `5d93fc3` commit remains historical input evidence.

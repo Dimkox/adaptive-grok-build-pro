@@ -16,15 +16,15 @@
     "coverage_matrix": "engineering/changes/20260930-factory-v1-5-fast-working-release-52ad34/evidence/requirement-coverage.json",
     "integrated_contours": ["predictor", "paired_evaluation", "fpf", "vibevm", "linux_installer", "bb_durable_lifecycle", "unverified_capacity", "observation_only_model_rotator"],
     "model_rotator": "default_off_live_NOT_RUN",
-    "migration_version": 28,
-    "next_action": "Commit the additive migration028 RC hardening, then hand exact HEAD to coordinator for a fresh explicitly delegated UNVERIFIED branch push before full stable verification and independent reviews. Aggregate preview requires bounded dependency stacks and App-owned exact-head Trust CI; no merge/tag/Release is authorized. Installed/live qualification remains separate."
+    "migration_version": 30,
+    "next_action": "Verify the exact migration030/native-execution candidate, then re-measure an acyclic budget-safe delivery stack. The aggregate monolithic branch is not a deliverable while architecture budgets remain red; do not fabricate a stack. App-owned exact-head Trust CI and independent reviews remain required, and installed/live qualification is separate."
   },
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.0.19",
-  "latest_published_release": "v2.0.18",
+  "latest_published_release": "v2.0.19",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -53,19 +53,19 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.18",
-    "published_at": "2026-09-16T13:52:24Z",
-    "pull_request": 108,
-    "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
-    "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
-    "merged_at": "2026-09-16T13:51:26Z",
-    "tag_object": "31d3171f651ea77e29de58d4affc58d008f1c7a5",
-    "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+    "tag": "v2.0.19",
+    "published_at": "2026-09-24T21:29:33Z",
+    "pull_request": 193,
+    "checked_head": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+    "merged_at": "2026-09-24T21:29:33Z",
+    "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
+    "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.18.zip",
-      "sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256",
-      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
+      "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
+      "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
@@ -81,7 +81,7 @@
       "check_run_id": 104809206290,
       "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
     },
-    "notes": "The artifact is bound to the immutable v2.0.18 tag target. The archive preserves the pre-publication release-sync snapshot, so candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "notes": "The artifact is bound to the immutable v2.0.19 tag target. Candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
   },
   "prior_published_releases": [
     {

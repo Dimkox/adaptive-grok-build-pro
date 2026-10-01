@@ -115,7 +115,7 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["product_version"], "2.0.19")
-        self.assertEqual(state["latest_published_release"], "v2.0.18")
+        self.assertEqual(state["latest_published_release"], "v2.0.19")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
@@ -361,20 +361,20 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
-        self.assertEqual(published["tag"], "v2.0.18")
-        self.assertEqual(published["pull_request"], 108)
-        self.assertEqual(published["checked_head"], V2018_CHECKED_HEAD)
-        self.assertEqual(published["merge_commit"], V2018_MERGE_COMMIT)
-        self.assertEqual(published["tree"], V2018_TREE)
-        self.assertEqual(published["artifact"]["sha256"], V2018_ZIP_SHA256)
+        self.assertEqual(published["tag"], "v2.0.19")
+        self.assertEqual(published["pull_request"], 193)
+        self.assertEqual(published["checked_head"], "cb9af4073ba6c3d515145164d771c75ebdfa3224")
+        self.assertEqual(published["merge_commit"], "cb9af4073ba6c3d515145164d771c75ebdfa3224")
+        self.assertEqual(published["tree"], "881cb6f0ad65ecd131904adf701829e8146b60e3")
+        self.assertEqual(published["artifact"]["sha256"], V2019_ZIP_SHA256)
         self.assertEqual(
             published["artifact"]["sidecar_sha256"],
-            V2018_SIDECAR_SHA256,
+            V2019_SIDECAR_SHA256,
         )
         self.assertEqual(published["trust_ci"]["check_run_id"], 104809218211)
-        self.assertEqual(published["tag_object"], "31d3171f651ea77e29de58d4affc58d008f1c7a5")
-        self.assertEqual(published["published_at"], "2026-09-16T13:52:24Z")
-        self.assertEqual(published["merged_at"], "2026-09-16T13:51:26Z")
+        self.assertEqual(published["tag_object"], "4e5d1505433f7a2d5faa71db31c0b4d964f77897")
+        self.assertEqual(published["published_at"], "2026-09-24T21:29:33Z")
+        self.assertEqual(published["merged_at"], "2026-09-24T21:29:33Z")
         self.assertEqual(published["gitguardian"]["conclusion"], "SUCCESS")
         self.assertEqual(published["gitguardian"]["check_run_id"], 104809206290)
         self.assertEqual(
@@ -778,7 +778,7 @@ class ProjectStateTests(unittest.TestCase):
         runtime = state["runtime_observations"]
         # Runtime evidence is intentionally historical and remains bound to the
         # immutable published release while the current source observation advances.
-        self.assertEqual(state["published_release"]["merge_commit"], evidence["source_base"])
+        self.assertEqual(evidence["source_base"], V2018_MERGE_COMMIT)
         for role, source in (("primary", evidence["qwen_historical_acceptance"]),
                              ("secondary", evidence["grok"])):
             service = runtime["services"][role]
@@ -808,13 +808,13 @@ class ProjectStateTests(unittest.TestCase):
                     "m9_general_operational_qualification", "factory_site_publication",
                     "complete_pilot_cost_and_human_intervention_accounting"):
             self.assertFalse(state["operational_qualification"][key])
-        # A pending candidate must never be presented as the published release:
-        # the product identity leads, the published tag lags by exactly that bump.
+        # The product identity is the published baseline; the active Factory source
+        # candidate remains separately unpublished at that product identity.
         self.assertEqual(state["latest_published_release"], state["published_release"]["tag"])
         self.assertEqual(state["local_candidate"]["version"], state["product_version"])
         self.assertFalse(state["local_candidate"]["published"])
         self.assertFalse(state["local_candidate"]["operational_activation"])
-        self.assertNotEqual("v" + state["product_version"], state["published_release"]["tag"])
+        self.assertEqual("v" + state["product_version"], state["published_release"]["tag"])
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
 
     def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
