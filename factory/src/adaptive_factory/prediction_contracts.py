@@ -7,7 +7,13 @@ from .v15_contracts import FrozenWire, closed, digest, identity, integer, sequen
 
 
 def _number(value, name):
-    if type(value) not in (int, float) or not math.isfinite(value):
+    if type(value) not in (int, float):
+        raise ContractError("invalid_number", name)
+    try:
+        finite = math.isfinite(value)
+    except (OverflowError, ValueError) as exc:
+        raise ContractError("invalid_number", name) from exc
+    if not finite:
         raise ContractError("invalid_number", name)
     return value
 

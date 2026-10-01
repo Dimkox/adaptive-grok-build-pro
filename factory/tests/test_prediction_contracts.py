@@ -213,6 +213,38 @@ class PredictionContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "^nonadditive_explanation$"):
             module.PredictionExplanationV1.from_dict(explanation, prediction=prediction)
 
+    def test_huge_integer_numbers_fail_closed_without_raw_overflow(self):
+        module = self.module()
+        huge = 10**400
+        prediction_cases = (
+            (
+                "feature",
+                prediction_facts(
+                    features=[
+                        {"name": "changed_lines", "value": huge, "observed_at": "2026-09-30T11:58:00Z"}
+                    ]
+                ),
+            ),
+            ("prediction", prediction_facts(observed_history_count=100, predicted_value=huge)),
+        )
+        for name, payload in prediction_cases:
+            with self.subTest(name=name), self.assertRaisesRegex(ContractError, f"^invalid_number: {name}$"):
+                module.PredictionObservationV1.from_dict(payload)
+
+        prediction = module.PredictionObservationV1.from_dict(
+            prediction_facts(observed_history_count=100, predicted_value=0.7)
+        )
+        explanation_cases = (
+            ("base_value", {"base_value": huge}),
+            ("tolerance", {"tolerance": huge}),
+            ("contribution", {"contributions": [{"name": "changed_lines", "value": huge}]}),
+        )
+        for name, changes in explanation_cases:
+            with self.subTest(name=name), self.assertRaisesRegex(ContractError, f"^invalid_number: {name}$"):
+                module.PredictionExplanationV1.from_dict(
+                    explanation_facts(prediction, **changes), prediction=prediction
+                )
+
     def test_replay_index_accepts_same_canonical_body_and_rejects_identity_reuse(self):
         module = self.module()
         replay = module.PredictionReplayIndex(max_entries=2)
