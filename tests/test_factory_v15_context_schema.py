@@ -50,17 +50,22 @@ def context_facts():
     }
 
 
-def test_draft_2020_12_and_python_share_structural_admission_corpus():
+def test_draft_2020_12_schema_is_structural_and_python_is_mandatory_admission():
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
-    assert "(?i" not in json.dumps(schema)
-    assert "(?s" not in json.dumps(schema)
+    assert schema["x-admission"] == {
+        "level": "structural",
+        "semantic_validator": "adaptive_factory.context_contracts.ContextManifestV1.from_dict",
+        "semantic_validation_required": True,
+        "semantic_checks": ["utf8_byte_limits", "secret_detection", "content_digest", "source_binding", "safe_path"],
+    }
     validator = Draft202012Validator(schema)
     valid = context_facts()
     for harmless in (
         "safe project fact",
         "Token budgets and authorization policies contain no credentials.",
         "Secret detection documents private key handling without carrying a value.",
+        "NoAuthorization=harmless structural example",
     ):
         candidate = deepcopy(valid)
         _replace_bound_content(candidate, harmless)
@@ -82,7 +87,7 @@ def test_draft_2020_12_and_python_share_structural_admission_corpus():
         with pytest.raises(ContractError):
             ContextManifestV1.from_dict(candidate)
 
-    for secret_content in (
+    for semantically_unsafe in (
         "password=synthetic-secret",
         "Authorization: Basic synthetic-value",
         "Bearer synthetic-token",
@@ -90,10 +95,16 @@ def test_draft_2020_12_and_python_share_structural_admission_corpus():
         "github_pat_syntheticvalue",
     ):
         candidate = deepcopy(valid)
-        _replace_bound_content(candidate, secret_content)
-        assert list(validator.iter_errors(candidate))
+        _replace_bound_content(candidate, semantically_unsafe)
+        assert not list(validator.iter_errors(candidate))
         with pytest.raises(ContractError, match="secret_content"):
             ContextManifestV1.from_dict(candidate)
+
+    unicode_candidate = deepcopy(valid)
+    _replace_bound_content(unicode_candidate, "é" * 3000)
+    assert not list(validator.iter_errors(unicode_candidate))
+    with pytest.raises(ContractError, match="invalid_text: content"):
+        ContextManifestV1.from_dict(unicode_candidate)
 
 
 def _replace_bound_content(value, content):

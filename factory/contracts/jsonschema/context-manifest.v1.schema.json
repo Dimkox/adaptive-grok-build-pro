@@ -1,6 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:adaptive-factory:context-manifest:v1",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.context_contracts.ContextManifestV1.from_dict",
+    "semantic_validation_required": true,
+    "semantic_checks": ["utf8_byte_limits", "secret_detection", "content_digest", "source_binding", "safe_path"]
+  },
   "$defs": {
     "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
     "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
@@ -16,8 +22,7 @@
         "path": {"$ref": "#/$defs/safe_path"},
         "kind": {"enum": ["instruction", "rule", "contract", "source", "navigation"]},
         "content": {
-          "type": "string", "minLength": 1, "maxLength": 4096,
-          "pattern": "^(?![\\s\\S]*(?:-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----|[Bb][Ee][Aa][Rr][Ee][Rr][ \\t]+[A-Za-z0-9._~+/=-]+|(?:[A-Za-z0-9]+[_-])*[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn][ \\t]*[=:][ \\t]*[^\\r\\n]*|(?:[Ss][Kk]-|[Gg][Hh][Pp]_|[Gg][Ii][Tt][Hh][Uu][Bb]_[Pp][Aa][Tt]_)[A-Za-z0-9_-]+|(?:[Aa][Kk][Ii][Aa]|[Aa][Ss][Ii][Aa])[A-Za-z0-9]{16}|(?:[A-Za-z0-9]+[_-])*(?:[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Aa][Cc][Cc][Ee][Ss][Ss][_-]?[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn][_-]?[Tt][Oo][Kk][Ee][Nn]|[Cc][Ll][Ii][Ee][Nn][Tt][_-]?[Ss][Ee][Cc][Rr][Ee][Tt]|[Rr][Ee][Ff][Rr][Ee][Ss][Hh][_-]?[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Ss][Ee][Cc][Rr][Ee][Tt][_-]?[Kk][Ee][Yy]|[Pp][Rr][Ii][Vv][Aa][Tt][Ee][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt])(?:[_-][A-Za-z0-9]+)*[ \\t]*[:=][ \\t]*(?:\"[^\"\\r\\n]+\"|'[^'\\r\\n]+'|[^\\s,;}]+)))[\\s\\S]+$"
+          "type": "string", "minLength": 1, "maxLength": 4096
         },
         "sha256": {"$ref": "#/$defs/digest"},
         "reason": {"$ref": "#/$defs/identifier"},
