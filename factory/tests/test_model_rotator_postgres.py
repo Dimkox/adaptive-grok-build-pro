@@ -99,8 +99,10 @@ class ModelRotatorPostgresTests(unittest.TestCase):
         self.assertEqual(self.owner_row(
             "SELECT has_table_privilege('factory_runtime','factory.model_rotator_safe_status','SELECT'), "
             "has_function_privilege('factory_runtime','factory.model_rotator_reconcile_v1(character, text)','EXECUTE'), "
-            "has_function_privilege('factory_migrator','factory.model_rotator_reconcile_v1(character, text)','EXECUTE')"
-        ), (True, False, True))
+            "has_function_privilege('factory_migrator','factory.model_rotator_reconcile_v1(character, text)','EXECUTE'), "
+            "has_function_privilege('factory_runtime','factory.model_rotator_finish_v1_028(character, character, jsonb, jsonb, integer, bigint)','EXECUTE'), "
+            "has_function_privilege('factory_migrator','factory.model_rotator_reconcile_v1_028(character, text)','EXECUTE')"
+        ), (True, False, True, False, False))
         for query in (
             "UPDATE factory.model_rotator_states SET quarantined=false",
             "DELETE FROM factory.model_rotator_request_grants",
@@ -152,6 +154,72 @@ class ModelRotatorPostgresTests(unittest.TestCase):
             self.assertEqual(connection.execute(
                 "SELECT factory.model_rotator_reconcile_v1(NULL,NULL)"
             ).fetchone(), (False,))
+
+    def test_runtime_entrypoints_require_native_json_types_without_mutation(self):
+        import psycopg
+
+        _, bind, store = self.binding()
+        requested = self.requested_digest(bind)
+        native_type_mutations = (
+            {"schema_version": "1"},
+            {"tenant_id": None},
+            {"repository_id": [bind.repository_id]},
+            {"budget_digest": None},
+            {"registry_digest": None},
+            {"fence": str(bind.fence)},
+            {"remaining_token_units": True},
+            {"remaining_request_units": 1.5},
+        )
+        for ordinal, mutation in enumerate(native_type_mutations, 1):
+            candidate = replace(bind, operation_id=f"rotator-native-type-{ordinal}")
+            wire = {**candidate.to_dict(), **mutation}
+            with self.subTest(mutation=mutation), psycopg.connect(self.runtime_url) as connection:
+                connection.execute("SET LOCAL ROLE factory_runtime")
+                result = connection.execute(
+                    "SELECT factory.model_rotator_claim_v1(%s::jsonb,%s,%s,%s,0,%s,100)",
+                    (json.dumps(wire), json.dumps(wire), candidate.binding_digest,
+                     candidate.registry_digest, requested),
+                ).fetchone()[0]
+                self.assertEqual(result, {"error": "binding_digest_mismatch"})
+                connection.rollback()
+
+        claim = self.claim(store, bind)
+        token = claim["claim_token"]
+        cooldown_key = "c" * 64
+        invalid_finishes = (
+            ({"evidence_digest": None, "next_model_digest": requested}, {cooldown_key: 1}),
+            ({"evidence_digest": "e" * 64, "next_model_digest": [requested]}, {cooldown_key: 1}),
+            ({"evidence_digest": "e" * 64, "next_model_digest": requested}, {cooldown_key: "1"}),
+            ({"evidence_digest": "e" * 64, "next_model_digest": requested}, {cooldown_key: True}),
+            ({"evidence_digest": "e" * 64, "next_model_digest": requested}, {cooldown_key: 1.5}),
+            ({"evidence_digest": "e" * 64, "next_model_digest": requested}, {cooldown_key: None}),
+        )
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET LOCAL ROLE factory_runtime")
+            for evidence, cooldowns in invalid_finishes:
+                with self.subTest(evidence=evidence, cooldowns=cooldowns):
+                    accepted = connection.execute(
+                        "SELECT factory.model_rotator_finish_v1(%s,%s,%s::jsonb,%s::jsonb,0,0)",
+                        (bind.binding_digest, token, json.dumps(evidence), json.dumps(cooldowns)),
+                    ).fetchone()[0]
+                    self.assertFalse(accepted)
+            for quarantine_evidence in (
+                {"evidence_digest": None, "outcome_digest": "f" * 64},
+                {"evidence_digest": "e" * 64, "outcome_digest": None},
+            ):
+                self.assertFalse(connection.execute(
+                    "SELECT factory.model_rotator_quarantine_v1(%s,%s,%s::jsonb)",
+                    (bind.binding_digest, token, json.dumps(quarantine_evidence)),
+                ).fetchone()[0])
+        self.assertEqual(self.owner_row(
+            "SELECT state,evidence,reserved_token_units,reserved_request_units "
+            "FROM factory.model_rotator_operations WHERE binding_digest=%s",
+            (bind.binding_digest,),
+        ), ("claimed", None, 0, 0))
+        self.assertEqual(self.owner_row(
+            "SELECT held_token_units,settled_token_units,held_request_units,settled_request_units "
+            "FROM factory.model_rotator_reservation_accounting"
+        ), (0, 0, 0, 0))
 
     def test_python_sql_digest_parity_wire_independence_and_authority_join(self):
         import psycopg

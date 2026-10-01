@@ -118,6 +118,9 @@ Migration 028 is an additive wrapper hardening layer: migration 027 remains immu
 all direct SQL entrypoints reject NULL/invalid values, private predecessor bodies lose
 runtime EXECUTE, cooldown keys are model digests, and persisted completion/quarantine
 evidence is a closed digest-only record.
+Migration 029 keeps both predecessors immutable and requires native JSON types for every
+binding, evidence and cooldown child; strings cannot impersonate integers, and JSON null,
+boolean, fractional, array or object values never reach mutation or accounting.
 
 The installed inspection command is deliberately read-only:
 

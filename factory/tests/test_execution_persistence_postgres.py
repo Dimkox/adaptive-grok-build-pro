@@ -1744,6 +1744,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
+                    (29, "029_model_rotator_native_json.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1761,7 +1762,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (28, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (29, 1, 1, 1, True, 1, True)
                 )
                 after_functions = self.replaced_execution_function_metadata(cursor)
                 propose_name = next(
@@ -2295,6 +2296,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
+                    (29, "029_model_rotator_native_json.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -2309,7 +2311,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (28, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (29, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -2412,6 +2414,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
+                    (29, "029_model_rotator_native_json.sql"),
                 ],
             )
             result = FactoryService(
@@ -2436,7 +2439,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (28, 1, True))
+                self.assertEqual(cursor.fetchone(), (29, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -6233,6 +6236,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     (26, "026_unverified_legacy_packet_guard.sql"),
                     (27, "027_model_rotator_state.sql"),
                     (28, "028_model_rotator_closed_inputs.sql"),
+                    (29, "029_model_rotator_native_json.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())

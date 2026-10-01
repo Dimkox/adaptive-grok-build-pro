@@ -17,6 +17,7 @@
 - [x] Measure unchanged architecture budgets and record a candidate dependency-stack delivery plan; integrated preview risk=red requires architecture/contract/data/security scopes, not fabricated approvals.
 - [x] Integrate reviewed observation-only model rotator and migration027; real-PG authority/grant/digest/race/CAS/expiry/settlement tests plus three actual restarts PASS. Live providers remain default-off/NOT_RUN.
 - [x] Add migration028 without changing migration027: close NULL/invalid direct SQL calls, predecessor ACLs, cooldown keys and persisted evidence; focused real-PG9 plus stale-upgrade3 PASS.
+- [x] Add migration029 without changing027/028: enforce native JSON child types/ranges and exact predecessor ACLs; RED accepted string/null shapes, GREEN real-PG10 with zero-mutation/accounting proof.
 - [ ] Freeze clean candidate and hand exact HEAD to coordinator for explicitly delegated UNVERIFIED branch push before full verification/reviews; no merge/tag/Release authorization.
 - [ ] Run selected quality profiles and complete independent reviews.
 - [ ] Bind evidence to the final tree fingerprint and prepare the PR-only release report.
