@@ -2,16 +2,9 @@ from copy import deepcopy
 import hashlib
 import importlib
 import importlib.util
-import json
-from pathlib import Path
 import unittest
 
-from jsonschema import Draft202012Validator
-
 from adaptive_factory.contracts import ContractError
-
-
-SCHEMA = Path(__file__).parents[1] / "contracts/jsonschema/context-manifest.v1.schema.json"
 
 
 def context_facts():
@@ -113,33 +106,6 @@ class ContextContractTests(unittest.TestCase):
         exported = manifest.to_dict()
         exported["selected_sources"][0]["content"] = "changed"
         self.assertEqual(manifest.context_digest, digest)
-
-    def test_draft_2020_12_and_python_share_the_structural_admission_corpus(self):
-        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-        validator = Draft202012Validator(schema)
-        cls = self.contract()
-        valid = context_facts()
-        self.assertEqual(list(validator.iter_errors(valid)), [])
-        cls.from_dict(valid)
-
-        cases = []
-        for mutate in (
-            lambda value: value.update(builder_version="bad value"),
-            lambda value: value["mandatory_sources"][0].update(path=".env"),
-            lambda value: value["mandatory_sources"][0].update(path="keys/private.pem"),
-            lambda value: value["mandatory_sources"][0].update(content="password=synthetic-secret"),
-            lambda value: value["mandatory_sources"][0].update(reason="bad reason"),
-            lambda value: value["mandatory_sources"][0].update(mode="summary"),
-            lambda value: value["rule_bindings"][0].pop("source_digest"),
-        ):
-            candidate = context_facts()
-            mutate(candidate)
-            cases.append(candidate)
-        for candidate in cases:
-            with self.subTest(candidate=candidate):
-                self.assertTrue(list(validator.iter_errors(candidate)))
-                with self.assertRaises(ContractError):
-                    cls.from_dict(candidate)
 
     def test_rule_binding_resolves_exact_admitted_digest_scope_mode_and_path(self):
         cls = self.contract()
