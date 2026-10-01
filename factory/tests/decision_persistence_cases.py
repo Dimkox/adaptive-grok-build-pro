@@ -170,7 +170,7 @@ def assert_v15_decision_persistence(case, *, database_url, worker, now, psycopg)
         ).fetchone()[0]
     cross = record.to_dict()
     cross.update(
-        decision_id="cross-task-supersession",
+        decision_id="different-work-decision",
         task_id=foreign_grant.task_id,
         run_id=foreign_grant.run_id,
         attempt_id=str(foreign_attempt),
@@ -244,7 +244,7 @@ def assert_v15_decision_persistence(case, *, database_url, worker, now, psycopg)
         ).fetchone()[0]
     cross_run = first_retry.copy()
     cross_run.update(
-        decision_id="cross-run-supersession",
+        decision_id="other-run-decision",
         run_id=retry_grant.run_id,
         attempt_id=str(retry_attempt),
         fence=retry_grant.fence,
@@ -272,7 +272,7 @@ def assert_v15_decision_persistence(case, *, database_url, worker, now, psycopg)
             ("task", cross, foreign_grant),
             ("run", cross_run, retry_grant),
         ):
-            sql_bad = dict(sql_bad, decision_id=f"sql-cross-{label}")
+            sql_bad = dict(sql_bad, decision_id=f"sql-other-{label}")
             with case.subTest(sql_supersession=label), case.assertRaises(
                 psycopg.errors.RaiseException
             ):
