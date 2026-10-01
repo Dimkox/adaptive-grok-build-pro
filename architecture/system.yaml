@@ -1802,6 +1802,8 @@
         "factory/src/adaptive_factory/behavior_qualification.py",
         "factory/src/adaptive_factory/fpf_runtime.py",
         "factory/src/adaptive_factory/qualification.py",
+        "factory/src/adaptive_factory/v15_runtime.py",
+        "factory/src/adaptive_factory/v15_runtime_config.py",
         "factory/src/adaptive_factory/vibevm_runtime.py",
         "factory/contracts/jsonschema/vibevm-generation.v1.schema.json",
         "factory/contracts/jsonschema/context-manifest.v1.schema.json",

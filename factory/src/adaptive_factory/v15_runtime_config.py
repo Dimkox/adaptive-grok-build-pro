@@ -50,6 +50,7 @@ class V15RuntimeBinding:
 @dataclass(frozen=True)
 class V15RuntimeConfig:
     bindings: tuple[V15RuntimeBinding, ...]
+    config_digest: str
 
     def resolve(self, tenant_id: str, repository_id: str, exact_head_sha: str):
         key = tenant_id, repository_id, exact_head_sha
@@ -85,7 +86,8 @@ def _adapter(value, name: str) -> AdapterBinding:
 
 def load_v15_runtime_config(path: Path) -> V15RuntimeConfig:
     try:
-        payload = json.loads(read_private_file(path, 131_072), object_pairs_hook=_pairs)
+        raw = read_private_file(path, 131_072)
+        payload = json.loads(raw, object_pairs_hook=_pairs)
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
         raise SettingsError("v1.5 runtime configuration must be valid JSON") from exc
     _closed(payload, ("schema_version", "bindings"), "closed v1.5 runtime configuration required")
@@ -126,4 +128,4 @@ def load_v15_runtime_config(path: Path) -> V15RuntimeConfig:
                 _adapter(record["prediction"], "prediction"),
             )
         )
-    return V15RuntimeConfig(tuple(bindings))
+    return V15RuntimeConfig(tuple(bindings), hashlib.sha256(raw).hexdigest())

@@ -3050,6 +3050,19 @@ class PostgresFactoryStore:
             cursor.execute("SELECT factory.v15_runtime_evaluation(%s)", (task_id,))
             return cursor.fetchone()[0]
 
+    def v15_candidate_sha(self, task_id: str) -> str:
+        with self._transaction() as cursor:
+            cursor.execute(
+                """SELECT intent.body#>>'{m0_authority,exact_head_sha}'
+                FROM factory.tasks task JOIN factory.accepted_intents intent
+                  ON intent.intent_id=task.intent_id WHERE task.task_id=%s""",
+                (task_id,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(task_id)
+            return row[0]
+
     def advance_execution(
         self,
         grant: LeaseGrant,

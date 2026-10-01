@@ -89,7 +89,7 @@ class FactoryV15QualificationV1(FrozenWire):
     pass
 
 
-def qualify(repository_id, task_id, evidence):
+def qualify(repository_id, task_id, evidence, *, runtime_evaluation=None):
     identity(repository_id)
     identity(task_id)
     allowed = {
@@ -201,6 +201,16 @@ def qualify(repository_id, task_id, evidence):
         core = "not_evaluated"
     else:
         core = "ready_for_human"
+    runtime_evaluation = runtime_evaluation or {}
+    fpf_status = runtime_evaluation.get("fpf_status", "not_evaluated")
+    vibevm_status = runtime_evaluation.get("vibevm_status", "not_evaluated")
+    runtime_prediction = runtime_evaluation.get("prediction_status", "not_qualified")
+    if fpf_status not in ("supported", "not_evaluated", "unavailable"):
+        raise ContractError("invalid_fpf_status")
+    if vibevm_status not in ("supported", "not_evaluated", "unavailable"):
+        raise ContractError("invalid_vibevm_status")
+    if prediction_status == "not_qualified" and runtime_prediction in ("not_qualified", "unavailable"):
+        prediction_status = runtime_prediction
     return FactoryV15QualificationV1.freeze(
         dict(
             schema_version=1,
@@ -218,8 +228,8 @@ def qualify(repository_id, task_id, evidence):
             prediction_status=prediction_status,
             apple_status="excluded_by_owner",
             bb_status="not_run",
-            fpf_status="not_evaluated",
-            vibevm_status="not_evaluated",
+            fpf_status=fpf_status,
+            vibevm_status=vibevm_status,
             m8_status="inactive",
             external_trust_status="pending",
             human_acceptance="awaiting_human",
@@ -229,11 +239,22 @@ def qualify(repository_id, task_id, evidence):
 
 
 class FactoryV15QualificationService:
-    def __init__(self, factory_service, evidence_reader):
+    def __init__(self, factory_service, evidence_reader, *, runtime_evaluator=None):
         self.factory_service = factory_service
         self.evidence_reader = evidence_reader
+        self.runtime_evaluator = runtime_evaluator
 
     def get_qualification(self, task_id, *, actor):
         # Existing factory access check happens before reading any evidence.
         task = self.factory_service.get_task(task_id, actor=actor)
-        return qualify(task.repository_id, task.task_id, self.evidence_reader(task))
+        evidence = self.evidence_reader(task)
+        runtime = None
+        if self.runtime_evaluator is not None:
+            context = evidence.get("context")
+            candidate_sha = (
+                context.to_dict()["source_snapshot"]["head_sha"]
+                if context is not None
+                else self.factory_service.store.v15_candidate_sha(task.task_id)
+            )
+            runtime = self.runtime_evaluator.evaluate(task, candidate_sha=candidate_sha)
+        return qualify(task.repository_id, task.task_id, evidence, runtime_evaluation=runtime)

@@ -218,9 +218,18 @@ def build_app(
                 semantic_adjudicator_store=semantic_adjudicator_store,
             )
         qualification_service = None
-        if settings.v15_evidence_root is not None:
+        if settings.v15_evidence_root is not None or v15_runtime_config is not None:
             from .qualification import FactoryV15QualificationService, FileQualificationEvidenceReader
-            qualification_service = FactoryV15QualificationService(service, FileQualificationEvidenceReader(settings.v15_evidence_root))
+            from .v15_runtime import V15RuntimeEvaluator
+            evidence_reader = (
+                FileQualificationEvidenceReader(settings.v15_evidence_root)
+                if settings.v15_evidence_root is not None else lambda _task: {}
+            )
+            qualification_service = FactoryV15QualificationService(
+                service,
+                evidence_reader,
+                runtime_evaluator=(V15RuntimeEvaluator(store, v15_runtime_config) if v15_runtime_config else None),
+            )
         app = create_app(
             service,
             Authenticator(load_actors(settings.actors_file)),
