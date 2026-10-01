@@ -1799,6 +1799,7 @@
         "factory/src/adaptive_factory/state.py",
         "factory/src/adaptive_factory/store.py",
         "factory/src/adaptive_factory/v15_contracts.py",
+        "factory/src/adaptive_factory/vibevm_store.py",
         "factory/tests"
       ],
       "runtime": {

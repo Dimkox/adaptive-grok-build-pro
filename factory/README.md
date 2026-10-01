@@ -98,3 +98,20 @@ Stages are immutable and verified before pointer activation. Ambiguous effects a
 The three files in `runtime/` implement immutable-release installation with separate control and exact landing checkouts. The installer creates default-off release files; credential provisioning and systemd activation are separate operator actions. The observed installed services are described in the dated runtime record. The template selects Qwen Omni for capabilities; actual billed development cost remains unknown.
 
 Historical observation: a separately authorized `qwen-intl` / `qwen-plus` synthetic normalization used 735 input and 117 output units in 8,598 ms on the prior source. That does not establish current-HEAD connectivity or Omni/multimodal acceptance. The user's earlier `data_inspection_failed` is an observed rejection with undetermined trigger. Mocked refusal/SSE and defensive Unicode, path, DOCX and PDF fixtures prove local handling, without identifying live moderation triggers.
+
+## VibeVM package-store core (Linux only, default off)
+
+`vibevm_store.py` provides the Factory-owned V1 data plane for deterministic
+package resolution, immutable digest admission, offline replay, bounded ZIP
+projection, managed boot-block reconciliation, and crash-safe generation
+switching. Stores are tenant/repository scoped; path traversal, links, device
+members, lifecycle hooks, XML DTD/entity declarations, and configured file,
+depth, and expanded-byte overflows fail closed. Interrupted staging directories
+can be removed with `reconcile()` without selecting a generation.
+
+The reviewed optional upstream adapter provenance is
+`Dimkox/vibevm` branch `feat/factory-context-data-only`, commit
+`0b63caa86e80ff670dc2a62ff529079b91d08e4d`, tree
+`1ff4963aeea1f3f0a925485437b8dcf7130bf17d`. This contour implements only the
+Factory package-store core: it does not execute that adapter, install VibeVM,
+establish live qualification, grant authority, or support macOS/U4.
