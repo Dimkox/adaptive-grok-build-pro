@@ -19,12 +19,17 @@ class SubsetValidator:
     _SUPPORTED_KEYWORDS = frozenset(
         {
             "$schema",
+            "$id",
+            "$defs",
             "$ref",
             "components",
+            "format",
+            "x-admission",
             "type",
             "required",
             "properties",
             "additionalProperties",
+            "anyOf",
             "oneOf",
             "enum",
             "const",
@@ -85,10 +90,23 @@ class SubsetValidator:
                 raise SchemaDefinitionError(f"{path}: cyclic $ref {reference!r}")
             self._validate(
                 instance,
-                self._resolve_component_reference(reference),
+                self._resolve_reference(reference),
                 path,
                 reference_stack | {reference},
             )
+
+        variants = schema.get("anyOf")
+        if variants is not None:
+            if not isinstance(variants, list) or not variants:
+                raise SchemaDefinitionError(f"{path}: anyOf must be a non-empty array")
+            for variant in variants:
+                try:
+                    self._validate(instance, variant, path, reference_stack)
+                except SchemaValidationError:
+                    continue
+                break
+            else:
+                raise SchemaValidationError(f"{path}: anyOf did not match any schema")
 
         if "type" in schema:
             expected = schema["type"]
@@ -147,30 +165,51 @@ class SubsetValidator:
         if isinstance(instance, (int, float)) and not isinstance(instance, bool):
             self._validate_number(instance, schema, path)
 
-    def _resolve_component_reference(self, reference: str) -> Mapping[str, Any] | bool:
-        prefix = "#/components/schemas/"
+    def _resolve_reference(self, reference: str) -> Mapping[str, Any] | bool:
+        for prefix, container_path, label in (
+            ("#/components/schemas/", ("components", "schemas"), "OpenAPI component schema"),
+            ("#/$defs/", ("$defs",), "local definition"),
+        ):
+            if reference.startswith(prefix):
+                return self._resolve_root_container_reference(
+                    reference, prefix, container_path, label
+                )
+        raise SchemaDefinitionError(
+            "unsupported reference; expected one local $defs or OpenAPI component "
+            f"schema: {reference!r}"
+        )
+
+    def _resolve_root_container_reference(
+        self,
+        reference: str,
+        prefix: str,
+        container_path: tuple[str, ...],
+        label: str,
+    ) -> Mapping[str, Any] | bool:
         encoded_name = reference.removeprefix(prefix)
         if (
-            not reference.startswith(prefix)
-            or not encoded_name
+            not encoded_name
             or "/" in encoded_name
             or re.search(r"~(?:[^01]|$)", encoded_name)
         ):
             raise SchemaDefinitionError(
-                f"unsupported reference; expected one OpenAPI component schema: {reference!r}"
+                f"unsupported reference; expected one {label}: {reference!r}"
             )
         name = encoded_name.replace("~1", "/").replace("~0", "~")
         if not isinstance(self._root, Mapping):
             raise SchemaDefinitionError("boolean root schema cannot resolve references")
-        components = self._root.get("components")
-        if not isinstance(components, Mapping):
-            raise SchemaDefinitionError("root schema has no components object")
-        schemas = components.get("schemas")
-        if not isinstance(schemas, Mapping) or name not in schemas:
-            raise SchemaDefinitionError(f"unknown OpenAPI component schema: {name!r}")
-        target = schemas[name]
+        container: Any = self._root
+        for segment in container_path:
+            if not isinstance(container, Mapping) or segment not in container:
+                raise SchemaDefinitionError(
+                    f"root schema has no {'/'.join(container_path)} object"
+                )
+            container = container[segment]
+        if not isinstance(container, Mapping) or name not in container:
+            raise SchemaDefinitionError(f"unknown {label}: {name!r}")
+        target = container[name]
         if not isinstance(target, (Mapping, bool)):
-            raise SchemaDefinitionError(f"component schema {name!r} is not an object or boolean")
+            raise SchemaDefinitionError(f"{label} {name!r} is not an object or boolean")
         return target
 
     def _validate_string(
