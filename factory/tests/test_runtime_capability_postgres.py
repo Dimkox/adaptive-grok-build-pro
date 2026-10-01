@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 
 from adaptive_factory.admin import (
     provision_artifact_attestor_login,
@@ -13,11 +14,27 @@ from adaptive_factory.store import (
 )
 
 
-DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
+INITIAL_DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
+
+
+def _current_database_url() -> str:
+    database_url = os.environ.get("FACTORY_TEST_DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("FACTORY_TEST_DATABASE_URL must name a disposable database")
+    return database_url
+
+
+class RuntimeCapabilityDatabaseUrlTests(unittest.TestCase):
+    def test_set_up_resolution_observes_environment_change_after_import(self):
+        replacement = "postgresql://runtime-capability/new-port"
+        with mock.patch.dict(
+            os.environ, {"FACTORY_TEST_DATABASE_URL": replacement}
+        ):
+            self.assertEqual(_current_database_url(), replacement)
 
 
 @unittest.skipUnless(
-    DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database"
+    INITIAL_DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database"
 )
 class RuntimeCapabilityPostgresTests(unittest.TestCase):
     @classmethod
@@ -26,33 +43,34 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
         from psycopg import sql
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-        PostgresMigrator(DATABASE_URL).apply()
+        cls.database_url = _current_database_url()
+        PostgresMigrator(cls.database_url).apply()
         cls.login = f"factory_slice04_runtime_{os.getpid()}"
         cls.attestor_login = f"factory_slice04_attestor_{os.getpid()}"
         cls.password = "local-" + "slice04-runtime-password"
         cls.attestor_password = "local-" + "slice04-attestor-password"
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(cls.database_url) as connection:
             for login in (cls.attestor_login, cls.login):
                 connection.execute(
                     sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login))
                 )
-        provision_runtime_login(DATABASE_URL, cls.login, cls.password)
+        provision_runtime_login(cls.database_url, cls.login, cls.password)
         provision_artifact_attestor_login(
-            DATABASE_URL,
+            cls.database_url,
             cls.attestor_login,
             cls.attestor_password,
             runtime_login=cls.login,
         )
         cls.runtime_url = make_conninfo(
             **{
-                **conninfo_to_dict(DATABASE_URL),
+                **conninfo_to_dict(cls.database_url),
                 "user": cls.login,
                 "password": cls.password,
             }
         )
         cls.attestor_url = make_conninfo(
             **{
-                **conninfo_to_dict(DATABASE_URL),
+                **conninfo_to_dict(cls.database_url),
                 "user": cls.attestor_login,
                 "password": cls.attestor_password,
             }
@@ -63,7 +81,7 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
         import psycopg
         from psycopg import sql
 
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(cls.database_url) as connection:
             for login in (cls.attestor_login, cls.login):
                 connection.execute(
                     sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login))
@@ -71,7 +89,7 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
 
     def test_runtime_store_requires_exact_capability_login_before_set_role(self):
         with self.assertRaisesRegex(StoreError, "runtime login is not least privilege"):
-            with PostgresFactoryStore(DATABASE_URL)._connect():
+            with PostgresFactoryStore(self.database_url)._connect():
                 pass
 
         with (
@@ -107,9 +125,9 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
         with self.assertRaisesRegex(StoreError, "excess role membership"):
             PostgresArtifactAttestationStore(self.runtime_url).readiness()
         with self.assertRaisesRegex(StoreError, "login is not least privilege"):
-            PostgresArtifactAttestationStore(DATABASE_URL).readiness()
+            PostgresArtifactAttestationStore(self.database_url).readiness()
 
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(self.database_url) as connection:
             connection.execute(
                 sql.SQL("GRANT factory_artifact_attestor TO {}").format(
                     sql.Identifier(self.login)
@@ -119,14 +137,14 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(StoreError, "excess role membership"):
                 PostgresFactoryStore(self.runtime_url).readiness()
         finally:
-            with psycopg.connect(DATABASE_URL) as connection:
+            with psycopg.connect(self.database_url) as connection:
                 connection.execute(
                     sql.SQL("REVOKE factory_artifact_attestor FROM {}").format(
                         sql.Identifier(self.login)
                     )
                 )
 
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(self.database_url) as connection:
             connection.execute(
                 sql.SQL("GRANT SELECT (task_id) ON factory.tasks TO {}").format(
                     sql.Identifier(self.login)
@@ -136,7 +154,7 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(StoreError, "direct database authority"):
                 PostgresFactoryStore(self.runtime_url).readiness()
         finally:
-            with psycopg.connect(DATABASE_URL) as connection:
+            with psycopg.connect(self.database_url) as connection:
                 connection.execute(
                     sql.SQL("REVOKE SELECT (task_id) ON factory.tasks FROM {}").format(
                         sql.Identifier(self.login)
@@ -144,7 +162,7 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
                 )
 
         schema = f"slice04_owned_{os.getpid()}"
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(self.database_url) as connection:
             connection.execute(
                 sql.SQL("CREATE SCHEMA {} AUTHORIZATION {}").format(
                     sql.Identifier(schema), sql.Identifier(self.login)
@@ -154,12 +172,12 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(StoreError, "direct database authority"):
                 PostgresFactoryStore(self.runtime_url).readiness()
         finally:
-            with psycopg.connect(DATABASE_URL) as connection:
+            with psycopg.connect(self.database_url) as connection:
                 connection.execute(
                     sql.SQL("DROP SCHEMA {}").format(sql.Identifier(schema))
                 )
 
-        with psycopg.connect(DATABASE_URL) as connection:
+        with psycopg.connect(self.database_url) as connection:
             connection.execute(
                 sql.SQL("ALTER ROLE {} SET application_name='unsafe'").format(
                     sql.Identifier(self.login)
@@ -169,7 +187,7 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(StoreError, "not least privilege"):
                 PostgresFactoryStore(self.runtime_url).readiness()
         finally:
-            with psycopg.connect(DATABASE_URL) as connection:
+            with psycopg.connect(self.database_url) as connection:
                 connection.execute(
                     sql.SQL("ALTER ROLE {} RESET ALL").format(
                         sql.Identifier(self.login)
