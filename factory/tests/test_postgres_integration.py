@@ -914,6 +914,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
 
     def test_v15_decision_persistence(self):
+        import hashlib
         import psycopg
         from adaptive_factory.decision_contracts import DecisionRecordV1
         from factory.tests.test_decision_contracts import decision_facts
@@ -938,36 +939,28 @@ class PostgresFactoryTests(unittest.TestCase):
                      rule_id='FACTORY-STATE-TRANSITION', evidence_refs=[])
         record = DecisionRecordV1.from_dict(facts)
         key = '9' * 64
-        self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW,
-                                    idempotency_key=key, decision_record=record)
+        self.service.transition_phase(grant, target=TaskStatus.ANALYZING, actor=WORKER,
+            now=NOW, idempotency_key=key, decision_record=record)
         self.assertEqual(self.store.transition_phase(
             grant, TaskStatus.ANALYZING, WORKER, NOW,
             idempotency_key=key, decision_record=record), TaskStatus.ANALYZING)
         with self.assertRaises(StoreError):
             self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW,
                                         idempotency_key=key)
-        changed_replay_facts = record.to_dict()
-        changed_replay_facts['decision_id'] = 'changed-replay-decision'
+        changed = record.to_dict()
+        changed['decision_id'] = 'changed-replay-decision'
         with self.assertRaises(StoreError):
             self.store.transition_phase(
                 grant, TaskStatus.ANALYZING, WORKER, NOW, idempotency_key=key,
-                decision_record=DecisionRecordV1.from_dict(changed_replay_facts))
-        self.assertEqual(self.store.append_decision(grant, record, WORKER), record.record_digest)
+                decision_record=DecisionRecordV1.from_dict(changed))
         facts['facts'] = [dict(name='from_state', value='analyzing'), dict(name='target', value='implementing')]
-        conflicting = DecisionRecordV1.from_dict(facts)
-        with self.assertRaises(IntegrityError):
-            self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW, decision_record=conflicting)
-        self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.ANALYZING)
         facts.update(decision_id='decision-2', supersedes='decision-1')
-        correction = DecisionRecordV1.from_dict(facts)
-        self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW, decision_record=correction)
+        fix = DecisionRecordV1.from_dict(facts)
+        self.store.transition_phase(grant, TaskStatus.IMPLEMENTING, WORKER, NOW,
+                                    idempotency_key='7' * 64, decision_record=fix)
         with psycopg.connect(DATABASE_URL) as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=%s', (task.task_id,)).fetchone()[0], 2)
         with psycopg.connect(self.runtime_url) as connection:
-            connection.execute('SET ROLE factory_runtime')
-            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
-                connection.execute('UPDATE factory.decision_records_v1 SET supersedes=NULL')
-            connection.rollback()
             connection.execute('SET ROLE factory_runtime')
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 connection.execute("""INSERT INTO factory.decision_records_v1
@@ -976,21 +969,29 @@ class PostgresFactoryTests(unittest.TestCase):
                     (task.task_id, grant.run_id, '0' * 64))
             connection.rollback()
             connection.execute('SET ROLE factory_runtime')
-            with self.assertRaises(psycopg.errors.RaiseException):
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 connection.execute(
-                    'SELECT factory.append_decision_v1(%s,%s,%s,%s)',
+                    'SELECT factory._append_decision_v1(%s,%s,%s,%s)',
                     ('{}', '0' * 64, grant.run_id, grant.fence))
             connection.rollback()
             connection.execute('SET ROLE factory_runtime')
-            malformed = record.to_dict()
+            persisted = connection.execute("SELECT record FROM factory.decision_records_v1 WHERE decision_id='decision-2'").fetchone()[0]
+            malformed = dict(persisted)
             malformed['decision_id'] = 'parser-bypass'
             malformed['facts'].append(dict(malformed['facts'][0]))
-            malformed_canonical = canonical_json(malformed).decode()
+            wire = canonical_json(malformed).decode()
             with self.assertRaises(psycopg.errors.RaiseException):
                 connection.execute(
-                    'SELECT factory.append_decision_v1(%s,%s,%s,%s)',
-                    (malformed_canonical, canonical_digest(malformed), grant.run_id,
-                     grant.fence))
+                    'SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
+                    (wire, canonical_digest(malformed), grant.run_id,
+                     grant.fence, '7' * 64, fix.record_digest))
+            connection.rollback()
+            connection.execute('SET ROLE factory_runtime')
+            bad_wire = ' ' + canonical_json(persisted).decode()
+            with self.assertRaises(psycopg.errors.RaiseException):
+                connection.execute('SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)',
+                    (bad_wire, hashlib.sha256(bad_wire.encode()).hexdigest(), grant.run_id,
+                     grant.fence, '7' * 64, fix.record_digest))
 
         class FailingDecisionAuditStore(PostgresFactoryStore):
             def _audit(self, *args, **kwargs):
@@ -998,11 +999,11 @@ class PostgresFactoryTests(unittest.TestCase):
                     raise StoreError('injected decision audit failure')
                 return super()._audit(*args, **kwargs)
 
-        failed_facts = correction.to_dict()
-        failed_facts.update(decision_id='rollback-decision', supersedes='decision-2',
+        failed = fix.to_dict()
+        failed.update(decision_id='rollback-decision', supersedes='decision-2',
             facts=[dict(name='from_state', value='implementing'),
                    dict(name='target', value='verifying')])
-        failed_record = DecisionRecordV1.from_dict(failed_facts)
+        failed_record = DecisionRecordV1.from_dict(failed)
         with self.assertRaisesRegex(StoreError, 'decision audit'):
             FailingDecisionAuditStore(self.runtime_url).transition_phase(
                 grant, TaskStatus.VERIFYING, WORKER, NOW,

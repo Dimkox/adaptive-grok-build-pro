@@ -18,7 +18,7 @@ REVOKE INSERT ON factory.decision_records_v1 FROM factory_runtime;
 GRANT SELECT ON factory.decision_records_v1 TO factory_runtime;
 -- UPDATE/DELETE are deliberately absent. Corrections append superseding records.
 
-CREATE FUNCTION factory.append_decision_v1(
+CREATE FUNCTION factory._append_decision_v1(
   p_record_canonical text,
   p_record_digest char(64),
   p_run_id uuid,
@@ -41,6 +41,8 @@ BEGIN
   THEN RAISE EXCEPTION 'invalid decision digest'; END IF;
   BEGIN v_record := p_record_canonical::jsonb;
   EXCEPTION WHEN others THEN RAISE EXCEPTION 'invalid decision json'; END;
+  IF factory.execution_canonical_json(v_record)<>p_record_canonical
+  THEN RAISE EXCEPTION 'noncanonical decision json'; END IF;
 
   IF jsonb_typeof(v_record)<>'object' OR (SELECT count(*) FROM jsonb_object_keys(v_record))<>23
     OR NOT v_record ?& ARRAY['schema_version','decision_id','repository_id','task_id','run_id','attempt_id','fence','observed_at','decision_kind','rule_id','rule_version','facts','outcome','reason_code','base_sha','head_sha','context_digest','spec_digest','profile_digest','evidence_refs','constraints','next_step','supersedes']
@@ -111,7 +113,7 @@ BEGIN
         OR jsonb_typeof(f->'value')<>'string')
     OR (SELECT count(DISTINCT f->>'name') FROM jsonb_array_elements(v_record->'facts') f)<>2
     OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_record->'facts') f
-      WHERE f->>'name'='from_state' AND f->>'value'=v_task.state)
+      WHERE f->>'name'='from_state')
     OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_record->'facts') f
       WHERE f->>'name'='target' AND f->>'value' IN
         ('inbox','triaged','waiting_design_approval','queued','leased','analyzing','implementing','verifying','reviewing','ready_for_human','retry','needs_human','dead','cancelled','superseded'))
@@ -130,5 +132,38 @@ BEGIN
   IF trim(v_existing) IS DISTINCT FROM trim(p_record_digest) THEN RETURN NULL; END IF;
   RETURN v_existing;
 END $$;
-REVOKE ALL ON FUNCTION factory.append_decision_v1(text,char(64),uuid,bigint) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION factory.append_decision_v1(text,char(64),uuid,bigint) TO factory_runtime;
+REVOKE ALL ON FUNCTION factory._append_decision_v1(text,char(64),uuid,bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory._append_decision_v1(text,char(64),uuid,bigint) FROM factory_runtime;
+
+CREATE FUNCTION factory.persist_phase_decision_v1(
+  p_record_canonical text,p_record_digest char(64),p_run_id uuid,p_fence bigint,
+  p_idempotency_key char(64),p_request_decision_digest char(64)
+) RETURNS char(64)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE v_record jsonb; v_task_id uuid; v_owner text; v_from text; v_target text;
+BEGIN
+  v_record:=p_record_canonical::jsonb;
+  SELECT task_id,owner_id INTO v_task_id,v_owner FROM factory.runs
+    WHERE run_id=p_run_id AND fence=p_fence AND state='leased';
+  SELECT f->>'value' INTO v_from FROM jsonb_array_elements(v_record->'facts') f WHERE f->>'name'='from_state';
+  SELECT f->>'value' INTO v_target FROM jsonb_array_elements(v_record->'facts') f WHERE f->>'name'='target';
+  IF v_task_id IS NULL OR NOT EXISTS (SELECT 1 FROM factory.tasks t WHERE t.task_id=v_task_id AND t.state=v_target)
+    OR NOT EXISTS (SELECT 1 FROM factory.task_events e WHERE e.task_id=v_task_id
+      AND e.actor_id=v_owner AND e.action='phase_transitioned'
+      AND e.metadata->>'run_id'=p_run_id::text AND e.metadata->>'fence'=p_fence::text
+      AND e.metadata->>'from_state'=v_from AND e.metadata->>'target'=v_target)
+    OR NOT EXISTS (SELECT 1 FROM factory.audit_log a WHERE a.task_id=v_task_id AND a.run_id=p_run_id
+      AND a.actor_id=v_owner AND a.action='phase_transition' AND a.created_at=(v_record->>'observed_at')::timestamptz
+      AND a.metadata->>'from_state'=v_from AND a.metadata->>'target'=v_target)
+    OR NOT EXISTS (SELECT 1 FROM factory.command_results c WHERE c.idempotency_key=p_idempotency_key
+      AND c.actor_id=v_owner AND c.action='transition_phase' AND c.result->>'status'=v_target
+      AND trim(c.request_digest)=factory.execution_contract_hash(NULL,factory.execution_canonical_json(
+        jsonb_build_object('grant',jsonb_build_object('task_id',v_task_id::text,'run_id',p_run_id::text,
+          'owner',v_owner,'role',(SELECT role FROM factory.runs WHERE run_id=p_run_id),
+          'fence',p_fence,'packet_digest',(SELECT trim(packet_digest) FROM factory.runs WHERE run_id=p_run_id)),
+          'target',v_target,'decision_digest',trim(p_request_decision_digest)))))
+  THEN RAISE EXCEPTION 'decision requires atomic phase evidence'; END IF;
+  RETURN factory._append_decision_v1(p_record_canonical,p_record_digest,p_run_id,p_fence);
+END $$;
+REVOKE ALL ON FUNCTION factory.persist_phase_decision_v1(text,char(64),uuid,bigint,char(64),char(64)) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION factory.persist_phase_decision_v1(text,char(64),uuid,bigint,char(64),char(64)) TO factory_runtime;

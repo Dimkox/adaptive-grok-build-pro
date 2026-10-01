@@ -2117,6 +2117,7 @@ class PostgresFactoryStore:
             ),
         )
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
+        return received_at
 
     def intake(
         self,
@@ -3986,6 +3987,7 @@ class PostgresFactoryStore:
                 cursor, grant
             )
             current = TaskStatus(task_state)
+            record = None
             if decision_record is not None:
                 record = DecisionRecordV1.from_dict(decision_record.to_dict())
                 facts = {
@@ -3998,7 +4000,8 @@ class PostgresFactoryStore:
                     or facts.get("target") != target.value
                 ):
                     raise IntegrityError("state decision facts mismatch")
-                self._append_decision_locked(cursor, grant, record, actor)
+                if idempotency_key is None:
+                    raise IntegrityError("state decision requires idempotency key")
             operation = TransitionOperation.PHASE
             self._apply_task_transition(
                 cursor,
@@ -4030,7 +4033,7 @@ class PostgresFactoryStore:
                 event_key,
                 metadata,
             )
-            self._audit(
+            audit_time = self._audit(
                 cursor,
                 str(task_id),
                 actor,
@@ -4050,10 +4053,18 @@ class PostgresFactoryStore:
                 correlation_id,
                 {"status": target.value},
             )
+            if record is not None:
+                self._append_decision_locked(
+                    cursor, grant, record, actor, idempotency_key, audit_time,
+                    decision_record.record_digest,
+                )
             return target
 
-    def _append_decision_locked(self, cursor, grant, record, actor):
+    def _append_decision_locked(self, cursor, grant, record, actor, idempotency_key, observed_at,
+                                request_decision_digest):
         data = record.to_dict()
+        data["observed_at"] = observed_at.isoformat().replace("+00:00", "Z")
+        record = DecisionRecordV1.from_dict(data)
         cursor.execute(
             "SELECT repository_id FROM factory.tasks WHERE task_id=%s",
             (grant.task_id,),
@@ -4091,8 +4102,9 @@ class PostgresFactoryStore:
             ):
                 raise IntegrityError("decision supersession mismatch")
         cursor.execute(
-            "SELECT factory.append_decision_v1(%s,%s,%s,%s)",
-            (canonical_json(data).decode(), record.record_digest, grant.run_id, grant.fence),
+            "SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)",
+            (canonical_json(data).decode(), record.record_digest, grant.run_id,
+             grant.fence, idempotency_key, request_decision_digest),
         )
         stored = cursor.fetchone()[0]
         if stored != record.record_digest:
@@ -4100,10 +4112,7 @@ class PostgresFactoryStore:
         return record.record_digest
 
     def append_decision(self, grant, record, actor):
-        record = DecisionRecordV1.from_dict(record.to_dict())
-        with self._transaction() as cursor:
-            self._lock_grant(cursor, grant)
-            return self._append_decision_locked(cursor, grant, record, actor)
+        raise StoreError("decisions persist only with an atomic phase transition")
 
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,

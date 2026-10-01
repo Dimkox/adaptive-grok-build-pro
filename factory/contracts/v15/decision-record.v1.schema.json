@@ -44,18 +44,18 @@
     },
     "task_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "run_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "attempt_id": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 128
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     },
     "fence": {
       "type": "integer",

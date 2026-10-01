@@ -1,5 +1,7 @@
 """Factual decisions and honest accounting; these sidecars never grant authority."""
 
+from uuid import UUID
+
 from .contracts import ContractError
 from .v15_contracts import (
     FrozenWire,
@@ -51,14 +53,17 @@ class DecisionRecordV1(FrozenWire):
         for key in (
             "decision_id",
             "repository_id",
-            "task_id",
-            "run_id",
-            "attempt_id",
             "rule_id",
             "rule_version",
             "reason_code",
         ):
             identity(data[key])
+        for key in ("task_id", "run_id", "attempt_id"):
+            try:
+                if str(UUID(data[key])) != data[key]:
+                    raise ValueError
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise ContractError("invalid_uuid", key) from exc
         integer(data["fence"], "fence", 1)
         timestamp(data["observed_at"])
         for key in ("base_sha", "head_sha"):
