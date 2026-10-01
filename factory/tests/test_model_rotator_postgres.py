@@ -265,14 +265,32 @@ class ModelRotatorPostgresTests(unittest.TestCase):
     def test_bundled_registry_two_operations_reconnect_and_owner_settlement(self):
         registry, bind, store = self.binding(requests=3)
         result = TransportResult.success(response_digest="a" * 64, input_tokens=2, output_tokens=1)
-        first = ModelRotator(registry, store, enabled=True).execute(bind, lambda *args: result, now=100)
+        transport_calls = []
+        def transport(*args):
+            transport_calls.append(args)
+            return result
+        first = ModelRotator(registry, store, enabled=True).execute(bind, transport, now=100)
         self.assertEqual(first["status"], "selected")
+        replay = ModelRotator(
+            registry, PostgresRotationStore(self.runtime_url), enabled=True
+        ).execute(bind, transport, now=101)
+        self.assertEqual(replay, {
+            "evidence_digest": first["evidence_digest"],
+            "next_model_digest": first["next_model_digest"],
+        })
+        self.assertEqual(len(transport_calls), 1)
+        self.assertEqual(self.owner_row(
+            "SELECT evidence,held_request_units,settled_request_units "
+            "FROM factory.model_rotator_operations o JOIN factory.model_rotator_reservation_accounting a "
+            "ON a.reservation_id=o.reservation_id AND a.registry_digest=o.registry_digest "
+            "WHERE o.binding_digest=%s", (bind.binding_digest,)
+        ), (replay, 0, 1))
         second_binding = replace(bind, operation_id="rotator-op-2")
         second = ModelRotator(registry, PostgresRotationStore(self.runtime_url), enabled=True).execute(
-            second_binding, lambda *args: result, now=101)
+            second_binding, transport, now=102)
         self.assertEqual((second["status"], second["state_version"]), ("selected", 1))
         third = replace(bind, operation_id="rotator-op-3")
-        claim = self.claim(store, third)
+        claim = store.claim(third, third.registry_digest, 0, self.requested_digest(third), 103)
         self.assertTrue(store.reserve_dispatch(third.binding_digest, claim["claim_token"], "request", 1))
         store.quarantine(third.binding_digest, claim["claim_token"], {
             "evidence_digest": "f" * 64, "status": "needs_human", "state_version": claim["version"],

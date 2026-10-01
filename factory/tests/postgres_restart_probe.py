@@ -1186,11 +1186,19 @@ def _exercise_rotator_restart(container_name, container_id, nonce, owner_url, ru
     PostgresRotationStore(owner_url).reconcile(binding.binding_digest, settle=False)
     next_binding = replace(binding, operation_id="restart-rotation-2")
     rotator = ModelRotator(registry, recovered, enabled=True)
-    evidence = rotator.execute(next_binding, lambda *args: TransportResult.success(response_digest="e" * 64, input_tokens=2, output_tokens=1), now=102)
+    transport_calls = 0
+    def synthetic_transport(*args):
+        nonlocal transport_calls
+        transport_calls += 1
+        return TransportResult.success(response_digest="e" * 64, input_tokens=2, output_tokens=1)
+    evidence = rotator.execute(next_binding, synthetic_transport, now=102)
     _require(evidence["status"] == "selected", "rotator_restart_success missing")
-    def forbidden_transport(*args):
-        raise AssertionError("completed rotator replay redispatched")
-    _require(rotator.execute(next_binding, forbidden_transport, now=103) == evidence, "restart replay did not retain exact evidence")
+    replay = rotator.execute(next_binding, synthetic_transport, now=103)
+    _require(replay == {
+        "evidence_digest": evidence["evidence_digest"],
+        "next_model_digest": evidence["next_model_digest"],
+    }, "restart replay did not retain exact digest evidence")
+    _require(transport_calls == 1, "completed rotator replay redispatched")
     with psycopg.connect(owner_url) as connection:
         _require(connection.execute("SELECT held_request_units,settled_request_units FROM factory.model_rotator_reservation_accounting").fetchone() == (0, 1), "rotator restart settlement was not exact")
     FactoryService(PostgresFactoryStore(runtime_url)).release(execution.lease, outcome=FailureClass.WORKER_LOST,
@@ -1611,7 +1619,7 @@ def main() -> int:
     )
     _exercise_rotator_restart(container_name, container_id, nonce, owner_url, runtime_url, attestor_url)
     print(
-        "PASS: three PostgreSQL restarts; rotator durable hold/quarantine/owner release/replay; exact runtime/attestor roles; "
+        "PASS: three PostgreSQL restarts; rotator durable hold/quarantine/owner release/digest-evidence replay; exact runtime/attestor roles; "
         "cancelled+orphaned recovery; ambiguous cleanup fence2 replay; "
         "zero fabricated proposal/result/attestation; higher M4 fence"
     )

@@ -131,7 +131,7 @@ activate providers, edit `~/.qwen`, start a proxy, kill processes, or enable ups
 
 Local disposable tests passed nine database authority/recovery scenarios and three
 actual PostgreSQL restarts, including retained holds, quarantine, owner release and exact
-replay. No provider was called, and this is not installed/live acceptance. Rollback retains
+digest-evidence replay with no redispatch. No provider was called, and this is not installed/live acceptance. Rollback retains
 migrations027-028 and their immutable operation/grant/accounting evidence, disables composition,
 and uses forward recovery rather than discarding unknown holds.
 
