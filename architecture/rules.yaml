@@ -353,6 +353,40 @@
     {
       "forbidden_dependency_prefixes": [
         "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "api",
+        "brokers",
+        "execution_contracts",
+        "migrations",
+        "service",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-BB-CONTRACT-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/bb_contracts.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
         "adaptive_factory.brokers",
         "adaptive_factory.migrations",
         "adaptive_factory.store",

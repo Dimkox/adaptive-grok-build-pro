@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:bb-backend-profile:v1",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.bb_contracts.BBBackendProfileV1.from_dict",
+    "semantic_validation_required": true,
+    "semantic_checks": ["default_off", "bounded_limits", "deadline_order", "known_capabilities"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "profile_id", "enabled", "source_commit",
+    "binary_digest", "workflows_digest", "orchestra_digest", "capabilities",
+    "max_agents", "max_depth", "max_cost_usd_micros", "wall_seconds",
+    "lease_seconds", "stop_seconds"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "enabled": {"const": false},
+    "source_commit": {
+      "anyOf": [
+        {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        {"type": "null"}
+      ]
+    },
+    "binary_digest": {"$ref": "#/$defs/optional_digest"},
+    "workflows_digest": {"$ref": "#/$defs/optional_digest"},
+    "orchestra_digest": {"$ref": "#/$defs/optional_digest"},
+    "capabilities": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["observe", "pause", "resume", "cancel", "pre_model_interception"]
+      }
+    },
+    "max_agents": {"$ref": "#/$defs/limit"},
+    "max_depth": {"$ref": "#/$defs/limit"},
+    "max_cost_usd_micros": {"$ref": "#/$defs/limit"},
+    "wall_seconds": {"$ref": "#/$defs/limit"},
+    "lease_seconds": {"$ref": "#/$defs/limit"},
+    "stop_seconds": {"$ref": "#/$defs/limit"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "optional_digest": {
+      "anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]
+    },
+    "limit": {"type": "integer", "minimum": 1, "maximum": 1000000000}
+  }
+}

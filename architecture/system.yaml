@@ -179,6 +179,22 @@
     },
     {
       "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-V15-BB-BACKEND-PROFILE",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/bb-backend-profile.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-V15-BB-LIFECYCLE-OBSERVATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/bb-lifecycle-observation.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
@@ -1739,6 +1755,8 @@
       "id": "NODE-FACTORY-CONTROL",
       "owner": "local factory operators",
       "public_contracts": [
+        "CONTRACT-FACTORY-V15-BB-BACKEND-PROFILE",
+        "CONTRACT-FACTORY-V15-BB-LIFECYCLE-OBSERVATION",
         "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
         "CONTRACT-FACTORY-V15-DECISION-RECORD",
         "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API"
@@ -1749,6 +1767,7 @@
         "factory/pyproject.toml",
         "factory/src/adaptive_factory/__init__.py",
         "factory/src/adaptive_factory/admin.py",
+        "factory/src/adaptive_factory/bb_contracts.py",
         "factory/src/adaptive_factory/context_contracts.py",
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/decision_contracts.py",

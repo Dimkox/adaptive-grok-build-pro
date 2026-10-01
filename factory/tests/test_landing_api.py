@@ -436,6 +436,7 @@ class LandingApiTests(unittest.TestCase):
             for path in Path("factory/contracts").rglob("*")
             if path.is_file()
             and "landing-" not in path.name
+            and not path.name.startswith("bb-")
             and path.name != "static-landing-spec.v1.schema.json"
             and path.name != "context-manifest.v1.schema.json"
             and path.name != "decision-record.v1.schema.json"
