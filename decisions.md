@@ -897,3 +897,7 @@ Migration 028 preserves the published migration-027 bytes and replaces its expos
 ### 2026-10-01 — Admit optional v1.5 runtimes only through exact private bindings
 
 Binding tenant, repository, exact head, absolute artifact path and SHA-256 in one closed mode-0600 operator file kept FPF, VibeVM and prediction default-off without inferring authority from repository contents. Persisting the immutable twelve-case suite as `not_evaluated` until factual execution preserved useful composition while preventing configuration or artifact presence from becoming qualification.
+
+### 2026-10-01 — Serialize runtime consumption with every revocation authority
+
+Locking authoritative run/task rows before a shared lock on the complete kill-head table gives release, existing kills, and first-time repository kills one deterministic order before budget mutation. Real PostgreSQL tests observe the exact server-side lock wait and prove a committed release or kill leaves usage unchanged.

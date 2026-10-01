@@ -665,6 +665,38 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         self.assertIsNotNone(execution)
         return task, execution
 
+    def record_native_sidecar(self, execution, *, max_rounds=8, max_tool_operations=8):
+        import psycopg
+
+        content = "trusted exact repository rule"
+        context = {
+            "schema_version": 1, "builder_version": "native-git-1",
+            "tenant_id": "owner/repository", "repository_id": "owner/repository",
+            "source_snapshot": {"base_sha": "1" * 40, "head_sha": "3" * 40, "dirty_fingerprint": None},
+            "change_id": "20260831-m4-control-plane", "route_id": "b7f288f1e81e",
+            "change_spec_digest": "a" * 64, "observed_at": "2026-10-01T00:00:00Z",
+            "mandatory_sources": [{"path": "AGENTS.md", "kind": "instruction", "content": content,
+                                   "sha256": hashlib.sha256(content.encode()).hexdigest(), "reason": "mandatory"}],
+            "selected_sources": [], "rule_bindings": [],
+        }
+        context_without_time = {key: value for key, value in context.items() if key != "observed_at"}
+        sidecar = {
+            "schema_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "packet_digest": execution.packet_digest,
+            "fence": execution.lease.fence, "repository_id": "owner/repository",
+            "context_digest": canonical_digest(context_without_time), "context_manifest": context,
+            "analysis_budget": {"schema_version": 1, "max_rounds": max_rounds,
+                                "max_tool_operations": max_tool_operations},
+        }
+        sidecar["sidecar_digest"] = canonical_digest(sidecar)
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            self.assertTrue(connection.execute(
+                "SELECT factory.execution_record_native_sidecar(%s::jsonb)",
+                (json.dumps(sidecar),),
+            ).fetchone()[0])
+        return sidecar
+
     @staticmethod
     def proposal_body(execution, sequence, event_type, inner):
         envelope = {
@@ -808,6 +840,140 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
                      execution.lease.fence, execution.packet_digest, "e" * 64, "f" * 64),
                 )
+
+    def _assert_runtime_native_functions_reject(self, execution):
+        import psycopg
+
+        values = (execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                  execution.lease.fence, execution.packet_digest)
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            self.assertIsNone(connection.execute(
+                "SELECT factory.execution_native_context(%s,%s,%s,%s,%s)", values,
+            ).fetchone()[0])
+            with self.assertRaises(psycopg.errors.RaiseException):
+                connection.execute(
+                    "SELECT factory.execution_consume_analysis_budget(%s,%s,%s,%s,%s,1,0,%s,%s)",
+                    (*values, "e" * 64, "f" * 64),
+                )
+
+    def test_runtime_native_functions_reject_replaced_fence_and_each_kill_scope(self):
+        for scope in ("global", "repository:owner/repository"):
+            with self.subTest(scope=scope):
+                _task, execution = self.claim_execution(
+                    "native-authority-" + scope.replace(":", "-"), capabilities=["structured_output"]
+                )
+                self.record_native_sidecar(execution)
+                self.store.set_kill(scope, True, "runtime authority test", canonical_digest({"on": scope}), OPERATOR, NOW)
+                self._assert_runtime_native_functions_reject(execution)
+                self.store.set_kill(scope, False, "runtime authority test complete",
+                                    canonical_digest({"off": scope}), OPERATOR, NOW)
+                self.service.release(execution.lease, outcome=FailureClass.VALIDATION,
+                                     actor=WORKER, now=NOW)
+
+        _task, stale = self.claim_execution("native-stale-fence", capabilities=["structured_output"])
+        self.record_native_sidecar(stale)
+        self.service.release(stale.lease, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+        replacement = FactoryService(
+            self.store, execution_registry=trusted_registry(self.selection(capabilities=["structured_output"]))
+        ).claim_execution(owner=WORKER.actor_id, role=RunRole.WRITER,
+                          repositories=("owner/repository",), lease_seconds=60,
+                          selection=self.selection(capabilities=["structured_output"]), actor=WORKER, now=NOW)
+        self.assertIsNotNone(replacement)
+        self.assertEqual(replacement.lease.task_id, stale.lease.task_id)
+        self.assertGreater(replacement.lease.fence, stale.lease.fence)
+        self._assert_runtime_native_functions_reject(stale)
+
+    def _wait_for_lock_wait(self, application_name, expected_wait_event):
+        import psycopg
+
+        deadline = time.monotonic() + 5
+        with psycopg.connect(DATABASE_URL) as connection:
+            while time.monotonic() < deadline:
+                row = connection.execute(
+                    """SELECT wait_event_type,wait_event,cardinality(pg_blocking_pids(pid)) FROM pg_stat_activity
+                    WHERE application_name=%s AND state='active'""", (application_name,),
+                ).fetchone()
+                if row is not None and row[:2] == ("Lock", expected_wait_event) and row[2] > 0:
+                    return row
+                threading.Event().wait(0.01)
+        self.fail(f"backend {application_name} did not reach an exact PostgreSQL lock wait")
+
+    def _direct_budget_consume(self, execution, application_name):
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        url = make_conninfo(**{**conninfo_to_dict(self.runtime_url), "application_name": application_name})
+        with psycopg.connect(url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            return connection.execute(
+                "SELECT factory.execution_consume_analysis_budget(%s,%s,%s,%s,%s,1,0,%s,%s)",
+                (execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                 execution.lease.fence, execution.packet_digest, "e" * 64, "f" * 64),
+            ).fetchone()[0]
+
+    def test_runtime_budget_consume_serializes_after_release(self):
+        import psycopg
+
+        class PausingReleaseStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.locked = threading.Event()
+                self.resume = threading.Event()
+
+            def _lock_grant(self, cursor, grant, *, allow_expired=False):
+                row = super()._lock_grant(cursor, grant, allow_expired=allow_expired)
+                self.locked.set()
+                if not self.resume.wait(timeout=5):
+                    raise RuntimeError("release lock barrier timed out")
+                return row
+
+        _task, execution = self.claim_execution("native-release-race", capabilities=["structured_output"])
+        self.record_native_sidecar(execution)
+        store = PausingReleaseStore(self.runtime_url)
+        app_name = "factory-v15-consume-release"
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            release = pool.submit(FactoryService(store).release, execution.lease,
+                                  outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+            self.assertTrue(store.locked.wait(timeout=5))
+            consume = pool.submit(self._direct_budget_consume, execution, app_name)
+            self._wait_for_lock_wait(app_name, "transactionid")
+            store.resume.set()
+            release.result(timeout=5)
+            with self.assertRaises(psycopg.errors.RaiseException):
+                consume.result(timeout=5)
+        with psycopg.connect(DATABASE_URL) as connection:
+            used = connection.execute(
+                "SELECT used_rounds,used_tool_operations FROM factory.execution_analysis_budgets WHERE run_id=%s",
+                (execution.lease.run_id,),
+            ).fetchone()
+        self.assertEqual(used, (0, 0))
+
+    def test_runtime_budget_consume_serializes_after_kill_publication(self):
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        _task, execution = self.claim_execution("native-kill-race", capabilities=["structured_output"])
+        self.record_native_sidecar(execution)
+        kill_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "application_name": "factory-v15-kill"})
+        app_name = "factory-v15-consume-kill"
+        with psycopg.connect(kill_url) as killer:
+            killer.execute(
+                "INSERT INTO factory.kill_switches(switch_id,scope_key,enabled,actor_id,reason,idempotency_key) VALUES (%s,'global',true,%s,'race test',%s)",
+                (uuid.uuid4(), OPERATOR.actor_id, canonical_digest({"kill": execution.lease.run_id})),
+            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                consume = pool.submit(self._direct_budget_consume, execution, app_name)
+                self._wait_for_lock_wait(app_name, "relation")
+                killer.commit()
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    consume.result(timeout=5)
+        with psycopg.connect(DATABASE_URL) as connection:
+            used = connection.execute(
+                "SELECT used_rounds,used_tool_operations FROM factory.execution_analysis_budgets WHERE run_id=%s",
+                (execution.lease.run_id,),
+            ).fetchone()
+        self.assertEqual(used, (0, 0))
 
     def test_unverified_capacity_race_reconnect_and_owner_only_resolution(self):
         import psycopg

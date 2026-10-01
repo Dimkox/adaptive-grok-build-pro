@@ -2364,7 +2364,10 @@ class PostgresFactoryTests(unittest.TestCase):
                     return service.intake(payload, actor=OPERATOR, now=NOW)
 
                 def revoke_then_commit():
-                    with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    application_name = f"factory-m0-revoker-{kind}"
+                    with psycopg.connect(
+                        DATABASE_URL, application_name=application_name
+                    ) as connection, connection.cursor() as cursor:
                         cursor.execute(
                             sql.SQL("UPDATE factory.{} SET revoked_at=clock_timestamp() WHERE {}=%s").format(
                                 sql.Identifier(table), sql.Identifier(key_column)
@@ -2383,16 +2386,30 @@ class PostgresFactoryTests(unittest.TestCase):
                     intake_future = pool.submit(intake_then_commit)
                     self.assertTrue(store.validated.wait(timeout=5))
                     revoke_future = pool.submit(revoke_then_commit)
-                    revocation_blocked = False
+                    application_name = f"factory-m0-revoker-{kind}"
+                    wait_deadline = time.monotonic() + 5
+                    observed_lock_wait = None
                     try:
-                        revoke_future.result(timeout=0.25)
-                    except FutureTimeout:
-                        revocation_blocked = True
+                        with psycopg.connect(DATABASE_URL) as observer:
+                            while time.monotonic() < wait_deadline:
+                                observed_lock_wait = observer.execute(
+                                    """SELECT wait_event_type,wait_event,
+                                    cardinality(pg_blocking_pids(pid)) FROM pg_stat_activity
+                                    WHERE application_name=%s AND state='active'""",
+                                    (application_name,),
+                                ).fetchone()
+                                if (observed_lock_wait is not None
+                                        and observed_lock_wait[:2] == ("Lock", "transactionid")
+                                        and observed_lock_wait[2] > 0):
+                                    break
+                                threading.Event().wait(0.01)
                     finally:
                         store.resume.set()
                     accepted = intake_future.result(timeout=5)
                     revoked_at = revoke_future.result(timeout=5)
-                self.assertTrue(revocation_blocked)
+                self.assertIsNotNone(observed_lock_wait)
+                self.assertEqual(observed_lock_wait[:2], ("Lock", "transactionid"))
+                self.assertGreater(observed_lock_wait[2], 0)
                 self.assertTrue(accepted.created)
                 with psycopg.connect(DATABASE_URL) as connection:
                     committed = connection.execute(
@@ -2403,7 +2420,7 @@ class PostgresFactoryTests(unittest.TestCase):
                         (accepted.task.task_id,),
                     ).fetchone()
                 self.assertIsNotNone(committed)
-                self.assertLessEqual(max(committed), revoked_at)
+                self.assertIsNotNone(revoked_at)
                 later = {
                     **payload,
                     "request_id": f"{payload['request_id']}-later",

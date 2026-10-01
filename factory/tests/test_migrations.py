@@ -396,8 +396,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 35)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 34)
+        self.assertEqual([item.version for item in migrations], list(range(1, 36)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 35)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -420,6 +420,11 @@ class MigrationTests(unittest.TestCase):
             (migrations[30].name, migrations[30].sha256),
             ("031_native_execution_delivery.sql", "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7"),
         )
+        serialization = migrations[34]
+        self.assertEqual(serialization.name, "035_serialize_native_execution_revocation.sql")
+        self.assertIn("FOR UPDATE OF r,t", serialization.sql)
+        self.assertIn("LOCK TABLE factory.kill_switch_heads IN SHARE MODE", serialization.sql)
+        self.assertEqual(serialization.sql.count("SECURITY DEFINER"), 2)
 
     def test_rotator_recovery_is_part_of_the_actual_restart_probe(self):
         import inspect
