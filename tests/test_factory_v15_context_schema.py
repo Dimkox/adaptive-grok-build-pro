@@ -3,9 +3,9 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import unittest
 
-from jsonschema import Draft202012Validator
-import pytest
+from tests.json_schema_subset import SubsetValidator
 
 
 ROOT = Path(__file__).parents[1]
@@ -50,61 +50,75 @@ def context_facts():
     }
 
 
-def test_draft_2020_12_schema_is_structural_and_python_is_mandatory_admission():
-    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    Draft202012Validator.check_schema(schema)
-    assert schema["x-admission"] == {
-        "level": "structural",
-        "semantic_validator": "adaptive_factory.context_contracts.ContextManifestV1.from_dict",
-        "semantic_validation_required": True,
-        "semantic_checks": ["utf8_byte_limits", "secret_detection", "content_digest", "source_binding", "safe_path"],
-    }
-    validator = Draft202012Validator(schema)
-    valid = context_facts()
-    for harmless in (
-        "safe project fact",
-        "Token budgets and authorization policies contain no credentials.",
-        "Secret detection documents private key handling without carrying a value.",
-        "NoAuthorization=harmless structural example",
-    ):
-        candidate = deepcopy(valid)
-        _replace_bound_content(candidate, harmless)
-        assert not list(validator.iter_errors(candidate))
-        ContextManifestV1.from_dict(candidate)
+class ContextManifestSchemaTests(unittest.TestCase):
+    def test_draft_2020_12_schema_is_structural_and_python_is_mandatory_admission(
+        self,
+    ) -> None:
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(
+            schema["x-admission"],
+            {
+                "level": "structural",
+                "semantic_validator": "adaptive_factory.context_contracts.ContextManifestV1.from_dict",
+                "semantic_validation_required": True,
+                "semantic_checks": [
+                    "utf8_byte_limits",
+                    "secret_detection",
+                    "content_digest",
+                    "source_binding",
+                    "safe_path",
+                ],
+            },
+        )
+        validator = SubsetValidator(schema)
+        valid = context_facts()
+        for harmless in (
+            "safe project fact",
+            "Token budgets and authorization policies contain no credentials.",
+            "Secret detection documents private key handling without carrying a value.",
+            "NoAuthorization=harmless structural example",
+        ):
+            with self.subTest(harmless=harmless):
+                candidate = deepcopy(valid)
+                _replace_bound_content(candidate, harmless)
+                validator.validate(candidate)
+                ContextManifestV1.from_dict(candidate)
 
-    mutations = (
-        lambda value: value.update(builder_version="bad value"),
-        lambda value: value["mandatory_sources"][0].update(path=".env"),
-        lambda value: value["mandatory_sources"][0].update(path="keys/private.pem"),
-        lambda value: value["mandatory_sources"][0].update(reason="bad reason"),
-        lambda value: value["mandatory_sources"][0].update(mode="summary"),
-        lambda value: value["rule_bindings"][0].pop("source_digest"),
-    )
-    for mutate in mutations:
-        candidate = deepcopy(valid)
-        mutate(candidate)
-        assert list(validator.iter_errors(candidate))
-        with pytest.raises(ContractError):
-            ContextManifestV1.from_dict(candidate)
+        mutations = (
+            lambda value: value.update(builder_version="bad value"),
+            lambda value: value["mandatory_sources"][0].update(path=".env"),
+            lambda value: value["mandatory_sources"][0].update(path="keys/private.pem"),
+            lambda value: value["mandatory_sources"][0].update(reason="bad reason"),
+            lambda value: value["mandatory_sources"][0].update(mode="summary"),
+            lambda value: value["rule_bindings"][0].pop("source_digest"),
+        )
+        for mutate in mutations:
+            with self.subTest(structural_mutation=mutate):
+                candidate = deepcopy(valid)
+                mutate(candidate)
+                self.assertFalse(validator.is_valid(candidate))
+                with self.assertRaises(ContractError):
+                    ContextManifestV1.from_dict(candidate)
 
-    for semantically_unsafe in (
-        "password=synthetic-secret",
-        "Authorization: Basic synthetic-value",
-        "Bearer synthetic-token",
-        "-----BEGIN " + "PRIVATE KEY-----synthetic-----END " + "PRIVATE KEY-----",
-        "github_pat_syntheticvalue",
-    ):
-        candidate = deepcopy(valid)
-        _replace_bound_content(candidate, semantically_unsafe)
-        assert not list(validator.iter_errors(candidate))
-        with pytest.raises(ContractError, match="secret_content"):
-            ContextManifestV1.from_dict(candidate)
+        for semantically_unsafe in (
+            "password=synthetic-secret",
+            "Authorization: Basic synthetic-value",
+            "Bearer synthetic-token",
+            "-----BEGIN " + "PRIVATE KEY-----synthetic-----END " + "PRIVATE KEY-----",
+            "github_pat_syntheticvalue",
+        ):
+            with self.subTest(semantically_unsafe=semantically_unsafe):
+                candidate = deepcopy(valid)
+                _replace_bound_content(candidate, semantically_unsafe)
+                validator.validate(candidate)
+                with self.assertRaisesRegex(ContractError, "secret_content"):
+                    ContextManifestV1.from_dict(candidate)
 
-    unicode_candidate = deepcopy(valid)
-    _replace_bound_content(unicode_candidate, "é" * 3000)
-    assert not list(validator.iter_errors(unicode_candidate))
-    with pytest.raises(ContractError, match="invalid_text: content"):
-        ContextManifestV1.from_dict(unicode_candidate)
+        unicode_candidate = deepcopy(valid)
+        _replace_bound_content(unicode_candidate, "é" * 3000)
+        validator.validate(unicode_candidate)
+        with self.assertRaisesRegex(ContractError, "invalid_text: content"):
+            ContextManifestV1.from_dict(unicode_candidate)
 
 
 def _replace_bound_content(value, content):
@@ -116,3 +130,7 @@ def _replace_bound_content(value, content):
     binding["source_path"] = source["path"]
     binding["applicable_scope"] = source["applicable_scope"]
     binding["mode"] = source["mode"]
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -126,8 +126,82 @@ class JsonSchemaSubsetTests(unittest.TestCase):
         self.assertFalse(validator.is_valid(["alpha", "beta", "gamma"]))
         self.assertFalse(validator.is_valid(["UPPER"]))
 
-    def test_unsupported_schema_keywords_fail_closed(self) -> None:
-        validator = SubsetValidator({"type": "string", "format": "date-time"})
+    def test_local_defs_any_of_and_annotations_are_supported(self) -> None:
+        validator = SubsetValidator(
+            {
+                "$id": "urn:test:manifest:v1",
+                "$defs": {
+                    "digest/value": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{4}$",
+                    }
+                },
+                "x-admission": {"level": "structural"},
+                "type": "object",
+                "required": ["digest", "observed_at", "optional_digest"],
+                "properties": {
+                    "digest": {"$ref": "#/$defs/digest~1value"},
+                    "observed_at": {"type": "string", "format": "date-time"},
+                    "optional_digest": {
+                        "anyOf": [
+                            {"$ref": "#/$defs/digest~1value"},
+                            {"type": "null"},
+                        ]
+                    },
+                },
+            }
+        )
+
+        validator.validate(
+            {
+                "digest": "0a1b",
+                "observed_at": "2026-10-01T12:00:00Z",
+                "optional_digest": None,
+            }
+        )
+        self.assertTrue(
+            validator.is_valid(
+                {
+                    "digest": "cafe",
+                    "observed_at": "not-format-validated",
+                    "optional_digest": "beef",
+                }
+            )
+        )
+        self.assertFalse(
+            validator.is_valid(
+                {
+                    "digest": "wrong",
+                    "observed_at": "2026-10-01T12:00:00Z",
+                    "optional_digest": 7,
+                }
+            )
+        )
+
+    def test_any_of_requires_at_least_one_matching_schema(self) -> None:
+        validator = SubsetValidator(
+            {"anyOf": [{"type": "string"}, {"type": "integer", "minimum": 1}]}
+        )
+
+        validator.validate("value")
+        validator.validate(1)
+        with self.assertRaises(SchemaValidationError):
+            validator.validate(None)
+
+    def test_local_defs_references_fail_closed_for_invalid_targets(self) -> None:
+        for schema in (
+            {"$defs": {}, "$ref": "#/$defs/missing"},
+            {"$defs": {"value": {"type": "string"}}, "$ref": "#/$defs/"},
+            {"$defs": {"value": {"type": "string"}}, "$ref": "#/$defs/value/child"},
+            {"$defs": {"value": {"type": "string"}}, "$ref": "#/$defs/value~2"},
+            {"$defs": {"value": {"$ref": "#/$defs/value"}}, "$ref": "#/$defs/value"},
+        ):
+            with self.subTest(schema=schema):
+                with self.assertRaises(SchemaDefinitionError):
+                    SubsetValidator(schema).validate("value")
+
+    def test_unknown_schema_keywords_still_fail_closed(self) -> None:
+        validator = SubsetValidator({"type": "string", "minProperties": 1})
 
         with self.assertRaises(SchemaDefinitionError):
             validator.validate("2026-09-04T00:00:00Z")
