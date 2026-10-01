@@ -30,6 +30,8 @@ The public context-manifest JSON Schema is a structural consumer contract, not s
 
 The decision-record v1 sidecar is likewise structural at the JSON Schema boundary and semantically admitted by `DecisionRecordV1.from_dict`. State decisions bind the current and target state, lease owner, repository, task, run, attempt, and fence inside the same PostgreSQL transaction as the phase transition. Corrections append a same-task/run superseding record; update/delete privileges are withheld.
 
+Migration 023 is the first installable decision-store lineage. The earlier monolithic `feature/factory-v15-fast-release` tree is a preserved, explicitly non-installable diagnostic preview (`release_candidate_ready=false`); databases created from it are unsupported and must be recreated, never upgraded by rewriting an applied 023. In this contour persistence is deliberately narrower than the wire contract: only the built-in state-transition rule can be stored, context/profile use the fixed unavailable-binding digest, evidence must be empty, and prediction/qualification sources fail closed until their authoritative registries arrive.
+
 ## Governance context
 
 Canonical governance JSON under `governance/` remains separately reviewed authority. Any rule, example, debt, or digest named here is non-authoritative context until the verifier rederives current governance evidence.

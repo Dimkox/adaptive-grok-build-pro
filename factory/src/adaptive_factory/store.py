@@ -4091,25 +4091,11 @@ class PostgresFactoryStore:
             ):
                 raise IntegrityError("decision supersession mismatch")
         cursor.execute(
-            """INSERT INTO factory.decision_records_v1
-            (repository_id,decision_id,task_id,run_id,record_digest,record,supersedes)
-            VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s) ON CONFLICT DO NOTHING""",
-            (
-                repository,
-                data["decision_id"],
-                grant.task_id,
-                grant.run_id,
-                record.record_digest,
-                canonical_json(data).decode(),
-                data["supersedes"],
-            ),
+            "SELECT factory.append_decision_v1(%s,%s,%s,%s)",
+            (canonical_json(data).decode(), record.record_digest, grant.run_id, grant.fence),
         )
-        cursor.execute(
-            "SELECT record_digest FROM factory.decision_records_v1 "
-            "WHERE repository_id=%s AND decision_id=%s",
-            (repository, data["decision_id"]),
-        )
-        if cursor.fetchone()[0] != record.record_digest:
+        stored = cursor.fetchone()[0]
+        if stored != record.record_digest:
             raise IntegrityError("decision idempotency conflict")
         return record.record_digest
 
