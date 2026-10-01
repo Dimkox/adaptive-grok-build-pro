@@ -131,6 +131,7 @@ class SemanticContractTests(unittest.TestCase):
             "operator-handoff-proposal.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
+            "result-channel-qualification.v2.schema.json",
             "result-envelope.v1.schema.json",
             "result-envelope.v2.schema.json",
             "shadow-cohort.v1.schema.json",

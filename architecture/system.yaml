@@ -147,6 +147,14 @@
     },
     {
       "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-channel-qualification.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
       "id": "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/result-envelope.v2.schema.json",
@@ -729,6 +737,52 @@
       "network_policy": "no_network",
       "protocol": "jsonl",
       "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EXECUTION-CORE",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-FACTORY-LOCAL-API",
+      "id": "EDGE-FACTORY-API-RESULT-DISPATCHER",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "asynchronous",
+      "to": "NODE-FACTORY-RESULT-DISPATCHER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-FACTORY-RESULT-DISPATCHER",
+      "id": "EDGE-FACTORY-RESULT-DISPATCH-UDS",
+      "network_policy": "local_only",
+      "protocol": "unix_http",
+      "sync_or_async": "asynchronous",
       "to": "NODE-FACTORY-EXECUTION-CORE",
       "type": "data_flow"
     },
@@ -1815,12 +1869,39 @@
     },
     {
       "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-RESULT-DISPATCHER",
+      "owner": "local factory operators",
+      "public_contracts": [
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2",
+        "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2"
+      ],
+      "repository_paths": [
+        "factory/src/adaptive_factory/result_dispatch.py",
+        "factory/src/adaptive_factory/result_dispatch_cli.py",
+        "factory/tests/test_result_dispatch.py",
+        "factory/tests/test_result_dispatch_server.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "long_running",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "worker"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-PROPOSAL-BROKER",
       "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
-        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION"
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION",
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2"
       ],
       "repository_paths": [
         "factory/src/adaptive_factory/brokers.py",

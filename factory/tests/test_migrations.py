@@ -42,7 +42,7 @@ PRE_RECOVERY_MIGRATIONS = (
 
 class MigrationTests(unittest.TestCase):
     def test_result_admission_is_definer_only_immutable_and_dormant_until_qualification(self):
-        migration = discover_migrations()[-1]
+        migration = discover_migrations()[-2]
         self.assertEqual((migration.version, migration.name), (24, "024_factory_v15_result_outbox.sql"))
         lowered = migration.sql.lower()
         self.assertIn("security definer", lowered)
@@ -52,6 +52,23 @@ class MigrationTests(unittest.TestCase):
         self.assertIn("create table factory.result_admission_commands_v1", lowered)
         function_body = lowered.split("create function factory.admit_result_v1", 1)[1]
         self.assertNotIn("insert into factory.next_model_request_outbox_v1", function_body)
+
+    def test_result_dispatch_migration_is_fenced_definer_only_and_native_only(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual(
+            (migration.version, migration.name),
+            (25, "025_factory_v15_result_dispatch.sql"),
+        )
+        lowered = migration.sql.lower()
+        for name in (
+            "claim_model_requests_v1", "start_model_request_dispatch_v1",
+            "record_model_request_dispatch_v1", "reconcile_model_requests_v1",
+        ):
+            self.assertIn(f"security definer", lowered)
+            self.assertIn(f"revoke all on function factory.{name}", lowered)
+        self.assertIn("new.envelope->>'channel'='native_tool_result'", lowered)
+        self.assertNotIn("synthetic_child_report' then", lowered)
+        self.assertIn("post_outcome_ambiguous", lowered)
 
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
@@ -382,8 +399,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 25)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 24)
+        self.assertEqual([item.version for item in migrations], list(range(1, 26)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 25)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())

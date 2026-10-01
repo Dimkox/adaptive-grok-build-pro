@@ -15,6 +15,8 @@ from adaptive_factory.result_contracts import (  # noqa: E402
     ResultEnvelopeV2,
     result_channel_qualification_from_wire,
     result_channel_qualification_wire,
+    result_channel_qualification_v2_from_wire,
+    result_channel_qualification_v2_wire,
 )
 
 
@@ -66,6 +68,20 @@ def test_result_schemas_are_structural_and_semantic_admission_is_mandatory():
     assert list(Draft202012Validator(qualification_schema).iter_errors(falsely_qualified))
     with pytest.raises(ContractError, match="channel_not_qualified"):
         result_channel_qualification_from_wire(falsely_qualified)
+
+    qualification_v2_schema = json.loads(
+        (root / "result-channel-qualification.v2.schema.json").read_text()
+    )
+    Draft202012Validator.check_schema(qualification_v2_schema)
+    qualification_v2 = result_channel_qualification_v2_wire()
+    assert not list(Draft202012Validator(qualification_v2_schema).iter_errors(qualification_v2))
+    assert result_channel_qualification_v2_from_wire(qualification_v2)[0].status == "qualified"
+    assert all(row["status"] == "unavailable" for row in qualification_v2[1:])
+    forged_v2 = deepcopy(qualification_v2)
+    forged_v2[0]["interception_point"] = "fake.callback"
+    assert list(Draft202012Validator(qualification_v2_schema).iter_errors(forged_v2))
+    with pytest.raises(ContractError, match="unproved_interception_point"):
+        result_channel_qualification_v2_from_wire(forged_v2)
 
     def require_closed(schema):
         assert schema["additionalProperties"] is False

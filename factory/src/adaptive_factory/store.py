@@ -12,6 +12,7 @@ import uuid
 from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
 from .decision_contracts import DecisionRecordV1
 from .result_contracts import ResultEnvelopeV2
+from .result_dispatch import DispatchClaim, DispatchOutcome
 from .brokers import (
     ArtifactProposal,
     BrokerError,
@@ -4322,7 +4323,7 @@ class PostgresFactoryStore:
         self, envelope: ResultEnvelopeV2, *, actor: Actor,
         idempotency_key: str, correlation_id: str,
     ) -> ResultAdmission:
-        """Atomically admit an immutable result; 04A leaves the outbox dormant."""
+        """Atomically admit an immutable result and report qualified durable handoff."""
         record = ResultEnvelopeV2.from_dict(envelope.to_dict())
         request = {
             "contract": "adaptive-factory.result-admission-command/v1",
@@ -4342,6 +4343,12 @@ class PostgresFactoryStore:
                      canonical_digest(request), request_wire, correlation_id),
                 )
                 value = cursor.fetchone()[0]
+                cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM factory.next_model_request_outbox_v1 "
+                    "WHERE envelope_digest=%s)",
+                    (record.record_digest,),
+                )
+                value["outbox_created"] = cursor.fetchone()[0]
         except Exception as exc:
             import psycopg
             if isinstance(exc, psycopg.errors.RaiseException):
@@ -4355,7 +4362,10 @@ class PostgresFactoryStore:
             value["envelope_digest"] != record.record_digest
             or type(value["created"]) is not bool
             or type(value["outbox_created"]) is not bool
-            or value["outbox_created"] is not False
+            or value["outbox_created"] is not (
+                record.channel == "native_tool_result"
+                and record.outcome in {"allow", "redacted"}
+            )
         ):
             raise StoreError("stored result admission binding mismatch")
         return ResultAdmission(**value)
@@ -4376,6 +4386,71 @@ class PostgresFactoryStore:
         if result.task_id != task_id or result.record_digest != envelope_digest:
             raise StoreError("stored result envelope binding mismatch")
         return result
+
+    def claim_model_requests(
+        self, dispatcher_id: str, *, limit: int, lease_seconds: int
+    ) -> tuple[DispatchClaim, ...]:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.claim_model_requests_v1(%s,%s,%s)",
+                (dispatcher_id, limit, lease_seconds),
+            )
+            rows = cursor.fetchone()[0]
+        if not isinstance(rows, list):
+            raise StoreError("stored dispatch claims are invalid")
+        try:
+            return tuple(DispatchClaim(**row) for row in rows)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("stored dispatch claim is invalid") from exc
+
+    def start_model_request_dispatch(self, claim: DispatchClaim) -> None:
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.start_model_request_dispatch_v1(%s,%s,%s)",
+                    (claim.request_digest, self._dispatch_owner(claim), claim.claim_token),
+                )
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("stale dispatch claim") from exc
+            raise
+
+    @staticmethod
+    def _dispatch_owner(claim: DispatchClaim) -> str:
+        owner = getattr(claim, "dispatcher_id", None)
+        if not isinstance(owner, str):
+            raise StoreError("dispatch claim owner is missing")
+        return owner
+
+    def record_model_request_dispatch(
+        self, claim: DispatchClaim, outcome: DispatchOutcome
+    ) -> None:
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.record_model_request_dispatch_v1(%s,%s,%s,%s,%s,%s)",
+                    (
+                        claim.request_digest, self._dispatch_owner(claim), claim.claim_token,
+                        outcome.state, outcome.reason_code, outcome.observation_digest,
+                    ),
+                )
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("stale or invalid dispatch observation") from exc
+            raise
+
+    def reconcile_model_requests(self, dispatcher_id: str, *, limit: int) -> int:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.reconcile_model_requests_v1(%s,%s)",
+                (dispatcher_id, limit),
+            )
+            count = cursor.fetchone()[0]
+        if type(count) is not int or not 0 <= count <= limit:
+            raise StoreError("stored dispatch reconciliation is invalid")
+        return count
 
     def reserve_budget(
         self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor,

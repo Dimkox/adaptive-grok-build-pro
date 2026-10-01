@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/result-channel-qualification.v2.schema.json",
+  "title": "Result channel qualification matrix v2",
+  "type": "array",
+  "minItems": 7,
+  "maxItems": 7,
+  "uniqueItems": true,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["channel", "status", "interception_point", "limitation"],
+    "properties": {
+      "channel": {"enum": ["native_tool_result", "synthetic_child_report", "attachment", "artifact_cache", "resume", "external_cli", "unknown"]},
+      "status": {"enum": ["qualified", "unavailable"]},
+      "interception_point": {"type": ["string", "null"], "maxLength": 128},
+      "limitation": {"type": "string", "minLength": 1, "maxLength": 128}
+    },
+    "allOf": [
+      {
+        "if": {"properties": {"channel": {"const": "native_tool_result"}}, "required": ["channel"]},
+        "then": {"properties": {
+          "status": {"const": "qualified"},
+          "interception_point": {"const": "factory.result-admission/native-tool-result/v1"},
+          "limitation": {"const": "default_off_authenticated_uds"}
+        }},
+        "else": {"properties": {
+          "status": {"const": "unavailable"}, "interception_point": {"type": "null"}
+        }}
+      }
+    ]
+  }
+}

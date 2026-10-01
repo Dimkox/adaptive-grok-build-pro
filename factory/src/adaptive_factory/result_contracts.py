@@ -109,6 +109,69 @@ def result_channel_qualification_from_wire(
 
 
 @dataclass(frozen=True)
+class ResultChannelQualificationV2:
+    channel: str
+    status: str
+    interception_point: str | None
+    limitation: str
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ResultChannelQualificationV2":
+        closed(data, {"channel", "status", "interception_point", "limitation"})
+        if data["channel"] not in RESULT_CHANNELS:
+            raise ContractError("invalid_channel")
+        if data["channel"] == "native_tool_result":
+            if data["status"] != "qualified":
+                raise ContractError("channel_qualification_missing")
+            if data["interception_point"] != "factory.result-admission/native-tool-result/v1":
+                raise ContractError("unproved_interception_point")
+            if data["limitation"] != "default_off_authenticated_uds":
+                raise ContractError("qualification_limitation_mismatch")
+        else:
+            if data["status"] != "unavailable":
+                raise ContractError("channel_not_qualified")
+            if data["interception_point"] is not None:
+                raise ContractError("unproved_interception_point")
+            safe_text(data["limitation"], "limitation", 128)
+        return cls(**data)
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "channel": self.channel, "status": self.status,
+            "interception_point": self.interception_point, "limitation": self.limitation,
+        }
+
+
+RESULT_CHANNEL_QUALIFICATION_V2 = tuple(
+    ResultChannelQualificationV2.from_dict({
+        **row.to_dict(),
+        **({
+            "status": "qualified",
+            "interception_point": "factory.result-admission/native-tool-result/v1",
+            "limitation": "default_off_authenticated_uds",
+        } if row.channel == "native_tool_result" else {}),
+    })
+    for row in RESULT_CHANNEL_QUALIFICATION
+)
+
+
+def result_channel_qualification_v2_wire() -> list[dict[str, str | None]]:
+    return [row.to_dict() for row in RESULT_CHANNEL_QUALIFICATION_V2]
+
+
+def result_channel_qualification_v2_from_wire(
+    data: Any,
+) -> tuple[ResultChannelQualificationV2, ...]:
+    if not isinstance(data, list) or len(data) != len(RESULT_CHANNELS):
+        raise ContractError("qualification_channel_set")
+    rows = tuple(ResultChannelQualificationV2.from_dict(row) for row in data)
+    channels = [row.channel for row in rows]
+    if len(set(channels)) != len(channels) or set(channels) != RESULT_CHANNELS:
+        raise ContractError("qualification_channel_set")
+    return rows
+
+
+@dataclass(frozen=True)
 class ResultEnvelopeV1:
     """Frozen 04 predecessor wire; retained for compatibility, never admitted by 04A."""
 
