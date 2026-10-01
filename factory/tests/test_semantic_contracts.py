@@ -130,6 +130,8 @@ class SemanticContractTests(unittest.TestCase):
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
+            "result-channel-qualification.v1.schema.json",
+            "result-envelope.v1.schema.json",
             "shadow-cohort.v1.schema.json",
             "shadow-outcome.v1.schema.json",
             "shadow-task-evidence.v1.schema.json",

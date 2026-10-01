@@ -449,7 +449,7 @@ class LandingApiTests(unittest.TestCase):
             aggregate(migrations),
         )
         self.assertEqual(
-            (23, "98818e23ea78821c1c602774072c77bf7d891ef69fe2ba03f0ecbad9220134fc"),
+            (25, "323d381a1fe8f986b93a13ff8cd3ea4b3e1526a463533c1c46dee16a0933461f"),
             aggregate(predecessor_contracts),
         )
         self.assertEqual(
