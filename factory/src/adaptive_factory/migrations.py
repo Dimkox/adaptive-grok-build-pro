@@ -20,10 +20,13 @@ FACTORY_GROUP_ROLES = (
 )
 SAFE_GROUP_ATTRIBUTES = (False, False, False, False, False, False, False)
 SAFE_LOGIN_ATTRIBUTES = (True, False, False, False, False, False, False)
-RC_CHECKSUM_CANONICALIZER_VERSION = 35
+RC_CHECKSUM_CANONICALIZER_VERSION = 36
+RC_CHECKSUM_CANONICALIZER_NAME = "036_reconcile_rc_migration_checksums.sql"
+RC_CHECKSUM_CANONICALIZER_SHA256 = "677d22b04dfac83200ccb436c9cd667f714014908bde31bc3c2115c5eb8ceb7a"
 RC_LEGACY_CHECKSUMS = {
     31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
     34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+    35: "b7285c70b5bea53a5e7eac9757f631373264e923fac82b2933e1a6655aa53207",
 }
 
 
@@ -83,7 +86,13 @@ def plan_migrations(available: Iterable[Migration], applied: Iterable[AppliedMig
         and available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].version
         == RC_CHECKSUM_CANONICALIZER_VERSION
         and available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].name
-        == "035_serialize_native_execution_revocation.sql"
+        == RC_CHECKSUM_CANONICALIZER_NAME
+        and available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].sha256
+        == RC_CHECKSUM_CANONICALIZER_SHA256
+        and hashlib.sha256(
+            available[RC_CHECKSUM_CANONICALIZER_VERSION - 1].sql.encode("utf-8")
+        ).hexdigest()
+        == RC_CHECKSUM_CANONICALIZER_SHA256
     )
     canonicalizer_unapplied = len(applied) < RC_CHECKSUM_CANONICALIZER_VERSION
     for recorded, packaged in zip(applied, available):
@@ -101,6 +110,30 @@ def plan_migrations(available: Iterable[Migration], applied: Iterable[AppliedMig
         )
         if not exact and not legacy_rc:
             raise MigrationError(f"migration drift at version {recorded.version}")
+    recorded_checksums = {item.version: item.sha256 for item in applied}
+    current_checksums = {item.version: item.sha256 for item in available}
+    if len(applied) >= 35 and any(
+        recorded_checksums.get(version) != current_checksums.get(version)
+        for version in (31, 34, 35)
+    ):
+        allowed = {
+            (RC_LEGACY_CHECKSUMS[31], RC_LEGACY_CHECKSUMS[34], current_checksums[35]),
+            (RC_LEGACY_CHECKSUMS[31], RC_LEGACY_CHECKSUMS[34], RC_LEGACY_CHECKSUMS[35]),
+            (RC_LEGACY_CHECKSUMS[31], current_checksums[34], current_checksums[35]),
+        }
+        observed = tuple(recorded_checksums[version] for version in (31, 34, 35))
+        if not canonicalizer_available or not canonicalizer_unapplied or observed not in allowed:
+            raise MigrationError("migration drift in RC checksum history")
+    elif len(applied) >= 34 and any(
+        recorded_checksums.get(version) != current_checksums.get(version)
+        for version in (31, 34)
+    ):
+        observed = tuple(recorded_checksums[version] for version in (31, 34))
+        allowed = {
+            (RC_LEGACY_CHECKSUMS[31], RC_LEGACY_CHECKSUMS[34]),
+        }
+        if not canonicalizer_available or not canonicalizer_unapplied or observed not in allowed:
+            raise MigrationError("migration drift in RC checksum history")
     return available[len(applied) :]
 
 

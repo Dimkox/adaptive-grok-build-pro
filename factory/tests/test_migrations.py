@@ -70,6 +70,7 @@ class MigrationTests(unittest.TestCase):
                 self.assertIn("CREATE OR REPLACE FUNCTION factory.execution_consume_analysis_budget(", sql)
                 if version >= 34:
                     self.assertIn("CREATE OR REPLACE FUNCTION factory.execution_native_context(", sql)
+        self.assertNotIn("DROP FUNCTION", migrations[36].sql.upper())
         self.assertIn(
             "CREATE OR REPLACE FUNCTION factory.execution_record_native_sidecar(p_sidecar jsonb)",
             migrations[31].sql,
@@ -410,8 +411,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 36)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 35)
+        self.assertEqual([item.version for item in migrations], list(range(1, 37)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 36)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -439,6 +440,14 @@ class MigrationTests(unittest.TestCase):
         self.assertIn("FOR UPDATE OF r,t", serialization.sql)
         self.assertIn("LOCK TABLE factory.kill_switch_heads IN SHARE MODE", serialization.sql)
         self.assertEqual(serialization.sql.count("SECURITY DEFINER"), 2)
+        self.assertEqual(
+            serialization.sha256,
+            "272d8a385d87d00779ab7d6b219cd01af0981603bdb7ddb7d07a7ef050a89216",
+        )
+        self.assertEqual(
+            (migrations[35].name, migrations[35].sha256),
+            ("036_reconcile_rc_migration_checksums.sql", "677d22b04dfac83200ccb436c9cd667f714014908bde31bc3c2115c5eb8ceb7a"),
+        )
 
     def test_rotator_recovery_is_part_of_the_actual_restart_probe(self):
         import inspect
@@ -488,7 +497,7 @@ class MigrationTests(unittest.TestCase):
         applied = [AppliedMigration(item.version, item.name, item.sha256) for item in migrations[:2]]
         self.assertEqual(plan_migrations(migrations, applied), migrations[2:])
 
-    def test_rc_checksum_bridge_is_exact_bounded_and_requires_unapplied_035(self):
+    def test_rc_checksum_bridge_is_exact_bounded_and_requires_unapplied_036(self):
         migrations = discover_migrations()
 
         def history(stop, legacy=()):
@@ -499,19 +508,24 @@ class MigrationTests(unittest.TestCase):
                     {
                         31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
                         34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+                        35: "b7285c70b5bea53a5e7eac9757f631373264e923fac82b2933e1a6655aa53207",
                     }.get(item.version, item.sha256) if item.version in legacy else item.sha256,
                 )
                 for item in migrations[:stop]
             )
 
-        for stop, legacy in ((31, (31,)), (34, (31,)), (34, (34,)), (34, (31, 34))):
+        for stop, legacy in ((31, (31,)), (34, (31, 34)), (35, (31, 34, 35)), (35, ())):
             with self.subTest(stop=stop, legacy=legacy):
                 pending = plan_migrations(migrations, history(stop, legacy))
                 self.assertEqual(
                     [item.version for item in pending],
-                    list(range(stop + 1, 36)),
+                    list(range(stop + 1, 37)),
                 )
-                self.assertEqual(pending[-1].version, 35)
+                self.assertEqual(pending[-1].version, 36)
+
+        for legacy in ((31,), (34,), (35,)):
+            with self.subTest(impossible_mixed=legacy), self.assertRaises(MigrationError):
+                plan_migrations(migrations, history(34 if 35 not in legacy else 35, legacy))
 
         for version in (31, 34):
             arbitrary = list(history(34))
@@ -528,18 +542,27 @@ class MigrationTests(unittest.TestCase):
         with self.assertRaises(MigrationError):
             plan_migrations(migrations[:34], history(31, (31,)))
         altered_package = list(migrations)
-        current35 = altered_package[34]
-        altered_package[34] = type(current35)(
-            current35.version,
-            "035_other.sql",
-            current35.sha256,
-            current35.sql,
+        current36 = altered_package[35]
+        altered_package[35] = type(current36)(
+            current36.version,
+            "036_other.sql",
+            current36.sha256,
+            current36.sql,
         )
         with self.assertRaises(MigrationError):
             plan_migrations(altered_package, history(31, (31,)))
+        altered_content = list(migrations)
+        altered_content[35] = type(current36)(
+            current36.version,
+            current36.name,
+            current36.sha256,
+            current36.sql + "\n-- arbitrary drift\n",
+        )
+        with self.assertRaises(MigrationError):
+            plan_migrations(altered_content, history(31, (31,)))
 
         with self.assertRaises(MigrationError):
-            plan_migrations(migrations, history(35, (31, 34)))
+            plan_migrations(migrations, history(36, (31, 34, 35)))
 
     @staticmethod
     def _function_text(sql, signature):

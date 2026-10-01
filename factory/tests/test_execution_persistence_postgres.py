@@ -843,26 +843,45 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
     def test_rc_checksum_bridge_real_postgres_matrix_is_atomic_and_one_shot(self):
         import psycopg
+        import subprocess
+        from pathlib import Path
 
         packaged = discover_migrations()
+        root = Path(__file__).resolve().parents[2]
         legacy = {
             31: "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7",
             34: "e1e979f6adf7dc14fed76fbba4ff894eee5be823c925881629c35471108c1347",
+            35: "b7285c70b5bea53a5e7eac9757f631373264e923fac82b2933e1a6655aa53207",
         }
 
-        def prefix(label, stop, legacy_versions=()):
+        def exact_blob(commit, version, name, expected):
+            raw = subprocess.run(
+                ["git", "show", f"{commit}:factory/src/adaptive_factory/resources/{version:03d}_{name}.sql"],
+                cwd=root, check=True, capture_output=True,
+            ).stdout
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), expected)
+            return raw.decode("utf-8")
+
+        historical = {
+            31: exact_blob("8530c4a8", 31, "native_execution_delivery", legacy[31]),
+            34: exact_blob("8530c4a8", 34, "native_execution_live_grants", legacy[34]),
+            35: exact_blob("8530c4a8", 35, "serialize_native_execution_revocation", legacy[35]),
+        }
+
+        def prefix(label, stop, historical_versions=(), overrides=None):
             database_url, admin_url = self.create_schema14_database(label)
             with psycopg.connect(database_url) as connection:
                 for migration in packaged[14:stop]:
-                    connection.execute(migration.sql)
+                    sql_text = (overrides or {}).get(
+                        migration.version,
+                        historical.get(migration.version, migration.sql)
+                        if migration.version in historical_versions else migration.sql,
+                    )
+                    checksum = hashlib.sha256(sql_text.encode("utf-8")).hexdigest()
+                    connection.execute(sql_text)
                     connection.execute(
                         "INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)",
-                        (migration.version, migration.name, migration.sha256),
-                    )
-                for version in legacy_versions:
-                    connection.execute(
-                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
-                        (legacy[version], version),
+                        (migration.version, migration.name, checksum),
                     )
             return database_url, admin_url
 
@@ -872,54 +891,85 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     "SELECT version,name,sha256 FROM factory.schema_migrations ORDER BY version"
                 ).fetchall()
 
-        self.assertEqual(len(PostgresMigrator(DATABASE_URL).status()), 35)
+        def function_authority(database_url):
+            signatures = (
+                "factory.execution_native_context(uuid,uuid,text,bigint,character)",
+                "factory.execution_consume_analysis_budget(uuid,uuid,text,bigint,character,integer,integer,character,character)",
+            )
+            with psycopg.connect(database_url) as connection:
+                rows = tuple(connection.execute(
+                    """SELECT p.prosecdef,
+                    has_function_privilege('factory_runtime',p.oid,'EXECUTE'),
+                    has_function_privilege('factory_migrator',p.oid,'EXECUTE'),
+                    pg_get_functiondef(p.oid)
+                    FROM pg_proc p WHERE p.oid=%s::regprocedure""", (signature,),
+                ).fetchone() for signature in signatures)
+                connection.execute("SET ROLE factory_runtime")
+                value = connection.execute(
+                    "SELECT factory.execution_native_context(%s,%s,%s,%s,%s)",
+                    (uuid.uuid4(), uuid.uuid4(), "nobody", 1, "f" * 64),
+                ).fetchone()[0]
+            self.assertIsNone(value)
+            self.assertTrue(all(row[:3] == (True, True, False) for row in rows))
+            with psycopg.connect(database_url) as connection:
+                connection.execute("SET ROLE factory_runtime")
+                with self.assertRaises(psycopg.errors.RaiseException):
+                    connection.execute(
+                        "SELECT factory.execution_consume_analysis_budget(%s,%s,%s,%s,%s,1,0,%s,%s)",
+                        (uuid.uuid4(), uuid.uuid4(), "nobody", 1, "f" * 64, "e" * 64, "d" * 64),
+                    )
+            return rows
+
+        self.assertEqual(len(PostgresMigrator(DATABASE_URL).status()), 36)
         self.assertEqual(self.migrate(DATABASE_URL), ())
         with psycopg.connect(DATABASE_URL) as connection:
             self.assertEqual(connection.execute(
                 "SELECT count(*) FROM factory.migration_checksum_reconciliations"
             ).fetchone()[0], 0)
 
-        for label, stop, legacy_versions in (
-            ("rc_fresh", 34, ()),
-            ("rc_old_old", 34, (31, 34)),
-            ("rc_old_current", 34, (31,)),
-            ("rc_current_old", 34, (34,)),
-            ("rc_stopped31", 31, (31,)),
+        for label, stop, historical_versions, evidence_versions in (
+            ("rc_pre035", 34, (31, 34), (31, 34)),
+            ("rc_old035", 35, (31, 34, 35), (31, 34, 35)),
+            ("rc_exact6f", 35, (), ()),
+            ("rc_stopped31", 31, (31,), (31,)),
         ):
             with self.subTest(label=label):
-                database_url, admin_url = prefix(label, stop, legacy_versions)
+                database_url, admin_url = prefix(label, stop, historical_versions)
                 try:
+                    before_authority = function_authority(database_url) if stop >= 34 else None
                     applied = self.migrate(database_url)
                     self.assertEqual(
-                        [item.version for item in applied], list(range(stop + 1, 36))
+                        [item.version for item in applied], list(range(stop + 1, 37))
                     )
                     rows = history(database_url)
-                    self.assertEqual(rows[30][2], packaged[30].sha256)
-                    self.assertEqual(rows[33][2], packaged[33].sha256)
+                    for version in (31, 34, 35):
+                        self.assertEqual(rows[version - 1][2], packaged[version - 1].sha256)
                     with psycopg.connect(database_url) as connection:
                         evidence = connection.execute(
                             """SELECT version,previous_checksum,current_checksum,canonicalizer
                             FROM factory.migration_checksum_reconciliations ORDER BY version"""
                         ).fetchall()
-                    self.assertEqual([row[0] for row in evidence], list(legacy_versions))
+                    self.assertEqual([row[0] for row in evidence], list(evidence_versions))
                     self.assertTrue(all(
                         row[1] == legacy[row[0]]
                         and row[2] == packaged[row[0] - 1].sha256
-                        and row[3] == 35
+                        and row[3] == 36
                         for row in evidence
                     ))
+                    after_authority = function_authority(database_url)
+                    if before_authority is not None and stop == 35:
+                        self.assertEqual(after_authority, before_authority)
                     self.assertEqual(self.migrate(database_url), ())
                 finally:
                     self.drop_disposable_database(database_url, admin_url)
 
-        for version in (31, 34):
-            database_url, admin_url = prefix(f"rc_drift_{version}", 34)
+        for version in (31, 34, 35):
+            stop = max(34, version)
+            drifted_sql = historical[version] + "\n-- arbitrary content with the same name\n"
+            database_url, admin_url = prefix(
+                f"rc_drift_{version}", stop, overrides={version: drifted_sql}
+            )
             try:
-                with psycopg.connect(database_url) as connection:
-                    connection.execute(
-                        "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
-                        ("f" * 64, version),
-                    )
                 before = history(database_url)
                 with self.assertRaises(MigrationError):
                     self.migrate(database_url)
@@ -927,10 +977,10 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             finally:
                 self.drop_disposable_database(database_url, admin_url)
 
-        database_url, admin_url = prefix("rc_after35", 34, (31, 34))
+        database_url, admin_url = prefix("rc_after36", 35)
         try:
             self.migrate(database_url)
-            for version in (31, 34):
+            for version in (31, 34, 35):
                 with psycopg.connect(database_url) as connection:
                     connection.execute(
                         "UPDATE factory.schema_migrations SET sha256=%s WHERE version=%s",
@@ -948,18 +998,18 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
-        database_url, admin_url = prefix("rc_rollback", 34, (31, 34))
+        database_url, admin_url = prefix("rc_rollback", 35, (31, 34, 35))
         try:
             with psycopg.connect(database_url) as connection:
                 before_function = connection.execute(
                     "SELECT pg_get_functiondef('factory.execution_native_context(uuid,uuid,text,bigint,character)'::regprocedure)"
                 ).fetchone()[0]
-                connection.execute("""CREATE FUNCTION factory.reject_035() RETURNS trigger
-                    LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected 035 failure'; END $$""")
-                connection.execute("""CREATE TRIGGER reject_035 BEFORE INSERT ON factory.schema_migrations
-                    FOR EACH ROW WHEN (NEW.version=35) EXECUTE FUNCTION factory.reject_035()""")
+                connection.execute("""CREATE FUNCTION factory.reject_036() RETURNS trigger
+                    LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected 036 failure'; END $$""")
+                connection.execute("""CREATE TRIGGER reject_036 BEFORE INSERT ON factory.schema_migrations
+                    FOR EACH ROW WHEN (NEW.version=36) EXECUTE FUNCTION factory.reject_036()""")
             before = history(database_url)
-            with self.assertRaisesRegex(psycopg.errors.RaiseException, "injected 035 failure"):
+            with self.assertRaisesRegex(psycopg.errors.RaiseException, "injected 036 failure"):
                 self.migrate(database_url)
             self.assertEqual(history(database_url), before)
             with psycopg.connect(database_url) as connection:
@@ -972,7 +1022,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
-        database_url, admin_url = prefix("rc_concurrent", 34, (31, 34))
+        database_url, admin_url = prefix("rc_concurrent", 35, (31, 34, 35))
         try:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 outcomes = list(pool.map(lambda _: self.migrate(database_url), range(2)))

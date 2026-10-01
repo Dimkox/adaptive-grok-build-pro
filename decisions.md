@@ -904,4 +904,4 @@ Locking authoritative run/task rows before a shared lock on the complete kill-he
 
 ### 2026-10-01 — Reconcile only named pre-release migration checksums
 
-The RC bridge admits only the two known 031/034 checksums while the exact migration035 canonicalizer is still pending, then records and rewrites them in the same advisory transaction as migration035. This preserves strict drift rejection after 035 and for every unrelated checksum without requiring destructive migration SQL.
+The RC bridge admits only exact known 031/034/035 histories while the checksum-pinned migration036 canonicalizer is still pending, then records and rewrites them in the same advisory transaction as migration036. This preserves byte identity for published migration035 and strict drift rejection after 036 without destructive migration SQL.
