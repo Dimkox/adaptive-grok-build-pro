@@ -790,6 +790,24 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 (execution.lease.run_id,),
             ).fetchone()
         self.assertEqual(row, ("exhausted", "e" * 64, "f" * 64))
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            self.assertIsNone(connection.execute(
+                "SELECT factory.execution_native_context(%s,%s,%s,%s,%s)",
+                (execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                 execution.lease.fence, execution.packet_digest),
+            ).fetchone()[0])
+            with self.assertRaises(psycopg.errors.RaiseException):
+                connection.execute(
+                    "SELECT factory.execution_consume_analysis_budget(%s,%s,%s,%s,%s,1,0,%s,%s)",
+                    (execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                     execution.lease.fence, execution.packet_digest, "e" * 64, "f" * 64),
+                )
 
     def test_unverified_capacity_race_reconnect_and_owner_only_resolution(self):
         import psycopg

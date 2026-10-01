@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 from .behavior_qualification import load_frozen_suite
@@ -16,7 +17,10 @@ def _json_artifact(binding: AdapterBinding):
     if not binding.enabled or binding.path is None:
         return None
     try:
-        value = json.loads(read_private_file(binding.path, 4_194_304))
+        raw = read_private_file(binding.path, 4_194_304)
+        if hashlib.sha256(raw).hexdigest() != binding.digest:
+            raise SettingsError("v1.5 runtime artifact digest mismatch")
+        value = json.loads(raw)
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
         raise SettingsError("v1.5 runtime artifact must be valid JSON") from exc
     if not isinstance(value, dict):
@@ -108,6 +112,10 @@ class V15RuntimeEvaluator:
             "qualification": self._qualification(),
         }
         body["evidence_digest"] = canonical_digest(body)
+        if "unavailable" in (
+            body["fpf_status"], body["vibevm_status"], body["prediction_status"]
+        ):
+            return body
         if not self.store.record_v15_runtime_evaluation(body):
             prior = self.store.v15_runtime_evaluation(task.task_id)
             if prior != body:

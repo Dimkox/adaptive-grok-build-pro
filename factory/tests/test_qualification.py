@@ -59,6 +59,8 @@ class QualificationTests(unittest.TestCase):
         module = self.module(); task_id='00000000-0000-0000-0000-000000000001'
         actor=Actor('reader','client',frozenset({'task:read'}),frozenset({'owner/project'}))
         class ExistingFactory:
+            store = type("Store", (), {"v15_candidate_sha": lambda _self, _task_id: "2" * 40})()
+
             def get_task(self, task_id, *, actor):
                 if 'owner/project' not in actor.repositories: raise PermissionError('repository denied')
                 return TaskProjection(task_id, 'owner/project', TaskStatus.REVIEWING, 1, 'a'*64, 'b'*64, datetime.now(timezone.utc))

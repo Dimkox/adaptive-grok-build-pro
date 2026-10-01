@@ -249,12 +249,15 @@ class FactoryV15QualificationService:
         task = self.factory_service.get_task(task_id, actor=actor)
         evidence = self.evidence_reader(task)
         runtime = None
+        authoritative_candidate = self.factory_service.store.v15_candidate_sha(task.task_id)
+        context = evidence.get("context")
+        if (
+            context is not None
+            and context.to_dict()["source_snapshot"]["head_sha"] != authoritative_candidate
+        ):
+            raise ContractError("qualification_candidate_authority_mismatch")
         if self.runtime_evaluator is not None:
-            context = evidence.get("context")
-            candidate_sha = (
-                context.to_dict()["source_snapshot"]["head_sha"]
-                if context is not None
-                else self.factory_service.store.v15_candidate_sha(task.task_id)
+            runtime = self.runtime_evaluator.evaluate(
+                task, candidate_sha=authoritative_candidate
             )
-            runtime = self.runtime_evaluator.evaluate(task, candidate_sha=candidate_sha)
         return qualify(task.repository_id, task.task_id, evidence, runtime_evaluation=runtime)

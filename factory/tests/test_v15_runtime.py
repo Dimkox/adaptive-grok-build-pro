@@ -94,6 +94,41 @@ class V15RuntimeTests(unittest.TestCase):
                                   "prediction_status": "not_qualified"})
         self.assertIsNone(store.body)
 
+    def test_artifact_mutation_or_symlink_after_config_load_is_rejected_without_persistence(self):
+        from adaptive_factory.v15_runtime import V15RuntimeEvaluator
+
+        for replacement in ("mutated", "symlink"):
+            with self.subTest(replacement=replacement), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                artifact = root / "prediction.json"
+                artifact_digest = self.private_json(
+                    artifact, {"status": "not_qualified", "authority_effect": "none"}
+                )
+                disabled = {"enabled": False, "path": None, "digest": None}
+                config_path = root / "config.json"
+                self.private_json(config_path, {"schema_version": 1, "bindings": [{
+                    "tenant_id": "owner/project", "repository_id": "owner/project",
+                    "exact_head_sha": "a" * 40, "fpf": disabled, "vibevm": disabled,
+                    "prediction": {"enabled": True, "path": str(artifact), "digest": artifact_digest},
+                }]})
+                config = load_v15_runtime_config(config_path)
+                if replacement == "mutated":
+                    artifact.write_text('{"status":"qualified"}', encoding="utf-8")
+                    artifact.chmod(0o600)
+                else:
+                    target = root / "replacement.json"
+                    self.private_json(target, {"status": "not_qualified", "authority_effect": "none"})
+                    artifact.unlink()
+                    artifact.symlink_to(target)
+                store = MemoryStore()
+                task = SimpleNamespace(
+                    task_id="00000000-0000-0000-0000-000000000001",
+                    repository_id="owner/project",
+                )
+                result = V15RuntimeEvaluator(store, config).evaluate(task, candidate_sha="a" * 40)
+                self.assertEqual(result["prediction_status"], "unavailable")
+                self.assertIsNone(store.body)
+
     def test_qualification_service_invokes_runtime_after_existing_access_check(self):
         from adaptive_factory.qualification import FactoryV15QualificationService
 
@@ -116,3 +151,17 @@ class V15RuntimeTests(unittest.TestCase):
         self.assertEqual(calls, [(task.task_id, "reader")])
         self.assertEqual(result["fpf_status"], "supported")
         self.assertEqual(result["vibevm_status"], "unavailable")
+
+    def test_qualification_rejects_cross_sha_evidence_before_runtime_persistence(self):
+        from adaptive_factory.qualification import FactoryV15QualificationService
+        from factory.tests.test_qualification import qualification_evidence
+
+        task = SimpleNamespace(task_id="00000000-0000-0000-0000-000000000001", repository_id="owner/project")
+        factory = SimpleNamespace(
+            store=SimpleNamespace(v15_candidate_sha=lambda _task_id: "3" * 40),
+            get_task=lambda _task_id, actor: task,
+        )
+        evaluator = SimpleNamespace(evaluate=lambda *_args, **_kwargs: self.fail("runtime invoked"))
+        service = FactoryV15QualificationService(factory, lambda _task: qualification_evidence(), runtime_evaluator=evaluator)
+        with self.assertRaisesRegex(Exception, "qualification_candidate_authority_mismatch"):
+            service.get_qualification(task.task_id, actor="reader")

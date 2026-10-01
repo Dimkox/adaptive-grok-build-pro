@@ -12,6 +12,9 @@ from .execution_contracts import TaskPacketV1
 from .v15_contracts import closed, integer, version
 
 
+MAX_AGENTS_BLOB_BYTES = 65_536
+
+
 @dataclass(frozen=True)
 class AnalysisBudgetV1:
     max_rounds: int
@@ -98,6 +101,13 @@ class RepositoryNativeContextSource:
             )
             if ancestry.returncode != 0:
                 raise ContractError("context_base_mismatch")
+            size = subprocess.run(
+                ["git", "-C", str(self._root), "cat-file", "-s",
+                 f"{packet.authority.exact_head_sha}:AGENTS.md"],
+                check=True, capture_output=True, timeout=5,
+            ).stdout.decode("ascii").strip()
+            if not size.isdigit() or int(size) > MAX_AGENTS_BLOB_BYTES:
+                raise ContractError("context_source_too_large")
             raw_content = subprocess.run(
                 ["git", "-C", str(self._root), "show", f"{packet.authority.exact_head_sha}:AGENTS.md"],
                 check=True, capture_output=True, timeout=5,

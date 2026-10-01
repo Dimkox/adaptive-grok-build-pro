@@ -63,3 +63,23 @@ class NativeExecutionTests(unittest.TestCase):
                     RepositoryNativeContextSource(root),
                     AnalysisBudgetV1.from_dict({"schema_version": 1, "max_rounds": 1, "max_tool_operations": 1}),
                 ).prepare(TaskPacketV1.from_dict(forged))
+
+    def test_source_rejects_oversized_agents_blob_before_capture(self):
+        from adaptive_factory.native_execution import (
+            AnalysisBudgetV1, RepositoryNativeContextSource, NativeExecutionConsumer,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = self.repository(root)
+            (root / "AGENTS.md").write_text("x" * 65_537, encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "commit", "-qam", "oversized"], check=True)
+            facts = packet.to_dict()
+            facts["authority"]["exact_head_sha"] = subprocess.check_output(
+                ["git", "-C", str(root), "rev-parse", "HEAD"], text=True
+            ).strip()
+            facts.pop("packet_digest")
+            with self.assertRaisesRegex(ContractError, "context_source_too_large"):
+                NativeExecutionConsumer(
+                    RepositoryNativeContextSource(root),
+                    AnalysisBudgetV1.from_dict({"schema_version": 1, "max_rounds": 1, "max_tool_operations": 1}),
+                ).prepare(TaskPacketV1.from_dict(facts))

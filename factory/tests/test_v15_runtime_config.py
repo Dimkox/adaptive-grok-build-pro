@@ -108,8 +108,13 @@ class V15RuntimeConfigTests(unittest.TestCase):
                 patch("adaptive_factory.server._runtime_readiness"),
                 patch("adaptive_factory.server.load_actors", return_value={}),
                 patch("adaptive_factory.server.Authenticator"),
-                patch("adaptive_factory.server.create_app", return_value=application),
+                patch("adaptive_factory.server.create_app", return_value=application) as create,
             ):
                 result = build_app(settings)
         self.assertIs(result, application)
         self.assertIsNotNone(result.state.v15_runtime_config)
+        qualifier = create.call_args.kwargs["qualification_service"]
+        from adaptive_factory.qualification import FactoryV15QualificationService
+
+        self.assertIsInstance(qualifier, FactoryV15QualificationService)
+        self.assertIsNotNone(qualifier.runtime_evaluator)
