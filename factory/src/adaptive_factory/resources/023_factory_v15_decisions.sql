@@ -46,6 +46,11 @@ BEGIN
 
   IF jsonb_typeof(v_record)<>'object' OR (SELECT count(*) FROM jsonb_object_keys(v_record))<>23
     OR NOT v_record ?& ARRAY['schema_version','decision_id','repository_id','task_id','run_id','attempt_id','fence','observed_at','decision_kind','rule_id','rule_version','facts','outcome','reason_code','base_sha','head_sha','context_digest','spec_digest','profile_digest','evidence_refs','constraints','next_step','supersedes']
+    OR jsonb_typeof(v_record->'schema_version')<>'number'
+    OR jsonb_typeof(v_record->'fence')<>'number'
+    OR EXISTS (SELECT 1 FROM unnest(ARRAY['decision_id','repository_id','task_id','run_id','attempt_id','observed_at','decision_kind','rule_id','rule_version','outcome','reason_code','base_sha','head_sha','context_digest','spec_digest','profile_digest','next_step']) k
+      WHERE jsonb_typeof(v_record->k)<>'string')
+    OR jsonb_typeof(v_record->'supersedes') NOT IN ('string','null')
     OR v_record->>'schema_version'<>'1'
     OR v_record->>'decision_kind' NOT IN ('scope','retry','state','validation','qualification','prediction')
     OR v_record->>'outcome' NOT IN ('observed','blocked','unknown','rejected','allowed')
