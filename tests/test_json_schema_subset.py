@@ -10,6 +10,45 @@ from tests.json_schema_subset import (
 
 
 class JsonSchemaSubsetTests(unittest.TestCase):
+    def test_constructor_preflights_unreached_nested_schema_nodes(self) -> None:
+        malformed_schemas = (
+            {"anyOf": [{"type": "string"}, 7]},
+            {"oneOf": [{"type": "string"}, {"unknown": True}]},
+            {"$defs": {"unused": {"format": 7}}, "type": "null"},
+            {"properties": {"unused": {"required": "name"}}},
+            {"items": []},
+            {"additionalProperties": 1},
+            {"components": {"schemas": {"Unused": {"type": "number"}}}},
+        )
+
+        for schema in malformed_schemas:
+            with self.subTest(schema=schema):
+                with self.assertRaises(SchemaDefinitionError):
+                    SubsetValidator(schema)
+
+    def test_constructor_validates_annotation_and_keyword_operand_shapes(self) -> None:
+        malformed_schemas = (
+            {"$schema": 202012},
+            {"$id": 7},
+            {"$ref": None},
+            {"format": 7},
+            {"x-admission": ["structural"]},
+            {"$defs": []},
+            {"properties": []},
+            {"type": []},
+            {"required": ["name", "name"]},
+            {"enum": []},
+            {"pattern": "["},
+            {"minLength": -1},
+            {"minimum": True},
+            {"uniqueItems": "yes"},
+        )
+
+        for schema in malformed_schemas:
+            with self.subTest(schema=schema):
+                with self.assertRaises(SchemaDefinitionError):
+                    SubsetValidator(schema)
+
     def test_component_refs_closed_objects_and_exact_one_are_enforced(self) -> None:
         validator = SubsetValidator(
             {
@@ -201,12 +240,15 @@ class JsonSchemaSubsetTests(unittest.TestCase):
                     SubsetValidator(schema).validate("value")
 
     def test_unknown_schema_keywords_still_fail_closed(self) -> None:
-        validator = SubsetValidator({"type": "string", "minProperties": 1})
-
         with self.assertRaises(SchemaDefinitionError):
-            validator.validate("2026-09-04T00:00:00Z")
+            SubsetValidator({"type": "string", "minProperties": 1})
         with self.assertRaises(SchemaDefinitionError):
-            validator.is_valid("2026-09-04T00:00:00Z")
+            SubsetValidator(
+                {
+                    "type": "object",
+                    "properties": {"nested": {"minProperties": 1}},
+                }
+            )
 
 
 if __name__ == "__main__":
