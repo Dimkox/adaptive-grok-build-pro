@@ -575,6 +575,8 @@ def write_receipt(
     ):
         raise RuntimeError('repository, spec, architecture, or governance changed while receipt was written')
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
+    invocation_path = receipt_dir(root, route['route_id']) / f'{kind}.{bound_receipt_id}.json'
+    dump_json(invocation_path, data)
     dump_json(path, data)
     return path
 
@@ -677,6 +679,26 @@ def receipt_echo(
         return unavailable('receipt-read-failed', expected, _echo_detail(exc))
     if not data:
         return unavailable('receipt-not-recorded', expected)
+    if (
+        expected_receipt_id is not None
+        and RECEIPT_ID_PATTERN.fullmatch(expected_receipt_id) is not None
+        and data.get('receipt_id') != expected_receipt_id
+    ):
+        invocation_path = (
+            runtime_dir(root) / 'receipts' / route_id
+            / f'{kind}.{expected_receipt_id}.json'
+        )
+        try:
+            invocation_data = get_receipt(
+                root, route_id, kind, receipt_id=expected_receipt_id
+            )
+        except (RuntimeError, OSError, ValueError) as exc:
+            return unavailable(
+                'receipt-read-failed', invocation_path, _echo_detail(exc)
+            )
+        if invocation_data:
+            data = invocation_data
+            expected = invocation_path
     missing = [key for key in RECEIPT_ENVELOPE_KEYS if key not in data]
     status = data.get('status')
     fingerprint = data.get('tree_fingerprint')
@@ -726,9 +748,17 @@ def receipt_echo(
     )
 
 
-def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
+def get_receipt(
+    root: Path,
+    route_id: str,
+    kind: str,
+    *,
+    receipt_id: str | None = None,
+) -> dict[str, Any] | None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", route_id) or kind not in RECEIPT_KINDS:
         raise RuntimeError("receipt route or kind is outside the closed set")
+    if receipt_id is not None and RECEIPT_ID_PATTERN.fullmatch(receipt_id) is None:
+        raise RuntimeError("receipt id is outside the closed set")
     required_flags = ("O_DIRECTORY", "O_NOFOLLOW", "O_CLOEXEC", "O_NONBLOCK")
     if any(not hasattr(os, name) for name in required_flags) or os.open not in getattr(os, "supports_dir_fd", set()):
         raise RuntimeError("descriptor-safe receipt reads are unavailable")
@@ -743,7 +773,8 @@ def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
             next_fd = os.open(component, flags_dir, dir_fd=directory_fd)
             os.close(directory_fd)
             directory_fd = next_fd
-        receipt_fd = os.open(f"{kind}.json", flags_file, dir_fd=directory_fd)
+        filename = f"{kind}.{receipt_id}.json" if receipt_id is not None else f"{kind}.json"
+        receipt_fd = os.open(filename, flags_file, dir_fd=directory_fd)
         before = os.fstat(receipt_fd)
         if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_RECEIPT_BYTES:
             raise RuntimeError("receipt is not a bounded regular file")

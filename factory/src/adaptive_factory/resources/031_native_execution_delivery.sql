@@ -1,8 +1,5 @@
 -- Correct the migration030 run-owner binding and expose only the bound pre-model context.
-DROP FUNCTION factory.execution_record_native_sidecar(jsonb);
-DROP FUNCTION factory.execution_consume_analysis_budget(uuid,uuid,text,bigint,char,integer,integer,char,char);
-
-CREATE FUNCTION factory.execution_record_native_sidecar(p_sidecar jsonb) RETURNS boolean
+CREATE OR REPLACE FUNCTION factory.execution_record_native_sidecar(p_sidecar jsonb) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
 DECLARE v_run uuid; v_task uuid; v_fence bigint; v_packet char(64); v_context jsonb;
   v_budget jsonb; v_packet_body jsonb; v_repository text; v_prior jsonb; v_entry jsonb;
@@ -75,7 +72,7 @@ BEGIN
 EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range OR check_violation THEN RETURN false;
 END $$;
 
-CREATE FUNCTION factory.execution_consume_analysis_budget(
+CREATE OR REPLACE FUNCTION factory.execution_consume_analysis_budget(
   p_task uuid,p_run uuid,p_owner text,p_fence bigint,p_packet char(64),
   p_rounds integer,p_tools integer,p_facts char(64),p_blocker char(64)
 ) RETURNS jsonb

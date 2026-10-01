@@ -61,6 +61,20 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual((hardening.version, hardening.name), (33, "033_v15_frozen_qualification.sql"))
         self.assertIn("jsonb_array_length(p_value->'cases')<>12", hardening.sql)
 
+    def test_native_runtime_function_upgrades_are_non_destructive_and_signature_compatible(self):
+        migrations = {item.version: item for item in discover_migrations()}
+        for version in (31, 34, 35):
+            with self.subTest(version=version):
+                sql = migrations[version].sql
+                self.assertNotIn("DROP FUNCTION", sql.upper())
+                self.assertIn("CREATE OR REPLACE FUNCTION factory.execution_consume_analysis_budget(", sql)
+                if version >= 34:
+                    self.assertIn("CREATE OR REPLACE FUNCTION factory.execution_native_context(", sql)
+        self.assertIn(
+            "CREATE OR REPLACE FUNCTION factory.execution_record_native_sidecar(p_sidecar jsonb)",
+            migrations[31].sql,
+        )
+
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
@@ -418,7 +432,7 @@ class MigrationTests(unittest.TestCase):
         )
         self.assertEqual(
             (migrations[30].name, migrations[30].sha256),
-            ("031_native_execution_delivery.sql", "33d846f8f29c51264547cb9d924e947762c7ff8366521cdb6483b832c796f8a7"),
+            ("031_native_execution_delivery.sql", "23e2d280a391a174b020055a7a4aeaf06207d5f3c157666ac4b5f24473dbfa90"),
         )
         serialization = migrations[34]
         self.assertEqual(serialization.name, "035_serialize_native_execution_revocation.sql")
@@ -456,7 +470,11 @@ class MigrationTests(unittest.TestCase):
                 child=int(pid_path.read_text())
                 def executing():
                     path=Path('/proc')/str(child)/'stat'
-                    return path.exists() and path.read_text().rsplit(')',1)[1].split()[0]!='Z'
+                    try:
+                        state=path.read_text().rsplit(')',1)[1].split()[0]
+                    except (FileNotFoundError, ProcessLookupError):
+                        return False
+                    return state!='Z'
                 deadline=time.monotonic()+2
                 while executing() and time.monotonic()<deadline:
                     time.sleep(0.05)

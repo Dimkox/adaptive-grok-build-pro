@@ -1,8 +1,5 @@
 -- Direct runtime calls must revalidate the live lease and repository kill boundary.
-DROP FUNCTION factory.execution_consume_analysis_budget(uuid,uuid,text,bigint,char,integer,integer,char,char);
-DROP FUNCTION factory.execution_native_context(uuid,uuid,text,bigint,char);
-
-CREATE FUNCTION factory.execution_consume_analysis_budget(
+CREATE OR REPLACE FUNCTION factory.execution_consume_analysis_budget(
   p_task uuid,p_run uuid,p_owner text,p_fence bigint,p_packet char(64),
   p_rounds integer,p_tools integer,p_facts char(64),p_blocker char(64)
 ) RETURNS jsonb
@@ -37,7 +34,7 @@ BEGIN
     'used_tool_operations',v.used_tool_operations+p_tools);
 END $$;
 
-CREATE FUNCTION factory.execution_native_context(
+CREATE OR REPLACE FUNCTION factory.execution_native_context(
   p_task uuid,p_run uuid,p_owner text,p_fence bigint,p_packet char(64)
 ) RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$

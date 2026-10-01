@@ -443,6 +443,25 @@ class ReceiptEchoTests(unittest.TestCase):
             self.assertIn('reason=tree-fingerprint-mismatch', line)
             self.assertNotIn(' fingerprint=', line)
 
+    def test_echo_reads_its_invocation_receipt_when_a_parallel_run_updates_canonical(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Fix cited identifiers', 's1').to_dict()
+            set_active_route(root, route)
+            started = now_utc()
+            write_receipt(root, 'verification', 'pass', receipt_id=RECEIPT_ID_A)
+            write_receipt(root, 'verification', 'fail', receipt_id=RECEIPT_ID_B)
+
+            line = receipt_echo(
+                root,
+                'verification',
+                not_before=started,
+                expected_receipt_id=RECEIPT_ID_A,
+            )
+
+            self.assertIn('status=pass', line)
+            self.assertIn(f'verification.{RECEIPT_ID_A}.json', line)
+            self.assertNotIn('reason=not-recorded-this-invocation', line)
+
     def test_echo_refuses_a_receipt_this_run_never_recorded(self) -> None:
         # The governance-fail shape: verify() records nothing, the tree is untouched, so the
         # fingerprint guard passes and only the run bound can refuse the old receipt.
