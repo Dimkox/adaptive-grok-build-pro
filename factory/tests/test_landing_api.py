@@ -444,6 +444,7 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "result-channel-qualification.v2.schema.json"
             and path.name != "factory-result-admission.v1.json"
             and path.name != "factory-execution.v3.json"
+            and not path.name.startswith("prediction-")
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()

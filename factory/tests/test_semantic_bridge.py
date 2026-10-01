@@ -167,6 +167,8 @@ class SemanticBridgeTests(unittest.TestCase):
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
+            "prediction-explanation.v1.schema.json",
+            "prediction-observation.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
             "repair-directive.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
