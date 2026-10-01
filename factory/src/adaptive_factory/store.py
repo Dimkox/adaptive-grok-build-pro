@@ -2076,14 +2076,16 @@ class PostgresFactoryStore:
         correlation_id: str,
         metadata: dict | None = None,
         run_id: str | None = None,
+        received_at: datetime | None = None,
     ) -> None:
         cursor.execute("SELECT last_digest FROM factory.audit_heads WHERE task_id=%s FOR UPDATE", (task_id,))
         row = cursor.fetchone()
         previous = row[0].strip() if row else "0" * 64
         if row is None:
             cursor.execute("INSERT INTO factory.audit_heads(task_id,last_digest) VALUES (%s,%s)", (task_id, previous))
-        cursor.execute("SELECT clock_timestamp()")
-        received_at = cursor.fetchone()[0]
+        if received_at is None:
+            cursor.execute("SELECT clock_timestamp()")
+            received_at = cursor.fetchone()[0]
         bounded = metadata or {}
         digest = canonical_digest(
             {
@@ -3965,6 +3967,24 @@ class PostgresFactoryStore:
     ) -> TaskStatus:
         del now
         with self._transaction() as cursor:
+            decision_time = None
+            if decision_record is not None:
+                normalized = decision_record.to_dict()
+                cursor.execute(
+                    "SELECT record->>'observed_at' FROM factory.decision_records_v1 "
+                    "WHERE repository_id=%s AND decision_id=%s",
+                    (normalized["repository_id"], normalized["decision_id"]),
+                )
+                prior_observation = cursor.fetchone()
+                if prior_observation is None:
+                    cursor.execute("SELECT clock_timestamp()")
+                    decision_time = cursor.fetchone()[0]
+                else:
+                    decision_time = datetime.fromisoformat(
+                        prior_observation[0].replace("Z", "+00:00")
+                    )
+                normalized["observed_at"] = decision_time.isoformat().replace("+00:00", "Z")
+                decision_record = DecisionRecordV1.from_dict(normalized)
             command = {
                 "grant": {
                     "task_id": grant.task_id,
@@ -4043,6 +4063,7 @@ class PostgresFactoryStore:
                 correlation_id or idempotency_key or event_key,
                 metadata,
                 grant.run_id,
+                received_at=decision_time,
             )
             self._record_command(
                 cursor,
@@ -4056,15 +4077,13 @@ class PostgresFactoryStore:
             if record is not None:
                 self._append_decision_locked(
                     cursor, grant, record, actor, idempotency_key, audit_time,
-                    decision_record.record_digest,
                 )
             return target
 
-    def _append_decision_locked(self, cursor, grant, record, actor, idempotency_key, observed_at,
-                                request_decision_digest):
+    def _append_decision_locked(self, cursor, grant, record, actor, idempotency_key, observed_at):
         data = record.to_dict()
-        data["observed_at"] = observed_at.isoformat().replace("+00:00", "Z")
-        record = DecisionRecordV1.from_dict(data)
+        if data["observed_at"] != observed_at.isoformat().replace("+00:00", "Z"):
+            raise IntegrityError("decision observation mismatch")
         cursor.execute(
             "SELECT repository_id FROM factory.tasks WHERE task_id=%s",
             (grant.task_id,),
@@ -4104,7 +4123,7 @@ class PostgresFactoryStore:
         cursor.execute(
             "SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)",
             (canonical_json(data).decode(), record.record_digest, grant.run_id,
-             grant.fence, idempotency_key, request_decision_digest),
+             grant.fence, idempotency_key, record.record_digest),
         )
         stored = cursor.fetchone()[0]
         if stored != record.record_digest:

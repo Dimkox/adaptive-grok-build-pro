@@ -142,6 +142,8 @@ CREATE FUNCTION factory.persist_phase_decision_v1(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
 DECLARE v_record jsonb; v_task_id uuid; v_owner text; v_from text; v_target text;
 BEGIN
+  IF trim(p_record_digest)<>trim(p_request_decision_digest)
+  THEN RAISE EXCEPTION 'decision request mismatch'; END IF;
   v_record:=p_record_canonical::jsonb;
   SELECT task_id,owner_id INTO v_task_id,v_owner FROM factory.runs
     WHERE run_id=p_run_id AND fence=p_fence AND state='leased';
