@@ -1666,6 +1666,7 @@
         "factory/pyproject.toml",
         "factory/src/adaptive_factory/__init__.py",
         "factory/src/adaptive_factory/admin.py",
+        "factory/src/adaptive_factory/context_contracts.py",
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
@@ -1673,6 +1674,7 @@
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
         "factory/src/adaptive_factory/store.py",
+        "factory/src/adaptive_factory/v15_contracts.py",
         "factory/tests"
       ],
       "runtime": {
@@ -1722,12 +1724,10 @@
       ],
       "repository_paths": [
         "factory/contracts/schemas",
-        "factory/src/adaptive_factory/context_contracts.py",
         "factory/src/adaptive_factory/execution_contracts.py",
         "factory/src/adaptive_factory/pricing.py",
         "factory/src/adaptive_factory/protocol.py",
-        "factory/src/adaptive_factory/semantic_bridge.py",
-        "factory/src/adaptive_factory/v15_contracts.py"
+        "factory/src/adaptive_factory/semantic_bridge.py"
       ],
       "runtime": {
         "evidence": "source_described",
