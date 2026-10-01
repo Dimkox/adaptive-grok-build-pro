@@ -276,6 +276,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "factory/src/adaptive_factory/adapters/base.py",
                 "factory/src/adaptive_factory/adapters/codex.py",
                 "factory/src/adaptive_factory/adapters/grok.py",
+                "factory/src/adaptive_factory/model_rotator_registry.py",
             },
             "NODE-FACTORY-PROPOSAL-BROKER": {
                 "factory/src/adaptive_factory/brokers.py",
