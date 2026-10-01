@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "id": "superpowers-v6.4.2",
+      "fixture": "superpowers-v6.4.2-writing-plans.md",
+      "repository": "obra/superpowers",
+      "revision": "8ca22dba9a94f28898bbce59f2537ff4d87c747d",
+      "source_path": "skills/writing-plans/SKILL.md",
+      "source_type": "superpowers",
+      "source_version": "6.4.2",
+      "role": "plan",
+      "target_path": "docs/superpowers/plans/current.md",
+      "sha256": "748945515f314db743af14b2688316e391238d6e5edb3dee26cb5397d50de34b"
+    },
+    {
+      "id": "spec-kit-v1.0.13",
+      "fixture": "spec-kit-v1.0.13-tasks-template.md",
+      "repository": "github/spec-kit",
+      "revision": "f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9",
+      "source_path": "templates/tasks-template.md",
+      "source_type": "spec-kit",
+      "source_version": "1.0.13",
+      "role": "tasks",
+      "target_path": "specs/001-current/tasks.md",
+      "sha256": "8431744d682db4553e44ec172ac201917b6d70e8ecce768484ca55936e819347"
+    },
+    {
+      "id": "bmad-main",
+      "fixture": "bmad-main-ticket-story-template.md",
+      "repository": "bmad-code-org/BMAD-METHOD",
+      "revision": "1cbcfa272fe65787c06a1fa164a901f46117cca7",
+      "source_path": "skills/bmad-ticket/assets/story-template.md",
+      "source_type": "bmad",
+      "source_version": "main@1cbcfa272fe6",
+      "role": "stories",
+      "target_path": "_bmad-output/stories/current.md",
+      "sha256": "b4612a6cc8a89e378647083a91b00536642dd3a000bf0c89cc7f83e25ec2e2f2"
+    },
+    {
+      "id": "bmad-v6.12.0",
+      "fixture": "bmad-v6.12.0-create-story-template.md",
+      "repository": "bmad-code-org/BMAD-METHOD",
+      "revision": "05bfbd46d00766ec88eb9b42e76be2c575d64d7b",
+      "source_path": "src/bmm-skills/v6-shims/bmad-create-story/template.md",
+      "source_type": "bmad",
+      "source_version": "6.12.0",
+      "role": "stories",
+      "target_path": "_bmad-output/stories/stable.md",
+      "sha256": "fe74a29ef032bba8e0731c9fe148fa9a65d96e7f7c28a26bb28e9c44935780cd"
+    }
+  ]
+}
