@@ -1,7 +1,7 @@
 # Factory Linux setup manager
 
-`setup_manager.py` is a Python 3.11+ stdlib release lifecycle policy. It imports no
-application/web/database stack and executes no subprocesses. `install_into.py`,
+`setup_manager.py` is a Python 3.11+ stdlib release lifecycle policy. Its default
+imports no application/web/database stack and executes no subprocesses. `install_into.py`,
 inactive L5 preparation, Factory storage, and Trust CI authority remain unchanged.
 
 ## Release contract
@@ -45,11 +45,61 @@ python3 factory/runtime/setup_manager.py status --root /absolute/private/factory
 
 CLI returns `factory-preflight/v1`, `factory-status/v1`, or `factory-error/v1`
 JSON; failures expose closed codes and exit 1. `verify` returns the digest.
-Malformed CLI syntax is argparse exit 2. The standalone CLI has **no runtime
+Malformed CLI syntax is argparse exit 2. The standalone CLI defaults to **no runtime
 adapter**. Lifecycle effects fail with `ADAPTER_REQUIRED` when needed. An authorized
 operator wrapper can inject one through `main(argv, adapter=...)` or `SetupManager`.
 CLI update/reversal have no backup provider and fail closed. No Docker, systemd,
 credentials, or production-host integration is implied.
+
+### Explicit Ubuntu process profile
+
+`linux_process_adapter.py` is opt-in for exactly Ubuntu 24.04 x86_64 and
+`/usr/bin/python3.12`. Use `setup_manager_linux.py ... --runtime-config
+/absolute/private.json`; the ordinary setup-manager CLI remains adapter-free.
+The owner-only (`0600`) JSON has this closed shape; the separately existing runtime
+directory must be owner-only `0700` and short enough for AF_UNIX:
+
+```json
+{"schema_version":"factory-linux-process/v1","python":"/usr/bin/python3.12","runtime_directory":"/run/user/1000/adaptive-factory","environment":{}}
+```
+
+Only bounded `FACTORY_*` environment entries are accepted; `FACTORY_SOCKET_PATH`
+is adapter-owned. The child receives a clean fixed environment and exact argv
+`/usr/bin/python3.12 -m adaptive_factory.server`, with `PYTHONPATH` bound to the
+selected immutable release. It uses no shell, root, systemd, package manager,
+network, or migrations. Each release gets a distinct UDS, private log and durable
+PID record bound to release, boot ID, PID/PGID, `/proc` start time, cmdline and argv
+digest. Stop pins the live leader and every observed group member with pidfds before
+TERM and a bounded KILL fallback, and cannot target its own group. This cleans
+resistant descendants during owned startup/stop without a validate-then-PID-reuse
+signal race. A stale boot or leaderless persisted group blocks restart and signalling
+for explicit recovery; it is never mistaken for an absent release. Readiness uses a
+stdlib UDS `GET /health/ready`.
+Windows is unsupported and macOS is excluded.
+
+Config and runtime paths are opened component-by-component through owner-pinned
+`O_NOFOLLOW` descriptors; the child inherits only the pinned runtime-directory
+descriptor used for its UDS. Intermediate symlinks and mutable unsafe ancestors are
+rejected. Application stdout/stderr is deliberately discarded: the adapter's private
+on-disk log contains bounded lifecycle signals only and is tail-truncated at 64 KiB.
+
+### Deterministic offline builder
+
+`build_offline_release.py` accepts an exact clean Git HEAD, a wheelhouse containing
+exactly `runtime-wheels-linux-x86_64-cpython312.json`, and an output stem. The
+inventory is checked against `uv.lock`; every wheel filename/SHA-256 must match,
+with no extras, dependency resolver or network access. The builder safely expands
+wheels and tracked `factory/src/adaptive_factory` bytes, rejects unsafe entries and
+collisions, emits canonical sorted ZIP metadata plus detached manifest/digests,
+then self-verifies through the setup manager before publishing outputs.
+
+```sh
+python3 factory/runtime/build_offline_release.py \
+  --repository "$PWD" --expected-head "$(git rev-parse HEAD)" \
+  --wheelhouse /absolute/offline-wheelhouse \
+  --inventory factory/runtime/runtime-wheels-linux-x86_64-cpython312.json \
+  --output /absolute/output/factory-0.1.0 --product-version 0.1.0
+```
 
 `RuntimeAdapter` requires read-only preflight/status/health/logs and exact-release
 start/stop. Each call receives a 30-second timeout; logs receive byte/line limits.
@@ -113,7 +163,7 @@ Safety patterns were adapted with explicit owner authorization from
 The upstream tree has **no root open-source license**. Owner-directed transfer is
 recorded in the change package; it makes no upstream open-license claim. This newly
 written Factory code contains no Liqvera service/config/image/Compose/Caddy/migration
-payload. A real runtime adapter remains separate scoped work.
+payload. The opt-in Linux adapter is Factory-specific new code.
 
 The checked-in [`setup_manager.provenance.json`](setup_manager.provenance.json)
 pins the upstream SHA/reference hashes and records the owner's 2026-09-30 direction:
@@ -122,7 +172,8 @@ inspection/selective prototype safety-pattern reuse, not a license grant, signed
 security approval, or host operation. No temporary inspection checkout is needed to
 understand this record.
 
-`python3 -m unittest factory.tests.test_runtime_installer` uses private temporary
-roots, real ZIP/digest/lock/journal behavior, and an injected in-memory runtime.
-It establishes no live-host/service acceptance, backup restore qualification, or
-deployment authority.
+`python3 -m unittest factory.tests.test_runtime_installer
+factory.tests.test_linux_process_adapter factory.tests.test_offline_release_builder`
+adds real local child/UDS lifecycle and deterministic builder coverage to the private
+temporary-root archive/digest/lock/journal suite. It establishes no production-host
+acceptance, database availability, backup restore qualification, or deployment authority.

@@ -859,3 +859,7 @@ The review of head `a08060c1` showed "prose" is not a directory property: `docs/
 ## 2026-10-01 — Separate the VibeVM store from adapter execution
 
 Keep V1 package resolution, admission, replay, safe projection and boot reconciliation in a Factory-owned Linux data-only store, with the reviewed upstream commit and tree recorded as provenance only. This preserves deterministic offline recovery and archive safety without falsely claiming that the optional upstream adapter ran or qualified.
+
+## 2026-10-01 — Keep process sockets outside the installer inventory
+
+Put per-release UDS files in an explicitly configured private runtime directory while retaining the full release/PID binding in durable installer state. This avoids both AF_UNIX path-length failures and false installer-tamper findings from a live socket inside the managed tree.
