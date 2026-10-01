@@ -195,6 +195,22 @@
     },
     {
       "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-V15-PREDICTION-OBSERVATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/prediction-observation.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-V15-PREDICTION-EXPLANATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/prediction-explanation.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
@@ -1759,7 +1775,9 @@
         "CONTRACT-FACTORY-V15-BB-LIFECYCLE-OBSERVATION",
         "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
         "CONTRACT-FACTORY-V15-DECISION-RECORD",
-        "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API"
+        "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+        "CONTRACT-FACTORY-V15-PREDICTION-OBSERVATION",
+        "CONTRACT-FACTORY-V15-PREDICTION-EXPLANATION"
       ],
       "repository_paths": [
         "factory/.gitignore",
@@ -1773,6 +1791,7 @@
         "factory/src/adaptive_factory/decision_contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
+        "factory/src/adaptive_factory/prediction_contracts.py",
         "factory/src/adaptive_factory/recovery.py",
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
