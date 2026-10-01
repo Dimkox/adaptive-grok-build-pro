@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import os
 import re
@@ -8,8 +9,52 @@ import tempfile
 import unittest
 import unicodedata
 from pathlib import Path
+from dataclasses import dataclass
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@dataclass(frozen=True)
+class FrozenUpstreamFixture:
+    fixture: str
+    source_type: str
+    source_version: str
+    role: str
+    target_path: str
+    repository: str
+    revision: str
+    source_path: str
+    sha256: str
+
+
+FROZEN_UPSTREAM_FIXTURES = {
+    "superpowers-v6.4.2": FrozenUpstreamFixture(
+        "superpowers-v6.4.2-writing-plans.md", "superpowers", "6.4.2", "plan",
+        "docs/superpowers/plans/current.md", "obra/superpowers",
+        "8ca22dba9a94f28898bbce59f2537ff4d87c747d", "skills/writing-plans/SKILL.md",
+        "748945515f314db743af14b2688316e391238d6e5edb3dee26cb5397d50de34b",
+    ),
+    "spec-kit-v1.0.13": FrozenUpstreamFixture(
+        "spec-kit-v1.0.13-tasks-template.md", "spec-kit", "1.0.13", "tasks",
+        "specs/001-current/tasks.md", "github/spec-kit",
+        "f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9", "templates/tasks-template.md",
+        "8431744d682db4553e44ec172ac201917b6d70e8ecce768484ca55936e819347",
+    ),
+    "bmad-main": FrozenUpstreamFixture(
+        "bmad-main-ticket-story-template.md", "bmad", "main@1cbcfa272fe6", "stories",
+        "_bmad-output/stories/current.md", "bmad-code-org/BMAD-METHOD",
+        "1cbcfa272fe65787c06a1fa164a901f46117cca7", "skills/bmad-ticket/assets/story-template.md",
+        "b4612a6cc8a89e378647083a91b00536642dd3a000bf0c89cc7f83e25ec2e2f2",
+    ),
+    "bmad-v6.12.0": FrozenUpstreamFixture(
+        "bmad-v6.12.0-create-story-template.md", "bmad", "6.12.0", "stories",
+        "_bmad-output/stories/stable.md", "bmad-code-org/BMAD-METHOD",
+        "05bfbd46d00766ec88eb9b42e76be2c575d64d7b",
+        "src/bmm-skills/v6-shims/bmad-create-story/template.md",
+        "fe74a29ef032bba8e0731c9fe148fa9a65d96e7f7c28a26bb28e9c44935780cd",
+    ),
+}
+FROZEN_UPSTREAM_MANIFEST_SHA256 = "1797d4074cc2ca168b4532fdcc48425cd9af2220c80ca17231124b92e062c953"
 
 
 def _load_module():
@@ -647,30 +692,64 @@ class CurrentUpstreamFormatTests(unittest.TestCase):
             entries.append({"source_type": source_type, "source_version": version, "role": role, "path": path})
         return _write_manifest(root, entries)
 
+    def _frozen_doc(
+        self,
+        key: str,
+        *,
+        raw: bytes | None = None,
+        source_version: str | None = None,
+    ) -> tuple[FrozenUpstreamFixture, str]:
+        fixture = FROZEN_UPSTREAM_FIXTURES[key]
+        observed = raw if raw is not None else (
+            ROOT / "tests/fixtures/workflow-upstreams" / fixture.fixture
+        ).read_bytes()
+        self.assertEqual(hashlib.sha256(observed).hexdigest(), fixture.sha256, key)
+        observed_version = fixture.source_version if source_version is None else source_version
+        self.assertEqual(observed_version, fixture.source_version, key)
+        self.assertRegex(fixture.revision, r"^[0-9a-f]{40}$")
+        self.assertIn("/", fixture.repository)
+        self.assertFalse(fixture.source_path.startswith("/"))
+        return fixture, observed.decode("utf-8")
+
+    def test_frozen_upstream_manifest_binds_identity_version_and_content_digest(self) -> None:
+        manifest_path = ROOT / "tests/fixtures/workflow-upstreams/manifest.json"
+        raw = manifest_path.read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), FROZEN_UPSTREAM_MANIFEST_SHA256)
+        document = json.loads(raw)
+        self.assertEqual(document.get("schema_version"), 1)
+        observed = {item.pop("id"): item for item in document["fixtures"]}
+        expected = {
+            key: {
+                "fixture": value.fixture,
+                "source_type": value.source_type,
+                "source_version": value.source_version,
+                "role": value.role,
+                "target_path": value.target_path,
+                "repository": value.repository,
+                "revision": value.revision,
+                "source_path": value.source_path,
+                "sha256": value.sha256,
+            }
+            for key, value in FROZEN_UPSTREAM_FIXTURES.items()
+        }
+        self.assertEqual(observed, expected)
+
+    def test_frozen_upstream_samples_reject_content_and_source_version_mutations(self) -> None:
+        for key, fixture in FROZEN_UPSTREAM_FIXTURES.items():
+            raw = (ROOT / "tests/fixtures/workflow-upstreams" / fixture.fixture).read_bytes()
+            with self.subTest(key=key, mutation="bytes"), self.assertRaises(AssertionError):
+                self._frozen_doc(key, raw=raw + b"\nmutated\n")
+            with self.subTest(key=key, mutation="source_version"), self.assertRaises(AssertionError):
+                self._frozen_doc(key, source_version=f"{fixture.source_version}-mutated")
+
     def test_superpowers_v642_spec_pointer_and_interfaces_stay_opaque_advisory(self) -> None:
-        # Assembled verbatim excerpts: obra/superpowers @
-        # 8ca22dba9a94f28898bbce59f2537ff4d87c747d, skills/writing-plans/SKILL.md.
+        fixture, content = self._frozen_doc("superpowers-v6.4.2")
         # A parser that follows Spec pointers or invents tasks from plan checkboxes fails.
-        content = """# [Feature Name] Implementation Plan
-
-**Spec:** [path to the spec/design doc this plan implements — the plan
-argues from the spec, so the spec travels with it; executors read both]
-
-### Task N: [Component Name]
-
-**Interfaces:**
-- Consumes: [what this task uses from earlier tasks — exact signatures]
-- Produces: [what later tasks rely on — exact function names, parameter
-  and return types. A task's implementer sees only their own task; this
-  block is how they learn the names and types neighboring tasks use.]
-
-- [ ] **Step 1: Write the failing test**
-"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest = self._docs(root, [
-                ("superpowers", "plan", "docs/superpowers/plans/current.md", content)
-            ], "6.4.2")
+                (fixture.source_type, fixture.role, fixture.target_path, content)
+            ], fixture.source_version)
             bundle = self.artifacts.load_source_manifest(root, manifest)
             self.assertEqual(len(bundle.sources), 1)
             self.assertEqual(self.artifacts._native_framework_tasks(bundle.sources[0]), [])
@@ -680,29 +759,13 @@ argues from the spec, so the spec travels with it; executors read both]
             self.assertEqual(self.artifacts._advanced_status_hints(bundle), set())
 
     def test_spec_kit_v1013_exact_task_rows_preserve_phase_dependencies(self) -> None:
-        # Assembled verbatim excerpts: github/spec-kit @
-        # f1a548a39dba4e5e8600de1d2e0d3ff0c468d2a9, templates/tasks-template.md.
+        fixture, content = self._frozen_doc("spec-kit-v1.0.13")
         # Dropping [P]/[US1] rows or phase dependencies changes the observable graph.
-        content = """# Tasks: [FEATURE NAME]
-
-## Phase 1: Setup (Shared Infrastructure)
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
-
-## Phase 2: Foundational (Blocking Prerequisites)
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-
-## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
-"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest = self._docs(root, [
-                ("spec-kit", "tasks", "specs/001-current/tasks.md", content)
-            ], "1.0.13")
+                (fixture.source_type, fixture.role, fixture.target_path, content)
+            ], fixture.source_version)
             bundle = self.artifacts.load_source_manifest(root, manifest)
             tasks = self.artifacts._native_framework_tasks(bundle.sources[0])
             self.assertEqual([t["key"] for t in tasks],
@@ -715,32 +778,13 @@ argues from the spec, so the spec travels with it; executors read both]
             self.assertTrue(all(not c["authority"] and not c["receipt_eligible"] for c in candidates))
 
     def test_bmad_observed_main_ticket_shape_remains_advisory_without_native_tasks(self) -> None:
-        # Verbatim example excerpt: bmad-code-org/BMAD-METHOD @
-        # 1cbcfa272fe65787c06a1fa164a901f46117cca7, skills/bmad-ticket/assets/story-template.md.
+        fixture, content = self._frozen_doc("bmad-main")
         # Main is an observation, not stable 6.12.0; arbitrary ticket metadata is no status authority.
-        content = """---
-id: 4
-type: story
-title: "A shopper applies a discount code and sees the new total"
-parent: epic-cart-rules
-covers: [R2, R3]
-after: [3]
-refined: true
-hitl: false
-risk: medium
----
-
-# A shopper applies a discount code and sees the new total
-
-## Description
-
-A shopper with items in the cart enters a discount code, and the cart total updates to show the discount before tax. An invalid or expired code tells them why it was refused and leaves the total as it was.
-"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest = self._docs(root, [
-                ("bmad", "stories", "_bmad-output/stories/current.md", content)
-            ], "main@1cbcfa272fe6")
+                (fixture.source_type, fixture.role, fixture.target_path, content)
+            ], fixture.source_version)
             bundle = self.artifacts.load_source_manifest(root, manifest)
             self.assertEqual(self.artifacts._native_framework_tasks(bundle.sources[0]), [])
             self.assertEqual(self.artifacts._advanced_status_hints(bundle), set())
@@ -749,25 +793,13 @@ A shopper with items in the cart enters a discount code, and the cart total upda
             self.assertTrue(all(not c["authority"] and not c["receipt_eligible"] for c in candidates))
 
     def test_bmad_v612_exact_template_tasks_preserve_nested_subtasks(self) -> None:
-        # bmad-code-org/BMAD-METHOD @ 05bfbd46d00766ec88eb9b42e76be2c575d64d7b,
-        # src/bmm-skills/v6-shims/bmad-create-story/template.md.
+        fixture, content = self._frozen_doc("bmad-v6.12.0")
         # Heading placeholders are instantiated; status and task excerpts are verbatim.
-        content = """# Story 1.1: Template sample
-
-Status: ready-for-dev
-
-## Tasks / Subtasks
-
-- [ ] Task 1 (AC: #)
-  - [ ] Subtask 1.1
-- [ ] Task 2 (AC: #)
-  - [ ] Subtask 2.1
-"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             manifest = self._docs(root, [
-                ("bmad", "stories", "_bmad-output/stories/stable.md", content)
-            ], "6.12.0")
+                (fixture.source_type, fixture.role, fixture.target_path, content)
+            ], fixture.source_version)
             bundle = self.artifacts.load_source_manifest(root, manifest)
             tasks = self.artifacts._native_framework_tasks(bundle.sources[0])
             self.assertEqual([t["key"] for t in tasks],
