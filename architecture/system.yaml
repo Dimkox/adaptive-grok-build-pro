@@ -585,6 +585,29 @@
   "edges": [
     {
       "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 1000
+      },
+      "from": "NODE-FACTORY-LOCAL-API",
+      "id": "EDGE-FACTORY-INSTALLER-LOOPBACK-PREFLIGHT",
+      "network_policy": "local_only",
+      "protocol": "tcp",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LOCAL-API",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
@@ -1749,6 +1772,9 @@
         "factory/src/adaptive_factory/landing_server.py",
         "factory/src/adaptive_factory/server.py",
         "factory/src/adaptive_factory/settings.py",
+        "factory/tests/test_linux_process_adapter.py",
+        "factory/tests/test_offline_release_builder.py",
+        "factory/tests/test_runtime_installer.py",
         "factory/tests/test_landing_host.py",
         "factory/tests/test_landing_server.py",
         "factory/tests/test_server.py",

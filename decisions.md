@@ -1,5 +1,9 @@
 # Decisions
 
+### 2026-10-01 — Declare installer loopback preflight as local TCP
+
+Own the setup manager and its focused tests under the existing Factory local-API node, and declare its optional `127.0.0.1` port-availability probe as a fail-closed self-edge. This keeps cumulative architecture fitness truthful without granting external network access or disguising the probe as UDS traffic.
+
 ### 2026-09-30 — Keep stable workflow pins separate from main observations
 
 Record peeled stable commits alongside separately observed main commits and exercise exact-revision excerpts through the existing advisory adapters. This updated source currency without changing runtime parsing or promoting BMAD main ticket metadata and Superpowers Spec pointers into authority.
