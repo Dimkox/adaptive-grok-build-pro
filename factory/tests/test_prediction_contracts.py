@@ -164,23 +164,76 @@ class PredictionContractTests(unittest.TestCase):
         self.assertEqual(first.record_digest, second.record_digest)
         self.assertEqual([item["name"] for item in first.to_dict()["contributions"]], ["a_feature", "z_feature"])
 
+    def test_additivity_uses_canonical_fsum_for_adversarial_permutations(self):
+        module = self.module()
+        prediction = module.PredictionObservationV1.from_dict(
+            prediction_facts(
+                observed_history_count=100,
+                predicted_value=1.0,
+                features=[
+                    {"name": "a_large", "value": 1, "observed_at": "2026-09-30T11:58:00Z"},
+                    {"name": "b_cancel", "value": 1, "observed_at": "2026-09-30T11:58:00Z"},
+                    {"name": "c_small", "value": 1, "observed_at": "2026-09-30T11:58:00Z"},
+                ],
+            )
+        )
+        contributions = [
+            {"name": "a_large", "value": 1e16},
+            {"name": "b_cancel", "value": -1e16},
+            {"name": "c_small", "value": 1.0},
+        ]
+        records = [
+            module.PredictionExplanationV1.from_dict(
+                explanation_facts(prediction, base_value=0.0, contributions=values), prediction=prediction
+            )
+            for values in (contributions, list(reversed(contributions)))
+        ]
+        self.assertEqual(records[0].record_digest, records[1].record_digest)
+
     def test_replay_index_accepts_same_canonical_body_and_rejects_identity_reuse(self):
         module = self.module()
-        replay = module.PredictionReplayIndex()
+        replay = module.PredictionReplayIndex(max_entries=2)
         first = module.PredictionObservationV1.from_dict(
             prediction_facts(train_change_ids=["old-2", "old-1"])
         )
         same = module.PredictionObservationV1.from_dict(
             prediction_facts(train_change_ids=["old-1", "old-2"])
         )
-        self.assertIs(first, replay.admit(first))
-        self.assertIs(same, replay.admit(same))
+        admitted = replay.admit(first)
+        self.assertIsNot(first, admitted)
+        self.assertEqual(first, admitted)
+        self.assertIsNot(same, replay.admit(same))
         with self.assertRaisesRegex(ContractError, "prediction_replay_conflict"):
             replay.admit(module.PredictionObservationV1.from_dict(prediction_facts(context_digest="f" * 64)))
         with self.assertRaisesRegex(ContractError, "prediction_replay_conflict"):
             replay.admit(
                 module.PredictionObservationV1.from_dict(
                     prediction_facts(repository_id="other/project", candidate_sha="f" * 40)
+                )
+            )
+
+    def test_replay_index_is_bounded_fail_closed_and_detaches_duck_input(self):
+        module = self.module()
+
+        class MutableWire:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def to_dict(self):
+                return self.payload
+
+        with self.assertRaises(ContractError):
+            module.PredictionReplayIndex(max_entries=0)
+        replay = module.PredictionReplayIndex(max_entries=1)
+        payload = prediction_facts()
+        admitted = replay.admit(MutableWire(payload))
+        payload["context_digest"] = "f" * 64
+        self.assertEqual(admitted.to_dict()["context_digest"], "2" * 64)
+        self.assertEqual(admitted, replay.admit(module.PredictionObservationV1.from_dict(prediction_facts())))
+        with self.assertRaisesRegex(ContractError, "prediction_replay_capacity"):
+            replay.admit(
+                module.PredictionObservationV1.from_dict(
+                    prediction_facts(prediction_id="pred-2", change_id="change-2", test_change_ids=["change-2"])
                 )
             )
 

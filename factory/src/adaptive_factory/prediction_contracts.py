@@ -190,35 +190,45 @@ class PredictionExplanationV1(FrozenWire):
         if not 0 <= tolerance <= 0.000001:
             raise ContractError("excessive_tolerance")
         names = set()
-        total = base_value
+        validated_contributions = []
         for contribution in sequence(data["contributions"], 128):
             closed(contribution, ("name", "value"))
             identity(contribution["name"])
             if contribution["name"] in names:
                 raise ContractError("duplicate_contribution")
             names.add(contribution["name"])
-            total += _number(contribution["value"], "contribution")
+            value = _number(contribution["value"], "contribution")
+            validated_contributions.append((contribution["name"], value, contribution))
         if names != {feature["name"] for feature in facts["features"]}:
             raise ContractError("incomplete_vector")
+        validated_contributions.sort(key=lambda item: item[0])
+        total = math.fsum([base_value, *(item[1] for item in validated_contributions)])
         if abs(total - facts["predicted_value"]) > tolerance:
             raise ContractError("nonadditive_explanation")
         if data["authority_effect"] != "none":
             raise ContractError("invalid_authority_effect")
         normalized = dict(data)
-        normalized["contributions"] = sorted(data["contributions"], key=lambda item: item["name"])
+        normalized["contributions"] = [item[2] for item in validated_contributions]
         return cls.freeze(normalized)
 
 
 class PredictionReplayIndex:
     """Process-local validator for an append-only store's prediction-id replay rule."""
 
-    def __init__(self):
+    def __init__(self, *, max_entries):
+        integer(max_entries, "max_entries", 1, 1_000_000)
+        self._max_entries = max_entries
         self._digests = {}
 
     def admit(self, prediction):
         admitted = PredictionObservationV1.from_dict(prediction.to_dict())
         prediction_id = admitted.to_dict()["prediction_id"]
-        previous = self._digests.setdefault(prediction_id, admitted.record_digest)
+        previous = self._digests.get(prediction_id)
+        if previous is None:
+            if len(self._digests) >= self._max_entries:
+                raise ContractError("prediction_replay_capacity")
+            self._digests[prediction_id] = admitted.record_digest
+            return admitted
         if previous != admitted.record_digest:
             raise ContractError("prediction_replay_conflict", prediction_id)
-        return prediction
+        return admitted
