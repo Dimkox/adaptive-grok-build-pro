@@ -314,7 +314,16 @@ class PostgresFactoryTests(unittest.TestCase):
             "vibevm_status": "not_evaluated",
             "prediction_status": "not_qualified",
             "timing": {"status": "not_evaluated"},
-            "qualification": {"status": "not_evaluated", "cases": []},
+            "qualification": {
+                "status": "not_evaluated",
+                "suite_digest": "d57c08cecf33c021e15911cfd3a6b4c96ea198c4b3e34f8b76048399daf51c9a",
+                "cases": [
+                    {"case_id": f"F24-{index:03d}",
+                     "domain": "pump_selector" if index <= 4 else "factory" if index <= 8 else "cross_component",
+                     "status": "not_evaluated"}
+                    for index in range(1, 13)
+                ],
+            },
         }
         body["evidence_digest"] = canonical_digest(body)
         self.assertTrue(self.store.record_v15_runtime_evaluation(body))
