@@ -41,6 +41,13 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_v15_runtime_evaluation_migration_is_additive_and_capability_scoped(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual((migration.version, migration.name), (32, "032_v15_runtime_evaluations.sql"))
+        self.assertIn("CREATE TABLE factory.v15_runtime_evaluations", migration.sql)
+        self.assertIn("GRANT EXECUTE ON FUNCTION", migration.sql)
+        self.assertNotIn("GRANT SELECT ON TABLE factory.v15_runtime_evaluations", migration.sql)
+
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
@@ -376,8 +383,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 32)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 31)
+        self.assertEqual([item.version for item in migrations], list(range(1, 33)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 32)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())

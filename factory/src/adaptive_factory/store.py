@@ -3037,6 +3037,19 @@ class PostgresFactoryStore:
             )
             return cursor.fetchone()[0]
 
+    def record_v15_runtime_evaluation(self, body: dict) -> bool:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.v15_record_runtime_evaluation(%s::jsonb)",
+                (json.dumps(body, sort_keys=True, separators=(",", ":")),),
+            )
+            return cursor.fetchone()[0] is True
+
+    def v15_runtime_evaluation(self, task_id: str):
+        with self._transaction() as cursor:
+            cursor.execute("SELECT factory.v15_runtime_evaluation(%s)", (task_id,))
+            return cursor.fetchone()[0]
+
     def advance_execution(
         self,
         grant: LeaseGrant,

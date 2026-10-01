@@ -219,7 +219,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.execution_analysis_budgets, factory.execution_native_contexts, factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.v15_runtime_evaluations, factory.execution_analysis_budgets, factory.execution_native_contexts, factory.model_rotator_operations, factory.model_rotator_reservation_accounting, factory.model_rotator_request_grants, factory.model_rotator_states, factory.bb_external_binding_receipts, factory.bb_external_bindings, factory.unverified_resolutions, factory.unverified_slots, factory.unverified_limits, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -300,6 +300,32 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def submit(self, repository="owner/repository", source=None):
         return self.service.intake(self.payload(repository, source), actor=OPERATOR, now=NOW)
+
+    def test_v15_runtime_evaluation_is_immutable_task_and_repository_bound(self):
+        task = self.submit(source="v15-runtime-evaluation").task
+        body = {
+            "schema_version": 1,
+            "tenant_id": task.repository_id,
+            "repository_id": task.repository_id,
+            "task_id": task.task_id,
+            "candidate_sha": "3" * 40,
+            "config_digest": "4" * 64,
+            "fpf_status": "not_evaluated",
+            "vibevm_status": "not_evaluated",
+            "prediction_status": "not_qualified",
+            "timing": {"status": "not_evaluated"},
+            "qualification": {"status": "not_evaluated", "cases": []},
+        }
+        body["evidence_digest"] = canonical_digest(body)
+        self.assertTrue(self.store.record_v15_runtime_evaluation(body))
+        self.assertEqual(self.store.v15_runtime_evaluation(task.task_id), body)
+        self.assertTrue(self.store.record_v15_runtime_evaluation(body))
+        forged = dict(body, repository_id="other/repository")
+        forged["evidence_digest"] = canonical_digest({key: value for key, value in forged.items() if key != "evidence_digest"})
+        self.assertFalse(self.store.record_v15_runtime_evaluation(forged))
+        changed = dict(body, fpf_status="supported")
+        changed["evidence_digest"] = canonical_digest({key: value for key, value in changed.items() if key != "evidence_digest"})
+        self.assertFalse(self.store.record_v15_runtime_evaluation(changed))
 
     def advance_to_phase(self, grant, target: TaskStatus) -> None:
         ordered = (
