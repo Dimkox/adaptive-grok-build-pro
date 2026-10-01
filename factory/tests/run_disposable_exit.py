@@ -202,7 +202,10 @@ def main() -> int:
                     "-v",
                 ],
                 environment=environment,
-                timeout=480,
+                # The unified RC discovers 953 tests. Keep this bounded while
+                # leaving roughly one minute for the outer 600-second verifier
+                # to run the post-suite restart probe and exact cleanup.
+                timeout=540,
             )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
