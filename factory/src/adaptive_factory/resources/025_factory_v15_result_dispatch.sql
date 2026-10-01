@@ -2,7 +2,7 @@
 -- vocabulary remains intact; dispatch_phase adds the finer sending/unknown distinction.
 ALTER TABLE factory.next_model_request_outbox_v1
   ADD COLUMN dispatch_phase text NOT NULL DEFAULT 'pending'
-    CHECK (dispatch_phase IN ('pending','claimed','sending','unknown','delivered','failed')),
+    CHECK (dispatch_phase IN ('pending','claimed','sending','unknown','blocked','delivered','failed')),
   ADD COLUMN operation_id text,
   ADD COLUMN claim_token char(64),
   ADD COLUMN dispatcher_id text,
@@ -162,17 +162,15 @@ BEGIN
   ), repaired AS (
     UPDATE factory.next_model_request_outbox_v1 o SET
       state=CASE
-        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'failed'
+        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'claimed'
         WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'claimed' END,
       dispatch_phase=CASE
-        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'failed'
+        WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100 THEN 'blocked'
         WHEN e.dispatch_phase='claimed' THEN 'pending' ELSE 'unknown' END,
       reason_code=CASE
         WHEN o.observation_deadline<=clock_timestamp() THEN 'observation_deadline_exceeded'
         WHEN o.dispatch_attempts>=100 THEN 'dispatch_attempts_exhausted'
         WHEN e.dispatch_phase='sending' THEN 'post_outcome_ambiguous' ELSE o.reason_code END,
-      observed_at=CASE WHEN o.observation_deadline<=clock_timestamp() OR o.dispatch_attempts>=100
-        THEN clock_timestamp() ELSE o.observed_at END,
       available_at=clock_timestamp(),claim_token=NULL,dispatcher_id=NULL,claim_expires_at=NULL
     FROM expired e WHERE o.request_digest=e.request_digest RETURNING 1
   ) SELECT count(*) INTO v_count FROM repaired;

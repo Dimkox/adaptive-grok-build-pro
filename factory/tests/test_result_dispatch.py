@@ -214,18 +214,38 @@ class UdsModelRequestClientTests(unittest.TestCase):
         self.assertEqual(outcome, DispatchOutcome("unknown", "observation_pending", None))
         self.assertEqual(methods, ["GET"])
 
-    def test_recipient_rejection_is_terminal_but_server_failure_is_unknown(self):
-        for status, expected in (
-            (409, DispatchOutcome("failed", "recipient_rejected", None)),
-            (503, DispatchOutcome("unknown", "post_outcome_ambiguous", None)),
-        ):
-            with self.subTest(status=status):
+    def test_unbound_http_errors_are_ambiguous_for_post_and_observation(self):
+        for method in ("dispatch", "observe"):
+            for status in (400, 404, 408, 409, 429, 500, 503):
+                with self.subTest(method=method, status=status):
+                    path = self._serve(lambda *_: None)
+                    client = UdsModelRequestClient(
+                        path, "secret-token-value", timeout_seconds=1,
+                        transport=httpx.MockTransport(lambda request, status=status: httpx.Response(status)),
+                    )
+                    outcome = getattr(client, method)(claim("unknown" if method == "observe" else "claimed"))
+                    self.assertEqual(outcome.state, "unknown")
+                    self.assertEqual(outcome.observation_digest, None)
+
+    def test_identity_bound_failure_proves_terminal_non_effect_even_on_http_conflict(self):
+        item = claim()
+        payload = {
+            "status": "failed", "operation_id": item.operation_id,
+            "request_digest": item.request_digest, "envelope_digest": item.envelope_digest,
+        }
+        for method in ("dispatch", "observe"):
+            with self.subTest(method=method):
                 path = self._serve(lambda *_: None)
                 client = UdsModelRequestClient(
                     path, "secret-token-value", timeout_seconds=1,
-                    transport=httpx.MockTransport(lambda request: httpx.Response(status)),
+                    transport=httpx.MockTransport(
+                        lambda request: httpx.Response(409, json=payload)
+                    ),
                 )
-                self.assertEqual(client.dispatch(claim()), expected)
+                self.assertEqual(
+                    getattr(client, method)(item),
+                    DispatchOutcome("failed", "effect_failed", None),
+                )
 
     def test_delivered_response_requires_exact_observation_digest(self):
         valid = self._delivered(claim())

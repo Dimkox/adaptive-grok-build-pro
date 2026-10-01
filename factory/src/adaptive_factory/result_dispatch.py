@@ -142,14 +142,13 @@ class UdsModelRequestClient:
     def _outcome(
         cls, status_code: int, raw: bytes, claim: DispatchClaim, *, observation: bool
     ) -> DispatchOutcome:
-        if status_code >= 500:
-            return DispatchOutcome("unknown", "observation_unavailable" if observation else "post_outcome_ambiguous", None)
-        if status_code >= 400:
-            return DispatchOutcome("failed", "recipient_rejected", None)
+        ambiguous_reason = "observation_unavailable" if observation else "post_outcome_ambiguous"
         try:
             body = json.loads(raw)
         except (UnicodeDecodeError, ValueError):
-            return DispatchOutcome("unknown", "invalid_observation", None)
+            return DispatchOutcome(
+                "unknown", ambiguous_reason if status_code >= 400 else "invalid_observation", None
+            )
         allowed = {
             "status", "operation_id", "request_digest", "envelope_digest",
             "postcondition_digest", "reason_code",
@@ -161,7 +160,9 @@ class UdsModelRequestClient:
             or body.get("request_digest") != claim.request_digest
             or body.get("envelope_digest") != claim.envelope_digest
         ):
-            return DispatchOutcome("unknown", "invalid_observation", None)
+            return DispatchOutcome(
+                "unknown", ambiguous_reason if status_code >= 400 else "invalid_observation", None
+            )
         status = body.get("status")
         digest = body.get("postcondition_digest")
         if status == "delivered":
@@ -172,6 +173,8 @@ class UdsModelRequestClient:
             if digest is not None:
                 return DispatchOutcome("unknown", "invalid_observation", None)
             return DispatchOutcome("failed", "effect_failed", None)
+        if status_code >= 400:
+            return DispatchOutcome("unknown", ambiguous_reason, None)
         return DispatchOutcome("unknown", "observation_pending", None)
 
     def _request(self, method: str, path: str, claim: DispatchClaim, **kwargs) -> DispatchOutcome:

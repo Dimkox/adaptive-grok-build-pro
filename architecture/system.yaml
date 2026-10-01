@@ -755,36 +755,13 @@
         "terminal_action": "manual_recovery",
         "timeout_ms": 30000
       },
-      "from": "NODE-FACTORY-LOCAL-API",
-      "id": "EDGE-FACTORY-API-RESULT-DISPATCHER",
-      "network_policy": "no_network",
-      "protocol": "python_import",
-      "sync_or_async": "asynchronous",
-      "to": "NODE-FACTORY-RESULT-DISPATCHER",
-      "type": "control"
-    },
-    {
-      "allowed_data": [
-        "DATA-FACTORY-STATE"
-      ],
-      "authentication": "local_os",
-      "direction": "from_to",
-      "failure_behavior": {
-        "correlation_id": "required",
-        "idempotency": "required",
-        "max_retries": 0,
-        "mode": "fail_closed",
-        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
-        "terminal_action": "manual_recovery",
-        "timeout_ms": 30000
-      },
       "from": "NODE-FACTORY-RESULT-DISPATCHER",
-      "id": "EDGE-FACTORY-RESULT-DISPATCH-UDS",
+      "id": "EDGE-FACTORY-RESULT-DISPATCH-UDS-FOUNDATION",
       "network_policy": "local_only",
       "protocol": "unix_http",
-      "sync_or_async": "asynchronous",
+      "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-EXECUTION-CORE",
-      "type": "data_flow"
+      "type": "dependency"
     },
     {
       "allowed_data": [
@@ -1719,7 +1696,7 @@
     {
       "data_classification": "DATA-FACTORY-INTENT",
       "id": "NODE-FACTORY-LOCAL-API",
-      "owner": "local factory operators",
+      "owner": "unqualified dormant foundation; local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
@@ -1884,7 +1861,7 @@
       "runtime": {
         "evidence": "source_described",
         "kind": "python_process",
-        "lifecycle": "long_running",
+        "lifecycle": "on_demand",
         "network": "local_only"
       },
       "secrets": [

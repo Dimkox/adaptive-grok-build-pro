@@ -1480,7 +1480,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(connection.execute(
                 "SELECT state,dispatch_phase,reason_code FROM factory.next_model_request_outbox_v1 "
                 "WHERE request_digest=%s", (first.request_digest,),
-            ).fetchone(), ("failed", "failed", "observation_deadline_exceeded"))
+            ).fetchone(), ("claimed", "blocked", "observation_deadline_exceeded"))
             connection.execute(
                 "UPDATE factory.next_model_request_outbox_v1 SET state='pending',dispatch_phase='pending',"
                 "reason_code=NULL,dispatch_attempts=100,observation_deadline=clock_timestamp()+interval '1 hour' "
@@ -1491,7 +1491,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(connection.execute(
                 "SELECT state,dispatch_phase,reason_code FROM factory.next_model_request_outbox_v1 "
                 "WHERE request_digest=%s", (first.request_digest,),
-            ).fetchone(), ("failed", "failed", "dispatch_attempts_exhausted"))
+            ).fetchone(), ("claimed", "blocked", "dispatch_attempts_exhausted"))
 
     def test_result_dispatch_runs_admission_to_real_uds_and_observed_postcondition(self):
         import psycopg
@@ -1601,7 +1601,9 @@ class PostgresFactoryTests(unittest.TestCase):
         POSTGRES_CONTAINER, "FACTORY_TEST_POSTGRES_CONTAINER must name the disposable PostgreSQL container"
     )
     def test_result_dispatch_process_and_postgres_restart_observes_without_second_post(self):
+        global DATABASE_URL
         import psycopg
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
         from pathlib import Path
         import socketserver
         import subprocess
@@ -1611,6 +1613,30 @@ class PostgresFactoryTests(unittest.TestCase):
 
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", POSTGRES_CONTAINER):
             self.fail("invalid disposable PostgreSQL container name")
+
+        def restartable_binding():
+            inspected = subprocess.run(
+                ["docker", "inspect", POSTGRES_CONTAINER], check=True,
+                stdout=subprocess.PIPE, text=True, timeout=10,
+            )
+            document = json.loads(inspected.stdout)
+            if len(document) != 1 or document[0]["HostConfig"].get("AutoRemove") is not False:
+                self.fail("disposable PostgreSQL container must be restartable (AutoRemove=false)")
+            bindings = document[0]["NetworkSettings"]["Ports"].get("5432/tcp")
+            if not isinstance(bindings, list) or len(bindings) != 1:
+                self.fail("disposable PostgreSQL container must publish exactly one PostgreSQL port")
+            host, port = bindings[0].get("HostIp"), bindings[0].get("HostPort")
+            if host not in {"127.0.0.1", "::1"} or not isinstance(port, str) or not port.isdigit():
+                self.fail("disposable PostgreSQL binding must be numeric and loopback-only")
+            return document[0]["Id"], host, port
+
+        container_id, initial_host, initial_port = restartable_binding()
+        owner_parts = conninfo_to_dict(DATABASE_URL)
+        if (
+            owner_parts.get("host", "") != initial_host
+            or str(owner_parts.get("port", "5432")) != initial_port
+        ):
+            self.fail("FACTORY_TEST_DATABASE_URL does not match the restartable container binding")
         task = self.submit(source="v15-result-restart-e2e").task
         grant = self.service.claim(
             owner=WORKER.actor_id, role=RunRole.READER,
@@ -1718,6 +1744,26 @@ class PostgresFactoryTests(unittest.TestCase):
                 release_post.set()
                 subprocess.run(["docker", "stop", POSTGRES_CONTAINER], check=True, timeout=30)
                 subprocess.run(["docker", "start", POSTGRES_CONTAINER], check=True, timeout=30)
+                restarted_id, restarted_host, restarted_port = restartable_binding()
+                if restarted_id != container_id:
+                    self.fail("disposable PostgreSQL container identity changed across restart")
+                DATABASE_URL = make_conninfo(
+                    **{**owner_parts, "host": restarted_host, "port": restarted_port}
+                )
+                self.__class__.runtime_url = make_conninfo(
+                    **{
+                        **conninfo_to_dict(self.runtime_url),
+                        "host": restarted_host, "port": restarted_port,
+                    }
+                )
+                self.__class__.result_dispatcher_url = make_conninfo(
+                    **{
+                        **conninfo_to_dict(self.result_dispatcher_url),
+                        "host": restarted_host, "port": restarted_port,
+                    }
+                )
+                child_env["FACTORY_DATABASE_URL"] = DATABASE_URL
+                child_env["FACTORY_RESULT_DISPATCH_DATABASE_URL"] = self.result_dispatcher_url
                 deadline = time.monotonic() + 30
                 while True:
                     try:
