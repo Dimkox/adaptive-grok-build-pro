@@ -437,6 +437,7 @@ class LandingApiTests(unittest.TestCase):
             if path.is_file()
             and "landing-" not in path.name
             and path.name != "static-landing-spec.v1.schema.json"
+            and path.name != "context-manifest.v1.schema.json"
             and path.name != "factory-execution.v3.json"
         )
         showcase = (
