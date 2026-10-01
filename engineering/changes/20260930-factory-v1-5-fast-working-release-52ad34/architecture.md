@@ -28,6 +28,8 @@ New schemas are versioned sidecars. Existing execution v1/v2 event meanings and 
 
 The public context-manifest JSON Schema is a structural consumer contract, not standalone admission. Every schema-valid manifest must also pass `ContextManifestV1.from_dict`, which enforces UTF-8 byte bounds, secret detection, safe paths, content digests, and exact rule/source linkage.
 
+The decision-record v1 sidecar is likewise structural at the JSON Schema boundary and semantically admitted by `DecisionRecordV1.from_dict`. State decisions bind the current and target state, lease owner, repository, task, run, attempt, and fence inside the same PostgreSQL transaction as the phase transition. Corrections append a same-task/run superseding record; update/delete privileges are withheld.
+
 ## Governance context
 
 Canonical governance JSON under `governance/` remains separately reviewed authority. Any rule, example, debt, or digest named here is non-authoritative context until the verifier rederives current governance evidence.
