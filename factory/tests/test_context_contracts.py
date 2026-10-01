@@ -3,6 +3,7 @@ import hashlib
 import importlib
 import importlib.util
 import unittest
+from unittest.mock import patch
 
 from adaptive_factory.contracts import ContractError
 
@@ -119,3 +120,10 @@ class ContextContractTests(unittest.TestCase):
             facts["rule_bindings"][0][field] = value
             with self.subTest(field=field), self.assertRaisesRegex(ContractError, "source_binding_mismatch"):
                 cls.from_dict(facts)
+
+    def test_source_content_always_passes_through_safe_text(self):
+        module = importlib.import_module("adaptive_factory.context_contracts")
+        facts = context_facts()
+        with patch.object(module, "safe_text", wraps=module.safe_text) as guarded:
+            module.ContextManifestV1.from_dict(facts)
+        guarded.assert_any_call(facts["mandatory_sources"][0]["content"], "content")

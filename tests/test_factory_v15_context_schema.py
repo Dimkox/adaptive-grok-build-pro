@@ -51,16 +51,26 @@ def context_facts():
 
 
 def test_draft_2020_12_and_python_share_structural_admission_corpus():
-    validator = Draft202012Validator(json.loads(SCHEMA.read_text(encoding="utf-8")))
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    assert "(?i" not in json.dumps(schema)
+    assert "(?s" not in json.dumps(schema)
+    validator = Draft202012Validator(schema)
     valid = context_facts()
-    assert not list(validator.iter_errors(valid))
-    ContextManifestV1.from_dict(valid)
+    for harmless in (
+        "safe project fact",
+        "Token budgets and authorization policies contain no credentials.",
+        "Secret detection documents private key handling without carrying a value.",
+    ):
+        candidate = deepcopy(valid)
+        _replace_bound_content(candidate, harmless)
+        assert not list(validator.iter_errors(candidate))
+        ContextManifestV1.from_dict(candidate)
 
     mutations = (
         lambda value: value.update(builder_version="bad value"),
         lambda value: value["mandatory_sources"][0].update(path=".env"),
         lambda value: value["mandatory_sources"][0].update(path="keys/private.pem"),
-        lambda value: value["mandatory_sources"][0].update(content="password=synthetic-secret"),
         lambda value: value["mandatory_sources"][0].update(reason="bad reason"),
         lambda value: value["mandatory_sources"][0].update(mode="summary"),
         lambda value: value["rule_bindings"][0].pop("source_digest"),
@@ -71,3 +81,27 @@ def test_draft_2020_12_and_python_share_structural_admission_corpus():
         assert list(validator.iter_errors(candidate))
         with pytest.raises(ContractError):
             ContextManifestV1.from_dict(candidate)
+
+    for secret_content in (
+        "password=synthetic-secret",
+        "Authorization: Basic synthetic-value",
+        "Bearer synthetic-token",
+        "-----BEGIN " + "PRIVATE KEY-----synthetic-----END " + "PRIVATE KEY-----",
+        "github_pat_syntheticvalue",
+    ):
+        candidate = deepcopy(valid)
+        _replace_bound_content(candidate, secret_content)
+        assert list(validator.iter_errors(candidate))
+        with pytest.raises(ContractError, match="secret_content"):
+            ContextManifestV1.from_dict(candidate)
+
+
+def _replace_bound_content(value, content):
+    source = value["mandatory_sources"][0]
+    source["content"] = content
+    source["sha256"] = hashlib.sha256(content.encode()).hexdigest()
+    binding = value["rule_bindings"][0]
+    binding["source_digest"] = source["sha256"]
+    binding["source_path"] = source["path"]
+    binding["applicable_scope"] = source["applicable_scope"]
+    binding["mode"] = source["mode"]

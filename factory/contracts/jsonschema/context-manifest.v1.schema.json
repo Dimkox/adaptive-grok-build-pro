@@ -6,7 +6,7 @@
     "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "safe_path": {
       "type": "string", "minLength": 1, "maxLength": 512,
-      "pattern": "(?i)^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*[\\\\:])(?!.*(?:^|/)(?:\\.env[^/]*|secrets|credentials|\\.ssh|\\.aws|\\.gnupg)(?:/|$))(?!.*\\.(?:pem|key|p12|pfx)$).+$"
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*[\\\\:])(?!.*(?:^|/)(?:\\.[Ee][Nn][Vv][^/]*|[Ss][Ee][Cc][Rr][Ee][Tt][Ss]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll][Ss]|\\.[Ss][Ss][Hh]|\\.[Aa][Ww][Ss]|\\.[Gg][Nn][Uu][Pp][Gg])(?:/|$))(?!.*\\.(?:[Pp][Ee][Mm]|[Kk][Ee][Yy]|[Pp]12|[Pp][Ff][Xx])$).+$"
     },
     "source": {
       "type": "object",
@@ -17,7 +17,7 @@
         "kind": {"enum": ["instruction", "rule", "contract", "source", "navigation"]},
         "content": {
           "type": "string", "minLength": 1, "maxLength": 4096,
-          "pattern": "(?is)^(?!.*(?:password|credential|secret|token|api.?key|private.?key|authorization|-----BEGIN|ghp_|github_pat_|sk-|xox[baprs]-|AKIA))[\\s\\S]+$"
+          "pattern": "^(?![\\s\\S]*(?:-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----|[Bb][Ee][Aa][Rr][Ee][Rr][ \\t]+[A-Za-z0-9._~+/=-]+|(?:[A-Za-z0-9]+[_-])*[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn][ \\t]*[=:][ \\t]*[^\\r\\n]*|(?:[Ss][Kk]-|[Gg][Hh][Pp]_|[Gg][Ii][Tt][Hh][Uu][Bb]_[Pp][Aa][Tt]_)[A-Za-z0-9_-]+|(?:[Aa][Kk][Ii][Aa]|[Aa][Ss][Ii][Aa])[A-Za-z0-9]{16}|(?:[A-Za-z0-9]+[_-])*(?:[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]|[Aa][Cc][Cc][Ee][Ss][Ss][_-]?[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Ss][Ss][Ii][Oo][Nn][_-]?[Tt][Oo][Kk][Ee][Nn]|[Cc][Ll][Ii][Ee][Nn][Tt][_-]?[Ss][Ee][Cc][Rr][Ee][Tt]|[Rr][Ee][Ff][Rr][Ee][Ss][Hh][_-]?[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Ss][Ee][Cc][Rr][Ee][Tt][_-]?[Kk][Ee][Yy]|[Pp][Rr][Ii][Vv][Aa][Tt][Ee][_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Ss][Ee][Cc][Rr][Ee][Tt])(?:[_-][A-Za-z0-9]+)*[ \\t]*[:=][ \\t]*(?:\"[^\"\\r\\n]+\"|'[^'\\r\\n]+'|[^\\s,;}]+)))[\\s\\S]+$"
         },
         "sha256": {"$ref": "#/$defs/digest"},
         "reason": {"$ref": "#/$defs/identifier"},
