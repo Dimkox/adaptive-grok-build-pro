@@ -28,6 +28,7 @@ from .service import (
     SnapshotBrokerIntegrityError,
     SnapshotBrokerUnavailable,
 )
+from .result_contracts import ResultEnvelopeV2
 from .store import (
     AuthorityError,
     BudgetError,
@@ -1015,6 +1016,40 @@ def create_app(
             _json(service.heartbeat(_grant(payload), actor=actor, now=datetime.now(timezone.utc), idempotency_key=key, correlation_id=correlation)),
             headers={"X-Correlation-ID": correlation},
         )
+
+    @app.post("/v1/result-admissions", tags=["execution"])
+    def admit_result(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        command_key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        payload = _closed(payload, {"grant", "envelope"})
+        result = service.admit_result(
+            _grant(payload["grant"]), ResultEnvelopeV2.from_dict(payload["envelope"]),
+            actor=actor, idempotency_key=command_key, correlation_id=correlation,
+        )
+        return JSONResponse(_json(result), status_code=201 if result.created else 200,
+                            headers={"X-Correlation-ID": correlation})
+
+    @app.get("/v1/tasks/{task_id}/result-admissions/{envelope_digest}", tags=["execution"])
+    def get_result_admission(
+        task_id: str,
+        envelope_digest: str,
+        authorization: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:read")
+        try:
+            result = service.get_result_envelope(
+                _uuid(task_id, "task_id"), _digest(envelope_digest, "envelope_digest"),
+                actor=actor,
+            )
+        except KeyError as exc:
+            raise HTTPException(404, "result admission not found") from exc
+        return JSONResponse(result.to_dict())
 
     @app.post("/v1/transitions", tags=["worker"])
     def transition_phase(

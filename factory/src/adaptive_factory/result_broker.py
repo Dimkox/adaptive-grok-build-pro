@@ -10,7 +10,7 @@ from typing import Any
 
 from .brokers import BrokerError, _redact
 from .contracts import ContractError, canonical_digest, canonical_json
-from .result_contracts import RESULT_CHANNELS, ResultEnvelopeV1
+from .result_contracts import RESULT_CHANNELS, ResultEnvelopeV2
 from .v15_contracts import safe_text
 
 
@@ -30,12 +30,13 @@ class ResultBroker:
         self.max_depth = max_depth
 
     def _envelope(
-        self, *, channel: str, content_type: str,
+        self, *, identity: dict[str, Any], channel: str, content_type: str,
         outcome: str, reason_code: str, payload: str | None,
-    ) -> ResultEnvelopeV1:
-        return ResultEnvelopeV1.from_dict(
+    ) -> ResultEnvelopeV2:
+        return ResultEnvelopeV2.from_dict(
             {
-                "schema_version": 1,
+                **identity,
+                "schema_version": 2,
                 "channel": channel,
                 "content_type": content_type,
                 "outcome": outcome,
@@ -48,33 +49,35 @@ class ResultBroker:
         )
 
     def inspect(
-        self, *, channel: str, content_type: str, chunks: Iterable[bytes],
-    ) -> ResultEnvelopeV1:
+        self, *, identity: dict[str, Any], channel: str, content_type: str,
+        chunks: Iterable[bytes],
+    ) -> ResultEnvelopeV2:
         """Fail closed without consuming input while runtime interception is unproved."""
         channel, content_type, metadata_error = self._metadata(channel, content_type)
         if metadata_error is not None:
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="rejected", reason_code=metadata_error, payload=None,
             )
         return self._envelope(
-            channel=channel, content_type=content_type,
+            identity=identity, channel=channel, content_type=content_type,
             outcome="unavailable", reason_code="runtime_wiring_missing", payload=None,
         )
 
     def sanitize_candidate(
-        self, *, channel: str, content_type: str, chunks: Iterable[bytes],
-    ) -> ResultEnvelopeV1:
+        self, *, identity: dict[str, Any], channel: str, content_type: str,
+        chunks: Iterable[bytes],
+    ) -> ResultEnvelopeV2:
         """Exercise the policy offline without asserting a pre-model interception point."""
         channel, content_type, metadata_error = self._metadata(channel, content_type)
         if metadata_error is not None:
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="rejected", reason_code=metadata_error, payload=None,
             )
         if content_type not in _CONTENT_TYPES:
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="rejected", reason_code="unsupported_content_type", payload=None,
             )
         try:
@@ -82,25 +85,25 @@ class ResultBroker:
             for chunk in chunks:
                 if not isinstance(chunk, bytes):
                     return self._envelope(
-                        channel=channel, content_type=content_type,
+                        identity=identity, channel=channel, content_type=content_type,
                         outcome="rejected", reason_code="invalid_chunk", payload=None,
                     )
                 buffered.extend(chunk)
                 if len(buffered) > self.max_bytes:
                     return self._envelope(
-                        channel=channel, content_type=content_type,
+                        identity=identity, channel=channel, content_type=content_type,
                         outcome="rejected", reason_code="result_too_large", payload=None,
                     )
         except Exception:
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="rejected", reason_code="result_stream_failure", payload=None,
             )
         try:
             text = bytes(buffered).decode("utf-8", errors="strict")
         except UnicodeDecodeError:
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="rejected", reason_code="invalid_encoding", payload=None,
             )
         try:
@@ -117,7 +120,7 @@ class ResultBroker:
                 payload = _redact(text, self.max_bytes)
                 changed = payload != text
             return self._envelope(
-                channel=channel, content_type=content_type,
+                identity=identity, channel=channel, content_type=content_type,
                 outcome="redacted" if changed else "allow",
                 reason_code="known_secret_redacted" if changed else "accepted", payload=payload,
             )
@@ -130,7 +133,7 @@ class ResultBroker:
         except Exception:
             reason = "sanitizer_failure"
         return self._envelope(
-            channel=channel, content_type=content_type,
+            identity=identity, channel=channel, content_type=content_type,
             outcome="rejected", reason_code=reason, payload=None,
         )
 

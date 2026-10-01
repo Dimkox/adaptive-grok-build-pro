@@ -146,6 +146,22 @@
       "version": "1"
     },
     {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-envelope.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-result-admission.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-V15-DECISION-RECORD",
       "kind": "json_schema",
@@ -1693,7 +1709,8 @@
       "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-V15-CONTEXT-MANIFEST",
-        "CONTRACT-FACTORY-V15-DECISION-RECORD"
+        "CONTRACT-FACTORY-V15-DECISION-RECORD",
+        "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API"
       ],
       "repository_paths": [
         "factory/.gitignore",
@@ -1802,6 +1819,7 @@
       "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
+        "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
         "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION"
       ],
       "repository_paths": [

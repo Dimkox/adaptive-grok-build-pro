@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / "factory" / "src"))
 
 from adaptive_factory.contracts import ContractError, canonical_digest  # noqa: E402
 from adaptive_factory.result_contracts import (  # noqa: E402
-    ResultEnvelopeV1,
+    ResultEnvelopeV2,
     result_channel_qualification_from_wire,
     result_channel_qualification_wire,
 )
@@ -20,7 +20,7 @@ from adaptive_factory.result_contracts import (  # noqa: E402
 
 def test_result_schemas_are_structural_and_semantic_admission_is_mandatory():
     root = ROOT / "factory/contracts/jsonschema"
-    envelope_schema = json.loads((root / "result-envelope.v1.schema.json").read_text())
+    envelope_schema = json.loads((root / "result-envelope.v2.schema.json").read_text())
     qualification_schema = json.loads((root / "result-channel-qualification.v1.schema.json").read_text())
     Draft202012Validator.check_schema(envelope_schema)
     Draft202012Validator.check_schema(qualification_schema)
@@ -28,17 +28,25 @@ def test_result_schemas_are_structural_and_semantic_admission_is_mandatory():
     assert not list(Draft202012Validator(qualification_schema).iter_errors(qualification_wire))
     assert result_channel_qualification_from_wire(qualification_wire)
     value = {
-        "schema_version": 1, "channel": "native_tool_result",
+        "repository_id": "owner/repository",
+        "task_id": "11111111-1111-4111-8111-111111111111",
+        "run_id": "22222222-2222-4222-8222-222222222222",
+        "fence": 1,
+        "packet_digest": "3" * 64,
+        "attempt_id": "44444444-4444-4444-8444-444444444444",
+        "source_operation": "tool.call/read",
+        "source_digest": "5" * 64,
+        "schema_version": 2, "channel": "native_tool_result",
         "content_type": "text/plain", "outcome": "allow", "reason_code": "accepted",
         "completeness": "complete", "policy_version": "result-sanitizer/1",
         "sanitized_payload": "safe", "sanitized_payload_digest": canonical_digest("safe"),
     }
     assert not list(Draft202012Validator(envelope_schema).iter_errors(value))
-    assert ResultEnvelopeV1.from_dict(value).channel == "native_tool_result"
+    assert ResultEnvelopeV2.from_dict(value).channel == "native_tool_result"
     structurally_valid_but_forged = {**value, "sanitized_payload_digest": "0" * 64}
     assert not list(Draft202012Validator(envelope_schema).iter_errors(structurally_valid_but_forged))
     with pytest.raises(ContractError, match="sanitized_payload_digest_mismatch"):
-        ResultEnvelopeV1.from_dict(structurally_valid_but_forged)
+        ResultEnvelopeV2.from_dict(structurally_valid_but_forged)
 
     duplicate = deepcopy(qualification_wire)
     duplicate[-1] = deepcopy(duplicate[0])

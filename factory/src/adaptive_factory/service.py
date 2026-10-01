@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Iterable
+from typing import Iterable, Protocol
 
 from .brokers import ProposalBroker
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
@@ -29,6 +29,7 @@ from .semantic_repair import (
     RepairLifecycleResult,
     SemanticRepairRequestV1,
 )
+from .result_contracts import ResultEnvelopeV2
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
@@ -67,6 +68,15 @@ class ClaimRequest:
 class ExecutionTerminalCompletion:
     proposal: object
     result: WorkspaceResultV1
+
+
+class ExecutionResultClient(Protocol):
+    """Owned seam used by execution adapters; 04A deliberately provides no transport."""
+
+    def admit(
+        self, grant: LeaseGrant, envelope: ResultEnvelopeV2, *, actor: Actor,
+        idempotency_key: str, correlation_id: str,
+    ): ...
 
 
 class FactoryService:
@@ -913,6 +923,29 @@ class FactoryService:
                 correlation_id=correlation_id,
             )
         )
+
+    def admit_result(
+        self, grant: LeaseGrant, envelope: ResultEnvelopeV2, *, actor: Actor,
+        idempotency_key: str, correlation_id: str,
+    ):
+        self._require_grant_actor(grant, actor, "task:execute")
+        record = ResultEnvelopeV2.from_dict(envelope.to_dict())
+        if (
+            record.task_id != grant.task_id
+            or record.run_id != grant.run_id
+            or record.fence != grant.fence
+            or record.packet_digest != grant.packet_digest
+        ):
+            raise AuthorizationError("result envelope does not belong to lease grant")
+        return self._fenced(lambda: self.store.admit_result(
+            record, actor=actor, idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+        ))
+
+    def get_result_envelope(self, task_id: str, envelope_digest: str, *, actor: Actor):
+        task = self.store.get_task(task_id)
+        self._require(actor, "task:read", task.repository_id)
+        return self.store.result_envelope(task_id, envelope_digest)
 
     def reserve_budget(
         self,

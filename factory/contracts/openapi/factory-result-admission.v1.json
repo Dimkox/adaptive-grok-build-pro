@@ -1,0 +1,1180 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Adaptive Factory Result Admission API",
+    "version": "1.0.0",
+    "description": "Authenticated immutable result admission with a dormant durable outbox. No channel is qualified in 04A, so admission never enqueues; model transport and qualification-gated enqueue are outside this contract."
+  },
+  "paths": {
+    "/v1/result-admissions": {
+      "post": {
+        "operationId": "admitResultEnvelope",
+        "description": "Required scope: task:execute. Authenticated, fenced admission of one immutable sanitized result; no model transport is performed.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Required transport replay identifier; for task intake it must equal request_id.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Closed JSON command.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "grant": {
+                    "type": "object",
+                    "properties": {
+                      "task_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      },
+                      "run_id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                      },
+                      "owner": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "reader",
+                          "writer"
+                        ]
+                      },
+                      "fence": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9223372036854775807
+                      },
+                      "expires_at": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "description": "RFC 3339 timestamp with an explicit timezone."
+                      },
+                      "packet_digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      }
+                    },
+                    "required": [
+                      "task_id",
+                      "run_id",
+                      "owner",
+                      "role",
+                      "fence",
+                      "expires_at",
+                      "packet_digest"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "envelope": {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "$id": "https://adaptive-grok.local/contracts/result-envelope.v2.schema.json",
+                    "title": "ResultEnvelopeV2 authoritative admission wire contract",
+                    "x-admission": {
+                      "level": "structural",
+                      "semantic_validator": "adaptive_factory.result_contracts.ResultEnvelopeV2.from_dict",
+                      "semantic_validation_required": true,
+                      "semantic_checks": [
+                        "utf8_byte_limits",
+                        "known_secret_detection",
+                        "payload_digest",
+                        "outcome_payload_parity"
+                      ]
+                    },
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "repository_id",
+                      "task_id",
+                      "run_id",
+                      "fence",
+                      "packet_digest",
+                      "attempt_id",
+                      "source_operation",
+                      "source_digest",
+                      "schema_version",
+                      "channel",
+                      "content_type",
+                      "outcome",
+                      "reason_code",
+                      "completeness",
+                      "policy_version",
+                      "sanitized_payload",
+                      "sanitized_payload_digest"
+                    ],
+                    "properties": {
+                      "repository_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+                      },
+                      "task_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "run_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "fence": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "packet_digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "attempt_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "source_operation": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+                      },
+                      "source_digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "schema_version": {
+                        "const": 2
+                      },
+                      "channel": {
+                        "enum": [
+                          "native_tool_result",
+                          "synthetic_child_report",
+                          "attachment",
+                          "artifact_cache",
+                          "resume",
+                          "external_cli",
+                          "unknown"
+                        ]
+                      },
+                      "content_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "outcome": {
+                        "enum": [
+                          "allow",
+                          "redacted",
+                          "rejected",
+                          "unavailable"
+                        ]
+                      },
+                      "reason_code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "completeness": {
+                        "enum": [
+                          "complete",
+                          "missing"
+                        ]
+                      },
+                      "policy_version": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128
+                      },
+                      "sanitized_payload": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "maxLength": 1000000
+                      },
+                      "sanitized_payload_digest": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "grant",
+                  "envelope"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exact replay of the admitted result.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "envelope_digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "outbox_created": {
+                      "type": "boolean",
+                      "enum": [false]
+                    }
+                  },
+                  "required": [
+                    "envelope_digest",
+                    "created",
+                    "outbox_created"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Required command header is missing or malformed.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer authentication failed.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              },
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "Bearer"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor scope, kind, authority, or repository authorization was denied.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency, fence, state, budget, or stored command conflict.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the one MiB bound.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Closed command or request value is invalid.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded database mutation is unavailable or timed out.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New immutable result admitted.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "envelope_digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    },
+                    "outbox_created": {
+                      "type": "boolean",
+                      "enum": [false]
+                    }
+                  },
+                  "required": [
+                    "envelope_digest",
+                    "created",
+                    "outbox_created"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{task_id}/result-admissions/{envelope_digest}": {
+      "get": {
+        "operationId": "getResultEnvelope",
+        "description": "Required scope: task:read. Reads one immutable result envelope within the authorized repository.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "Canonical task_id.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": false,
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "envelope_digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Immutable admitted result envelope.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "$id": "https://adaptive-grok.local/contracts/result-envelope.v2.schema.json",
+                  "title": "ResultEnvelopeV2 authoritative admission wire contract",
+                  "x-admission": {
+                    "level": "structural",
+                    "semantic_validator": "adaptive_factory.result_contracts.ResultEnvelopeV2.from_dict",
+                    "semantic_validation_required": true,
+                    "semantic_checks": [
+                      "utf8_byte_limits",
+                      "known_secret_detection",
+                      "payload_digest",
+                      "outcome_payload_parity"
+                    ]
+                  },
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "repository_id",
+                    "task_id",
+                    "run_id",
+                    "fence",
+                    "packet_digest",
+                    "attempt_id",
+                    "source_operation",
+                    "source_digest",
+                    "schema_version",
+                    "channel",
+                    "content_type",
+                    "outcome",
+                    "reason_code",
+                    "completeness",
+                    "policy_version",
+                    "sanitized_payload",
+                    "sanitized_payload_digest"
+                  ],
+                  "properties": {
+                    "repository_id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+                    },
+                    "task_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "run_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "fence": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "packet_digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "attempt_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "source_operation": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+                    },
+                    "source_digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "schema_version": {
+                      "const": 2
+                    },
+                    "channel": {
+                      "enum": [
+                        "native_tool_result",
+                        "synthetic_child_report",
+                        "attachment",
+                        "artifact_cache",
+                        "resume",
+                        "external_cli",
+                        "unknown"
+                      ]
+                    },
+                    "content_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "outcome": {
+                      "enum": [
+                        "allow",
+                        "redacted",
+                        "rejected",
+                        "unavailable"
+                      ]
+                    },
+                    "reason_code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "completeness": {
+                      "enum": [
+                        "complete",
+                        "missing"
+                      ]
+                    },
+                    "policy_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "sanitized_payload": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 1000000
+                    },
+                    "sanitized_payload_digest": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bearer authentication failed.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              },
+              "WWW-Authenticate": {
+                "description": "Bearer authentication challenge.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "Bearer"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actor scope, kind, or repository authorization was denied.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Task was not found.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Path or query value is invalid.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Bounded database read is unavailable or timed out.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "detail": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Local bearer token loaded from a private no-follow token file."
+      }
+    }
+  }
+}

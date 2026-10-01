@@ -33,7 +33,7 @@ from adaptive_factory.service import (
     SnapshotBrokerUnavailable,
 )
 from adaptive_factory.settings import SettingsError, read_token_file
-from adaptive_factory.store import IntegrityError, IntakeResult, StoreError, TransitionError
+from adaptive_factory.store import IntegrityError, IntakeResult, ResultAdmission, StoreError, TransitionError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -138,6 +138,17 @@ class FakeService:
     def advance_execution(self, *args, **kwargs):
         self.calls.append(("advance_execution", args, kwargs))
         return kwargs["stage"]
+
+    def admit_result(self, grant, envelope, *, actor, idempotency_key, correlation_id):
+        self.calls.append(("admit_result", grant, envelope, actor, idempotency_key, correlation_id))
+        return ResultAdmission(
+            envelope_digest=envelope.record_digest, created=True,
+            outbox_created=False,
+        )
+
+    def get_result_envelope(self, task_id, envelope_digest, *, actor):
+        self.calls.append(("get_result_envelope", task_id, envelope_digest, actor))
+        raise KeyError(envelope_digest)
 
     def commit_execution_proposal(self, *args, **kwargs):
         self.calls.append(("commit_execution_proposal", args, kwargs))
@@ -420,6 +431,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("/v1/usage-observations", paths)
         self.assertIn("/v1/execution/claims", paths)
         self.assertIn("/v1/execution/stages", paths)
+        self.assertIn("/v1/result-admissions", paths)
+        self.assertIn("/v1/tasks/{task_id}/result-admissions/{envelope_digest}", paths)
         for kind in ("notes", "artifacts", "usage", "terminal"):
             self.assertIn(f"/v1/execution/{kind}", paths)
         for kind in ("claims", "stages", "notes", "artifacts", "usage", "terminal"):
@@ -809,6 +822,60 @@ class ApiTests(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 200, response.text)
                 self.assertEqual(set(response.json()), expected_fields)
+
+    def test_result_admission_endpoint_is_closed_authenticated_and_has_no_dispatch(self):
+        from adaptive_factory.contracts import canonical_digest
+
+        token = "result-admission-worker-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}),
+                      frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01", "role": "writer", "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64,
+        }
+        payload = "safe"
+        envelope = {
+            "schema_version": 2, "repository_id": "owner/repository",
+            "task_id": grant["task_id"], "run_id": grant["run_id"], "fence": 7,
+            "packet_digest": "0" * 64,
+            "attempt_id": "00000000-0000-0000-0000-000000000003",
+            "source_operation": "tool.call/read", "source_digest": "1" * 64,
+            "channel": "native_tool_result", "content_type": "text/plain",
+            "outcome": "allow", "reason_code": "accepted", "completeness": "complete",
+            "policy_version": "result-sanitizer/1", "sanitized_payload": payload,
+            "sanitized_payload_digest": canonical_digest(payload),
+        }
+        response = client.post(
+            "/v1/result-admissions",
+            headers={"Authorization": f"Bearer {token}", "Idempotency-Key": "result-admission-key-1", "X-Correlation-ID": "result-admission-1"},
+            json={"grant": grant, "envelope": envelope},
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        self.assertEqual(set(response.json()), {"envelope_digest", "created", "outbox_created"})
+        self.assertEqual(self.service.calls[-1][0], "admit_result")
+        self.assertEqual(self.service.calls[-1][-2:], (
+            canonical_digest({"contract": "adaptive-factory.command/v1", "idempotency_key": "result-admission-key-1"}),
+            "result-admission-1",
+        ))
+        self.assertNotIn("dispatch", response.json())
+        original_admit = self.service.admit_result
+        self.service.admit_result = mock.MagicMock(side_effect=StoreError("result command conflict"))
+        conflict = client.post(
+            "/v1/result-admissions",
+            headers={"Authorization": f"Bearer {token}", "Idempotency-Key": "result-admission-key-1", "X-Correlation-ID": "result-admission-retry"},
+            json={"grant": grant, "envelope": {**envelope, "source_digest": "2" * 64}},
+        )
+        self.assertEqual(conflict.status_code, 409, conflict.text)
+        self.service.admit_result = original_admit
+        malformed = client.post(
+            "/v1/result-admissions",
+            headers={"Authorization": f"Bearer {token}", "Idempotency-Key": "result-admission-key-2", "X-Correlation-ID": "result-admission-2"},
+            json={"grant": grant, "envelope": envelope, "transport": "http"},
+        )
+        self.assertEqual(malformed.status_code, 422)
 
     def test_execution_usage_authenticates_exactly_once(self):
         token = "execution-" + "usage-credential"
