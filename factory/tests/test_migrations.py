@@ -2,7 +2,7 @@ import hashlib
 import re
 import traceback
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 import subprocess
 from urllib.parse import urlsplit
 
@@ -77,14 +77,19 @@ class MigrationTests(unittest.TestCase):
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
-        port = type(
+        initial_port = type(
             "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:5432\n"}
         )()
+        rebound_port = type(
+            "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:6543\n"}
+        )()
         with patch.object(
-            run_disposable_exit.subprocess, "run", side_effect=[created, port]
+            run_disposable_exit.subprocess,
+            "run",
+            side_effect=[created, initial_port, rebound_port],
         ) as subprocess_run, patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
-        ), patch.object(
+        ) as binding_matches, patch.object(
             run_disposable_exit, "_final_postgres_ready", return_value=True
         ), patch.object(run_disposable_exit, "_run") as run, patch.object(
             run_disposable_exit, "_remove_bound_container"
@@ -94,11 +99,27 @@ class MigrationTests(unittest.TestCase):
             subprocess_run.call_args_list[1].args[0],
             ["docker", "port", container_id, "5432/tcp"],
         )
+        self.assertEqual(
+            subprocess_run.call_args_list[2].args[0],
+            ["docker", "port", container_id, "5432/tcp"],
+        )
+        self.assertEqual(
+            binding_matches.call_args_list[:2],
+            [
+                call(container_id, ANY, ANY, require_running=True),
+                call(container_id, ANY, ANY, require_running=True),
+            ],
+        )
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
         self.assertEqual(run.call_args_list[1].kwargs["timeout"], 540)
         self.assertNotIn("--preflight-only", commands[2])
+        final_database_url = run.call_args_list[2].kwargs["environment"][
+            "FACTORY_TEST_DATABASE_URL"
+        ]
+        self.assertTrue(final_database_url.startswith("postgresql://factory_exit:local-"))
+        self.assertIn("@127.0.0.1:6543/factory_exit", final_database_url)
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(
             "PASS: disposable PostgreSQL + API + effective roles + actual "

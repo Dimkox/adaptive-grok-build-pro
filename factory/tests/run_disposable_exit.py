@@ -207,6 +207,25 @@ def main() -> int:
                 # to run the post-suite restart probe and exact cleanup.
                 timeout=540,
             )
+            if not _binding_matches(
+                container_id, name, nonce, require_running=True
+            ):
+                raise RuntimeError(
+                    "disposable PostgreSQL binding changed after test-suite restart; "
+                    f"leaked id={container_id}"
+                )
+            rebound_published = subprocess.run(
+                ["docker", "port", container_id, "5432/tcp"],
+                check=True,
+                text=True,
+                capture_output=True,
+                timeout=10,
+            ).stdout.strip()
+            rebound_port = _published_loopback_port(rebound_published)
+            environment["FACTORY_TEST_DATABASE_URL"] = (
+                f"postgresql://factory_exit:{password}@127.0.0.1:"
+                f"{rebound_port}/factory_exit"
+            )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
         return 0
