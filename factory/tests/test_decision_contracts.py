@@ -15,7 +15,7 @@ def decision_facts():
         repository_id="owner/project",
         task_id="00000000-0000-0000-0000-000000000001",
         run_id="00000000-0000-0000-0000-000000000002",
-        attempt_id="attempt-1",
+        attempt_id="00000000-0000-0000-0000-000000000003",
         fence=1,
         observed_at="2026-09-30T12:00:00Z",
         decision_kind="state",
@@ -135,7 +135,7 @@ class DecisionContractTests(unittest.TestCase):
         self.assertIn(23, versions)
         self.assertTrue(hasattr(PostgresFactoryStore, "append_decision"))
         sql = Path("factory/src/adaptive_factory/resources/023_factory_v15_decisions.sql").read_text()
-        for required in ("SECURITY DEFINER", "factory.append_decision_v1",
+        for required in ("SECURITY DEFINER", "factory.persist_phase_decision_v1",
                          "REVOKE INSERT ON factory.decision_records_v1"):
             self.assertIn(required, sql)
         self.assertNotIn("GRANT SELECT, INSERT ON factory.decision_records_v1", sql)
