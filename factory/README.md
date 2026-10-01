@@ -114,8 +114,10 @@ immutable package coordinates/graph facts; resolve, admission, and every replay
 recheck those facts plus current qualification/revocation against that registry,
 so a caller-recomputed lock digest is not authority. The store root must already
 exist as an owner-pinned, non-symlink directory that is not group/world writable.
-Every tenant/repository component is created and reopened with `O_NOFOLLOW` and
-inode-pinned for the store lifetime. A generation is activated only after its
+Every tenant/repository component is created with `openat`-style operations,
+opened with `O_NOFOLLOW`, and held by an owner/inode-pinned descriptor for the
+store lifetime; object, generation and pointer I/O uses those descriptors rather
+than resolving the caller-visible path again. A generation is activated only after its
 exact manifest and regular-file tree verify; object, generation, and active
 pointer publication fsync their parent directory.
 

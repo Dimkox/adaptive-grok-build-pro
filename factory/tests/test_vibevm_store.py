@@ -48,11 +48,22 @@ def publish_process(root, item, lock, queue):
         queue.put(type(error).__name__)
 
 
+class CallbackRegistry(StaticPackageRegistry):
+    callback = None
+
+    def get_package(self, name, version):
+        result = super().get_package(name, version)
+        if self.callback is not None:
+            callback, self.callback = self.callback, None
+            callback()
+        return result
+
+
 class VibeVMStoreTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
-        self.registry = StaticPackageRegistry()
+        self.registry = CallbackRegistry()
         self.store = VibeVMStore(self.base, tenant_id="tenant-a", repository_id="owner/project",
                                  registry=self.registry)
 
@@ -173,6 +184,16 @@ class VibeVMStoreTests(unittest.TestCase):
                 self.assert_code(expected, lambda: self.store.materialize(lock, "owner\n", "bad"))
                 self.assertEqual(self.store.active_generation(), old)
 
+        for raw_path in ("a//b", "a/./b", "./a"):
+            with self.subTest(raw_path=raw_path):
+                payload = archive([(raw_path, "x")])
+                item = package("raw-alias", hashlib.sha256(raw_path.encode()).hexdigest()[:8], payload)
+                self.registry.register(item)
+                lock = self.store.resolve([item])
+                self.store.admit(item, payload)
+                self.assert_code("noncanonical_member", lambda: self.store.materialize(lock, "owner\n", "bad"))
+                self.assertEqual(self.store.active_generation(), old)
+
     def test_crc_and_encrypted_members_fail_closed(self):
         good = archive([("good", "ok")])
         good_item = package("good", "1", good)
@@ -204,13 +225,53 @@ class VibeVMStoreTests(unittest.TestCase):
         target = self.store.generations / generation
         original_boot = (target / "boot.md").read_bytes()
         (target / "boot.md").write_text("tampered")
-        self.assert_code("generation_manifest_mismatch", lambda: self.store.materialize(lock, "owner\n", "managed"))
+        self.assert_code("active_generation_corrupt", lambda: self.store.materialize(lock, "owner\n", "managed"))
         self.assertEqual(self.store.active_path.read_text().strip(), generation)
         (target / "boot.md").write_bytes(original_boot)
         link = self.store.generations / ("f" * 64)
         link.symlink_to(target, target_is_directory=True)
         self.store.active_path.write_text("f" * 64 + "\n")
         self.assert_code("active_generation_corrupt", self.store.active_generation)
+
+    def test_external_hardlinks_in_object_generation_manifest_and_active_fail_closed(self):
+        payload = archive([("rule.md", "ok")])
+        item = package("rules", "1", payload)
+        lock = self.lock(item)
+        object_path = self.store.admit(item, payload)
+        generation = self.store.materialize(lock, "owner\n", "managed")
+        external = self.base / "external-link"
+        os.link(object_path, external)
+        self.assert_code("object_authority_mismatch:rules@1", lambda: self.store.replay(lock))
+        external.unlink()
+        generation_file = self.store.generations / generation / "boot.md"
+        os.link(generation_file, external)
+        self.assert_code("active_generation_corrupt", self.store.active_generation)
+        self.assert_code("active_generation_corrupt", lambda: self.store.materialize(lock, "owner\n", "managed"))
+        self.assertEqual(self.store.active_path.read_text().strip(), generation)
+        external.unlink()
+        manifest = self.store.generations / generation / "manifest.json"
+        os.link(manifest, external)
+        self.assert_code("active_generation_corrupt", self.store.active_generation)
+        external.unlink()
+        os.link(self.store.active_path, external)
+        self.assert_code("active_generation_corrupt", self.store.active_generation)
+
+    def test_registry_callback_cannot_redirect_object_writes_or_reads(self):
+        payload = archive([("rule.md", "ok")])
+        item = package("rules", "1", payload)
+        lock = self.lock(item)
+        self.store.admit(item, payload)
+        outside = self.base / "outside"
+        outside.mkdir(mode=0o700)
+        moved = self.base / "objects-moved"
+
+        def swap_objects():
+            self.store.objects.rename(moved)
+            self.store.objects.symlink_to(outside, target_is_directory=True)
+
+        self.registry.callback = swap_objects
+        self.assert_code("store_path_changed", lambda: self.store.replay(lock))
+        self.assertEqual(list(outside.iterdir()), [])
 
     def test_restart_and_tenant_repository_symlink_isolation(self):
         payload = archive([("rule.md", "ok")])
@@ -265,10 +326,10 @@ class VibeVMStoreTests(unittest.TestCase):
         self.store.admit(item, payload)
         barrier, outcomes, original = threading.Barrier(2), [], os.replace
 
-        def synchronized(source, destination):
+        def synchronized(source, destination, *args, **kwargs):
             if Path(source).name.startswith(".generation-"):
                 barrier.wait()
-            return original(source, destination)
+            return original(source, destination, *args, **kwargs)
 
         def publish_thread():
             try:

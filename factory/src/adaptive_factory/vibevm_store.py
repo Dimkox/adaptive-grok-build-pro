@@ -123,7 +123,7 @@ class VibeVMStore:
         if max_files < 1 or max_bytes < 1 or max_depth < 1 or not hasattr(registry, "get_package"):
             raise VibeVMStoreError("invalid_configuration")
         base = Path(root).absolute()
-        self._pins = []
+        self._pins, self._fds = [], {}
         self._pin(base, "store_root")
         tenant, repository = _scope(tenant_id, "tenant_id"), _scope(repository_id, "repository_id")
         tenant_root = self._child(base, "tenants")
@@ -136,21 +136,23 @@ class VibeVMStore:
         self.registry = registry
         self.max_files, self.max_bytes, self.max_depth = max_files, max_bytes, max_depth
 
-    def _pin(self, path: Path, code: str) -> Path:
+    def _pin(self, path: Path, code: str, descriptor=None) -> Path:
         try:
             value = path.lstat()
         except FileNotFoundError:
             raise VibeVMStoreError(f"{code}_missing") from None
         if not stat.S_ISDIR(value.st_mode) or stat.S_ISLNK(value.st_mode) or value.st_uid != os.geteuid() or value.st_mode & 0o022:
             raise VibeVMStoreError(f"{code}_unsafe")
-        descriptor = self._open_path(path)
+        descriptor = self._open_path(path) if descriptor is None else descriptor
         try:
             opened = os.fstat(descriptor)
             if (opened.st_dev, opened.st_ino) != (value.st_dev, value.st_ino):
                 raise VibeVMStoreError("store_path_changed")
-        finally:
+        except Exception:
             os.close(descriptor)
+            raise
         self._pins.append((path, value.st_dev, value.st_ino, value.st_uid))
+        self._fds[path] = descriptor
         return path
 
     @staticmethod
@@ -167,7 +169,7 @@ class VibeVMStore:
             raise VibeVMStoreError("store_path_unsafe") from error
 
     def _child(self, parent: Path, name: str) -> Path:
-        descriptor = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        descriptor = self._fds[parent]
         try:
             try:
                 os.mkdir(name, mode=0o700, dir_fd=descriptor)
@@ -175,23 +177,23 @@ class VibeVMStore:
             except FileExistsError:
                 pass
             child_descriptor = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor)
-            os.close(child_descriptor)
         except OSError as error:
             raise VibeVMStoreError("store_path_unsafe") from error
-        finally:
-            os.close(descriptor)
-        return self._pin(parent / name, "store_path")
+        return self._pin(parent / name, "store_path", child_descriptor)
+
+    def _fd_path(self, path: Path) -> Path:
+        return Path(f"/proc/self/fd/{self._fds[path]}")
 
     def _check_paths(self) -> None:
         for path, device, inode, owner in self._pins:
             try:
-                descriptor = self._open_path(path)
-                value = os.fstat(descriptor)
-                os.close(descriptor)
-            except (FileNotFoundError, VibeVMStoreError):
+                value = os.fstat(self._fds[path])
+                visible = path.lstat()
+            except (OSError, VibeVMStoreError):
                 raise VibeVMStoreError("store_path_changed") from None
             if (stat.S_ISLNK(value.st_mode) or not stat.S_ISDIR(value.st_mode)
                     or (value.st_dev, value.st_ino, value.st_uid) != (device, inode, owner)
+                    or (visible.st_dev, visible.st_ino) != (device, inode)
                     or value.st_mode & 0o022):
                 raise VibeVMStoreError("store_path_changed")
 
@@ -203,6 +205,7 @@ class VibeVMStore:
         _validate_item(item)
         coordinate = self._coordinate(item)
         authoritative = self.registry.get_package(item["name"], item["version"])
+        self._check_paths()
         if authoritative is None:
             raise VibeVMStoreError(f"package_unknown:{coordinate}")
         _validate_item(authoritative)
@@ -260,6 +263,19 @@ class VibeVMStore:
             raise VibeVMStoreError("invalid_digest")
         return self.objects / digest
 
+    def _read_object(self, digest: str, coordinate: str) -> bytes:
+        try:
+            descriptor = os.open(digest, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=self._fds[self.objects])
+            value = os.fstat(descriptor)
+            if not stat.S_ISREG(value.st_mode) or value.st_uid != os.geteuid() or value.st_nlink != 1:
+                raise VibeVMStoreError(f"object_authority_mismatch:{coordinate}")
+            with os.fdopen(descriptor, "rb") as source:
+                return source.read()
+        except FileNotFoundError:
+            raise VibeVMStoreError(f"missing_package:{coordinate}") from None
+        except OSError as error:
+            raise VibeVMStoreError(f"object_authority_mismatch:{coordinate}") from error
+
     def admit(self, item, payload: bytes) -> Path:
         self._check_paths()
         authoritative = self._authority(item)
@@ -271,11 +287,16 @@ class VibeVMStore:
         if not isinstance(payload, bytes) or _digest(payload) != authoritative["sha256"]:
             raise VibeVMStoreError(f"digest_mismatch:{coordinate}")
         target = self.object_path(authoritative["sha256"])
-        if target.exists():
-            if target.is_symlink() or not target.is_file() or _digest(target.read_bytes()) != authoritative["sha256"]:
+        try:
+            existing = self._read_object(authoritative["sha256"], coordinate)
+        except VibeVMStoreError as error:
+            if error.code != f"missing_package:{coordinate}":
+                raise
+        else:
+            if _digest(existing) != authoritative["sha256"]:
                 raise VibeVMStoreError(f"immutable_object_conflict:{coordinate}")
             return target
-        descriptor, name = tempfile.mkstemp(prefix=".admit-", dir=self.objects)
+        descriptor, name = tempfile.mkstemp(prefix=".admit-", dir=self._fd_path(self.objects))
         temporary = Path(name)
         try:
             with os.fdopen(descriptor, "wb") as output:
@@ -284,13 +305,14 @@ class VibeVMStore:
                 os.fsync(output.fileno())
             temporary.chmod(0o400)
             try:
-                os.link(temporary, target, follow_symlinks=False)
-                _fsync_directory(self.objects)
+                os.link(temporary, authoritative["sha256"], dst_dir_fd=self._fds[self.objects], follow_symlinks=False)
+                os.fsync(self._fds[self.objects])
             except FileExistsError:
-                if target.is_symlink() or not target.is_file() or _digest(target.read_bytes()) != authoritative["sha256"]:
+                if _digest(self._read_object(authoritative["sha256"], coordinate)) != authoritative["sha256"]:
                     raise VibeVMStoreError(f"immutable_object_conflict:{coordinate}") from None
         finally:
             temporary.unlink(missing_ok=True)
+        self._check_paths()
         return target
 
     def replay(self, lock):
@@ -315,13 +337,11 @@ class VibeVMStore:
                 raise VibeVMStoreError(f"package_revoked:{coordinate}")
             if not item["qualified"]:
                 raise VibeVMStoreError(f"package_unqualified:{coordinate}")
-            target = self.object_path(item["sha256"])
-            if target.is_symlink() or not target.is_file():
-                raise VibeVMStoreError(f"missing_package:{coordinate}")
-            payload = target.read_bytes()
+            payload = self._read_object(item["sha256"], coordinate)
             if _digest(payload) != item["sha256"]:
                 raise VibeVMStoreError(f"digest_mismatch:{coordinate}")
             result[coordinate] = payload
+        self._check_paths()
         return result
 
     @staticmethod
@@ -356,6 +376,12 @@ class VibeVMStore:
             for member in members:
                 original = member.filename
                 if "\\" in original or "\x00" in original:
+                    raise VibeVMStoreError("noncanonical_member")
+                raw = original[:-1] if original.endswith("/") else original
+                raw_parts = raw.split("/")
+                if original.startswith("/") or ".." in raw_parts:
+                    raise VibeVMStoreError("path_escape")
+                if not raw or any(part in ("", ".") for part in raw_parts):
                     raise VibeVMStoreError("noncanonical_member")
                 path = PurePosixPath(original)
                 if path.is_absolute() or not path.parts or any(part in ("", ".", "..") for part in path.parts):
@@ -409,7 +435,8 @@ class VibeVMStore:
         entries = []
         for path in sorted(directory.rglob("*")):
             value = path.lstat()
-            if stat.S_ISLNK(value.st_mode) or not (stat.S_ISDIR(value.st_mode) or stat.S_ISREG(value.st_mode)):
+            if (stat.S_ISLNK(value.st_mode) or not (stat.S_ISDIR(value.st_mode) or stat.S_ISREG(value.st_mode))
+                    or (stat.S_ISREG(value.st_mode) and (value.st_nlink != 1 or value.st_uid != os.geteuid()))):
                 raise VibeVMStoreError("generation_manifest_mismatch")
             relative = path.relative_to(directory).as_posix()
             if relative in exclude:
@@ -419,26 +446,62 @@ class VibeVMStore:
                             "sha256": None if path.is_dir() else _digest(path.read_bytes())})
         return entries
 
-    def _validate_generation(self, directory: Path, identity: str) -> None:
-        if directory.is_symlink() or not directory.is_dir():
-            raise VibeVMStoreError("generation_manifest_mismatch")
-        manifest_path = directory / "manifest.json"
-        if manifest_path.is_symlink() or not manifest_path.is_file():
-            raise VibeVMStoreError("generation_manifest_mismatch")
+    def _validate_generation(self, identity: str) -> None:
         try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            raise VibeVMStoreError("generation_manifest_mismatch") from None
-        entries = self._tree_entries(directory, exclude={"manifest.json"})
-        if manifest != {"schema_version": 1, "generation_id": identity, "entries": entries}:
+            descriptor = os.open(identity, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                                 dir_fd=self._fds[self.generations])
+            metadata = os.fstat(descriptor)
+            visible = os.stat(identity, dir_fd=self._fds[self.generations], follow_symlinks=False)
+        except OSError as error:
+            raise VibeVMStoreError("generation_manifest_mismatch") from error
+        if (not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != os.geteuid()
+                or (metadata.st_dev, metadata.st_ino) != (visible.st_dev, visible.st_ino)):
+            os.close(descriptor)
             raise VibeVMStoreError("generation_manifest_mismatch")
+        directory = Path(f"/proc/self/fd/{descriptor}")
+        try:
+            manifest_path = directory / "manifest.json"
+            manifest_value = manifest_path.lstat() if manifest_path.exists() else None
+            if (manifest_value is None or stat.S_ISLNK(manifest_value.st_mode)
+                    or not stat.S_ISREG(manifest_value.st_mode) or manifest_value.st_nlink != 1
+                    or manifest_value.st_uid != os.geteuid()):
+                raise VibeVMStoreError("generation_manifest_mismatch")
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                raise VibeVMStoreError("generation_manifest_mismatch") from None
+            entries = self._tree_entries(directory, exclude={"manifest.json"})
+            if manifest != {"schema_version": 1, "generation_id": identity, "entries": entries}:
+                raise VibeVMStoreError("generation_manifest_mismatch")
+            try:
+                after = os.stat(identity, dir_fd=self._fds[self.generations], follow_symlinks=False)
+            except OSError:
+                raise VibeVMStoreError("generation_manifest_mismatch") from None
+        finally:
+            os.close(descriptor)
+        if (after.st_dev, after.st_ino) != (metadata.st_dev, metadata.st_ino):
+            raise VibeVMStoreError("generation_manifest_mismatch")
+
+    def _locked_root(self):
+        try:
+            descriptor = os.open(".generation.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600,
+                                 dir_fd=self._fds[self.root])
+            value = os.fstat(descriptor)
+        except OSError as error:
+            raise VibeVMStoreError("generation_lock_unsafe") from error
+        if not stat.S_ISREG(value.st_mode) or value.st_uid != os.geteuid() or value.st_nlink != 1:
+            os.close(descriptor)
+            raise VibeVMStoreError("generation_lock_unsafe")
+        return os.fdopen(descriptor, "a+b")
 
     def materialize(self, lock, owner_text: str, managed_text: str, *, crash_before_switch=False) -> str:
         self._check_paths()
+        self.active_generation()
         boot, payloads = reconcile_boot_block(owner_text, managed_text), self.replay(lock)
         identity = _digest(_canonical({"lock": lock, "boot": boot}))
-        final = self.generations / identity
-        staging = Path(tempfile.mkdtemp(prefix=".generation-", dir=self.generations))
+        secure_generations = self._fd_path(self.generations)
+        final = secure_generations / identity
+        staging = Path(tempfile.mkdtemp(prefix=".generation-", dir=secure_generations))
         try:
             projection = staging / "projection"
             projection.mkdir(mode=0o700)
@@ -458,34 +521,35 @@ class VibeVMStore:
                     _fsync_directory(path)
             _fsync_directory(staging)
             if final.exists() or final.is_symlink():
-                self._validate_generation(final, identity)
+                self._validate_generation(identity)
                 shutil.rmtree(staging)
             else:
                 try:
                     os.replace(staging, final)
-                    _fsync_directory(self.generations)
+                    os.fsync(self._fds[self.generations])
                 except OSError as error:
                     if error.errno not in (errno.EEXIST, errno.ENOTEMPTY):
                         raise
-                    self._validate_generation(final, identity)
+                    self._validate_generation(identity)
                     shutil.rmtree(staging)
-            self._validate_generation(final, identity)
+            self._validate_generation(identity)
             if crash_before_switch:
                 raise VibeVMStoreError("simulated_crash")
-            with (self.root / ".generation.lock").open("a+b") as update_lock:
+            with self._locked_root() as update_lock:
                 fcntl.flock(update_lock, fcntl.LOCK_EX)
-                self._validate_generation(final, identity)
-                descriptor, name = tempfile.mkstemp(prefix=".active-", dir=self.root)
+                self._validate_generation(identity)
+                descriptor, name = tempfile.mkstemp(prefix=".active-", dir=self._fd_path(self.root))
                 pointer = Path(name)
                 try:
                     with os.fdopen(descriptor, "w", encoding="utf-8") as output:
                         output.write(identity + "\n")
                         output.flush()
                         os.fsync(output.fileno())
-                    os.replace(pointer, self.active_path)
-                    _fsync_directory(self.root)
+                    os.replace(pointer, "active", dst_dir_fd=self._fds[self.root])
+                    os.fsync(self._fds[self.root])
                 finally:
                     pointer.unlink(missing_ok=True)
+            self._check_paths()
             return identity
         finally:
             if staging.exists():
@@ -493,15 +557,24 @@ class VibeVMStore:
 
     def active_generation(self):
         self._check_paths()
-        if not self.active_path.exists() and not self.active_path.is_symlink():
+        try:
+            descriptor = os.open("active", os.O_RDONLY | os.O_NOFOLLOW, dir_fd=self._fds[self.root])
+        except FileNotFoundError:
             return None
-        if self.active_path.is_symlink() or not self.active_path.is_file():
-            raise VibeVMStoreError("active_generation_corrupt")
-        value = self.active_path.read_text(encoding="utf-8").strip()
+        except OSError as error:
+            raise VibeVMStoreError("active_generation_corrupt") from error
+        with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid() or metadata.st_nlink != 1:
+                raise VibeVMStoreError("active_generation_corrupt")
+            try:
+                value = source.read().decode("utf-8").strip()
+            except UnicodeDecodeError:
+                raise VibeVMStoreError("active_generation_corrupt") from None
         if not _valid_digest(value):
             raise VibeVMStoreError("active_generation_corrupt")
         try:
-            self._validate_generation(self.generations / value, value)
+            self._validate_generation(value)
         except VibeVMStoreError:
             raise VibeVMStoreError("active_generation_corrupt") from None
         return value
@@ -509,14 +582,15 @@ class VibeVMStore:
     def reconcile(self) -> int:
         self._check_paths()
         removed = 0
-        with (self.root / ".generation.lock").open("a+b") as update_lock:
+        with self._locked_root() as update_lock:
             fcntl.flock(update_lock, fcntl.LOCK_EX)
-            for candidate in self.generations.iterdir():
+            for candidate in self._fd_path(self.generations).iterdir():
                 if candidate.name.startswith(".generation-"):
                     if candidate.is_symlink() or not candidate.is_dir():
                         raise VibeVMStoreError("generation_staging_unsafe")
                     shutil.rmtree(candidate)
                     removed += 1
             if removed:
-                _fsync_directory(self.generations)
+                os.fsync(self._fds[self.generations])
+        self._check_paths()
         return removed
