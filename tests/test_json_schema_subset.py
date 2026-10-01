@@ -49,6 +49,55 @@ class JsonSchemaSubsetTests(unittest.TestCase):
                 with self.assertRaises(SchemaDefinitionError):
                     SubsetValidator(schema)
 
+    def test_constructor_resolves_every_reference_and_rejects_cycles(self) -> None:
+        malformed_schemas = (
+            {"$defs": {"unused": {"$ref": "#/$defs/missing"}}},
+            {
+                "$defs": {
+                    "value": {"type": "string"},
+                    "unused": {"$ref": "#/$defs/value~2"},
+                }
+            },
+            {"$defs": {"unused": {"$ref": "#/properties/value"}}},
+            {"$defs": {"unused": {"$ref": "../schemas/external.json"}}},
+            {
+                "components": {
+                    "schemas": {"Unused": {"$ref": "#/components/schemas/Missing"}}
+                }
+            },
+            {"$defs": {"node": {"$ref": "#/$defs/node"}}},
+            {
+                "$defs": {
+                    "left": {"$ref": "#/$defs/right"},
+                    "right": {"$ref": "#/$defs/left"},
+                }
+            },
+        )
+
+        for schema in malformed_schemas:
+            with self.subTest(schema=schema):
+                with self.assertRaises(SchemaDefinitionError):
+                    SubsetValidator(schema)
+
+    def test_constructor_accepts_shared_repeated_acyclic_references(self) -> None:
+        validator = SubsetValidator(
+            {
+                "$defs": {
+                    "digest/value": {"type": "string", "pattern": "^[a-f]+$"},
+                    "first": {"$ref": "#/$defs/digest~1value"},
+                    "second": {"$ref": "#/$defs/digest~1value"},
+                },
+                "type": "object",
+                "required": ["first", "second"],
+                "properties": {
+                    "first": {"$ref": "#/$defs/first"},
+                    "second": {"$ref": "#/$defs/second"},
+                },
+            }
+        )
+
+        validator.validate({"first": "face", "second": "cafe"})
+
     def test_component_refs_closed_objects_and_exact_one_are_enforced(self) -> None:
         validator = SubsetValidator(
             {

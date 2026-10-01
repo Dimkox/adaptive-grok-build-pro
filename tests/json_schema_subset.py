@@ -81,6 +81,13 @@ class SubsetValidator:
                 if keyword in schema and not isinstance(schema[keyword], str):
                     raise SchemaDefinitionError(f"{path}: {keyword} must be a string")
 
+            if "$ref" in schema:
+                reference = schema["$ref"]
+                target = self._resolve_reference(reference)
+                self._preflight_schema(
+                    target, f"{path}.$ref({reference})", active_nodes
+                )
+
             if "x-admission" in schema:
                 annotation = schema["x-admission"]
                 if not isinstance(annotation, Mapping):

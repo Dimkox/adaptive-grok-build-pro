@@ -430,6 +430,33 @@ class StructureTests(unittest.TestCase):
                 if method in {"get", "post", "put", "patch", "delete"}
             }
 
+        def reachable_components(root_schema_name: str) -> dict:
+            all_schemas = execution["components"]["schemas"]
+            selected = {}
+            pending = [root_schema_name]
+            reference_prefix = "#/components/schemas/"
+            while pending:
+                schema_name = pending.pop()
+                if schema_name in selected:
+                    continue
+                selected[schema_name] = all_schemas[schema_name]
+                nodes = [selected[schema_name]]
+                while nodes:
+                    node = nodes.pop()
+                    if isinstance(node, dict):
+                        reference = node.get("$ref")
+                        if isinstance(reference, str) and reference.startswith(
+                            reference_prefix
+                        ):
+                            encoded_name = reference.removeprefix(reference_prefix)
+                            pending.append(
+                                encoded_name.replace("~1", "/").replace("~0", "~")
+                            )
+                        nodes.extend(node.values())
+                    elif isinstance(node, list):
+                        nodes.extend(node)
+            return {"schemas": selected}
+
         execution_operations = operations(execution)
         v1_operations = operations(execution_v1)
         control_operations = operations(control)
@@ -601,11 +628,14 @@ class StructureTests(unittest.TestCase):
             },
         }
         for schema_name, proposal in proposals.items():
+            bundled_components = reachable_components(schema_name)
+            self.assertIn(schema_name, bundled_components["schemas"])
+            self.assertNotIn("WorkspaceResultV1", bundled_components["schemas"])
             validator = SubsetValidator(
                 {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$ref": f"#/components/schemas/{schema_name}",
-                    "components": execution["components"],
+                    "components": bundled_components,
                 }
             )
             response = {"proposal": proposal}
@@ -625,7 +655,7 @@ class StructureTests(unittest.TestCase):
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "$ref": "#/components/schemas/TerminalProposal",
-                "components": execution["components"],
+                "components": reachable_components("TerminalProposal"),
             }
         )
         terminal_proposal = {
@@ -680,7 +710,7 @@ class StructureTests(unittest.TestCase):
                 {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$ref": f"#/components/schemas/{schema_name}",
-                    "components": execution["components"],
+                    "components": reachable_components(schema_name),
                 }
             )
             with self.subTest(response_parity=label):
@@ -690,7 +720,7 @@ class StructureTests(unittest.TestCase):
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "$ref": "#/components/schemas/TerminalRequest",
-                "components": execution["components"],
+                "components": reachable_components("TerminalRequest"),
             }
         )
         grant = {
