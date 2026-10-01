@@ -71,7 +71,8 @@
         "retry",
         "state",
         "validation",
-        "qualification"
+        "qualification",
+        "prediction"
       ]
     },
     "rule_id": {

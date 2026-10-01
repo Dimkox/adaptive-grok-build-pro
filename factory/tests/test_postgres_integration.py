@@ -913,21 +913,45 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
 
-    def test_v15_phase_decision_is_atomic_idempotent_and_append_only(self):
+    def test_v15_decision_persistence(self):
         import psycopg
         from adaptive_factory.decision_contracts import DecisionRecordV1
         from factory.tests.test_decision_contracts import decision_facts
+
+        unavailable = 'cc37cbe49cbf74f722413d345a76197162a263353554ae3eb463da8fc249c14d'
 
         task = self.submit(source='v15-decision').task
         grant = self.service.claim(owner=WORKER.actor_id, role=RunRole.READER,
             repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW)
         with psycopg.connect(DATABASE_URL) as connection:
-            attempt = connection.execute('SELECT attempt_id FROM factory.attempts WHERE run_id=%s', (grant.run_id,)).fetchone()[0]
+            attempt, base_sha, spec_digest, head_sha = connection.execute(
+                """SELECT a.attempt_id,i.exact_base_sha,i.spec_digest,
+                i.body->'m0_authority'->>'exact_head_sha'
+                FROM factory.attempts a JOIN factory.tasks t ON t.task_id=a.task_id
+                JOIN factory.accepted_intents i ON i.intent_id=t.intent_id
+                WHERE a.run_id=%s""", (grant.run_id,)).fetchone()
         facts = decision_facts()
         facts.update(repository_id=task.repository_id, task_id=grant.task_id, run_id=grant.run_id,
-                     attempt_id=str(attempt), fence=grant.fence)
+                     attempt_id=str(attempt), fence=grant.fence, base_sha=base_sha,
+                     head_sha=head_sha, spec_digest=spec_digest,
+                     context_digest=unavailable, profile_digest=unavailable,
+                     rule_id='FACTORY-STATE-TRANSITION', evidence_refs=[])
         record = DecisionRecordV1.from_dict(facts)
-        self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW, decision_record=record)
+        key = '9' * 64
+        self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW,
+                                    idempotency_key=key, decision_record=record)
+        self.assertEqual(self.store.transition_phase(
+            grant, TaskStatus.ANALYZING, WORKER, NOW,
+            idempotency_key=key, decision_record=record), TaskStatus.ANALYZING)
+        with self.assertRaises(StoreError):
+            self.store.transition_phase(grant, TaskStatus.ANALYZING, WORKER, NOW,
+                                        idempotency_key=key)
+        changed_replay_facts = record.to_dict()
+        changed_replay_facts['decision_id'] = 'changed-replay-decision'
+        with self.assertRaises(StoreError):
+            self.store.transition_phase(
+                grant, TaskStatus.ANALYZING, WORKER, NOW, idempotency_key=key,
+                decision_record=DecisionRecordV1.from_dict(changed_replay_facts))
         self.assertEqual(self.store.append_decision(grant, record, WORKER), record.record_digest)
         facts['facts'] = [dict(name='from_state', value='analyzing'), dict(name='target', value='implementing')]
         conflicting = DecisionRecordV1.from_dict(facts)
@@ -940,8 +964,57 @@ class PostgresFactoryTests(unittest.TestCase):
         with psycopg.connect(DATABASE_URL) as connection:
             self.assertEqual(connection.execute('SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=%s', (task.task_id,)).fetchone()[0], 2)
         with psycopg.connect(self.runtime_url) as connection:
+            connection.execute('SET ROLE factory_runtime')
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 connection.execute('UPDATE factory.decision_records_v1 SET supersedes=NULL')
+            connection.rollback()
+            connection.execute('SET ROLE factory_runtime')
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                connection.execute("""INSERT INTO factory.decision_records_v1
+                    (repository_id,decision_id,task_id,run_id,record_digest,record)
+                    VALUES ('forged','forged',%s,%s,%s,'{}')""",
+                    (task.task_id, grant.run_id, '0' * 64))
+            connection.rollback()
+            connection.execute('SET ROLE factory_runtime')
+            with self.assertRaises(psycopg.errors.RaiseException):
+                connection.execute(
+                    'SELECT factory.append_decision_v1(%s,%s,%s,%s)',
+                    ('{}', '0' * 64, grant.run_id, grant.fence))
+            connection.rollback()
+            connection.execute('SET ROLE factory_runtime')
+            malformed = record.to_dict()
+            malformed['decision_id'] = 'parser-bypass'
+            malformed['facts'].append(dict(malformed['facts'][0]))
+            malformed_canonical = canonical_json(malformed).decode()
+            with self.assertRaises(psycopg.errors.RaiseException):
+                connection.execute(
+                    'SELECT factory.append_decision_v1(%s,%s,%s,%s)',
+                    (malformed_canonical, canonical_digest(malformed), grant.run_id,
+                     grant.fence))
+
+        class FailingDecisionAuditStore(PostgresFactoryStore):
+            def _audit(self, *args, **kwargs):
+                if args[3] == 'phase_transition':
+                    raise StoreError('injected decision audit failure')
+                return super()._audit(*args, **kwargs)
+
+        failed_facts = correction.to_dict()
+        failed_facts.update(decision_id='rollback-decision', supersedes='decision-2',
+            facts=[dict(name='from_state', value='implementing'),
+                   dict(name='target', value='verifying')])
+        failed_record = DecisionRecordV1.from_dict(failed_facts)
+        with self.assertRaisesRegex(StoreError, 'decision audit'):
+            FailingDecisionAuditStore(self.runtime_url).transition_phase(
+                grant, TaskStatus.VERIFYING, WORKER, NOW,
+                idempotency_key='8' * 64, decision_record=failed_record)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute("""SELECT t.state,
+                (SELECT count(*) FROM factory.task_events WHERE task_id=t.task_id AND action='phase_transitioned'),
+                (SELECT count(*) FROM factory.audit_log WHERE task_id=t.task_id AND action='phase_transition'),
+                (SELECT count(*) FROM factory.command_results WHERE idempotency_key=%s),
+                (SELECT count(*) FROM factory.decision_records_v1 WHERE task_id=t.task_id)
+                FROM factory.tasks t WHERE task_id=%s""",
+                ('8' * 64, task.task_id)).fetchone(), ('implementing', 2, 2, 0, 2))
 
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg

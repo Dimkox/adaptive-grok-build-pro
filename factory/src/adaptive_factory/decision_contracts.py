@@ -65,7 +65,7 @@ class DecisionRecordV1(FrozenWire):
             sha(data[key])
         for key in ("context_digest", "spec_digest", "profile_digest"):
             digest(data[key])
-        if data["decision_kind"] not in ("scope", "retry", "state", "validation", "qualification"):
+        if data["decision_kind"] not in ("scope", "retry", "state", "validation", "qualification", "prediction"):
             raise ContractError("invalid_decision_kind")
         if data["outcome"] not in ("observed", "blocked", "unknown", "rejected", "allowed"):
             raise ContractError("invalid_outcome")
@@ -89,9 +89,15 @@ class DecisionRecordV1(FrozenWire):
                 raise ContractError("invalid_fact")
             if type(value) is int:
                 integer(value, "fact", -(2**63))
-        for ref in sequence(data["evidence_refs"], 32):
+        evidence = sequence(data["evidence_refs"], 32)
+        if len(set(evidence)) != len(evidence):
+            raise ContractError("duplicate_evidence_ref")
+        for ref in evidence:
             path(ref)
-        for constraint in sequence(data["constraints"], 32):
+        constraints = sequence(data["constraints"], 32)
+        if len(set(constraints)) != len(constraints):
+            raise ContractError("duplicate_constraint")
+        for constraint in constraints:
             identity(constraint)
         return cls.freeze(data)
 
@@ -127,6 +133,8 @@ def summarize_cost(entries, *, expected_usage_ids=None):
     expected = None
     if expected_usage_ids is not None:
         required = sequence(expected_usage_ids, 1024)
+        if not required:
+            raise ContractError("empty_usage_coverage")
         for item in required:
             identity(item)
         expected = set(required)

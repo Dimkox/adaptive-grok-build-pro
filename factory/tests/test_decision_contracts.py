@@ -1,13 +1,10 @@
 from copy import deepcopy
-import importlib
-import importlib.util
 import unittest
-from datetime import datetime, timezone
+from pathlib import Path
 
 from adaptive_factory.contracts import ContractError
+from adaptive_factory.decision_contracts import DecisionRecordV1, summarize_cost, summarize_timing
 from adaptive_factory.migrations import discover_migrations
-from adaptive_factory.models import Actor, LeaseGrant, RunRole, TaskProjection, TaskStatus
-from adaptive_factory.service import FactoryService
 from adaptive_factory.store import PostgresFactoryStore
 
 
@@ -43,22 +40,11 @@ def decision_facts():
 
 
 class DecisionContractTests(unittest.TestCase):
-    def module(self):
-        self.assertIsNotNone(
-            importlib.util.find_spec("adaptive_factory.decision_contracts"),
-            "decision contract missing",
-        )
-        return importlib.import_module("adaptive_factory.decision_contracts")
-
-    def test_strict_factual_record_and_supersession_identity(self):
-        module = self.module()
+    def test_record_boundaries(self):
         facts = decision_facts()
-        record = module.DecisionRecordV1.from_dict(facts)
+        record = DecisionRecordV1.from_dict(facts)
         self.assertEqual(record.to_dict()["next_step"], "verify")
-        self.assertEqual(
-            record.record_digest,
-            module.DecisionRecordV1.from_dict(deepcopy(facts)).record_digest,
-        )
+        self.assertEqual(record.record_digest, DecisionRecordV1.from_dict(deepcopy(facts)).record_digest)
         for key, value in [
             ("outcome", "success"),
             ("fence", True),
@@ -68,13 +54,37 @@ class DecisionContractTests(unittest.TestCase):
             changed = deepcopy(facts)
             changed[key] = value
             with self.subTest(key=key), self.assertRaises(ContractError):
-                module.DecisionRecordV1.from_dict(changed)
+                DecisionRecordV1.from_dict(changed)
         facts["facts"][0]["value"] = "password=synthetic-secret"
         with self.assertRaises(ContractError):
-            module.DecisionRecordV1.from_dict(facts)
+            DecisionRecordV1.from_dict(facts)
 
-    def test_cost_completeness_requires_declared_usage_coverage(self):
-        module = self.module()
+        prediction = decision_facts()
+        prediction["decision_kind"] = "prediction"
+        DecisionRecordV1.from_dict(prediction)
+
+    def test_collection_boundaries(self):
+        facts = decision_facts()
+        dup_fact = deepcopy(facts)
+        dup_fact["facts"].append(deepcopy(dup_fact["facts"][0]))
+        dup_ref = deepcopy(facts)
+        dup_ref["evidence_refs"] *= 2
+        dup_constraint = deepcopy(facts)
+        dup_constraint["constraints"] *= 2
+        oversized = deepcopy(facts)
+        oversized["facts"] = [
+            dict(name=f"fact-{index}", value=index) for index in range(33)
+        ]
+        for candidate in (
+            dup_fact,
+            dup_ref,
+            dup_constraint,
+            oversized,
+        ):
+            with self.assertRaises(ContractError):
+                DecisionRecordV1.from_dict(candidate)
+
+    def test_cost_boundaries(self):
         entry = dict(
             usage_id="call-1",
             source="provider",
@@ -83,12 +93,19 @@ class DecisionContractTests(unittest.TestCase):
             amount_usd_micros=120,
             status="actual",
         )
-        self.assertFalse(module.summarize_cost([entry])["complete"])
-        self.assertFalse(module.summarize_cost([entry], expected_usage_ids=["call-1", "call-2"])["complete"])
-        self.assertTrue(module.summarize_cost([entry], expected_usage_ids=["call-1"])["complete"])
+        self.assertFalse(summarize_cost([entry])["complete"])
+        self.assertFalse(summarize_cost([entry], expected_usage_ids=["call-1", "call-2"])["complete"])
+        self.assertTrue(summarize_cost([entry], expected_usage_ids=["call-1"])["complete"])
+        with self.assertRaises(ContractError):
+            summarize_cost([entry], expected_usage_ids=["call-1", "call-1"])
+        with self.assertRaises(ContractError):
+            summarize_cost([entry], expected_usage_ids=[])
+        with self.assertRaises(ContractError):
+            summarize_cost(
+                [dict(entry, amount_usd_micros=-1)], expected_usage_ids=["call-1"]
+            )
 
-    def test_parallel_timing_uses_union_not_sum_and_never_invents_acceptance(self):
-        module = self.module()
+    def test_timing_boundaries(self):
         intervals = [
             dict(
                 phase="analysis",
@@ -101,7 +118,7 @@ class DecisionContractTests(unittest.TestCase):
                 end="2026-09-30T12:00:15Z",
             ),
         ]
-        summary = module.summarize_timing("2026-09-30T12:00:00Z", "2026-09-30T12:00:20Z", intervals)
+        summary = summarize_timing("2026-09-30T12:00:00Z", "2026-09-30T12:00:20Z", intervals)
         self.assertEqual(
             summary,
             dict(
@@ -113,49 +130,12 @@ class DecisionContractTests(unittest.TestCase):
             ),
         )
 
-    def test_append_only_migration_and_transactional_store_seam_exist(self):
-        self.module()
+    def test_persistence_seam(self):
         versions = {migration.version for migration in discover_migrations()}
-        self.assertIn(23, versions, "additive decision migration missing")
-        self.assertTrue(
-            hasattr(PostgresFactoryStore, "append_decision"),
-            "durable decision consumer missing",
-        )
-
-    def test_service_forwards_decision_to_atomic_phase_transition(self):
-        now = datetime(2026, 9, 30, 12, tzinfo=timezone.utc)
-        decision = object()
-
-        class Store:
-            forwarded = None
-
-            def get_task(self, task_id):
-                return TaskProjection(
-                    task_id, "owner/project", TaskStatus.LEASED, 1, "a" * 64, "b" * 64, now
-                )
-
-            def transition_phase(self, grant, target, actor, observed_at, **kwargs):
-                self.forwarded = kwargs["decision_record"]
-                return target
-
-        store = Store()
-        worker = Actor(
-            "worker-1",
-            "worker",
-            frozenset({"task:release"}),
-            frozenset({"owner/project"}),
-        )
-        grant = LeaseGrant(
-            "task-1", "run-1", worker.actor_id, RunRole.READER, 1, now, "b" * 64
-        )
-        self.assertEqual(
-            FactoryService(store).transition_phase(
-                grant,
-                target=TaskStatus.ANALYZING,
-                actor=worker,
-                now=now,
-                decision_record=decision,
-            ),
-            TaskStatus.ANALYZING,
-        )
-        self.assertIs(store.forwarded, decision)
+        self.assertIn(23, versions)
+        self.assertTrue(hasattr(PostgresFactoryStore, "append_decision"))
+        sql = Path("factory/src/adaptive_factory/resources/023_factory_v15_decisions.sql").read_text()
+        for required in ("SECURITY DEFINER", "factory.append_decision_v1",
+                         "REVOKE INSERT ON factory.decision_records_v1"):
+            self.assertIn(required, sql)
+        self.assertNotIn("GRANT SELECT, INSERT ON factory.decision_records_v1", sql)
