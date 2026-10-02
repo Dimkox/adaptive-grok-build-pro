@@ -459,6 +459,25 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["source_base"], local["source_base"])
         self.assertEqual(current["source_tree"], local["source_tree"])
         self.assertEqual(current["frozen"]["published_release"], "v2.0.19")
+        self.assertEqual(
+            current["predecessors"],
+            [
+                {
+                    "kind": "published_release",
+                    "tag": "v2.0.19",
+                    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+                    "published_at": "2026-09-24T21:30:52Z",
+                },
+                {
+                    "kind": "post_v2_0_19_source_landing",
+                    "pull_request": 236,
+                    "head": "5dc835f84543c71ff0faf3c3e3e5cf3041175903",
+                    "merge_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+                    "merged_at": "2026-10-02T21:10:22Z",
+                    "check_run_id": 111022092183,
+                },
+            ],
+        )
         self.assertNotIn("v2.0.19 artifact-child", current["next_action"])
         self.assertNotIn("v2.0.18 remains", current["tag_and_release"])
 
@@ -524,6 +543,10 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(delivery["local_source_gate"]["artifact_head"], current["source_base"])
         self.assertEqual(delivery["local_source_gate"]["artifact_tree"], current["source_tree"])
         self.assertEqual(delivery["package_handoff"]["release"], "v2.1.0")
+        self.assertEqual(
+            delivery["package_handoff"]["status"],
+            "repository_custody_pending_artifact_delivery",
+        )
         self.assertEqual(delivery["package_handoff"]["zip_sha256"], "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e")
         self.assertEqual(delivery["package_handoff"]["sidecar_sha256"], "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d")
         self.assertEqual(delivery["repository_delivery"]["release"], "v2.1.0")

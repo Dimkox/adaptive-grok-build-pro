@@ -42,16 +42,16 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "implementation not started",
+        "reason": "Focused PR verification passed before ready transition; exact receipt remains machine-local runtime evidence",
         "receipt_kind": "verification",
-        "status": "not_run"
+        "status": "passed"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "implementation not started",
+        "reason": "Independent mutation-backed PASS report persisted at evidence/code-review.md",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "status": "passed"
       }
     ],
     "schema_version": 1

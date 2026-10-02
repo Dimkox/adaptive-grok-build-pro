@@ -4,5 +4,5 @@
 - [x] Update binding tests.
 - [x] Record repository custody and documentation.
 - [x] Run focused binding tests.
-- [ ] Complete independent review.
-- [ ] Bind final verification evidence.
+- [x] Complete independent review.
+- [x] Bind final verification evidence.

@@ -69,6 +69,8 @@ Initial evidence accounting (current records are in `state.json`):
 }
 ```
 
+Current durable evidence accounting is `passed` for focused verification and independent code review. The review report is stored in `code-review.md`; machine receipts remain runtime-local and do not establish external Trust CI, merge, tag, publication, deployment, or activation.
+
 <!-- checkpoint:implementation -->
 ## Implementation checkpoint
 
