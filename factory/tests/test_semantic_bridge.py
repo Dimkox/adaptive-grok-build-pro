@@ -188,7 +188,7 @@ class SemanticBridgeTests(unittest.TestCase):
         }
         self.assertEqual(
             {path.name for path in SCHEMAS.glob("*.json")}
-            - {"native-result-handoff.v1.schema.json"},
+            - {"native-result-handoff.v1.schema.json", "m7-durable-lookup.v1.schema.json"},
             expected,
         )
         versions = {

@@ -917,3 +917,6 @@ Nine successful historical Actions runs took 50–64 seconds on 2.0.11, whereas 
 ### 2026-10-03 — Preserve complete Core output outside source discovery
 
 Execute the normal pinned measured Core4 backend once against the frozen repair and capture its complete process results before any receipt publication or workflow evidence changes. Private0700 non-.py artifacts retained the fresh passing test/coverage output and stable before/after fingerprint without recreating the undeclared-source defect; old unretained failure names remain unknown.
+### 2026-10-02 — Index durable evidence by its canonical source bytes
+
+Generate indexed lookup selectors from stored canonical UTF8 JSON, then check all denormalized metadata and the domain-separated digest after selecting the latest row. A real PostgreSQL corruption probe proved that changing PR metadata no longer routes lookup to an older green result; NFC rejection and repository-qualified replay keys preserve identity across restart.

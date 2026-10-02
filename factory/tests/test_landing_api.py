@@ -450,6 +450,7 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "bb-lifecycle-observation.v1.schema.json"
             and path.name != "prediction-explanation.v1.schema.json"
             and path.name != "prediction-observation.v1.schema.json"
+            and path.name != "m7-durable-lookup.v1.schema.json"
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()

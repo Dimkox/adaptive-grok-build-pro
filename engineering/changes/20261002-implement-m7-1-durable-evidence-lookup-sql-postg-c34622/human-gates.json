@@ -1,0 +1,31 @@
+{
+  "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user-Dimkox",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-02T22:35:14+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Materialize existing owner-approved October1 recovery design and repeated user command to implement all changes for release2.1.1; source and synthetic fixtures only",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "c373e9e44731b5c2816c279a5afbaceb14d4dd2c9e11ebaf2a90518016d292b5"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "user-Dimkox",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-02T22:35:14+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing approved contourF requires additive026 max+1 and local disposable upgrade tests; no live database application or production effects",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "c373e9e44731b5c2816c279a5afbaceb14d4dd2c9e11ebaf2a90518016d292b5"
+    }
+  ],
+  "route_id": "c34622ec1ccf",
+  "schema_version": 1
+}

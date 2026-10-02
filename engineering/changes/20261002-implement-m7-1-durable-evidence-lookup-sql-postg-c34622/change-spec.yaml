@@ -1,0 +1,67 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Reconstruct approved M7.1 durable evidence lookup in factory, additive migration026(current max+1), four mandatory CR001/TR001/SEC001/SEC002 repairs, repository-qualified append-only identities, bounded queries and disposable local PostgreSQL upgrade/restart/privilege/Unicode controls. Preserve001-025. No live DB, provider calls, or operational activation.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "security",
+      "data"
+    ]
+  },
+  "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No deployed system, secrets, approval authority, historical migration or unrelated dirty tree may be changed.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup_postgres.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Exact repository and immutable recorded identity boundaries fail closed and preserve existing callers.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement M7.1 durable evidence lookup: SQL PostgreSQL database migration 026, tenant repository isolation, canonical selector digest integrity, bounded queries, SECURITY DEFINER safe privileges and restart Unicode tests.",
+    "success_metric": "Fresh exact-state reconstruction tests and selected independent review evidence",
+    "target": "Approved contour accepted without production activation or weakening adjacent behavior"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

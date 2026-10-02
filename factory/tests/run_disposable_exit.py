@@ -150,6 +150,7 @@ def main() -> int:
     try:
         created = subprocess.run([
             "docker", "run", "--name", name,
+            "--cpus=2", "--memory=768m",
             "--label", f"adaptive-factory.disposable-exit={nonce}",
             "-e", "POSTGRES_DB=factory_exit",
             "-e", "POSTGRES_USER=factory_exit",
@@ -223,6 +224,15 @@ def main() -> int:
                 text=True,
                 capture_output=True,
                 timeout=10,
+            ).stdout.strip()
+            port = _published_loopback_port(published)
+            environment["FACTORY_TEST_DATABASE_URL"] = (
+                f"postgresql://factory_exit:{password}@127.0.0.1:{port}/factory_exit"
+            )
+            _run([*uv, "python", "-m", "factory.tests.m7_postgres_restart_probe"], environment=environment)
+            published = subprocess.run(
+                ["docker", "port", container_id, "5432/tcp"], check=True,
+                text=True, capture_output=True, timeout=10,
             ).stdout.strip()
             port = _published_loopback_port(published)
             environment["FACTORY_TEST_DATABASE_URL"] = (

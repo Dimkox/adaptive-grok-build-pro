@@ -1,0 +1,98 @@
+{
+  "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feat/v211-durable-evidence",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T22:28:35+00:00",
+      "route_id": "c34622ec1ccf"
+    }
+  ],
+  "created_at": "2026-10-02T22:28:35+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T22:28:35+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T22:35:14+00:00",
+      "from": "draft",
+      "reason": "Approved recovery scope and concrete source-only acceptance recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T22:35:14+00:00",
+      "from": "scoped",
+      "reason": "Existing user-approved source scope materialized; no production permission inferred",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "human_gates_digest": "b1fa99993b71f966874e316dc3cec3b4440600c1ec7d30220e3fb43f4656ff84",
+  "route_id": "c34622ec1ccf",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement M7.1 durable evidence lookup: SQL PostgreSQL database migration 026, tenant repository isolation, canonical selector digest integrity, bounded queries, SECURITY DEFINER safe privileges and restart Unicode tests.",
+  "updated_at": "2026-10-02T22:35:14+00:00"
+}

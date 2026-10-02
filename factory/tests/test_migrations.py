@@ -43,7 +43,7 @@ PRE_RECOVERY_MIGRATIONS = (
 
 class MigrationTests(unittest.TestCase):
     def test_result_admission_is_definer_only_immutable_and_dormant_until_qualification(self):
-        migration = discover_migrations()[-2]
+        migration = discover_migrations()[23]
         self.assertEqual((migration.version, migration.name), (24, "024_factory_v15_result_outbox.sql"))
         lowered = migration.sql.lower()
         self.assertIn("security definer", lowered)
@@ -77,7 +77,7 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(record.to_dict()["evidence_refs"], [])
         self.assertEqual(len(record.record_digest), 64)
     def test_result_dispatch_migration_is_fenced_dormant_and_least_privilege(self):
-        migration = discover_migrations()[-1]
+        migration = discover_migrations()[24]
         self.assertEqual(
             (migration.version, migration.name),
             (25, "025_factory_v15_result_dispatch.sql"),
@@ -110,7 +110,7 @@ class MigrationTests(unittest.TestCase):
             "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:6543\n"}
         )()
         with patch.object(
-            run_disposable_exit.subprocess, "run", side_effect=[created, port, moved_port]
+            run_disposable_exit.subprocess, "run", side_effect=[created, port, moved_port, moved_port]
         ) as subprocess_run, patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
         ), patch.object(
@@ -128,6 +128,8 @@ class MigrationTests(unittest.TestCase):
         self.assertIn("unittest", commands[1])
         self.assertEqual(run.call_args_list[1].kwargs["timeout"], 720)
         self.assertNotIn("--preflight-only", commands[2])
+        self.assertIn("factory.tests.m7_postgres_restart_probe", commands[2])
+        self.assertIn("factory/tests/postgres_restart_probe.py", commands[3])
         self.assertEqual(
             run.call_args_list[2].kwargs["environment"]["FACTORY_TEST_DATABASE_URL"].rsplit(
                 ":", 1
@@ -442,11 +444,11 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 26)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 25)
+        self.assertEqual([item.version for item in migrations], list(range(1, 27)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 26)
         for item in migrations:
             self.assertIn("factory.", item.sql)
-            self.assertNotIn("trust_ci", item.sql.lower())
+            self.assertNotIn("trust_ci.", item.sql.lower())
 
     def test_matching_applied_migrations_are_idempotent(self):
         migrations = discover_migrations()

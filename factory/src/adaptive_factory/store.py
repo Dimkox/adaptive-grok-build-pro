@@ -4904,3 +4904,138 @@ class PostgresResultDispatcherStore(PostgresFactoryStore):
         if type(count) is not int or not 0 <= count <= limit:
             raise StoreError("stored dispatch reconciliation is invalid")
         return count
+
+
+class _PostgresM7Store:
+    """M7 observations use distinct configured capabilities; no credentials are inferred."""
+    capability: str
+
+    def __init__(self, database_url: str, *, source_id: str | None = None, repository_id: str | None = None):
+        if not database_url:
+            raise StoreError("M7 database URL is required")
+        self.database_url = database_url
+        self.source_id = source_id
+        self.repository_id = repository_id
+
+    def _connect(self):
+        import psycopg
+        from psycopg import sql
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET statement_timeout='10s'")
+                cursor.execute("SET lock_timeout='3s'")
+                cursor.execute(sql.SQL("SET ROLE {}").format(sql.Identifier("factory_m7_" + self.capability)))
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+    def _call(self, statement, arguments):
+        import psycopg
+        try:
+            with self._connect() as connection, connection.cursor() as cursor:
+                cursor.execute(statement, arguments)
+                return cursor.fetchone()[0]
+        except psycopg.Error as exc:
+            if exc.sqlstate in {"P0001", "23505", "23503", "23514", "22023", "22P02"}:
+                raise IntegrityError("M7 durable evidence rejected") from exc
+            raise StoreError("M7 durable evidence unavailable") from exc
+
+    @staticmethod
+    def _canonical(value):
+        from .shadow_lookup import canonical_m7_bytes
+        return canonical_m7_bytes(value.to_dict()).decode("utf-8")
+
+    @staticmethod
+    def _registration(value):
+        from .shadow_lookup import M7BundleRegistrationV1
+        if not isinstance(value, dict) or set(value) != {"registration", "intake", "material", "semantic", "verdict"}:
+            raise IntegrityError("M7 stored producer response is corrupt")
+        intake_wire = dict(value["intake"])
+        intent_digest = intake_wire.pop("intent_digest")
+        idempotency_key = intake_wire.pop("idempotency_key")
+        if canonical_digest(intake_wire) != intent_digest:
+            raise IntegrityError("M7 stored intake canonical body is corrupt")
+        # Decode the already-admitted historical wire at its recorded authority boundary.
+        # The intake parser accepts one sparse authority form; stored asdict includes nulls.
+        # This does not refresh the authority or consult it for M7 qualification.
+        from datetime import timedelta
+        authority = {key: item for key, item in intake_wire["m0_authority"].items() if item is not None}
+        recorded_time = datetime.fromisoformat((authority.get("observed_at") or authority["expires_at"]).replace("Z", "+00:00"))
+        if "observed_at" not in authority:
+            recorded_time -= timedelta(microseconds=1)
+        intake = TaskIntakeV1.from_dict({**intake_wire, "m0_authority": authority}, now=recorded_time)
+        if intake.intent_digest != intent_digest or intake.idempotency_key != idempotency_key:
+            raise IntegrityError("M7 stored intake digest is corrupt")
+        material = PostgresSemanticCoordinatorStore._material(value["material"])
+        semantic = PostgresSemanticCoordinatorStore._record(value["semantic"])
+        verdict = PostgresSemanticCoordinatorStore._verdict_record(value["verdict"])
+        registration = M7BundleRegistrationV1.from_dict(value["registration"])
+        evidence = registration.bundle.evidence
+        if (material is None or semantic is None or verdict is None
+                or evidence.m4.intent_digest != intake.intent_digest
+                or evidence.m5.repository_id != intake.repository_id
+                or evidence.m5.workspace_result_digest != material["result"].workspace_result_digest
+                or evidence.m6.subject_digest != semantic.subject.digest
+                or evidence.m6.verdict_digest != verdict["verdict_digest"]):
+            raise IntegrityError("M7 stored producer binding is corrupt")
+        return registration
+
+
+class PostgresM7RegistryStore(_PostgresM7Store):
+    capability = "registry"
+
+    def register_bundle(self, registration, *, idempotency_key=None):
+        from .shadow_lookup import M7BundleRegistrationV1
+        registration = M7BundleRegistrationV1.from_dict(registration.to_dict())
+        value = self._call("SELECT factory.m7_register(%s,%s,%s,%s)",
+                           (self.source_id, self.repository_id, idempotency_key or registration.digest, self._canonical(registration)))
+        return self._registration(value)
+
+
+class PostgresM7OutcomeObserverStore(_PostgresM7Store):
+    capability = "outcome"
+
+    def record_outcome(self, observation, *, idempotency_key=None):
+        from .shadow_lookup import M7OutcomeObservationV1
+        observation = M7OutcomeObservationV1.from_dict(observation.to_dict())
+        value = self._call("SELECT factory.m7_observe(%s,%s,%s,%s,%s)",
+                           (self.source_id, self.repository_id, idempotency_key or observation.digest,
+                            "human_outcome", self._canonical(observation)))
+        return M7OutcomeObservationV1.from_dict(value)
+
+
+class PostgresM7CheckContextObserverStore(_PostgresM7Store):
+    capability = "check_context"
+
+    def _observe(self, observation, contract, kind, idempotency_key):
+        observation = contract.from_dict(observation.to_dict())
+        return contract.from_dict(self._call("SELECT factory.m7_observe(%s,%s,%s,%s,%s)",
+            (self.source_id, self.repository_id, idempotency_key or observation.digest, kind, self._canonical(observation))))
+
+    def record_check(self, observation, *, idempotency_key=None):
+        from .shadow_lookup import M7CheckObservationV1
+        return self._observe(observation, M7CheckObservationV1, "signed_ci", idempotency_key)
+
+    def record_context(self, observation, *, idempotency_key=None):
+        from .shadow_lookup import M7GitHubContextV1, M7EpochContextV1
+        contract, kind = ((M7GitHubContextV1, "github_current") if isinstance(observation, M7GitHubContextV1)
+                          else (M7EpochContextV1, "deployed_epoch"))
+        return self._observe(observation, contract, kind, idempotency_key)
+
+
+class PostgresM7LookupStore(_PostgresM7Store):
+    capability = "reader"
+
+    def lookup(self, request):
+        from .shadow_lookup import M7LookupRequestV1, build_lookup_result
+        request = M7LookupRequestV1.from_dict(request.to_dict())
+        value = self._call("SELECT factory.m7_lookup(%s)", (self._canonical(request),))
+        expected = {"registration", "outcome", "check", "github", "epoch", "observed_at", "unavailable_reasons", "source_modes"}
+        if not isinstance(value, dict) or set(value) != expected:
+            raise IntegrityError("M7 stored lookup response is corrupt")
+        if value["registration"] is not None:
+            value["registration"] = self._registration(value["registration"])
+        return build_lookup_result(request=request, **value)

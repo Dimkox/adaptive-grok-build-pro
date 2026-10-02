@@ -234,6 +234,7 @@ def _provision_semantic_login(
         "factory_semantic_coordinator",
         "factory_semantic_validator",
         "factory_semantic_adjudicator",
+        "factory_m7_registry", "factory_m7_outcome", "factory_m7_check_context", "factory_m7_reader",
     }:
         raise BootstrapError("unknown semantic capability role")
     import psycopg
@@ -419,6 +420,66 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(f"status={readiness['status']} schema_version={readiness['schema_version']} role={readiness['database_role']}")
     return 0
+
+
+M7_CAPABILITIES = frozenset({"registry", "outcome", "check_context", "reader"})
+
+
+def provision_m7_login(owner_url: str, login: str, password: str, *, capability_kind: str) -> None:
+    if capability_kind not in M7_CAPABILITIES:
+        raise BootstrapError("unknown M7 capability")
+    _provision_semantic_login(owner_url, login, password,
+                             role="factory_m7_" + capability_kind, label="M7 " + capability_kind)
+
+
+def configure_m7_source(owner_url: str, *, login: str, repository_id: str, source_id: str,
+                        capability_kind: str, source_kind: str, mode: str,
+                        trust_config_digest: str, valid_until, max_age_seconds: int, enabled: bool = True) -> None:
+    """Owner-only configuration. No source is configured by migration or runtime input."""
+    import psycopg
+    from .shadow_lookup import canonical_m7_bytes, m7_digest
+    from .shadow_lookup import _identifier, _digest, _time, _instant
+    if not LOGIN_NAME.fullmatch(login) or capability_kind not in M7_CAPABILITIES:
+        raise BootstrapError("invalid M7 principal")
+    _identifier(repository_id)
+    _identifier(source_id)
+    _digest(trust_config_digest)
+    expires = _time(valid_until.isoformat() if hasattr(valid_until, "isoformat") else valid_until)
+    if (source_kind not in {"registry", "human_outcome", "signed_ci", "github_current", "deployed_epoch"}
+            or mode not in {"synthetic", "imported", "authenticated"}
+            or type(max_age_seconds) is not int or not 1 <= max_age_seconds <= 86400 or type(enabled) is not bool):
+        raise BootstrapError("invalid M7 source configuration")
+    expected = {"registry": {"registry"}, "outcome": {"human_outcome"},
+                "check_context": {"signed_ci", "github_current", "deployed_epoch"}}
+    if capability_kind != "reader" and source_kind not in expected[capability_kind]:
+        raise BootstrapError("M7 source capability mismatch")
+    with psycopg.connect(owner_url) as connection, connection.cursor() as cursor:
+        _validate_semantic_capability_role(cursor, "factory_m7_" + capability_kind, "M7")
+        cursor.execute("SELECT oid FROM pg_roles WHERE rolname=%s", (login,))
+        row = cursor.fetchone()
+        if row is None:
+            raise BootstrapError("M7 login missing")
+        principal = row[0]
+        cursor.execute("SELECT pg_has_role(%s,%s,'MEMBER')", (login, "factory_m7_" + capability_kind))
+        if not cursor.fetchone()[0]:
+            raise BootstrapError("M7 login capability missing")
+        body = {"principal_oid": principal, "principal_name": login, "repository_id": repository_id,
+                "source_id": source_id, "capability_kind": capability_kind, "source_kind": source_kind,
+                "mode": mode, "trust_config_digest": trust_config_digest,
+                "valid_until": expires, "max_age_seconds": max_age_seconds, "enabled": enabled}
+        digest = m7_digest("adaptive-factory.m7-source-binding/v1", body)
+        cursor.execute("""DELETE FROM factory.m7_source_bindings WHERE principal_name=%s AND repository_id=%s
+                       AND source_id=%s AND capability_kind=%s AND principal_oid<>%s""",
+                       (login, repository_id, source_id, capability_kind, principal))
+        cursor.execute("""INSERT INTO factory.m7_source_bindings(principal_oid,principal_name,repository_id,source_id,
+            capability_kind,source_kind,mode,trust_config_digest,binding_digest,enabled,valid_until,max_age_seconds,canonical_body)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT(principal_oid,repository_id,source_id,capability_kind) DO UPDATE SET
+            source_kind=EXCLUDED.source_kind,mode=EXCLUDED.mode,trust_config_digest=EXCLUDED.trust_config_digest,
+            binding_digest=EXCLUDED.binding_digest,enabled=EXCLUDED.enabled,valid_until=EXCLUDED.valid_until,
+            max_age_seconds=EXCLUDED.max_age_seconds,canonical_body=EXCLUDED.canonical_body""",
+            (principal, login, repository_id, source_id, capability_kind, source_kind, mode,
+             trust_config_digest, digest, enabled, _instant(expires), max_age_seconds, canonical_m7_bytes(body).decode("utf-8")))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,1211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok-build-pro.local/contracts/m7-durable-lookup.v1.schema.json",
+  "title": "M7.1 canonical observation and lookup wire forms; no authority effect",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/M7LookupRequestV1"
+    },
+    {
+      "$ref": "#/$defs/M7BundleRegistrationV1"
+    },
+    {
+      "$ref": "#/$defs/M7SourceProvenanceV1"
+    },
+    {
+      "$ref": "#/$defs/M7MeasurementsV1"
+    },
+    {
+      "$ref": "#/$defs/M7OutcomeObservationV1"
+    },
+    {
+      "$ref": "#/$defs/M7CheckObservationV1"
+    },
+    {
+      "$ref": "#/$defs/M7GitHubContextV1"
+    },
+    {
+      "$ref": "#/$defs/M7EpochContextV1"
+    },
+    {
+      "$ref": "#/$defs/M7ProfileMetadataV1"
+    },
+    {
+      "$ref": "#/$defs/SourceUnavailable"
+    },
+    {
+      "$ref": "#/$defs/M7LookupResultV1"
+    }
+  ],
+  "$defs": {
+    "M7LookupRequestV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "profile_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pr_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "app_id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "check_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\x00-\\x1f]+$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "holdout_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "task_id",
+        "run_id",
+        "generation",
+        "bundle_digest",
+        "profile_digest",
+        "pr_number",
+        "base_sha",
+        "head_sha",
+        "app_id",
+        "check_name",
+        "policy_digest",
+        "holdout_digest"
+      ],
+      "additionalProperties": false
+    },
+    "M7BundleRegistrationV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "bundle": {
+          "$ref": "ready-for-pr-bundle.v1.schema.json"
+        },
+        "profile": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7ProfileMetadataV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "generation",
+        "bundle",
+        "profile"
+      ],
+      "additionalProperties": false
+    },
+    "M7SourceProvenanceV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "source_kind": {
+          "enum": [
+            "human_outcome",
+            "signed_ci",
+            "github_current",
+            "deployed_epoch"
+          ]
+        },
+        "adapter_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "source_event_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "source_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "predecessor_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_issued_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 32,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 32,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "valid_until": {
+          "type": "string",
+          "format": "date-time",
+          "maxLength": 32,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+        },
+        "trust_config_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "verifier_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "source_id",
+        "source_kind",
+        "adapter_version",
+        "source_event_id",
+        "source_revision",
+        "predecessor_digest",
+        "source_issued_at",
+        "observed_at",
+        "valid_until",
+        "trust_config_digest",
+        "evidence_ref",
+        "verifier_id"
+      ],
+      "additionalProperties": false
+    },
+    "M7MeasurementsV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "cost_usd_micros": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latency_ms": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repair_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rollback_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "regression_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "intervention_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "intervention_coverage": {
+          "enum": [
+            "unknown",
+            "partial",
+            "complete"
+          ]
+        },
+        "intervention_source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "session_started_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 32,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "session_ended_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 32,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "cost_usd_micros",
+        "latency_ms",
+        "repair_count",
+        "rollback_count",
+        "regression_count",
+        "intervention_count",
+        "intervention_coverage",
+        "intervention_source_refs",
+        "session_started_at",
+        "session_ended_at"
+      ],
+      "additionalProperties": false
+    },
+    "M7OutcomeObservationV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "bundle_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result_head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "provenance": {
+          "$ref": "#/$defs/M7SourceProvenanceV1"
+        },
+        "decision": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "outcome": {
+          "oneOf": [
+            {
+              "$ref": "shadow-outcome.v1.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "profile": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7ProfileMetadataV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "measurements": {
+          "$ref": "#/$defs/M7MeasurementsV1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "bundle_digest",
+        "result_head_sha",
+        "provenance",
+        "decision",
+        "outcome",
+        "profile",
+        "measurements"
+      ],
+      "additionalProperties": false
+    },
+    "M7CheckObservationV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "pr_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "holdout_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "external_job_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "result": {
+          "enum": [
+            "passed",
+            "failed",
+            "revoked"
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/M7SourceProvenanceV1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "pr_number",
+        "base_sha",
+        "head_sha",
+        "policy_digest",
+        "holdout_digest",
+        "external_job_id",
+        "attestation_digest",
+        "signer_key_id",
+        "result",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "M7GitHubContextV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "pr_number": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "app_id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "check_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\x00-\\x1f]+$"
+        },
+        "external_job_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "check_id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "check_state": {
+          "enum": [
+            "queued",
+            "in_progress",
+            "completed"
+          ]
+        },
+        "check_conclusion": {
+          "enum": [
+            "unknown",
+            "success",
+            "failure",
+            "cancelled",
+            "action_required",
+            "timed_out",
+            "neutral",
+            "skipped"
+          ]
+        },
+        "revoked": {
+          "type": "boolean"
+        },
+        "provenance": {
+          "$ref": "#/$defs/M7SourceProvenanceV1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "pr_number",
+        "base_sha",
+        "head_sha",
+        "app_id",
+        "check_name",
+        "external_job_id",
+        "check_id",
+        "check_state",
+        "check_conclusion",
+        "revoked",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "M7EpochContextV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "holdout_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "app_id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "check_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\x00-\\x1f]+$"
+        },
+        "revoked": {
+          "type": "boolean"
+        },
+        "provenance": {
+          "$ref": "#/$defs/M7SourceProvenanceV1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "policy_digest",
+        "holdout_digest",
+        "app_id",
+        "check_name",
+        "revoked",
+        "provenance"
+      ],
+      "additionalProperties": false
+    },
+    "M7ProfileMetadataV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "repository_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "task_class": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "m7_change_class": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "m7_cohort_key_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_mapping_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agent_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validator_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prompt_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "policy_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "runner_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "holdout_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authority_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authority_ceiling": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 32,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "repository_id",
+        "task_class",
+        "m7_change_class",
+        "m7_cohort_key_digest",
+        "provider_mapping_digest",
+        "agent_digest",
+        "validator_digest",
+        "provider_digest",
+        "model_digest",
+        "prompt_digest",
+        "policy_digest",
+        "runner_digest",
+        "holdout_digest",
+        "authority_digest",
+        "authority_ceiling",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    },
+    "SourceUnavailable": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "M7LookupResultV1": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "request": {
+          "$ref": "#/$defs/M7LookupRequestV1"
+        },
+        "observed_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 32,
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "registration": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7BundleRegistrationV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7OutcomeObservationV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "check": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7CheckObservationV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "github": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7GitHubContextV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "epoch": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/M7EpochContextV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lookup_outcome": {
+          "enum": ["found", "not_found", "stale", "ambiguous", "invalid", "unavailable"]
+        },
+        "unavailable_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "source_modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "synthetic",
+              "imported",
+              "authenticated"
+            ]
+          },
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "snapshot_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "acceptance": {
+          "enum": [
+            "unavailable",
+            "accepted",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "signed_check": {
+          "enum": [
+            "unavailable",
+            "valid",
+            "invalid"
+          ]
+        },
+        "currentness": {
+          "enum": [
+            "unavailable",
+            "current",
+            "stale",
+            "conflict"
+          ]
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "producer_bindings": {
+              "enum": [
+                "complete",
+                "unknown"
+              ]
+            },
+            "profile": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "profile_provenance": {
+              "const": "not_evaluated"
+            },
+            "missing_profile_fields": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "schema_version",
+                  "repository_id",
+                  "task_class",
+                  "m7_change_class",
+                  "m7_cohort_key_digest",
+                  "provider_mapping_digest",
+                  "agent_digest",
+                  "validator_digest",
+                  "provider_digest",
+                  "model_digest",
+                  "prompt_digest",
+                  "policy_digest",
+                  "runner_digest",
+                  "holdout_digest",
+                  "authority_digest",
+                  "authority_ceiling",
+                  "expires_at"
+                ]
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "task_class": {
+              "enum": [
+                "supported",
+                "unsupported",
+                "unknown"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "complete",
+                "unknown"
+              ]
+            },
+            "measurements": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            },
+            "missing_measurements": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "cost_usd_micros",
+                  "latency_ms",
+                  "repair_count",
+                  "rollback_count",
+                  "regression_count",
+                  "intervention_count"
+                ]
+              },
+              "maxItems": 64,
+              "uniqueItems": true
+            },
+            "interventions": {
+              "enum": [
+                "complete",
+                "partial",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "producer_bindings",
+            "profile",
+            "profile_provenance",
+            "missing_profile_fields",
+            "task_class",
+            "outcome",
+            "measurements",
+            "missing_measurements",
+            "interventions"
+          ],
+          "additionalProperties": false
+        },
+        "status": {
+          "enum": [
+            "unavailable",
+            "partial",
+            "resolved"
+          ]
+        },
+        "m8_qualification": {
+          "const": "not_evaluated"
+        },
+        "authority_effect": {
+          "const": "none"
+        }
+      },
+      "required": [
+        "schema_version",
+        "request",
+        "observed_at",
+        "registration",
+        "outcome",
+        "check",
+        "github",
+        "epoch",
+        "lookup_outcome",
+        "unavailable_reasons",
+        "source_modes",
+        "request_digest",
+        "snapshot_digest",
+        "acceptance",
+        "signed_check",
+        "currentness",
+        "coverage",
+        "status",
+        "m8_qualification",
+        "authority_effect"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

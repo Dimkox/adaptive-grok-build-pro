@@ -1620,3 +1620,6 @@ Root cause: I kept a diagnostic Python probe under ignored runtime storage, but 
 ### 2026-10-03 — Synthetic fixture literals still require the unchanged scanner
 
 Root cause: the fixture used a long static disposable password literal that the generic-secret rule correctly rejected, and the focused writer checks did not exercise that scanner before handoff. Generate an ephemeral local UUID password using the existing disposable-fixture pattern; both the repaired source and a separate private failing scanner control prove no regex waiver.
+### 2026-10-02 — Use literal callbacks when rewriting SQL through JavaScript
+
+Root cause: JavaScript replacement strings interpreted SQL dollar delimiters and regex anchors as replacement directives, duplicating uncommitted migration fragments and causing a syntax failure. Rebuild from the preserved source with literal replacement callbacks, check file size, and apply the complete migration to an exact disposable database before claiming SQL success.

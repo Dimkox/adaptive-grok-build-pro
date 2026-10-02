@@ -145,7 +145,7 @@ class SemanticContractTests(unittest.TestCase):
         }
         self.assertEqual(
             {path.name for path in SCHEMAS.glob("*.json")}
-            - {"native-result-handoff.v1.schema.json"},
+            - {"native-result-handoff.v1.schema.json", "m7-durable-lookup.v1.schema.json"},
             names,
         )
         versions = {name: 1 for name in semantic_names | failover_names}
