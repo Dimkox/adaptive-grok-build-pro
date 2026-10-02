@@ -446,10 +446,21 @@ class ProjectStateTests(unittest.TestCase):
         }
         self.assertEqual(forbidden_claims & set(local), set())
         self.assertNotIn("2.0.19", json.dumps(local, sort_keys=True))
+        current = state["current_unreleased_change"]
         self.assertEqual(
-            state["current_unreleased_change"]["change_id"],
-            "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+            current["change_id"],
+            "20261002-implement-repository-custody-for-already-built-d-a0ff84",
         )
+        self.assertEqual(current["route_id"], local["route_id"])
+        self.assertEqual(current["branch"], local["branch"])
+        self.assertEqual(current["change_package"], local["change_package"])
+        self.assertEqual(current["target_version"], "2.1.0")
+        self.assertEqual(current["stage"], "artifact_child_candidate_pending_pr_tag_release")
+        self.assertEqual(current["source_base"], local["source_base"])
+        self.assertEqual(current["source_tree"], local["source_tree"])
+        self.assertEqual(current["frozen"]["published_release"], "v2.0.19")
+        self.assertNotIn("v2.0.19 artifact-child", current["next_action"])
+        self.assertNotIn("v2.0.18 remains", current["tag_and_release"])
 
     def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
         landing = self.state["delivered_change_history"]["post_v2_0_17_landing"]
@@ -495,16 +506,15 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         current = self.state["current_unreleased_change"]
         delivery = self.state["active_delivery"]
-        for key in ("route_id", "branch", "change_package", "next_action"):
-            self.assertEqual(delivery[key], current[key])
-        self.assertEqual(current["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(current["status"], "release_sync_authored")
+        self.assertEqual(current["source_base"], "e5856acfd4bc7a186f40a740b54ec86459462db5")
+        self.assertEqual(current["source_tree"], "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b")
+        self.assertEqual(current["status"], "artifact_candidate")
         self.assertEqual(
             current["identity"],
-            "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
+            "v2.1.0 artifact-child candidate built twice from exact source",
         )
-        self.assertEqual(current["route_id"], "0ea34220576f")
-        self.assertEqual(current["target_version"], "2.0.19")
+        self.assertEqual(current["route_id"], "a0ff84051275")
+        self.assertEqual(current["target_version"], "2.1.0")
         self.assertEqual(delivery["status"], "release_sync_pending")
         self.assertEqual(
             delivery["local_source_gate"]["status"], "passed_for_artifact_source_parent"

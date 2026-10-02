@@ -238,19 +238,20 @@
     }
   ],
   "current_unreleased_change": {
-    "change_id": "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "route_id": "0ea34220576f",
-    "branch": "release/v2.0.19-candidate-20260922",
-    "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "identity": "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
-    "status": "release_sync_authored",
-    "stage": "artifact_child_delivered_pending_tag",
-    "source_base": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-    "target_version": "2.0.19",
+    "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+    "route_id": "a0ff84051275",
+    "branch": "release/v2.1.0-artifact",
+    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+    "identity": "v2.1.0 artifact-child candidate built twice from exact source",
+    "status": "artifact_candidate",
+    "stage": "artifact_child_candidate_pending_pr_tag_release",
+    "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+    "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+    "target_version": "2.1.0",
     "scope": [
-      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md, CHANGELOG.md, DARK_FACTORY_ROADMAP.md, START_HERE.md and GROK_BUILD_HANDOFF.md move to the 2.0.19 candidate",
-      "PROJECT_STATE records the merged release-sync parent, twenty post-v2.0.18 landings and the delivered v2.0.19 artifact-child bytes",
-      "lockstep test literals in tests/test_structure.py, tests/test_project_state.py and tests/test_manifest_package.py"
+      "Repository custody for the twice-reproducible v2.1.0 ZIP and checksum sidecar",
+      "PROJECT_STATE and release documentation bind exact source, tree and artifact hashes without delivery claims",
+      "Binding tests enforce immutable v2.0.19 publication identity and v2.1.0 candidate boundaries"
     ],
     "predecessors": [
       {
@@ -414,18 +415,18 @@
         "check_run_id": 107775220562
       }
     ],
-    "explanation": "Twenty pull requests merged after the v2.0.18 publication, so the tree must expose a new candidate identity. The v2.0.18 record and bytes stay immutable; the v2.0.19 artifact is a separate exact-child step.",
+    "explanation": "The v2.1.0 ZIP and sidecar were built twice byte-identically from the exact clean source and are now held in repository custody. Delivery identities remain unknown and the published v2.0.19 record stays immutable.",
     "external_effect": false,
     "frozen": {
-      "published_release": "v2.0.18",
+      "published_release": "v2.0.19",
       "package_bytes": true,
       "postgresql_migrations": "001-018"
     },
     "operational_activation": false,
-    "record_scope": "Release preparation for v2.0.19 only; provider installation, host mutation and operational qualification remain out of scope.",
-    "next_action": "Merge the v2.0.19 artifact-child PR on its exact-head App check, then tag v2.0.19 at that merged commit and publish the GitHub Release with both assets; each separate action requires its named delegated grant and no deployment is implied.",
-    "tag_and_release": "Not created. v2.0.18 remains the newest tag and GitHub Release; v2.0.19 publication requires the artifact-child merge, exact checks and named grants.",
-    "artifact_child": "Delivered: packages/adaptive-grok-build-pro-v2.0.19.zip and its sidecar exist in the artifact-child candidate, built twice byte-identically from merged release-sync parent 3f41be92161fef451a2dfa7451eb458ce8f022b3; the tag and GitHub Release remain pending separate delegated actions."
+    "record_scope": "Repository custody for the v2.1.0 artifact candidate only; pull request, check, merge, tag, publication, deployment and activation are not claimed.",
+    "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
+    "tag_and_release": "Not created. v2.0.19 remains the newest immutable tag and GitHub Release; v2.1.0 delivery identities are unknown.",
+    "artifact_child": "Repository custody: packages/adaptive-grok-build-pro-v2.1.0.zip and its sidecar were built twice byte-identically from source e5856acfd4bc7a186f40a740b54ec86459462db5 and tree 0dfa04f3ec3ea9c7a04c723e9d127603fc72999b; no delivery or publication is claimed."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
