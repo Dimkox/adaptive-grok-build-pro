@@ -1509,3 +1509,7 @@ Root cause: I created an exact-SHA clone with `git -C` but launched unittest wit
 ### 2026-10-02 — Do not assume a script implements `--help`
 
 Root cause: I invoked the disposable exit runner with `--help` without first inspecting its argument handling; it ignores extra arguments and started a second full PostgreSQL suite. Inspect script entrypoints before probing CLI flags, and never use a potentially mutating or expensive command as its own help discovery mechanism.
+
+### 2026-10-02 — Keep factory tests within the declared environment
+
+Root cause: transplanted tests retained undeclared `pytest` and `jsonschema` imports, while the frozen predecessor inventory did not explicitly exclude four new current schemas. Use stdlib/internal validation in factory exit tests and classify new contracts outside immutable predecessor fixtures.

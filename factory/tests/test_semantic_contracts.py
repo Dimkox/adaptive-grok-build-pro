@@ -118,6 +118,8 @@ class SemanticContractTests(unittest.TestCase):
             "repair-directive.v1.schema.json",
         }
         names = semantic_names | failover_names | {
+            "bb-backend-profile.v1.schema.json",
+            "bb-lifecycle-observation.v1.schema.json",
             "context-manifest.v1.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
@@ -129,6 +131,8 @@ class SemanticContractTests(unittest.TestCase):
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
+            "prediction-explanation.v1.schema.json",
+            "prediction-observation.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
             "result-channel-qualification.v2.schema.json",
