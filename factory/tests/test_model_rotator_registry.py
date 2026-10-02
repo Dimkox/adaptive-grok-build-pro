@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 import unittest
 
@@ -94,7 +95,7 @@ def test_literal_payload_and_digest_are_independent_golden_evidence() -> None:
 
     assert DEFAULT_MODEL_ROTATOR_REGISTRY.to_dict() == {
         **expected,
-        "registry_digest": "fe0bc56510116153d8a614be8330f913a7a2df6e90d5f5dca26436bef6e2773e",
+        "registry_digest": "09b9df8a94d742644154a854ecd1700de0e7b4fd799a01ebcd739c09a635cfb7",
     }
     for field in ("archive_sha256", "models_file_sha256", "tree_sha1"):
         mutated = json.loads(json.dumps(expected))
@@ -273,3 +274,46 @@ assert DEFAULT_MODEL_ROTATOR_REGISTRY.enabled is False
     )
 
     assert completed.returncode == 0, completed.stderr
+
+
+def _test_clean_import_with_stdlib_tempdir() -> None:
+    with tempfile.TemporaryDirectory(prefix="rotator-import-test-") as raw:
+        test_clean_import_cannot_open_socket_spawn_or_write_settings_or_environment(Path(raw))
+
+
+_UNITTEST_FUNCTIONS = (
+    test_registry_is_default_off_and_pins_exact_upstream_provenance,
+    test_registry_digest_binds_version_strategy_models_and_provenance,
+    test_literal_payload_and_digest_are_independent_golden_evidence,
+    test_weak_and_dashscope_models_are_not_admitted,
+    test_best_first_order_ignores_request_and_cursor_and_demotes_cooling_models,
+    test_expired_or_unknown_cooldowns_do_not_change_order,
+    test_candidate_selection_rejects_invalid_time_without_effects,
+    test_registry_rejects_order_and_provenance_mutations,
+    test_selection_is_pure_and_has_no_runtime_interfaces,
+    _test_clean_import_with_stdlib_tempdir,
+)
+
+
+def test_unittest_discovery_inventory_is_exact() -> None:
+    assert len(_UNITTEST_FUNCTIONS) == 10
+    assert {test.__name__ for test in _UNITTEST_FUNCTIONS} == {
+        "test_registry_is_default_off_and_pins_exact_upstream_provenance",
+        "test_registry_digest_binds_version_strategy_models_and_provenance",
+        "test_literal_payload_and_digest_are_independent_golden_evidence",
+        "test_weak_and_dashscope_models_are_not_admitted",
+        "test_best_first_order_ignores_request_and_cursor_and_demotes_cooling_models",
+        "test_expired_or_unknown_cooldowns_do_not_change_order",
+        "test_candidate_selection_rejects_invalid_time_without_effects",
+        "test_registry_rejects_order_and_provenance_mutations",
+        "test_selection_is_pure_and_has_no_runtime_interfaces",
+        "_test_clean_import_with_stdlib_tempdir",
+    }
+
+
+def load_tests(loader, tests, pattern):
+    del loader, tests, pattern
+    return unittest.TestSuite(
+        unittest.FunctionTestCase(test)
+        for test in (*_UNITTEST_FUNCTIONS, test_unittest_discovery_inventory_is_exact)
+    )

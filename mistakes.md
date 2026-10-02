@@ -1525,3 +1525,9 @@ Keep both limits explicitly bounded and regression-test that the outer limit exc
 Root cause: the runner passed its pre-suite ephemeral PostgreSQL port to the restart probe after the
 suite had restarted the named container. Revalidate the exact ID/name/nonce binding, read its current
 loopback-only port, and propagate that URL before the final probe.
+
+### 2026-10-02 — Do not rely on pytest collection in a unittest gate
+
+Root cause: the rotator tests were transplanted as free pytest functions, so mandatory unittest
+discovery imported the module but executed zero assertions and hid a stale golden digest. Bind every
+free-function test into `load_tests` and pin the collected inventory so both runners execute it.
