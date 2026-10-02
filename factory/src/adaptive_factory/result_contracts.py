@@ -163,6 +163,54 @@ def result_channel_qualification_from_wire(
 
 
 @dataclass(frozen=True)
+class ResultChannelQualificationV2:
+    channel: str
+    status: str
+    interception_point: str | None
+    limitation: str
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ResultChannelQualificationV2":
+        closed(data, {"channel", "status", "interception_point", "limitation"})
+        if not isinstance(data["channel"], str) or data["channel"] not in RESULT_CHANNELS:
+            raise ContractError("invalid_channel")
+        if data["status"] != "unavailable":
+            raise ContractError("channel_not_qualified")
+        if data["interception_point"] is not None:
+            raise ContractError("unproved_interception_point")
+        _metadata_text(data["limitation"], "limitation")
+        return cls(**data)
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {
+            "channel": self.channel, "status": self.status,
+            "interception_point": self.interception_point, "limitation": self.limitation,
+        }
+
+
+RESULT_CHANNEL_QUALIFICATION_V2 = tuple(
+    ResultChannelQualificationV2.from_dict(row.to_dict())
+    for row in RESULT_CHANNEL_QUALIFICATION
+)
+
+
+def result_channel_qualification_v2_wire() -> list[dict[str, str | None]]:
+    return [row.to_dict() for row in RESULT_CHANNEL_QUALIFICATION_V2]
+
+
+def result_channel_qualification_v2_from_wire(
+    data: Any,
+) -> tuple[ResultChannelQualificationV2, ...]:
+    if not isinstance(data, list) or len(data) != len(RESULT_CHANNELS):
+        raise ContractError("qualification_channel_set")
+    rows = tuple(ResultChannelQualificationV2.from_dict(row) for row in data)
+    channels = [row.channel for row in rows]
+    if len(set(channels)) != len(channels) or set(channels) != RESULT_CHANNELS:
+        raise ContractError("qualification_channel_set")
+    return rows
+
+
+@dataclass(frozen=True)
 class ResultEnvelopeV1:
     _frozen: FrozenWire
 

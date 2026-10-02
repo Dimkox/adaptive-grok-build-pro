@@ -1,0 +1,81 @@
+{
+  "change_id": "20261002-implement-restart-safe-qualified-native-result-d-d349f5",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-v15-stack-03d-result-dispatch",
+      "change_id": "20261002-implement-restart-safe-qualified-native-result-d-d349f5",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "2fe3130d64714f2613dbf0303e5c84cb26d03463",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T11:40:02+00:00",
+      "route_id": "d349f503ee91"
+    }
+  ],
+  "created_at": "2026-10-02T11:40:02+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T11:40:02+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T12:06:35+00:00",
+      "from": "draft",
+      "reason": "Six route-selected analyses completed; final source semantics, security gaps, acceptance criteria and exclusions recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T12:06:35+00:00",
+      "from": "scoped",
+      "reason": "No human gates selected; bounded default-off dormant UDS dispatch foundation approved for implementation.",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "1b36492140835c303a53aa502ef04b1db58e206e25aca6c7c77a570f4ccc304a",
+  "route_id": "d349f503ee91",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement restart-safe qualified native result dispatch",
+  "updated_at": "2026-10-02T12:06:35+00:00"
+}

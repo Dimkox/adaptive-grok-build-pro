@@ -131,6 +131,7 @@ class SemanticContractTests(unittest.TestCase):
             "operator-handoff-proposal.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
+            "result-channel-qualification.v2.schema.json",
             "result-envelope.v1.schema.json",
             "result-envelope.v2.schema.json",
             "shadow-cohort.v1.schema.json",
@@ -138,7 +139,11 @@ class SemanticContractTests(unittest.TestCase):
             "shadow-task-evidence.v1.schema.json",
             "static-landing-spec.v1.schema.json",
         }
-        self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
+        self.assertEqual(
+            {path.name for path in SCHEMAS.glob("*.json")}
+            - {"native-result-handoff.v1.schema.json"},
+            names,
+        )
         versions = {name: 1 for name in semantic_names | failover_names}
         versions["landing-provider-evidence.v2.schema.json"] = 2
         versions["result-envelope.v2.schema.json"] = 2

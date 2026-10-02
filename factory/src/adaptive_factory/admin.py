@@ -66,6 +66,49 @@ def provision_runtime_login(
         raise BootstrapError("database role boundary validation failed") from exc
 
 
+def provision_result_dispatcher_login(owner_url: str, login: str, password: str) -> None:
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
+        raise BootstrapError("bounded dispatcher login and password are required")
+    import psycopg
+    from psycopg import sql
+
+    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,"
+            "rolreplication,rolbypassrls FROM pg_roles WHERE rolname='factory_result_dispatcher'"
+        )
+        if cursor.fetchone() != (False, False, False, False, False, False, False):
+            raise BootstrapError("result dispatcher capability is unavailable")
+        cursor.execute(
+            "SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,"
+            "rolreplication,rolbypassrls FROM pg_roles WHERE rolname=%s", (login,)
+        )
+        login_attributes = cursor.fetchone()
+        if login_attributes is None:
+            cursor.execute(sql.SQL(
+                "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB "
+                "NOREPLICATION NOBYPASSRLS PASSWORD {}"
+            ).format(sql.Identifier(login), sql.Literal(password)))
+        elif login_attributes == (True, False, False, False, False, False, False):
+            cursor.execute(sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+                sql.Identifier(login), sql.Literal(password)
+            ))
+        else:
+            raise BootstrapError("result dispatcher login is unsafe")
+        cursor.execute(
+            "SELECT parent.rolname FROM pg_auth_members membership "
+            "JOIN pg_roles parent ON parent.oid=membership.roleid "
+            "JOIN pg_roles member ON member.oid=membership.member WHERE member.rolname=%s",
+            (login,),
+        )
+        memberships = {row[0] for row in cursor.fetchall()}
+        if memberships - {"factory_result_dispatcher"}:
+            raise BootstrapError("result dispatcher login has unsafe membership")
+        cursor.execute(sql.SQL("GRANT factory_result_dispatcher TO {}").format(
+            sql.Identifier(login)
+        ))
+
+
 def provision_artifact_attestor_login(
     owner_url: str,
     login: str,

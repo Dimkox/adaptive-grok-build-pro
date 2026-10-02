@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/native-result-handoff.v1.schema.json",
+  "title": "Internal UDS native result handoff and observation v1",
+  "description": "Closed ingress-only local handoff wire. It does not represent a provider or model invocation.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "operation_id", "request_digest", "envelope_digest", "repository_id", "task_id", "run_id", "fence", "packet_digest", "attempt_id", "result_envelope"],
+      "properties": {
+        "contract": {"const": "adaptive-factory.native-result-handoff/v1"},
+        "operation_id": {"type": "string", "pattern": "^factory-result:[0-9a-f]{64}$"},
+        "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "envelope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "repository_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "task_id": {"type": "string", "format": "uuid"},
+        "run_id": {"type": "string", "format": "uuid"},
+        "fence": {"type": "integer", "minimum": 1},
+        "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "attempt_id": {"type": "string", "format": "uuid"},
+        "result_envelope": {"$ref": "result-envelope.v2.schema.json"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "operation_id", "request_digest", "envelope_digest", "postcondition_digest"],
+      "properties": {
+        "status": {"enum": ["delivered", "failed", "unknown"]},
+        "operation_id": {"type": "string", "pattern": "^factory-result:[0-9a-f]{64}$"},
+        "request_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "envelope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "postcondition_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  ],
+  "x-transport": {
+    "scope": "internal-uds-only",
+    "tcp": false,
+    "dns": false,
+    "proxy": false,
+    "redirects": false,
+    "provider_or_model_invocation": false
+  }
+}

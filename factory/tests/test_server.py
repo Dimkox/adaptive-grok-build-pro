@@ -525,7 +525,10 @@ class ServerTests(unittest.TestCase):
                 "landing_output_path",
             ],
         )
-        self.assertEqual(fields[-len(landing_fields):], tuple(landing_fields))
+        landing_start = fields.index(landing_fields[0])
+        self.assertEqual(
+            fields[landing_start:landing_start + len(landing_fields)], tuple(landing_fields)
+        )
 
         with patch.dict(
             os.environ,

@@ -170,6 +170,22 @@
       "version": "1"
     },
     {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-channel-qualification.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-INTERNAL-NATIVE-RESULT-HANDOFF-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/native-result-handoff.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-V15-DECISION-RECORD",
       "kind": "json_schema",
@@ -739,6 +755,29 @@
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-EXECUTION-CORE",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-FACTORY-RESULT-DISPATCHER",
+      "id": "EDGE-FACTORY-INTERNAL-RESULT-HANDOFF-UDS",
+      "network_policy": "local_only",
+      "protocol": "unix_http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EXECUTION-CORE",
+      "type": "dependency"
     },
     {
       "allowed_data": [
@@ -1830,7 +1869,8 @@
       "public_contracts": [
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
-        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION"
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION",
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION-V2"
       ],
       "repository_paths": [
         "factory/src/adaptive_factory/brokers.py",
@@ -1846,6 +1886,28 @@
       "secrets": [],
       "trust_domain": "TD-FACTORY-CONTROL",
       "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-RESULT-DISPATCHER",
+      "owner": "dormant unqualified internal foundation; local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/contracts/jsonschema/native-result-handoff.v1.schema.json",
+        "factory/src/adaptive_factory/result_dispatch.py",
+        "factory/src/adaptive_factory/result_dispatch_cli.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "worker"
     },
     {
       "data_classification": "DATA-REPOSITORY-SOURCE",

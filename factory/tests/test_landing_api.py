@@ -442,6 +442,8 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "result-envelope.v1.schema.json"
             and path.name != "result-envelope.v2.schema.json"
             and path.name != "result-channel-qualification.v1.schema.json"
+            and path.name != "result-channel-qualification.v2.schema.json"
+            and path.name != "native-result-handoff.v1.schema.json"
             and path.name != "factory-result-admission.v1.json"
             and path.name != "factory-execution.v3.json"
         )

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/result-channel-qualification.v2.schema.json",
+  "title": "Result channel qualification matrix v2",
+  "type": "array",
+  "minItems": 7,
+  "maxItems": 7,
+  "uniqueItems": true,
+  "allOf": [
+    {"contains": {"properties": {"channel": {"const": "native_tool_result"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "synthetic_child_report"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "attachment"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "artifact_cache"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "resume"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "external_cli"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1},
+    {"contains": {"properties": {"channel": {"const": "unknown"}}, "required": ["channel"]}, "minContains": 1, "maxContains": 1}
+  ],
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["channel", "status", "interception_point", "limitation"],
+    "properties": {
+      "channel": {"enum": ["native_tool_result", "synthetic_child_report", "attachment", "artifact_cache", "resume", "external_cli", "unknown"]},
+      "status": {"enum": ["qualified", "unavailable"]},
+      "interception_point": {"type": ["string", "null"], "maxLength": 128},
+      "limitation": {"type": "string", "minLength": 1, "maxLength": 128}
+    },
+    "allOf": [{"properties": {
+      "status": {"const": "unavailable"}, "interception_point": {"type": "null"}
+    }}]
+  }
+}

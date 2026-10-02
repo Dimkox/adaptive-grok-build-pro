@@ -168,6 +168,7 @@ class SemanticBridgeTests(unittest.TestCase):
             "ready-for-pr-bundle.v1.schema.json",
             "repair-directive.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
+            "result-channel-qualification.v2.schema.json",
             "result-envelope.v1.schema.json",
             "result-envelope.v2.schema.json",
             "semantic-coverage.v1.schema.json",
@@ -181,7 +182,11 @@ class SemanticBridgeTests(unittest.TestCase):
             "shadow-task-evidence.v1.schema.json",
             "static-landing-spec.v1.schema.json",
         }
-        self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
+        self.assertEqual(
+            {path.name for path in SCHEMAS.glob("*.json")}
+            - {"native-result-handoff.v1.schema.json"},
+            expected,
+        )
         versions = {
             "semantic-execution-binding.v1.schema.json": 1,
             "semantic-validation-inputs.v1.schema.json": 1,
