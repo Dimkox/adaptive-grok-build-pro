@@ -27,6 +27,7 @@ from adaptive_factory.admin import (
     provision_runtime_login,
 )
 from adaptive_factory.decision_contracts import DecisionRecordV1
+from adaptive_factory.contracts import canonical_digest
 from factory.tests.decision_fixtures import decision_facts
 from adaptive_factory.execution_contracts import ExecutionSelectionV1
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
@@ -41,6 +42,7 @@ from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryClaim,
 )
+from adaptive_factory.result_broker import ResultBroker
 from adaptive_factory.service import FactoryService
 from adaptive_factory.store import (
     FenceError,
@@ -361,7 +363,9 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, "
+            "TRUNCATE factory.next_model_request_outbox_v1, "
+            "factory.result_admission_commands_v1, factory.result_sources_v1, "
+            "factory.decision_records_v1, factory.semantic_recovery_records, "
             "factory.semantic_escalations, factory.semantic_child_task_bindings, "
             "factory.semantic_child_proposals, factory.semantic_directives, "
             "factory.semantic_verdicts, factory.semantic_coverage, "
@@ -1262,7 +1266,7 @@ def main() -> int:
     worker_b = Actor(
         "restart-worker-b",
         "worker",
-        frozenset({"task:claim", "task:execute", "task:heartbeat", "task:release"}),
+        frozenset({"task:claim", "task:execute", "task:heartbeat", "task:release", "task:read"}),
         frozenset({"probe/repository"}),
     )
     control = FactoryService(runtime_store)
@@ -1344,6 +1348,34 @@ def main() -> int:
         head_sha=head_sha,
         spec_digest=spec_digest,
     )
+    result_identity = {
+        "repository_id": task_decision.repository_id,
+        "task_id": grant_decision.task_id,
+        "run_id": grant_decision.run_id,
+        "fence": grant_decision.fence,
+        "packet_digest": grant_decision.packet_digest,
+        "attempt_id": str(attempt_id),
+        "source_operation": "restart.probe/result",
+        "source_digest": canonical_digest({"restart_probe": "durable_result"}),
+    }
+    restart_result = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+        identity=result_identity,
+        channel="native_tool_result",
+        content_type="text/plain",
+        chunks=(b"durable restart result",),
+    )
+    result_key = canonical_digest({"restart_probe": "result_admission"})
+    admitted_result = control.admit_result(
+        grant_decision,
+        restart_result,
+        actor=worker_b,
+        idempotency_key=result_key,
+        correlation_id="restart-result-admission",
+    )
+    _require(
+        (admitted_result.created, admitted_result.outbox_created) == (True, False),
+        "restart result was not durably admitted with dormant outbox",
+    )
     decision_key = "0" * 64
     _require(
         control.transition_phase(
@@ -1398,6 +1430,34 @@ def main() -> int:
     _assert_decision_replay(FactoryService(runtime_store), owner_url, task_decision,
                             grant_decision, worker_b, now, decision_key,
                             restart_decision, decision_snapshot)
+    restarted_result_service = FactoryService(runtime_store)
+    _require(
+        restarted_result_service.get_result_envelope(
+            task_decision.task_id,
+            restart_result.record_digest,
+            repository_id=task_decision.repository_id,
+            actor=worker_b,
+        ) == restart_result,
+        "admitted result did not survive the real PostgreSQL restart",
+    )
+    replayed_result = restarted_result_service.admit_result(
+        grant_decision,
+        restart_result,
+        actor=worker_b,
+        idempotency_key=result_key,
+        correlation_id="restart-result-admission",
+    )
+    _require(
+        (replayed_result.created, replayed_result.outbox_created) == (False, False),
+        "post-restart exact result replay was not stable",
+    )
+    with psycopg.connect(owner_url) as connection:
+        _require(
+            connection.execute(
+                "SELECT count(*) FROM factory.next_model_request_outbox_v1"
+            ).fetchone()[0] == 0,
+            "restart result admission activated the dormant outbox",
+        )
     identity_first = _database_identity(owner_url)
     _require(
         (identity_first[0] > identity_before[0], identity_first[1:] == identity_before[1:]) == (True, True),

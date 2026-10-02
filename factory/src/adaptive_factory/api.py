@@ -26,7 +26,7 @@ from .models import Actor, ExecutionStage, LeaseGrant, RunRole, TaskStatus
 from .protocol import PROTOCOL_VERSION, PROTOCOL_VERSION_V2
 from .service import (
     AuthorizationError,
-    ResultAdmissionUnavailable,
+    ResultAdmissionNotFound, ResultAdmissionUnavailable,
     SnapshotBrokerIntegrityError,
     SnapshotBrokerUnavailable,
 )
@@ -391,6 +391,15 @@ def create_app(
         return _error_response(
             "unavailable", "result_admission_unavailable",
             "result admission persistence unavailable", 503,
+        )
+
+    @app.exception_handler(ResultAdmissionNotFound)
+    async def result_admission_not_found(
+        _request: Request, _error: ResultAdmissionNotFound,
+    ):
+        return _error_response(
+            "not_found", "result_admission_not_found",
+            "result admission not found", 404,
         )
 
     @app.exception_handler(StoreError)

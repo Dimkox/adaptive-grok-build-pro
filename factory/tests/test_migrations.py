@@ -42,6 +42,22 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_result_admission_is_definer_only_immutable_and_dormant_until_qualification(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual((migration.version, migration.name), (24, "024_factory_v15_result_outbox.sql"))
+        lowered = migration.sql.lower()
+        self.assertIn("security definer", lowered)
+        self.assertIn("revoke all on function factory.admit_result_v1", lowered)
+        self.assertIn("revoke insert,update,delete on factory.result_sources_v1", lowered)
+        self.assertIn("primary key (actor_id,action,idempotency_key)", lowered)
+        self.assertIn(
+            "unique (repository_id,task_id,run_id,attempt_id,source_operation,source_digest)",
+            lowered,
+        )
+        self.assertIn("create table factory.result_admission_commands_v1", lowered)
+        function_body = lowered.split("create function factory.admit_result_v1", 1)[1]
+        self.assertNotIn("insert into factory.next_model_request_outbox_v1", function_body)
+
     def test_restart_probe_builds_one_canonical_bound_decision(self):
         record = postgres_restart_probe._canonical_restart_decision(
             repository_id="probe/repository",
@@ -390,8 +406,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 24)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 23)
+        self.assertEqual([item.version for item in migrations], list(range(1, 25)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 24)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())

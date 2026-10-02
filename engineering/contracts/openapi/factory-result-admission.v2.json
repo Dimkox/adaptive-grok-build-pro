@@ -1,0 +1,114 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Adaptive Factory Result Admission API",
+    "version": "2.0.0",
+    "description": "Authenticated bounded durable result admission. The future outbox remains dormant; dispatch and model transport are unavailable in this slice."
+  },
+  "paths": {
+    "/v1/result-admissions": {
+      "post": {
+        "operationId": "admitResultEnvelope",
+        "description": "Requires task:execute; atomically admits a closed fenced envelope with exact idempotent replay.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CorrelationId"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["grant", "envelope"],
+                "properties": {
+                  "grant": {"$ref": "#/components/schemas/LeaseGrant"},
+                  "envelope": {"$ref": "../../../factory/contracts/jsonschema/result-envelope.v2.schema.json"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Created or exact replay", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AdmissionResult"}}}},
+          "400": {"$ref": "#/components/responses/Error"},
+          "401": {"$ref": "#/components/responses/Error"},
+          "403": {"$ref": "#/components/responses/Error"},
+          "413": {"$ref": "#/components/responses/Error"},
+          "415": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "503": {"$ref": "#/components/responses/Unavailable"}
+        }
+      }
+    },
+    "/v1/tasks/{task_id}/result-admissions/{envelope_digest}": {
+      "get": {
+        "operationId": "getResultEnvelope",
+        "description": "Requires task:read and an explicit repository identity; lookup is bound to repository, task and envelope digest.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "task_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"name": "envelope_digest", "in": "path", "required": true, "schema": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"name": "X-Repository-ID", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"}}
+        ],
+        "responses": {
+          "200": {"description": "Persisted immutable ResultEnvelopeV2", "content": {"application/json": {"schema": {"$ref": "../../../factory/contracts/jsonschema/result-envelope.v2.schema.json"}}}},
+          "400": {"$ref": "#/components/responses/Error"},
+          "401": {"$ref": "#/components/responses/Error"},
+          "403": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"},
+          "404": {"$ref": "#/components/responses/Error"},
+          "503": {"$ref": "#/components/responses/Unavailable"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}},
+    "parameters": {
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}}
+    },
+    "schemas": {
+      "AdmissionResult": {
+        "type": "object", "additionalProperties": false,
+        "required": ["envelope_digest", "created", "outbox_created"],
+        "properties": {
+          "envelope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "created": {"type": "boolean"},
+          "outbox_created": {"const": false}
+        }
+      },
+      "LeaseGrant": {
+        "type": "object", "additionalProperties": false,
+        "required": ["task_id", "run_id", "owner", "role", "fence", "expires_at", "packet_digest"],
+        "properties": {
+          "task_id": {"type": "string", "format": "uuid"},
+          "run_id": {"type": "string", "format": "uuid"},
+          "owner": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+          "role": {"enum": ["reader", "writer"]},
+          "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+          "expires_at": {"type": "string", "format": "date-time"},
+          "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      },
+      "Error": {
+        "type": "object", "additionalProperties": false,
+        "required": ["error", "code", "detail"],
+        "properties": {"error": {"type": "string"}, "code": {"type": "string"}, "detail": {"type": "string"}}
+      }
+    },
+    "responses": {
+      "Error": {"description": "Rejected request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "Unavailable": {
+        "description": "Result admission persistence is not installed",
+        "headers": {"X-Correlation-ID": {"required": true, "schema": {"type": "string"}}},
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}
+      }
+    }
+  }
+}

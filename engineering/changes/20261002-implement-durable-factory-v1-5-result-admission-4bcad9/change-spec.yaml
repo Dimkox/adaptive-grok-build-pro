@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "change_id": "20261002-implement-durable-factory-v1-5-result-admission-4bcad9",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add durable transactional PostgreSQL admission and retrieval for bounded ResultEnvelopeV2 while keeping the future outbox dormant and all dispatch, model invocation, live interception, BB activation, and U4/macOS work disabled.",
+    "success_metric": "factory_v15_result_persistence_full_gate_status",
+    "target": "exact replay, conflict, tenant, fencing, rollback, concurrency, restart, privilege and zero-outbox evidence pass on the PR head"
+  },
+  "risk": {"tier": "yellow", "domains": ["api", "data"]},
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Additive migration 024 creates immutable result, command-replay and dormant outbox structures in the existing Factory PostgreSQL database, upgrades schema readiness to 24, and grants runtime only controlled function execution plus bounded reads, never raw table mutation.","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"AC-002","statement":"A valid current leased-run V2 result is committed atomically with its command record and returns the exact digest with created=true and outbox_created=false; any failure rolls back all result and command mutations.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"verification"}]},
+    {"id":"AC-003","statement":"The same actor, idempotency key and canonical request replays as created=false even after authority expiry, while changed command content or changed envelope for one natural source identity returns a stable conflict and preserves the original record.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"}]},
+    {"id":"AC-004","statement":"Concurrent identical admissions produce exactly one created result, and concurrent competing envelopes for one natural identity produce one winner and one conflict without duplicate rows or an unbounded wait.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"AC-005","statement":"Repository, task, run, attempt, owner, fence, packet, active-state, lease and deadline bindings fail closed; stale or late results cannot mutate a newer run.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-006","statement":"PostgreSQL revalidates the closed canonical V2 and command shapes, digests, channel/content rules, payload structure, bounds and secret controls so direct function execution cannot bypass the hardened Python contract.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_result_broker.py"},{"receipt":"data_review"}]},
+    {"id":"AC-007","statement":"Committed results survive a real disposable PostgreSQL restart and exact replay remains stable afterward; retrieval binds repository_id, task_id and envelope digest and cross-repository access is indistinguishable from not found.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"}]},
+    {"id":"AC-008","statement":"POST and GET retain PR234 strict authentication, repository, duplicate-JSON, media, correlation, idempotency and grant checks while OpenAPI and runtime agree on bounded success, conflict, not-found and unavailable responses.","evidence":[{"test":"factory/tests/test_result_admission_api.py"},{"test":"factory/tests/test_openapi_contract.py"},{"receipt":"code_review"}]},
+    {"id":"AC-009","statement":"All validated outcomes remain recordable but every path, replay, concurrency case and restart leaves the future outbox empty and reports outbox_created=false; all seven qualification channels and V1 behavior remain unchanged.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_result_broker.py"},{"receipt":"verification"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Result admission never changes task or run state, reserves provider budget, publishes an event, dispatches a request, invokes a model, or intercepts live tool output.","evidence":[{"receipt":"code_review"},{"receipt":"data_review"}]},
+    {"id":"INV-002","statement":"V1 compatibility and all PR3a sanitization and PR3b API authorization/correlation checks remain fail closed.","evidence":[{"test":"factory/tests/test_result_admission_api.py"},{"test":"factory/tests/test_result_broker.py"}]},
+    {"id":"INV-003","statement":"U4 and Apple/macOS qualification are explicitly excluded by the owner and are neither implemented nor claimed by this change.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No outbox row, consumer, dispatcher, provider/model call, live interception, BB activation or milestone-completion claim is introduced.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"No caller-selected repository header can authorize retrieval from a task owned by another repository.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"}]},
+    {"id":"FORBID-003","statement":"No last-write-wins replay, raw runtime DML, destructive migration, success-before-commit, or weakened V2 validation is permitted.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]}
+  ],
+  "contracts": {"openapi": ["engineering/contracts/openapi/factory-result-admission.v2.json"], "json_schema": ["factory/contracts/jsonschema/result-envelope.v2.schema.json"], "events": []},
+  "observability": [
+    {"id":"SIG-001","metric":"result admission created/replay/conflict/authority/db-unavailable outcomes without payload logging","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"next_model_request_outbox_v1 row count remains zero","proves":["OBJ-001"]}
+  ],
+  "rollback": {"strategy":"forward_fix", "maximum_steps":1},
+  "approvals": {"required_scopes":[]}
+}
