@@ -77,3 +77,25 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20261002-implement-durable-factory-v1-5-result-admission-4bcad9",
+  "route_id": "4bcad92f7be6",
+  "observed_at": "2026-10-02T11:03:52+00:00",
+  "branch": "feature/factory-v15-stack-03c-result-persistence",
+  "head": "48267913b35e69736ef7e012e6865b6e37fc1a22",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "clean",
+  "dirty_product_paths": [],
+  "note": "implementation started; preserve work before handoff"
+}
+```
