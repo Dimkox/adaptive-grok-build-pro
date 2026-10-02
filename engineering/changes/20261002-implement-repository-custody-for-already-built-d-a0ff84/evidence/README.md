@@ -68,3 +68,25 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+  "route_id": "a0ff84051275",
+  "observed_at": "2026-10-02T21:39:38+00:00",
+  "branch": "release/v2.1.0-artifact",
+  "head": "ca9139129232b2264c3c1fa6dbb577acb5513429",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "clean",
+  "dirty_product_paths": [],
+  "note": "implementation started; preserve work before handoff"
+}
+```
