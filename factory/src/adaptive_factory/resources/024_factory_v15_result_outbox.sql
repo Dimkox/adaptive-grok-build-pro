@@ -63,6 +63,7 @@ DECLARE
   v_task factory.tasks%ROWTYPE; v_run factory.runs%ROWTYPE;
   v_existing char(64); v_created boolean := false; v_command factory.result_admission_commands_v1%ROWTYPE;
   v_pem_pattern text := '-----(BEGIN|END) [A-Z0-9 ]*PRIVATE KEY-----';
+  v_sensitive_key_pattern text := '(^|[_-])(authorization|api[_-]?key|access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|password|credentials?|secret[_-]?key|private[_-]?key|token|secret)([_-]|$)';
   v_secret_pattern text := regexp_replace($result_secret$
     ((^|[^A-Za-z0-9_])Bearer[ 	]+[A-Za-z0-9._~+/=-]+
     |(^|[^A-Za-z0-9_-])([A-Za-z0-9]+[_-])*Authorization[ 	]*[=:][ 	]*[^\r\n]*
@@ -163,6 +164,44 @@ BEGIN
       GROUP BY ()
       HAVING max(depth)>64 OR count(*)>100001
     ) THEN RAISE EXCEPTION 'invalid structured result bounds'; END IF;
+    IF EXISTS (
+      WITH RECURSIVE payload_nodes(value,depth) AS (
+        SELECT v_payload,1
+        UNION ALL
+        SELECT children.value,payload_nodes.depth+1
+        FROM payload_nodes
+        CROSS JOIN LATERAL (
+          SELECT item AS value
+          FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(payload_nodes.value)='array'
+              THEN payload_nodes.value ELSE '[]'::jsonb END
+          ) item
+          UNION ALL
+          SELECT child_value AS value
+          FROM jsonb_each(
+            CASE WHEN jsonb_typeof(payload_nodes.value)='object'
+              THEN payload_nodes.value ELSE '{}'::jsonb END
+          ) object_item(child_key,child_value)
+        ) children
+      ), payload_text(value,is_key) AS (
+        SELECT object_key,true
+        FROM payload_nodes
+        CROSS JOIN LATERAL jsonb_object_keys(
+          CASE WHEN jsonb_typeof(payload_nodes.value)='object'
+            THEN payload_nodes.value ELSE '{}'::jsonb END
+        ) object_key
+        UNION ALL
+        SELECT payload_nodes.value #>> '{}',false
+        FROM payload_nodes WHERE jsonb_typeof(payload_nodes.value)='string'
+      )
+      SELECT 1 FROM payload_text
+      WHERE octet_length(value)>1000000
+        OR normalize(value,NFC)<>value
+        OR value ~ E'[\\x01-\\x08\\x0B-\\x1F]'
+        OR value ~ v_pem_pattern
+        OR value ~* v_secret_pattern
+        OR (is_key AND value ~* v_sensitive_key_pattern)
+    ) THEN RAISE EXCEPTION 'invalid structured result text'; END IF;
   END IF;
   BEGIN
     PERFORM (v->>'task_id')::uuid,(v->>'run_id')::uuid,(v->>'attempt_id')::uuid,(v->>'fence')::bigint;

@@ -50,6 +50,10 @@ class MigrationTests(unittest.TestCase):
         self.assertIn("revoke all on function factory.admit_result_v1", lowered)
         self.assertIn("revoke insert,update,delete on factory.result_sources_v1", lowered)
         self.assertIn("primary key (actor_id,action,idempotency_key)", lowered)
+        self.assertIn(
+            "unique (repository_id,task_id,run_id,attempt_id,source_operation,source_digest)",
+            lowered,
+        )
         self.assertIn("create table factory.result_admission_commands_v1", lowered)
         function_body = lowered.split("create function factory.admit_result_v1", 1)[1]
         self.assertNotIn("insert into factory.next_model_request_outbox_v1", function_body)

@@ -120,6 +120,14 @@ class ResultEnvelopeV2Tests(unittest.TestCase):
             self.assertNotIn("201", operation["responses"])
         self.assertIn("409", openapi["paths"]["/v1/result-admissions"]["post"]["responses"])
         self.assertIn("404", openapi["paths"]["/v1/tasks/{task_id}/result-admissions/{envelope_digest}"]["get"]["responses"])
+        admission_result = openapi["components"]["schemas"]["AdmissionResult"]
+        self.assertEqual(admission_result["required"], [
+            "envelope_digest", "created", "outbox_created",
+        ])
+        self.assertEqual(set(admission_result["properties"]), {
+            "envelope_digest", "created", "outbox_created",
+        })
+        self.assertEqual(admission_result["properties"]["outbox_created"], {"const": False})
 
     def test_broker_can_bind_v2_identity_without_qualifying_any_channel(self):
         identity = {key: value for key, value in envelope().items() if key in {
@@ -262,6 +270,18 @@ class ResultAdmissionServiceTests(unittest.TestCase):
                     lease, ResultEnvelopeV2.from_dict(wire), actor=self.actor,
                     idempotency_key="a" * 64, correlation_id="corr-service",
                 )
+        self.assertEqual(self.store.calls, [])
+
+    def test_result_read_rejects_cross_repository_actor_before_store(self):
+        denied = Actor(
+            "reader-02", "operator", frozenset({"task:read"}),
+            frozenset({"other/repository"}),
+        )
+        with self.assertRaisesRegex(AuthorizationError, "outside actor authorization"):
+            self.service.get_result_envelope(
+                TASK, self.store.record.record_digest,
+                repository_id="owner/repository", actor=denied,
+            )
         self.assertEqual(self.store.calls, [])
 
 if __name__ == "__main__":

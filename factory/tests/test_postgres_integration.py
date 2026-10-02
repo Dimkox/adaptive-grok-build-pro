@@ -1129,6 +1129,15 @@ class PostgresFactoryTests(unittest.TestCase):
                     bad_payload["sanitized_payload"]
                 )
             direct_bad.append((bad_payload, None, None))
+        escaped_sensitive_key = {
+            **envelope.to_dict(), "content_type": "application/json",
+            "sanitized_payload": '{"pass\\u0077ord":"not-safe"}',
+            "source_digest": canonical_digest({"structured_bad": "escaped-sensitive-key"}),
+        }
+        escaped_sensitive_key["sanitized_payload_digest"] = canonical_digest(
+            escaped_sensitive_key["sanitized_payload"]
+        )
+        direct_bad.append((escaped_sensitive_key, None, None))
         for document, wire, bad_digest in direct_bad:
             with self.assertRaises(psycopg.errors.RaiseException):
                 direct(document, wire=wire, digest_value=bad_digest)
