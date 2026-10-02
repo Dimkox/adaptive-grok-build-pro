@@ -1,0 +1,74 @@
+{
+  "change_id": "20261002-add-factory-v1-5-decision-accounting-boundary-be-797c13",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-v15-stack-02c-decision-boundaries",
+      "change_id": "20261002-add-factory-v1-5-decision-accounting-boundary-be-797c13",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "c78dfb301d4b957d338f9fbc61d1a9e6a7bf1fe5",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T00:47:25+00:00",
+      "route_id": "797c13b3a4cf"
+    }
+  ],
+  "created_at": "2026-10-02T00:47:25+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T00:47:25+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T01:08:29+00:00",
+      "from": "draft",
+      "reason": "scope, invariants, acceptance criteria, tests and rollback recorded from four independent analyses",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T01:08:29+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded design approved for single-owner implementation",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "b5d9ebc88e57fe27acfc1b10500392d3f8ac9556fe94a3cd5aff7dd4edee52eb",
+  "route_id": "797c13b3a4cf",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Add Factory v1.5 decision accounting boundary behavior from source commit 531089f to the PR2 persistence foundation: enforce bounded cost and duration values and exact persisted accounting invariants as a new feature slice, with regression tests and isolated PR delivery",
+  "updated_at": "2026-10-02T01:08:29+00:00"
+}

@@ -1,0 +1,58 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A cumulative known USD-micros value at 2**63-1 is accepted and any larger aggregate is rejected even when every individual amount is valid.",
+      "evidence": [{"test": "factory/tests/decision_contract_cases.py"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Actual, estimated, unknown, duplicate, currency, pricing-version and timing boundary cases execute through both Factory and root discovery without adding an external jsonschema CLI dependency.",
+      "evidence": [{"test": "factory/tests/test_decision_contracts.py"}, {"test": "tests/test_factory_v15_decisions.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "PR2 decision persistence, replay, fencing and audit compatibility remain unchanged and the slice makes no durable accounting or full-U2 completion claim.",
+      "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}, {"receipt": "test_review"}]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-add-factory-v1-5-decision-accounting-boundary-be-797c13",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Persist or wrap a cost aggregate outside signed 64-bit range.", "evidence": [{"test": "factory/tests/decision_contract_cases.py"}]},
+    {"id": "FORBID-002", "statement": "Present unknown or estimated cost as a complete actual total.", "evidence": [{"test": "factory/tests/decision_contract_cases.py"}]},
+    {"id": "FORBID-003", "statement": "Claim durable cost/time accounting, BB-R11 budget reservation, or full U2 completion from this slice.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Each cost scalar and the cumulative known amount is an integer from 0 through 2**63-1 and booleans are rejected.", "evidence": [{"test": "factory/tests/decision_contract_cases.py"}]},
+    {"id": "INV-002", "statement": "Unknown and estimated entries keep the summary incomplete; currency conversion is never invented.", "evidence": [{"test": "factory/tests/decision_contract_cases.py"}]},
+    {"id": "INV-003", "statement": "Existing DecisionRecordV1 identity, atomic persistence, replay, fencing and append-only supersession semantics do not change.", "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Reject signed-64-bit overflow in Factory v1.5 factual cost summaries and preserve honest incomplete-cost and timing boundaries without widening PR2 persistence claims.",
+    "success_metric": "Both discovery surfaces pass the adapted source boundary matrix and reject cumulative USD-micros overflow while the full PR verifier remains green.",
+    "target": "A bounded stacked PR containing only the aggregate guard, adapted regression tests and truthful change evidence."
+  },
+  "observability": [
+    {"id": "SIG-001", "metric": "ContractError names total_usd_micros and both discovery surfaces pass", "proves": ["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

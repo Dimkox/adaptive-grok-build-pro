@@ -132,6 +132,7 @@ def summarize_cost(entries, *, expected_usage_ids=None):
             integer(amount, "amount")
             identity(entry["pricing_version"])
             known += amount
+            integer(known, "total_usd_micros")
             estimated += entry["status"] == "estimated"
         if entry["pricing_version"] is not None:
             identity(entry["pricing_version"])
