@@ -1537,3 +1537,9 @@ free-function test into `load_tests` and pin the collected inventory so both run
 Root cause: installer tests covered a generic unsupported platform and unsafe roots, but did not pin
 the excluded Darwin host or isolate the explicit home-directory guard. Use controlled inputs and
 exact error assertions so broader platform admission or removal of a named root guard kills a test.
+
+### 2026-10-02 — Keep root tests inside the immutable runner environment
+
+Root cause: the result-schema test imported third-party `jsonschema`, which is not installed in the
+Trust CI runner image, and unittest discovery therefore failed during import. Use the repository's
+dependency-free schema subset validator and bind free-function assertions into unittest discovery.
