@@ -1,0 +1,82 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "55779432d7ff13cc29a2c2cd9c72d69f5d45dda1",
+  "base_fingerprint": "581a9a62d47707b5cb4ee01c61362cd54e5751d184f4660870e07af1ad6aa3a4",
+  "complexity": "standard",
+  "created_at": "2026-10-02T04:39:27+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "matched_keywords": {
+    "api": [
+      "api",
+      "openapi"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "0fb1ebee4b9e",
+  "schema_version": 1,
+  "session_id": "factory-v15-stack-03b-result-api",
+  "status": "routed",
+  "task": "Implement the bounded Factory v1.5 result admission contract and HTTP API from source commit b0579a390, stacked on PR233; preserve hardened offline result sanitization, keep persistence and dispatch excluded, add closed OpenAPI/schema contracts and regression tests",
+  "task_domains": [
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

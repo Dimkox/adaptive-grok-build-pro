@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/result-envelope.v2.schema.json",
+  "title": "ResultEnvelopeV2 bounded admission wire contract",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.result_contracts.ResultEnvelopeV2.from_dict",
+    "semantic_validation_required": true,
+    "semantic_checks": ["identity_binding", "strict_json", "utf8_byte_limits", "known_secret_detection", "payload_digest", "outcome_payload_parity"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "repository_id", "task_id", "run_id", "fence", "packet_digest",
+    "attempt_id", "source_operation", "source_digest", "schema_version",
+    "channel", "content_type", "outcome", "reason_code", "completeness",
+    "policy_version", "sanitized_payload", "sanitized_payload_digest"
+  ],
+  "properties": {
+    "repository_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+    "task_id": {"type": "string", "format": "uuid"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "attempt_id": {"type": "string", "format": "uuid"},
+    "source_operation": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+    "source_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "schema_version": {"const": 2},
+    "channel": {"enum": ["native_tool_result", "synthetic_child_report", "attachment", "artifact_cache", "resume", "external_cli", "unknown"]},
+    "content_type": {"type": "string", "minLength": 1, "maxLength": 128},
+    "outcome": {"enum": ["allow", "redacted", "rejected", "unavailable"]},
+    "reason_code": {"type": "string", "minLength": 1, "maxLength": 128},
+    "completeness": {"enum": ["complete", "missing"]},
+    "policy_version": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sanitized_payload": {"type": ["string", "null"], "maxLength": 1000000},
+    "sanitized_payload_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

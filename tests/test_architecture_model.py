@@ -1267,6 +1267,15 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertIn("NODE-GOVERNANCE-VALIDATOR", node_ids)
         self.assertIn("NODE-GOVERNANCE-REGISTRIES", node_ids)
         self.assertNotIn("NODE-FACTORY-CONTROL-PLANE", node_ids)
+        nodes_by_id = {node["id"]: node for node in snapshot.system["nodes"]}
+        self.assertIn(
+            "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
+            nodes_by_id["NODE-FACTORY-PROPOSAL-BROKER"]["public_contracts"],
+        )
+        self.assertIn(
+            "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+            nodes_by_id["NODE-FACTORY-LOCAL-API"]["public_contracts"],
+        )
         governance_validator = next(
             node
             for node in snapshot.system["nodes"]

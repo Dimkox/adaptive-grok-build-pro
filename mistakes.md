@@ -1501,3 +1501,7 @@ Root cause: I guessed a decision-schema filename and used standalone discovery f
 ### 2026-10-02 — Distinguish declared sentinel channels from invalid metadata
 
 Root cause: I reused the sanitizer metadata rejection for inspect() and retained the source test's exclusion of unknown, overlooking that unknown is a declared seventh qualification channel. The all-channel regression now catches the inconsistency, while separate tests preserve rejection and non-consumption for unknown-channel sanitization and unrecognized inspection metadata.
+
+### 2026-10-02 — Bind diagnostic commands to the intended clean clone
+
+Root cause: I created an exact-SHA clone with `git -C` but launched unittest without changing its working directory, so the diagnostic accidentally exercised the dirty controller worktree and produced irrelevant failures. Use the clone itself as the command working directory (and verify `pwd`/HEAD) before interpreting clean-clone evidence.

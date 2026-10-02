@@ -15,6 +15,7 @@ from .execution_contracts import (
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
 from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .result_contracts import ResultEnvelopeV2
 from .semantic_adjudication import adjudicate
 from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
 from .semantic_contracts import (
@@ -48,6 +49,12 @@ class SnapshotBrokerUnavailable(RuntimeError):
 
 
 class SnapshotBrokerIntegrityError(RuntimeError):
+    pass
+
+
+class ResultAdmissionUnavailable(RuntimeError):
+    """The contract seam exists but durable result storage is not installed."""
+
     pass
 
 
@@ -101,6 +108,31 @@ class FactoryService:
         if actor.kind != "operator" or "*" not in actor.repositories:
             raise AuthorizationError("metrics require operator actor")
         return self.store.metrics()
+
+    def admit_result(
+        self, grant: LeaseGrant, envelope: ResultEnvelopeV2, *, actor: Actor,
+        idempotency_key: str, correlation_id: str,
+    ) -> None:
+        """Validate admission authority, then fail closed before any store side effect."""
+        self._require(actor, "task:execute", envelope.repository_id)
+        if actor.kind != "worker" or grant.owner != actor.actor_id:
+            raise AuthorizationError("lease grant belongs to another worker")
+        record = ResultEnvelopeV2.from_dict(envelope.to_dict())
+        if (
+            record.task_id != grant.task_id
+            or record.run_id != grant.run_id
+            or record.fence != grant.fence
+            or record.packet_digest != grant.packet_digest
+        ):
+            raise AuthorizationError("result envelope does not belong to lease grant")
+        raise ResultAdmissionUnavailable("result admission persistence unavailable")
+
+    def get_result_envelope(
+        self, task_id: str, envelope_digest: str, *, repository_id: str, actor: Actor,
+    ) -> None:
+        """Authorize the closed read seam without implying persisted replay exists."""
+        self._require(actor, "task:read", repository_id)
+        raise ResultAdmissionUnavailable("result admission persistence unavailable")
 
     @staticmethod
     def _require(actor: Actor, scope: str, repository: str | None = None) -> None:

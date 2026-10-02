@@ -1,0 +1,74 @@
+{
+  "change_id": "20261002-implement-bounded-factory-v1-5-result-admission-0fb1eb",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-v15-stack-03b-result-api",
+      "change_id": "20261002-implement-bounded-factory-v1-5-result-admission-0fb1eb",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "55779432d7ff13cc29a2c2cd9c72d69f5d45dda1",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T04:39:46+00:00",
+      "route_id": "0fb1ebee4b9e"
+    }
+  ],
+  "created_at": "2026-10-02T04:39:46+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T04:39:46+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T05:16:59+00:00",
+      "from": "draft",
+      "reason": "Parallel source, architecture, requirements and integration analyses converged on a fail-closed contract-only slice",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T05:16:59+00:00",
+      "from": "scoped",
+      "reason": "No human gates; typed acceptance criteria and exclusions validated",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "659fbffaac6a83273d3c0637792098523ba0a3666901bcb8844cb980fbf7308c",
+  "route_id": "0fb1ebee4b9e",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement bounded Factory v1.5 result admission contract API",
+  "updated_at": "2026-10-02T05:16:59+00:00"
+}

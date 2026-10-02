@@ -169,6 +169,7 @@ class SemanticBridgeTests(unittest.TestCase):
             "repair-directive.v1.schema.json",
             "result-channel-qualification.v1.schema.json",
             "result-envelope.v1.schema.json",
+            "result-envelope.v2.schema.json",
             "semantic-coverage.v1.schema.json",
             "semantic-execution-binding.v1.schema.json",
             "semantic-finding.v1.schema.json",
