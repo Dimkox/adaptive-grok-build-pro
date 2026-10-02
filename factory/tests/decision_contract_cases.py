@@ -11,6 +11,13 @@ from factory.tests.decision_fixtures import decision_facts
 from tests.json_schema_subset import SubsetValidator
 
 
+def actual_cost_entry(amount=120):
+    return dict(
+        usage_id="call-1", source="provider", currency="USD",
+        pricing_version="p1", amount_usd_micros=amount, status="actual",
+    )
+
+
 class DecisionContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -140,14 +147,7 @@ class DecisionContractTests(unittest.TestCase):
                 DecisionRecordV1.from_dict(candidate)
 
     def test_cost_boundaries(self):
-        entry = dict(
-            usage_id="call-1",
-            source="provider",
-            currency="USD",
-            pricing_version="p1",
-            amount_usd_micros=120,
-            status="actual",
-        )
+        entry = actual_cost_entry()
         self.assertFalse(summarize_cost([entry])["complete"])
         self.assertFalse(summarize_cost([entry], expected_usage_ids=["call-1", "call-2"])["complete"])
         self.assertTrue(summarize_cost([entry], expected_usage_ids=["call-1"])["complete"])
@@ -161,34 +161,31 @@ class DecisionContractTests(unittest.TestCase):
             )
 
     def test_cost_completeness_and_invalid_entries(self):
-        actual = dict(
-            usage_id="call-1", source="provider", currency="USD",
-            pricing_version="p1", amount_usd_micros=120, status="actual",
-        )
+        actual = actual_cost_entry()
         unknown = dict(
             actual, usage_id="call-2", pricing_version=None,
             amount_usd_micros=None, status="unknown",
         )
         estimated = dict(actual, usage_id="call-2", amount_usd_micros=30, status="estimated")
+        incomplete = dict(
+            known_usd_micros=120, complete=False, total_usd_micros=None,
+            unknown_items=1, estimated_items=0,
+        )
         self.assertEqual(
             summarize_cost([actual], expected_usage_ids=["call-1"]),
-            dict(known_usd_micros=120, complete=True, total_usd_micros=120,
-                 unknown_items=0, estimated_items=0),
+            dict(incomplete, complete=True, total_usd_micros=120, unknown_items=0),
         )
         self.assertEqual(
             summarize_cost([actual, unknown], expected_usage_ids=["call-1", "call-2"]),
-            dict(known_usd_micros=120, complete=False, total_usd_micros=None,
-                 unknown_items=1, estimated_items=0),
+            incomplete,
         )
         self.assertEqual(
             summarize_cost([actual, estimated], expected_usage_ids=["call-1", "call-2"]),
-            dict(known_usd_micros=150, complete=False, total_usd_micros=None,
-                 unknown_items=0, estimated_items=1),
+            dict(incomplete, known_usd_micros=150, unknown_items=0, estimated_items=1),
         )
         self.assertEqual(
             summarize_cost([actual], expected_usage_ids=["call-1", "call-2"]),
-            dict(known_usd_micros=120, complete=False, total_usd_micros=None,
-                 unknown_items=1, estimated_items=0),
+            incomplete,
         )
         invalid = (
             ("duplicate", [actual, actual]),
@@ -205,10 +202,7 @@ class DecisionContractTests(unittest.TestCase):
                 summarize_cost(entries, expected_usage_ids=["call-1"])
 
     def test_cumulative_cost_accepts_signed_bigint_maximum(self):
-        actual = dict(
-            usage_id="call-1", source="provider", currency="USD",
-            pricing_version="p1", amount_usd_micros=2**63 - 1, status="actual",
-        )
+        actual = actual_cost_entry(2**63 - 1)
         for entries in (
             [actual],
             [dict(actual, amount_usd_micros=2**63 - 2),
@@ -223,14 +217,7 @@ class DecisionContractTests(unittest.TestCase):
                 )
 
     def test_cumulative_cost_rejects_overflow_even_when_incomplete(self):
-        actual = dict(
-            usage_id="call-1",
-            source="provider",
-            currency="USD",
-            pricing_version="p1",
-            amount_usd_micros=2**63 - 1,
-            status="actual",
-        )
+        actual = actual_cost_entry(2**63 - 1)
         second = dict(actual, usage_id="call-2", amount_usd_micros=1)
         unknown = dict(
             actual, usage_id="call-3", pricing_version=None,

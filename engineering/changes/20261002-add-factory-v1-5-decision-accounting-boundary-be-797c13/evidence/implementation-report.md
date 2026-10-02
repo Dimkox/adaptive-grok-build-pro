@@ -56,3 +56,16 @@ No schema, migration, HTTP/event, store/service or audit changes were made. The 
 ## Rollout and recovery
 
 Deliver on the isolated stacked PR above PR231 after the remaining gates. The helper currently has test-only callers; the intentional compatibility change rejects previously unrepresentable aggregate amounts. No data rollback is required; forward-fix any valid-input regression and rerun both discovery modules plus full verification. Existing schema-23 decision history remains in place.
+
+## Architecture-budget fix attempt 1
+
+The coordinator's full verifier at historical HEAD `48fac6d54b16c5231c680ba740ded25e7f376c94` passed product checks, coverage, factory-unit and factory-postgres-exit but failed architecture/governance because `FIT-BOUNDED-FACTORY-TEST-CHANGE` measured 800,532 bytes against its 800,000-byte limit. The initial adaptation repeated fixtures and expected summary fields without checking the cumulative exact-base fitness budget before the full run.
+
+The writer factored four identical actual-cost fixtures into a test-only helper inside the governed shared module, and reused a literal incomplete-summary expectation with explicit overrides. Every scenario and assertion remains present; both discovery bridges and runtime behavior are unchanged. The shared file shrank from 14,223 to 13,636 bytes (587 bytes), while the existing architecture rule and governed prefixes remain unchanged.
+
+- `PYTHONPATH=factory/src taskset -c 0-27 python3 -m unittest factory.tests.test_decision_contracts tests.test_factory_v15_decisions -v`: exit 0, 26 tests in 0.026 s, no skips.
+- `taskset -c 0-27 python3 scripts/grok_architecture.py fitness --base 01b089fcbf417d69f8a21407ea41941436ce74d4 --worktree --json`: exit 0, `fitness_status=pass`, no failures. The rule's exact metric, sum of `max(base_size, head_size)` across its governed changed artifacts, is 799,945 / 800,000 bytes, leaving 55 bytes of headroom. The original comparison base is retained.
+- `ruff check factory/tests/decision_contract_cases.py`: exit 0, all checks passed.
+- `git diff --check`: exit 0, no whitespace errors.
+
+Resumed capacity discovery at `2026-10-02T01:37:25Z` was recorded locally first in `/tmp/pr2c-fitness-fix-capacity-20261002T013725Z.md`: `lscpu -p=CORE,SOCKET,ONLINE`, both nproc commands, process affinity, actual cgroup membership/mount, ancestor quota/cpuset reads and child-only `taskset -c 0-27` probe reconfirmed 14 physical / 28 online logical CPUs, default affinity 22, effective cpuset 0-27 and unlimited ancestor quotas. The child probe exposes 28; writer allocation remains one worker. This bounded fix follows the full verifier's failure without launching a competing full runner; fresh full verification, affected independent reviews and receipts remain coordinator-owned.
