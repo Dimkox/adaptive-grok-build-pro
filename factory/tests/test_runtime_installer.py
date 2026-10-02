@@ -11,6 +11,7 @@ import stat
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 
@@ -173,6 +174,35 @@ class InstallerTests(unittest.TestCase):
             setup.preflight(self.root, platform_name="Windows")
         with self.assertRaises(setup.InstallerError):
             setup.preflight(self.root, minimum_free_bytes=10**30)
+        self.assertFalse(self.root.exists())
+
+    def test_preflight_rejects_darwin_with_exact_unsupported_host_reason(self):
+        with self.assertRaisesRegex(setup.InstallerError, "^UNSUPPORTED_HOST$"):
+            setup.preflight(
+                self.root,
+                platform_name="Darwin",
+                minimum_free_bytes=0,
+                minimum_memory_bytes=0,
+            )
+        self.assertFalse(self.root.exists())
+
+    def test_preflight_rejects_exact_home_root_by_explicit_home_guard(self):
+        control = setup.preflight(
+            self.root,
+            platform_name="Linux",
+            minimum_free_bytes=0,
+            minimum_memory_bytes=0,
+        )
+        self.assertTrue(control["ready"])
+        with patch.object(setup.Path, "home", return_value=self.root), patch.object(
+            setup.Path, "cwd", return_value=self.parent / "controlled-cwd"
+        ), self.assertRaisesRegex(setup.InstallerError, "^UNSAFE_ROOT$"):
+            setup.preflight(
+                self.root,
+                platform_name="Linux",
+                minimum_free_bytes=0,
+                minimum_memory_bytes=0,
+            )
         self.assertFalse(self.root.exists())
 
     def test_port_and_missing_adapter_fail_before_root_creation(self):

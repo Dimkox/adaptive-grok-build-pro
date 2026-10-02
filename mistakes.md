@@ -1531,3 +1531,9 @@ loopback-only port, and propagate that URL before the final probe.
 Root cause: the rotator tests were transplanted as free pytest functions, so mandatory unittest
 discovery imported the module but executed zero assertions and hid a stale golden digest. Bind every
 free-function test into `load_tests` and pin the collected inventory so both runners execute it.
+
+### 2026-10-02 — Test safety branches by their exact rejection reason
+
+Root cause: installer tests covered a generic unsupported platform and unsafe roots, but did not pin
+the excluded Darwin host or isolate the explicit home-directory guard. Use controlled inputs and
+exact error assertions so broader platform admission or removal of a named root guard kills a test.
