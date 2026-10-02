@@ -12,13 +12,13 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.1.0 release candidate**. This exact branch is an unqualified, default-off source candidate: U5 supplies observation-only predictor/explainer contracts, U6 supplies a pinned deterministic FPF snapshot evaluator, and neither capability changes routing, production authority, or external systems. No live qualification, 2.1.0 artifact, tag, package publication, deployment, or merge is claimed; the published `v2.0.19` bytes remain immutable.
+Identity: **2.1.0 release candidate**. This artifact-child branch holds the twice-reproducible ZIP and checksum built from exact source `e5856acfd4bc7a186f40a740b54ec86459462db5` / tree `0dfa04f3ec3ea9c7a04c723e9d127603fc72999b`. Repository custody does not claim a pull request, check, merge, tag, publication, deployment, or activation. The published `v2.0.19` record remains immutable.
 
 The candidate also carries closed default-off BB contracts, an authenticated offline-only model-rotator registry, a bounded explicit-root VibeVM package store, and an opt-in offline Linux setup manager. U4/macOS remains excluded; no component activates providers, models, services, deployment, or production authority.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |
-| Repository source | `main` observed on September 24 at release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3` (PR #189), after twenty post-`v2.0.18` landings recorded in `PROJECT_STATE.json`; the artifact-child candidate carries the ZIP+sidecar built from that exact tree. Published tag `v2.0.18` stays immutable at `e7d0f72`. M0-M9 source is delivered; runtime activation and M8/M9 qualification remain separate. |
+| Repository source | Historical `main` observation: `3f41be92161fef451a2dfa7451eb458ce8f022b3`. This artifact child is built from exact source `e5856acfd4bc7a186f40a740b54ec86459462db5` and tree `0dfa04f3ec3ea9c7a04c723e9d127603fc72999b`. Published `v2.0.19` stays immutable; the `v2.1.0` delivery identities are unknown and activation remains false. |
 | 2.1.0 candidate capabilities | U5 prediction artifacts are observation-only and require declared history before they can report availability. U6's pinned FPF snapshot can only emit deterministic evaluation evidence; external qualification remains `not_qualified`/not established and all authority effects remain `none`. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |

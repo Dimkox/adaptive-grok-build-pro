@@ -1,12 +1,12 @@
 # Release packages
 
-The latest published release is [`v2.0.18`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.18), published `2026-09-16T13:52:24Z`, targeting `e7d0f72bf834b75eb543d9424ee47c7829cc65c0`. Its ZIP SHA-256 is `0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a`; the sidecar file SHA-256 is `dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216`. The superseded [`v2.0.17`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.17) (ZIP `770f1db5725e666be60c1f879d2768feacb15dd53e194a1f1f48632980f74616`, sidecar `54db9f64bb7296ca657410131499ca06358f89b23171e221b04e300acf03f3c0`) stays immutable. These immutable bytes are recorded in [`PROJECT_STATE.json`](../PROJECT_STATE.json) under `published_release`; earlier releases remain in `prior_published_releases`.
+The latest published release is [`v2.0.19`](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.19), published `2026-09-24T21:30:52Z`, targeting `cb9af4073ba6c3d515145164d771c75ebdfa3224`. Its ZIP SHA-256 is `4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9`; the sidecar file SHA-256 is `77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8`. These immutable bytes are recorded in [`PROJECT_STATE.json`](../PROJECT_STATE.json) under `published_release`; earlier releases remain in `prior_published_releases`.
 
 Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptive-grok-build-pro-v2.0.14.zip` is published with tag `v2.0.14` at `2026-09-04T16:58:48Z`; its SHA-256 is `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and its sidecar file SHA-256 is `1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c`. The release is bound to checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` and immutable tag/merge target `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`, rather than later documentation-only HEADs. PR #24’s squash merge changed commit identity while preserving the reviewed tree; the tagged artifact was rebuilt from the exact merge before publication.
 
 Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Published artifacts are not restacked for documentation-only successors.
 
-`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. The `v2.0.19` release-sync candidate is merged in PR #189 at `3f41be92161fef451a2dfa7451eb458ce8f022b3`; its ZIP and sidecar are delivered by the separate artifact-child candidate, while tag and GitHub Release publication remain pending exact-head Trust CI and named grants.
+`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. `v2.0.19` is published and immutable. The `v2.1.0` pair is a local artifact candidate only; its delivery identities are not yet known.
 
 | File | Version |
 | --- | --- |
@@ -29,8 +29,8 @@ Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `859
 | `adaptive-grok-build-pro-v2.0.16.zip` | 2.0.16 (published 2026-09-13T22:04:08Z) |
 | `adaptive-grok-build-pro-v2.0.17.zip` | 2.0.17 (published 2026-09-16T01:17:14Z) |
 | `adaptive-grok-build-pro-v2.0.18.zip` | 2.0.18 (published 2026-09-16T13:52:24Z) |
-| `adaptive-grok-build-pro-v2.0.19.zip` | 2.0.19 (artifact delivered, tag and GitHub Release pending) |
-| `adaptive-grok-build-pro-v2.1.0.zip` | 2.1.0 release-candidate name reserved; bytes are not built or published by this source commit |
+| `adaptive-grok-build-pro-v2.0.19.zip` | 2.0.19 (published 2026-09-24T21:30:52Z) |
+| `adaptive-grok-build-pro-v2.1.0.zip` | 2.1.0 artifact candidate; built twice byte-identically, repository custody only, unpublished |
 
 ## Build a future candidate
 

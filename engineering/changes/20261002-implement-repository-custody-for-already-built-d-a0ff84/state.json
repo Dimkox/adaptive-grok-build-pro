@@ -1,0 +1,110 @@
+{
+  "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "release/v2.1.0-artifact",
+      "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "detached": false,
+      "dirty_product_paths": [
+        "packages/adaptive-grok-build-pro-v2.1.0.zip",
+        "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T21:14:30+00:00",
+      "route_id": "a0ff84051275"
+    },
+    {
+      "branch": "release/v2.1.0-artifact",
+      "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "ca9139129232b2264c3c1fa6dbb577acb5513429",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-02T21:39:38+00:00",
+      "route_id": "a0ff84051275"
+    }
+  ],
+  "created_at": "2026-10-02T21:14:30+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "Focused PR verification passed before ready transition; exact receipt remains machine-local runtime evidence",
+        "receipt_kind": "verification",
+        "status": "passed"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "Independent mutation-backed PASS report persisted at evidence/code-review.md",
+        "receipt_kind": "code_review",
+        "status": "passed"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T21:14:30+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T21:23:21+00:00",
+      "from": "draft",
+      "reason": "Scope, provenance, acceptance criteria, tests, rollback, and no-publication boundary are recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T21:23:21+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; owner authorized completing all release steps",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T21:39:38+00:00",
+      "from": "approved",
+      "reason": "Artifact custody implementation committed",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-02T21:39:38+00:00",
+      "from": "implementing",
+      "reason": "Focused PR verifier passed on exact candidate",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-02T21:39:38+00:00",
+      "from": "verifying",
+      "reason": "Independent reviewer completed mutation-backed review",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-02T21:39:38+00:00",
+      "from": "reviewing",
+      "reason": "Verification and independent code review passed",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "702b2a2c4b173128d8427ddaebb24abf593b1de4625e33e046935a43ca515170",
+  "route_id": "a0ff84051275",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Implement repository custody for already-built deterministic v2.1.0 package bytes from source e5856acfd4bc7a186f40a740b54ec86459462db5: add ZIP and checksum, update candidate state documentation and binding tests without publication or activation",
+  "updated_at": "2026-10-02T21:39:38+00:00"
+}

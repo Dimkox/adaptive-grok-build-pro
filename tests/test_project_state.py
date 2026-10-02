@@ -420,30 +420,66 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[5]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.1.0")
-        self.assertEqual(local["status"], "source_candidate")
-        self.assertEqual(local["route_id"], "7e4b7e6385ae")
-        self.assertEqual(local["branch"], "release/2.1.0-rc")
+        self.assertEqual(local["status"], "artifact_candidate")
+        self.assertEqual(local["route_id"], "a0ff84051275")
+        self.assertEqual(local["branch"], "release/v2.1.0-artifact")
         self.assertEqual(
             local["change_package"],
-            "engineering/changes/20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
+            "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
         )
-        self.assertEqual(local["artifact_status"], "not_built")
+        self.assertEqual(local["artifact_status"], "built_reproducibly_repository_custody_pending_delivery")
         self.assertFalse(local["default_enabled"])
         self.assertEqual(local["qualification_status"], "not_qualified")
         self.assertFalse(local["published"])
         self.assertFalse(local["external_effect"])
         self.assertFalse(local["operational_activation"])
-        self.assertEqual(local["source_base"], "23fdc2ef136a65ee2ff45397ff9952cdae934e21")
+        self.assertEqual(local["source_base"], "e5856acfd4bc7a186f40a740b54ec86459462db5")
+        self.assertEqual(local["source_tree"], "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b")
+        self.assertEqual(local["artifact"]["sha256"], "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e")
+        self.assertEqual(local["artifact"]["sidecar_sha256"], "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d")
+        self.assertEqual(local["artifact"]["reproducible_build_count"], 2)
+        for field in ("pull_request", "checked_head", "merge_commit", "tag"):
+            self.assertIsNone(local[field])
         forbidden_claims = {
-            "artifact_child", "artifact", "artifact_bytes", "zip_sha256", "sidecar_sha256",
-            "checked_head", "check_run_id", "merge_commit", "pull_request", "tree",
+            "artifact_child", "artifact_bytes", "zip_sha256", "sidecar_sha256",
+            "check_run_id", "tree",
         }
         self.assertEqual(forbidden_claims & set(local), set())
         self.assertNotIn("2.0.19", json.dumps(local, sort_keys=True))
+        current = state["current_unreleased_change"]
         self.assertEqual(
-            state["current_unreleased_change"]["change_id"],
-            "20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
+            current["change_id"],
+            "20261002-implement-repository-custody-for-already-built-d-a0ff84",
         )
+        self.assertEqual(current["route_id"], local["route_id"])
+        self.assertEqual(current["branch"], local["branch"])
+        self.assertEqual(current["change_package"], local["change_package"])
+        self.assertEqual(current["target_version"], "2.1.0")
+        self.assertEqual(current["stage"], "artifact_child_candidate_pending_pr_tag_release")
+        self.assertEqual(current["source_base"], local["source_base"])
+        self.assertEqual(current["source_tree"], local["source_tree"])
+        self.assertEqual(current["frozen"]["published_release"], "v2.0.19")
+        self.assertEqual(
+            current["predecessors"],
+            [
+                {
+                    "kind": "published_release",
+                    "tag": "v2.0.19",
+                    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+                    "published_at": "2026-09-24T21:30:52Z",
+                },
+                {
+                    "kind": "post_v2_0_19_source_landing",
+                    "pull_request": 236,
+                    "head": "5dc835f84543c71ff0faf3c3e3e5cf3041175903",
+                    "merge_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+                    "merged_at": "2026-10-02T21:10:22Z",
+                    "check_run_id": 111022092183,
+                },
+            ],
+        )
+        self.assertNotIn("v2.0.19 artifact-child", current["next_action"])
+        self.assertNotIn("v2.0.18 remains", current["tag_and_release"])
 
     def test_post_publication_landing_and_archived_candidate_are_recorded(self) -> None:
         landing = self.state["delivered_change_history"]["post_v2_0_17_landing"]
@@ -489,22 +525,34 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         current = self.state["current_unreleased_change"]
         delivery = self.state["active_delivery"]
-        for key in ("route_id", "branch", "change_package", "next_action"):
-            self.assertEqual(delivery[key], current[key])
-        self.assertEqual(current["source_base"], OBSERVED_MAIN_SHA)
-        self.assertEqual(current["status"], "release_sync_authored")
+        self.assertEqual(current["source_base"], "e5856acfd4bc7a186f40a740b54ec86459462db5")
+        self.assertEqual(current["source_tree"], "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b")
+        self.assertEqual(current["status"], "artifact_candidate")
         self.assertEqual(
             current["identity"],
-            "v2.0.19 release sync (identity bump and landing rows for the twenty pull requests merged after the v2.0.18 publication)",
+            "v2.1.0 artifact-child candidate built twice from exact source",
         )
-        self.assertEqual(current["route_id"], "0ea34220576f")
-        self.assertEqual(current["target_version"], "2.0.19")
-        self.assertEqual(delivery["status"], "release_sync_pending")
+        self.assertEqual(current["route_id"], "a0ff84051275")
+        self.assertEqual(current["target_version"], "2.1.0")
+        for key in ("route_id", "branch", "change_package", "next_action"):
+            self.assertEqual(delivery[key], current[key])
+        self.assertEqual(delivery["status"], "artifact_custody_pending_delivery")
         self.assertEqual(
             delivery["local_source_gate"]["status"], "passed_for_artifact_source_parent"
         )
-        self.assertEqual(delivery["local_source_gate"]["artifact_head"], OBSERVED_MAIN_SHA)
-        self.assertEqual(delivery["local_source_gate"]["artifact_tree"], V2019_ARTIFACT_TREE)
+        self.assertEqual(delivery["local_source_gate"]["artifact_head"], current["source_base"])
+        self.assertEqual(delivery["local_source_gate"]["artifact_tree"], current["source_tree"])
+        self.assertEqual(delivery["package_handoff"]["release"], "v2.1.0")
+        self.assertEqual(
+            delivery["package_handoff"]["status"],
+            "repository_custody_pending_artifact_delivery",
+        )
+        self.assertEqual(delivery["package_handoff"]["zip_sha256"], "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e")
+        self.assertEqual(delivery["package_handoff"]["sidecar_sha256"], "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d")
+        self.assertEqual(delivery["repository_delivery"]["release"], "v2.1.0")
+        self.assertFalse(delivery["repository_delivery"]["published"])
+        self.assertFalse(delivery["repository_delivery"]["operational_activation"])
+        self.assertNotIn("v2.0.19 artifact-child", delivery["next_action"])
         self.assertIsNone(delivery["repository_delivery"]["checked_head"])
         self.assertIsNone(delivery["repository_delivery"]["pull_request"])
         self.assertIsNone(delivery["package_handoff"]["tag_target"])
