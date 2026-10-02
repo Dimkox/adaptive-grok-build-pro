@@ -1,0 +1,49 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Canonical root v1.5 and BB-01 specifications are byte-identical to their coherent durable package and hash bindings.","evidence":[{"test":"tests/test_factory_v15_bundle.py"}]},
+    {"id":"AC-002","statement":"Migrations 023, 024 and 025 remain byte-identical and no alternate or later migration is added.","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"AC-003","statement":"BB contracts remain disabled/native-only/not_run with no authority effect and closed bounded identities.","evidence":[{"test":"factory/tests/test_bb_contracts.py"}]},
+    {"id":"AC-004","statement":"The rotator is an immutable offline registry only and performs no provider, credential, process, network or persistence action.","evidence":[{"test":"factory/tests/test_model_rotator_registry.py"}]},
+    {"id":"AC-005","statement":"The VibeVM contour is a hardened explicit-root Linux package store with immutable generations and no runtime hook or database migration.","evidence":[{"test":"factory/tests/test_vibevm_store.py"}]},
+    {"id":"AC-006","statement":"The Linux setup manager verifies pinned offline bytes, journals recovery, preserves data, requires an injected adapter, and is installed by the repository installer.","evidence":[{"test":"factory/tests/test_runtime_installer.py"},{"test":"tests/test_installer.py"}]},
+    {"id":"AC-007","statement":"Linux adapter and offline builder fail closed outside the pinned Ubuntu 24.04 x86_64 Python 3.12 boundary and create no implicit activation.","evidence":[{"test":"factory/tests/test_linux_process_adapter.py"},{"test":"factory/tests/test_offline_release_builder.py"}]},
+    {"id":"AC-008","statement":"Architecture, README, release state and manifest truthfully list all added contours as default-off/source-only and retain U4/macOS exclusion.","evidence":[{"receipt":"code_review"}]},
+    {"id":"AC-009","statement":"Existing context, decision, result, U5 and FPF behavior remains compatible and the full PR verifier passes.","evidence":[{"receipt":"verification"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-implement-missing-default-off-factory-context-bb-21a0aa",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No provider/model invocation, automatic activation, deployment, package publication, tag or migration 026+ is introduced.","evidence":[{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"No existing dirty worktree is reset, deleted, cleaned or merged wholesale.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Migrations 023-025 and the current context/decision/result stack are preserved.","evidence":[{"receipt":"verification"}]},
+    {"id":"INV-002","statement":"All imported contours are default-off, data-only, or explicit opt-in and grant no production authority.","evidence":[{"receipt":"code_review"}]},
+    {"id":"INV-003","statement":"U4/macOS remains excluded by owner decision; Windows remains unsupported.","evidence":[{"receipt":"test_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement missing default-off factory context BB contracts rotator registry hardened VibeVM store and Linux setup manager source contours with tests while preserving migrations 023 through 025",
+    "success_metric": "All nine acceptance criteria pass on one exact candidate tree without migration drift or external activation.",
+    "target": "A cb33100d successor containing the missing default-off/source-only contours and canonical specifications, ready for full PR verification."
+  },
+  "observability": [{"id":"SIG-001","metric":"exact_tree_verification","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
