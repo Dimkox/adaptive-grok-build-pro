@@ -5,7 +5,7 @@
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.1.0",
-  "latest_published_release": "v2.0.18",
+  "latest_published_release": "v2.0.19",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -34,37 +34,70 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.18",
-    "published_at": "2026-09-16T13:52:24Z",
-    "pull_request": 108,
-    "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
-    "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
-    "merged_at": "2026-09-16T13:51:26Z",
-    "tag_object": "31d3171f651ea77e29de58d4affc58d008f1c7a5",
-    "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+    "tag": "v2.0.19",
+    "published_at": "2026-09-24T21:30:52Z",
+    "pull_request": 203,
+    "checked_head": "7b1686ec5b0ca4917fd6865794da714e0c581756",
+    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+    "merged_at": "2026-09-24T21:29:33Z",
+    "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
+    "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.18.zip",
-      "sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256",
-      "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
+      "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
+      "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "conclusion": "SUCCESS",
-      "check_run_id": 104809218211,
-      "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
+      "check_run_id": 107833930893,
+      "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
       "signer": "0519cf1d47436f2e",
       "github_app_id": 4694114
     },
     "gitguardian": {
       "conclusion": "SUCCESS",
-      "check_run_id": 104809206290,
+      "check_run_id": 107833930933,
       "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
     },
-    "notes": "The artifact is bound to the immutable v2.0.18 tag target. The archive preserves the pre-publication release-sync snapshot, so candidate wording embedded inside the ZIP is historical. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "merge_tag_target_check_runs": [],
+    "operational_activation": false,
+    "notes": "The artifact is bound to immutable v2.0.19 tag target cb9af4073ba6c3d515145164d771c75ebdfa3224. Trust CI and GitGuardian succeeded on artifact-child PR #203 head 7b1686ec5b0ca4917fd6865794da714e0c581756; this record claims zero check runs on the distinct merge/tag target. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.18",
+      "published_at": "2026-09-16T13:52:24Z",
+      "pull_request": 108,
+      "checked_head": "07d1141e70884397a61eb93fd76525baf2444a0e",
+      "merge_commit": "e7d0f72bf834b75eb543d9424ee47c7829cc65c0",
+      "merged_at": "2026-09-16T13:51:26Z",
+      "tag_object": "31d3171f651ea77e29de58d4affc58d008f1c7a5",
+      "tree": "c78d200ee6a6a7ab1e32f2194691a8e639b9dab3",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.18.zip",
+        "sha256": "0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.18.zip.sha256",
+        "sidecar_sha256": "dd7e2ec5a979d70062f206f381efcb38b92da2f7bfc1129034b459e125a54216",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 104809218211,
+        "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": 4694114
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS",
+        "check_run_id": 104809206290,
+        "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      },
+      "notes": "Historical: superseded as the current published release by v2.0.19."
+    },
     {
       "tag": "v2.0.17",
       "published_at": "2026-09-16T01:17:14Z",
@@ -1171,43 +1204,18 @@
   },
   "local_candidate": {
     "version": "2.1.0",
-    "status": "artifact_bytes_delivered",
-    "route_id": "0ea34220576f",
-    "branch": "release/v2.0.19-candidate-20260922",
-    "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "source_base": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-    "reviewed_product_head": null,
-    "reviewed_product_tree": null,
-    "source_gate_status": "pending_final_tree",
-    "review_status": "pending",
-    "checked_head": null,
-    "merge_commit": null,
-    "tree": null,
-    "pull_request": null,
-    "artifact_status": "pending_tag_and_release",
-    "predecessor_record": "The published v2.0.18 candidate remains the immutable published_release record; earlier releases remain under prior_published_releases.",
-    "artifact_child": {
-      "identity": "A",
-      "source_parent": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-      "source_parent_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
-      "commit": null,
-      "tree": null,
-      "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.19.zip",
-        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
-      ],
-      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "status": "built_byte_reproducible_twice",
-      "requirement": "Released bytes: this commit delivered the ZIP+sidecar built from the merged release-sync tree; the tag binds to the artifact child's own merged commit and the GitHub Release carries both assets, each under its own exact delegated grant recorded by the successor; the child's own identities — merge_commit, tree, checked_head and pull_request — stay null because the child cannot self-record them.",
-      "zip_source_note": "The archive was built from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3; the artifact child additionally flips this record and the coupled docs/tests, whose bytes are deliberately not part of the archive (pre-publication snapshot caveat of the v2.0.15 precedent)."
-    },
+    "status": "source_candidate",
+    "route_id": "7e4b7e6385ae",
+    "branch": "release/2.1.0-rc",
+    "change_package": "engineering/changes/20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
+    "source_base": "23fdc2ef136a65ee2ff45397ff9952cdae934e21",
+    "artifact_status": "not_built",
+    "default_enabled": false,
+    "qualification_status": "not_qualified",
     "published": false,
-    "published_at": null,
     "external_effect": false,
-    "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "Artifact bytes (ZIP + sidecar, 14301716 bytes, built twice byte-identically in private 0700 staging from the merged release-sync tree 3f41be92161fef451a2dfa7451eb458ce8f022b3) are delivered into the repository tree. \"Delivered\" means bytes-in-tree only: no tag, no GitHub Release, no external effect and no operational activation. published, external_effect and operational_activation remain false, and merge_commit/tree stay null because the child cannot self-record them; the tag and the Release bind to this pull request's merged commit under their own exact delegated grants."
+    "notes": "Source-only v2.1.0 release candidate. No artifact bytes, hashes, pull request, check, merge, tag, publication, deployment or production activation are claimed. U5/U6 remain default-off and not live-qualified."
   },
   "delivered_non_milestone_work": [
     {
