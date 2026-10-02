@@ -1261,32 +1261,32 @@
     }
   ],
   "active_delivery": {
-    "route_id": "0ea34220576f",
-    "branch": "release/v2.0.19-candidate-20260922",
+    "route_id": "a0ff84051275",
+    "branch": "release/v2.1.0-artifact",
     "pull_request": null,
-    "change_package": "engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342",
-    "status": "release_sync_pending",
+    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+    "status": "artifact_custody_pending_delivery",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Merge the v2.0.19 artifact-child PR on its exact-head App check, then tag v2.0.19 at that merged commit and publish the GitHub Release with both assets; each separate action requires its named delegated grant and no deployment is implied.",
+    "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
     "local_source_gate": {
       "status": "passed_for_artifact_source_parent",
-      "artifact_head": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
-      "record_scope": "The artifact bytes were built twice from the exact merged v2.0.19 release-sync parent; the artifact-child head still requires its own local verifier and App-owned exact-head check."
+      "artifact_head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+      "record_scope": "The v2.1.0 artifact bytes were built twice from the exact clean source; the artifact-child candidate still requires its own pull request and App-owned exact-head check."
     },
     "package_handoff": {
       "status": "artifact_bytes_delivered_pending_artifact_pr",
       "artifact_child": null,
-      "artifact_tree": "aed3246585fc6435463c3e3a58f1fe6a16070e6a",
+      "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.19.zip",
-        "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.1.0.zip",
+        "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
       ],
-      "zip_sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "release": "v2.0.19",
+      "zip_sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
+      "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
+      "release": "v2.1.0",
       "tag_target": null
     },
     "repository_delivery": {
@@ -1295,12 +1295,13 @@
       "checked_head": null,
       "merge_commit": null,
       "tree": null,
-      "release": "v2.0.19",
+      "release": "v2.1.0",
       "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
       "check_run_id": null,
       "attestation_id": null,
+      "published": false,
       "operational_activation": false,
-      "record_scope": "The v2.0.19 release-sync parent is merged, and artifact bytes are delivered in a separate candidate; no artifact-child repository merge, tag or GitHub Release publication has occurred yet."
+      "record_scope": "The v2.1.0 artifact bytes are in repository custody; no artifact-child pull request check, merge, tag or GitHub Release publication has occurred yet."
     },
     "integrated_stack": {
       "status": "delivered_to_main",
