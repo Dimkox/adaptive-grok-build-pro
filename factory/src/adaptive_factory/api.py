@@ -504,11 +504,10 @@ def create_app(
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise HTTPException(422, "valid UTF-8 JSON required") from exc
         wire = _closed(wire, {"grant", "envelope"})
-        service.admit_result(
+        return service.admit_result(
             _grant(wire["grant"]), ResultEnvelopeV2.from_dict(wire["envelope"]),
             actor=actor, idempotency_key=command_key, correlation_id=correlation,
         )
-        raise ResultAdmissionUnavailable("result admission persistence unavailable")
 
     @app.get(
         "/v1/tasks/{task_id}/result-admissions/{envelope_digest}", tags=["execution"],
@@ -526,11 +525,10 @@ def create_app(
         repository_id = _text(
             x_repository_id, "X-Repository-ID", maximum=128, identifier=True,
         )
-        service.get_result_envelope(
+        return service.get_result_envelope(
             _uuid(task_id, "task_id"), _digest(envelope_digest, "envelope_digest"),
             repository_id=repository_id, actor=actor,
         )
-        raise ResultAdmissionUnavailable("result admission persistence unavailable")
 
     @app.get("/metrics", tags=["operator"])
     def metrics(authorization: str | None = Header(None)):

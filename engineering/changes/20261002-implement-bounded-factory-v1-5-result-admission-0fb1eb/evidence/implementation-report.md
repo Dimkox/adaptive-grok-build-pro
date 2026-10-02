@@ -24,6 +24,10 @@ Initial `factory.tests.test_result_admission_api` failed to import `ResultEnvelo
 
 The controller still owns full PR verification, independent mutation reviews, final receipts and external delivery.
 
+## Review correction
+
+Test review found surviving mutants for run, packet and lease-owner binding. Checked-in API and direct-service regressions now exercise each mismatch with an exploding store, and direct service admission must itself raise `ResultAdmissionUnavailable`; API routes return the service call directly so a future accidental return cannot be hidden by a redundant endpoint-level 503.
+
 ## Residual scope and rollback
 
 There is deliberately no durable admission, idempotent replay, concurrency, outbox, transport or live interception evidence. U4/macOS/Apple work is excluded. Rollback is a reviewed revert of this additive slice; no data recovery is necessary because no writes occur.

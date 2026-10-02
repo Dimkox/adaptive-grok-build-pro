@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import unittest
 
@@ -8,10 +9,12 @@ from fastapi.testclient import TestClient
 
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.contracts import ContractError, canonical_digest
-from adaptive_factory.models import Actor
+from adaptive_factory.models import Actor, LeaseGrant, RunRole
 from adaptive_factory.result_contracts import ResultEnvelopeV2
 from adaptive_factory.result_broker import ResultBroker
-from adaptive_factory.service import FactoryService
+from adaptive_factory.service import (
+    AuthorizationError, FactoryService, ResultAdmissionUnavailable,
+)
 
 
 TASK = "11111111-1111-4111-8111-111111111111"
@@ -146,27 +149,6 @@ class ResultAdmissionApiTests(unittest.TestCase):
         self.assertEqual(response.headers["x-correlation-id"], "corr-1")
         self.assertEqual(self.store.calls, [])
 
-        get = self.client.get(
-            f"/v1/tasks/{TASK}/result-admissions/{'a' * 64}",
-            headers={"Authorization": "Bearer credential", "X-Correlation-ID": "corr-2",
-                     "X-Repository-ID": "owner/repository"},
-        )
-        self.assertEqual(get.status_code, 503, get.text)
-        self.assertEqual(get.json()["code"], "result_admission_unavailable")
-        self.assertEqual(get.headers["x-correlation-id"], "corr-2")
-        self.assertEqual(self.store.calls, [])
-
-    def test_identity_mismatch_is_rejected_before_unavailable_capability(self):
-        for mutation in (
-            {"envelope": envelope(task_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")},
-            {"envelope": envelope(repository_id="other/repository")},
-            {"grant": grant(fence=8)},
-        ):
-            body = {"grant": grant(), "envelope": envelope(), **mutation}
-            response = self.client.post("/v1/result-admissions", headers=self.headers, json=body)
-            self.assertEqual(response.status_code, 403, response.text)
-        self.assertEqual(self.store.calls, [])
-
     def test_outer_duplicate_keys_and_wrong_media_type_are_rejected(self):
         raw = json.dumps({"grant": grant(), "envelope": envelope()})
         duplicate = raw[:-1] + ',"grant":' + json.dumps(grant()) + "}"
@@ -183,6 +165,70 @@ class ResultAdmissionApiTests(unittest.TestCase):
         self.assertEqual(wrong.status_code, 415)
         self.assertEqual(self.store.calls, [])
 
+        get = self.client.get(
+            f"/v1/tasks/{TASK}/result-admissions/{'a' * 64}",
+            headers={"Authorization": "Bearer credential", "X-Correlation-ID": "corr-2",
+                     "X-Repository-ID": "owner/repository"},
+        )
+        self.assertEqual(get.status_code, 503, get.text)
+        self.assertEqual(get.json()["code"], "result_admission_unavailable")
+        self.assertEqual(get.headers["x-correlation-id"], "corr-2")
+        self.assertEqual(self.store.calls, [])
+
+    def test_identity_mismatch_is_rejected_before_unavailable_capability(self):
+        for mutation in (
+            {"envelope": envelope(task_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")},
+            {"envelope": envelope(run_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")},
+            {"envelope": envelope(packet_digest="6" * 64)},
+            {"envelope": envelope(repository_id="other/repository")},
+            {"grant": grant(fence=8)},
+            {"grant": grant(owner="worker-02")},
+        ):
+            body = {"grant": grant(), "envelope": envelope(), **mutation}
+            response = self.client.post("/v1/result-admissions", headers=self.headers, json=body)
+            self.assertEqual(response.status_code, 403, response.text)
+        self.assertEqual(self.store.calls, [])
+
+
+class ResultAdmissionServiceTests(unittest.TestCase):
+    def setUp(self):
+        self.store = ExplodingStore()
+        self.service = FactoryService(self.store)
+        self.actor = Actor(
+            "worker-01", "worker", frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        self.grant = LeaseGrant(
+            TASK, RUN, "worker-01", RunRole.WRITER, 7,
+            datetime(2026, 10, 3, tzinfo=timezone.utc), "3" * 64,
+        )
+
+    def test_valid_admission_raises_explicit_unavailable_at_service_boundary(self):
+        with self.assertRaisesRegex(
+            ResultAdmissionUnavailable, "result admission persistence unavailable",
+        ):
+            self.service.admit_result(
+                self.grant, ResultEnvelopeV2.from_dict(envelope()), actor=self.actor,
+                idempotency_key="a" * 64, correlation_id="corr-service",
+            )
+        self.assertEqual(self.store.calls, [])
+
+    def test_each_grant_binding_rejects_before_unavailable_and_store(self):
+        cases = (
+            (self.grant, envelope(run_id="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")),
+            (self.grant, envelope(packet_digest="6" * 64)),
+            (LeaseGrant(
+                TASK, RUN, "worker-02", RunRole.WRITER, 7,
+                datetime(2026, 10, 3, tzinfo=timezone.utc), "3" * 64,
+            ), envelope()),
+        )
+        for lease, wire in cases:
+            with self.subTest(lease=lease, wire=wire), self.assertRaises(AuthorizationError):
+                self.service.admit_result(
+                    lease, ResultEnvelopeV2.from_dict(wire), actor=self.actor,
+                    idempotency_key="a" * 64, correlation_id="corr-service",
+                )
+        self.assertEqual(self.store.calls, [])
 
 if __name__ == "__main__":
     unittest.main()
