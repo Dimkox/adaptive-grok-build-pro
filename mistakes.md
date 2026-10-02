@@ -1517,5 +1517,5 @@ Root cause: transplanted tests retained undeclared `pytest` and `jsonschema` imp
 ### 2026-10-02 — Size the aggregate exit timeout for the aggregate suite
 
 Root cause: the disposable PostgreSQL exit runner kept a 480-second whole-suite timeout after the
-suite grew beyond that wall-clock budget, so a fully passing run was terminated. Keep the aggregate
-timeout explicitly bounded and regression-tested with visible margin over ordinary child commands.
+suite grew beyond that wall-clock budget, and its verifier wrapper had only a 600-second budget.
+Keep both limits explicitly bounded and regression-test that the outer limit exceeds the inner one.
