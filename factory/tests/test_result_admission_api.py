@@ -96,15 +96,17 @@ class ResultEnvelopeV2Tests(unittest.TestCase):
                 ResultEnvelopeV2.from_dict(mutation)
 
     def test_v2_schema_and_openapi_embed_the_same_canonical_contract(self):
-        root = Path(__file__).resolve().parents[1] / "contracts"
-        schema = json.loads((root / "jsonschema/result-envelope.v2.schema.json").read_text())
+        factory_root = Path(__file__).resolve().parents[1]
+        schema = json.loads((factory_root / "contracts/jsonschema/result-envelope.v2.schema.json").read_text())
         openapi = json.loads(
-            (root / "openapi/factory-result-admission.v1.json").read_text()
+            (factory_root.parent / "engineering/contracts/openapi/factory-result-admission.v2.json").read_text()
         )
         embedded = openapi["paths"]["/v1/result-admissions"]["post"][
             "requestBody"
         ]["content"]["application/json"]["schema"]["properties"]["envelope"]
-        self.assertEqual(embedded, {"$ref": "../jsonschema/result-envelope.v2.schema.json"})
+        self.assertEqual(embedded, {
+            "$ref": "../../../factory/contracts/jsonschema/result-envelope.v2.schema.json"
+        })
         self.assertEqual(schema["$id"], "https://adaptive-grok.local/contracts/result-envelope.v2.schema.json")
         self.assertEqual(set(openapi["paths"]), {
             "/v1/result-admissions",

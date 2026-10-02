@@ -20,7 +20,7 @@ POST -> strict V2/service grant checks -> one SQL transaction -> immutable resul
 
 ## API and event contracts
 
-OpenAPI adds 200/404/409 while retaining 503 for database unavailability. No event contract or publication is introduced.
+The byte-stable v1 OpenAPI remains as the unavailable seam; a new v2 snapshot adds 200/404/409 while retaining 503 for database unavailability. No event contract or publication is introduced.
 
 ## Governance context
 

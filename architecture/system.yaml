@@ -154,6 +154,14 @@
       "version": "1"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API-V2",
+      "kind": "openapi",
+      "path": "engineering/contracts/openapi/factory-result-admission.v2.json",
+      "role": "bidirectional",
+      "version": "2"
+    },
+    {
       "compatibility": "producer_accepted_by_old",
       "id": "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION",
       "kind": "json_schema",
@@ -1672,6 +1680,7 @@
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
         "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+        "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API-V2",
         "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
         "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
         "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1"

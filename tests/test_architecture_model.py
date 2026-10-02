@@ -1276,6 +1276,13 @@ class ArchitectureModelTests(unittest.TestCase):
             "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
             nodes_by_id["NODE-FACTORY-LOCAL-API"]["public_contracts"],
         )
+        contracts_by_id = {
+            contract["id"]: contract for contract in snapshot.system["contracts"]
+        }
+        self.assertEqual(
+            contracts_by_id["CONTRACT-FACTORY-V15-RESULT-ADMISSION-API-V2"]["compatibility"],
+            "bidirectional",
+        )
         governance_validator = next(
             node
             for node in snapshot.system["nodes"]

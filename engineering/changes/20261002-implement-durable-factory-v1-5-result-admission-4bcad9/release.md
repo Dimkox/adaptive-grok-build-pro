@@ -2,7 +2,7 @@
 
 ## Deployment
 
-Apply additive migration 024 before exposing POST/GET through the existing runtime. The migrator verifies contiguous schema 1..24 and least-privilege roles.
+Apply additive migration 024 before exposing POST/GET through the existing runtime and publish the v2 OpenAPI snapshot alongside byte-stable v1. The migrator verifies contiguous schema 1..24 and least-privilege roles.
 
 ## Feature flags / staged rollout
 
