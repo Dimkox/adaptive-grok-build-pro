@@ -50,7 +50,7 @@ governance bypass: the helpers were outside both Factory ownership and
 
 The corrected contour keeps all assertions under `factory/tests` and adds only
 `tests/test_factory_v15_decisions.py` as a root-discovery shim; both prefixes are
-one union budget. Exact accounting then failed at 793148/775000 bytes. Charged
+one union budget. Exact accounting then failed at 793281/775000 bytes. Charged
 inventory was: decision contract cases 7858, decision persistence cases 14472,
 restart probe 63903, contract shim 225, PostgreSQL shim 833, execution PostgreSQL
 278221, landing API 18184, migrations 45479, PostgreSQL integration 363785, and
@@ -61,9 +61,9 @@ its original migration-22 expectations and TRUNCATE list fail after migration 02
 moving tests outside the union was the already-rejected bypass, and splitting the
 change would separate required migration compatibility evidence from its contour.
 The route-approved bounded recalibration is 800000 bytes: a 25000-byte (3.23%)
-increase, leaving 6852 bytes (0.86%) at the measured 793148-byte contour. Line
+increase, leaving 6719 bytes (0.84%) at the measured 793281-byte contour. Line
 limit 7500, AST-complexity limit 600, severity `error`, and both exact prefixes
-remain unchanged and executable regression coverage proves union accounting plus
+remain fixed by regression coverage; executable tests prove union accounting plus
 fail-closed rejection at 800001 bytes.
 
 ## Scope and residual risk
