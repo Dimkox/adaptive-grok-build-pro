@@ -152,7 +152,7 @@ class ResultBrokerTests(unittest.TestCase):
     def test_runtime_channels_are_unavailable_and_stream_is_not_consumed(self):
         from adaptive_factory.result_contracts import RESULT_CHANNELS
 
-        for channel in RESULT_CHANNELS - {"unknown"}:
+        for channel in RESULT_CHANNELS:
             consumed = []
 
             def stream():
@@ -166,6 +166,25 @@ class ResultBrokerTests(unittest.TestCase):
                 (envelope.outcome, envelope.reason_code, consumed),
                 ("unavailable", "runtime_wiring_missing", []),
             )
+
+    def test_unknown_sanitization_and_unrecognized_inspection_reject_without_consuming(self):
+        for method, channel in (("sanitize_candidate", "unknown"),
+                                ("inspect", "unrecognized-private-channel")):
+            with self.subTest(method=method, channel=channel):
+                consumed = []
+
+                def stream():
+                    consumed.append(True)
+                    yield b"private-result-canary"
+
+                envelope = getattr(broker(), method)(
+                    channel=channel, content_type="text/plain", chunks=stream(),
+                )
+                self.assertEqual(
+                    (envelope.outcome, envelope.reason_code, envelope.sanitized_payload, consumed),
+                    ("rejected", "invalid_channel", None, []),
+                )
+                self.assertNotIn("private", json.dumps(envelope.to_dict()))
 
     def test_limits_malformed_input_and_recursive_redaction_fail_closed(self):
         cases = (

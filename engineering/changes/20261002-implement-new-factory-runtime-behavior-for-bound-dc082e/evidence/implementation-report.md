@@ -40,7 +40,7 @@ PY
 
 Focused GREEN commands/results are recorded after the final run below. Initial individual unittest discovery for semantic_bridge failed because its relative test imports require package-qualified loading; the corrected package-qualified combined invocation passes. An attempted decision schema filename was absent; the discovered actual module is tests/test_factory_v15_decisions.py and the final run uses that path.
 
-Final focused GREEN on this candidate:
+Initial implementation focused GREEN recorded for 3442713ef06b586b098d17ad10d377b7fa546193:
 
 - PYTHONPATH=factory/src python3 -m unittest factory.tests.test_result_broker factory.tests.test_semantic_contracts factory.tests.test_semantic_bridge factory.tests.test_landing_api.LandingApiTests.test_predecessor_contract_migration_showcase_and_published_package_are_frozen — 33 tests passed (13 result tests), 0.489 s.
 - python3 -m pytest tests/test_factory_v15_result_schema.py tests/test_factory_v15_decisions.py tests/test_architecture_model.py -q — 96 tests and 336 subtests passed, 2.35 s.
@@ -57,3 +57,22 @@ Fitness against exact agreed stacked base 12a7fd63146c96cff655f1d9cf21184c465037
 ## Residual scope
 
 inspect() never consumes result chunks and leaves every real channel unavailable. This is deterministic offline policy evaluation only, with known-pattern secret detection rather than proof of arbitrary secret identification. A synchronous iterator can block inside next(); timeout and authenticated runtime interception belong to the later adapter slice. No persistence, migration, endpoint, dispatch, live U3/U6, BB-R08 or full F25 acceptance is provided. Full routed verification, read-only independent mutation reviews, exact-tree receipts and external Trust CI remain coordinator delivery gates. Rollback is reviewed revert/forward fix of additive sidecars/bindings with unavailable runtime behavior preserved.
+
+## Independent code-review correction: declared unknown sentinel
+
+Code review of 3442713ef06b586b098d17ad10d377b7fa546193 found that inspect() rejected the declared unknown sentinel even though the qualification matrix includes it as unavailable. The source test explicitly excluded that seventh channel, allowing the inconsistent behavior to survive. Changed the test to iterate all RESULT_CHANNELS and added a separate non-consumption regression for unknown-channel sanitization and unrecognized-channel inspection.
+
+RED: PYTHONPATH=factory/src python3 -m unittest factory.tests.test_result_broker.ResultBrokerTests.test_runtime_channels_are_unavailable_and_stream_is_not_consumed factory.tests.test_result_broker.ResultBrokerTests.test_unknown_sanitization_and_unrecognized_inspection_reject_without_consuming — 2 tests, 1 failure: rejected/invalid_channel instead of unavailable/runtime_wiring_missing for the declared unknown channel.
+
+Repair: inspect() alone opts into allowing the declared sentinel in the shared metadata validator. The validator first distinguishes actual membership in RESULT_CHANNELS from fallback unknown metadata. Unrecognized metadata still rejects; sanitize_candidate() retains its default rejection of unknown, and direct ResultEnvelopeV1 admission still forbids unknown-channel sanitized payloads.
+
+Focused GREEN after correction:
+
+- PYTHONPATH=factory/src python3 -m unittest factory.tests.test_result_broker factory.tests.test_semantic_contracts factory.tests.test_semantic_bridge factory.tests.test_landing_api.LandingApiTests.test_predecessor_contract_migration_showcase_and_published_package_are_frozen — 34 tests passed (14 result tests), 0.464 s.
+- python3 -m pytest tests/test_factory_v15_result_schema.py tests/test_factory_v15_decisions.py tests/test_architecture_model.py -q — 96 tests and 336 subtests passed, 2.31 s.
+- python3 scripts/grok_architecture.py validate — ok, no findings.
+- python3 scripts/grok_architecture.py fitness --base 12a7fd63146c96cff655f1d9cf21184c465037ca --worktree --json — pass, no findings, unchanged limits.
+- ruff check factory/src/adaptive_factory/result_broker.py factory/src/adaptive_factory/result_contracts.py factory/tests/test_result_broker.py tests/test_factory_v15_result_schema.py — all checks passed.
+- git diff --check — passed.
+
+Prior full-verifier/review results remain bound to their original identities. The coordinator must verify/review the corrected candidate afresh.

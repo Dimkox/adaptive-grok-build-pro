@@ -1497,3 +1497,7 @@ Root cause: the decision regression adaptation duplicated fixtures and expected 
 ### 2026-10-02 — Resolve test identities before selecting focused commands
 
 Root cause: I guessed a decision-schema filename and used standalone discovery for a module with relative test imports, producing invocation errors rather than behavioral evidence. Resolve checked-in paths with rg and use package-qualified unittest identities; the corrected PR3a focused run passed all selected tests.
+
+### 2026-10-02 — Distinguish declared sentinel channels from invalid metadata
+
+Root cause: I reused the sanitizer metadata rejection for inspect() and retained the source test's exclusion of unknown, overlooking that unknown is a declared seventh qualification channel. The all-channel regression now catches the inconsistency, while separate tests preserve rejection and non-consumption for unknown-channel sanitization and unrecognized inspection metadata.

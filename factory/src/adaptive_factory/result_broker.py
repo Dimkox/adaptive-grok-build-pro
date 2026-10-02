@@ -61,7 +61,9 @@ class ResultBroker:
         self, *, channel: str, content_type: str, chunks: Iterable[bytes],
     ) -> ResultEnvelopeV1:
         """Fail closed without consuming input while runtime interception is unproved."""
-        channel, content_type, metadata_error = self._metadata(channel, content_type)
+        channel, content_type, metadata_error = self._metadata(
+            channel, content_type, allow_unknown=True,
+        )
         if metadata_error is not None:
             return self._envelope(
                 channel=channel, content_type=content_type,
@@ -152,9 +154,12 @@ class ResultBroker:
         )
 
     @staticmethod
-    def _metadata(channel: Any, content_type: Any) -> tuple[str, str, str | None]:
-        safe_channel = channel if isinstance(channel, str) and channel in RESULT_CHANNELS else "unknown"
-        if safe_channel == "unknown":
+    def _metadata(
+        channel: Any, content_type: Any, *, allow_unknown: bool = False,
+    ) -> tuple[str, str, str | None]:
+        known_channel = isinstance(channel, str) and channel in RESULT_CHANNELS
+        safe_channel = channel if known_channel else "unknown"
+        if not known_channel or (safe_channel == "unknown" and not allow_unknown):
             return safe_channel, "application/octet-stream", "invalid_channel"
         try:
             safe_content_type = safe_text(content_type, "content_type", 128)
