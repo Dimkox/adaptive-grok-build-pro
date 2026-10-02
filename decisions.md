@@ -859,3 +859,6 @@ Apply the existing signed-bigint contract immediately after each known-charge ad
 ### 2026-10-02 — Sanitize structured secret fields before flattening
 
 Treat known sensitive JSON keys as binding their entire value, replacing both key and value before canonical export; reject duplicate or redacted-collision keys rather than keeping an arbitrary winner. Retained-source regressions exposed Authorization leakage that fragment-only scanning missed, and independent envelope admission now rechecks structured secrets and typed failures. Additive exclusions preserve the frozen predecessor digest while new sidecars have their own closed schema and semantic tests.
+### 2026-10-02 — Expose result admission as an explicit unavailable capability
+
+The API performs full bounded parsing and authority/identity validation, then returns a stable 503 before any store or dispatch call. This permits contract integration without falsely claiming persistence or replay.

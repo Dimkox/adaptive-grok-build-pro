@@ -8,10 +8,11 @@ import math
 import re
 from typing import Any, Mapping
 import unicodedata
+from uuid import UUID
 
 from .brokers import BrokerError, _redact
 from .contracts import ContractError, canonical_digest
-from .v15_contracts import FrozenWire, closed, digest, safe_text, version
+from .v15_contracts import FrozenWire, closed, digest, identity, integer, safe_text, version
 
 
 RESULT_OUTCOMES = frozenset({"allow", "redacted", "rejected", "unavailable"})
@@ -202,6 +203,57 @@ class ResultEnvelopeV1:
         digest(data["sanitized_payload_digest"])
         if canonical_digest(payload) != data["sanitized_payload_digest"]:
             raise ContractError("sanitized_payload_digest_mismatch")
+        return cls(FrozenWire.freeze(dict(data)))
+
+    def to_dict(self) -> dict[str, Any]:
+        return self._frozen.to_dict()
+
+    @property
+    def record_digest(self) -> str:
+        return self._frozen.record_digest
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            raise AttributeError(name)
+        data = self.to_dict()
+        if name not in data:
+            raise AttributeError(name)
+        return data[name]
+
+
+@dataclass(frozen=True)
+class ResultEnvelopeV2:
+    """Additive admission identity wrapped around the unchanged V1 payload contract."""
+
+    _frozen: FrozenWire
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ResultEnvelopeV2":
+        identity_fields = {
+            "repository_id", "task_id", "run_id", "fence", "packet_digest",
+            "attempt_id", "source_operation", "source_digest",
+        }
+        v1_fields = {
+            "schema_version", "channel", "content_type", "outcome", "reason_code",
+            "completeness", "policy_version", "sanitized_payload",
+            "sanitized_payload_digest",
+        }
+        closed(data, identity_fields | v1_fields)
+        version(data, 2)
+        identity(data["repository_id"])
+        identity(data["source_operation"])
+        for key in ("task_id", "run_id", "attempt_id"):
+            try:
+                if not isinstance(data[key], str) or str(UUID(data[key])) != data[key]:
+                    raise ValueError
+            except (ValueError, AttributeError) as exc:
+                raise ContractError("invalid_uuid", key) from exc
+        integer(data["fence"], "fence", 1)
+        digest(data["packet_digest"])
+        digest(data["source_digest"])
+        ResultEnvelopeV1.from_dict({
+            key: (1 if key == "schema_version" else data[key]) for key in v1_fields
+        })
         return cls(FrozenWire.freeze(dict(data)))
 
     def to_dict(self) -> dict[str, Any]:

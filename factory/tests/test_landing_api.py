@@ -440,7 +440,9 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "context-manifest.v1.schema.json"
             and path.name != "decision-record.v1.schema.json"
             and path.name != "result-envelope.v1.schema.json"
+            and path.name != "result-envelope.v2.schema.json"
             and path.name != "result-channel-qualification.v1.schema.json"
+            and path.name != "factory-result-admission.v1.json"
             and path.name != "factory-execution.v3.json"
         )
         showcase = (

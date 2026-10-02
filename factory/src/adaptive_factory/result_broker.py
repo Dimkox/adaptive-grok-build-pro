@@ -11,7 +11,7 @@ from typing import Any
 from .brokers import BrokerError, _redact
 from .contracts import ContractError, canonical_digest, canonical_json
 from .result_contracts import (
-    RESULT_CHANNELS, ResultEnvelopeV1, strict_json, sensitive_key,
+    RESULT_CHANNELS, ResultEnvelopeV1, ResultEnvelopeV2, strict_json, sensitive_key,
 )
 from .v15_contracts import safe_text
 
@@ -42,9 +42,9 @@ class ResultBroker:
     def _envelope(
         self, *, channel: str, content_type: str,
         outcome: str, reason_code: str, payload: str | None,
-    ) -> ResultEnvelopeV1:
-        return ResultEnvelopeV1.from_dict(
-            {
+        identity: dict[str, Any] | None = None,
+    ) -> ResultEnvelopeV1 | ResultEnvelopeV2:
+        envelope = {
                 "schema_version": 1,
                 "channel": channel,
                 "content_type": content_type,
@@ -55,11 +55,14 @@ class ResultBroker:
                 "sanitized_payload": payload,
                 "sanitized_payload_digest": canonical_digest(payload),
             }
-        )
+        if identity is None:
+            return ResultEnvelopeV1.from_dict(envelope)
+        return ResultEnvelopeV2.from_dict({**identity, **envelope, "schema_version": 2})
 
     def inspect(
         self, *, channel: str, content_type: str, chunks: Iterable[bytes],
-    ) -> ResultEnvelopeV1:
+        identity: dict[str, Any] | None = None,
+    ) -> ResultEnvelopeV1 | ResultEnvelopeV2:
         """Fail closed without consuming input while runtime interception is unproved."""
         channel, content_type, metadata_error = self._metadata(
             channel, content_type, allow_unknown=True,
@@ -67,27 +70,28 @@ class ResultBroker:
         if metadata_error is not None:
             return self._envelope(
                 channel=channel, content_type=content_type,
-                outcome="rejected", reason_code=metadata_error, payload=None,
+                outcome="rejected", reason_code=metadata_error, payload=None, identity=identity,
             )
         return self._envelope(
             channel=channel, content_type=content_type,
-            outcome="unavailable", reason_code="runtime_wiring_missing", payload=None,
+            outcome="unavailable", reason_code="runtime_wiring_missing", payload=None, identity=identity,
         )
 
     def sanitize_candidate(
         self, *, channel: str, content_type: str, chunks: Iterable[bytes],
-    ) -> ResultEnvelopeV1:
+        identity: dict[str, Any] | None = None,
+    ) -> ResultEnvelopeV1 | ResultEnvelopeV2:
         """Exercise the policy offline without asserting a pre-model interception point."""
         channel, content_type, metadata_error = self._metadata(channel, content_type)
         if metadata_error is not None:
             return self._envelope(
                 channel=channel, content_type=content_type,
-                outcome="rejected", reason_code=metadata_error, payload=None,
+                outcome="rejected", reason_code=metadata_error, payload=None, identity=identity,
             )
         if content_type not in _CONTENT_TYPES:
             return self._envelope(
                 channel=channel, content_type=content_type,
-                outcome="rejected", reason_code="unsupported_content_type", payload=None,
+                outcome="rejected", reason_code="unsupported_content_type", payload=None, identity=identity,
             )
         try:
             buffered = bytearray()
@@ -95,30 +99,30 @@ class ResultBroker:
                 if index >= self.max_chunks:
                     return self._envelope(
                         channel=channel, content_type=content_type,
-                        outcome="rejected", reason_code="chunk_limit", payload=None,
+                        outcome="rejected", reason_code="chunk_limit", payload=None, identity=identity,
                     )
                 if not isinstance(chunk, bytes):
                     return self._envelope(
                         channel=channel, content_type=content_type,
-                        outcome="rejected", reason_code="invalid_chunk", payload=None,
+                        outcome="rejected", reason_code="invalid_chunk", payload=None, identity=identity,
                     )
                 if len(chunk) > self.max_bytes - len(buffered):
                     return self._envelope(
                         channel=channel, content_type=content_type,
-                        outcome="rejected", reason_code="result_too_large", payload=None,
+                        outcome="rejected", reason_code="result_too_large", payload=None, identity=identity,
                     )
                 buffered.extend(chunk)
         except Exception:
             return self._envelope(
                 channel=channel, content_type=content_type,
-                outcome="rejected", reason_code="result_stream_failure", payload=None,
+                outcome="rejected", reason_code="result_stream_failure", payload=None, identity=identity,
             )
         try:
             text = bytes(buffered).decode("utf-8", errors="strict")
         except UnicodeDecodeError:
             return self._envelope(
                 channel=channel, content_type=content_type,
-                outcome="rejected", reason_code="invalid_encoding", payload=None,
+                outcome="rejected", reason_code="invalid_encoding", payload=None, identity=identity,
             )
         try:
             if content_type == "application/json":
@@ -137,6 +141,7 @@ class ResultBroker:
                 channel=channel, content_type=content_type,
                 outcome="redacted" if changed else "allow",
                 reason_code="known_secret_redacted" if changed else "accepted", payload=payload,
+                identity=identity,
             )
         except (json.JSONDecodeError, RecursionError):
             reason = "malformed_payload"
@@ -150,7 +155,7 @@ class ResultBroker:
             reason = "sanitizer_failure"
         return self._envelope(
             channel=channel, content_type=content_type,
-            outcome="rejected", reason_code=reason, payload=None,
+            outcome="rejected", reason_code=reason, payload=None, identity=identity,
         )
 
     @staticmethod

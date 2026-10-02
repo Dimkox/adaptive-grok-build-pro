@@ -139,6 +139,22 @@
     },
     {
       "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-envelope.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-result-admission.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
       "id": "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION",
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/result-channel-qualification.v1.schema.json",
@@ -1655,6 +1671,7 @@
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
+        "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
         "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
         "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
         "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1"
@@ -1803,6 +1820,7 @@
       "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
+        "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
         "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION"
       ],
       "repository_paths": [
