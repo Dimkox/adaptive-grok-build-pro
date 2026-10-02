@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/result-envelope.v1.schema.json",
+  "title": "ResultEnvelopeV1 structural wire contract",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.result_contracts.ResultEnvelopeV1.from_dict",
+    "semantic_validation_required": true,
+    "semantic_checks": ["utf8_byte_limits", "known_secret_detection", "strict_structured_payload", "payload_digest", "outcome_payload_parity", "unknown_channel_payload_parity"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "channel", "content_type", "outcome",
+    "reason_code", "completeness", "policy_version", "sanitized_payload",
+    "sanitized_payload_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "channel": {
+      "enum": ["native_tool_result", "synthetic_child_report", "attachment", "artifact_cache", "resume", "external_cli", "unknown"]
+    },
+    "content_type": {"type": "string", "minLength": 1, "maxLength": 128},
+    "outcome": {"enum": ["allow", "redacted", "rejected", "unavailable"]},
+    "reason_code": {"type": "string", "minLength": 1, "maxLength": 128},
+    "completeness": {"enum": ["complete", "missing"]},
+    "policy_version": {"type": "string", "minLength": 1, "maxLength": 128},
+    "sanitized_payload": {"type": ["string", "null"], "maxLength": 1000000},
+    "sanitized_payload_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

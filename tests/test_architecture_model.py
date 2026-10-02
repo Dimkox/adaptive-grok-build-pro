@@ -280,7 +280,11 @@ class ArchitectureModelTests(unittest.TestCase):
                 "factory/src/adaptive_factory/adapters/codex.py",
                 "factory/src/adaptive_factory/adapters/grok.py",
             },
-            "NODE-FACTORY-PROPOSAL-BROKER": {"factory/src/adaptive_factory/brokers.py"},
+            "NODE-FACTORY-PROPOSAL-BROKER": {
+                "factory/src/adaptive_factory/brokers.py",
+                "factory/src/adaptive_factory/result_broker.py",
+                "factory/src/adaptive_factory/result_contracts.py",
+            },
             "NODE-FACTORY-WORKSPACE-BROKER": {"factory/src/adaptive_factory/workspace.py"},
         }
         for node_id, paths in expected_paths.items():

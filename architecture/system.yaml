@@ -130,6 +130,22 @@
       "version": "1"
     },
     {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-envelope.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/result-channel-qualification.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-V15-DECISION-RECORD",
       "kind": "json_schema",
@@ -1785,9 +1801,14 @@
       "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-PROPOSAL-BROKER",
       "owner": "local factory operators",
-      "public_contracts": [],
+      "public_contracts": [
+        "CONTRACT-FACTORY-V15-RESULT-ENVELOPE",
+        "CONTRACT-FACTORY-V15-RESULT-CHANNEL-QUALIFICATION"
+      ],
       "repository_paths": [
-        "factory/src/adaptive_factory/brokers.py"
+        "factory/src/adaptive_factory/brokers.py",
+        "factory/src/adaptive_factory/result_broker.py",
+        "factory/src/adaptive_factory/result_contracts.py"
       ],
       "runtime": {
         "evidence": "source_described",

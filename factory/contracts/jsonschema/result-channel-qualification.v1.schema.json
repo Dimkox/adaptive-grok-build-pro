@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/result-channel-qualification.v1.schema.json",
+  "title": "Result channel qualification matrix",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.result_contracts.result_channel_qualification_from_wire",
+    "semantic_validation_required": true,
+    "semantic_checks": ["exact_channel_set", "unavailable_only", "no_interception_point"]
+  },
+  "type": "array",
+  "minItems": 7,
+  "maxItems": 7,
+  "uniqueItems": true,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["channel", "status", "interception_point", "limitation"],
+    "properties": {
+      "channel": {
+        "enum": ["native_tool_result", "synthetic_child_report", "attachment", "artifact_cache", "resume", "external_cli", "unknown"]
+      },
+      "status": {"const": "unavailable"},
+      "interception_point": {"type": "null"},
+      "limitation": {"type": "string", "minLength": 1, "maxLength": 128}
+    }
+  }
+}

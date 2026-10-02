@@ -1,0 +1,5 @@
+At 2026-10-02T02:54:22Z, lscpu reported 14 physical cores and 28 online logical CPUs (0-27); nproc --all=28, nproc=22, taskset -pc shell affinity=0,1,8-27.
+
+/proc/self/cgroup: 0::/user.slice/user-1000.slice/session-2050.scope. /proc/self/mountinfo resolved cgroup2 at /sys/fs/cgroup. Root effective cpuset and user.slice effective cpuset=0-27; lower cpuset files absent, so effective cpuset inherits ancestor bound. cpu.max=max 100000 at user.slice, user-1000.slice and session-2050.scope; root cpu.max absent, no finite ancestor quota.
+
+One bounded taskset -c 0-27 bash child probe returned nproc=28, affinity=0-27 and the same cgroup membership; quota membership unchanged. Verified effective child capacity=28; default process capacity=22. Controller affinity unchanged; this implementer allocates one serial test process, with global slot/CPU scheduling owned by coordinator. Raw commands/results recorded in the startup tool trace and a local /tmp/pr3a-implementer-capacity.md snapshot before package inspection.
