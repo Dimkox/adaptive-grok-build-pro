@@ -420,23 +420,29 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[5]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.1.0")
-        self.assertEqual(local["status"], "source_candidate")
-        self.assertEqual(local["route_id"], "7e4b7e6385ae")
-        self.assertEqual(local["branch"], "release/2.1.0-rc")
+        self.assertEqual(local["status"], "artifact_candidate")
+        self.assertEqual(local["route_id"], "a0ff84051275")
+        self.assertEqual(local["branch"], "release/v2.1.0-artifact")
         self.assertEqual(
             local["change_package"],
-            "engineering/changes/20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
+            "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
         )
-        self.assertEqual(local["artifact_status"], "not_built")
+        self.assertEqual(local["artifact_status"], "built_reproducibly_repository_custody_pending_delivery")
         self.assertFalse(local["default_enabled"])
         self.assertEqual(local["qualification_status"], "not_qualified")
         self.assertFalse(local["published"])
         self.assertFalse(local["external_effect"])
         self.assertFalse(local["operational_activation"])
-        self.assertEqual(local["source_base"], "23fdc2ef136a65ee2ff45397ff9952cdae934e21")
+        self.assertEqual(local["source_base"], "e5856acfd4bc7a186f40a740b54ec86459462db5")
+        self.assertEqual(local["source_tree"], "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b")
+        self.assertEqual(local["artifact"]["sha256"], "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e")
+        self.assertEqual(local["artifact"]["sidecar_sha256"], "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d")
+        self.assertEqual(local["artifact"]["reproducible_build_count"], 2)
+        for field in ("pull_request", "checked_head", "merge_commit", "tag"):
+            self.assertIsNone(local[field])
         forbidden_claims = {
-            "artifact_child", "artifact", "artifact_bytes", "zip_sha256", "sidecar_sha256",
-            "checked_head", "check_run_id", "merge_commit", "pull_request", "tree",
+            "artifact_child", "artifact_bytes", "zip_sha256", "sidecar_sha256",
+            "check_run_id", "tree",
         }
         self.assertEqual(forbidden_claims & set(local), set())
         self.assertNotIn("2.0.19", json.dumps(local, sort_keys=True))

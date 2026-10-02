@@ -1,0 +1,72 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+  "base_fingerprint": "0bb413a30e0c94609563b934dab438e86ae3d3c3065507c13ae61f4e9ee730de",
+  "complexity": "standard",
+  "created_at": "2026-10-02T21:14:19+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "a0ff84051275",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Implement repository custody for already-built deterministic v2.1.0 package bytes from source e5856acfd4bc7a186f40a740b54ec86459462db5: add ZIP and checksum, update candidate state documentation and binding tests without publication or activation",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

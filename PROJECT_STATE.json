@@ -1204,12 +1204,24 @@
   },
   "local_candidate": {
     "version": "2.1.0",
-    "status": "source_candidate",
-    "route_id": "7e4b7e6385ae",
-    "branch": "release/2.1.0-rc",
-    "change_package": "engineering/changes/20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
-    "source_base": "23fdc2ef136a65ee2ff45397ff9952cdae934e21",
-    "artifact_status": "not_built",
+    "status": "artifact_candidate",
+    "route_id": "a0ff84051275",
+    "branch": "release/v2.1.0-artifact",
+    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+    "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+    "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+    "artifact_status": "built_reproducibly_repository_custody_pending_delivery",
+    "artifact": {
+      "path": "packages/adaptive-grok-build-pro-v2.1.0.zip",
+      "sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
+      "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
+      "reproducible_build_count": 2
+    },
+    "pull_request": null,
+    "checked_head": null,
+    "merge_commit": null,
+    "tag": null,
     "default_enabled": false,
     "qualification_status": "not_qualified",
     "included_default_off_contours": [
@@ -1223,7 +1235,7 @@
     "published": false,
     "external_effect": false,
     "operational_activation": false,
-    "notes": "Source-only v2.1.0 release candidate. No artifact bytes, hashes, pull request, check, merge, tag, publication, deployment or production activation are claimed. U5/U6 remain default-off and not live-qualified."
+    "notes": "Repository-custodied v2.1.0 artifact candidate built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
   },
   "delivered_non_milestone_work": [
     {

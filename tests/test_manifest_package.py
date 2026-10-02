@@ -1422,11 +1422,17 @@ module.main()
         self.assertEqual(candidate_version, '2.1.0')
         self.assertEqual(state['product_version'], candidate_version)
         candidate = state['local_candidate']
-        self.assertEqual(candidate['status'], 'source_candidate')
-        self.assertEqual(candidate['artifact_status'], 'not_built')
+        self.assertEqual(candidate['status'], 'artifact_candidate')
+        self.assertEqual(candidate['artifact_status'], 'built_reproducibly_repository_custody_pending_delivery')
         self.assertNotIn('artifact_child', candidate)
         self.assertNotIn('zip_sha256', candidate)
         self.assertNotIn('sidecar_sha256', candidate)
+        candidate_artifact = candidate['artifact']
+        candidate_zip = ROOT / candidate_artifact['path']
+        candidate_sidecar = ROOT / candidate_artifact['sidecar_path']
+        self.assertEqual(hashlib.sha256(candidate_zip.read_bytes()).hexdigest(), candidate_artifact['sha256'])
+        self.assertEqual(hashlib.sha256(candidate_sidecar.read_bytes()).hexdigest(), candidate_artifact['sidecar_sha256'])
+        self.assertEqual(candidate_artifact['reproducible_build_count'], 2)
         published_version = published['tag'].removeprefix('v')
         self.assertEqual(published_version, '2.0.19')
         self.assertEqual(state['latest_published_release'], published['tag'])

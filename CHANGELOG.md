@@ -7,15 +7,16 @@
 - Adds default-off BB contracts, the authenticated offline rotator registry, bounded VibeVM store, and opt-in offline Linux setup manager; none has runtime or production authority.
 - Preserves the existing `024`/`025` result outbox and dispatch migrations unchanged; the divergent VibeVM migration chain is excluded.
 - No push, merge, tag, package publication, deployment, or external write is part of this candidate.
+- Adds repository custody for the twice-reproducible ZIP `cdd7fe8e…` and checksum sidecar file `62a6fd80…`, built from exact source `e5856acf…`; delivery identities remain null and activation remains false.
 
-## 2.0.19 — 2026-09-24 (candidate, unpublished)
+## 2.0.19 — 2026-09-24 (published)
 
-Twenty pull requests merged after `v2.0.18` are recorded in the candidate state. The release-sync parent is merged and the ZIP+sidecar are delivered by the separate artifact-child candidate; tag and GitHub Release remain pending their exact protected steps.
+Twenty pull requests merged after `v2.0.18` are recorded in the release state. The release was published at `2026-09-24T21:30:52Z`; its immutable identity remains in `PROJECT_STATE.json`.
 
 - Carries the release-successor, architecture, verification, installer, landing, routing, evidence, schema, package-diagnostics, merge-gate and factory-fix repairs through PRs #111, #112, #113, #114, #115, #116, #133, #149, #150, #151, #154, #170, #173, #174, #184, #185, #192, #194, #191 and #193.
 - Binds candidate identity and source provenance to release-sync merge `3f41be92161fef451a2dfa7451eb458ce8f022b3`, whose source parent is protected-main `7650a5e12aad55bdcf730cd37e2faf162bec0486`; the earlier `5d93fc3` commit remains historical input evidence.
-- Delivers `packages/adaptive-grok-build-pro-v2.0.19.zip` and its sidecar twice byte-identically from the release-sync tree; the tag and GitHub Release are still unpublished and require fresh exact checks and grants.
-- Keeps published `v2.0.18` bytes immutable and preserves the separate artifact-child/package and no-deployment boundaries.
+- Delivers `packages/adaptive-grok-build-pro-v2.0.19.zip` and its sidecar as the immutable published pair.
+- Keeps prior published bytes immutable and preserves the no-deployment boundary.
 
 ## 2.0.18 — 2026-09-16
 
