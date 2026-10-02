@@ -39,11 +39,20 @@ def _qualification_v2_subset_schema(schema):
     normalized = _dependency_free_validation_schema(schema)
     channel_clauses = normalized.pop("allOf")
     expected_channels = set(normalized["items"]["properties"]["channel"]["enum"])
-    assert {
-        clause["contains"]["properties"]["channel"]["const"]
-        for clause in channel_clauses
-        if clause["minContains"] == 1 and clause["maxContains"] == 1
-    } == expected_channels
+    assert len(channel_clauses) == len(expected_channels) == 7
+    observed_channels = []
+    for clause in channel_clauses:
+        assert set(clause) == {"contains", "minContains", "maxContains"}
+        assert clause["minContains"] == clause["maxContains"] == 1
+        contains = clause["contains"]
+        assert set(contains) == {"properties", "required"}
+        assert contains["required"] == ["channel"]
+        assert set(contains["properties"]) == {"channel"}
+        channel = contains["properties"]["channel"]
+        assert set(channel) == {"const"}
+        observed_channels.append(channel["const"])
+    assert len(set(observed_channels)) == len(observed_channels)
+    assert set(observed_channels) == expected_channels
     item_clauses = normalized["items"].pop("allOf")
     assert item_clauses == [
         {
@@ -182,8 +191,27 @@ def test_result_schemas_are_structural_and_semantic_admission_is_mandatory():
         require_closed(weakened_qualification["items"])
 
 
+def test_qualification_v2_subset_rejects_extra_allof_clause():
+    schema = json.loads(
+        (
+            ROOT
+            / "factory/contracts/jsonschema/result-channel-qualification.v2.schema.json"
+        ).read_text()
+    )
+    schema["allOf"].append(deepcopy(schema["allOf"][0]))
+    with unittest.TestCase().assertRaises(AssertionError):
+        _qualification_v2_subset_schema(schema)
+
+
 def load_tests(loader, tests, pattern):
     del loader, tests, pattern
     return unittest.TestSuite(
-        [unittest.FunctionTestCase(test_result_schemas_are_structural_and_semantic_admission_is_mandatory)]
+        [
+            unittest.FunctionTestCase(
+                test_result_schemas_are_structural_and_semantic_admission_is_mandatory
+            ),
+            unittest.FunctionTestCase(
+                test_qualification_v2_subset_rejects_extra_allof_clause
+            ),
+        ]
     )
