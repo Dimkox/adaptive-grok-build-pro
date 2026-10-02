@@ -462,4 +462,3 @@ class PredictionContractTests(unittest.TestCase):
                 self.assertTrue(list(validator.iter_errors(payload)))
                 with self.assertRaises((ContractError, KeyError)):
                     module.PredictionExplanationV1.from_dict(payload, prediction=prediction)
-

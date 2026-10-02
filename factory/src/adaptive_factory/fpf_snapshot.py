@@ -751,4 +751,3 @@ def _applicability_selector(snapshot_type, snapshot_validator):
 Applicability.select = classmethod(
     _applicability_selector(FrozenFpfSnapshot, _snapshot_revalidate)
 )
-

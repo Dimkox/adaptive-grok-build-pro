@@ -101,4 +101,3 @@ FPF_FRAGMENT_MANIFEST = MappingProxyType({
         for key, value in FPF_FRAGMENT_MANIFEST["fragments"].items()
     }),
 })
-

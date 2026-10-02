@@ -241,4 +241,3 @@ class PredictionReplayIndex:
         if previous != admitted.record_digest:
             raise ContractError("prediction_replay_conflict", prediction_id)
         return admitted
-

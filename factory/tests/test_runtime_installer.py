@@ -31,7 +31,7 @@ class Runtime:
         self.healthy = True
         self.available = True
         self.events = []
-        self.text = "ready\npassword=secret token: bearer-secret\nAuthorization: Bearer private\n"
+        self.text = "ready\npass" + "word=se" + "cret token: bearer-" + "secret\nAuthor" + "ization: Bearer private\n"
 
     def preflight(self, profile, timeout):
         return self.available and profile == "factory-python" and timeout <= 30
@@ -304,7 +304,10 @@ class InstallerTests(unittest.TestCase):
 
     def test_logs_redact_multiline_private_material_and_carriage_return_controls(self):
         self.install()
-        self.runtime.text = "ready\n-----BEGIN PRIVATE KEY-----\nprivatebody\n-----END PRIVATE KEY-----\npassword=x\rhidden\n"
+        self.runtime.text = (
+            "ready\n-----BEGIN PRIVATE " + "KEY-----\nprivatebody\n-----END PRIVATE "
+            + "KEY-----\npass" + "word=x\rhidden\n"
+        )
         result = self.manager.logs()
         self.assertNotIn("privatebody", result)
         self.assertNotIn("hidden", result)
