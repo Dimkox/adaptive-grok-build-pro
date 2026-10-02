@@ -1513,3 +1513,9 @@ Root cause: I invoked the disposable exit runner with `--help` without first ins
 ### 2026-10-02 — Keep factory tests within the declared environment
 
 Root cause: transplanted tests retained undeclared `pytest` and `jsonschema` imports, while the frozen predecessor inventory did not explicitly exclude four new current schemas. Use stdlib/internal validation in factory exit tests and classify new contracts outside immutable predecessor fixtures.
+
+### 2026-10-02 — Size the aggregate exit timeout for the aggregate suite
+
+Root cause: the disposable PostgreSQL exit runner kept a 480-second whole-suite timeout after the
+suite grew beyond that wall-clock budget, so a fully passing run was terminated. Keep the aggregate
+timeout explicitly bounded and regression-tested with visible margin over ordinary child commands.
