@@ -48,13 +48,25 @@
       "from": null,
       "reason": "created",
       "to": "draft"
+    },
+    {
+      "at": "2026-10-02T21:23:21+00:00",
+      "from": "draft",
+      "reason": "Scope, provenance, acceptance criteria, tests, rollback, and no-publication boundary are recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T21:23:21+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; owner authorized completing all release steps",
+      "to": "approved"
     }
   ],
   "human_gates": [],
   "human_gates_digest": "702b2a2c4b173128d8427ddaebb24abf593b1de4625e33e046935a43ca515170",
   "route_id": "a0ff84051275",
   "schema_version": 1,
-  "status": "draft",
+  "status": "approved",
   "title": "Implement repository custody for already-built deterministic v2.1.0 package bytes from source e5856acfd4bc7a186f40a740b54ec86459462db5: add ZIP and checksum, update candidate state documentation and binding tests without publication or activation",
-  "updated_at": "2026-10-02T21:14:30+00:00"
+  "updated_at": "2026-10-02T21:23:21+00:00"
 }
