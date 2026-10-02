@@ -13,6 +13,8 @@ import uuid
 
 
 _CONTAINER_ID = re.compile(r"^[0-9a-f]{64}$")
+_DEFAULT_COMMAND_TIMEOUT_SECONDS = 300
+_FULL_SUITE_TIMEOUT_SECONDS = 720
 
 
 def _binding_matches(
@@ -66,7 +68,12 @@ def _remove_bound_container(container_id: str, name: str, nonce: str) -> None:
     )
 
 
-def _run(command: list[str], *, environment: dict[str, str] | None = None, timeout: int = 300) -> None:
+def _run(
+    command: list[str],
+    *,
+    environment: dict[str, str] | None = None,
+    timeout: int = _DEFAULT_COMMAND_TIMEOUT_SECONDS,
+) -> None:
     subprocess.run(command, check=True, env=environment, timeout=timeout)
 
 
@@ -202,7 +209,24 @@ def main() -> int:
                     "-v",
                 ],
                 environment=environment,
-                timeout=480,
+                timeout=_FULL_SUITE_TIMEOUT_SECONDS,
+            )
+            if not _binding_matches(
+                container_id, name, nonce, require_running=True
+            ):
+                raise RuntimeError(
+                    f"disposable container binding changed after tests; leaked id={container_id}"
+                )
+            published = subprocess.run(
+                ["docker", "port", container_id, "5432/tcp"],
+                check=True,
+                text=True,
+                capture_output=True,
+                timeout=10,
+            ).stdout.strip()
+            port = _published_loopback_port(published)
+            environment["FACTORY_TEST_DATABASE_URL"] = (
+                f"postgresql://factory_exit:{password}@127.0.0.1:{port}/factory_exit"
             )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")

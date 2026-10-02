@@ -81,6 +81,7 @@ _CHANGE_PACKAGE_PREFIX = re.compile(
     r'^engineering/changes/[A-Za-z0-9][A-Za-z0-9._-]*$'
 )
 _SAFE_FOCUSED_FILE_STATUSES = {'A', 'M', '??'}
+_FACTORY_POSTGRES_EXIT_TIMEOUT_SECONDS = 900
 
 
 def _canonical_digest(value: object) -> str:
@@ -1633,7 +1634,7 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
                     root,
                     'factory-postgres-exit',
                     [sys.executable, str(factory_exit.relative_to(root))],
-                    600,
+                    _FACTORY_POSTGRES_EXIT_TIMEOUT_SECONDS,
                 )
             )
     return results

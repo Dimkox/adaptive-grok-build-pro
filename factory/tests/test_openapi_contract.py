@@ -28,6 +28,10 @@ LANDING_CONTRACT = (
     Path(__file__).resolve().parents[1]
     / "contracts/openapi/landing-dogfood.v1.json"
 )
+RESULT_ADMISSION_CONTRACT = (
+    Path(__file__).resolve().parents[1]
+    / "contracts/openapi/factory-result-admission.v1.json"
+)
 
 
 EXPECTED_CONTROL_OPERATIONS = {
@@ -48,6 +52,10 @@ EXPECTED_CONTROL_OPERATIONS = {
     ("/v1/tasks/{task_id}/runs", "get"): "listTaskRuns",
     ("/v1/tasks/{task_id}/events", "get"): "listTaskEvents",
     ("/v1/transitions", "post"): "proposeTaskPhaseTransition",
+}
+EXPECTED_RESULT_ADMISSION_OPERATIONS = {
+    ("/v1/result-admissions", "post"): "admitResultEnvelope",
+    ("/v1/tasks/{task_id}/result-admissions/{envelope_digest}", "get"): "getResultEnvelope",
 }
 EXPECTED_SEMANTIC_OPERATIONS = {
     ("/v1/semantic/subjects", "post"): "publishSemanticSubject",
@@ -198,13 +206,21 @@ class CheckedOpenApiContractTests(unittest.TestCase):
         cls.landing_document = json.loads(
             LANDING_CONTRACT.read_text(encoding="utf-8")
         )
+        cls.result_admission_document = json.loads(
+            RESULT_ADMISSION_CONTRACT.read_text(encoding="utf-8")
+        )
         cls.documents = (cls.document, cls.semantic_document)
 
     def test_exact_runtime_operation_inventory_has_stable_unique_ids(self):
         control_operations = dict(_operations(self.document))
         semantic_operations = dict(_operations(self.semantic_document))
+        result_admission_operations = dict(_operations(self.result_admission_document))
         self.assertEqual(set(control_operations), set(EXPECTED_CONTROL_OPERATIONS))
         self.assertEqual(set(semantic_operations), set(EXPECTED_SEMANTIC_OPERATIONS))
+        self.assertEqual(
+            {key: value.get("operationId") for key, value in result_admission_operations.items()},
+            EXPECTED_RESULT_ADMISSION_OPERATIONS,
+        )
         operations = control_operations | semantic_operations
         observed = {key: value.get("operationId") for key, value in operations.items()}
         self.assertEqual(observed, EXPECTED_OPERATIONS)
@@ -242,6 +258,7 @@ class CheckedOpenApiContractTests(unittest.TestCase):
             runtime,
             set(EXPECTED_OPERATIONS).union(
                 set(EXPECTED_LANDING_OPERATIONS),
+                set(EXPECTED_RESULT_ADMISSION_OPERATIONS),
                 *(set(items) for items in execution_operations)
             ),
         )

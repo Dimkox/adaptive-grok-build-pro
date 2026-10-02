@@ -1,5 +1,7 @@
 # Fresh-agent bootstrap
 
+The current `2.1.0` branch is a source-only release candidate. Its BB, rotator, VibeVM, FPF, prediction, and Linux setup contours are default-off and not live-qualified; U4/macOS, artifacts, publication, deployment, and activation are excluded. The immutable published release remains `v2.0.19`.
+
 This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Claude session, or clean clone of this repository. Do not depend on chat history to continue the project.
 
 ## First action: measure resources and schedule independent work

@@ -1,0 +1,43 @@
+{
+  "change_id": "20261002-publish-unverified-transport-branch-for-the-asse-051f6c",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20261002-publish-unverified-transport-branch-for-the-asse-051f6c",
+      "decided_at": "2026-10-02T13:09:55+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User directed 2.1.0 release candidate assembly with U4 excluded and U5-U7 included",
+      "resource": null,
+      "route_id": "051f6c8ee10f",
+      "scope_digest": "ae528e6b8eeac30bb839fad4e1e82fa87e39ce7ae0fe23934cab62369363d6c5"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "user",
+      "change_id": "20261002-publish-unverified-transport-branch-for-the-asse-051f6c",
+      "decided_at": "2026-10-02T13:10:01+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "User explicitly directed git push as release candidate before verifier",
+      "resource": null,
+      "route_id": "051f6c8ee10f",
+      "scope_digest": "ae528e6b8eeac30bb839fad4e1e82fa87e39ce7ae0fe23934cab62369363d6c5"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20261002-publish-unverified-transport-branch-for-the-asse-051f6c",
+      "decided_at": "2026-10-02T13:13:12+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User directed this exact 2.1.0 RC scope: U4 excluded, minimal U0-U3/U5-U7, verify and prepare PR",
+      "resource": null,
+      "route_id": "051f6c8ee10f",
+      "scope_digest": "01e673dd14db9a1d1440b1c19982f0514c77b80c717b92a3a04977b13084cd3d"
+    }
+  ],
+  "route_id": "051f6c8ee10f",
+  "schema_version": 1
+}

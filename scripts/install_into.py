@@ -20,6 +20,7 @@ MANAGED_DIRS = (
     ".agents",
     ".grok-stack",
     "factory/contracts",
+    "factory/runtime",
     "factory/src",
 )
 MANAGED_FILES = (

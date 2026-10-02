@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import os
 import shutil
@@ -1517,6 +1518,21 @@ class VerificationTests(unittest.TestCase):
             postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
             self.assertIsNotNone(postgres)
             self.assertEqual(postgres.status, 'pass')
+
+    def test_factory_postgres_exit_outer_timeout_exceeds_bounded_inner_timeout(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "disposable_exit_verifier_timeout_contract",
+            ROOT / "factory/tests/run_disposable_exit.py",
+        )
+        runner = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(runner)
+
+        outer = verification_module._FACTORY_POSTGRES_EXIT_TIMEOUT_SECONDS
+        self.assertEqual(720, runner._FULL_SUITE_TIMEOUT_SECONDS)
+        self.assertEqual(900, outer)
+        self.assertGreater(outer, runner._FULL_SUITE_TIMEOUT_SECONDS)
+        self.assertLessEqual(outer, 15 * 60)
 
     def test_python_pr_skips_factory_postgres_exit_only_in_repository_sandbox(self) -> None:
         with project_copy() as root:

@@ -1,0 +1,80 @@
+{
+  "change_id": "20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "release/2.1.0-rc",
+      "change_id": "20261002-fix-project-state-2-1-0-release-candidate-identi-7e4b7e",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cd8fd7c5c13a0a794e2dea60ed6a7f0f37e5f273",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T13:13:53+00:00",
+      "route_id": "7e4b7e6385ae"
+    }
+  ],
+  "created_at": "2026-10-02T13:13:53+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T13:13:53+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T16:49:36+00:00",
+      "from": "draft",
+      "reason": "Published and source-candidate identities were separated and binding tests passed",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T16:49:36+00:00",
+      "from": "scoped",
+      "reason": "User-directed release-candidate state correction was implemented",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T16:49:36+00:00",
+      "from": "approved",
+      "reason": "Correction is integrated; final exact-head verification remains",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "945096e8ab99c641a907776e54ca27e71b040151965deb04921a2f054437adc2",
+  "route_id": "7e4b7e6385ae",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix PROJECT_STATE 2.1.0 release candidate identity so the new source-only candidate has no artifact hashes while preserving the immutable 2.0.19 artifact record",
+  "updated_at": "2026-10-02T16:49:36+00:00"
+}

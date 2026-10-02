@@ -78,6 +78,23 @@ def _broken_local_links(document: Path, root: Path) -> list[str]:
 
 
 class InstallerTests(unittest.TestCase):
+    def test_disposable_exit_full_suite_timeout_is_bounded_and_has_growth_margin(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "disposable_exit_timeout_contract",
+            ROOT / "factory/tests/run_disposable_exit.py",
+        )
+        runner = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(runner)
+
+        self.assertEqual(300, runner._DEFAULT_COMMAND_TIMEOUT_SECONDS)
+        self.assertEqual(720, runner._FULL_SUITE_TIMEOUT_SECONDS)
+        self.assertGreaterEqual(
+            runner._FULL_SUITE_TIMEOUT_SECONDS,
+            2 * runner._DEFAULT_COMMAND_TIMEOUT_SECONDS,
+        )
+        self.assertLessEqual(runner._FULL_SUITE_TIMEOUT_SECONDS, 15 * 60)
+
     def test_installed_link_audit_detects_missing_and_escaping_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "consumer"
@@ -1150,6 +1167,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(default.stdout.count(MODULE.LEGACY_PLAN_NOTICE), 1)
             self.assertEqual(_snapshot(existing), before)
             self.assertTrue((target / "scripts/grok_verify.py").is_file())
+            self.assertTrue((target / "factory/runtime/setup_manager.py").is_file())
             self.assertFalse((target / ".github/workflows").exists())
 
     def test_with_ci_remains_forbidden_without_mutation(self) -> None:

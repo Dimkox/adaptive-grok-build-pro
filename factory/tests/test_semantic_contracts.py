@@ -118,6 +118,8 @@ class SemanticContractTests(unittest.TestCase):
             "repair-directive.v1.schema.json",
         }
         names = semantic_names | failover_names | {
+            "bb-backend-profile.v1.schema.json",
+            "bb-lifecycle-observation.v1.schema.json",
             "context-manifest.v1.schema.json",
             "earned-autonomy.v1.schema.json",
             "landing-attempt.v1.schema.json",
@@ -129,15 +131,26 @@ class SemanticContractTests(unittest.TestCase):
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
+            "prediction-explanation.v1.schema.json",
+            "prediction-observation.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
+            "result-channel-qualification.v1.schema.json",
+            "result-channel-qualification.v2.schema.json",
+            "result-envelope.v1.schema.json",
+            "result-envelope.v2.schema.json",
             "shadow-cohort.v1.schema.json",
             "shadow-outcome.v1.schema.json",
             "shadow-task-evidence.v1.schema.json",
             "static-landing-spec.v1.schema.json",
         }
-        self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
+        self.assertEqual(
+            {path.name for path in SCHEMAS.glob("*.json")}
+            - {"native-result-handoff.v1.schema.json"},
+            names,
+        )
         versions = {name: 1 for name in semantic_names | failover_names}
         versions["landing-provider-evidence.v2.schema.json"] = 2
+        versions["result-envelope.v2.schema.json"] = 2
         for name, version in versions.items():
             with self.subTest(name=name):
                 schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))

@@ -10,6 +10,9 @@ import time
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
+from .decision_contracts import DecisionRecordV1
+from .result_contracts import ResultEnvelopeV2
+from .result_dispatch import DispatchClaim, DispatchOutcome
 from .brokers import (
     ArtifactProposal,
     BrokerError,
@@ -114,6 +117,13 @@ class TransitionError(StoreError):
 
 class IntegrityError(StoreError):
     pass
+
+
+@dataclass(frozen=True)
+class ResultAdmission:
+    envelope_digest: str
+    created: bool
+    outbox_created: bool
 
 
 def _validate_capability_session(cursor, capability_role: str, label: str) -> None:
@@ -1135,6 +1145,8 @@ class PostgresFactoryStore:
     _CONNECT_TIMEOUT_SECONDS = 5
     _MUTATION_LOCK_TIMEOUT = "5s"
     _MUTATION_STATEMENT_TIMEOUT = "5s"
+    _CAPABILITY_ROLE = "factory_runtime"
+    _CAPABILITY_LABEL = "runtime"
     _RECONCILIATION_TIMEOUT_SECONDS = 5.0
     _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.1
 
@@ -1235,12 +1247,19 @@ class PostgresFactoryStore:
                     )
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
-                _validate_capability_session(cursor, "factory_runtime", "runtime")
-                cursor.execute("SET ROLE factory_runtime")
+                _validate_capability_session(
+                    cursor, self._CAPABILITY_ROLE, self._CAPABILITY_LABEL
+                )
+                if self._CAPABILITY_ROLE == "factory_runtime":
+                    cursor.execute("SET ROLE factory_runtime")
+                elif self._CAPABILITY_ROLE == "factory_result_dispatcher":
+                    cursor.execute("SET ROLE factory_result_dispatcher")
+                else:
+                    raise StoreError("unknown database capability")
                 cursor.execute("SET search_path=pg_catalog,factory")
                 cursor.execute("SELECT current_user,current_setting('search_path')")
-                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
-                    raise StoreError("runtime capability unavailable")
+                if cursor.fetchone() != (self._CAPABILITY_ROLE, "pg_catalog, factory"):
+                    raise StoreError(f"{self._CAPABILITY_LABEL} capability unavailable")
         except (
             psycopg.InterfaceError,
             psycopg.OperationalError,
@@ -2075,14 +2094,16 @@ class PostgresFactoryStore:
         correlation_id: str,
         metadata: dict | None = None,
         run_id: str | None = None,
-    ) -> None:
+        received_at: datetime | None = None,
+    ) -> datetime:
         cursor.execute("SELECT last_digest FROM factory.audit_heads WHERE task_id=%s FOR UPDATE", (task_id,))
         row = cursor.fetchone()
         previous = row[0].strip() if row else "0" * 64
         if row is None:
             cursor.execute("INSERT INTO factory.audit_heads(task_id,last_digest) VALUES (%s,%s)", (task_id, previous))
-        cursor.execute("SELECT clock_timestamp()")
-        received_at = cursor.fetchone()[0]
+        if received_at is None:
+            cursor.execute("SELECT clock_timestamp()")
+            received_at = cursor.fetchone()[0]
         bounded = metadata or {}
         digest = canonical_digest(
             {
@@ -2116,6 +2137,7 @@ class PostgresFactoryStore:
             ),
         )
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
+        return received_at
 
     def intake(
         self,
@@ -3959,9 +3981,33 @@ class PostgresFactoryStore:
         *,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        decision_record: DecisionRecordV1 | None = None,
     ) -> TaskStatus:
         del now
         with self._transaction() as cursor:
+            if idempotency_key is not None:
+                cursor.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                    (idempotency_key,),
+                )
+            decision_time = None
+            if decision_record is not None:
+                normalized = decision_record.to_dict()
+                cursor.execute(
+                    "SELECT record->>'observed_at' FROM factory.decision_records_v1 "
+                    "WHERE repository_id=%s AND decision_id=%s",
+                    (normalized["repository_id"], normalized["decision_id"]),
+                )
+                prior_observation = cursor.fetchone()
+                if prior_observation is None:
+                    cursor.execute("SELECT clock_timestamp()")
+                    decision_time = cursor.fetchone()[0]
+                else:
+                    decision_time = datetime.fromisoformat(
+                        prior_observation[0].replace("Z", "+00:00")
+                    )
+                normalized["observed_at"] = decision_time.isoformat().replace("+00:00", "Z")
+                decision_record = DecisionRecordV1.from_dict(normalized)
             command = {
                 "grant": {
                     "task_id": grant.task_id,
@@ -3973,6 +4019,8 @@ class PostgresFactoryStore:
                 },
                 "target": target.value,
             }
+            if decision_record is not None:
+                command["decision_digest"] = decision_record.record_digest
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "transition_phase", command
             )
@@ -3982,6 +4030,21 @@ class PostgresFactoryStore:
                 cursor, grant
             )
             current = TaskStatus(task_state)
+            record = None
+            if decision_record is not None:
+                record = DecisionRecordV1.from_dict(decision_record.to_dict())
+                facts = {
+                    fact["name"]: fact["value"]
+                    for fact in record.to_dict()["facts"]
+                }
+                if (
+                    record.to_dict()["decision_kind"] != "state"
+                    or facts.get("from_state") != current.value
+                    or facts.get("target") != target.value
+                ):
+                    raise IntegrityError("state decision facts mismatch")
+                if idempotency_key is None:
+                    raise IntegrityError("state decision requires idempotency key")
             operation = TransitionOperation.PHASE
             self._apply_task_transition(
                 cursor,
@@ -4013,7 +4076,7 @@ class PostgresFactoryStore:
                 event_key,
                 metadata,
             )
-            self._audit(
+            audit_time = self._audit(
                 cursor,
                 str(task_id),
                 actor,
@@ -4023,6 +4086,7 @@ class PostgresFactoryStore:
                 correlation_id or idempotency_key or event_key,
                 metadata,
                 grant.run_id,
+                received_at=decision_time,
             )
             self._record_command(
                 cursor,
@@ -4033,7 +4097,64 @@ class PostgresFactoryStore:
                 correlation_id,
                 {"status": target.value},
             )
+            if record is not None:
+                self._append_decision_locked(
+                    cursor, grant, record, actor, idempotency_key, audit_time,
+                )
             return target
+
+    def _append_decision_locked(self, cursor, grant, record, actor, idempotency_key, observed_at):
+        data = record.to_dict()
+        if data["observed_at"] != observed_at.isoformat().replace("+00:00", "Z"):
+            raise IntegrityError("decision observation mismatch")
+        cursor.execute(
+            "SELECT repository_id FROM factory.tasks WHERE task_id=%s",
+            (grant.task_id,),
+        )
+        repository = cursor.fetchone()[0]
+        if (
+            data["repository_id"] != repository
+            or data["task_id"] != grant.task_id
+            or data["run_id"] != grant.run_id
+            or data["fence"] != grant.fence
+            or actor.actor_id != grant.owner
+            or "task:release" not in actor.scopes
+            or ("*" not in actor.repositories and repository not in actor.repositories)
+        ):
+            raise AuthorityError("decision identity mismatch")
+        cursor.execute(
+            "SELECT attempt_id FROM factory.attempts "
+            "WHERE run_id=%s AND task_id=%s",
+            (grant.run_id, grant.task_id),
+        )
+        attempt = cursor.fetchone()
+        if attempt is None or str(attempt[0]) != data["attempt_id"]:
+            raise IntegrityError("decision attempt mismatch")
+        if data["supersedes"] is not None:
+            cursor.execute(
+                "SELECT task_id,run_id FROM factory.decision_records_v1 "
+                "WHERE repository_id=%s AND decision_id=%s",
+                (repository, data["supersedes"]),
+            )
+            prior = cursor.fetchone()
+            if (
+                prior is None
+                or str(prior[0]) != grant.task_id
+                or str(prior[1]) != grant.run_id
+            ):
+                raise IntegrityError("decision supersession mismatch")
+        cursor.execute(
+            "SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)",
+            (canonical_json(data).decode(), record.record_digest, grant.run_id,
+             grant.fence, idempotency_key, record.record_digest),
+        )
+        stored = cursor.fetchone()[0]
+        if stored != record.record_digest:
+            raise IntegrityError("decision idempotency conflict")
+        return record.record_digest
+
+    def append_decision(self, grant, record, actor):
+        raise StoreError("decisions persist only with an atomic phase transition")
 
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
@@ -4206,6 +4327,78 @@ class PostgresFactoryStore:
             result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
             self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
             return result
+
+    def admit_result(
+        self, envelope: ResultEnvelopeV2, *, actor: Actor,
+        idempotency_key: str, correlation_id: str,
+    ) -> ResultAdmission:
+        """Atomically admit an immutable result and report qualified durable handoff."""
+        record = ResultEnvelopeV2.from_dict(envelope.to_dict())
+        request = {
+            "contract": "adaptive-factory.result-admission-command/v1",
+            "action": "result_admission",
+            "actor_id": actor.actor_id,
+            "idempotency_key": idempotency_key,
+            "envelope_digest": record.record_digest,
+            "correlation_id": correlation_id,
+        }
+        request_wire = canonical_json(request).decode("utf-8")
+        wire = canonical_json(record.to_dict()).decode("utf-8")
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.admit_result_v1(%s,%s,%s,%s,%s,%s,%s)",
+                    (wire, record.record_digest, actor.actor_id, idempotency_key,
+                     canonical_digest(request), request_wire, correlation_id),
+                )
+                value = cursor.fetchone()[0]
+                cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM factory.next_model_request_outbox_v1 "
+                    "WHERE envelope_digest=%s)",
+                    (record.record_digest,),
+                )
+                value["outbox_created"] = cursor.fetchone()[0]
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("result admission conflicts with stored command") from exc
+            raise
+        if not isinstance(value, dict) or set(value) != {
+            "envelope_digest", "created", "outbox_created"
+        }:
+            raise StoreError("stored result admission is invalid")
+        if (
+            value["envelope_digest"] != record.record_digest
+            or type(value["created"]) is not bool
+            or type(value["outbox_created"]) is not bool
+            or value["outbox_created"] is not False
+        ):
+            raise StoreError("stored result admission binding mismatch")
+        return ResultAdmission(**value)
+
+    def result_envelope(
+        self, repository_id: str, task_id: str, envelope_digest: str,
+    ) -> ResultEnvelopeV2:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT envelope FROM factory.result_sources_v1 "
+                "WHERE repository_id=%s AND task_id=%s AND envelope_digest=%s",
+                (repository_id, task_id, envelope_digest),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise KeyError(envelope_digest)
+        try:
+            result = ResultEnvelopeV2.from_dict(row[0])
+        except Exception as exc:
+            raise StoreError("stored result envelope is corrupt") from exc
+        if (
+            result.repository_id != repository_id
+            or result.task_id != task_id
+            or result.record_digest != envelope_digest
+        ):
+            raise StoreError("stored result envelope binding mismatch")
+        return result
 
     def reserve_budget(
         self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor,
@@ -4639,3 +4832,75 @@ class PostgresFactoryStore:
                 )
             self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
             return self._get_task(cursor, task_id)
+
+
+class PostgresResultDispatcherStore(PostgresFactoryStore):
+    """Database interface whose login can assume only the dispatcher capability."""
+
+    _CAPABILITY_ROLE = "factory_result_dispatcher"
+    _CAPABILITY_LABEL = "result dispatcher"
+
+    def claim_model_requests(
+        self, dispatcher_id: str, *, limit: int, lease_seconds: int
+    ) -> tuple[DispatchClaim, ...]:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.claim_model_requests_v1(%s,%s,%s)",
+                (dispatcher_id, limit, lease_seconds),
+            )
+            rows = cursor.fetchone()[0]
+        if not isinstance(rows, list):
+            raise StoreError("stored dispatch claims are invalid")
+        try:
+            return tuple(DispatchClaim(**row) for row in rows)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("stored dispatch claim is invalid") from exc
+
+    def start_model_request_dispatch(self, claim: DispatchClaim) -> None:
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.start_model_request_dispatch_v1(%s,%s,%s)",
+                    (claim.request_digest, self._dispatch_owner(claim), claim.claim_token),
+                )
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("stale dispatch claim") from exc
+            raise
+
+    @staticmethod
+    def _dispatch_owner(claim: DispatchClaim) -> str:
+        owner = getattr(claim, "dispatcher_id", None)
+        if not isinstance(owner, str):
+            raise StoreError("dispatch claim owner is missing")
+        return owner
+
+    def record_model_request_dispatch(
+        self, claim: DispatchClaim, outcome: DispatchOutcome
+    ) -> None:
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.record_model_request_dispatch_v1(%s,%s,%s,%s,%s,%s)",
+                    (
+                        claim.request_digest, self._dispatch_owner(claim), claim.claim_token,
+                        outcome.state, outcome.reason_code, outcome.observation_digest,
+                    ),
+                )
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("stale or invalid dispatch observation") from exc
+            raise
+
+    def reconcile_model_requests(self, dispatcher_id: str, *, limit: int) -> int:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.reconcile_model_requests_v1(%s,%s)",
+                (dispatcher_id, limit),
+            )
+            count = cursor.fetchone()[0]
+        if type(count) is not int or not 0 <= count <= limit:
+            raise StoreError("stored dispatch reconciliation is invalid")
+        return count

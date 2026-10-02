@@ -1419,43 +1419,22 @@ module.main()
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(candidate_version, '2.0.19')
+        self.assertEqual(candidate_version, '2.1.0')
         self.assertEqual(state['product_version'], candidate_version)
-        self.assertIn(
-            state['local_candidate']['artifact_status'],
-            {
-                'pending_unpublished_artifact_child',
-                'pending_tag_and_release',
-                'published_tag_bound',
-            },
-        )
-        candidate_pair = tuple(
-            ROOT / path
-            for path in state['local_candidate']['artifact_child']['delta_paths']
-        )
-        # Existence is gated on byte delivery, not release publication: the pending
-        # unpublished slot must claim no bytes; once the artifact child delivers
-        # them, both must exist and the sidecar must match the zip digest.
-        if state['local_candidate']['artifact_status'] == 'pending_unpublished_artifact_child':
-            self.assertEqual(tuple(p for p in candidate_pair if p.exists()), ())
-        else:
-            self.assertEqual(len(tuple(p for p in candidate_pair if p.exists())), 2)
-            zip_bytes = candidate_pair[0].read_bytes()
-            import hashlib as _hl
-            digest = _hl.sha256(zip_bytes).hexdigest()
-            self.assertEqual(digest, state['local_candidate']['artifact_child']['zip_sha256'])
-            self.assertEqual(
-                candidate_pair[1].read_text(encoding='ascii'),
-                f"{digest}  {candidate_pair[1].name.removesuffix('.sha256')}\n",
-            )
+        candidate = state['local_candidate']
+        self.assertEqual(candidate['status'], 'source_candidate')
+        self.assertEqual(candidate['artifact_status'], 'not_built')
+        self.assertNotIn('artifact_child', candidate)
+        self.assertNotIn('zip_sha256', candidate)
+        self.assertNotIn('sidecar_sha256', candidate)
         published_version = published['tag'].removeprefix('v')
-        self.assertEqual(published_version, '2.0.18')
+        self.assertEqual(published_version, '2.0.19')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
-        expected_digest = '0bc6adc9f4660e1b60be4cb4895e97f2641338b52b6a5e05ac3c7acd85e59b3a'
+        expected_digest = '4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9'
         self.assertEqual(artifact['sha256'], expected_digest)
 
         zip_path = ROOT / expected_relative

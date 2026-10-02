@@ -1,0 +1,21 @@
+{
+  "schema_version": "factory-installer-provenance/v1",
+  "upstream_repository": "https://github.com/Dimkox/liqvera",
+  "upstream_commit": "e3df6833e8916d01f55028e63d4db1632a805a75",
+  "reference_sha256": {
+    "scripts/verify-liqvera-installer.py": "72e22cda1930d859be8093e3ec875ae5e673c842a41da849644147ae6b9fb207",
+    "installer/lib/runtime.py": "8ffdc2be7c350fb1d529beeaa9de6326e9942bc9edf520ce194f87372de7a8f4",
+    "installer/lib/lifecycle.py": "0fb33e0405f02784a871569a785f92e8d7acc2978c2effd400a507ce926d054b"
+  },
+  "authorization": {
+    "date": "2026-09-30",
+    "authority": "explicit-user-direction-recorded-by-coordinator",
+    "user_direction": "https://github.com/Dimkox/liqvera отсюда прототип инсталлера забери",
+    "scope": "Inspect and selectively reuse installer prototype safety patterns for the Factory Linux setup manager; exclude Liqvera product topology, service/config/image/migration payload.",
+    "not_authorized": ["live host mutation", "service activation", "publication", "human security approval"],
+    "evidence_kind": "durable session direction record, not a signed approval or license grant"
+  },
+  "upstream_open_license_claim": false,
+  "licensing_observation": "Inspected exact upstream root tree contained no open-source license. This record makes no upstream open-license claim and is not a license grant.",
+  "adaptation": "New Factory stdlib implementation of verification/preflight/immutable staging/health-switch/recovery/removal patterns; no upstream executable product payload imported."
+}

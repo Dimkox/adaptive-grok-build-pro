@@ -847,3 +847,22 @@ When a predecessor merges, first restack the continuation branch and bind its ro
 ### 2026-09-24 — Admit by content role, never by directory (corrects the entry above)
 
 The review of head `a08060c1` showed "prose" is not a directory property: `docs/bitrix-local-AGENTS.md` is installed verbatim as `local/AGENTS.md` into every consumer Bitrix install (executed product), and `**/evidence/historical-*` bytes are pinned to a literal sha256 by `tests/test_history.py` (declared immutable). Both are now refused by their own reason codes, documentation prefixes are directory-shaped only, and every remaining admitted class is bound by a module the lane itself runs — `tests/test_workflow_sources.py` and `tests/test_repo_router.py` joined the trio for that reason, so the lane runs five modules (~14 s) and skips three named checks including the discovery runner it replaced.
+
+### 2026-10-01 — Recalibrate the complete Factory-test union, not its ownership
+
+When required migration compatibility makes whole legacy test modules chargeable, keep every helper and discovery shim in one governed union and adjust only the byte ceiling to the measured contour. An executable just-over-limit fixture preserves fail-closed accounting while unchanged line, complexity and severity guards prevent the recalibration from becoming an exemption.
+
+### 2026-10-02 — Validate cumulative accounting before completeness
+
+Apply the existing signed-bigint contract immediately after each known-charge addition, independently of whether usage coverage permits a complete total. The same failing max+1 regression through both shared discovery surfaces caught unrepresentable subtotals for actual, estimated and incomplete summaries, while maximum-valid totals stayed accepted. Adapting source cases into the shared dependency-free module preserved PR2 discovery and avoided reinstating the obsolete CLI validator layout.
+
+### 2026-10-02 — Sanitize structured secret fields before flattening
+
+Treat known sensitive JSON keys as binding their entire value, replacing both key and value before canonical export; reject duplicate or redacted-collision keys rather than keeping an arbitrary winner. Retained-source regressions exposed Authorization leakage that fragment-only scanning missed, and independent envelope admission now rechecks structured secrets and typed failures. Additive exclusions preserve the frozen predecessor digest while new sidecars have their own closed schema and semantic tests.
+### 2026-10-02 — Expose result admission as an explicit unavailable capability
+
+The API performs full bounded parsing and authority/identity validation, then returns a stable 503 before any store or dispatch call. This permits contract integration without falsely claiming persistence or replay.
+
+### 2026-10-02 — Use ASD-STE100 style in project-chat responses
+
+Write project-chat answers with ASD-STE100 principles: use short sentences, active voice, one term for one concept, and one main instruction or fact per sentence. This makes status, risk, and release decisions easier to read and less ambiguous; it is a writing rule, not a claim of formal ASD-STE100 certification.

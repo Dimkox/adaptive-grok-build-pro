@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from functools import partial
 import json
 import os
+import re
 import threading
 import time
 import unittest
@@ -44,6 +45,7 @@ from adaptive_factory.store import (
     PostgresSemanticAdjudicatorStore,
     PostgresSemanticCoordinatorStore,
     PostgresSemanticValidatorStore,
+    ResultAdmission,
     StoreError,
     StoreUnavailable,
 )
@@ -54,6 +56,7 @@ from factory.tests.test_execution_service import trusted_registry
 
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
+POSTGRES_CONTAINER = os.environ.get("FACTORY_TEST_POSTGRES_CONTAINER")
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
 # A child task's deadline_at is assigned by PostgreSQL as now() + wall_seconds at its own
 # INSERT, so the inherited child budget must end strictly inside the parent horizon.  The
@@ -115,6 +118,7 @@ class PostgresFactoryTests(unittest.TestCase):
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
         from adaptive_factory.admin import (
+            provision_result_dispatcher_login,
             provision_runtime_login,
             provision_semantic_adjudicator_login,
             provision_semantic_coordinator_login,
@@ -123,14 +127,19 @@ class PostgresFactoryTests(unittest.TestCase):
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         cls.runtime_login = f"factory_base_runtime_{os.getpid()}"
+        cls.result_dispatcher_login = f"factory_dispatcher_{os.getpid()}"
         cls.semantic_coordinator_login = f"factory_semantic_{os.getpid()}"
         cls.semantic_validator_login = f"factory_validator_{os.getpid()}"
         cls.semantic_adjudicator_login = f"factory_adjudicator_{os.getpid()}"
         cls.runtime_password = "local-" + "base-runtime-store-password"
+        cls.result_dispatcher_password = "local-" + "result-dispatcher-test"
         cls.semantic_coordinator_password = "local-" + "semantic-coordinator-test"
         cls.semantic_validator_password = "local-" + "semantic-validator-test"
         cls.semantic_adjudicator_password = "local-" + "semantic-adjudicator-test"
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
+        provision_result_dispatcher_login(
+            DATABASE_URL, cls.result_dispatcher_login, cls.result_dispatcher_password
+        )
         provision_semantic_coordinator_login(
             DATABASE_URL,
             cls.semantic_coordinator_login,
@@ -151,6 +160,13 @@ class PostgresFactoryTests(unittest.TestCase):
                 **conninfo_to_dict(DATABASE_URL),
                 "user": cls.runtime_login,
                 "password": cls.runtime_password,
+            }
+        )
+        cls.result_dispatcher_url = make_conninfo(
+            **{
+                **conninfo_to_dict(DATABASE_URL),
+                "user": cls.result_dispatcher_login,
+                "password": cls.result_dispatcher_password,
             }
         )
         cls.semantic_coordinator_url = make_conninfo(
@@ -186,6 +202,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 cls.semantic_validator_login,
                 cls.semantic_coordinator_login,
                 cls.runtime_login,
+                cls.result_dispatcher_login,
             ):
                 connection.execute(
                     sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(role))
@@ -208,6 +225,36 @@ class PostgresFactoryTests(unittest.TestCase):
         )
 
     @classmethod
+    def result_dispatcher_store(cls):
+        from adaptive_factory.store import PostgresResultDispatcherStore
+
+        return PostgresResultDispatcherStore(cls.result_dispatcher_url)
+
+    def seed_result_dispatch(self, envelope):
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection:
+            request_digest = connection.execute(
+                "SELECT factory.execution_contract_hash(NULL,"
+                "factory.execution_canonical_json(jsonb_build_object("
+                "'contract','next-model-request/v1','envelope_digest',%s::text)))",
+                (envelope.record_digest,),
+            ).fetchone()[0]
+            connection.execute(
+                "INSERT INTO factory.next_model_request_outbox_v1("
+                "request_digest,envelope_digest,repository_id,task_id,run_id,fence,packet_digest,"
+                "attempt_id,operation_id,observation_deadline) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,clock_timestamp()+interval '5 minutes')",
+                (
+                    request_digest, envelope.record_digest, envelope.repository_id,
+                    envelope.task_id, envelope.run_id, envelope.fence,
+                    envelope.packet_digest, envelope.attempt_id,
+                    f"factory-result:{request_digest}",
+                ),
+            )
+        return request_digest
+
+    @classmethod
     def migrate(cls, database_url: str):
         return PostgresMigrator(database_url).apply(
             expected_runtime_login=cls.runtime_login
@@ -218,7 +265,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.next_model_request_outbox_v1, factory.result_admission_commands_v1, factory.result_sources_v1, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -912,6 +959,852 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
 
+    def test_v15_result_admission_is_authoritative_replay_safe_and_durable(self):
+        import psycopg
+        import uuid
+        from adaptive_factory.result_broker import ResultBroker
+
+        task = self.submit(source="v15-result-admission").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60,
+            actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt_id = str(connection.execute(
+                "SELECT attempt_id FROM factory.attempts WHERE run_id=%s",
+                (grant.run_id,),
+            ).fetchone()[0])
+        identity = {
+            "repository_id": task.repository_id, "task_id": task.task_id,
+            "run_id": grant.run_id, "fence": grant.fence,
+            "packet_digest": grant.packet_digest, "attempt_id": attempt_id,
+            "source_operation": "tool.call/read", "source_digest": "5" * 64,
+        }
+        envelope = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity=identity, channel="native_tool_result", content_type="text/plain",
+            chunks=(b"safe result",),
+        )
+        def admit(value, key, correlation="result-admission-correlation"):
+            return self.service.admit_result(
+                grant, value, actor=WORKER,
+                idempotency_key=canonical_digest({"test_command": key}),
+                correlation_id=correlation,
+            )
+        call = partial(admit, envelope, "result-admission-command-1")
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = tuple(pool.map(lambda _: call(), range(2)))
+        self.assertEqual(sum(item.created for item in results), 1)
+        self.assertFalse(any(item.outbox_created for item in results))
+        self.assertEqual(
+            self.service.get_result_envelope(
+                task.task_id, envelope.record_digest,
+                repository_id=task.repository_id, actor=READER,
+            ),
+            envelope,
+        )
+        replay_with_second_key = admit(envelope, "result-admission-command-2")
+        self.assertFalse(replay_with_second_key.created)
+        with self.assertRaisesRegex(StoreError, "conflicts"):
+            admit(envelope, "result-admission-command-1", "different-correlation")
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT (SELECT count(*) FROM factory.result_sources_v1),"
+                "(SELECT count(*) FROM factory.next_model_request_outbox_v1),"
+                "(SELECT count(*) FROM factory.result_admission_commands_v1)"
+            ).fetchone(), (1, 0, 2))
+
+        changed = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity=identity, channel="native_tool_result", content_type="text/plain",
+            chunks=(b"different",),
+        )
+        with self.assertRaisesRegex(StoreError, "conflicts"):
+            admit(changed, "result-admission-command-1")
+        with self.assertRaisesRegex(StoreError, "conflicts"):
+            admit(changed, "result-admission-command-2")
+        unavailable = ResultBroker(policy_version="result-sanitizer/1").inspect(
+            identity={**identity, "source_digest": "6" * 64},
+            channel="synthetic_child_report", content_type="text/plain", chunks=(),
+        )
+        admitted = admit(unavailable, "result-admission-command-3")
+        self.assertFalse(admitted.outbox_created)
+        redacted = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={**identity, "source_digest": "7" * 64},
+            channel="native_tool_result", content_type="text/plain",
+            chunks=(b"Authorization: Basic dXNlcjpwYXNz",),
+        )
+        self.assertEqual(redacted.outcome, "redacted")
+        self.assertFalse(admit(redacted, "result-admission-command-4").outbox_created)
+        rejected = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={**identity, "source_digest": "8" * 64},
+            channel="native_tool_result", content_type="text/plain", chunks=(b"\xff",),
+        )
+        self.assertEqual(rejected.outcome, "rejected")
+        self.assertFalse(admit(rejected, "result-admission-command-5").outbox_created)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT (SELECT count(*) FROM factory.result_sources_v1),"
+                "(SELECT count(*) FROM factory.next_model_request_outbox_v1)"
+            ).fetchone(), (4, 0))
+        with psycopg.connect(self.runtime_url) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            for table in ("result_sources_v1", "result_admission_commands_v1", "next_model_request_outbox_v1"):
+                for statement in (
+                    f"INSERT INTO factory.{table} DEFAULT VALUES",
+                    f"UPDATE factory.{table} SET envelope_digest=envelope_digest",
+                    f"DELETE FROM factory.{table}",
+                ):
+                    with self.subTest(table=table, statement=statement.split()[0]):
+                        with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                            connection.execute(statement)
+                        connection.rollback()
+                        connection.execute("SET ROLE factory_runtime")
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertFalse(connection.execute(
+                "SELECT has_function_privilege('public',"
+                "'factory.admit_result_v1(text,character,text,text,character,text,text)','EXECUTE')"
+            ).fetchone()[0])
+            signatures = (
+                "factory.claim_model_requests_v1(text,integer,integer)",
+                "factory.start_model_request_dispatch_v1(character,text,character)",
+                "factory.record_model_request_dispatch_v1(character,text,character,text,text,character)",
+                "factory.reconcile_model_requests_v1(text,integer)",
+            )
+            for signature in signatures:
+                self.assertFalse(connection.execute(
+                    "SELECT has_function_privilege('public',%s,'EXECUTE')", (signature,)
+                ).fetchone()[0])
+                self.assertFalse(connection.execute(
+                    "SELECT has_function_privilege('factory_runtime',%s,'EXECUTE')", (signature,)
+                ).fetchone()[0])
+                self.assertTrue(connection.execute(
+                    "SELECT has_function_privilege('factory_result_dispatcher',%s,'EXECUTE')",
+                    (signature,),
+                ).fetchone()[0])
+
+        def direct(
+            document, *, owner=WORKER.actor_id, key=None,
+            correlation="direct-result-correlation", wire=None, digest_value=None,
+        ):
+            key = key or canonical_digest({"direct_command": str(uuid.uuid4())})
+            digest_value = digest_value or canonical_digest(document)
+            request = {
+                "contract": "adaptive-factory.result-admission-command/v1",
+                "action": "result_admission", "actor_id": owner,
+                "idempotency_key": key, "envelope_digest": digest_value,
+                "correlation_id": correlation,
+            }
+            with psycopg.connect(self.runtime_url) as connection:
+                connection.execute("SET statement_timeout='5s'")
+                connection.execute("SET ROLE factory_runtime")
+                return connection.execute(
+                    "SELECT factory.admit_result_v1(%s,%s,%s,%s,%s,%s,%s)",
+                    (wire or canonical_json(document).decode(), digest_value, owner, key,
+                     canonical_digest(request), canonical_json(request).decode(),
+                     correlation),
+                ).fetchone()[0]
+
+        authority_mutations = {
+            "repository": {"repository_id": "other/repository"},
+            "task": {"task_id": str(uuid.uuid4())},
+            "run": {"run_id": str(uuid.uuid4())},
+            "fence": {"fence": grant.fence + 1},
+            "packet": {"packet_digest": "9" * 64},
+            "attempt": {"attempt_id": str(uuid.uuid4())},
+        }
+        for label, mutation in authority_mutations.items():
+            forged = {**envelope.to_dict(), **mutation, "source_digest": canonical_digest(mutation)}
+            with self.subTest(authority=label), self.assertRaises(psycopg.errors.RaiseException):
+                direct(forged)
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct({**envelope.to_dict(), "source_digest": "a" * 64}, owner="other-worker")
+
+        other_task = self.submit(source="v15-result-cross-run-attempt").task
+        other_grant = self.service.claim(
+            owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(other_task.repository_id,), lease_seconds=60,
+            actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            other_attempt = str(connection.execute(
+                "SELECT attempt_id FROM factory.attempts WHERE run_id=%s",
+                (other_grant.run_id,),
+            ).fetchone()[0])
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct({**envelope.to_dict(), "attempt_id": other_attempt, "source_digest": "6" * 64})
+
+        direct_bad = []
+        extra = {**envelope.to_dict(), "extra": "field", "source_digest": "b" * 64}
+        direct_bad.append((extra, None, None))
+        uppercase_uuid = {**envelope.to_dict(), "task_id": task.task_id.upper(), "source_digest": "c" * 64}
+        direct_bad.append((uppercase_uuid, None, None))
+        decomposed = {**envelope.to_dict(), "reason_code": "cafe\u0301", "source_digest": "d" * 64}
+        direct_bad.append((decomposed, None, None))
+        secret_payload = {**envelope.to_dict(), "sanitized_payload": "X_AUTHORIZATION=Basic dXNlcjpwYXNz", "source_digest": "e" * 64}
+        secret_payload["sanitized_payload_digest"] = canonical_digest(secret_payload["sanitized_payload"])
+        direct_bad.append((secret_payload, None, None))
+        secret_vectors = (
+            "Authorization: Basic dXNlcjpwYXNz",
+            "X_AUTHORIZATION=Basic dXNlcjpwYXNz",
+            "Bearer abc.def",
+            "api_key=not-safe",
+            "my_password_value=foo",
+            "client_secret_rotated=foo",
+            "-----BEGIN " + "PRIVATE KEY-----",
+        )
+        for field in ("content_type", "reason_code", "policy_version"):
+            for secret in secret_vectors:
+                direct_bad.append(({
+                    **envelope.to_dict(), field: secret,
+                    "source_digest": canonical_digest({"field": field, "secret": secret}),
+                }, None, None))
+        noncanonical = {**envelope.to_dict(), "source_digest": "f" * 64}
+        direct_bad.append((noncanonical, json.dumps(noncanonical), None))
+        direct_bad.append(({**envelope.to_dict(), "source_digest": "0" * 64}, None, "1" * 64))
+        direct_bad.append(({
+            **envelope.to_dict(), "content_type": "safe\ntext",
+            "source_digest": canonical_digest({"content_type": "safe\ntext"}),
+        }, None, None))
+        carriage_return = {
+            **envelope.to_dict(), "sanitized_payload": "safe\rtext",
+            "source_digest": canonical_digest({"payload": "carriage-return"}),
+        }
+        carriage_return["sanitized_payload_digest"] = canonical_digest(
+            carriage_return["sanitized_payload"]
+        )
+        direct_bad.append((carriage_return, None, None))
+        for label, mutation in (
+            ("unknown-payload", {"channel": "unknown"}),
+            ("unsupported-content", {"content_type": "application/octet-stream"}),
+            ("malformed-json", {"content_type": "application/json", "sanitized_payload": "{"}),
+            ("deep-json", {
+                "content_type": "application/json",
+                "sanitized_payload": "[" * 65 + "0" + "]" * 65,
+            }),
+        ):
+            bad_payload = {
+                **envelope.to_dict(), **mutation,
+                "source_digest": canonical_digest({"structured_bad": label}),
+            }
+            if "sanitized_payload" in mutation:
+                bad_payload["sanitized_payload_digest"] = canonical_digest(
+                    bad_payload["sanitized_payload"]
+                )
+            direct_bad.append((bad_payload, None, None))
+        escaped_sensitive_key = {
+            **envelope.to_dict(), "content_type": "application/json",
+            "sanitized_payload": '{"pass\\u0077ord":"not-safe"}',
+            "source_digest": canonical_digest({"structured_bad": "escaped-sensitive-key"}),
+        }
+        escaped_sensitive_key["sanitized_payload_digest"] = canonical_digest(
+            escaped_sensitive_key["sanitized_payload"]
+        )
+        direct_bad.append((escaped_sensitive_key, None, None))
+        for label, payload in (
+            ("duplicate-root-key", '{"safe":1,"safe":2}'),
+            ("duplicate-nested-key", '{"outer":{"safe":1,"safe":2}}'),
+        ):
+            duplicate_key = {
+                **envelope.to_dict(), "content_type": "application/json",
+                "sanitized_payload": payload,
+                "source_digest": canonical_digest({"structured_bad": label}),
+            }
+            duplicate_key["sanitized_payload_digest"] = canonical_digest(payload)
+            direct_bad.append((duplicate_key, None, None))
+        for document, wire, bad_digest in direct_bad:
+            with self.assertRaises(psycopg.errors.RaiseException):
+                direct(document, wire=wire, digest_value=bad_digest)
+
+        repeated_key_in_distinct_objects = {
+            **envelope.to_dict(), "content_type": "application/json",
+            "sanitized_payload": '[{"same":1},{"same":2}]',
+            "source_digest": canonical_digest({"structured_good": "separate-objects"}),
+        }
+        repeated_key_in_distinct_objects["sanitized_payload_digest"] = canonical_digest(
+            repeated_key_in_distinct_objects["sanitized_payload"]
+        )
+        self.assertTrue(direct(repeated_key_in_distinct_objects)["created"])
+
+        rollback_document = {
+            **envelope.to_dict(),
+            "source_digest": canonical_digest({"rollback": "post-result"}),
+        }
+        rollback_digest = canonical_digest(rollback_document)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "CREATE FUNCTION factory.test_reject_result_command_v1() RETURNS trigger "
+                "LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected command failure'; END $$"
+            )
+            connection.execute(
+                "CREATE TRIGGER test_reject_result_command_v1 BEFORE INSERT ON "
+                "factory.result_admission_commands_v1 FOR EACH ROW EXECUTE FUNCTION "
+                "factory.test_reject_result_command_v1()"
+            )
+        try:
+            with self.assertRaises(psycopg.errors.RaiseException):
+                direct(rollback_document, digest_value=rollback_digest)
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(
+                    "DROP TRIGGER test_reject_result_command_v1 ON "
+                    "factory.result_admission_commands_v1"
+                )
+                connection.execute("DROP FUNCTION factory.test_reject_result_command_v1()")
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT count(*) FROM factory.result_sources_v1 WHERE envelope_digest=%s",
+                (rollback_digest,),
+            ).fetchone()[0], 0)
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct({**envelope.to_dict(), "source_digest": "a" * 64}, key="not-api-syntax")
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct(
+                {**envelope.to_dict(), "source_digest": "b" * 64},
+                correlation="bad\ncorrelation",
+            )
+
+        bare_basic = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={**identity, "source_digest": "9" * 64},
+            channel="native_tool_result", content_type="text/plain",
+            chunks=(b"Basic dXNlcjpwYXNz",),
+        )
+        self.assertEqual(bare_basic.outcome, "allow")
+        self.assertTrue(direct(bare_basic.to_dict())["created"])
+        tab_lf = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={
+                **identity,
+                "source_digest": canonical_digest({"payload": "tab-lf"}),
+            },
+            channel="native_tool_result", content_type="text/plain",
+            chunks=(b"safe\tline\ntext",),
+        )
+        self.assertEqual(tab_lf.outcome, "allow")
+        self.assertTrue(direct(tab_lf.to_dict())["created"])
+        for field, accepted in (
+            ("reason_code", "my_password_value"),
+            ("policy_version", "client_secret_rotated"),
+            ("reason_code", "safe\x7ftext"),
+            ("reason_code", "safe\u0085text"),
+            ("policy_version", "-----begin private key-----"),
+        ):
+            accepted_document = {
+                **envelope.to_dict(), field: accepted,
+                "source_digest": canonical_digest({"accepted_field": field, "value": accepted}),
+            }
+            self.assertTrue(direct(accepted_document)["created"])
+
+        for label, payload in (
+            ("max-ascii", "a" * 1_000_000),
+            ("max-multibyte", "€" * 333_333),
+        ):
+            large_document = {
+                **envelope.to_dict(),
+                "source_digest": canonical_digest({"large_payload": label}),
+                "sanitized_payload": payload,
+                "sanitized_payload_digest": canonical_digest(payload),
+            }
+            started = time.monotonic()
+            self.assertTrue(direct(large_document)["created"])
+            self.assertLess(time.monotonic() - started, 5.0, label)
+
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (grant.run_id,),
+            )
+        replay_after_expiry = admit(envelope, "result-admission-command-1")
+        self.assertFalse(replay_after_expiry.created)
+        expired = {**envelope.to_dict(), "source_digest": "1" * 64}
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct(expired)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()+interval '1 hour',"
+                "deadline_at=clock_timestamp()-interval '1 second' WHERE run_id=%s", (grant.run_id,),
+            )
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct({**expired, "source_digest": "2" * 64})
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET deadline_at=clock_timestamp()+interval '1 hour' WHERE run_id=%s",
+                (grant.run_id,),
+            )
+            connection.execute(
+                "UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE attempt_id=%s",
+                (attempt_id,),
+            )
+        with self.assertRaises(psycopg.errors.RaiseException):
+            direct({**expired, "source_digest": "3" * 64})
+
+        # Natural source identity is serialized independently of command identity.
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute("UPDATE factory.attempts SET finished_at=NULL WHERE attempt_id=%s", (attempt_id,))
+        conflict_identity = {**identity, "source_digest": "4" * 64}
+        first = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity=conflict_identity, channel="native_tool_result",
+            content_type="text/plain", chunks=(b"first",),
+        )
+        second = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity=conflict_identity, channel="native_tool_result",
+            content_type="text/plain", chunks=(b"second",),
+        )
+        def competing(value, key):
+            try:
+                return admit(value, key)
+            except StoreError as exc:
+                return exc
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            competing_results = tuple(pool.map(
+                lambda pair: competing(*pair),
+                ((first, "conflict-command-1"), (second, "conflict-command-2")),
+            ))
+        self.assertEqual(sum(isinstance(item, ResultAdmission) for item in competing_results), 1)
+        self.assertEqual(sum(isinstance(item, StoreError) for item in competing_results), 1)
+
+    def test_result_dispatch_is_fenced_restart_safe_and_never_blindly_reposts_unknown(self):
+        import psycopg
+        from adaptive_factory.result_broker import ResultBroker
+        from adaptive_factory.result_dispatch import DispatchOutcome
+
+        task = self.submit(source="v15-result-dispatch").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60,
+            actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt_id = str(connection.execute(
+                "SELECT attempt_id FROM factory.attempts WHERE run_id=%s", (grant.run_id,),
+            ).fetchone()[0])
+        envelope = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={
+                "repository_id": task.repository_id, "task_id": task.task_id,
+                "run_id": grant.run_id, "fence": grant.fence,
+                "packet_digest": grant.packet_digest, "attempt_id": attempt_id,
+                "source_operation": "tool.call/dispatch", "source_digest": "d" * 64,
+            },
+            channel="native_tool_result", content_type="text/plain", chunks=(b"safe",),
+        )
+        admitted = self.service.admit_result(
+            grant, envelope, actor=WORKER, idempotency_key="d" * 64,
+            correlation_id="dispatch-admission",
+        )
+        self.assertFalse(admitted.outbox_created)
+        self.seed_result_dispatch(envelope)
+        with psycopg.connect(DATABASE_URL) as connection:
+            with self.assertRaises(psycopg.errors.ForeignKeyViolation):
+                connection.execute(
+                    "UPDATE factory.next_model_request_outbox_v1 "
+                    "SET repository_id='mismatched/repository' WHERE envelope_digest=%s",
+                    (envelope.record_digest,),
+                )
+            connection.rollback()
+        dispatcher = self.result_dispatcher_store()
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE attempt_id=%s",
+                (envelope.attempt_id,),
+            )
+        self.assertEqual(
+            dispatcher.claim_model_requests("dispatcher-stale", limit=1, lease_seconds=5), ()
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.attempts SET finished_at=NULL WHERE attempt_id=%s",
+                (envelope.attempt_id,),
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            claimed = tuple(pool.map(
+                lambda name: dispatcher.claim_model_requests(name, limit=1, lease_seconds=5),
+                ("dispatcher-a", "dispatcher-b"),
+            ))
+        self.assertEqual(sum(len(rows) for rows in claimed), 1)
+        first = next(rows[0] for rows in claimed if rows)
+        self.assertEqual(first.state, "claimed")
+        self.assertEqual(first.operation_id, f"factory-result:{first.request_digest}")
+        dispatcher.start_model_request_dispatch(first)
+        dispatcher.record_model_request_dispatch(
+            first, DispatchOutcome("unknown", "post_outcome_ambiguous", None),
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET available_at=clock_timestamp() "
+                "WHERE request_digest=%s", (first.request_digest,),
+            )
+        observed = dispatcher.claim_model_requests("dispatcher-c", limit=1, lease_seconds=5)[0]
+        self.assertEqual(observed.state, "unknown")
+        with self.assertRaisesRegex(StoreError, "stale"):
+            dispatcher.record_model_request_dispatch(
+                first, DispatchOutcome("delivered", "observed", "e" * 64),
+            )
+        dispatcher.record_model_request_dispatch(
+            observed, DispatchOutcome("delivered", "observed", "e" * 64),
+        )
+        self.assertEqual(
+            dispatcher.claim_model_requests("dispatcher-d", limit=1, lease_seconds=5), ()
+        )
+
+        # A crash before POST is safe to retry; a crash after sending becomes observation-only.
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET state='pending',dispatch_phase='pending',"
+                "claim_token=NULL,dispatcher_id=NULL,claim_expires_at=NULL,"
+                "observation_digest=NULL,observed_at=NULL WHERE request_digest=%s",
+                (first.request_digest,),
+            )
+        dispatcher.claim_model_requests("dispatcher-e", limit=1, lease_seconds=5)[0]
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET claim_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE request_digest=%s", (first.request_digest,),
+            )
+        self.assertEqual(dispatcher.reconcile_model_requests("dispatcher-r", limit=1), 1)
+        retry = dispatcher.claim_model_requests("dispatcher-f", limit=1, lease_seconds=5)[0]
+        self.assertEqual(retry.state, "claimed")
+        dispatcher.start_model_request_dispatch(retry)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET claim_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE request_digest=%s", (first.request_digest,),
+            )
+        self.assertEqual(dispatcher.reconcile_model_requests("dispatcher-r", limit=1), 1)
+        observation = dispatcher.claim_model_requests("dispatcher-g", limit=1, lease_seconds=5)[0]
+        self.assertEqual(observation.state, "unknown")
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET claim_expires_at=clock_timestamp()-interval '1 second',"
+                "observation_deadline=clock_timestamp()-interval '1 second' WHERE request_digest=%s",
+                (first.request_digest,),
+            )
+        self.assertEqual(dispatcher.reconcile_model_requests("dispatcher-r", limit=1), 1)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state,dispatch_phase,reason_code FROM factory.next_model_request_outbox_v1 "
+                "WHERE request_digest=%s", (first.request_digest,),
+            ).fetchone(), ("claimed", "blocked", "observation_deadline_exceeded"))
+            connection.execute(
+                "UPDATE factory.next_model_request_outbox_v1 SET state='pending',dispatch_phase='pending',"
+                "reason_code=NULL,send_attempts=3,observation_deadline=clock_timestamp()+interval '1 hour' "
+                "WHERE request_digest=%s", (first.request_digest,),
+            )
+        self.assertEqual(dispatcher.reconcile_model_requests("dispatcher-r", limit=1), 1)
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state,dispatch_phase,reason_code FROM factory.next_model_request_outbox_v1 "
+                "WHERE request_digest=%s", (first.request_digest,),
+            ).fetchone(), ("claimed", "blocked", "send_attempts_exhausted"))
+
+    def test_result_dispatch_runs_admission_to_real_uds_and_observed_postcondition(self):
+        import psycopg
+        from pathlib import Path
+        import socketserver
+        import tempfile
+        from adaptive_factory.result_broker import ResultBroker
+        from adaptive_factory.result_dispatch import ResultDispatcher, UdsResultHandoffClient
+
+        task = self.submit(source="v15-result-dispatch-e2e").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60,
+            actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt_id = str(connection.execute(
+                "SELECT attempt_id FROM factory.attempts WHERE run_id=%s", (grant.run_id,),
+            ).fetchone()[0])
+        envelope = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={
+                "repository_id": task.repository_id, "task_id": task.task_id,
+                "run_id": grant.run_id, "fence": grant.fence,
+                "packet_digest": grant.packet_digest, "attempt_id": attempt_id,
+                "source_operation": "tool.call/e2e", "source_digest": "f" * 64,
+            },
+            channel="native_tool_result", content_type="text/plain",
+            chunks=(b"bounded native result",),
+        )
+        self.assertFalse(self.service.admit_result(
+            grant, envelope, actor=WORKER, idempotency_key="e" * 64,
+            correlation_id="dispatch-e2e",
+        ).outbox_created)
+        self.seed_result_dispatch(envelope)
+
+        seen = []
+        observation_digest = None
+        with tempfile.TemporaryDirectory() as directory:
+            socket_path = Path(directory) / "model.sock"
+
+            class Handler(socketserver.StreamRequestHandler):
+                def handle(handler_self):
+                    line = handler_self.rfile.readline().decode("ascii")
+                    headers = {}
+                    while True:
+                        header = handler_self.rfile.readline()
+                        if header == b"\r\n":
+                            break
+                        name, value = header.decode("ascii").split(":", 1)
+                        headers[name.lower()] = value.strip()
+                    body = handler_self.rfile.read(int(headers["content-length"]))
+                    request = json.loads(body)
+                    seen.append((line, headers, request))
+                    postcondition_digest = canonical_digest({
+                        "contract": "next-model-result-postcondition/v1",
+                        "operation_id": request["operation_id"],
+                        "request_digest": request["request_digest"],
+                        "envelope_digest": request["envelope_digest"],
+                    })
+                    response = json.dumps({
+                        "status": "delivered", "operation_id": request["operation_id"],
+                        "request_digest": request["request_digest"],
+                        "envelope_digest": request["envelope_digest"],
+                        "postcondition_digest": postcondition_digest,
+                    }).encode()
+                    handler_self.wfile.write(
+                        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                        + str(len(response)).encode() + b"\r\n\r\n" + response
+                    )
+
+            server = socketserver.UnixStreamServer(str(socket_path), Handler)
+            socket_path.chmod(0o600)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                dispatcher = ResultDispatcher(
+                    self.result_dispatcher_store(),
+                    UdsResultHandoffClient(socket_path, "private-e2e-token", timeout_seconds=1),
+                    dispatcher_id="dispatcher-e2e", batch_size=1, lease_seconds=5,
+                )
+                self.assertEqual(dispatcher.run_once(), 1)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(2)
+
+        self.assertEqual(len(seen), 1)
+        line, headers, payload = seen[0]
+        self.assertEqual(line, "POST /v1/native-result-handoffs HTTP/1.1\r\n")
+        self.assertEqual(headers["authorization"], "Bearer private-e2e-token")
+        self.assertEqual(headers["idempotency-key"], payload["operation_id"])
+        self.assertEqual(payload["result_envelope"], envelope.to_dict())
+        observation_digest = canonical_digest({
+            "contract": "next-model-result-postcondition/v1",
+            "operation_id": payload["operation_id"],
+            "request_digest": payload["request_digest"],
+            "envelope_digest": payload["envelope_digest"],
+        })
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state,reason_code,trim(observation_digest),send_attempts,"
+                "claim_token,dispatcher_id FROM factory.next_model_request_outbox_v1 "
+                "WHERE envelope_digest=%s", (envelope.record_digest,),
+            ).fetchone(), ("delivered", "accepted", observation_digest, 1, None, None))
+
+    @unittest.skipUnless(
+        POSTGRES_CONTAINER, "FACTORY_TEST_POSTGRES_CONTAINER must name the disposable PostgreSQL container"
+    )
+    def test_result_dispatch_process_and_postgres_restart_observes_without_second_post(self):
+        global DATABASE_URL
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+        from pathlib import Path
+        import socketserver
+        import subprocess
+        import sys
+        import tempfile
+        from adaptive_factory.result_broker import ResultBroker
+
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", POSTGRES_CONTAINER):
+            self.fail("invalid disposable PostgreSQL container name")
+
+        def restartable_binding():
+            inspected = subprocess.run(
+                ["docker", "inspect", POSTGRES_CONTAINER], check=True,
+                stdout=subprocess.PIPE, text=True, timeout=10,
+            )
+            document = json.loads(inspected.stdout)
+            if len(document) != 1 or document[0]["HostConfig"].get("AutoRemove") is not False:
+                self.fail("disposable PostgreSQL container must be restartable (AutoRemove=false)")
+            bindings = document[0]["NetworkSettings"]["Ports"].get("5432/tcp")
+            if not isinstance(bindings, list) or len(bindings) != 1:
+                self.fail("disposable PostgreSQL container must publish exactly one PostgreSQL port")
+            host, port = bindings[0].get("HostIp"), bindings[0].get("HostPort")
+            if host not in {"127.0.0.1", "::1"} or not isinstance(port, str) or not port.isdigit():
+                self.fail("disposable PostgreSQL binding must be numeric and loopback-only")
+            return document[0]["Id"], host, port
+
+        container_id, initial_host, initial_port = restartable_binding()
+        owner_parts = conninfo_to_dict(DATABASE_URL)
+        if (
+            owner_parts.get("host", "") != initial_host
+            or str(owner_parts.get("port", "5432")) != initial_port
+        ):
+            self.fail("FACTORY_TEST_DATABASE_URL does not match the restartable container binding")
+        task = self.submit(source="v15-result-restart-e2e").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id, role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            attempt_id = str(connection.execute(
+                "SELECT attempt_id FROM factory.attempts WHERE run_id=%s", (grant.run_id,)
+            ).fetchone()[0])
+        envelope = ResultBroker(policy_version="result-sanitizer/1").sanitize_candidate(
+            identity={
+                "repository_id": task.repository_id, "task_id": task.task_id,
+                "run_id": grant.run_id, "fence": grant.fence,
+                "packet_digest": grant.packet_digest, "attempt_id": attempt_id,
+                "source_operation": "tool.call/restart", "source_digest": "1" * 64,
+            },
+            channel="native_tool_result", content_type="text/plain", chunks=(b"restart",),
+        )
+        self.assertFalse(self.service.admit_result(
+            grant, envelope, actor=WORKER, idempotency_key="1" * 64,
+            correlation_id="dispatch-restart-e2e",
+        ).outbox_created)
+        request_digest = self.seed_result_dispatch(envelope)
+        methods = []
+        post_received = threading.Event()
+        release_post = threading.Event()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            socket_path = root / "model.sock"
+            token_path = root / "token"
+            token_path.write_text("private-restart-token")
+            token_path.chmod(0o600)
+
+            class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+                daemon_threads = True
+
+            class Handler(socketserver.StreamRequestHandler):
+                def handle(handler_self):
+                    line = handler_self.rfile.readline().decode("ascii")
+                    headers = {}
+                    while True:
+                        header = handler_self.rfile.readline()
+                        if header == b"\r\n":
+                            break
+                        name, value = header.decode("ascii").split(":", 1)
+                        headers[name.lower()] = value.strip()
+                    handler_self.rfile.read(int(headers.get("content-length", "0")))
+                    methods.append(line.split(" ", 1)[0])
+                    if line.startswith("POST "):
+                        post_received.set()
+                        release_post.wait(10)
+                        return
+                    operation_id = line.split(" ", 2)[1].rsplit("/", 1)[-1]
+                    response = json.dumps({
+                        "status": "delivered", "operation_id": operation_id,
+                        "request_digest": request_digest,
+                        "envelope_digest": envelope.record_digest,
+                        "postcondition_digest": canonical_digest({
+                            "contract": "next-model-result-postcondition/v1",
+                            "operation_id": operation_id,
+                            "request_digest": request_digest,
+                            "envelope_digest": envelope.record_digest,
+                        }),
+                    }).encode()
+                    handler_self.wfile.write(
+                        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                        + str(len(response)).encode() + b"\r\n\r\n" + response
+                    )
+
+            server = Server(str(socket_path), Handler)
+            socket_path.chmod(0o600)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            child_env = {
+                **os.environ,
+                "PYTHONPATH": str(Path(__file__).parents[1] / "src"),
+                "FACTORY_DATABASE_URL": DATABASE_URL,
+                "FACTORY_ACTORS_FILE": str(root / "unused-actors.json"),
+                "FACTORY_RESULT_DISPATCH_ENABLED": "true",
+                "FACTORY_RESULT_DISPATCH_DATABASE_URL": self.result_dispatcher_url,
+                "FACTORY_RESULT_DISPATCH_SOCKET_PATH": str(socket_path),
+                "FACTORY_RESULT_DISPATCH_TOKEN_FILE": str(token_path),
+                "FACTORY_RESULT_DISPATCH_BATCH_SIZE": "1",
+                "FACTORY_RESULT_DISPATCH_LEASE_SECONDS": "5",
+                "FACTORY_RESULT_DISPATCH_TIMEOUT_SECONDS": "1",
+                "FACTORY_RESULT_DISPATCH_PROCESSING_MARGIN_SECONDS": "1",
+            }
+            first = subprocess.Popen(
+                [sys.executable, "-m", "adaptive_factory.result_dispatch_cli", "--once"],
+                env=child_env,
+            )
+            try:
+                self.assertTrue(post_received.wait(10), "dispatcher did not reach POST")
+                first.terminate()
+                first.wait(timeout=10)
+                with psycopg.connect(DATABASE_URL) as connection:
+                    self.assertEqual(connection.execute(
+                        "SELECT dispatch_phase FROM factory.next_model_request_outbox_v1 "
+                        "WHERE request_digest=%s", (request_digest,),
+                    ).fetchone()[0], "sending")
+                    connection.execute(
+                        "UPDATE factory.next_model_request_outbox_v1 SET "
+                        "claim_expires_at=clock_timestamp()-interval '1 second' "
+                        "WHERE request_digest=%s", (request_digest,),
+                    )
+                release_post.set()
+                subprocess.run(["docker", "stop", POSTGRES_CONTAINER], check=True, timeout=30)
+                subprocess.run(["docker", "start", POSTGRES_CONTAINER], check=True, timeout=30)
+                restarted_id, restarted_host, restarted_port = restartable_binding()
+                if restarted_id != container_id:
+                    self.fail("disposable PostgreSQL container identity changed across restart")
+                DATABASE_URL = make_conninfo(
+                    **{**owner_parts, "host": restarted_host, "port": restarted_port}
+                )
+                for url_name in (
+                    "runtime_url", "result_dispatcher_url", "semantic_coordinator_url",
+                    "semantic_validator_url", "semantic_adjudicator_url",
+                ):
+                    current_url = getattr(self.__class__, url_name)
+                    setattr(self.__class__, url_name, make_conninfo(
+                        **{
+                            **conninfo_to_dict(current_url),
+                            "host": restarted_host, "port": restarted_port,
+                        }
+                    ))
+                os.environ["FACTORY_TEST_DATABASE_URL"] = DATABASE_URL
+                # unittest discovery imports this later-running module before this
+                # restart; keep its module-level disposable DSN bound to the same
+                # restarted container rather than the now-stale published port.
+                runtime_capability_module = sys.modules.get(
+                    "factory.tests.test_runtime_capability_postgres"
+                )
+                if runtime_capability_module is not None:
+                    runtime_capability_module.DATABASE_URL = DATABASE_URL
+                child_env["FACTORY_DATABASE_URL"] = DATABASE_URL
+                child_env["FACTORY_RESULT_DISPATCH_DATABASE_URL"] = self.result_dispatcher_url
+                deadline = time.monotonic() + 30
+                while True:
+                    try:
+                        with psycopg.connect(DATABASE_URL, connect_timeout=1):
+                            break
+                    except psycopg.OperationalError:
+                        if time.monotonic() >= deadline:
+                            raise
+                        time.sleep(0.2)
+                second = subprocess.run(
+                    [sys.executable, "-m", "adaptive_factory.result_dispatch_cli", "--once"],
+                    env=child_env, timeout=15,
+                )
+                self.assertEqual(second.returncode, 0)
+            finally:
+                release_post.set()
+                if first.poll() is None:
+                    first.kill()
+                    first.wait(timeout=5)
+                server.shutdown()
+                server.server_close()
+                thread.join(2)
+        self.assertEqual(methods, ["POST", "GET"])
+        with psycopg.connect(DATABASE_URL) as connection:
+            self.assertEqual(connection.execute(
+                "SELECT state,dispatch_phase FROM factory.next_model_request_outbox_v1 "
+                "WHERE request_digest=%s", (request_digest,),
+            ).fetchone(), ("delivered", "delivered"))
+
     def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
         import psycopg
 
@@ -1083,7 +1976,19 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         class FailingPhaseAuditStore(PostgresFactoryStore):
-            def _audit(self, cursor, task_id, actor, action, resource, reason, correlation_id, metadata=None, run_id=None):
+            def _audit(
+                self,
+                cursor,
+                task_id,
+                actor,
+                action,
+                resource,
+                reason,
+                correlation_id,
+                metadata=None,
+                run_id=None,
+                received_at=None,
+            ):
                 if action == "phase_transition":
                     raise StoreError("injected post-mutation audit failure")
                 return super()._audit(
@@ -1096,6 +2001,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     correlation_id,
                     metadata,
                     run_id,
+                    received_at,
                 )
 
         task = self.submit(source="phase-post-mutation-rollback").task
@@ -4107,7 +5013,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+                        [item.version for item in discover_migrations() if item.version >= 13],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4398,7 +5304,8 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], "ready", 22, True,
+                    [item.version for item in discover_migrations() if item.version >= 9],
+                    "ready", len(discover_migrations()), True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5093,7 +6000,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 22)
+        self.assertEqual(result["schema_version"], 25)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

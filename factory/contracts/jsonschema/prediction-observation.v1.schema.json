@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:prediction-observation.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "prediction_id", "repository_id", "change_id", "candidate_sha",
+    "context_digest", "spec_digest", "profile_digest", "feature_schema_version",
+    "feature_schema_digest", "dataset_version", "dataset_digest", "split_digest",
+    "model_version", "model_digest", "preprocessing_version", "preprocessing_digest",
+    "deterministic_evidence_digest", "seed", "predicted_at", "first_check_started_at",
+    "train_before", "test_after", "train_change_ids", "test_change_ids", "features",
+    "required_history_count", "observed_history_count", "label_status", "predicted_value",
+    "output_space", "authority_effect"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "prediction_id": {"$ref": "#/$defs/identity"},
+    "repository_id": {"$ref": "#/$defs/identity"},
+    "change_id": {"$ref": "#/$defs/identity"},
+    "candidate_sha": {"$ref": "#/$defs/sha"},
+    "context_digest": {"$ref": "#/$defs/digest"},
+    "spec_digest": {"$ref": "#/$defs/digest"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "feature_schema_version": {"$ref": "#/$defs/identity"},
+    "feature_schema_digest": {"$ref": "#/$defs/digest"},
+    "dataset_version": {"$ref": "#/$defs/identity"},
+    "dataset_digest": {"$ref": "#/$defs/digest"},
+    "split_digest": {"$ref": "#/$defs/digest"},
+    "model_version": {"$ref": "#/$defs/identity"},
+    "model_digest": {"$ref": "#/$defs/digest"},
+    "preprocessing_version": {"$ref": "#/$defs/identity"},
+    "preprocessing_digest": {"$ref": "#/$defs/digest"},
+    "deterministic_evidence_digest": {"$ref": "#/$defs/digest"},
+    "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "predicted_at": {"type": "string", "format": "date-time"},
+    "first_check_started_at": {"type": "string", "format": "date-time"},
+    "train_before": {"type": "string", "format": "date-time"},
+    "test_after": {"type": "string", "format": "date-time"},
+    "train_change_ids": {"type": "array", "maxItems": 1024, "uniqueItems": true, "items": {"$ref": "#/$defs/identity"}},
+    "test_change_ids": {"type": "array", "minItems": 1, "maxItems": 1024, "uniqueItems": true, "items": {"$ref": "#/$defs/identity"}},
+    "features": {
+      "type": "array", "minItems": 1, "maxItems": 128,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "value", "observed_at"],
+        "properties": {
+          "name": {"$ref": "#/$defs/identity"},
+          "value": {"type": "number"},
+          "observed_at": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "required_history_count": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "observed_history_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "label_status": {"enum": ["unknown", "pending"]},
+    "predicted_value": {"type": ["number", "null"]},
+    "output_space": {"enum": ["probability", "log_odds"]},
+    "authority_effect": {"const": "none"}
+  },
+  "$defs": {
+    "identity": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  }
+}

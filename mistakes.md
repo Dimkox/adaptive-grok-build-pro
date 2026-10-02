@@ -1486,3 +1486,60 @@ The coordinator initially generalized a historical Git-bound component-reuse dec
 # 2026-09-30 — Do not mutate a worktree during baseline verification
 
 I started `grok_verify` and then wrote the change plan into the same worktree, which made the in-flight exact-tree result unusable. The root cause was treating a long baseline command and planning writes as independent work even though verification fingerprints repository state; stop or finish the verifier before any repository mutation.
+# 2026-10-02 — Validate typed JSON before state transitions
+
+Root cause: a multi-file manual patch omitted the closing delimiter for `observability`, while change-state transitions were issued without conditioning them on successful spec validation. Run the validator first and only transition after its zero exit status.
+
+### 2026-10-02 — Check cumulative fitness after adapting test matrices
+
+Root cause: the decision regression adaptation duplicated fixtures and expected fields without measuring its cumulative exact-base Factory test budget, exceeding the existing 800,000-byte limit by 532 bytes. Shared test-only fixtures and literal expectation reuse preserved every scenario while reducing 587 bytes; check the unchanged fitness rule before committing similar adaptations.
+
+### 2026-10-02 — Resolve test identities before selecting focused commands
+
+Root cause: I guessed a decision-schema filename and used standalone discovery for a module with relative test imports, producing invocation errors rather than behavioral evidence. Resolve checked-in paths with rg and use package-qualified unittest identities; the corrected PR3a focused run passed all selected tests.
+
+### 2026-10-02 — Distinguish declared sentinel channels from invalid metadata
+
+Root cause: I reused the sanitizer metadata rejection for inspect() and retained the source test's exclusion of unknown, overlooking that unknown is a declared seventh qualification channel. The all-channel regression now catches the inconsistency, while separate tests preserve rejection and non-consumption for unknown-channel sanitization and unrecognized inspection metadata.
+
+### 2026-10-02 — Bind diagnostic commands to the intended clean clone
+
+Root cause: I created an exact-SHA clone with `git -C` but launched unittest without changing its working directory, so the diagnostic accidentally exercised the dirty controller worktree and produced irrelevant failures. Use the clone itself as the command working directory (and verify `pwd`/HEAD) before interpreting clean-clone evidence.
+
+### 2026-10-02 — Do not assume a script implements `--help`
+
+Root cause: I invoked the disposable exit runner with `--help` without first inspecting its argument handling; it ignores extra arguments and started a second full PostgreSQL suite. Inspect script entrypoints before probing CLI flags, and never use a potentially mutating or expensive command as its own help discovery mechanism.
+
+### 2026-10-02 — Keep factory tests within the declared environment
+
+Root cause: transplanted tests retained undeclared `pytest` and `jsonschema` imports, while the frozen predecessor inventory did not explicitly exclude four new current schemas. Use stdlib/internal validation in factory exit tests and classify new contracts outside immutable predecessor fixtures.
+
+### 2026-10-02 — Size the aggregate exit timeout for the aggregate suite
+
+Root cause: the disposable PostgreSQL exit runner kept a 480-second whole-suite timeout after the
+suite grew beyond that wall-clock budget, and its verifier wrapper had only a 600-second budget.
+Keep both limits explicitly bounded and regression-test that the outer limit exceeds the inner one.
+
+### 2026-10-02 — Refresh exact disposable port identity after the suite
+
+Root cause: the runner passed its pre-suite ephemeral PostgreSQL port to the restart probe after the
+suite had restarted the named container. Revalidate the exact ID/name/nonce binding, read its current
+loopback-only port, and propagate that URL before the final probe.
+
+### 2026-10-02 — Do not rely on pytest collection in a unittest gate
+
+Root cause: the rotator tests were transplanted as free pytest functions, so mandatory unittest
+discovery imported the module but executed zero assertions and hid a stale golden digest. Bind every
+free-function test into `load_tests` and pin the collected inventory so both runners execute it.
+
+### 2026-10-02 — Test safety branches by their exact rejection reason
+
+Root cause: installer tests covered a generic unsupported platform and unsafe roots, but did not pin
+the excluded Darwin host or isolate the explicit home-directory guard. Use controlled inputs and
+exact error assertions so broader platform admission or removal of a named root guard kills a test.
+
+### 2026-10-02 — Keep root tests inside the immutable runner environment
+
+Root cause: the result-schema test imported third-party `jsonschema`, which is not installed in the
+Trust CI runner image, and unittest discovery therefore failed during import. Use the repository's
+dependency-free schema subset validator and bind free-function assertions into unittest discovery.

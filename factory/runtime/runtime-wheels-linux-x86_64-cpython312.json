@@ -1,0 +1,26 @@
+{
+  "lock_sha256": "27e8a6001da8598cb0765412e07b4ae9112b69b621b23a8d4f8c0ae0a10b0c28",
+  "profile": "ubuntu-24.04-x86_64-cpython312",
+  "schema_version": "factory-runtime-wheels/v1",
+  "wheels": [
+    {"filename":"annotated_doc-0.0.5-py3-none-any.whl","name":"annotated-doc","sha256":"117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101","version":"0.0.5"},
+    {"filename":"annotated_types-0.8.0-py3-none-any.whl","name":"annotated-types","sha256":"f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0","version":"0.8.0"},
+    {"filename":"anyio-4.14.2-py3-none-any.whl","name":"anyio","sha256":"9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494","version":"4.14.2"},
+    {"filename":"certifi-2026.7.22-py3-none-any.whl","name":"certifi","sha256":"62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775","version":"2026.7.22"},
+    {"filename":"click-8.5.0-py3-none-any.whl","name":"click","sha256":"255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360","version":"8.5.0"},
+    {"filename":"fastapi-0.128.2-py3-none-any.whl","name":"fastapi","sha256":"55bfd9490ca0125707d80e785583c2dc57840bb66e3a0bbc087d20c364964dc0","version":"0.128.2"},
+    {"filename":"h11-0.16.0-py3-none-any.whl","name":"h11","sha256":"63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86","version":"0.16.0"},
+    {"filename":"httpcore-1.0.9-py3-none-any.whl","name":"httpcore","sha256":"2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55","version":"1.0.9"},
+    {"filename":"httpx-0.28.1-py3-none-any.whl","name":"httpx","sha256":"d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad","version":"0.28.1"},
+    {"filename":"idna-3.19-py3-none-any.whl","name":"idna","sha256":"815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4","version":"3.19"},
+    {"filename":"psycopg-3.3.4-py3-none-any.whl","name":"psycopg","sha256":"b6bbc25ccf05c8fad3b061d9db2ef0909a555171b84b07f29458a447253d679a","version":"3.3.4"},
+    {"filename":"psycopg_binary-3.3.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl","name":"psycopg-binary","sha256":"e7510c37550f91a187e3660a8cc50d4b760f8c3b8b2f89ebc5698cd2c7f2c85d","version":"3.3.4"},
+    {"filename":"pydantic-2.13.5-py3-none-any.whl","name":"pydantic","sha256":"346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73","version":"2.13.5"},
+    {"filename":"pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl","name":"pydantic-core","sha256":"0fc5be0abd4a407e200d844b404e33639a554e7bd0d448e7b9ae181be4789ac2","version":"2.46.5"},
+    {"filename":"pypdf-6.18.1-py3-none-any.whl","name":"pypdf","sha256":"ee93a2665670ecf57ee81d197a4ca548f3dc15f9cefc56e59b8140866aaa3de5","version":"6.18.1"},
+    {"filename":"starlette-0.50.0-py3-none-any.whl","name":"starlette","sha256":"9e5391843ec9b6e472eed1365a78c8098cfceb7a74bfd4d6b1c0c0095efb3bca","version":"0.50.0"},
+    {"filename":"typing_extensions-4.16.0-py3-none-any.whl","name":"typing-extensions","sha256":"481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8","version":"4.16.0"},
+    {"filename":"typing_inspection-0.4.4-py3-none-any.whl","name":"typing-inspection","sha256":"65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147","version":"0.4.4"},
+    {"filename":"uvicorn-0.48.0-py3-none-any.whl","name":"uvicorn","sha256":"48097851328b87ec36117d3d575234519eb58c2b22d79666e9bbc6c49a761dad","version":"0.48.0"}
+  ]
+}

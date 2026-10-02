@@ -19,6 +19,7 @@ flowchart LR
     node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
     node_21b552fdfa11f1c2["NODE-FACTORY-PROPOSAL-BROKER | local_component | local factory operators"]
     node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
+    node_dccaa7d04c359247["NODE-FACTORY-RESULT-DISPATCHER | worker | dormant unqualified internal foundation; local factory operators"]
     node_c10acb5d92ad0ee0["NODE-FACTORY-SEMANTIC-VALIDATION | local_component | independent local semantic validators"]
     node_c3bf47ff1c652923["NODE-FACTORY-SHADOW-HANDOFF | local_component | local factory operators and human reviewers"]
     node_23f89cd7152cc030["NODE-FACTORY-WORKSPACE-BROKER | local_component | local factory operators"]
@@ -78,6 +79,8 @@ flowchart LR
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-API | control | unix_http"| node_93915052ae8a2e67
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-CONTRACTS | control | in_process"| node_340c6123d4df34df
   node_0a318bb118382036 -->|"EDGE-FACTORY-FAILOVER-SQLITE | control | in_process"| node_7c8192807445a8a6
+  node_93915052ae8a2e67 -->|"EDGE-FACTORY-INSTALLER-LOOPBACK-PREFLIGHT | control | tcp"| node_93915052ae8a2e67
+  node_dccaa7d04c359247 -->|"EDGE-FACTORY-INTERNAL-RESULT-HANDOFF-UDS | dependency | unix_http"| node_0a087cfaed95a8ad
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-EXECUTORS | dependency | python_import"| node_340c6123d4df34df
   node_956eadd47cc94452 -->|"EDGE-FACTORY-LANDING-LIVE-MODELS | control | https"| node_6716118911fde778
   node_340c6123d4df34df -->|"EDGE-FACTORY-LANDING-SQLITE | data_flow | sqlite"| node_7c8192807445a8a6

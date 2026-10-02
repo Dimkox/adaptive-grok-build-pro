@@ -438,7 +438,18 @@ class LandingApiTests(unittest.TestCase):
             and "landing-" not in path.name
             and path.name != "static-landing-spec.v1.schema.json"
             and path.name != "context-manifest.v1.schema.json"
+            and path.name != "decision-record.v1.schema.json"
+            and path.name != "result-envelope.v1.schema.json"
+            and path.name != "result-envelope.v2.schema.json"
+            and path.name != "result-channel-qualification.v1.schema.json"
+            and path.name != "result-channel-qualification.v2.schema.json"
+            and path.name != "native-result-handoff.v1.schema.json"
+            and path.name != "factory-result-admission.v1.json"
             and path.name != "factory-execution.v3.json"
+            and path.name != "bb-backend-profile.v1.schema.json"
+            and path.name != "bb-lifecycle-observation.v1.schema.json"
+            and path.name != "prediction-explanation.v1.schema.json"
+            and path.name != "prediction-observation.v1.schema.json"
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()

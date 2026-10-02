@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "change_id": "20261002-implement-restart-safe-qualified-native-result-d-d349f5",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add a default-off, UDS-only, restart-safe durable native-result handoff foundation with fenced claims and observation-only ambiguous recovery, without qualifying any channel or invoking a provider/model.",
+    "success_metric": "factory_v15_dormant_dispatch_full_gate_status",
+    "target": "dispatch state, identity, recovery, ACL, restart and closed-transport tests plus all route reviews pass on one exact PR head"
+  },
+  "risk": {"tier": "yellow", "domains": ["api", "data", "event"]},
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Additive migration 025 upgrades hardened migration 024 exactly once, requires the pre-qualification outbox to be empty or fails closed, adds only bounded dispatch metadata/functions/indexes and an isolated dispatcher capability role, and performs no trigger, backfill or automatic enqueue.","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"AC-002","statement":"Outbox rows are compositionally bound to one result source repository, task, run, fence, packet, attempt and envelope identity; mismatched redundant identity cannot be inserted or emitted by a claim.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"AC-003","statement":"Concurrent bounded SKIP LOCKED claims give one owner/token/lease per row, and claim/start/record reject stale owners, tokens, leases, non-current run/fence/packet or closed attempt authority.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-004","statement":"A pre-send lease expiry may return to pending; once sending begins, timeout, disconnect, crash or unbound response becomes unknown and every restart performs observation GET for the same deterministic operation without a second POST.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"},{"receipt":"test_review"}]},
+    {"id":"AC-005","statement":"Delivered or proved-failed state requires a closed bounded response with JSON content type and exact operation, request, envelope and postcondition bindings; transport ACK, redirects, authentication failures, 5xx, malformed, duplicate-key, oversized or mismatched responses remain ambiguous and never assert business success.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-006","statement":"Send and observation attempts/deadlines are finite and persisted; exhaustion becomes blocked/unknown without retry reset, blind repost, provider failover or false failure, and restart preserves all counters and operation identity.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"},{"receipt":"data_review"}]},
+    {"id":"AC-007","statement":"Dispatcher is false by default and enabling requires its separate database URL, private no-follow token file, one absolute normalized same-UID mode-0600 Unix socket with trusted non-writable ancestry, bounded response/poll/batch/timeout, and lease duration greater than timeout plus processing margin; TCP, DNS, proxy, redirect and arbitrary URL paths are unavailable.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-008","statement":"Only the provisioned dispatcher login can assume the NOLOGIN/NOINHERIT capability and execute claim/start/record/reconcile; factory_runtime and PUBLIC cannot execute them or mutate outbox state, and dispatcher cannot use unrelated runtime mutation APIs.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"AC-009","statement":"PR235 admission, retrieval, structured payload defenses and exact replay remain unchanged and always return outbox_created=false; tests may seed an internally consistent already-admitted row only as an explicit test fixture.","evidence":[{"test":"factory/tests/test_result_admission_api.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"verification"}]},
+    {"id":"AC-010","statement":"A versioned closed internal UDS handoff/observation contract and qualification-v2 contract remain additive; all seven channels stay unavailable, and no receiver/provider/model invocation, live interception, BB/FPF/VibeVM activation, U4/macOS work or production qualification is claimed.","evidence":[{"test":"tests/test_factory_v15_result_schema.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-011","statement":"A fake UDS end-to-end path and real PostgreSQL tests prove one bounded POST, observation-only recovery, concurrent ownership, stale-fence rejection, zero automatic enqueue and two actual database restarts; the full PR verifier and code/test/data reviews pass.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"data_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Admission, qualification, enqueue and dispatch remain separate authorities; an unavailable qualification can never enqueue or dispatch.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"INV-002","statement":"Post-send ambiguity is monotonic: it may become observed delivered, proved failed or blocked, but never pending/sendable again.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"INV-003","statement":"Payloads and bearer tokens are never logged; operational signals expose only bounded state, reason, identity and latency metadata.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]}
+  ],
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No trigger, backfill or admission path creates an outbox row and no channel is marked qualified or enabled.","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"tests/test_factory_v15_result_schema.py"}]},
+    {"id":"FORBID-002","statement":"No second POST follows an ambiguous send; no provider/model SDK, TCP/HTTP destination, DNS, proxy, redirect, live interception or provider failover is introduced.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-003","statement":"No cross-task identity, stale fence, transport ACK, authentication error, malformed response or unobserved effect can become delivered.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"data_review"}]},
+    {"id":"FORBID-004","statement":"This slice does not claim U3, U6 or U7 completion, BB support, M8 activation, production readiness, exactly-once remote execution, U4 or macOS coverage.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [
+      "factory/contracts/jsonschema/result-channel-qualification.v2.schema.json",
+      "factory/contracts/jsonschema/native-result-handoff.v1.schema.json"
+    ],
+    "events": []
+  },
+  "observability": [
+    {"id":"SIG-001","metric":"payload-free dispatch claimed/sending/unknown/delivered/failed/blocked and POST-versus-observe outcomes","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"automatic outbox row count remains zero while every channel is unavailable","proves":["OBJ-001"]}
+  ],
+  "rollback": {"strategy":"forward_fix", "maximum_steps":1},
+  "approvals": {"required_scopes":[]}
+}

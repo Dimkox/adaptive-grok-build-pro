@@ -1,0 +1,101 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "2fe3130d64714f2613dbf0303e5c84cb26d03463",
+  "base_fingerprint": "2f77030064d36727291f7e980d06705c49449c76573f0edd46e64bdac67e10c5",
+  "complexity": "standard",
+  "created_at": "2026-10-02T11:39:42+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api",
+    "event"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "matched_keywords": {
+    "api": [
+      "api"
+    ],
+    "data": [
+      "database",
+      "postgres"
+    ],
+    "event": [
+      "event"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=data,api,event",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "d349f503ee91",
+  "schema_version": 1,
+  "session_id": "factory-v15-stack-03d-result-dispatch",
+  "status": "routed",
+  "task": "Implement PostgreSQL migration and database-backed restart-safe qualified native result dispatch by adapting aefbde3ed c5fe8f397 8ffd66982 onto PR235: durable outbox claim retry ambiguous recovery, API event contract, explicit network allowlist; no provider model invocation, live interception, U4 or macOS work",
+  "task_domains": [
+    "data",
+    "api",
+    "event"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change"
+  ],
+  "write_agent": "data_implementer"
+}

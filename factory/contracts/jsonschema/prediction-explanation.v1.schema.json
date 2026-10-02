@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:prediction-explanation.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "prediction_digest", "model_version", "model_digest",
+    "background_dataset_version", "background_dataset_digest", "explainer_version",
+    "explainer_options_digest", "deterministic_evidence_digest", "output_space",
+    "base_value", "contributions", "tolerance", "authority_effect"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "prediction_digest": {"$ref": "#/$defs/digest"},
+    "model_version": {"$ref": "#/$defs/identity"},
+    "model_digest": {"$ref": "#/$defs/digest"},
+    "background_dataset_version": {"$ref": "#/$defs/identity"},
+    "background_dataset_digest": {"$ref": "#/$defs/digest"},
+    "explainer_version": {"$ref": "#/$defs/identity"},
+    "explainer_options_digest": {"$ref": "#/$defs/digest"},
+    "deterministic_evidence_digest": {"$ref": "#/$defs/digest"},
+    "output_space": {"enum": ["probability", "log_odds"]},
+    "base_value": {"type": "number"},
+    "contributions": {
+      "type": "array", "minItems": 1, "maxItems": 128,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "value"],
+        "properties": {"name": {"$ref": "#/$defs/identity"}, "value": {"type": "number"}}
+      }
+    },
+    "tolerance": {"type": "number", "minimum": 0, "maximum": 0.000001},
+    "authority_effect": {"const": "none"}
+  },
+  "$defs": {
+    "identity": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

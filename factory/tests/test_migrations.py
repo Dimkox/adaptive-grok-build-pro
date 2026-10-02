@@ -1,4 +1,5 @@
 import hashlib
+from datetime import datetime, timezone
 import re
 import traceback
 import unittest
@@ -41,14 +42,75 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_result_admission_is_definer_only_immutable_and_dormant_until_qualification(self):
+        migration = discover_migrations()[-2]
+        self.assertEqual((migration.version, migration.name), (24, "024_factory_v15_result_outbox.sql"))
+        lowered = migration.sql.lower()
+        self.assertIn("security definer", lowered)
+        self.assertIn("revoke all on function factory.admit_result_v1", lowered)
+        self.assertIn("revoke insert,update,delete on factory.result_sources_v1", lowered)
+        self.assertIn("primary key (actor_id,action,idempotency_key)", lowered)
+        self.assertIn(
+            "unique (repository_id,task_id,run_id,attempt_id,source_operation,source_digest)",
+            lowered,
+        )
+        self.assertIn("create table factory.result_admission_commands_v1", lowered)
+        function_body = lowered.split("create function factory.admit_result_v1", 1)[1]
+        self.assertNotIn("insert into factory.next_model_request_outbox_v1", function_body)
+
+    def test_restart_probe_builds_one_canonical_bound_decision(self):
+        record = postgres_restart_probe._canonical_restart_decision(
+            repository_id="probe/repository",
+            task_id="00000000-0000-0000-0000-000000000001",
+            run_id="00000000-0000-0000-0000-000000000002",
+            attempt_id="00000000-0000-0000-0000-000000000003",
+            fence=1,
+            observed_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            base_sha="1" * 40,
+            head_sha="3" * 40,
+            spec_digest="a" * 64,
+        )
+        self.assertEqual(record.to_dict()["facts"], [
+            {"name": "from_state", "value": "leased"},
+            {"name": "target", "value": "analyzing"},
+        ])
+        self.assertEqual(record.to_dict()["evidence_refs"], [])
+        self.assertEqual(len(record.record_digest), 64)
+    def test_result_dispatch_migration_is_fenced_dormant_and_least_privilege(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual(
+            (migration.version, migration.name),
+            (25, "025_factory_v15_result_dispatch.sql"),
+        )
+        lowered = migration.sql.lower()
+        for name in (
+            "claim_model_requests_v1", "start_model_request_dispatch_v1",
+            "record_model_request_dispatch_v1", "reconcile_model_requests_v1",
+        ):
+            self.assertIn(f"security definer", lowered)
+            self.assertIn(f"revoke all on function factory.{name}", lowered)
+        self.assertIn("create role factory_result_dispatcher nologin noinherit", lowered)
+        self.assertNotIn("create trigger enqueue_native_tool_result", lowered)
+        self.assertNotIn("grant execute on function factory.claim_model_requests_v1(text,integer,integer) to factory_runtime", lowered)
+        self.assertIn("to factory_result_dispatcher", lowered)
+        self.assertIn("observation_deadline_exceeded", lowered)
+        self.assertIn("send_attempts_exhausted", lowered)
+        self.assertIn("observation_attempts_exhausted", lowered)
+        self.assertIn("unexpected pre-025 result outbox rows", lowered)
+        self.assertNotIn("update factory.next_model_request_outbox_v1\nset operation_id", lowered)
+        self.assertIn("post_outcome_ambiguous", lowered)
+
     def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
         container_id = "a" * 64
         created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
         port = type(
             "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:5432\n"}
         )()
+        moved_port = type(
+            "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:6543\n"}
+        )()
         with patch.object(
-            run_disposable_exit.subprocess, "run", side_effect=[created, port]
+            run_disposable_exit.subprocess, "run", side_effect=[created, port, moved_port]
         ) as subprocess_run, patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
         ), patch.object(
@@ -64,8 +126,18 @@ class MigrationTests(unittest.TestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
-        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 480)
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 720)
         self.assertNotIn("--preflight-only", commands[2])
+        self.assertEqual(
+            run.call_args_list[2].kwargs["environment"]["FACTORY_TEST_DATABASE_URL"].rsplit(
+                ":", 1
+            )[1],
+            "6543/factory_exit",
+        )
+        self.assertEqual(
+            subprocess_run.call_args_list[2].args[0],
+            ["docker", "port", container_id, "5432/tcp"],
+        )
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(
             "PASS: disposable PostgreSQL + API + effective roles + actual "
@@ -370,8 +442,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 23)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 22)
+        self.assertEqual([item.version for item in migrations], list(range(1, 26)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 25)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -863,7 +935,7 @@ class RepairPlanMigrationTests(unittest.TestCase):
     )
 
     def plan_migration(self):
-        migrations = discover_migrations()
+        migrations = tuple(item for item in discover_migrations() if item.version <= 22)
         self.assertEqual(migrations[-1].version, 22)
         self.assertEqual(migrations[-1].name,
                          "022_semantic_repair_plan_rejection_reasons.sql")

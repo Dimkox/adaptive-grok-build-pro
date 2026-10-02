@@ -1,0 +1,41 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"DecisionRecordV1 is closed, deterministic and versioned; canonical digest and native semantic admission reject unknown, unsafe, foreign or malformed input.","evidence":[{"test":"factory/tests/test_decision_contracts.py"},{"test":"factory/tests/test_decision_contracts.py"}]},
+    {"id":"AC-002","statement":"A supported state-transition decision, phase state, event, audit and command result commit in one PostgreSQL transaction; injected failure rolls every effect back.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-003","statement":"Exact request and decision replay is stable and idempotent; the same key with a different decision conflicts under serialized concurrency.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-004","statement":"Decision history is append-only; corrections use same-repository/task/run supersession and survive two PostgreSQL restarts with the same digest and cardinality.","evidence":[{"test":"factory/tests/postgres_restart_probe.py"},{"test":"factory/tests/test_postgres_integration.py"}]},
+    {"id":"AC-005","statement":"Timing and cost helpers preserve unknown and incomplete values and avoid overlapping wall-time double counting; durable accounting integration is explicitly deferred.","evidence":[{"test":"factory/tests/test_decision_contracts.py"}]},
+    {"id":"AC-006","statement":"Migration 023 is additive and forward-only, existing v1/v2 and legacy transition callers remain compatible, and the final exact tree passes full verification plus independent code/test review.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]},
+    {"id":"AC-007","statement":"Factory tests and the exact root decision discovery shim share one 800000-byte fail-closed budget while line, AST-complexity and error-severity guards remain unchanged.","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_architecture_fitness.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261001-implement-the-factory-v1-5-pr2-decision-persiste-64e359",
+  "contracts": {
+    "events": [],
+    "json_schema": ["factory/contracts/v15/decision-record.v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [{"id":"FORBID-001","statement":"A decision record creates no authorization, merge, release, deployment or external-effect authority.","evidence":[{"receipt":"code_review"}]},{"id":"FORBID-002","statement":"Unsupported decision sources, non-empty evidence, or unavailable context/profile bindings cannot be persisted by this contour.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},{"id":"FORBID-003","statement":"This contour does not claim full U2, U3, BB integration, U5, U6, U7, or U4/macOS delivery.","evidence":[{"receipt":"code_review"}]}],
+  "invariants": [{"id":"INV-001","statement":"Runtime has no direct INSERT, UPDATE or DELETE authority over decision history; only the fenced transition function may append.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},{"id":"INV-002","statement":"The existing /v1/transitions HTTP contract remains closed and unchanged; decision persistence is an optional typed Python service seam.","evidence":[{"test":"factory/tests/test_landing_api.py"}]},{"id":"INV-003","statement":"U4/macOS remains excluded by owner decision and no unrelated dirty worktree is altered.","evidence":[{"receipt":"code_review"}]}],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement the Factory v1.5 PR2 decision persistence contour on current main: transplant the five existing decision persistence commits from the isolated branch, resolve bounded API and data persistence conflicts, preserve behavior and tests, and deliver the isolated candidate",
+    "success_metric": "Five commits replayed onto exact current main; schema parity and two-restart durability pass; full verifier and independent code/test reviews pass on one frozen tree.",
+    "target": "feature/factory-v15-stack-02-decision-persistence as a bounded PR2 candidate over current main"
+  },
+  "observability": [{"id":"SIG-001","metric":"Exact-tree full verifier plus PostgreSQL atomicity, replay and restart probes","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api",
+      "data"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

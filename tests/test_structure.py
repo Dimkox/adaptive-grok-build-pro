@@ -16,6 +16,7 @@ ROOT_ENTRIES = frozenset(
     {
         ".agents", ".coveragerc", ".gitattributes", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
         "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
+        "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md", "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
         "delivery", "docs", "engineering", "examples", "factory", "governance",
@@ -376,14 +377,14 @@ class StructureTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
-        self.assertEqual(version, "2.0.19")
+        self.assertEqual(version, "2.1.0")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
-        self.assertIn("Identity: **2.0.19 candidate**", readme)
+        self.assertIn("Identity: **2.1.0 release candidate**", readme)
         self.assertTrue(
-            changelog.startswith("# Changelog\n\n## 2.0.19 — 2026-09-24 (candidate, unpublished)\n")
+            changelog.startswith("# Changelog\n\n## 2.1.0 — 2026-10-02 (release candidate, unpublished)\n")
         )
         self.assertIn(
-            "product version: 2.0.19 (latest published release: v2.0.18; published 2026-09-16T13:52:24Z)",
+            "product version: 2.1.0 release candidate (latest published release: v2.0.18; U5/U6 default-off and not live-qualified)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))

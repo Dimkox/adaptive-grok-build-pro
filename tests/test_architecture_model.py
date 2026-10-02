@@ -239,8 +239,11 @@ class ArchitectureModelTests(unittest.TestCase):
                 },
                 {
                     "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
-                    "path_prefixes": ["factory/tests"],
-                    "max_changed_bytes": 775_000,
+                    "path_prefixes": [
+                        "factory/tests",
+                        "tests/test_factory_v15_decisions.py",
+                    ],
+                    "max_changed_bytes": 800_000,
                     "max_changed_lines": 7_500,
                     "max_ast_complexity": 600,
                     "severity": "error",
@@ -277,7 +280,11 @@ class ArchitectureModelTests(unittest.TestCase):
                 "factory/src/adaptive_factory/adapters/codex.py",
                 "factory/src/adaptive_factory/adapters/grok.py",
             },
-            "NODE-FACTORY-PROPOSAL-BROKER": {"factory/src/adaptive_factory/brokers.py"},
+            "NODE-FACTORY-PROPOSAL-BROKER": {
+                "factory/src/adaptive_factory/brokers.py",
+                "factory/src/adaptive_factory/result_broker.py",
+                "factory/src/adaptive_factory/result_contracts.py",
+            },
             "NODE-FACTORY-WORKSPACE-BROKER": {"factory/src/adaptive_factory/workspace.py"},
         }
         for node_id, paths in expected_paths.items():
@@ -1260,6 +1267,22 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertIn("NODE-GOVERNANCE-VALIDATOR", node_ids)
         self.assertIn("NODE-GOVERNANCE-REGISTRIES", node_ids)
         self.assertNotIn("NODE-FACTORY-CONTROL-PLANE", node_ids)
+        nodes_by_id = {node["id"]: node for node in snapshot.system["nodes"]}
+        self.assertIn(
+            "CONTRACT-FACTORY-V15-RESULT-ENVELOPE-V2",
+            nodes_by_id["NODE-FACTORY-PROPOSAL-BROKER"]["public_contracts"],
+        )
+        self.assertIn(
+            "CONTRACT-FACTORY-V15-RESULT-ADMISSION-API",
+            nodes_by_id["NODE-FACTORY-LOCAL-API"]["public_contracts"],
+        )
+        contracts_by_id = {
+            contract["id"]: contract for contract in snapshot.system["contracts"]
+        }
+        self.assertEqual(
+            contracts_by_id["CONTRACT-FACTORY-V15-RESULT-ADMISSION-API-V2"]["compatibility"],
+            "bidirectional",
+        )
         governance_validator = next(
             node
             for node in snapshot.system["nodes"]

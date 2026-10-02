@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "version": "2.1.0",
+  "status": "release_candidate_unqualified",
+  "base_commit": "23fdc2ef136a65ee2ff45397ff9952cdae934e21",
+  "default_enabled": false,
+  "capabilities": {
+    "u5_prediction_artifacts": "observation_only",
+    "u6_fpf_snapshot": "deterministic_only",
+    "u6_live_qualification": "not_qualified",
+    "bb_contracts": "default_off",
+    "model_rotator_registry": "offline_default_off",
+    "vibevm_store": "explicit_root_default_off",
+    "linux_setup_manager": "opt_in_offline",
+    "u7_release_identity": "candidate"
+  },
+  "preserved_migrations": [
+    "factory/src/adaptive_factory/resources/024_factory_v15_result_outbox.sql",
+    "factory/src/adaptive_factory/resources/025_factory_v15_result_dispatch.sql"
+  ],
+  "excluded": [
+    "U4",
+    "VibeVM divergent migration chain",
+    "live qualification",
+    "package publication",
+    "tagging",
+    "deployment"
+  ],
+  "authority_effect": "none"
+}

@@ -95,6 +95,16 @@ class FactorySettings:
     # env-landing composition change, so positional construction stays compatible.
     landing_state_path: Path | None = None
     landing_live_enabled: bool = False
+    result_dispatch_enabled: bool = False
+    result_dispatch_database_url: str | None = None
+    result_dispatch_socket_path: Path | None = None
+    result_dispatch_token_file: Path | None = None
+    result_dispatcher_id: str = "factory-result-dispatcher"
+    result_dispatch_batch_size: int = 8
+    result_dispatch_lease_seconds: int = 30
+    result_dispatch_poll_seconds: float = 1.0
+    result_dispatch_timeout_seconds: float = 5.0
+    result_dispatch_processing_margin_seconds: float = 2.0
 
     def validate_landing(self) -> None:
         if type(self.landing_live_enabled) is not bool or self.landing_provider not in LANDING_PROVIDERS:
@@ -122,6 +132,53 @@ class FactorySettings:
                 raise SettingsError("live landing requires provider and all durable paths")
         elif self.landing_provider != "unavailable":
             raise SettingsError("landing provider requires explicit live enablement")
+
+    def validate_result_dispatch(self) -> None:
+        if type(self.result_dispatch_enabled) is not bool:
+            raise SettingsError("invalid result dispatch enablement")
+        for path in (self.result_dispatch_socket_path, self.result_dispatch_token_file):
+            if path is not None and (
+                not isinstance(path, Path) or not path.is_absolute()
+                or path.anchor == "//" or ".." in path.parts
+            ):
+                raise SettingsError("result dispatch paths must be absolute and normalized")
+        if (
+            not isinstance(self.result_dispatcher_id, str)
+            or not self.result_dispatcher_id
+            or len(self.result_dispatcher_id) > 128
+            or not self.result_dispatcher_id[0].isalnum()
+            or any(not (character.isalnum() or character in "._:-") for character in self.result_dispatcher_id)
+        ):
+            raise SettingsError("invalid result dispatcher identifier")
+        if type(self.result_dispatch_batch_size) is not int or not 1 <= self.result_dispatch_batch_size <= 100:
+            raise SettingsError("invalid result dispatch batch size")
+        if type(self.result_dispatch_lease_seconds) is not int or not 5 <= self.result_dispatch_lease_seconds <= 300:
+            raise SettingsError("invalid result dispatch lease")
+        if (
+            type(self.result_dispatch_poll_seconds) not in {int, float}
+            or not 0.05 <= self.result_dispatch_poll_seconds <= 60
+        ):
+            raise SettingsError("invalid result dispatch poll interval")
+        if (
+            type(self.result_dispatch_timeout_seconds) not in {int, float}
+            or not 0.1 <= self.result_dispatch_timeout_seconds <= 30
+        ):
+            raise SettingsError("invalid result dispatch timeout")
+        if (
+            type(self.result_dispatch_processing_margin_seconds) not in {int, float}
+            or not 0.1 <= self.result_dispatch_processing_margin_seconds <= 30
+        ):
+            raise SettingsError("invalid result dispatch processing margin")
+        if self.result_dispatch_lease_seconds <= (
+            self.result_dispatch_timeout_seconds
+            + self.result_dispatch_processing_margin_seconds
+        ):
+            raise SettingsError("result dispatch lease must exceed timeout plus processing margin")
+        if self.result_dispatch_enabled and (
+            not self.result_dispatch_database_url
+            or self.result_dispatch_socket_path is None or self.result_dispatch_token_file is None
+        ):
+            raise SettingsError("enabled result dispatch requires database, socket and token")
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -158,6 +215,21 @@ class FactorySettings:
         landing_flag = os.environ.get("FACTORY_LANDING_LIVE_ENABLED", "false")
         if landing_flag not in {"true", "false"}:
             raise SettingsError("FACTORY_LANDING_LIVE_ENABLED must be true or false")
+        dispatch_flag = os.environ.get("FACTORY_RESULT_DISPATCH_ENABLED", "false")
+        if dispatch_flag not in {"true", "false"}:
+            raise SettingsError("FACTORY_RESULT_DISPATCH_ENABLED must be true or false")
+        dispatch_socket = os.environ.get("FACTORY_RESULT_DISPATCH_SOCKET_PATH")
+        dispatch_token = os.environ.get("FACTORY_RESULT_DISPATCH_TOKEN_FILE")
+        try:
+            dispatch_batch = int(os.environ.get("FACTORY_RESULT_DISPATCH_BATCH_SIZE", "8"))
+            dispatch_lease = int(os.environ.get("FACTORY_RESULT_DISPATCH_LEASE_SECONDS", "30"))
+            dispatch_poll = float(os.environ.get("FACTORY_RESULT_DISPATCH_POLL_SECONDS", "1"))
+            dispatch_timeout = float(os.environ.get("FACTORY_RESULT_DISPATCH_TIMEOUT_SECONDS", "5"))
+            dispatch_margin = float(os.environ.get(
+                "FACTORY_RESULT_DISPATCH_PROCESSING_MARGIN_SECONDS", "2"
+            ))
+        except ValueError as exc:
+            raise SettingsError("invalid result dispatch numeric setting") from exc
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if (
@@ -192,6 +264,19 @@ class FactorySettings:
             **landing_paths,
             landing_live_enabled=landing_flag == "true",
             landing_provider=landing_provider,
+            result_dispatch_enabled=dispatch_flag == "true",
+            result_dispatch_database_url=os.environ.get("FACTORY_RESULT_DISPATCH_DATABASE_URL"),
+            result_dispatch_socket_path=Path(dispatch_socket) if dispatch_socket else None,
+            result_dispatch_token_file=Path(dispatch_token) if dispatch_token else None,
+            result_dispatcher_id=os.environ.get(
+                "FACTORY_RESULT_DISPATCHER_ID", "factory-result-dispatcher"
+            ),
+            result_dispatch_batch_size=dispatch_batch,
+            result_dispatch_lease_seconds=dispatch_lease,
+            result_dispatch_poll_seconds=dispatch_poll,
+            result_dispatch_timeout_seconds=dispatch_timeout,
+            result_dispatch_processing_margin_seconds=dispatch_margin,
         )
         result.validate_landing()
+        result.validate_result_dispatch()
         return result

@@ -1,0 +1,119 @@
+{
+  "change_id": "20261002-implement-durable-factory-v1-5-result-admission-4bcad9",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-v15-stack-03c-result-persistence",
+      "change_id": "20261002-implement-durable-factory-v1-5-result-admission-4bcad9",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "d2230d59e29b5b6a843d0565ce4b6f339734ea88",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T07:10:37+00:00",
+      "route_id": "4bcad92f7be6"
+    },
+    {
+      "branch": "feature/factory-v15-stack-03c-result-persistence",
+      "change_id": "20261002-implement-durable-factory-v1-5-result-admission-4bcad9",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "48267913b35e69736ef7e012e6865b6e37fc1a22",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-02T11:03:52+00:00",
+      "route_id": "4bcad92f7be6"
+    }
+  ],
+  "created_at": "2026-10-02T07:10:37+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T07:10:37+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T07:35:10+00:00",
+      "from": "draft",
+      "reason": "Six route-selected read-only analyses completed; typed acceptance, invariants, exclusions and dependency order recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T07:35:10+00:00",
+      "from": "scoped",
+      "reason": "No human gates selected; implementation scope is bounded to durable admission with dormant empty outbox and explicit exclusions.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T11:03:52+00:00",
+      "from": "approved",
+      "reason": "Sole data implementer completed durable result persistence and review findings were repaired.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-02T11:03:52+00:00",
+      "from": "implementing",
+      "reason": "Exact-tree full PR verification passed with runtime, SQL, contracts, coverage and PostgreSQL restart gates.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-02T11:03:52+00:00",
+      "from": "verifying",
+      "reason": "All route-selected independent final review reports are persisted and pass with no surviving mutants.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-02T11:03:53+00:00",
+      "from": "reviewing",
+      "reason": "Local PR candidate is ready; external exact-head Trust CI and merge remain separate gates.",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "1d5eaac70b314df774088967a557dcff8c2c28c6e60be9f4c82c930185cebea2",
+  "route_id": "4bcad92f7be6",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Implement durable Factory v1.5 result admission persistence",
+  "updated_at": "2026-10-02T11:03:53+00:00"
+}

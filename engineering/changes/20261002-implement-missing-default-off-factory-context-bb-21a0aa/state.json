@@ -1,0 +1,112 @@
+{
+  "change_id": "20261002-implement-missing-default-off-factory-context-bb-21a0aa",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "release/2.1.0-rc",
+      "change_id": "20261002-implement-missing-default-off-factory-context-bb-21a0aa",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "cb33100d44a97b642b8063871263312eb2a5f8d7",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T13:22:37+00:00",
+      "route_id": "21a0aa52091f"
+    },
+    {
+      "branch": "release/2.1.0-rc",
+      "change_id": "20261002-implement-missing-default-off-factory-context-bb-21a0aa",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "5645e1b515579c1cfc791cf285d91bab0ddb8475",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-02T16:49:35+00:00",
+      "route_id": "21a0aa52091f"
+    }
+  ],
+  "created_at": "2026-10-02T13:22:37+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T13:22:37+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T13:27:46+00:00",
+      "from": "draft",
+      "reason": "Nine acceptance criteria and selective overlay architecture recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T13:27:46+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; owner already directed U5-U7 and release completion",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T16:49:35+00:00",
+      "from": "approved",
+      "reason": "Selective overlay and review repairs implemented on isolated release candidate",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-02T16:49:36+00:00",
+      "from": "implementing",
+      "reason": "Focused product and contract checks passed; final full verifier remains after evidence commit",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-02T16:49:36+00:00",
+      "from": "verifying",
+      "reason": "Exact-head code and test reviews passed on 5645e1b5 and reports are persisted",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-02T17:13:08+00:00",
+      "from": "reviewing",
+      "reason": "Full exact-head PR verifier passed and fresh code/test review receipts leave no evidence gaps",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "9dece962b6529d6fff23f3cdb516ef03143e64b4ea1b931f76c20897ec0937ae",
+  "route_id": "21a0aa52091f",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Implement missing default-off factory context BB contracts rotator registry hardened VibeVM store and Linux setup manager source contours with tests while preserving migrations 023 through 025",
+  "updated_at": "2026-10-02T17:13:08+00:00"
+}

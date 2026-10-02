@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:bb-lifecycle-observation:v1",
+  "x-admission": {
+    "level": "structural",
+    "semantic_validator": "adaptive_factory.bb_contracts.BBLifecycleObservationV1.from_dict",
+    "semantic_validation_required": true,
+    "semantic_checks": ["execution_binding", "effect_evidence", "idempotency", "replay_body"]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "repository_id", "task_id", "run_id", "attempt_id",
+    "fence", "context_digest", "policy_digest", "operation_id",
+    "command_digest", "acknowledged", "effect_outcome", "stop_outcome",
+    "evidence_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "repository_id": {"$ref": "#/$defs/identifier"},
+    "task_id": {"$ref": "#/$defs/identifier"},
+    "run_id": {"$ref": "#/$defs/identifier"},
+    "attempt_id": {"$ref": "#/$defs/identifier"},
+    "fence": {"type": "integer", "minimum": 1},
+    "context_digest": {"$ref": "#/$defs/digest"},
+    "policy_digest": {"$ref": "#/$defs/digest"},
+    "operation_id": {"$ref": "#/$defs/identifier"},
+    "command_digest": {"$ref": "#/$defs/digest"},
+    "acknowledged": {"type": "boolean"},
+    "effect_outcome": {"$ref": "#/$defs/outcome"},
+    "stop_outcome": {"$ref": "#/$defs/outcome"},
+    "evidence_digest": {
+      "anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 128},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "outcome": {"enum": ["unknown", "observed", "rejected", "unavailable"]}
+  }
+}

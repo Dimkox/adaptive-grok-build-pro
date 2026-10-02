@@ -6,6 +6,7 @@ from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import json
 import re
 import threading
 import uuid
@@ -25,9 +26,11 @@ from .models import Actor, ExecutionStage, LeaseGrant, RunRole, TaskStatus
 from .protocol import PROTOCOL_VERSION, PROTOCOL_VERSION_V2
 from .service import (
     AuthorizationError,
+    ResultAdmissionNotFound, ResultAdmissionUnavailable,
     SnapshotBrokerIntegrityError,
     SnapshotBrokerUnavailable,
 )
+from .result_contracts import ResultEnvelopeV2, strict_json
 from .store import (
     AuthorityError,
     BudgetError,
@@ -381,6 +384,24 @@ def create_app(
             status_code=503,
         )
 
+    @app.exception_handler(ResultAdmissionUnavailable)
+    async def result_admission_unavailable(
+        _request: Request, _error: ResultAdmissionUnavailable,
+    ):
+        return _error_response(
+            "unavailable", "result_admission_unavailable",
+            "result admission persistence unavailable", 503,
+        )
+
+    @app.exception_handler(ResultAdmissionNotFound)
+    async def result_admission_not_found(
+        _request: Request, _error: ResultAdmissionNotFound,
+    ):
+        return _error_response(
+            "not_found", "result_admission_not_found",
+            "result admission not found", 404,
+        )
+
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):
         return _error_response(
@@ -470,6 +491,53 @@ def create_app(
         if result.get("status") != "ready":
             raise HTTPException(503, "schema not ready")
         return result
+
+    @app.post(
+        "/v1/result-admissions", tags=["execution"],
+        operation_id="admitResultEnvelope",
+    )
+    async def admit_result(
+        request: Request,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        content_type: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        command_key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        if content_type != "application/json":
+            raise HTTPException(415, "application/json required")
+        try:
+            wire = strict_json((await request.body()).decode("utf-8", errors="strict"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise HTTPException(422, "valid UTF-8 JSON required") from exc
+        wire = _closed(wire, {"grant", "envelope"})
+        return service.admit_result(
+            _grant(wire["grant"]), ResultEnvelopeV2.from_dict(wire["envelope"]),
+            actor=actor, idempotency_key=command_key, correlation_id=correlation,
+        )
+
+    @app.get(
+        "/v1/tasks/{task_id}/result-admissions/{envelope_digest}", tags=["execution"],
+        operation_id="getResultEnvelope",
+    )
+    def get_result_admission(
+        task_id: str,
+        envelope_digest: str,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        x_repository_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:read")
+        _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        repository_id = _text(
+            x_repository_id, "X-Repository-ID", maximum=128, identifier=True,
+        )
+        return service.get_result_envelope(
+            _uuid(task_id, "task_id"), _digest(envelope_digest, "envelope_digest"),
+            repository_id=repository_id, actor=actor,
+        )
 
     @app.get("/metrics", tags=["operator"])
     def metrics(authorization: str | None = Header(None)):
