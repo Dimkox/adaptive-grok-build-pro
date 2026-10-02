@@ -11,6 +11,7 @@ import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
 from .decision_contracts import DecisionRecordV1
+from .result_contracts import ResultEnvelopeV2
 from .brokers import (
     ArtifactProposal,
     BrokerError,
@@ -115,6 +116,13 @@ class TransitionError(StoreError):
 
 class IntegrityError(StoreError):
     pass
+
+
+@dataclass(frozen=True)
+class ResultAdmission:
+    envelope_digest: str
+    created: bool
+    outbox_created: bool
 
 
 def _validate_capability_session(cursor, capability_role: str, label: str) -> None:
@@ -4309,6 +4317,72 @@ class PostgresFactoryStore:
             result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
             self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
             return result
+
+    def admit_result(
+        self, envelope: ResultEnvelopeV2, *, actor: Actor,
+        idempotency_key: str, correlation_id: str,
+    ) -> ResultAdmission:
+        """Atomically admit an immutable result; 04A leaves the outbox dormant."""
+        record = ResultEnvelopeV2.from_dict(envelope.to_dict())
+        request = {
+            "contract": "adaptive-factory.result-admission-command/v1",
+            "action": "result_admission",
+            "actor_id": actor.actor_id,
+            "idempotency_key": idempotency_key,
+            "envelope_digest": record.record_digest,
+            "correlation_id": correlation_id,
+        }
+        request_wire = canonical_json(request).decode("utf-8")
+        wire = canonical_json(record.to_dict()).decode("utf-8")
+        try:
+            with self._transaction() as cursor:
+                cursor.execute(
+                    "SELECT factory.admit_result_v1(%s,%s,%s,%s,%s,%s,%s)",
+                    (wire, record.record_digest, actor.actor_id, idempotency_key,
+                     canonical_digest(request), request_wire, correlation_id),
+                )
+                value = cursor.fetchone()[0]
+        except Exception as exc:
+            import psycopg
+            if isinstance(exc, psycopg.errors.RaiseException):
+                raise StoreError("result admission conflicts with stored command") from exc
+            raise
+        if not isinstance(value, dict) or set(value) != {
+            "envelope_digest", "created", "outbox_created"
+        }:
+            raise StoreError("stored result admission is invalid")
+        if (
+            value["envelope_digest"] != record.record_digest
+            or type(value["created"]) is not bool
+            or type(value["outbox_created"]) is not bool
+            or value["outbox_created"] is not False
+        ):
+            raise StoreError("stored result admission binding mismatch")
+        return ResultAdmission(**value)
+
+    def result_envelope(
+        self, repository_id: str, task_id: str, envelope_digest: str,
+    ) -> ResultEnvelopeV2:
+        with self._transaction() as cursor:
+            cursor.execute(
+                "SELECT envelope FROM factory.result_sources_v1 "
+                "WHERE repository_id=%s AND task_id=%s AND envelope_digest=%s",
+                (repository_id, task_id, envelope_digest),
+            )
+            row = cursor.fetchone()
+        if row is None:
+            raise KeyError(envelope_digest)
+        try:
+            result = ResultEnvelopeV2.from_dict(row[0])
+        except Exception as exc:
+            raise StoreError("stored result envelope is corrupt") from exc
+        if (
+            result.repository_id != repository_id
+            or result.task_id != task_id
+            or result.record_digest != envelope_digest
+        ):
+            raise StoreError("stored result envelope binding mismatch")
+        return result
 
     def reserve_budget(
         self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor,

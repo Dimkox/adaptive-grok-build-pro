@@ -58,6 +58,10 @@ class ResultAdmissionUnavailable(RuntimeError):
     pass
 
 
+class ResultAdmissionNotFound(LookupError):
+    pass
+
+
 REPAIR_CHILD_BROKER_ACTOR_KIND = "repair_broker"
 REPAIR_CHILD_BROKER_ACTOR_ID = "semantic-repair-child-broker"
 
@@ -112,8 +116,8 @@ class FactoryService:
     def admit_result(
         self, grant: LeaseGrant, envelope: ResultEnvelopeV2, *, actor: Actor,
         idempotency_key: str, correlation_id: str,
-    ) -> None:
-        """Validate admission authority, then fail closed before any store side effect."""
+    ):
+        """Validate admission authority and atomically persist the immutable envelope."""
         self._require(actor, "task:execute", envelope.repository_id)
         if actor.kind != "worker" or grant.owner != actor.actor_id:
             raise AuthorizationError("lease grant belongs to another worker")
@@ -125,14 +129,20 @@ class FactoryService:
             or record.packet_digest != grant.packet_digest
         ):
             raise AuthorizationError("result envelope does not belong to lease grant")
-        raise ResultAdmissionUnavailable("result admission persistence unavailable")
+        return self.store.admit_result(
+            record, actor=actor, idempotency_key=idempotency_key,
+            correlation_id=correlation_id,
+        )
 
     def get_result_envelope(
         self, task_id: str, envelope_digest: str, *, repository_id: str, actor: Actor,
-    ) -> None:
-        """Authorize the closed read seam without implying persisted replay exists."""
+    ) -> ResultEnvelopeV2:
+        """Return a persisted envelope only through its repository-bound identity."""
         self._require(actor, "task:read", repository_id)
-        raise ResultAdmissionUnavailable("result admission persistence unavailable")
+        try:
+            return self.store.result_envelope(repository_id, task_id, envelope_digest)
+        except KeyError as exc:
+            raise ResultAdmissionNotFound(envelope_digest) from exc
 
     @staticmethod
     def _require(actor: Actor, scope: str, repository: str | None = None) -> None:

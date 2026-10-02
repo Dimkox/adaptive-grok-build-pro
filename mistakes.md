@@ -1505,3 +1505,7 @@ Root cause: I reused the sanitizer metadata rejection for inspect() and retained
 ### 2026-10-02 — Bind diagnostic commands to the intended clean clone
 
 Root cause: I created an exact-SHA clone with `git -C` but launched unittest without changing its working directory, so the diagnostic accidentally exercised the dirty controller worktree and produced irrelevant failures. Use the clone itself as the command working directory (and verify `pwd`/HEAD) before interpreting clean-clone evidence.
+
+### 2026-10-02 — Do not assume a script implements `--help`
+
+Root cause: I invoked the disposable exit runner with `--help` without first inspecting its argument handling; it ignores extra arguments and started a second full PostgreSQL suite. Inspect script entrypoints before probing CLI flags, and never use a potentially mutating or expensive command as its own help discovery mechanism.
