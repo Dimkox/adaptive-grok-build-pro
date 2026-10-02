@@ -114,7 +114,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.19")
+        self.assertEqual(state["product_version"], "2.1.0")
         self.assertEqual(state["latest_published_release"], "v2.0.18")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
@@ -416,7 +416,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[4]["tree"], RELEASE_TREE)
         self.assertEqual(prior[4]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
-        self.assertEqual(local["version"], "2.0.19")
+        self.assertEqual(local["version"], "2.1.0")
         self.assertEqual(local["status"], "artifact_bytes_delivered")
         self.assertEqual(local["route_id"], "0ea34220576f")
         self.assertEqual(local["branch"], "release/v2.0.19-candidate-20260922")

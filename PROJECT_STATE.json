@@ -4,7 +4,7 @@
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-  "product_version": "2.0.19",
+  "product_version": "2.1.0",
   "latest_published_release": "v2.0.18",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -1170,7 +1170,7 @@
     }
   },
   "local_candidate": {
-    "version": "2.0.19",
+    "version": "2.1.0",
     "status": "artifact_bytes_delivered",
     "route_id": "0ea34220576f",
     "branch": "release/v2.0.19-candidate-20260922",
