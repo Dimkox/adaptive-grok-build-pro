@@ -1,0 +1,51 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Valid plain text and JSON yield detached immutable deterministic envelopes, while all runtime channel inspection remains unavailable and does not consume input.", "evidence": [{"test": "factory/tests/test_result_broker.py"}, {"receipt": "verification"}]},
+    {"id": "AC-002", "statement": "Structured Authorization and nested sensitive keys are redacted or rejected without leaking canaries; duplicate JSON keys and ambiguous structured input fail closed.", "evidence": [{"test": "factory/tests/test_result_broker.py"}, {"receipt": "test_review"}]},
+    {"id": "AC-003", "statement": "Configuration accepts only bounded positive integers and safe policy metadata; byte, record, depth and chunk ceilings reject before avoidable oversized copying.", "evidence": [{"test": "factory/tests/test_result_broker.py"}, {"receipt": "test_review"}]},
+    {"id": "AC-004", "statement": "Envelope and seven-channel qualification schemas are closed, and semantic admission rejects forged digests, invalid parity, duplicates, omissions and invented interception points.", "evidence": [{"test": "tests/test_factory_v15_result_schema.py"}, {"test": "factory/tests/test_result_broker.py"}, {"receipt": "verification"}, {"receipt": "test_review"}]},
+    {"id": "AC-005", "statement": "Existing predecessor pins and PR2c decision behavior remain intact; full verification and independent reviews pass on the exact final tree.", "evidence": [{"test": "factory/tests/test_landing_api.py"}, {"test": "factory/tests/test_semantic_bridge.py"}, {"test": "factory/tests/test_semantic_contracts.py"}, {"test": "tests/test_architecture_model.py"}, {"receipt": "verification"}, {"receipt": "code_review"}, {"receipt": "test_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-implement-new-factory-runtime-behavior-for-bound-dc082e",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "factory/contracts/jsonschema/result-envelope.v1.schema.json",
+      "factory/contracts/jsonschema/result-channel-qualification.v1.schema.json"
+    ],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Credential-bearing Authorization or other structured secret content appears in any exported envelope.", "evidence": [{"receipt": "test_review"}]},
+    {"id": "FORBID-002", "statement": "Duplicate keys, nonfinite or boolean limits, infinite empty-chunk streams, silent truncation or raw exception text are admitted.", "evidence": [{"receipt": "test_review"}]},
+    {"id": "FORBID-003", "statement": "This offline foundation is described as live interception, qualified U3 or U6, durable result persistence or dispatch.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Allow or redacted requires a complete sanitized payload; rejected or unavailable requires no payload and missing completeness.", "evidence": [{"receipt": "verification"}, {"receipt": "test_review"}]},
+    {"id": "INV-002", "statement": "Sanitization success never qualifies a runtime channel or grants model, tool, merge or production authority.", "evidence": [{"receipt": "code_review"}]},
+    {"id": "INV-003", "statement": "Existing service, adapter, database, migration, decision and execution contract bytes and meanings are unchanged.", "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add a deterministic offline pre-model result-envelope and sanitization foundation that fails closed on ambiguous, secret-bearing, malformed or unbounded input while honestly leaving every runtime channel unavailable.",
+    "success_metric": "Closed schemas and semantic admission pass dual contract tests; source leakage and boundedness reproductions become passing regressions; full PR verification passes.",
+    "target": "A stacked additive PR with no persistence, dispatch, runtime interception or U3 completion claim."
+  },
+  "observability": [
+    {"id": "SIG-001", "metric": "dual result contract suites and full verifier outcomes", "proves": ["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

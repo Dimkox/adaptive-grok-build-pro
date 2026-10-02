@@ -167,6 +167,8 @@ class SemanticBridgeTests(unittest.TestCase):
             "operator-handoff-proposal.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
             "repair-directive.v1.schema.json",
+            "result-channel-qualification.v1.schema.json",
+            "result-envelope.v1.schema.json",
             "semantic-coverage.v1.schema.json",
             "semantic-execution-binding.v1.schema.json",
             "semantic-finding.v1.schema.json",

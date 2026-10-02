@@ -403,7 +403,9 @@
       "id": "FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY",
       "severity": "error",
       "source_prefixes": [
-        "factory/src/adaptive_factory/brokers.py"
+        "factory/src/adaptive_factory/brokers.py",
+        "factory/src/adaptive_factory/result_broker.py",
+        "factory/src/adaptive_factory/result_contracts.py"
       ]
     },
     {
