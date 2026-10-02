@@ -12,7 +12,9 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.1.0 release candidate**. This exact branch is an unqualified, default-off source candidate: U5 supplies observation-only predictor/explainer contracts, U6 supplies a pinned deterministic FPF snapshot evaluator, and neither capability changes routing, production authority, or external systems. No live qualification, tag, package publication, deployment, or merge is claimed; the published `v2.0.18` bytes remain immutable.
+Identity: **2.1.0 release candidate**. This exact branch is an unqualified, default-off source candidate: U5 supplies observation-only predictor/explainer contracts, U6 supplies a pinned deterministic FPF snapshot evaluator, and neither capability changes routing, production authority, or external systems. No live qualification, 2.1.0 artifact, tag, package publication, deployment, or merge is claimed; the published `v2.0.19` bytes remain immutable.
+
+The candidate also carries closed default-off BB contracts, an authenticated offline-only model-rotator registry, a bounded explicit-root VibeVM package store, and an opt-in offline Linux setup manager. U4/macOS remains excluded; no component activates providers, models, services, deployment, or production authority.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |

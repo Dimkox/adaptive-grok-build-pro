@@ -1212,6 +1212,14 @@
     "artifact_status": "not_built",
     "default_enabled": false,
     "qualification_status": "not_qualified",
+    "included_default_off_contours": [
+      "prediction_observation_and_explanation",
+      "fpf_snapshot",
+      "bb_contracts",
+      "model_rotator_registry",
+      "vibevm_store",
+      "linux_setup_manager"
+    ],
     "published": false,
     "external_effect": false,
     "operational_activation": false,

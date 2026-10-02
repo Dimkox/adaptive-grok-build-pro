@@ -8,6 +8,10 @@
     "u5_prediction_artifacts": "observation_only",
     "u6_fpf_snapshot": "deterministic_only",
     "u6_live_qualification": "not_qualified",
+    "bb_contracts": "default_off",
+    "model_rotator_registry": "offline_default_off",
+    "vibevm_store": "explicit_root_default_off",
+    "linux_setup_manager": "opt_in_offline",
     "u7_release_identity": "candidate"
   },
   "preserved_migrations": [

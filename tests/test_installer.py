@@ -1150,6 +1150,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(default.stdout.count(MODULE.LEGACY_PLAN_NOTICE), 1)
             self.assertEqual(_snapshot(existing), before)
             self.assertTrue((target / "scripts/grok_verify.py").is_file())
+            self.assertTrue((target / "factory/runtime/setup_manager.py").is_file())
             self.assertFalse((target / ".github/workflows").exists())
 
     def test_with_ci_remains_forbidden_without_mutation(self) -> None:

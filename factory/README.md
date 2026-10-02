@@ -1,5 +1,9 @@
 # Adaptive Factory M4-M8 control/evaluation and L5 landing runtime
 
+## 2.1.0 source-candidate contours
+
+BB contracts, the model-rotator registry, VibeVM store, FPF snapshot, and Linux setup manager are source-only and default-off. Setup requires explicit opt-in and offline inputs; U4/macOS, live qualification, service activation, provider execution, deployment, and production authority are excluded.
+
 The source includes `adaptive-landing-submit`, a durable command for text and safe DOCX with ordered Qwen → Grok → OpenAI → Claude → OpenRouter failover. It submits at most once per backend, advances only after proven pre-send unavailability or an eligible confirmed provider failure, and reconciles ambiguous delivery through the same child job. Hosts need the new capability/attempt API; installed Qwen/Grok revisions still provide single-provider operation. The three added providers and full chain remain unqualified for live inference. See the [operator guide](../engineering/runbooks/l5-provider-failover.md) and [example config](runtime/landing-failover.example.json).
 
 Observed 2026-09-15: Qwen primary (`qwen-intl` / `qwen-plus`) `adaptive-l5.service` at `5f6f6ce` and Grok secondary `adaptive-l5-grok.service` at `61a05da` are installed and active/enabled. Both have authenticated artifact-generation evidence; Grok reached `artifact_ready` in 29.852 s with `live_url=null`. Source configuration still defaults to live execution off. See the [dated runtime observation](../engineering/runbooks/l5-runtime-observation-2026-09-15.md); full external pilot acceptance, M8 qualification and general M9 acceptance remain unproven.

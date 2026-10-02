@@ -4,6 +4,7 @@
 
 - Adds closed U5 prediction observation and additive explanation contracts with bounded replay validation; there is no model fitting or routing hook.
 - Adds the pinned offline U6 FPF snapshot selector as deterministic evidence only. Live qualification is absent, so production qualification remains not established and the feature is default-off.
+- Adds default-off BB contracts, the authenticated offline rotator registry, bounded VibeVM store, and opt-in offline Linux setup manager; none has runtime or production authority.
 - Preserves the existing `024`/`025` result outbox and dispatch migrations unchanged; the divergent VibeVM migration chain is excluded.
 - No push, merge, tag, package publication, deployment, or external write is part of this candidate.
 
