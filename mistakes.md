@@ -1519,3 +1519,9 @@ Root cause: transplanted tests retained undeclared `pytest` and `jsonschema` imp
 Root cause: the disposable PostgreSQL exit runner kept a 480-second whole-suite timeout after the
 suite grew beyond that wall-clock budget, and its verifier wrapper had only a 600-second budget.
 Keep both limits explicitly bounded and regression-test that the outer limit exceeds the inner one.
+
+### 2026-10-02 — Refresh exact disposable port identity after the suite
+
+Root cause: the runner passed its pre-suite ephemeral PostgreSQL port to the restart probe after the
+suite had restarted the named container. Revalidate the exact ID/name/nonce binding, read its current
+loopback-only port, and propagate that URL before the final probe.

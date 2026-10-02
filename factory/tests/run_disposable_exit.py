@@ -211,6 +211,23 @@ def main() -> int:
                 environment=environment,
                 timeout=_FULL_SUITE_TIMEOUT_SECONDS,
             )
+            if not _binding_matches(
+                container_id, name, nonce, require_running=True
+            ):
+                raise RuntimeError(
+                    f"disposable container binding changed after tests; leaked id={container_id}"
+                )
+            published = subprocess.run(
+                ["docker", "port", container_id, "5432/tcp"],
+                check=True,
+                text=True,
+                capture_output=True,
+                timeout=10,
+            ).stdout.strip()
+            port = _published_loopback_port(published)
+            environment["FACTORY_TEST_DATABASE_URL"] = (
+                f"postgresql://factory_exit:{password}@127.0.0.1:{port}/factory_exit"
+            )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
         return 0

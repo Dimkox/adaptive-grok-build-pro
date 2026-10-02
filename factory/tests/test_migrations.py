@@ -106,8 +106,11 @@ class MigrationTests(unittest.TestCase):
         port = type(
             "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:5432\n"}
         )()
+        moved_port = type(
+            "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:6543\n"}
+        )()
         with patch.object(
-            run_disposable_exit.subprocess, "run", side_effect=[created, port]
+            run_disposable_exit.subprocess, "run", side_effect=[created, port, moved_port]
         ) as subprocess_run, patch.object(
             run_disposable_exit, "_binding_matches", return_value=True
         ), patch.object(
@@ -125,6 +128,16 @@ class MigrationTests(unittest.TestCase):
         self.assertIn("unittest", commands[1])
         self.assertEqual(run.call_args_list[1].kwargs["timeout"], 720)
         self.assertNotIn("--preflight-only", commands[2])
+        self.assertEqual(
+            run.call_args_list[2].kwargs["environment"]["FACTORY_TEST_DATABASE_URL"].rsplit(
+                ":", 1
+            )[1],
+            "6543/factory_exit",
+        )
+        self.assertEqual(
+            subprocess_run.call_args_list[2].args[0],
+            ["docker", "port", container_id, "5432/tcp"],
+        )
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(
             "PASS: disposable PostgreSQL + API + effective roles + actual "
