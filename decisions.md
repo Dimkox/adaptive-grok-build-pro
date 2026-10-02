@@ -862,3 +862,7 @@ Treat known sensitive JSON keys as binding their entire value, replacing both ke
 ### 2026-10-02 — Expose result admission as an explicit unavailable capability
 
 The API performs full bounded parsing and authority/identity validation, then returns a stable 503 before any store or dispatch call. This permits contract integration without falsely claiming persistence or replay.
+
+### 2026-10-02 — Use ASD-STE100 style in project-chat responses
+
+Write project-chat answers with ASD-STE100 principles: use short sentences, active voice, one term for one concept, and one main instruction or fact per sentence. This makes status, risk, and release decisions easier to read and less ambiguous; it is a writing rule, not a claim of formal ASD-STE100 certification.
