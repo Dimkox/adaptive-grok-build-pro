@@ -1,0 +1,83 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "01b089fcbf417d69f8a21407ea41941436ce74d4",
+  "base_fingerprint": "39c5a0c34d24a7b9f3d44ef05c2ee6b11d67304973124809e5ebc929fab06286",
+  "complexity": "standard",
+  "created_at": "2026-10-01T21:15:44+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "matched_keywords": {
+    "api": [
+      "api"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "64e359641bc2",
+  "schema_version": 1,
+  "session_id": "factory-v15-stack-02-implementation",
+  "status": "routed",
+  "task": "Implement the Factory v1.5 PR2 decision persistence contour on current main: transplant the five existing decision persistence commits from the isolated branch, resolve bounded API and data persistence conflicts, preserve behavior and tests, and deliver the isolated candidate",
+  "task_domains": [
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

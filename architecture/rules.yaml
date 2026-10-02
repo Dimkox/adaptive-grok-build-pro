@@ -105,10 +105,11 @@
     {
       "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
       "max_ast_complexity": 600,
-      "max_changed_bytes": 775000,
+      "max_changed_bytes": 800000,
       "max_changed_lines": 7500,
       "path_prefixes": [
-        "factory/tests"
+        "factory/tests",
+        "tests/test_factory_v15_decisions.py"
       ],
       "severity": "error"
     },

@@ -40,6 +40,7 @@ from adaptive_factory.state import TransitionDecision
 from adaptive_factory.store import (
     BudgetError,
     FenceError,
+    IntegrityError,
     PostgresFactoryStore,
     PostgresSemanticAdjudicatorStore,
     PostgresSemanticCoordinatorStore,
@@ -218,7 +219,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -1083,7 +1084,19 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         class FailingPhaseAuditStore(PostgresFactoryStore):
-            def _audit(self, cursor, task_id, actor, action, resource, reason, correlation_id, metadata=None, run_id=None):
+            def _audit(
+                self,
+                cursor,
+                task_id,
+                actor,
+                action,
+                resource,
+                reason,
+                correlation_id,
+                metadata=None,
+                run_id=None,
+                received_at=None,
+            ):
                 if action == "phase_transition":
                     raise StoreError("injected post-mutation audit failure")
                 return super()._audit(
@@ -1096,6 +1109,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     correlation_id,
                     metadata,
                     run_id,
+                    received_at,
                 )
 
         task = self.submit(source="phase-post-mutation-rollback").task
@@ -4107,7 +4121,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+                        [item.version for item in discover_migrations() if item.version >= 13],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4398,7 +4412,8 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], "ready", 22, True,
+                    [item.version for item in discover_migrations() if item.version >= 9],
+                    "ready", len(discover_migrations()), True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5093,7 +5108,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 22)
+        self.assertEqual(result["schema_version"], 23)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:decision-record:v1",
+  "x-admission": {
+    "boundary": "This schema validates the portable structural wire contract. DecisionRecordV1.from_dict applies the narrower native semantic admission before persistence.",
+    "runtime_only": [
+      "safe_fact_text",
+      "no_self_supersession",
+      "unique_fact_names",
+      "unique_evidence_refs",
+      "unique_constraints",
+      "canonical_uuid_and_timestamp",
+      "repository_task_run_attempt_fence_binding",
+      "supported_persistence_source"
+    ]
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "repository_id",
+    "task_id",
+    "run_id",
+    "attempt_id",
+    "fence",
+    "observed_at",
+    "decision_kind",
+    "rule_id",
+    "rule_version",
+    "facts",
+    "outcome",
+    "reason_code",
+    "base_sha",
+    "head_sha",
+    "context_digest",
+    "spec_digest",
+    "profile_digest",
+    "evidence_refs",
+    "constraints",
+    "next_step",
+    "supersedes"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "repository_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "attempt_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "fence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decision_kind": {
+      "enum": [
+        "scope",
+        "retry",
+        "state",
+        "validation",
+        "qualification",
+        "prediction"
+      ]
+    },
+    "rule_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rule_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "value": {
+            "type": [
+              "string",
+              "integer",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "outcome": {
+      "enum": [
+        "observed",
+        "blocked",
+        "unknown",
+        "rejected",
+        "allowed"
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "base_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "spec_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    },
+    "next_step": {
+      "enum": [
+        "analyze",
+        "verify",
+        "reconcile",
+        "await_human",
+        "none"
+      ]
+    },
+    "supersedes": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

@@ -3711,6 +3711,33 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(any(field in finding for finding in result.findings))
 
+    def test_factory_test_budget_unions_discovery_shim_and_fails_over_800000(self) -> None:
+        identity = "FIT-BOUNDED-FACTORY-TEST-CHANGE"
+        budget = self._repository_code_budgets(identity)[0]
+        self.assertEqual(
+            budget["path_prefixes"],
+            ["factory/tests", "tests/test_factory_v15_decisions.py"],
+        )
+        self.assertEqual(budget["max_changed_bytes"], 800_000)
+        rules = _rules()
+        rules["code_budgets"] = [budget]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/tests/payload.txt", "f" * 400_001)
+        repo.write_text("tests/test_factory_v15_decisions.py", "#" + "s" * 399_999)
+        head = repo.commit("factory tests plus root discovery shim")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            (f"{identity}: max_changed_bytes 800001 exceeds 800000",),
+        )
+        self.assertTrue(
+            {"factory/tests/payload.txt", "tests/test_factory_v15_decisions.py"}
+            <= set(result.applicability.scanned_scope)
+        )
+
     def test_changed_code_budget_rejects_unknown_non_python_line_metrics(self) -> None:
         for label, content in (
             ("nul", b"line one\0\nline two\n"),

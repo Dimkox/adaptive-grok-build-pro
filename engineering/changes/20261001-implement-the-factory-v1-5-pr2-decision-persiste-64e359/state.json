@@ -1,0 +1,76 @@
+{
+  "change_id": "20261001-implement-the-factory-v1-5-pr2-decision-persiste-64e359",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feature/factory-v15-stack-02-decision-persistence",
+      "change_id": "20261001-implement-the-factory-v1-5-pr2-decision-persiste-64e359",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [
+        "git_base_unknown"
+      ],
+      "head": "5c06cc146896fb48668291455fcbd7e23d8770a9",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-01T21:15:52+00:00",
+      "route_id": "64e359641bc2"
+    }
+  ],
+  "created_at": "2026-10-01T21:15:52+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-01T21:15:52+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-01T21:47:26+00:00",
+      "from": "draft",
+      "reason": "Bounded U2 decision-persistence acceptance criteria, architecture, tests and forward-only rollback recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-01T21:47:27+00:00",
+      "from": "scoped",
+      "reason": "No named human gate; owner said Go and route permits implementation",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "808ca95507895c2933ee618000dc6313adbfb8039000421551f363b3762fc307",
+  "route_id": "64e359641bc2",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement the Factory v1.5 PR2 decision persistence contour on current main: transplant the five existing decision persistence commits from the isolated branch, resolve bounded API and data persistence conflicts, preserve behavior and tests, and deliver the isolated candidate",
+  "updated_at": "2026-10-01T21:47:27+00:00"
+}

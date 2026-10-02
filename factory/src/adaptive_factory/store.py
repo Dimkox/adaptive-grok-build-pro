@@ -10,6 +10,7 @@ import time
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
+from .decision_contracts import DecisionRecordV1
 from .brokers import (
     ArtifactProposal,
     BrokerError,
@@ -2075,14 +2076,16 @@ class PostgresFactoryStore:
         correlation_id: str,
         metadata: dict | None = None,
         run_id: str | None = None,
-    ) -> None:
+        received_at: datetime | None = None,
+    ) -> datetime:
         cursor.execute("SELECT last_digest FROM factory.audit_heads WHERE task_id=%s FOR UPDATE", (task_id,))
         row = cursor.fetchone()
         previous = row[0].strip() if row else "0" * 64
         if row is None:
             cursor.execute("INSERT INTO factory.audit_heads(task_id,last_digest) VALUES (%s,%s)", (task_id, previous))
-        cursor.execute("SELECT clock_timestamp()")
-        received_at = cursor.fetchone()[0]
+        if received_at is None:
+            cursor.execute("SELECT clock_timestamp()")
+            received_at = cursor.fetchone()[0]
         bounded = metadata or {}
         digest = canonical_digest(
             {
@@ -2116,6 +2119,7 @@ class PostgresFactoryStore:
             ),
         )
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
+        return received_at
 
     def intake(
         self,
@@ -3959,9 +3963,33 @@ class PostgresFactoryStore:
         *,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        decision_record: DecisionRecordV1 | None = None,
     ) -> TaskStatus:
         del now
         with self._transaction() as cursor:
+            if idempotency_key is not None:
+                cursor.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                    (idempotency_key,),
+                )
+            decision_time = None
+            if decision_record is not None:
+                normalized = decision_record.to_dict()
+                cursor.execute(
+                    "SELECT record->>'observed_at' FROM factory.decision_records_v1 "
+                    "WHERE repository_id=%s AND decision_id=%s",
+                    (normalized["repository_id"], normalized["decision_id"]),
+                )
+                prior_observation = cursor.fetchone()
+                if prior_observation is None:
+                    cursor.execute("SELECT clock_timestamp()")
+                    decision_time = cursor.fetchone()[0]
+                else:
+                    decision_time = datetime.fromisoformat(
+                        prior_observation[0].replace("Z", "+00:00")
+                    )
+                normalized["observed_at"] = decision_time.isoformat().replace("+00:00", "Z")
+                decision_record = DecisionRecordV1.from_dict(normalized)
             command = {
                 "grant": {
                     "task_id": grant.task_id,
@@ -3973,6 +4001,8 @@ class PostgresFactoryStore:
                 },
                 "target": target.value,
             }
+            if decision_record is not None:
+                command["decision_digest"] = decision_record.record_digest
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "transition_phase", command
             )
@@ -3982,6 +4012,21 @@ class PostgresFactoryStore:
                 cursor, grant
             )
             current = TaskStatus(task_state)
+            record = None
+            if decision_record is not None:
+                record = DecisionRecordV1.from_dict(decision_record.to_dict())
+                facts = {
+                    fact["name"]: fact["value"]
+                    for fact in record.to_dict()["facts"]
+                }
+                if (
+                    record.to_dict()["decision_kind"] != "state"
+                    or facts.get("from_state") != current.value
+                    or facts.get("target") != target.value
+                ):
+                    raise IntegrityError("state decision facts mismatch")
+                if idempotency_key is None:
+                    raise IntegrityError("state decision requires idempotency key")
             operation = TransitionOperation.PHASE
             self._apply_task_transition(
                 cursor,
@@ -4013,7 +4058,7 @@ class PostgresFactoryStore:
                 event_key,
                 metadata,
             )
-            self._audit(
+            audit_time = self._audit(
                 cursor,
                 str(task_id),
                 actor,
@@ -4023,6 +4068,7 @@ class PostgresFactoryStore:
                 correlation_id or idempotency_key or event_key,
                 metadata,
                 grant.run_id,
+                received_at=decision_time,
             )
             self._record_command(
                 cursor,
@@ -4033,7 +4079,64 @@ class PostgresFactoryStore:
                 correlation_id,
                 {"status": target.value},
             )
+            if record is not None:
+                self._append_decision_locked(
+                    cursor, grant, record, actor, idempotency_key, audit_time,
+                )
             return target
+
+    def _append_decision_locked(self, cursor, grant, record, actor, idempotency_key, observed_at):
+        data = record.to_dict()
+        if data["observed_at"] != observed_at.isoformat().replace("+00:00", "Z"):
+            raise IntegrityError("decision observation mismatch")
+        cursor.execute(
+            "SELECT repository_id FROM factory.tasks WHERE task_id=%s",
+            (grant.task_id,),
+        )
+        repository = cursor.fetchone()[0]
+        if (
+            data["repository_id"] != repository
+            or data["task_id"] != grant.task_id
+            or data["run_id"] != grant.run_id
+            or data["fence"] != grant.fence
+            or actor.actor_id != grant.owner
+            or "task:release" not in actor.scopes
+            or ("*" not in actor.repositories and repository not in actor.repositories)
+        ):
+            raise AuthorityError("decision identity mismatch")
+        cursor.execute(
+            "SELECT attempt_id FROM factory.attempts "
+            "WHERE run_id=%s AND task_id=%s",
+            (grant.run_id, grant.task_id),
+        )
+        attempt = cursor.fetchone()
+        if attempt is None or str(attempt[0]) != data["attempt_id"]:
+            raise IntegrityError("decision attempt mismatch")
+        if data["supersedes"] is not None:
+            cursor.execute(
+                "SELECT task_id,run_id FROM factory.decision_records_v1 "
+                "WHERE repository_id=%s AND decision_id=%s",
+                (repository, data["supersedes"]),
+            )
+            prior = cursor.fetchone()
+            if (
+                prior is None
+                or str(prior[0]) != grant.task_id
+                or str(prior[1]) != grant.run_id
+            ):
+                raise IntegrityError("decision supersession mismatch")
+        cursor.execute(
+            "SELECT factory.persist_phase_decision_v1(%s,%s,%s,%s,%s,%s)",
+            (canonical_json(data).decode(), record.record_digest, grant.run_id,
+             grant.fence, idempotency_key, record.record_digest),
+        )
+        stored = cursor.fetchone()[0]
+        if stored != record.record_digest:
+            raise IntegrityError("decision idempotency conflict")
+        return record.record_digest
+
+    def append_decision(self, grant, record, actor):
+        raise StoreError("decisions persist only with an atomic phase transition")
 
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
