@@ -1138,9 +1138,30 @@ class PostgresFactoryTests(unittest.TestCase):
             escaped_sensitive_key["sanitized_payload"]
         )
         direct_bad.append((escaped_sensitive_key, None, None))
+        for label, payload in (
+            ("duplicate-root-key", '{"safe":1,"safe":2}'),
+            ("duplicate-nested-key", '{"outer":{"safe":1,"safe":2}}'),
+        ):
+            duplicate_key = {
+                **envelope.to_dict(), "content_type": "application/json",
+                "sanitized_payload": payload,
+                "source_digest": canonical_digest({"structured_bad": label}),
+            }
+            duplicate_key["sanitized_payload_digest"] = canonical_digest(payload)
+            direct_bad.append((duplicate_key, None, None))
         for document, wire, bad_digest in direct_bad:
             with self.assertRaises(psycopg.errors.RaiseException):
                 direct(document, wire=wire, digest_value=bad_digest)
+
+        repeated_key_in_distinct_objects = {
+            **envelope.to_dict(), "content_type": "application/json",
+            "sanitized_payload": '[{"same":1},{"same":2}]',
+            "source_digest": canonical_digest({"structured_good": "separate-objects"}),
+        }
+        repeated_key_in_distinct_objects["sanitized_payload_digest"] = canonical_digest(
+            repeated_key_in_distinct_objects["sanitized_payload"]
+        )
+        self.assertTrue(direct(repeated_key_in_distinct_objects)["created"])
 
         rollback_document = {
             **envelope.to_dict(),

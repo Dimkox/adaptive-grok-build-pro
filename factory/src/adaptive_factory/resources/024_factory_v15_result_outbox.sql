@@ -59,7 +59,7 @@ SECURITY DEFINER
 SET search_path=pg_catalog,pg_temp
 AS $$
 DECLARE
-  v jsonb; v_request jsonb; v_payload jsonb;
+  v jsonb; v_request jsonb; v_payload jsonb; v_payload_json json;
   v_task factory.tasks%ROWTYPE; v_run factory.runs%ROWTYPE;
   v_existing char(64); v_created boolean := false; v_command factory.result_admission_commands_v1%ROWTYPE;
   v_pem_pattern text := '-----(BEGIN|END) [A-Z0-9 ]*PRIVATE KEY-----';
@@ -138,32 +138,38 @@ BEGIN
         OR (v->>k) ~ v_pem_pattern OR (v->>k) ~* v_secret_pattern)
   THEN RAISE EXCEPTION 'invalid result shape'; END IF;
   IF v->'sanitized_payload'<>'null'::jsonb AND v->>'content_type'='application/json' THEN
-    BEGIN v_payload:=(v->>'sanitized_payload')::jsonb;
+    BEGIN v_payload_json:=(v->>'sanitized_payload')::json;
     EXCEPTION WHEN others THEN RAISE EXCEPTION 'invalid structured result payload'; END;
     IF EXISTS (
       WITH RECURSIVE payload_nodes(value,depth) AS (
-        SELECT v_payload,1
+        SELECT v_payload_json,1
         UNION ALL
         SELECT children.value,payload_nodes.depth+1
         FROM payload_nodes
         CROSS JOIN LATERAL (
           SELECT item AS value
-          FROM jsonb_array_elements(
-            CASE WHEN jsonb_typeof(payload_nodes.value)='array'
-              THEN payload_nodes.value ELSE '[]'::jsonb END
+          FROM json_array_elements(
+            CASE WHEN json_typeof(payload_nodes.value)='array'
+              THEN payload_nodes.value ELSE '[]'::json END
           ) item
           UNION ALL
           SELECT child_value AS value
-          FROM jsonb_each(
-            CASE WHEN jsonb_typeof(payload_nodes.value)='object'
-              THEN payload_nodes.value ELSE '{}'::jsonb END
+          FROM json_each(
+            CASE WHEN json_typeof(payload_nodes.value)='object'
+              THEN payload_nodes.value ELSE '{}'::json END
           ) object_item(child_key,child_value)
         ) children
       )
+      SELECT 1 FROM payload_nodes node
+      WHERE json_typeof(node.value)='object' AND EXISTS (
+        SELECT 1 FROM json_each(node.value) member
+        GROUP BY member.key HAVING count(*)>1
+      )
+      UNION ALL
       SELECT 1 FROM payload_nodes
-      GROUP BY ()
-      HAVING max(depth)>64 OR count(*)>100001
-    ) THEN RAISE EXCEPTION 'invalid structured result bounds'; END IF;
+      GROUP BY () HAVING max(depth)>64 OR count(*)>100001
+    ) THEN RAISE EXCEPTION 'invalid structured result bounds or duplicate key'; END IF;
+    v_payload:=v_payload_json::jsonb;
     IF EXISTS (
       WITH RECURSIVE payload_nodes(value,depth) AS (
         SELECT v_payload,1
