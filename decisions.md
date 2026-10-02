@@ -851,3 +851,7 @@ The review of head `a08060c1` showed "prose" is not a directory property: `docs/
 ### 2026-10-01 — Recalibrate the complete Factory-test union, not its ownership
 
 When required migration compatibility makes whole legacy test modules chargeable, keep every helper and discovery shim in one governed union and adjust only the byte ceiling to the measured contour. An executable just-over-limit fixture preserves fail-closed accounting while unchanged line, complexity and severity guards prevent the recalibration from becoming an exemption.
+
+### 2026-10-02 — Validate cumulative accounting before completeness
+
+Apply the existing signed-bigint contract immediately after each known-charge addition, independently of whether usage coverage permits a complete total. The same failing max+1 regression through both shared discovery surfaces caught unrepresentable subtotals for actual, estimated and incomplete summaries, while maximum-valid totals stayed accepted. Adapting source cases into the shared dependency-free module preserved PR2 discovery and avoided reinstating the obsolete CLI validator layout.

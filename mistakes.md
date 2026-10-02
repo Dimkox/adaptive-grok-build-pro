@@ -1486,3 +1486,10 @@ The coordinator initially generalized a historical Git-bound component-reuse dec
 # 2026-09-30 — Do not mutate a worktree during baseline verification
 
 I started `grok_verify` and then wrote the change plan into the same worktree, which made the in-flight exact-tree result unusable. The root cause was treating a long baseline command and planning writes as independent work even though verification fingerprints repository state; stop or finish the verifier before any repository mutation.
+# 2026-10-02 — Validate typed JSON before state transitions
+
+Root cause: a multi-file manual patch omitted the closing delimiter for `observability`, while change-state transitions were issued without conditioning them on successful spec validation. Run the validator first and only transition after its zero exit status.
+
+### 2026-10-02 — Check cumulative fitness after adapting test matrices
+
+Root cause: the decision regression adaptation duplicated fixtures and expected fields without measuring its cumulative exact-base Factory test budget, exceeding the existing 800,000-byte limit by 532 bytes. Shared test-only fixtures and literal expectation reuse preserved every scenario while reducing 587 bytes; check the unchanged fitness rule before committing similar adaptations.
