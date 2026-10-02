@@ -328,8 +328,9 @@ class InstallerTests(unittest.TestCase):
         self.install()
         token = self.manager.purge_token()
         before = list(self.runtime.events)
+        invalid_value = "purge-" + "anything"
         with self.assertRaises(setup.InstallerError):
-            self.manager.remove(purge=True, token="purge-anything")
+            self.manager.remove(purge=True, token=invalid_value)
         self.assertEqual(self.runtime.events, before)
         self.manager.stop()
         with self.assertRaises(setup.InstallerError):
