@@ -19,4 +19,3 @@
   "licensing_observation": "Inspected exact upstream root tree contained no open-source license. This record makes no upstream open-license claim and is not a license grant.",
   "adaptation": "New Factory stdlib implementation of verification/preflight/immutable staging/health-switch/recovery/removal patterns; no upstream executable product payload imported."
 }
-

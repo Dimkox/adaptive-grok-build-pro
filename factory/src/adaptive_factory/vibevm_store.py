@@ -642,4 +642,3 @@ class VibeVMStore:
                 os.fsync(self._fds[self.generations])
         self._check_paths()
         return removed
-

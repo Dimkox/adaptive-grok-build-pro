@@ -187,4 +187,3 @@ class BBLifecycleObservationV1(FrozenWire):
             raise ContractError("bb_idempotency_conflict")
         if self.record_digest != other.record_digest:
             raise ContractError("bb_replay_body_conflict")
-

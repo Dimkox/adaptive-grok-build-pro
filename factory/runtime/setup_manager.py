@@ -867,4 +867,3 @@ def main(argv: list[str] | None = None, *, adapter: RuntimeAdapter | None = None
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

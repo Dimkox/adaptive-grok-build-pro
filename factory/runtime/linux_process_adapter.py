@@ -508,4 +508,3 @@ class LinuxProcessRuntimeAdapter:
             return ""
         content = self._log(log_path)[-maximum_bytes:]
         return "\n".join(content.decode("utf-8", "replace").splitlines()[-lines:])
-

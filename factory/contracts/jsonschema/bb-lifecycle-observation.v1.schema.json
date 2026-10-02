@@ -39,4 +39,3 @@
     "outcome": {"enum": ["unknown", "observed", "rejected", "unavailable"]}
   }
 }
-

@@ -293,4 +293,3 @@ class BBContractTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         with self.assertRaisesRegex(ContractError, "invalid_deadlines"):
             module.BBBackendProfileV1.from_dict(structurally_valid)
-

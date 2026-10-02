@@ -16,6 +16,7 @@ ROOT_ENTRIES = frozenset(
     {
         ".agents", ".coveragerc", ".gitattributes", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
         "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
+        "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md", "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
         "delivery", "docs", "engineering", "examples", "factory", "governance",
