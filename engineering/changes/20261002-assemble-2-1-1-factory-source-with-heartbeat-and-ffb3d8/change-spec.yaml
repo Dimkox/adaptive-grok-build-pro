@@ -3,9 +3,9 @@
   "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
   "objective": {
     "id": "OBJ-001",
-    "statement": "Assemble approved2.1.1 core A-E/H/heartbeat-watchdog; retain F/G as required successors under owner-approved decomposition",
+    "statement": "Assemble approved2.1.1 core A-E/H/heartbeat-watchdog and qualifying frozen test-only fixture; retain F/G required successors under unchanged budgets",
     "success_metric": "Full core requirement ledger, exact-state full PR verification and selected independent reviews",
-    "target": "Sevenacceptancecriteria verified; no unclaimedqualification"
+    "target": "Eight core/fixture acceptance criteria verified; no unclaimed qualification"
   },
   "acceptance_criteria": [
     {
@@ -130,6 +130,33 @@
           "test": "tests/test_manifest_package.py"
         }
       ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "Qualifying frozen test-only025 fixture preserves exact reset/caller/import/installer boundaries and explicit typed lock refusal, rollback and no duplicate retry; final joined fitness stays within unchanged limits",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
     }
   ],
   "invariants": [
@@ -176,7 +203,8 @@
   },
   "approvals": {
     "required_scopes": [
-      "security"
+      "security",
+      "data"
     ]
   },
   "observability": [
