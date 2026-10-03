@@ -27,6 +27,7 @@ class Store(Protocol):
     def get_job_for_sha(self, repository: str, head_sha: str) -> Job | None: ...
     def record_approval(self, payload: ApprovalPayload, envelope: ApprovalEnvelope, *, now: datetime) -> None: ...
     def has_valid_approval(self, repository: str, pr_number: int, base_sha: str, head_sha: str, policy_digest: str, scope: str, now: datetime) -> bool: ...
+    def list_matching_approvals(self, repository: str, pr_number: int, base_sha: str, head_sha: str, policy_digest: str, *, now: datetime, limit: int = 128) -> list[ApprovalEnvelope]: ...
     def requeue_for_approval(self, repository: str, head_sha: str, *, now: datetime) -> int: ...
     def record_attestation(self, job_id: str, envelope: AttestationEnvelope) -> None: ...
     def get_attestation(self, job_id: str) -> AttestationEnvelope | None: ...
@@ -247,6 +248,25 @@ class MemoryStore:
                     count += 1
             return count
 
+    def list_matching_approvals(self, repository: str, pr_number: int, base_sha: str,
+        head_sha: str, policy_digest: str, *, now: datetime, limit: int = 128,
+    ) -> list[ApprovalEnvelope]:
+        if type(limit) is not int or not 1 <= limit <= 128:
+            raise ValueError('bounded approval inventory required')
+        with self._lock:
+            matches: list[tuple[ApprovalPayload, ApprovalEnvelope]] = []
+            for payload, envelope in self._approvals.values():
+                if (payload.repository == repository and payload.pr_number == pr_number
+                        and payload.base_sha == base_sha and payload.head_sha == head_sha
+                        and payload.policy_digest == policy_digest
+                        and parse_datetime(payload.issued_at) <= now < parse_datetime(payload.expires_at)):
+                    if len(matches) == limit:
+                        raise RuntimeError('approval inventory exceeds bound')
+                    matches.append((payload, envelope))
+            matches.sort(key=lambda item: item[0].approval_id)
+            matches.sort(key=lambda item: parse_datetime(item[0].expires_at), reverse=True)
+            return [copy.deepcopy(envelope) for _, envelope in matches]
+
     def record_attestation(self, job_id: str, envelope: AttestationEnvelope) -> None:
         with self._lock:
             if job_id in self._attestations:
@@ -288,6 +308,24 @@ class PostgresStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             cursor.fetchone()
+
+    def list_matching_approvals(self, repository: str, pr_number: int, base_sha: str,
+        head_sha: str, policy_digest: str, *, now: datetime, limit: int = 128,
+    ) -> list[ApprovalEnvelope]:
+        if type(limit) is not int or not 1 <= limit <= 128:
+            raise ValueError('bounded approval inventory required')
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET LOCAL statement_timeout = '4000ms'")
+            cursor.execute("""
+                SELECT payload, signature FROM trust_ci_approvals
+                WHERE repository = %s AND pr_number = %s AND base_sha = %s AND head_sha = %s
+                  AND policy_digest = %s AND issued_at <= %s AND expires_at > %s
+                ORDER BY expires_at DESC, approval_id ASC LIMIT %s
+                """, (repository, pr_number, base_sha, head_sha, policy_digest, now, now, limit + 1))
+            rows = cursor.fetchall()
+            if len(rows) > limit:
+                raise RuntimeError('approval inventory exceeds bound')
+            return [ApprovalEnvelope.from_dict({'payload': row['payload'], 'signature': row['signature']}) for row in rows]
 
     def migrate(self, sql: str) -> None:
         with self._connect() as connection:

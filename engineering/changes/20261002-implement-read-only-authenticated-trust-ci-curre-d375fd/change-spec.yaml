@@ -1,0 +1,65 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Reconstruct approved authenticated read-only GET/authority/{job_id} snapshot with exact repository/PR/base/head, current server policy/holdout/public trust, verified approvals and cryptographically verified attestation, bounded enumeration and validity<=60seconds and applicable cutoffs. Synthetic public fixtures only. No deployment or deployed trust changes.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_authority.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "security"
+    ]
+  },
+  "change_id": "20261002-implement-read-only-authenticated-trust-ci-curre-d375fd",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No deployed system, secrets, approval authority, historical migration or unrelated dirty tree may be changed.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_authority.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Exact repository and immutable recorded identity boundaries fail closed and preserve existing callers.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_authority.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement read-only authenticated Trust CI current-authority snapshot endpoint and bounded store queries with current public approval validation and short validity bound.",
+    "success_metric": "Fresh exact-state reconstruction tests and selected independent review evidence",
+    "target": "Approved contour accepted without production activation or weakening adjacent behavior"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

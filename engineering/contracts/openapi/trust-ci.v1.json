@@ -1,5 +1,45 @@
 {
   "components": {
+    "schemas": {
+      "CurrentAuthoritySnapshotV1": {
+        "additionalProperties": false,
+        "description": "Public exact-job observation, not merge permission. Re-read after expiry or authority changes; existing policy schema has no time-validity field.",
+        "properties": {
+          "schema_version": {"type": "integer", "enum": [1]},
+          "repository": {"type": "string", "minLength": 3},
+          "pr_number": {"type": "integer", "minimum": 1},
+          "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "job_id": {"type": "string", "minLength": 1},
+          "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "check_name": {"type": "string", "minLength": 1},
+          "holdout_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "required_scopes": {
+            "type": "array", "maxItems": 32, "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "approvals": {
+            "type": "array", "maxItems": 32,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "properties": {
+                "scope": {"type": "string", "minLength": 1},
+                "envelope_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "expires_at": {"type": "string", "format": "date-time"},
+                "key_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"}
+              },
+              "required": ["scope", "envelope_digest", "expires_at", "key_id"]
+            }
+          },
+          "trust_revision": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "attestation_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "observed_at": {"type": "string", "format": "date-time"},
+          "valid_until": {"type": "string", "format": "date-time"}
+        },
+        "required": ["schema_version", "repository", "pr_number", "base_sha", "head_sha", "job_id", "policy_digest", "check_name", "holdout_digest", "required_scopes", "approvals", "trust_revision", "attestation_digest", "observed_at", "valid_until"],
+        "type": "object"
+      }
+    },
     "securitySchemes": {
       "bearerAuth": {
         "scheme": "bearer",
@@ -19,6 +59,37 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/authority/{job_id}": {
+      "parameters": [{
+        "description": "Exact Trust CI job identifier",
+        "in": "path", "name": "job_id", "required": true,
+        "schema": {"type": "string", "minLength": 1}
+      }],
+      "get": {
+        "description": "Authenticated read-only current policy, holdout, public approval trust and cryptographically verified CI attestation snapshot. Server sources are reloaded and rechecked. Validity is at most 60 seconds and each selected approval/key cutoff. Does not authorize merge or create approvals.",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Public current exact-job observation",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CurrentAuthoritySnapshotV1"}}}
+          },
+          "401": {
+            "description": "Read bearer token required",
+            "content": {"application/json": {"schema": {
+              "type": "object", "additionalProperties": false,
+              "properties": {"detail": {"type": "string"}}, "required": ["detail"]
+            }}}
+          },
+          "409": {
+            "description": "Stopped, missing, incomplete, stale, revoked, invalid, over-bound or unavailable authority",
+            "content": {"application/json": {"schema": {
+              "type": "object", "additionalProperties": false,
+              "properties": {"detail": {"type": "string"}}, "required": ["detail"]
+            }}}
+          }
+        }
+      }
+    },
     "/approvals": {
       "post": {
         "requestBody": {

@@ -1631,3 +1631,15 @@ Root cause: isolated M7 PostgreSQL checks missed a legacy fixture's explicit for
 ### 2026-10-03 — Explicit caller keywords charged the complete legacy fixtures
 
 Root cause: adding schema_version=26 to both large callers ignored the unchanged whole-file changed-path accounting policy, so the provisional F split still exceeded its budgets. Move installed-version selection into the existing closed test-only helper and prove both callers byte-identical to the frozen predecessor before remeasuring.
+
+### 2026-10-02 — Compare content identity, not access time
+
+Root cause: the authority public-key reader compared whole stat results, so a legitimate first read of an older file could change access time and be rejected as a source mutation. A failing aged-access-time fixture isolated the error; compare device, inode, mode, size, mtime and ctime instead, and retain content/source rechecks.
+
+### 2026-10-02 — Keep authority test dependencies in the declared environment
+
+Root cause: the first authority contract test used locally available `jsonschema`, absent from the Trust CI declared test dependencies. Replace it with the checked-in dependency-free subset validator before handoff, and validate the closed response with explicit invalid controls.
+
+### 2026-10-02 — Register every new source in its architecture owner
+
+Root cause: the authority endpoint reconstruction omitted mandatory architecture ownership and exact OpenAPI binding preflight. Full verification exposed the undeclared module, then focused fitness exposed a pre-existing Python store adapter misowned by the datastore; register both under the existing API owner, preserve its database edge and network rule, and verify binding, drift, fitness and views before handoff.

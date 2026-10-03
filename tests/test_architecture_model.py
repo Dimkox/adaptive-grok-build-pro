@@ -154,6 +154,38 @@ class ArchitectureModelTests(unittest.TestCase):
         if ARCH is None:
             self.fail("adaptive_grok.architecture is not implemented")
 
+    def test_trust_ci_api_owns_authority_and_store_with_existing_database_policy(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        api = nodes["NODE-TRUST-CI-API"]
+        postgres = nodes["NODE-TRUST-CI-POSTGRES"]
+        self.assertEqual(api["type"], "service")
+        self.assertEqual(postgres["type"], "datastore")
+        for path in (
+            "trust-ci/src/adaptive_trust_ci/authority.py",
+            "trust-ci/src/adaptive_trust_ci/store.py",
+        ):
+            self.assertEqual(
+                [node["id"] for node in snapshot.system["nodes"] if path in node["repository_paths"]],
+                ["NODE-TRUST-CI-API"],
+            )
+        edge = next(edge for edge in snapshot.system["edges"] if edge["id"] == "EDGE-API-POSTGRES")
+        self.assertEqual(
+            {field: edge[field] for field in ("from", "to", "protocol", "network_policy", "authentication")},
+            {
+                "from": "NODE-TRUST-CI-API",
+                "to": "NODE-TRUST-CI-POSTGRES",
+                "protocol": "postgresql",
+                "network_policy": "local_only",
+                "authentication": "database_role",
+            },
+        )
+        rule = next(rule for rule in snapshot.rules["network_policies"] if rule["id"] == "FIT-DECLARED-NETWORK-ONLY")
+        self.assertIn(api["type"], rule["node_types"])
+        self.assertIn(edge["protocol"], rule["allowed_protocols"])
+        self.assertIs(rule["require_declared_edge"], True)
+        self.assertEqual(rule["severity"], "error")
+
     def test_factory_control_plane_is_local_and_separate_from_trust_ci(self) -> None:
         snapshot = ARCH.load_architecture(ROOT)
         nodes = {node["id"]: node for node in snapshot.system["nodes"]}
@@ -1516,6 +1548,7 @@ class ArchitectureModelTests(unittest.TestCase):
             {
                 "/approvals",
                 "/attestations/{job_id}",
+                "/authority/{job_id}",
                 "/health/live",
                 "/health/ready",
                 "/jobs/{job_id}",

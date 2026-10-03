@@ -1,0 +1,154 @@
+{
+  "evidence_kind": "focused architecture repair preflight, not full verification",
+  "historical_head": "49330e1a759df74a124c832677ee3639f4f67ed4",
+  "command": "taskset -c 24,25 python3 scripts/grok_architecture.py fitness --base 63799f8760d3a55028d83ab5ff0116ececf8f7d1 --worktree --pre-risk red --json",
+  "exit_code": 1,
+  "exact_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "head_kind": "worktree",
+  "architecture_evidence_digest": "0cd24778e5fab3fa170326b4991af99f8a8b4141ba7d9f51fe0c4d7127c86810",
+  "head_architecture_digest": "5044a4f6992b13797193e8ccaaccd89d9b76857a10d922531e0b811e6e3f9d1b",
+  "diff_digest": "74660554332e12e97d5e6984e00f3134353809a6e4d0218628f1225a6555826b",
+  "repository_inventory_digest": "15884124b431b4cd86ce48be0a05179086da91c69e4506941363d24973d8cf90",
+  "fitness_status": "fail",
+  "results": [
+    {
+      "category": "background_job",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-BOUNDED-WORKER-JOBS"
+      ],
+      "findings": []
+    },
+    {
+      "category": "change_separation",
+      "status": "fail",
+      "rule_ids": [
+        "FIT-TRUST-CI-SEPARATION"
+      ],
+      "findings": [
+        "FIT-TRUST-CI-SEPARATION: implementation and trust-ci mutations are mixed"
+      ]
+    },
+    {
+      "category": "code_budget",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+        "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+        "FIT-BOUNDED-FACTORY-CHANGE",
+        "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+        "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+        "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+        "FIT-BOUNDED-PILOT-CHANGE"
+      ],
+      "findings": []
+    },
+    {
+      "category": "contract_compatibility",
+      "status": "fail",
+      "rule_ids": [
+        "FIT-OPENAPI-BIDIRECTIONAL"
+      ],
+      "findings": [
+        "CONTRACT-TRUST-CI-OPENAPI: changed_constraint"
+      ]
+    },
+    {
+      "category": "forbidden_edge",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-FACTORY-NO-TRUST-OR-EXTERNAL-EDGE",
+        "FIT-NO-LOCAL-PRODUCTION-AUTHORITY",
+        "FIT-PILOT-CONTROL-NO-DIRECT-EXTERNAL-AUTHORITY",
+        "FIT-PILOT-EXECUTION-NO-PRODUCTION-AUTHORITY"
+      ],
+      "findings": []
+    },
+    {
+      "category": "governance_promotion",
+      "status": "not_applicable",
+      "rule_ids": [
+        "FIT-GOVERNANCE-PROMOTION"
+      ],
+      "findings": []
+    },
+    {
+      "category": "migration_safety",
+      "status": "not_applicable",
+      "rule_ids": [
+        "FIT-FACTORY-SQL-HISTORY",
+        "FIT-TRUST-CI-SQL-HISTORY"
+      ],
+      "findings": []
+    },
+    {
+      "category": "module_boundary",
+      "status": "not_applicable",
+      "rule_ids": [
+        "FIT-FACTORY-ADAPTER-BOUNDARY",
+        "FIT-FACTORY-CANNOT-DEFINE-TRUST-CI",
+        "FIT-FACTORY-EARNED-AUTONOMY-BOUNDARY",
+        "FIT-FACTORY-EXECUTION-CORE-BOUNDARY",
+        "FIT-FACTORY-LANDING-CALLER-BOUNDARY",
+        "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
+        "FIT-FACTORY-LANDING-HOST-BOUNDARY",
+        "FIT-FACTORY-LANDING-LIVE-BOUNDARY",
+        "FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY",
+        "FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY",
+        "FIT-FACTORY-SEMANTIC-VALIDATION-BOUNDARY",
+        "FIT-FACTORY-SHADOW-HANDOFF-BOUNDARY",
+        "FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY",
+        "FIT-LOCAL-CANNOT-DEFINE-TRUST-CI",
+        "FIT-PILOT-CONTROL-BOUNDARY",
+        "FIT-STAGED-DELIVERY-SOURCE-BOUNDARY"
+      ],
+      "findings": []
+    },
+    {
+      "category": "network_client",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-DECLARED-NETWORK-ONLY",
+        "FIT-RUNNER-NO-NETWORK"
+      ],
+      "findings": []
+    },
+    {
+      "category": "production_import",
+      "status": "pass",
+      "rule_ids": [],
+      "findings": []
+    },
+    {
+      "category": "secret_flow",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-FACTORY-MATERIAL-BOUNDARY",
+        "FIT-PILOT-MATERIAL-BOUNDARY",
+        "FIT-TRUST-MATERIAL-BOUNDARY"
+      ],
+      "findings": []
+    },
+    {
+      "category": "tenant_authorization",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-RESTRICTED-DATA-AUTHORIZATION"
+      ],
+      "findings": []
+    },
+    {
+      "category": "workspace_trust",
+      "status": "pass",
+      "rule_ids": [
+        "FIT-UNTRUSTED-RUNNER-NO-SECRETS"
+      ],
+      "findings": []
+    }
+  ],
+  "required_scopes": [
+    "architecture"
+  ],
+  "risk_pre": "red",
+  "risk_post": "red"
+}

@@ -1,0 +1,97 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+  "base_fingerprint": "9988caa90c1d8326a8a83c120959e47435e7352ef3dc68e3bc46ce9435a29528",
+  "complexity": "high-risk",
+  "created_at": "2026-10-02T22:28:16+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "matched_keywords": {
+    "api": [
+      "endpoint"
+    ],
+    "security": [
+      "auth"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=api,security",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "d375fd5f77d1",
+  "schema_version": 1,
+  "session_id": "v211-g-authority",
+  "status": "routed",
+  "task": "Implement read-only authenticated Trust CI current-authority snapshot endpoint and bounded store queries with current public approval validation and short validity bound.",
+  "task_domains": [
+    "api",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "integration_implementer"
+}

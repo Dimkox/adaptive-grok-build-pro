@@ -1,0 +1,43 @@
+{
+  "change_id": "20261002-implement-read-only-authenticated-trust-ci-curre-d375fd",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "user-Dimkox",
+      "change_id": "20261002-implement-read-only-authenticated-trust-ci-curre-d375fd",
+      "decided_at": "2026-10-02T22:35:14+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Materialize existing owner-approved October1 recovery design and repeated user command to implement all changes for release2.1.1; source and synthetic fixtures only",
+      "resource": null,
+      "route_id": "d375fd5f77d1",
+      "scope_digest": "1cf8d59f8b41e6aa96151ba439f09d3ace211dde80482a3d95c7ab756d442320"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20261002-implement-read-only-authenticated-trust-ci-curre-d375fd",
+      "decided_at": "2026-10-02T23:19:01+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Existing explicit owner approval for contourG source reconstruction includes mandatory ownership registration of the already approved authority.py in its existing architecture node and derived views; no new boundary or deployed operation. Binding failure/ruling recorded in package.",
+      "resource": null,
+      "route_id": "d375fd5f77d1",
+      "scope_digest": "1b48c1f4379c8870a14fd4d74c379aea7f4307731b1b07c19329b295e055cbc7"
+    },
+    {
+      "action": null,
+      "actor": "user",
+      "change_id": "20261002-implement-read-only-authenticated-trust-ci-curre-d375fd",
+      "decided_at": "2026-10-02T23:27:51+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner-approved current-authority source scope; independent evidence confirms normal existing-node source ownership repair for pre-existing store adapter plus exact additive endpoint binding, with all rules/edges/runtime/deployed boundaries unchanged. Package bounded ruling updated.",
+      "resource": null,
+      "route_id": "d375fd5f77d1",
+      "scope_digest": "b218b2381682731481e1be696fae6d9230e077e75ac97d7b294df25694d84826"
+    }
+  ],
+  "route_id": "d375fd5f77d1",
+  "schema_version": 1
+}

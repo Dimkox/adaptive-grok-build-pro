@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import dataclasses
 import os
 import threading
+import time
 import unittest
 from datetime import timedelta
 from pathlib import Path
@@ -11,7 +13,7 @@ from _support import digest, now, sha
 from adaptive_trust_ci.migrations import PostgresMigrator
 from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, AttestationPayload, JobRequest
 from adaptive_trust_ci.signing import Signer, sign_approval, sign_attestation, verify_attestation
-from adaptive_trust_ci.store import PostgresStore, ReplayError
+from adaptive_trust_ci.store import MemoryStore, PostgresStore, ReplayError
 
 
 DATABASE_URL = os.environ.get('TRUST_CI_TEST_DATABASE_URL', '').strip()
@@ -62,6 +64,74 @@ class PostgresIntegrationTests(unittest.TestCase):
             ).fetchall()
             connection.rollback()
         self.assertEqual(len(rows), len(first.applied))
+
+    def test_bounded_current_approval_inventory_matches_memory_order_and_tuple(self) -> None:
+        memory = MemoryStore()
+        signer = Signer.generate()
+        payload = ApprovalPayload.new(actor='synthetic', key_id=signer.key_id,
+            repository=self.request().repository, pr_number=701, base_sha=sha('a'), head_sha=sha('b'),
+            policy_digest=digest('c'), scope='governance', reason='synthetic', now=now())
+        changes = [
+            {'approval_id': '00000000-0000-0000-0000-000000000003'},
+            {'approval_id': '00000000-0000-0000-0000-000000000002'},
+            {'expires_at': (now() + timedelta(seconds=10)).isoformat()},
+            {'repository': 'Other/repository'}, {'pr_number': 702}, {'base_sha': sha('d')},
+            {'head_sha': sha('d')}, {'policy_digest': digest('d')},
+            {'issued_at': (now() + timedelta(seconds=1)).isoformat()},
+            {'issued_at': (now() - timedelta(seconds=1)).isoformat(), 'expires_at': now().isoformat()},
+        ]
+        for index, delta in enumerate(changes):
+            row = dataclasses.replace(payload, nonce=f'synthetic-nonce-{index:08}',
+                approval_id=f'10000000-0000-0000-0000-{index:012}', **{
+                    key: value for key, value in delta.items() if key != 'approval_id'})
+            if 'approval_id' in delta:
+                row = dataclasses.replace(row, approval_id=delta['approval_id'])
+            envelope = sign_approval(row, signer)
+            for store in (memory, self.store):
+                store.record_approval(row, envelope, now=now())
+        args = (payload.repository, 701, sha('a'), sha('b'), digest('c'))
+        actual = self.store.list_matching_approvals(*args, now=now(), limit=3)
+        self.assertEqual(actual, memory.list_matching_approvals(*args, now=now(), limit=3))
+        self.assertEqual([item.payload.approval_id for item in actual[:2]],
+            ['00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003'])
+        for store in (memory, self.store):
+            with self.assertRaisesRegex(RuntimeError, 'bound'):
+                store.list_matching_approvals(*args, now=now(), limit=2)
+
+    def test_current_approval_query_statement_timeout_is_enforced(self) -> None:
+        with self.store._connect() as lock:
+            lock.execute('LOCK TABLE trust_ci_approvals IN ACCESS EXCLUSIVE MODE')
+            started = time.monotonic()
+            with self.assertRaises(Exception) as cancelled:
+                self.store.list_matching_approvals(self.request().repository, 701, sha('a'), sha('b'),
+                    digest('c'), now=now(), limit=1)
+            self.assertEqual(getattr(cancelled.exception, 'sqlstate', None), '57014')
+            elapsed = time.monotonic() - started
+            self.assertGreater(elapsed, 3)
+            self.assertLess(elapsed, 10)
+            lock.rollback()
+
+    def test_current_authority_endpoint_observes_durable_signed_rows(self) -> None:
+        from test_authority import AuthorityTests
+        fixture = AuthorityTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        fixture.store = self.store
+        fixture.job, _ = self.store.enqueue(JobRequest(fixture.job.repository, fixture.job.pr_number,
+            fixture.job.base_sha, fixture.job.head_sha, 'synthetic', 'main'), fixture.policy.digest, 3, now=now())
+        self.store.claim('fixture-worker', 90, now=now())
+        self.store.finish(fixture.job.job_id, 'fixture-worker', 'passed',
+            {'changed_files': fixture.changed}, now=now())
+        payload = dataclasses.replace(fixture.envelope.payload, job_id=fixture.job.job_id,
+            attestation_id='00000000-0000-0000-0000-000000000001')
+        fixture.envelope = sign_attestation(payload, fixture.ci)
+        self.store.record_attestation(fixture.job.job_id, fixture.envelope)
+        fixture.approve()
+        response = fixture.get()
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['job_id'], fixture.job.job_id)
+        self.assertEqual(response.json()['required_scopes'], ['governance'])
+        self.assertEqual(len(response.json()['approvals']), 1)
 
     def test_two_concurrent_workers_cannot_claim_same_live_job(self) -> None:
         job, _ = self.enqueue()

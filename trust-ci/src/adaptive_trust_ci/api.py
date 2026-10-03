@@ -6,6 +6,7 @@ from typing import Any, Callable
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 
+from .authority import current_job_authority, load_attestation_public_key
 from .metrics import collect_metrics, render_prometheus
 from .models import ApprovalEnvelope, utc_now
 from .policy import Policy, PolicyCatalog, PolicyError
@@ -21,6 +22,7 @@ def create_app(
     store: Store | None = None,
     policy: Policy | PolicyCatalog | None = None,
     trust_store: TrustStore | None = None,
+    current_attestation_public_key: Callable[[], bytes] | None = None,
 ) -> FastAPI:
     if policy is None:
         active_catalog = PolicyCatalog.load(settings.common.policy_path)
@@ -183,6 +185,17 @@ def create_app(
         if envelope is None:
             raise HTTPException(status_code=404, detail='attestation not found')
         return envelope.to_dict()
+
+    @app.get('/authority/{job_id}', dependencies=[Depends(authorize_read)])
+    def authority(job_id: str) -> dict[str, Any]:
+        try:
+            return current_job_authority(active_store, job_id,
+                current_catalog=lambda: PolicyCatalog.load(settings.common.policy_path),
+                current_trust_store=lambda: TrustStore.load(settings.trust_store_path),
+                current_attestation_public_key=current_attestation_public_key or load_attestation_public_key,
+                stopped=lambda: settings.common.stopped)
+        except Exception as exc:
+            raise HTTPException(status_code=409, detail='current exact-job authority unavailable') from exc
 
     @app.get('/metrics', dependencies=[Depends(authorize_read)], response_class=PlainTextResponse)
     def metrics() -> PlainTextResponse:

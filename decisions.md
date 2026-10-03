@@ -924,3 +924,7 @@ Generate indexed lookup selectors from stored canonical UTF8 JSON, then check al
 ### 2026-10-03 — Select fixture inventory from the installed ledger inside the helper
 
 Read only the latest installed integer migration version on the caller's existing cursor and dispatch a closed025/026 inventory. This preserves real schema compatibility and byte-identical large callers while avoiding their whole-file successor budget charge; unknown versions still refuse before TRUNCATE.
+
+### 2026-10-02 — Verify raw signed authority bytes before observation
+
+Use the existing public attestation verifier, then require its signed inventory to match the canonical parsed inventory and compare the exact envelope digest during closing acquisition. Synthetic negative controls caught duplicate-normalization loss and signed-byte changes that dataclass equality excluded, while current public sources and bounded memory/SQL rows preserved the read-only trust boundary.

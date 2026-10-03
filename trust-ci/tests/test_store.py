@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import unittest
+import dataclasses
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 from _support import digest, now, sha
 from adaptive_trust_ci.models import ApprovalPayload, JobRequest
 from adaptive_trust_ci.signing import Signer, sign_approval
-from adaptive_trust_ci.store import MemoryStore
+from adaptive_trust_ci.store import MemoryStore, PostgresStore
 
 
 class StoreTests(unittest.TestCase):
@@ -152,6 +154,87 @@ class StoreTests(unittest.TestCase):
         count = self.store.requeue_for_approval(job.repository, job.head_sha, now=now() + timedelta(seconds=2))
         self.assertEqual(count, 1)
         self.assertEqual(self.store.get_job(job.job_id).status, "queued")
+
+    def test_bounded_approval_inventory_is_available(self) -> None:
+        self.assertTrue(callable(getattr(self.store, 'list_matching_approvals', None)))
+
+    def approval(self, **changes):
+        signer = Signer.generate()
+        payload = ApprovalPayload.new(actor='synthetic', key_id=signer.key_id,
+            repository=self.request.repository, pr_number=self.request.pr_number,
+            base_sha=self.request.base_sha, head_sha=self.request.head_sha,
+            policy_digest=digest('c'), scope='governance', reason='synthetic', now=now())
+        payload = dataclasses.replace(payload, **changes)
+        envelope = sign_approval(payload, signer)
+        self.store.record_approval(payload, envelope, now=now())
+        return envelope
+
+    def inventory(self, *, store=None, limit=128):
+        return (store or self.store).list_matching_approvals(self.request.repository,
+            self.request.pr_number, self.request.base_sha, self.request.head_sha,
+            digest('c'), now=now(), limit=limit)
+
+    def test_inventory_filters_exact_tuple_and_approval_time(self):
+        expected = self.approval()
+        for changes in ({'repository': 'Other/repository'}, {'pr_number': 8}, {'base_sha': sha('d')},
+                        {'head_sha': sha('d')}, {'policy_digest': digest('d')},
+                        {'issued_at': (now() + timedelta(seconds=1)).isoformat()},
+                        {'issued_at': (now() - timedelta(seconds=1)).isoformat(), 'expires_at': now().isoformat()}):
+            self.approval(**changes)
+        result = self.inventory(limit=1)
+        self.assertEqual(result, [expected])
+        self.assertIsNot(result[0], expected)
+
+    def test_inventory_orders_expiry_descending_then_approval_id_ascending(self):
+        short = self.approval(expires_at=(now() + timedelta(seconds=5)).isoformat())
+        later = self.approval(approval_id='00000000-0000-0000-0000-000000000003')
+        earlier = self.approval(approval_id='00000000-0000-0000-0000-000000000002')
+        self.assertEqual(self.inventory(), [earlier, later, short])
+
+    def test_memory_overflow_stops_acquisition_at_limit_plus_one(self):
+        envelope = self.approval()
+        class ObservedRows(dict):
+            acquired = 0
+            def values(rows):
+                for _ in range(1000):
+                    rows.acquired += 1
+                    yield envelope.payload, envelope
+        rows = ObservedRows()
+        self.store._approvals = rows
+        with self.assertRaisesRegex(RuntimeError, 'bound'):
+            self.inventory(limit=2)
+        self.assertEqual(rows.acquired, 3)
+
+    def test_inventory_rejects_unbounded_limits_before_acquisition(self):
+        for limit in (0, -1, 129, True, '1', None):
+            with self.subTest(limit=limit):
+                with self.assertRaises(ValueError):
+                    self.inventory(limit=limit)
+                with patch.object(PostgresStore, '_connect', side_effect=AssertionError('must not acquire')):
+                    with self.assertRaises(ValueError):
+                        self.inventory(store=PostgresStore('postgresql://unused'), limit=limit)
+
+    def test_postgres_query_is_timed_bounded_and_exact(self):
+        envelope = self.approval()
+        connection = MagicMock()
+        connection.__enter__.return_value = connection
+        cursor = connection.cursor.return_value.__enter__.return_value
+        cursor.fetchall.return_value = [{'payload': envelope.payload.to_dict(), 'signature': envelope.signature}]
+        with patch.object(PostgresStore, '_connect', return_value=connection):
+            self.assertEqual(self.inventory(store=PostgresStore('postgresql://unused'), limit=7), [envelope])
+        calls = cursor.execute.call_args_list
+        self.assertEqual(calls[0].args, ("SET LOCAL statement_timeout = '4000ms'",))
+        sql, params = calls[1].args
+        self.assertEqual(params, (self.request.repository, 7, sha('a'), sha('b'), digest('c'), now(), now(), 8))
+        for predicate in ('repository = %s', 'pr_number = %s', 'base_sha = %s', 'head_sha = %s',
+                          'policy_digest = %s', 'issued_at <= %s', 'expires_at > %s'):
+            self.assertIn(predicate, sql)
+        self.assertIn('ORDER BY expires_at DESC, approval_id ASC', sql)
+        self.assertIn('LIMIT %s', sql)
+        cursor.fetchall.return_value *= 8
+        with patch.object(PostgresStore, '_connect', return_value=connection):
+            with self.assertRaisesRegex(RuntimeError, 'bound'):
+                self.inventory(store=PostgresStore('postgresql://unused'), limit=7)
 
 
 if __name__ == "__main__":

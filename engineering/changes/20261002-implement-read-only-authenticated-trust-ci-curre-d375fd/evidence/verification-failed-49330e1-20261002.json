@@ -1,0 +1,724 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-02T23:15:58+00:00",
+  "mode": "pr",
+  "profiles": [
+    "base",
+    "contracts"
+  ],
+  "route_id": "d375fd5f77d1",
+  "tree_fingerprint": "b219291e035f073ffba67e21415695cc9350204ac5b8b9feddcb6447ca173ca3",
+  "changed_files": [
+    "CHANGELOG.md",
+    "PROJECT_STATE.json",
+    "README.md",
+    "START_HERE.md",
+    "decisions.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/architecture.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/brief.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/change-spec.yaml",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/README.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-architect.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-docs_researcher.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-integration_architect.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-repo_explorer.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-task_analyst.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/implementation-red-green.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/startup-capacity-and-scope.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/human-gates.json",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/release.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/requirements.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/rollback.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/route.json",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/state.json",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/tasks.md",
+    "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/test-plan.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/architecture.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/brief.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/change-spec.yaml",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/evidence/README.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/evidence/code-review.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/release.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/requirements.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/rollback.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/route.json",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/state.json",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/tasks.md",
+    "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/test-plan.md",
+    "engineering/contracts/openapi/trust-ci.v1.json",
+    "mistakes.md",
+    "packages/README.md",
+    "packages/adaptive-grok-build-pro-v2.1.0.zip",
+    "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
+    "tests/test_manifest_package.py",
+    "tests/test_project_state.py",
+    "trust-ci/src/adaptive_trust_ci/api.py",
+    "trust-ci/src/adaptive_trust_ci/authority.py",
+    "trust-ci/src/adaptive_trust_ci/store.py",
+    "trust-ci/tests/test_api.py",
+    "trust-ci/tests/test_authority.py",
+    "trust-ci/tests/test_postgres_integration.py",
+    "trust-ci/tests/test_store.py"
+  ],
+  "changed_file_inventory": {
+    "mode": "range-union",
+    "bases": [
+      {
+        "kind": "route",
+        "source": "route.base_commit",
+        "base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+        "target": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+        "count": 50
+      },
+      {
+        "kind": "pr-target",
+        "source": "refs/remotes/origin/main",
+        "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+        "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+        "count": 29
+      }
+    ],
+    "worktree_count": 0,
+    "union_count": 50,
+    "selection_findings": []
+  },
+  "docs_state_scope": {
+    "eligible": false,
+    "profile": "full-pr-suite",
+    "mode": "pr",
+    "reason": "one or more changed paths cannot be verified by the focused documentation/state profile",
+    "reason_code": "unallowlisted-path",
+    "documentation_files": [
+      "CHANGELOG.md",
+      "README.md",
+      "START_HERE.md",
+      "decisions.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/architecture.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/brief.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/change-spec.yaml",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/README.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-architect.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-docs_researcher.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-integration_architect.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-repo_explorer.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/analysis-task_analyst.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/implementation-red-green.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/evidence/startup-capacity-and-scope.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/human-gates.json",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/release.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/requirements.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/rollback.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/route.json",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/state.json",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/tasks.md",
+      "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/test-plan.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/architecture.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/brief.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/change-spec.yaml",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/evidence/README.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/evidence/code-review.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/release.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/requirements.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/rollback.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/route.json",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/state.json",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/tasks.md",
+      "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/test-plan.md",
+      "mistakes.md"
+    ],
+    "state_files": [
+      "PROJECT_STATE.json"
+    ],
+    "artifact_files": [
+      "packages/README.md",
+      "packages/adaptive-grok-build-pro-v2.1.0.zip",
+      "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
+    ],
+    "changed_lockstep_tests": [
+      "tests/test_manifest_package.py",
+      "tests/test_project_state.py"
+    ],
+    "focused_tests": [],
+    "rejected_files": [
+      "engineering/contracts/openapi/trust-ci.v1.json",
+      "trust-ci/src/adaptive_trust_ci/api.py",
+      "trust-ci/src/adaptive_trust_ci/authority.py",
+      "trust-ci/src/adaptive_trust_ci/store.py",
+      "trust-ci/tests/test_api.py",
+      "trust-ci/tests/test_authority.py",
+      "trust-ci/tests/test_postgres_integration.py",
+      "trust-ci/tests/test_store.py"
+    ],
+    "skipped_checks": [],
+    "changed_paths_digest": "12caf2506a0a39a01df653579f0f421a26318d1f1f0f4e85816f8497c1b2b72a",
+    "evidence_kind": "verification:full-pr-suite",
+    "rejection": null
+  },
+  "spec": {
+    "exempt": false,
+    "specs": [
+      {
+        "path": "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/change-spec.yaml",
+        "profile": "gate",
+        "valid": true,
+        "errors": [],
+        "coverage": {
+          "spec_count": 1,
+          "criterion_total": 1,
+          "criterion_mapped": 1,
+          "mapped_ids": [
+            "AC-001"
+          ],
+          "unmapped_ids": [],
+          "evidence_counts": {
+            "test": 1,
+            "receipt": 0,
+            "production_signal": 0,
+            "attestation": 0
+          },
+          "attestation_ac": {
+            "spec_count": 1,
+            "criterion_total": 1,
+            "criterion_mapped": 1,
+            "unmapped_ids": []
+          },
+          "categories": {
+            "acceptance_criteria": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "AC-001"
+              ],
+              "unmapped_ids": []
+            },
+            "invariants": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "INV-001"
+              ],
+              "unmapped_ids": []
+            },
+            "forbidden_outcomes": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "FORBID-001"
+              ],
+              "unmapped_ids": []
+            }
+          },
+          "all_criterion_total": 3,
+          "all_criterion_mapped": 3,
+          "all_mapped_ids": [
+            "AC-001",
+            "FORBID-001",
+            "INV-001"
+          ],
+          "all_unmapped_ids": []
+        },
+        "digest": "4ae649b3bcfb446eb4c8d0b1bcdb54cab2dc632e36b8b3c3d7da9eaba30f985a",
+        "fingerprint": "199154b9dec13bc5ba753a1c2c56030954c9739a365f0a284d48a1395f165387"
+      },
+      {
+        "path": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84/change-spec.yaml",
+        "profile": "gate",
+        "valid": true,
+        "errors": [],
+        "coverage": {
+          "spec_count": 1,
+          "criterion_total": 1,
+          "criterion_mapped": 1,
+          "mapped_ids": [
+            "AC-001"
+          ],
+          "unmapped_ids": [],
+          "evidence_counts": {
+            "test": 2,
+            "receipt": 0,
+            "production_signal": 0,
+            "attestation": 0
+          },
+          "attestation_ac": {
+            "spec_count": 1,
+            "criterion_total": 1,
+            "criterion_mapped": 1,
+            "unmapped_ids": []
+          },
+          "categories": {
+            "acceptance_criteria": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "AC-001"
+              ],
+              "unmapped_ids": []
+            },
+            "invariants": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "INV-001"
+              ],
+              "unmapped_ids": []
+            },
+            "forbidden_outcomes": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "FORBID-001"
+              ],
+              "unmapped_ids": []
+            }
+          },
+          "all_criterion_total": 3,
+          "all_criterion_mapped": 3,
+          "all_mapped_ids": [
+            "AC-001",
+            "FORBID-001",
+            "INV-001"
+          ],
+          "all_unmapped_ids": []
+        },
+        "digest": "e53a92b2069ed8c5800ab79dfe0a8b968f7e57cd7bd2179221fbe1c8bff86357",
+        "fingerprint": "771a331979f3063eecbd8bcd371f811fc1de5c91018d329987c32aa9d10733e2"
+      }
+    ],
+    "active_path": "engineering/changes/20261002-implement-read-only-authenticated-trust-ci-curre-d375fd/change-spec.yaml"
+  },
+  "architecture": {
+    "configured": true,
+    "diagram_status": "pass",
+    "diagram_mismatches": [],
+    "drift_findings": [
+      {
+        "code": "undeclared_source",
+        "message": "source artifact is not owned by an architecture node: trust-ci/src/adaptive_trust_ci/authority.py",
+        "path": "trust-ci/src/adaptive_trust_ci/authority.py",
+        "severity": "error"
+      }
+    ],
+    "status": "fail",
+    "architecture_contract_version": 1,
+    "adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+    "architecture_fingerprint": "64e325969e47287b43f3be5ff0aa7652bea10124d41974dbc329f51d0881b884",
+    "architecture_base_sha": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+    "architecture_head_commit": "49330e1a759df74a124c832677ee3639f4f67ed4",
+    "architecture_base_kind": "route_model",
+    "architecture_bootstrap_baseline": false,
+    "architecture_route_base_sha": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+    "baseline_introduced": false,
+    "base_adoption_state": "adopted",
+    "head_adoption_state": "adopted",
+    "base_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "head_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "contract_inventory_digest": "554d2d9525944f52361ac22b6b37711d1eb164314529444f5a2d8ffda79133e5",
+    "diff_digest": "794d53409a095e41add64a47297fdd94d0146ca6e4c5eab84eef3f12dfb545bf",
+    "drift_status": "fail",
+    "exact_base_sha": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+    "base_kind": "commit",
+    "fitness_evidence_digest": "754983470df1db8641d48f4f5d266077b0957f3cbe3156b986596e6e24667bae",
+    "fitness_status": "fail",
+    "generated_artifact_digests": {
+      "context.mmd": "4a8b63305ab5ccc98faf216305b09bc6e08926876b5769d1a5c84dab27dea76d",
+      "container.mmd": "da0ecc12272c5b546b626f48d649c2b5dabefa4aa98a5692cddd5ac90b45f8a5",
+      "deployment.mmd": "f671867835eaa3b391d9c892035ef0d714352e1fb4dce029edea9b2583a88bab",
+      "data-flow.mmd": "defbb77a18efc03d697dcb106b5c7e213c19ce076fce929e23a966ee31468907",
+      "trust-boundary.mmd": "6b0f83efafd7336d682f65115857d5ba16f6ef389210833efa3c028b876631b7"
+    },
+    "head_kind": "worktree",
+    "repository_inventory_digest": "455f1d5581baa279b91642813af9abd51d1f53e28f91438ff66a05bf20fb81a8",
+    "risk_escalation": "red",
+    "risk_post": "red",
+    "risk_pre": "red",
+    "rules_digest": "98df77357e869882c05cd294d58acae22a79c2457d5453f3801eeebf0fc7d621",
+    "schema_digest": "c849231d6d3e1ea35afa4da52f612893bf9c4586934670007b9bfb495afc8769",
+    "system_digest": "2479a8ffa9129713f2418d2cd6b0c1f44647069b02b4fbcc9d73abd47b8364fb",
+    "architecture_evidence_digest": "c90642c5d200a3a5b038cace2254830a7f29e568376204687bebbb886fb9ad8e"
+  },
+  "governance": {
+    "configured": true,
+    "error": "governance requires a complete successful architecture check",
+    "status": "fail"
+  },
+  "workflow_artifacts": {
+    "configured": false,
+    "status": "not_configured"
+  },
+  "status": "fail",
+  "checks": [
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:e5856acfd4bc7a186f40a740b54ec86459462db5,pr-target:63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "code": "checked-range",
+          "path": "route.base_commit",
+          "message": "checked e5856acfd4bc7a186f40a740b54ec86459462db5..HEAD",
+          "kind": "route",
+          "base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+          "target": "e5856acfd4bc7a186f40a740b54ec86459462db5"
+        },
+        {
+          "severity": "info",
+          "code": "checked-range",
+          "path": "refs/remotes/origin/main",
+          "message": "checked 63799f8760d3a55028d83ab5ff0116ececf8f7d1..HEAD",
+          "kind": "pr-target",
+          "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+          "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+        }
+      ]
+    },
+    {
+      "name": "docs-state-scope",
+      "status": "pass",
+      "summary": "profile=full-pr-suite; evidence=verification:full-pr-suite; reason=unallowlisted-path; paths=0; skipped=none",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "engineering/contracts/openapi/trust-ci.v1.json",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/src/adaptive_trust_ci/api.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/src/adaptive_trust_ci/authority.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/src/adaptive_trust_ci/store.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/tests/test_api.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/tests/test_authority.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/tests/test_postgres_integration.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/tests/test_store.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "",
+          "message": "full PR suite is required: one or more changed paths cannot be verified by the focused documentation/state profile"
+        }
+      ]
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "2 specs checked; exempt=False",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "architecture",
+      "status": "fail",
+      "summary": "drift=fail; fitness=fail; diagrams=pass",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "code": "undeclared_source",
+          "message": "source artifact is not owned by an architecture node: trust-ci/src/adaptive_trust_ci/authority.py",
+          "path": "trust-ci/src/adaptive_trust_ci/authority.py",
+          "severity": "error"
+        },
+        {
+          "severity": "error",
+          "code": "architecture-fitness",
+          "path": "architecture/rules.yaml",
+          "message": "architecture fitness status is fail"
+        }
+      ]
+    },
+    {
+      "name": "governance",
+      "status": "fail",
+      "summary": "governance requires a complete successful architecture check",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "error",
+          "code": "governance-invalid",
+          "path": "governance",
+          "message": "governance requires a complete successful architecture check"
+        }
+      ]
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "1 contracts checked",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "ruff",
+        "check",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        "tests",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "bandit",
+        "-c",
+        "bandit.yaml",
+        "-q",
+        "-r",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout": "",
+      "stderr": "[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "pilot/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "stdout": "",
+      "stderr": "test_any_server_request_is_denied_without_response (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_any_server_request_is_denied_without_response) ... ok\ntest_broad_workspace_profile_is_rejected_before_model_turn (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_broad_workspace_profile_is_rejected_before_model_turn) ... ok\ntest_malformed_or_non_success_terminal_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_malformed_or_non_success_terminal_fails_closed) ... ok\ntest_one_closed_app_server_thread_and_turn_returns_synthetic_success (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_one_closed_app_server_thread_and_turn_returns_synthetic_success) ... ok\ntest_wrong_response_id_or_timeout_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_wrong_response_id_or_timeout_fails_closed) ... ok\ntest_all_five_pilot_contracts_are_in_the_executable_inventory (pilot.tests.test_architecture.PilotArchitectureTests.test_all_five_pilot_contracts_are_in_the_executable_inventory) ... ok\ntest_pilot_has_separate_trust_domains_and_factory_has_no_external_edge (pilot.tests.test_architecture.PilotArchitectureTests.test_pilot_has_separate_trust_domains_and_factory_has_no_external_edge) ... ok\ntest_exact_request_resource_is_accepted_and_digest_bound (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_exact_request_resource_is_accepted_and_digest_bound) ... ok\ntest_wildcard_coarse_stale_or_ambiguous_grants_fail_closed (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_wildcard_coarse_stale_or_ambiguous_grants_fail_closed) ... ok\ntest_closed_config_dispatches_three_live_phases_and_read_only_status (pilot.tests.test_cli.PilotCliTests.test_closed_config_dispatches_three_live_phases_and_read_only_status) ... ok\ntest_effect_phases_are_disabled_without_live_flag_or_config (pilot.tests.test_cli.PilotCliTests.test_effect_phases_are_disabled_without_live_flag_or_config) ... ok\ntest_main_has_a_built_in_host_runner_not_an_adapter_placeholder (pilot.tests.test_cli.PilotCliTests.test_main_has_a_built_in_host_runner_not_an_adapter_placeholder) ... ok\ntest_exact_argv_starts_once_and_persists_the_sealed_candidate (pilot.tests.test_codex_executor.CodexExecutorTests.test_exact_argv_starts_once_and_persists_the_sealed_candidate) ... ok\ntest_failed_sandbox_proof_starts_zero_processes (pilot.tests.test_codex_executor.CodexExecutorTests.test_failed_sandbox_proof_starts_zero_processes) ... ok\ntest_installed_sandbox_denies_outside_reads_and_unix_sockets (pilot.tests.test_codex_executor.CodexExecutorTests.test_installed_sandbox_denies_outside_reads_and_unix_sockets) ... skipped 'requires explicit pinned local Codex sandbox'\ntest_contract_rejects_unknown_fields_and_digest_substitution (pilot.tests.test_contracts.PilotContractTests.test_contract_rejects_unknown_fields_and_digest_substitution) ... ok\ntest_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain (pilot.tests.test_contracts.PilotContractTests.test_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain) ... ok\ntest_untrusted_issue_text_does_not_change_the_profile_digest (pilot.tests.test_contracts.PilotContractTests.test_untrusted_issue_text_does_not_change_the_profile_digest) ... ok\ntest_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect (pilot.tests.test_coordinator.PilotCoordinatorTests.test_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect) ... ok\ntest_restart_reopens_workspace_at_each_recoverable_local_state (pilot.tests.test_coordinator.PilotCoordinatorTests.test_restart_reopens_workspace_at_each_recoverable_local_state) ... ok\ntest_ambiguous_restart_reconciles_branch_and_pr_without_second_write (pilot.tests.test_github.GitHubPublicationTests.test_ambiguous_restart_reconciles_branch_and_pr_without_second_write) ... ok\ntest_exact_command_shapes_are_non_force_single_ref_and_draft_only (pilot.tests.test_github.GitHubPublicationTests.test_exact_command_shapes_are_non_force_single_ref_and_draft_only) ... ok\ntest_base_or_issue_identity_drift_fails_closed (pilot.tests.test_issue_source.IssueSourceTests.test_base_or_issue_identity_drift_fails_closed) ... ok\ntest_snapshot_uses_only_the_exact_profile_for_routing (pilot.tests.test_issue_source.IssueSourceTests.test_snapshot_uses_only_the_exact_profile_for_routing) ... ok\ntest_in_flight_branch_restart_observes_without_a_second_push (pilot.tests.test_live.PilotPhasesTests.test_in_flight_branch_restart_observes_without_a_second_push) ... ok\ntest_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted (pilot.tests.test_live.PilotPhasesTests.test_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted) ... ok\ntest_runtime_roots_reject_a_symlinked_parent_into_control (pilot.tests.test_live.PilotPhasesTests.test_runtime_roots_reject_a_symlinked_parent_into_control) ... ok\ntest_three_process_phases_use_distinct_grants_and_replay_zero_writes (pilot.tests.test_live.PilotPhasesTests.test_three_process_phases_use_distinct_grants_and_replay_zero_writes) ... ok\ntest_observes_then_executes_only_exact_push_and_draft_post (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_observes_then_executes_only_exact_push_and_draft_post) ... ok\ntest_reads_only_exact_repo_issue_and_base_ref_facts (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_reads_only_exact_repo_issue_and_base_ref_facts) ... ok\ntest_interrupted_invocation_is_terminal_and_cannot_start_again (pilot.tests.test_recovery.PilotRecoveryTests.test_interrupted_invocation_is_terminal_and_cannot_start_again) ... ok\ntest_loads_one_literal_grant_bound_to_observed_control_state (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_loads_one_literal_grant_bound_to_observed_control_state) ... ok\ntest_stale_wildcard_or_multiple_runtime_grants_fail_closed (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_stale_wildcard_or_multiple_runtime_grants_fail_closed) ... ok\ntest_conflicting_replay_and_tampered_record_fail_closed (pilot.tests.test_store.PilotStoreTests.test_conflicting_replay_and_tampered_record_fail_closed) ... ok\ntest_read_only_status_does_not_recover_or_change_database (pilot.tests.test_store.PilotStoreTests.test_read_only_status_does_not_recover_or_change_database) ... ok\ntest_replay_is_exact_and_candidate_survives_close_reopen (pilot.tests.test_store.PilotStoreTests.test_replay_is_exact_and_candidate_survives_close_reopen) ... ok\ntest_bwrap_argv_has_minimal_read_only_source_and_no_network (pilot.tests.test_validation.ValidationTests.test_bwrap_argv_has_minimal_read_only_source_and_no_network) ... ok\ntest_fixed_test_and_semantic_pass_persist_one_exact_validation (pilot.tests.test_validation.ValidationTests.test_fixed_test_and_semantic_pass_persist_one_exact_validation) ... ok\ntest_semantic_gate_proves_exact_versions_labels_csp_and_protected_css (pilot.tests.test_validation.ValidationTests.test_semantic_gate_proves_exact_versions_labels_csp_and_protected_css) ... ok\ntest_semantic_gate_rejects_extra_padding_and_csp_policy_changes (pilot.tests.test_validation.ValidationTests.test_semantic_gate_rejects_extra_padding_and_csp_policy_changes) ... ok\ntest_tree_mutation_is_terminal_even_when_test_exit_is_zero (pilot.tests.test_validation.ValidationTests.test_tree_mutation_is_terminal_even_when_test_exit_is_zero) ... ok\ntest_disallowed_or_special_change_is_rejected_without_commit (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_disallowed_or_special_change_is_rejected_without_commit) ... ok\ntest_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate) ... ok\ntest_sealed_workspace_recovers_by_job_and_rejects_tamper (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_sealed_workspace_recovers_by_job_and_rejects_tamper) ... ok\n\n----------------------------------------------------------------------\nRan 44 tests in 1.466s\n\nOK (skipped=1)\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "python-unittest",
+      "status": "fail",
+      "summary": "pytest-xdist workers=3 exit=1 seconds=291.639",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-c",
+        "/dev/null",
+        "-p",
+        "xdist.plugin",
+        "-p",
+        "no:cacheprovider",
+        "--import-mode=prepend",
+        "--rootdir=.",
+        "-o",
+        "python_files=test*.py",
+        "-q",
+        "-n",
+        "3",
+        "--dist=worksteal",
+        "--max-worker-restart=0",
+        "--durations=20",
+        "-ra",
+        "-p",
+        "pytest_cov.plugin",
+        "--cov",
+        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-g-authority/.coveragerc",
+        "--cov-report=term",
+        "tests"
+      ],
+      "stdout": "331, 333, 336, 339, 341, 343, 345, 350, 352, 355, 358-360, 363, 367, 369, 385, 399, 404, 412, 433, 438\n.grok-stack/adaptive_grok/manifest.py                  203     25     62     12    86%   30, 60, 71, 81-82, 116-117, 124-125, 132-133, 135, 152-153, 162-163, 174, 203, 235, 247, 252, 255-257, 267\n.grok-stack/adaptive_grok/package_status.py            398     44    184     35    86%   52, 67, 69, 97, 156-157, 165, 168-169, 184-185, 188-189, 194, 196, 240, 256-259, 261, 263, 294, 304, 311, 318, 335, 343, 346, 347->308, 350, 359, 373->364, 380, 410, 430, 434, 443, 487, 490, 506, 510, 515, 527-528, 533\n.grok-stack/adaptive_grok/policy.py                     51     23     20      2    48%   25-50, 61, 76, 96\n.grok-stack/adaptive_grok/protected_write.py           190     43     68     15    75%   59, 86, 92, 97, 100-101, 104, 107, 125, 136, 138, 143, 147, 149, 151, 196, 203-220, 223, 237-243, 250-251, 254-255\n.grok-stack/adaptive_grok/python_test_runner.py        253     27     84     12    88%   38, 51, 61, 115-116, 119-124, 130, 136, 144, 162, 166, 171-173, 239, 252, 282, 297, 318-320, 329\n.grok-stack/adaptive_grok/queue_provenance.py          702    110    364     45    83%   114, 145, 152-154, 157-161, 174, 180, 200, 261, 264, 267, 270, 288, 291, 294, 297, 300-303, 317, 319, 338, 411, 434, 452-457, 475, 483-488, 496, 507, 514-516, 518, 530-532, 543, 593, 604, 617-618, 620->635, 622-623, 627-628, 630, 632-633, 653, 686, 690-691, 694-695, 703-704, 798, 804, 823, 825, 853-864, 948, 968, 995-997, 1005-1006, 1008-1016, 1018-1026, 1028-1034\n.grok-stack/adaptive_grok/receipts.py                  418     67    172     41    81%   59-60, 66, 90, 102, 109-110, 117-118, 122, 125, 132, 152, 157, 189, 192, 197, 204, 243, 248, 279, 314, 321, 323, 339, 354, 359, 363, 371-375, 379, 385-386, 391, 395, 397, 400, 402, 416, 432-433, 485, 489, 516, 522, 564, 572, 575, 590, 600, 612, 618, 663, 681-683, 706-708, 723, 730-731, 733, 742\n.grok-stack/adaptive_grok/repo.py                      100     15     50      9    84%   33->32, 63-64, 79-80, 83-84, 87-88, 91-92, 105->107, 108, 115-116, 120-121\n.grok-stack/adaptive_grok/router.py                    279     17    138     12    93%   132, 142->144, 145->147, 156, 159-160, 162->161, 236-238, 280, 355, 381, 443->445, 462, 519-524\n.grok-stack/adaptive_grok/shell_targets.py             269     75    144     32    69%   21, 46, 48, 65->69, 70, 72, 77-79, 88, 90, 92, 104-106, 109-110, 112-113, 123, 130, 132, 137-138, 142-149, 159-161, 167, 173-176, 188, 195, 213-214, 220, 224, 226-229, 248-251, 283-288, 292-302, 311, 323, 337, 339-340, 347, 357\n.grok-stack/adaptive_grok/spec.py                      646     93    376     72    83%   67, 78, 85, 87, 95->97, 100, 112-113, 121, 124, 136, 142, 145, 147, 151, 157, 168->217, 171, 177, 180, 184-189, 195, 198-203, 212, 222, 230, 232, 234, 238, 254, 275-276, 284-285, 294, 299, 301, 315, 319, 322, 348, 351->355, 363->362, 367, 374, 376, 388, 390, 401, 469, 478-479, 481, 511-512, 514, 535, 557-559, 560->555, 562->555, 628-629, 631, 634-635, 665, 674, 680, 683, 685, 703->701, 709-710, 730, 733, 739-740, 754, 756, 760, 772-780, 789, 792->794, 794->796, 803, 825-827, 831, 846\n.grok-stack/adaptive_grok/state.py                     245     62     80     21    72%   41, 46-50, 75-81, 89-90, 114, 143-157, 177, 202, 204, 206, 208, 212, 215, 219, 226, 239, 262, 280, 283, 286-287, 290, 306-307, 309, 312, 314, 332, 350, 354-361, 365-369\n.grok-stack/adaptive_grok/toolchain.py                 117     17     38      8    81%   39, 52-56, 161->160, 178, 184, 186-187, 189-190, 195-196, 200-202\n.grok-stack/adaptive_grok/util.py                      246     30    104     17    84%   23-41, 111->117, 113->115, 115->117, 126, 184-185, 187, 190->192, 198, 201, 212, 243, 255, 265, 270, 274, 278, 326, 353-354, 391\n.grok-stack/adaptive_grok/verification.py              865    114    402     63    84%   93, 123, 253-274, 313, 326-327, 333, 353-358, 429, 437, 458, 469, 499->538, 511, 607-613, 631-632, 640-645, 696, 710, 717-718, 720, 736, 743-749, 753-759, 784-790, 803, 842-843, 849-850, 874, 911-912, 917-918, 1026-1027, 1032-1033, 1040->1039, 1043-1045, 1072, 1079, 1090, 1094, 1096-1097, 1136, 1217, 1219, 1226, 1231-1233, 1259, 1261, 1262->1244, 1325, 1337, 1354-1366, 1424-1429, 1434, 1444, 1450, 1453-1454, 1457, 1460, 1466-1467, 1566-1569, 1578, 1654, 1656, 1660, 1662, 1667, 1670, 1674, 1702, 1759, 1795-1796, 1884, 1886\n.grok-stack/adaptive_grok/verification_scope.py        153      4     76      3    97%   163-164, 168, 201\n.grok-stack/adaptive_grok/workflow_artifacts.py       1038    144    452    100    83%   192, 196, 200, 204, 206, 216-217, 233-234, 238, 244, 284-285, 291, 309, 312, 322-323, 354, 388, 402, 417, 419, 425-426, 455, 458, 464, 466, 488, 520, 562, 578, 588, 596, 606, 712, 714->720, 716, 718->714, 722-723, 727, 732, 774, 777, 782-791, 820, 825, 840, 842, 874, 895->893, 912->911, 941, 955, 960, 967, 970, 973, 993, 1004, 1028, 1030, 1032, 1035, 1037, 1053, 1057, 1059, 1062, 1067, 1072, 1079, 1083, 1096, 1121, 1140, 1143-1144, 1152, 1157, 1166, 1179, 1195, 1220, 1226, 1238, 1247, 1258, 1264, 1306->1279, 1365, 1406, 1407->1409, 1410, 1424, 1453, 1458-1459, 1466-1472, 1478-1479, 1484-1489, 1515, 1533, 1537-1540, 1543, 1549, 1551, 1562, 1566, 1574, 1600, 1603->1609, 1627, 1636, 1639-1642, 1703-1704, 1723-1724, 1740-1741, 1744-1745, 1756, 1777\nscripts/generate_manifest.py                            11     11      2      0     0%   1-16\nscripts/grok_approve.py                                 30     30      6      0     0%   1-82\nscripts/grok_architecture.py                            90     35     26      7    59%   57, 61-79, 83-97, 106-123, 127-130, 132-145, 155->157, 159-169, 173\nscripts/grok_artifacts.py                               76      6     20      4    90%   55, 67, 84-98, 158\nscripts/grok_change.py                                  27     27      4      0     0%   1-33\nscripts/grok_demo.py                                    45     45      6      0     0%   2-57\nscripts/grok_deploy.py                                  21     21      6      0     0%   1-27\nscripts/grok_doctor.py                                  25     25     10      0     0%   1-33\nscripts/grok_gate.py                                    29     29      2      0     0%   1-58\nscripts/grok_governance.py                             104    104     28      0     0%   2-177\nscripts/grok_history.py                                 20     20      2      0     0%   2-28\nscripts/grok_landing_publish.py                         62     62     28      0     0%   3-93\nscripts/grok_protected_write.py                         23     23      2      0     0%   2-37\nscripts/grok_review.py                                  31     31     10      0     0%   1-36\nscripts/grok_route.py                                   31     31      8      0     0%   1-37\nscripts/grok_spec.py                                    85      8     24      4    89%   35, 47-48, 102->104, 111, 116-118, 122\nscripts/grok_status.py                                  23     23      2      0     0%   1-33\nscripts/grok_verify.py                                  30      7      8      2    66%   33, 38-43\nscripts/install_into.py                                851    144    276     57    81%   209-212, 220, 223-224, 254, 264, 267-268, 281-283, 305-306, 311-314, 339-342, 348, 355-357, 371, 375-376, 381, 387-388, 407, 419, 421, 426, 442, 455, 479, 483, 494, 505, 511, 520, 523->529, 531, 537, 561-562, 586, 604-605, 629, 648-649, 652, 656, 664, 699, 715, 718, 722-723, 728-729, 740-741, 759, 762, 772-773, 781, 795-796, 873, 881-882, 908-910, 918, 928, 932, 941, 961, 966-968, 982-983, 997-998, 1005, 1014, 1023, 1027-1032, 1036, 1084-1085, 1089, 1097, 1104, 1112, 1134, 1170, 1183, 1186, 1188, 1203, 1233, 1257, 1261, 1270->1269, 1274-1275, 1402-1464, 1468\nscripts/package_stack.py                               676    143    172     49    77%   36-37, 43-44, 50-51, 107-108, 111, 113, 124-125, 127, 129, 132->exit, 143-146, 158, 162-163, 168-169, 197, 218, 225, 226->177, 228-232, 234->236, 244-245, 249-251, 253-254, 261-263, 273-275, 282-283, 301-302, 304, 330-333, 339, 341-344, 346, 354-355, 368-369, 398-399, 414-415, 424-425, 447, 450-453, 470, 483-484, 500-501, 510-511, 518-519, 565-566, 577, 585, 588-589, 591, 623, 625->627, 628, 643, 645, 657, 665-666, 670, 688-689, 693, 701-702, 704, 710, 714, 716-717, 719->724, 722-723, 725->727, 728, 744, 746, 766-767, 771, 785, 834, 841, 853-854, 865-868, 872-874, 881-882, 884, 896-897, 899, 909, 940-941, 943, 964-965, 975->977, 1077, 1080, 1108\nscripts/verify_manifest.py                              12     12      4      0     0%   1-16\n------------------------------------------------------------------------------------------------\nTOTAL                                                15875   2755   7066   1215    81%\nRequired test coverage of 74.0% reached. Total coverage: 80.65%\n============================= slowest 20 durations =============================\n65.31s call     tests/test_verification_doctor.py::VerificationTests::test_governance_runs_after_spec_and_architecture_and_failure_is_not_receipted\n39.49s call     tests/test_governance.py::GovernanceHandoffTests::test_handoff_rejects_self_hashed_forged_m2_fitness_risk_and_scope\n36.36s call     tests/test_verification_doctor.py::VerificationTests::test_missing_adoption_marker_cannot_disable_architecture_checks\n17.37s call     tests/test_manifest_package.py::PackageTests::test_packaged_installer_materializes_new_target_without_authority\n16.00s call     tests/test_verification_scope.py::FocusedPythonEmptyTargetTests::test_the_replaced_runner_is_named_by_the_caller_not_assumed\n14.28s call     tests/test_verification_scope.py::FocusedPythonExecutionTests::test_admitted_inventory_never_executes_full_suite_discovery\n14.16s call     tests/test_verification_scope.py::VerifyDocsStateScopeEndToEndTests::test_verify_selects_and_runs_the_focused_profile_for_a_docs_only_successor\n11.89s call     tests/test_verification_doctor.py::VerificationTests::test_verify_unconfigured_is_compatible_but_adopted_deletion_fails\n11.22s call     tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_local_queue_adapter_dependency_chains_do_not_silently_truncate\n11.14s call     tests/test_verification_doctor.py::VerificationTests::test_verify_reports_architecture_metadata_without_exact_worktree_sha\n10.05s call     tests/test_verification_doctor.py::VerificationTests::test_adoption_marker_read_fails_when_nofollow_is_unavailable\n9.77s call     tests/test_verification_doctor.py::VerificationTests::test_marker_backed_merge_deletion_fails_without_history_inference\n9.59s call     tests/test_verification_doctor.py::VerificationTests::test_adopted_deletion_remains_invalid_after_unrelated_descendants\n9.04s call     tests/test_installer.py::InstallerTests::test_materialize_new_failure_injections_clean_owned_stage\n8.95s call     tests/test_verification_doctor.py::VerificationTests::test_marker_backed_shallow_deletion_fails_at_depth_one\n8.86s call     tests/test_verification_doctor.py::VerificationTests::test_shallow_descendant_cannot_hide_prior_adoption_from_legacy_route\n8.35s call     tests/test_verification_doctor.py::VerificationTests::test_verify_fails_after_committed_deletion_of_both_adopted_models\n7.57s call     tests/test_governance.py::GovernanceHandoffTests::test_handoff_binds_repeated_evidence_path_to_first_observation\n7.31s call     tests/test_verification_doctor.py::VerificationTests::test_malformed_adoption_marker_fails_closed\n6.88s call     tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_relative_child_import_requires_a_resolved_local_source\n=========================== short test summary info ============================\nFAILED tests/test_architecture_model.py::ArchitectureModelTests::test_seed_architecture_models_current_boundaries_and_real_contracts\n1 failed, 998 passed, 2 warnings, 1663 subtests passed in 291.07s (0:04:51)\n",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "path": "tests",
+          "message": "backend=pytest-xdist; fresh invocation-owned coverage",
+          "requested_workers": "3",
+          "versions": "{\"coverage\": \"7.15.4\", \"engine\": \"pytest-xdist\", \"pytest\": \"9.1.1\", \"pytest-cov\": \"7.1.0\", \"pytest-xdist\": \"3.8.0\"}",
+          "coverage": "{\"branch_coverage\": true, \"files\": [\".grok-stack/adaptive_grok/__init__.py\", \".grok-stack/adaptive_grok/_cpu_capacity.py\", \".grok-stack/adaptive_grok/_policy_legacy.py\", \".grok-stack/adaptive_grok/architecture.py\", \".grok-stack/adaptive_grok/architecture_diagrams.py\", \".grok-stack/adaptive_grok/architecture_diff.py\", \".grok-stack/adaptive_grok/architecture_fitness.py\", \".grok-stack/adaptive_grok/bitrix_checks.py\", \".grok-stack/adaptive_grok/change.py\", \".grok-stack/adaptive_grok/demo.py\", \".grok-stack/adaptive_grok/demo_http.py\", \".grok-stack/adaptive_grok/deploy.py\", \".grok-stack/adaptive_grok/doctor.py\", \".grok-stack/adaptive_grok/governance.py\", \".grok-stack/adaptive_grok/history.py\", \".grok-stack/adaptive_grok/human_gates.py\", \".grok-stack/adaptive_grok/manifest.py\", \".grok-stack/adaptive_grok/package_status.py\", \".grok-stack/adaptive_grok/policy.py\", \".grok-stack/adaptive_grok/protected_write.py\", \".grok-stack/adaptive_grok/python_test_runner.py\", \".grok-stack/adaptive_grok/queue_provenance.py\", \".grok-stack/adaptive_grok/receipts.py\", \".grok-stack/adaptive_grok/repo.py\", \".grok-stack/adaptive_grok/router.py\", \".grok-stack/adaptive_grok/shell_targets.py\", \".grok-stack/adaptive_grok/spec.py\", \".grok-stack/adaptive_grok/state.py\", \".grok-stack/adaptive_grok/toolchain.py\", \".grok-stack/adaptive_grok/util.py\", \".grok-stack/adaptive_grok/verification.py\", \".grok-stack/adaptive_grok/verification_scope.py\", \".grok-stack/adaptive_grok/workflow_artifacts.py\", \"scripts/generate_manifest.py\", \"scripts/grok_approve.py\", \"scripts/grok_architecture.py\", \"scripts/grok_artifacts.py\", \"scripts/grok_change.py\", \"scripts/grok_demo.py\", \"scripts/grok_deploy.py\", \"scripts/grok_doctor.py\", \"scripts/grok_gate.py\", \"scripts/grok_governance.py\", \"scripts/grok_history.py\", \"scripts/grok_landing_publish.py\", \"scripts/grok_protected_write.py\", \"scripts/grok_review.py\", \"scripts/grok_route.py\", \"scripts/grok_spec.py\", \"scripts/grok_status.py\", \"scripts/grok_verify.py\", \"scripts/install_into.py\", \"scripts/package_stack.py\", \"scripts/verify_manifest.py\"], \"totals\": {\"covered_branches\": 5383, \"covered_lines\": 13120, \"excluded_lines\": 7, \"missing_branches\": 1683, \"missing_lines\": 2755, \"num_branches\": 7066, \"num_partial_branches\": 1215, \"num_statements\": 15875, \"percent_branches_covered\": 76.18171525615624, \"percent_branches_covered_display\": \"76\", \"percent_covered\": 80.65472298504861, \"percent_covered_display\": \"81\", \"percent_statements_covered\": 82.64566929133858, \"percent_statements_covered_display\": \"83\"}}"
+        }
+      ]
+    },
+    {
+      "name": "coverage",
+      "status": "fail",
+      "summary": "pytest-xdist workers=3 exit=1 seconds=1.706",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "coverage",
+        "report",
+        "--rcfile=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-g-authority/.coveragerc"
+      ],
+      "stdout": "ecture_diff.py         688     88    280     65    84%   62, 69-70, 117-118, 137-138, 141-143, 150, 161, 180, 232-233, 239, 245, 259-263, 269, 337, 349, 358, 360, 366, 373-374, 378->380, 386, 388, 419->421, 439, 451, 456-459, 463, 480-481, 493, 525, 539, 547-548, 551, 557, 563-564, 574-575, 579, 589, 612, 616, 619, 621, 623, 635, 667, 674, 693, 711, 826, 855, 865, 898-899, 902, 906, 909, 912-913, 919, 930, 935, 947, 952, 957, 967, 985, 993, 997, 1007, 1038, 1097, 1099, 1106, 1116, 1139\n.grok-stack/adaptive_grok/architecture_fitness.py     1429     83    730     59    93%   266, 299, 305, 313, 321, 334, 342, 354, 357, 359, 362, 371, 374, 382-383, 385, 408, 451, 457, 461->460, 531->503, 545, 549, 554, 625, 643-645, 654, 688, 695, 739->738, 874, 879, 883, 1035, 1108->1110, 1165->1176, 1185, 1192, 1294, 1316-1317, 1330-1331, 1334-1335, 1341-1342, 1345-1347, 1486, 1542-1544, 1581-1582, 1717-1719, 1813, 1821->1820, 1845, 1857, 1966-1968, 1972-1973, 1978, 1992-1993, 2109-2111, 2213, 2239-2240, 2315, 2317, 2353-2355, 2357, 2513, 2628, 2630, 2662\n.grok-stack/adaptive_grok/bitrix_checks.py              75      6     46      4    92%   18, 50, 57-58, 66, 92\n.grok-stack/adaptive_grok/change.py                     97      3     30      1    97%   109-110, 149\n.grok-stack/adaptive_grok/demo.py                      122     11     16      5    88%   38, 42, 44, 60, 62, 72, 164-165, 263-265\n.grok-stack/adaptive_grok/demo_http.py                 140     18     40      7    86%   65->exit, 101, 109-110, 116-118, 127-128, 138-140, 146-147, 161-163, 168, 185\n.grok-stack/adaptive_grok/deploy.py                     57     19     22      4    63%   14-17, 27, 41-51, 63, 66, 70\n.grok-stack/adaptive_grok/doctor.py                     73     13     22      5    81%   36-37, 42-43, 52-53, 58-59, 64-65, 74->77, 83, 87-88\n.grok-stack/adaptive_grok/governance.py               1347    171    468     78    85%   127, 166, 173-174, 181, 185, 189, 193, 202, 209-210, 230, 237-238, 343-348, 350, 390, 421, 426, 433, 466, 491-498, 506-507, 563-564, 586-587, 622, 625-626, 643-648, 707, 713-714, 722, 726, 740, 773, 777, 786, 806, 809, 812, 837-840, 937-938, 943-944, 974, 1266->1268, 1274-1275, 1304, 1309, 1316, 1321, 1328, 1333, 1431, 1454, 1456->1455, 1474->1473, 1597, 1709, 1741, 1759, 1764, 1778, 1795, 1843->exit, 1856, 1860-1861, 1864, 1867-1868, 1877, 1917-1918, 1921, 1978->1984, 2027, 2030-2031, 2034, 2039-2041, 2053, 2065, 2068-2069, 2072, 2078-2079, 2094-2114, 2259->2309, 2440-2454, 2464, 2467-2474, 2479, 2493, 2498, 2511, 2519, 2527, 2553, 2571-2572, 2574, 2576, 2588, 2595, 2622, 2625-2626, 2632, 2642, 2658, 2665, 2692, 2699, 2810-2811\n.grok-stack/adaptive_grok/history.py                   303     11    144     10    95%   70, 86, 98, 154-155, 200, 253, 270, 304, 321, 385, 392->394\n.grok-stack/adaptive_grok/human_gates.py               314     73    178     53    74%   57, 59, 61, 64, 68-69, 71, 74, 76, 109, 111, 113-114, 121, 124, 135, 139, 144-146, 151, 170->175, 173-174, 176, 178, 180, 189, 193->192, 198, 205, 210-213, 228-229, 231-232, 240-241, 244-246, 250-251, 256-257, 259-260, 271-272, 277, 299, 331, 333, 336, 339, 341, 343, 345, 350, 352, 355, 358-360, 363, 367, 369, 385, 399, 404, 412, 433, 438\n.grok-stack/adaptive_grok/manifest.py                  203     25     62     12    86%   30, 60, 71, 81-82, 116-117, 124-125, 132-133, 135, 152-153, 162-163, 174, 203, 235, 247, 252, 255-257, 267\n.grok-stack/adaptive_grok/package_status.py            398     44    184     35    86%   52, 67, 69, 97, 156-157, 165, 168-169, 184-185, 188-189, 194, 196, 240, 256-259, 261, 263, 294, 304, 311, 318, 335, 343, 346, 347->308, 350, 359, 373->364, 380, 410, 430, 434, 443, 487, 490, 506, 510, 515, 527-528, 533\n.grok-stack/adaptive_grok/policy.py                     51     23     20      2    48%   25-50, 61, 76, 96\n.grok-stack/adaptive_grok/protected_write.py           190     43     68     15    75%   59, 86, 92, 97, 100-101, 104, 107, 125, 136, 138, 143, 147, 149, 151, 196, 203-220, 223, 237-243, 250-251, 254-255\n.grok-stack/adaptive_grok/python_test_runner.py        253     27     84     12    88%   38, 51, 61, 115-116, 119-124, 130, 136, 144, 162, 166, 171-173, 239, 252, 282, 297, 318-320, 329\n.grok-stack/adaptive_grok/queue_provenance.py          702    110    364     45    83%   114, 145, 152-154, 157-161, 174, 180, 200, 261, 264, 267, 270, 288, 291, 294, 297, 300-303, 317, 319, 338, 411, 434, 452-457, 475, 483-488, 496, 507, 514-516, 518, 530-532, 543, 593, 604, 617-618, 620->635, 622-623, 627-628, 630, 632-633, 653, 686, 690-691, 694-695, 703-704, 798, 804, 823, 825, 853-864, 948, 968, 995-997, 1005-1006, 1008-1016, 1018-1026, 1028-1034\n.grok-stack/adaptive_grok/receipts.py                  418     67    172     41    81%   59-60, 66, 90, 102, 109-110, 117-118, 122, 125, 132, 152, 157, 189, 192, 197, 204, 243, 248, 279, 314, 321, 323, 339, 354, 359, 363, 371-375, 379, 385-386, 391, 395, 397, 400, 402, 416, 432-433, 485, 489, 516, 522, 564, 572, 575, 590, 600, 612, 618, 663, 681-683, 706-708, 723, 730-731, 733, 742\n.grok-stack/adaptive_grok/repo.py                      100     15     50      9    84%   33->32, 63-64, 79-80, 83-84, 87-88, 91-92, 105->107, 108, 115-116, 120-121\n.grok-stack/adaptive_grok/router.py                    279     17    138     12    93%   132, 142->144, 145->147, 156, 159-160, 162->161, 236-238, 280, 355, 381, 443->445, 462, 519-524\n.grok-stack/adaptive_grok/shell_targets.py             269     75    144     32    69%   21, 46, 48, 65->69, 70, 72, 77-79, 88, 90, 92, 104-106, 109-110, 112-113, 123, 130, 132, 137-138, 142-149, 159-161, 167, 173-176, 188, 195, 213-214, 220, 224, 226-229, 248-251, 283-288, 292-302, 311, 323, 337, 339-340, 347, 357\n.grok-stack/adaptive_grok/spec.py                      646     93    376     72    83%   67, 78, 85, 87, 95->97, 100, 112-113, 121, 124, 136, 142, 145, 147, 151, 157, 168->217, 171, 177, 180, 184-189, 195, 198-203, 212, 222, 230, 232, 234, 238, 254, 275-276, 284-285, 294, 299, 301, 315, 319, 322, 348, 351->355, 363->362, 367, 374, 376, 388, 390, 401, 469, 478-479, 481, 511-512, 514, 535, 557-559, 560->555, 562->555, 628-629, 631, 634-635, 665, 674, 680, 683, 685, 703->701, 709-710, 730, 733, 739-740, 754, 756, 760, 772-780, 789, 792->794, 794->796, 803, 825-827, 831, 846\n.grok-stack/adaptive_grok/state.py                     245     62     80     21    72%   41, 46-50, 75-81, 89-90, 114, 143-157, 177, 202, 204, 206, 208, 212, 215, 219, 226, 239, 262, 280, 283, 286-287, 290, 306-307, 309, 312, 314, 332, 350, 354-361, 365-369\n.grok-stack/adaptive_grok/toolchain.py                 117     17     38      8    81%   39, 52-56, 161->160, 178, 184, 186-187, 189-190, 195-196, 200-202\n.grok-stack/adaptive_grok/util.py                      246     30    104     17    84%   23-41, 111->117, 113->115, 115->117, 126, 184-185, 187, 190->192, 198, 201, 212, 243, 255, 265, 270, 274, 278, 326, 353-354, 391\n.grok-stack/adaptive_grok/verification.py              865    114    402     63    84%   93, 123, 253-274, 313, 326-327, 333, 353-358, 429, 437, 458, 469, 499->538, 511, 607-613, 631-632, 640-645, 696, 710, 717-718, 720, 736, 743-749, 753-759, 784-790, 803, 842-843, 849-850, 874, 911-912, 917-918, 1026-1027, 1032-1033, 1040->1039, 1043-1045, 1072, 1079, 1090, 1094, 1096-1097, 1136, 1217, 1219, 1226, 1231-1233, 1259, 1261, 1262->1244, 1325, 1337, 1354-1366, 1424-1429, 1434, 1444, 1450, 1453-1454, 1457, 1460, 1466-1467, 1566-1569, 1578, 1654, 1656, 1660, 1662, 1667, 1670, 1674, 1702, 1759, 1795-1796, 1884, 1886\n.grok-stack/adaptive_grok/verification_scope.py        153      4     76      3    97%   163-164, 168, 201\n.grok-stack/adaptive_grok/workflow_artifacts.py       1038    144    452    100    83%   192, 196, 200, 204, 206, 216-217, 233-234, 238, 244, 284-285, 291, 309, 312, 322-323, 354, 388, 402, 417, 419, 425-426, 455, 458, 464, 466, 488, 520, 562, 578, 588, 596, 606, 712, 714->720, 716, 718->714, 722-723, 727, 732, 774, 777, 782-791, 820, 825, 840, 842, 874, 895->893, 912->911, 941, 955, 960, 967, 970, 973, 993, 1004, 1028, 1030, 1032, 1035, 1037, 1053, 1057, 1059, 1062, 1067, 1072, 1079, 1083, 1096, 1121, 1140, 1143-1144, 1152, 1157, 1166, 1179, 1195, 1220, 1226, 1238, 1247, 1258, 1264, 1306->1279, 1365, 1406, 1407->1409, 1410, 1424, 1453, 1458-1459, 1466-1472, 1478-1479, 1484-1489, 1515, 1533, 1537-1540, 1543, 1549, 1551, 1562, 1566, 1574, 1600, 1603->1609, 1627, 1636, 1639-1642, 1703-1704, 1723-1724, 1740-1741, 1744-1745, 1756, 1777\nscripts/generate_manifest.py                            11     11      2      0     0%   1-16\nscripts/grok_approve.py                                 30     30      6      0     0%   1-82\nscripts/grok_architecture.py                            90     35     26      7    59%   57, 61-79, 83-97, 106-123, 127-130, 132-145, 155->157, 159-169, 173\nscripts/grok_artifacts.py                               76      6     20      4    90%   55, 67, 84-98, 158\nscripts/grok_change.py                                  27     27      4      0     0%   1-33\nscripts/grok_demo.py                                    45     45      6      0     0%   2-57\nscripts/grok_deploy.py                                  21     21      6      0     0%   1-27\nscripts/grok_doctor.py                                  25     25     10      0     0%   1-33\nscripts/grok_gate.py                                    29     29      2      0     0%   1-58\nscripts/grok_governance.py                             104    104     28      0     0%   2-177\nscripts/grok_history.py                                 20     20      2      0     0%   2-28\nscripts/grok_landing_publish.py                         62     62     28      0     0%   3-93\nscripts/grok_protected_write.py                         23     23      2      0     0%   2-37\nscripts/grok_review.py                                  31     31     10      0     0%   1-36\nscripts/grok_route.py                                   31     31      8      0     0%   1-37\nscripts/grok_spec.py                                    85      8     24      4    89%   35, 47-48, 102->104, 111, 116-118, 122\nscripts/grok_status.py                                  23     23      2      0     0%   1-33\nscripts/grok_verify.py                                  30      7      8      2    66%   33, 38-43\nscripts/install_into.py                                851    144    276     57    81%   209-212, 220, 223-224, 254, 264, 267-268, 281-283, 305-306, 311-314, 339-342, 348, 355-357, 371, 375-376, 381, 387-388, 407, 419, 421, 426, 442, 455, 479, 483, 494, 505, 511, 520, 523->529, 531, 537, 561-562, 586, 604-605, 629, 648-649, 652, 656, 664, 699, 715, 718, 722-723, 728-729, 740-741, 759, 762, 772-773, 781, 795-796, 873, 881-882, 908-910, 918, 928, 932, 941, 961, 966-968, 982-983, 997-998, 1005, 1014, 1023, 1027-1032, 1036, 1084-1085, 1089, 1097, 1104, 1112, 1134, 1170, 1183, 1186, 1188, 1203, 1233, 1257, 1261, 1270->1269, 1274-1275, 1402-1464, 1468\nscripts/package_stack.py                               676    143    172     49    77%   36-37, 43-44, 50-51, 107-108, 111, 113, 124-125, 127, 129, 132->exit, 143-146, 158, 162-163, 168-169, 197, 218, 225, 226->177, 228-232, 234->236, 244-245, 249-251, 253-254, 261-263, 273-275, 282-283, 301-302, 304, 330-333, 339, 341-344, 346, 354-355, 368-369, 398-399, 414-415, 424-425, 447, 450-453, 470, 483-484, 500-501, 510-511, 518-519, 565-566, 577, 585, 588-589, 591, 623, 625->627, 628, 643, 645, 657, 665-666, 670, 688-689, 693, 701-702, 704, 710, 714, 716-717, 719->724, 722-723, 725->727, 728, 744, 746, 766-767, 771, 785, 834, 841, 853-854, 865-868, 872-874, 881-882, 884, 896-897, 899, 909, 940-941, 943, 964-965, 975->977, 1077, 1080, 1108\nscripts/verify_manifest.py                              12     12      4      0     0%   1-16\n------------------------------------------------------------------------------------------------\nTOTAL                                                15875   2755   7066   1215    81%\n",
+      "stderr": "\ncoverage does not qualify an unsuccessful or incomplete test run",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "path": "tests",
+          "message": "backend=pytest-xdist; fresh invocation-owned coverage",
+          "requested_workers": "3",
+          "versions": "{\"coverage\": \"7.15.4\", \"engine\": \"pytest-xdist\", \"pytest\": \"9.1.1\", \"pytest-cov\": \"7.1.0\", \"pytest-xdist\": \"3.8.0\"}",
+          "coverage": "{\"branch_coverage\": true, \"files\": [\".grok-stack/adaptive_grok/__init__.py\", \".grok-stack/adaptive_grok/_cpu_capacity.py\", \".grok-stack/adaptive_grok/_policy_legacy.py\", \".grok-stack/adaptive_grok/architecture.py\", \".grok-stack/adaptive_grok/architecture_diagrams.py\", \".grok-stack/adaptive_grok/architecture_diff.py\", \".grok-stack/adaptive_grok/architecture_fitness.py\", \".grok-stack/adaptive_grok/bitrix_checks.py\", \".grok-stack/adaptive_grok/change.py\", \".grok-stack/adaptive_grok/demo.py\", \".grok-stack/adaptive_grok/demo_http.py\", \".grok-stack/adaptive_grok/deploy.py\", \".grok-stack/adaptive_grok/doctor.py\", \".grok-stack/adaptive_grok/governance.py\", \".grok-stack/adaptive_grok/history.py\", \".grok-stack/adaptive_grok/human_gates.py\", \".grok-stack/adaptive_grok/manifest.py\", \".grok-stack/adaptive_grok/package_status.py\", \".grok-stack/adaptive_grok/policy.py\", \".grok-stack/adaptive_grok/protected_write.py\", \".grok-stack/adaptive_grok/python_test_runner.py\", \".grok-stack/adaptive_grok/queue_provenance.py\", \".grok-stack/adaptive_grok/receipts.py\", \".grok-stack/adaptive_grok/repo.py\", \".grok-stack/adaptive_grok/router.py\", \".grok-stack/adaptive_grok/shell_targets.py\", \".grok-stack/adaptive_grok/spec.py\", \".grok-stack/adaptive_grok/state.py\", \".grok-stack/adaptive_grok/toolchain.py\", \".grok-stack/adaptive_grok/util.py\", \".grok-stack/adaptive_grok/verification.py\", \".grok-stack/adaptive_grok/verification_scope.py\", \".grok-stack/adaptive_grok/workflow_artifacts.py\", \"scripts/generate_manifest.py\", \"scripts/grok_approve.py\", \"scripts/grok_architecture.py\", \"scripts/grok_artifacts.py\", \"scripts/grok_change.py\", \"scripts/grok_demo.py\", \"scripts/grok_deploy.py\", \"scripts/grok_doctor.py\", \"scripts/grok_gate.py\", \"scripts/grok_governance.py\", \"scripts/grok_history.py\", \"scripts/grok_landing_publish.py\", \"scripts/grok_protected_write.py\", \"scripts/grok_review.py\", \"scripts/grok_route.py\", \"scripts/grok_spec.py\", \"scripts/grok_status.py\", \"scripts/grok_verify.py\", \"scripts/install_into.py\", \"scripts/package_stack.py\", \"scripts/verify_manifest.py\"], \"totals\": {\"covered_branches\": 5383, \"covered_lines\": 13120, \"excluded_lines\": 7, \"missing_branches\": 1683, \"missing_lines\": 2755, \"num_branches\": 7066, \"num_partial_branches\": 1215, \"num_statements\": 15875, \"percent_branches_covered\": 76.18171525615624, \"percent_branches_covered_display\": \"76\", \"percent_covered\": 80.65472298504861, \"percent_covered_display\": \"81\", \"percent_statements_covered\": 82.64566929133858, \"percent_statements_covered_display\": \"83\"}}"
+        }
+      ]
+    },
+    {
+      "name": "factory-unit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "factory.tests.test_contracts",
+        "factory.tests.test_state",
+        "factory.tests.test_migrations",
+        "factory.tests.test_service"
+      ],
+      "stdout": "",
+      "stderr": "...............................................................\n----------------------------------------------------------------------\nRan 63 tests in 0.155s\n\nOK\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "factory-postgres-exit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "factory/tests/run_disposable_exit.py"
+      ],
+      "stdout": "PASS: disposable PostgreSQL identity preflight\nadaptive-factory-exit-8e4daa9e0e47\nadaptive-factory-exit-8e4daa9e0e47\nPASS: two PostgreSQL restarts; exact runtime/attestor roles; cancelled+orphaned recovery; ambiguous cleanup fence2 replay; zero fabricated proposal/result/attestation; higher M4 fence\nPASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation\n",
+      "stderr": "rization (factory.tests.test_service.ServiceTests.test_submit_requires_scope_and_repository_authorization) ... ok\ntest_valid_submit_parses_before_store_boundary (factory.tests.test_service.ServiceTests.test_valid_submit_parses_before_store_boundary) ... ok\ntest_worker_and_kill_mutations_enforce_actor_and_repository_boundary (factory.tests.test_service.ServiceTests.test_worker_and_kill_mutations_enforce_actor_and_repository_boundary) ... ok\ntest_bundle_digest_covers_every_nested_field (factory.tests.test_shadow_contracts.ShadowContractTests.test_bundle_digest_covers_every_nested_field) ... ok\ntest_caller_cannot_invent_dependency_or_evidence_authority_fields (factory.tests.test_shadow_contracts.ShadowContractTests.test_caller_cannot_invent_dependency_or_evidence_authority_fields) ... ok\ntest_closed_v1_bridges_are_content_addressed (factory.tests.test_shadow_contracts.ShadowContractTests.test_closed_v1_bridges_are_content_addressed) ... ok\ntest_every_m7_schema_object_is_closed_complete_and_versioned (factory.tests.test_shadow_contracts.ShadowContractTests.test_every_m7_schema_object_is_closed_complete_and_versioned) ... ok\ntest_every_shared_identity_must_match_across_all_bridges (factory.tests.test_shadow_contracts.ShadowContractTests.test_every_shared_identity_must_match_across_all_bridges) ... ok\ntest_input_authority_and_result_heads_are_separate_but_factually_bound (factory.tests.test_shadow_contracts.ShadowContractTests.test_input_authority_and_result_heads_are_separate_but_factually_bound) ... ok\ntest_m4_legacy_digest_and_m5_task_packet_are_separate_bound_fields (factory.tests.test_shadow_contracts.ShadowContractTests.test_m4_legacy_digest_and_m5_task_packet_are_separate_bound_fields) ... ok\ntest_m7_schema_enums_are_authority_safe_and_have_no_remote_fields (factory.tests.test_shadow_contracts.ShadowContractTests.test_m7_schema_enums_are_authority_safe_and_have_no_remote_fields) ... ok\ntest_m7_schema_fields_match_python_v1_surfaces (factory.tests.test_shadow_contracts.ShadowContractTests.test_m7_schema_fields_match_python_v1_surfaces) ... ok\ntest_m7_schema_inventory_and_dialect_are_exact (factory.tests.test_shadow_contracts.ShadowContractTests.test_m7_schema_inventory_and_dialect_are_exact) ... ok\ntest_m7_schema_registry_resolves_every_ref_without_network (factory.tests.test_shadow_contracts.ShadowContractTests.test_m7_schema_registry_resolves_every_ref_without_network) ... ok\ntest_operator_proposal_is_fixed_manual_and_subject_bound (factory.tests.test_shadow_contracts.ShadowContractTests.test_operator_proposal_is_fixed_manual_and_subject_bound) ... ok\ntest_public_values_are_deeply_frozen (factory.tests.test_shadow_contracts.ShadowContractTests.test_public_values_are_deeply_frozen) ... ok\ntest_pure_bundle_is_blocked_without_durable_lookup_and_has_no_remote_surface (factory.tests.test_shadow_contracts.ShadowContractTests.test_pure_bundle_is_blocked_without_durable_lookup_and_has_no_remote_surface) ... ok\ntest_semantic_bridge_requires_the_exact_closed_pass_verdict (factory.tests.test_shadow_contracts.ShadowContractTests.test_semantic_bridge_requires_the_exact_closed_pass_verdict) ... ok\ntest_unknown_versions_and_remote_capability_fields_fail_closed (factory.tests.test_shadow_contracts.ShadowContractTests.test_unknown_versions_and_remote_capability_fields_fail_closed) ... ok\ntest_cohort_size_is_bounded_from_one_to_ten_thousand (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_cohort_size_is_bounded_from_one_to_ten_thousand) ... ok\ntest_containment_requires_a_nonzero_fully_contained_denominator (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_containment_requires_a_nonzero_fully_contained_denominator) ... ok\ntest_directly_forged_aggregate_cannot_authorize_a_recommendation (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_directly_forged_aggregate_cannot_authorize_a_recommendation) ... ok\ntest_duplicate_outcome_or_bundle_identity_is_replay (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_duplicate_outcome_or_bundle_identity_is_replay) ... ok\ntest_each_budget_or_deadline_bound_blocks (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_each_budget_or_deadline_bound_blocks) ... ok\ntest_each_quality_threshold_blocks_l2_eligibility (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_each_quality_threshold_blocks_l2_eligibility) ... ok\ntest_each_safety_counter_blocks (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_each_safety_counter_blocks) ... ok\ntest_mixed_exact_tuple_is_rejected (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_mixed_exact_tuple_is_rejected) ... ok\ntest_multiple_failures_are_unique_and_sorted (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_multiple_failures_are_unique_and_sorted) ... ok\ntest_nearest_rank_is_used_for_even_median_and_p95 (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_nearest_rank_is_used_for_even_median_and_p95) ... ok\ntest_outcomes_are_closed_and_cannot_carry_bodies_or_pii (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_outcomes_are_closed_and_cannot_carry_bodies_or_pii) ... ok\ntest_sample_observation_and_baseline_failures_are_independent (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_sample_observation_and_baseline_failures_are_independent) ... ok\ntest_semantically_orderless_inputs_require_canonical_order (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_semantically_orderless_inputs_require_canonical_order) ... ok\ntest_thirty_synthetic_rows_have_hand_derived_integer_metrics (factory.tests.test_shadow_evaluation.ShadowEvaluationTests.test_thirty_synthetic_rows_have_hand_derived_integer_metrics) ... ok\ntest_accepted_infrastructure_retry_limit_is_exact (factory.tests.test_state.StatePolicyTests.test_accepted_infrastructure_retry_limit_is_exact) ... ok\ntest_completed_release_compatibility_edge_is_operation_scoped (factory.tests.test_state.StatePolicyTests.test_completed_release_compatibility_edge_is_operation_scoped) ... ok\ntest_completed_release_rejects_intermediate_phase_skips (factory.tests.test_state.StatePolicyTests.test_completed_release_rejects_intermediate_phase_skips) ... ok\ntest_every_state_pair_has_an_explicit_decision (factory.tests.test_state.StatePolicyTests.test_every_state_pair_has_an_explicit_decision) ... ok\ntest_future_delivery_state_is_not_a_task_status (factory.tests.test_state.StatePolicyTests.test_future_delivery_state_is_not_a_task_status) ... ok\ntest_needs_human_requeue_requires_persisted_decision (factory.tests.test_state.StatePolicyTests.test_needs_human_requeue_requires_persisted_decision) ... ok\ntest_normal_operation_cannot_bypass_the_closed_graph (factory.tests.test_state.StatePolicyTests.test_normal_operation_cannot_bypass_the_closed_graph) ... ok\ntest_only_closed_infrastructure_failures_retry_twice (factory.tests.test_state.StatePolicyTests.test_only_closed_infrastructure_failures_retry_twice) ... ok\ntest_phase_operation_allows_only_the_next_worker_phase (factory.tests.test_state.StatePolicyTests.test_phase_operation_allows_only_the_next_worker_phase) ... ok\ntest_provider_cannot_choose_state (factory.tests.test_state.StatePolicyTests.test_provider_cannot_choose_state) ... ok\ntest_retry_deadline_quarantine_can_enter_needs_human (factory.tests.test_state.StatePolicyTests.test_retry_deadline_quarantine_can_enter_needs_human) ... ok\ntest_terminal_states_cannot_transition (factory.tests.test_state.StatePolicyTests.test_terminal_states_cannot_transition) ... ok\ntest_boot_marker_injection_and_corruption_fail (factory.tests.test_vibevm_store.VibeVMStoreTests.test_boot_marker_injection_and_corruption_fail) ... ok\ntest_crc_and_encrypted_members_fail_closed (factory.tests.test_vibevm_store.VibeVMStoreTests.test_crc_and_encrypted_members_fail_closed) ... ok\ntest_descriptor_lifecycle_close_constructor_rollback_and_hostile_replay_are_bounded (factory.tests.test_vibevm_store.VibeVMStoreTests.test_descriptor_lifecycle_close_constructor_rollback_and_hostile_replay_are_bounded) ... ok\ntest_exact_archive_bounds_are_admitted (factory.tests.test_vibevm_store.VibeVMStoreTests.test_exact_archive_bounds_are_admitted) ... ok\ntest_external_hardlinks_in_object_generation_manifest_and_active_fail_closed (factory.tests.test_vibevm_store.VibeVMStoreTests.test_external_hardlinks_in_object_generation_manifest_and_active_fail_closed) ... ok\ntest_hostile_zip_matrix_preserves_old_active (factory.tests.test_vibevm_store.VibeVMStoreTests.test_hostile_zip_matrix_preserves_old_active) ... ok\ntest_manifest_tamper_and_generation_symlink_are_rejected (factory.tests.test_vibevm_store.VibeVMStoreTests.test_manifest_tamper_and_generation_symlink_are_rejected) ... ok\ntest_provenance_is_exact_and_data_only (factory.tests.test_vibevm_store.VibeVMStoreTests.test_provenance_is_exact_and_data_only) ... ok\ntest_registry_callback_cannot_redirect_object_writes_or_reads (factory.tests.test_vibevm_store.VibeVMStoreTests.test_registry_callback_cannot_redirect_object_writes_or_reads) ... ok\ntest_replay_rechecks_digest_origin_and_lifecycle_authority (factory.tests.test_vibevm_store.VibeVMStoreTests.test_replay_rechecks_digest_origin_and_lifecycle_authority) ... ok\ntest_resolve_rechecks_authoritative_graph (factory.tests.test_vibevm_store.VibeVMStoreTests.test_resolve_rechecks_authoritative_graph) ... ok\ntest_restart_and_tenant_repository_symlink_isolation (factory.tests.test_vibevm_store.VibeVMStoreTests.test_restart_and_tenant_repository_symlink_isolation) ... ok\ntest_root_must_be_owner_pinned_and_not_writable_by_others (factory.tests.test_vibevm_store.VibeVMStoreTests.test_root_must_be_owner_pinned_and_not_writable_by_others) ... ok\ntest_thread_and_process_competitors_converge_and_reconcile (factory.tests.test_vibevm_store.VibeVMStoreTests.test_thread_and_process_competitors_converge_and_reconcile) ... ok\ntest_artifact_attestation_is_closed_exact_and_content_bound (factory.tests.test_workspace.WorkspaceTests.test_artifact_attestation_is_closed_exact_and_content_bound) ... ok\ntest_artifact_attestor_database_errors_are_typed_and_fixed_reason (factory.tests.test_workspace.WorkspaceTests.test_artifact_attestor_database_errors_are_typed_and_fixed_reason) ... ok\ntest_environment_is_allowlisted_and_credential_names_are_removed (factory.tests.test_workspace.WorkspaceTests.test_environment_is_allowlisted_and_credential_names_are_removed) ... ok\ntest_fake_git_broker_reports_snapshot_unavailable_without_claiming_git_evidence (factory.tests.test_workspace.WorkspaceTests.test_fake_git_broker_reports_snapshot_unavailable_without_claiming_git_evidence) ... ok\ntest_fake_workspace_allows_only_bound_relative_paths (factory.tests.test_workspace.WorkspaceTests.test_fake_workspace_allows_only_bound_relative_paths) ... ok\ntest_fake_workspace_artifact_attestation_is_truthfully_unavailable (factory.tests.test_workspace.WorkspaceTests.test_fake_workspace_artifact_attestation_is_truthfully_unavailable) ... ok\ntest_fake_workspace_release_is_idempotent_and_revokes_every_operation (factory.tests.test_workspace.WorkspaceTests.test_fake_workspace_release_is_idempotent_and_revokes_every_operation) ... ok\ntest_host_isolation_report_requires_complete_rootless_toolchain (factory.tests.test_workspace.WorkspaceTests.test_host_isolation_report_requires_complete_rootless_toolchain) ... ok\ntest_network_and_external_git_operations_are_absent (factory.tests.test_workspace.WorkspaceTests.test_network_and_external_git_operations_are_absent) ... ok\ntest_traversal_absolute_git_symlink_and_cross_task_are_denied (factory.tests.test_workspace.WorkspaceTests.test_traversal_absolute_git_symlink_and_cross_task_are_denied) ... ok\ntest_trusted_workspace_snapshot_is_closed_and_binds_output_head (factory.tests.test_workspace.WorkspaceTests.test_trusted_workspace_snapshot_is_closed_and_binds_output_head) ... ok\n\n----------------------------------------------------------------------\nRan 1006 tests in 627.500s\n\nOK (skipped=2)\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "source-stability",
+      "status": "pass",
+      "summary": "repository fingerprint remained stable",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    }
+  ]
+}

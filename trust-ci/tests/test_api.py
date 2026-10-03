@@ -119,6 +119,12 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.json()['policy_digest'], self.policy.digest)
         self.assertEqual(response.json()['status_publisher'], 'worker-github-app')
 
+    def test_authority_auth_is_enforced_before_source_or_job_lookup(self) -> None:
+        response = self.client.get('/authority/not-a-job')
+        self.assertEqual(response.status_code, 401)
+        response = self.client.get('/authority/not-a-job', headers=self.read_headers)
+        self.assertEqual(response.status_code, 409)
+
     def test_signed_webhook_only_enqueues_for_worker_publisher(self) -> None:
         body = self.webhook_body()
         response = self.client.post('/webhooks/github', content=body, headers=self.headers(body))
