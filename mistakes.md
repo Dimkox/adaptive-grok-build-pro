@@ -1543,3 +1543,52 @@ exact error assertions so broader platform admission or removal of a named root 
 Root cause: the result-schema test imported third-party `jsonschema`, which is not installed in the
 Trust CI runner image, and unittest discovery therefore failed during import. Use the repository's
 dependency-free schema subset validator and bind free-function assertions into unittest discovery.
+## 2026-10-02 — A global worker override contaminated legacy runner tests
+
+Setting GROK_TEST_WORKERS=2 on the unittest harness overrode three fixtures that intentionally require the legacy unset-worker path, producing three false failures in a 296-second run. Pin harness affinity and let fixtures own worker selection; rerunning those controls with the variable unset passed.
+
+## 2026-10-02 — A cancellation regression sent SIGTERM before a safe baseline handler existed
+
+The first RED harness exited 143 when a signal-control test exercised the unimplemented verifier against the process's default handler. Signal fixtures now install/restore a benign baseline handler, while real child reaping is exercised in a disposable subprocess, so missing cancellation handling fails an assertion without terminating the entire suite.
+
+
+### 2026-10-02 — Include output-file exits in cleanup preservation
+
+Root cause: the initial recovery implementation protected owned-process stop and TemporaryDirectory cleanup, but left both TemporaryFile context exits outside result/primary-exception retention. Independent reviews reproduced lost exit7/output and RunCancelled after the existing controls passed; add separate real-file close faults for stdout, stderr and both, then preserve the retained result and primary exception across those exits.
+## 2026-10-02 — Keep file identities across the complete architecture input set
+
+Separate inode maps for authority/schema files and referenced contracts allowed a contract hard-link to an authority file to pass preflight. The root cause was resetting identity tracking at the input-group boundary; share one descriptor-derived map across the bounded loader and contract reads, while allowing a legitimate exact-path reread.
+
+## 2026-10-02 — Match duplicate-key diagnostics to decoder traversal
+
+A first-textual-duplicate scan named a root key even when the object decoder first refused a completed nested object. The root cause was ignoring object_pairs_hook's postorder traversal; track each object's first duplicate and report the first completed rejected object, as the nested same-key regression verifies.
+
+## 2026-10-02 — Distinguish loaded architecture inputs from source ownership inventory
+
+An initial preflight reused the full repository-path existence validator, so valid adopted-consumer fixtures lost binding metadata because their declared ownership anchors were intentionally outside the fixture. The root cause was treating source inventory as documents loaded by the architecture model; keep ownership drift downstream and preflight the actual model, schema and referenced contract documents.
+
+
+### 2026-10-02 — Negative operation words can misroute local implementation
+
+Root cause: the phrase excluding host deployment and Trust CI changes still matched release routing keywords, generating the abandoned ea3a12 release package with no writer. The controller rerouted the bounded local lifecycle repair to edd6ca before implementation and removed only its verified untouched default package files. Scope and 2.1.1 inclusion were already authorized; no new operational authority was inferred.
+
+### 2026-10-02 — Keep generation lineage when a child ID is reused
+
+Root cause: initial acquisition assigned generation number one after every termination, which let a legacy unversioned stop remove a reused child's new instance. A failing reused-ID regression now carries recorded generation lineage into acquisition and requires a token after the first execution. Resume already rotates its token while retaining ownership.
+
+### 2026-10-02 — Distinguish source task IDs from diagnostic tokens
+
+Root cause: lifecycle startup applied the ASCII diagnostic-token validator directly to change IDs, but the existing slug generator deliberately preserves Cyrillic. Russian change/session startup now derives an opaque token from bounded Unicode source bytes while retaining valid ASCII tokens, and malformed explicit sources cannot silently fall back. The failing Russian lifecycle and malformed-source fixtures bind this compatibility repair.
+### 2026-10-03 — Do not infer consolidation capacity from line deltas
+
+Root cause: planning counted small patch hunks while the code budget charges max(base, head) bytes and complexity of each whole changed file. The owner ordered decomposition; core remains separate from large F test/store surfaces and G executable Trust CI, with unchanged limits and the original obligations retained.
+
+### 2026-10-03 — Assert receipt staleness separately from retained verdict
+
+Root cause: the first lifecycle overlap assertion expected invalidation to replace the original receipt verdict with `stale`, but the established API preserves that verdict and adds a separate `stale` flag. The corrected control checks both fields, preserving the original result while proving the receipt no longer supplies current evidence.
+
+The same fixture initially omitted the stop event's role identity, which correctly preserved the writer reservation. Supply the exact child ID, role and generation when testing an observed native termination; a partial hook payload is not release authority.
+
+### 2026-10-03 — Preserve fixed-width Git status headers
+
+Root cause: trimming leading whitespace before parsing porcelain status shifted the first path and caused the scoped staging command to fail. Parse each unchanged status line at its documented path offset and check each command's result before dependent commit steps; no source was lost or committed by the failed attempt.

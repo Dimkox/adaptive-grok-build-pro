@@ -1,0 +1,104 @@
+{
+  "change_id": "20261002-fix-verifier-lifecycle-and-cancellation-preserve-c2333c",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/v211-verifier-recovery",
+      "change_id": "20261002-fix-verifier-lifecycle-and-cancellation-preserve-c2333c",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T22:27:53+00:00",
+      "route_id": "c2333ca04e25"
+    },
+    {
+      "branch": "fix/v211-verifier-recovery",
+      "change_id": "20261002-fix-verifier-lifecycle-and-cancellation-preserve-c2333c",
+      "detached": false,
+      "dirty_product_paths": [
+        ".grok-stack/adaptive_grok/python_test_runner.py",
+        ".grok-stack/adaptive_grok/receipts.py",
+        ".grok-stack/adaptive_grok/verification.py",
+        "decisions.md",
+        "mistakes.md",
+        "scripts/grok_verify.py",
+        "tests/test_verifier_recovery.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-02T23:04:10+00:00",
+      "route_id": "c2333ca04e25"
+    }
+  ],
+  "created_at": "2026-10-02T22:27:53+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "Focused172-test implementation evidence is recorded; full PR verification is controller-owned and not yet recorded.",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "Independent code review remains controller-owned and not yet run.",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "Independent test review remains controller-owned and not yet run.",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T22:27:53+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T23:04:09+00:00",
+      "from": "draft",
+      "reason": "Controller-approved section A scope and concrete typed criteria are recorded.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T23:04:10+00:00",
+      "from": "scoped",
+      "reason": "User approval for full 2.1.1 recovery includes section A; no named local human gate.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T23:04:10+00:00",
+      "from": "approved",
+      "reason": "Sole selected writer implemented recovery and focused checks; full verification and reviews remain controller-owned.",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "818968ba2b29c8df4bf95d4f12a9928d1f9fd284ab3e1c60a9fe1ac6a6e7bb7c",
+  "route_id": "c2333ca04e25",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix verifier lifecycle and cancellation: preserve computed verdict when report or receipt persistence fails; bounded owned-child cleanup, atomic durable receipts and issue226 regression controls.",
+  "updated_at": "2026-10-02T23:04:10+00:00"
+}

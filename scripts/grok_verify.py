@@ -9,9 +9,11 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 import argparse
 import json
 import os
+import signal
 
 from adaptive_grok.util import find_root
-from adaptive_grok.verification import verify
+from adaptive_grok.python_test_runner import RunCancelled, _cancellation
+from adaptive_grok.verification import CheckResult, VerificationCancelled, _record_verification_receipt, verify
 from adaptive_grok.verification_scope import FORCE_FULL_VARIABLE
 
 parser = argparse.ArgumentParser(description='Run route-selected verification and record a fingerprint-bound receipt.')
@@ -31,22 +33,55 @@ parser.add_argument(
 args = parser.parse_args()
 if args.full_scope:
     os.environ[FORCE_FULL_VARIABLE] = '1'
-report = verify(find_root(), args.mode, args.profiles, record=not args.no_record)
-if args.json:
-    print(json.dumps(report, ensure_ascii=True, indent=2))
-else:
-    for item in report['checks']:
-        print(f"{item['status'].upper():4} {item['name']}: {item['summary']}")
-        for finding in item.get('details', []):
-            print(f"     {finding.get('severity', '').upper()} {finding.get('path')}: {finding.get('message')}")
-    scope = report.get('verification_scope') or report.get('docs_state_scope') or {}
-    print(
-        f"RESULT: {report['status'].upper()} | mode={report['mode']} "
-        f"scope={scope.get('profile', 'not-run')} "
-        f"evidence={scope.get('evidence_kind', 'not-run')} "
-        f"reason={scope.get('reason_code', 'not-run')} "
-        f"| profiles={','.join(report['profiles'])} | changed={len(report['changed_files'])} "
-        f"checked={len(scope.get('checked_files', []))} "
-        f"focused_tests={','.join(scope.get('focused_tests', [])) or 'none'}"
-    )
-raise SystemExit(0 if report['status'] == 'pass' else 1)
+signal_exit = None
+root = find_root()
+try:
+    report = verify(root, args.mode, args.profiles, record=not args.no_record)
+except VerificationCancelled as exc:
+    report = exc.report
+    signal_exit = exc.code
+
+
+def _emit_report():
+    if args.json:
+        print(json.dumps(report, ensure_ascii=True, indent=2))
+    else:
+        for item in report['checks']:
+            print(f"{item['status'].upper():4} {item['name']}: {item['summary']}")
+            for finding in item.get('details', []):
+                print(f"     {finding.get('severity', '').upper()} {finding.get('path')}: {finding.get('message')}")
+        scope = report.get('verification_scope') or report.get('docs_state_scope') or {}
+        print(
+            f"RESULT: {report['status'].upper()} | mode={report['mode']} "
+            f"scope={scope.get('profile', 'not-run')} "
+            f"evidence={scope.get('evidence_kind', 'not-run')} "
+            f"reason={scope.get('reason_code', 'not-run')} "
+            f"| profiles={','.join(report['profiles'])} | changed={len(report['changed_files'])} "
+            f"checked={len(scope.get('checked_files', []))} "
+            f"focused_tests={','.join(scope.get('focused_tests', [])) or 'none'} "
+            f"terminal={report.get('terminal_state', 'completed')} "
+            f"checks={report.get('check_status', report['status'])} "
+            f"receipt={report.get('evidence_status', 'not_recorded')}"
+        )
+
+
+try:
+    with _cancellation() as cancellation:
+        _emit_report()
+        cancellation.check()
+except (RunCancelled, OSError, TypeError, ValueError) as exc:
+    report.setdefault('check_status', report['status'])
+    report['status'] = 'fail'
+    if isinstance(exc, RunCancelled):
+        signal_exit = signal_exit or exc.code
+        report['terminal_state'] = 'cancelled'
+        report['cancellation'] = {'signal': signal.Signals(exc.signal_number).name, 'stage': 'report-publication'}
+    report['checks'].append(CheckResult('report-publication', 'cancelled' if isinstance(exc, RunCancelled) else 'fail',
+                                       f'{type(exc).__name__}: {str(exc)[:512]}').to_dict())
+    if not args.no_record and report.get('route_id') and report.get('tree_fingerprint'):
+        _record_verification_receipt(root, report, report['tree_fingerprint'])
+    try:
+        print(json.dumps(report, ensure_ascii=True, indent=2), file=sys.stderr)
+    except (OSError, TypeError, ValueError):
+        pass
+raise SystemExit(signal_exit if signal_exit is not None else (0 if report['status'] == 'pass' else 1))

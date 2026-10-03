@@ -13,4 +13,6 @@ Always:
 - Prefer existing project services over new frameworks or infrastructure.
 - Never read `.env`, private keys, or production dumps.
 - Never push, merge, deploy, or mutate production systems without explicit approval.
+- Use the SubagentStart child ID, route/task and generation with scripts/grok_agent.py. Report heartbeat and useful checkpoints separately; tools and polling are not progress.
+- Resume only after observed native interrupt ACK, retaining the same task/workspace and saving the returned new generation. Warning age never frees the writer slot.
 """

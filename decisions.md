@@ -866,3 +866,26 @@ The API performs full bounded parsing and authority/identity validation, then re
 ### 2026-10-02 — Use ASD-STE100 style in project-chat responses
 
 Write project-chat answers with ASD-STE100 principles: use short sentences, active voice, one term for one concept, and one main instruction or fact per sentence. This makes status, risk, and release decisions easier to read and less ambiguous; it is a writing rule, not a claim of formal ASD-STE100 certification.
+## 2026-10-02 — Preserve execution results separately from evidence finalization
+
+Keep completed exit codes and check output while representing cancellation, cleanup and receipt/report publication outcomes separately. Fresh fault controls exposed where exceptions erased those results, and the separation let the gate fail closed without losing the specific product failure.
+
+
+### 2026-10-02 — Retain results before every resource-context exit
+
+Store the completed process result before unwinding either output-file context, and attach cleanup faults to that result or the primary exception. Real-file close faults on stdout, stderr and both proved retention while the verifier still failed closed for exit0 with cleanup errors. Check the shared cancellation token after each close so a first signal delivered during cleanup does not become a successful return.
+## 2026-10-02 — Locate architecture defects by structural slot and physical LF
+
+Replace the offending value in an already-validated canonical model to derive its exact source line/column instead of searching for the first repeated literal. Counting physical LF preserves coordinates when legal Unicode line lookalikes appear inside JSON strings, and the focused regression proves the naive splitlines count differs.
+
+
+### 2026-10-02 — Fence local recovery by execution generation
+
+Retain the same agent/task/workspace and writer reservation through acknowledged interruption, then rotate generation on resume. Deterministic stale-event and concurrent-acquisition regressions separate missing liveness/progress from ownership authority; warning age cannot create a duplicate writer. Native #229 hang causality remains unproven and requires observed harness evidence.
+### 2026-10-03 — Keep measured-budget recovery scopes separate
+
+The approved fixture → core A-E/H/HB → F → G → artifact sequence keeps the original release-wide ledger while fitting unchanged whole-file budgets. Shared-state receipt refusal and semantic overlap merges preserve the actual reconstructed behavior; component-only historic evidence does not qualify the integrated source.
+
+### 2026-10-03 — Preserve exact approved design Markdown bytes
+
+Use the existing exact-path `.gitattributes` archival precedent for the four intentional Markdown hard breaks in the approved recovery design. Its SHA256 remains byte-identical and the normal Git whitespace check continues to run for all other paths; this preserves syntax and source provenance without changing verification selectors, budgets or trust policy.

@@ -1,0 +1,74 @@
+{
+  "change_id": "20261002-repair-architecture-checks-for-2-1-1-g-ec43ac",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/v211-architecture-contract-fitness",
+      "change_id": "20261002-repair-architecture-checks-for-2-1-1-g-ec43ac",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T23:53:36+00:00",
+      "route_id": "ec43ac81e712"
+    }
+  ],
+  "created_at": "2026-10-02T23:53:36+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T23:53:36+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T23:54:49+00:00",
+      "from": "draft",
+      "reason": "Four selected independent analyses complete; user-approved narrow checker repair; two-source-PR delivery preserves separation.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T23:54:49+00:00",
+      "from": "scoped",
+      "reason": "Approved source scope materialized; no route human gates; no external authority change.",
+      "to": "approved"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "7cbfcbc1f6dae6f12cb8cf8712a2a7619579b39092373b880390c2b27eb04d78",
+  "route_id": "ec43ac81e712",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Repair architecture checks for 2.1.1 G",
+  "updated_at": "2026-10-02T23:54:49+00:00"
+}

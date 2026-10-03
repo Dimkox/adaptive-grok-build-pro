@@ -1,0 +1,52 @@
+{
+  "scope": "Second B sole-writer bounded review repair; fresh focused self-verification only. Combined source candidate owns full verification and independent review.",
+  "reviewed_source": {
+    "head": "5f96f392a8f3b10068d5a4a033f90fd910e9083b",
+    "git_tree": "c265b4c9abf542fc86932c242ade5a0e93ded663",
+    "fingerprint": "afd34d601fa83a247aaac2344f7ce3aad563491d6dd2e8115779a72cf9186c87",
+    "evidence_kind": "historical exact clean identity from both preserved second-failure reports; not current acceptance"
+  },
+  "report_hashes": "d79dee1806b565bc19be8a5388a7804938fe79ebd0fa0047bc943e611fe9d181  engineering/changes/20261002-fix-issue123-router-intent-precedence-explicit-o-03708e/evidence/code-review-second-fail.md\n64b7bc1b3d16968e63f8f2a7b2f5fcd443f84663a1d80676703ac155718a85f6  engineering/changes/20261002-fix-issue123-router-intent-precedence-explicit-o-03708e/evidence/test-review-second-fail.md\n",
+  "product_blobs": {
+    ".grok-stack/adaptive_grok/router.py": "cac83b62bfb1f315d5dd5fec3e11440990ba888d",
+    "tests/test_repo_router.py": "751003974672985082117de6c2be37a69a0f8ca9"
+  },
+  "root_cause": "Every period split an instruction before the historical predicate; direct-declaration subject grammar admitted only one token; Russian coordinated plan infinitives lacked the English counterpart's context.",
+  "red": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests.test_dotted_versions_and_bounded_historical_subjects_remain_review tests.test_repo_router.OperationalIntentTests.test_russian_coordinated_plan_infinitives_remain_descriptive",
+    "exit_code": 1,
+    "output": "FFFFFF\n======================================================================\nFAIL: test_dotted_versions_and_bounded_historical_subjects_remain_review (tests.test_repo_router.OperationalIntentTests.test_dotted_versions_and_bounded_historical_subjects_remain_review) (prompt='Review the note; release v2.1.1 was published yesterday')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 159, in test_dotted_versions_and_bounded_historical_subjects_remain_review\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_dotted_versions_and_bounded_historical_subjects_remain_review (tests.test_repo_router.OperationalIntentTests.test_dotted_versions_and_bounded_historical_subjects_remain_review) (prompt='Review the note; release v2.1.1 was published')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 159, in test_dotted_versions_and_bounded_historical_subjects_remain_review\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_dotted_versions_and_bounded_historical_subjects_remain_review (tests.test_repo_router.OperationalIntentTests.test_dotted_versions_and_bounded_historical_subjects_remain_review) (prompt='Review the note; release candidate v2 was published')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 159, in test_dotted_versions_and_bounded_historical_subjects_remain_review\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_dotted_versions_and_bounded_historical_subjects_remain_review (tests.test_repo_router.OperationalIntentTests.test_dotted_versions_and_bounded_historical_subjects_remain_review) (prompt='Review the note; publish the reviewed artifact was requested')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 159, in test_dotted_versions_and_bounded_historical_subjects_remain_review\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_russian_coordinated_plan_infinitives_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_russian_coordinated_plan_infinitives_remain_descriptive) (prompt='Проведи ревью плана развернуть сборку и опубликовать пакет')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 172, in test_russian_coordinated_plan_infinitives_remain_descriptive\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_russian_coordinated_plan_infinitives_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_russian_coordinated_plan_infinitives_remain_descriptive) (prompt='Проведи ревью плана: развернуть сборку и опубликовать пакет')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 172, in test_russian_coordinated_plan_infinitives_remain_descriptive\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n----------------------------------------------------------------------\nRan 2 tests in 0.025s\n\nFAILED (failures=6)\n"
+  },
+  "green_matrix": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests",
+    "exit_code": 0,
+    "observed": "Ran 13 tests in0.143s; OK"
+  },
+  "green_adjacent": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy",
+    "exit_code": 0,
+    "output": "...........................................................\n----------------------------------------------------------------------\nRan 83 tests in 30.049s\n\nOK\n"
+  },
+  "mutation_self_checks": {
+    "kind": "Developer in-memory self-check; no candidate file writes; not independent review",
+    "command": "taskset -c 17 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'\nimport inspect\nimport io\nimport sys\nimport unittest\nsys.path.insert(0, '.grok-stack')\nfrom adaptive_grok import router\nfrom tests.test_repo_router import OperationalIntentTests\noriginal = router._has_operational_intent\nsource = inspect.getsource(original)\nprobes = (\n    ('numeric-version-split-restored',\n     r'[;\\n!?]|(?<!\\d)\\.|\\.(?!\\d)|', r'[;\\n.!?]|',\n     'test_dotted_versions_and_bounded_historical_subjects_remain_review'),\n    ('single-subject-restored',\n     r'(?:(?!(?:that|which|who|котор\\w*)\\b)[\\w.-]+\\s+){0,3}',\n     r'(?:[\\w.-]+\\s+)?',\n     'test_dotted_versions_and_bounded_historical_subjects_remain_review'),\n    ('russian-plan-context-disabled',\n     r'\\bплан(?:а|ы|ов)?', r'\\bunsupported-plan-token',\n     'test_russian_coordinated_plan_infinitives_remain_descriptive'),\n)\nall_killed = True\nfor name, fragment, replacement, test_name in probes:\n    assert source.count(fragment) == 1, name\n    namespace = dict(router.__dict__)\n    exec(source.replace(fragment, replacement), namespace)\n    router._has_operational_intent = namespace['_has_operational_intent']\n    result = unittest.TextTestRunner(stream=io.StringIO()).run(unittest.TestSuite([\n        OperationalIntentTests(test_name),\n    ]))\n    killed = len(result.failures) == 2 and not result.errors\n    print(name, 'killed' if killed else 'inconclusive/survived',\n          'failures=', len(result.failures), 'errors=', len(result.errors))\n    all_killed = all_killed and killed\nrouter._has_operational_intent = original\nprint('developer in-memory probes; candidate files untouched')\nraise SystemExit(0 if all_killed else 1)\nPY",
+    "exit_code": 0,
+    "output": "numeric-version-split-restored killed failures= 2 errors= 0\nsingle-subject-restored killed failures= 2 errors= 0\nrussian-plan-context-disabled killed failures= 2 errors= 0\ndeveloper in-memory probes; candidate files untouched\n"
+  },
+  "static_checks": [
+    {
+      "command": "ruff check .grok-stack/adaptive_grok/router.py tests/test_repo_router.py",
+      "result": "All checks passed!"
+    },
+    {
+      "command": "python3 scripts/grok_spec.py validate --gate engineering/changes/20261002-fix-issue123-router-intent-precedence-explicit-o-03708e/change-spec.yaml",
+      "result": "ok true; errors []; all8criteria mapped"
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit0; no output"
+    }
+  ],
+  "limits": "Finite existingEN/RUgrammar: direct past declarations bounded0-3subject tokens excluding relative markers; RUplan optional colon. No generalNLP/fuzzing/authority qualification.",
+  "delivery": "B integrates into combinedA-F/H/HBsourcePR; G separate per user-approved architecture boundary. No per-contour fullsuite, push, merge, grants or subagents in this repair. Aggregate controller renews exact-state fullgate/review."
+}

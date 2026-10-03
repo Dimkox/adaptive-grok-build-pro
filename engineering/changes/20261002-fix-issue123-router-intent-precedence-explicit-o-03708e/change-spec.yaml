@@ -1,0 +1,43 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Affirmative bounded English/Russian release, deploy, publish, rollback or canary requests survive review, pull-request transport and ordinary bugfix vocabulary.", "evidence": [{"test": "tests/test_repo_router.py"}, {"receipt": "verification"}]},
+    {"id": "AC-002", "statement": "Negated, quoted, historical and incidental operational mentions preserve ordinary intent; independent affirmative clauses remain detectable.", "evidence": [{"test": "tests/test_repo_router.py"}, {"receipt": "verification"}]},
+    {"id": "AC-003", "statement": "Release routes have no write owner and retain delivery, security and release review evidence plus scope/design and production gates; incident priority retains explicit-operation controls.", "evidence": [{"test": "tests/test_repo_router.py"}, {"receipt": "code_review"}, {"receipt": "test_review"}]},
+    {"id": "AC-004", "statement": "Existing ordinary review/PR, bugfix, incident, hooks and reasoning-policy contracts remain compatible.", "evidence": [{"test": "tests/test_repo_router.py"}, {"test": "tests/test_hooks.py"}, {"test": "tests/test_reasoning_policy.py"}, {"receipt": "verification"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-fix-issue123-router-intent-precedence-explicit-o-03708e",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Routing classification must never grant operational, production, merge or human approval authority.", "evidence": [{"receipt": "code_review"}]},
+    {"id": "FORBID-002", "statement": "No VERSION/state/deployed-policy, classifier or immutable source-worktree changes are included.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Incident containment retains priority and ordinary review/PR prompts remain read-only.", "evidence": [{"test": "tests/test_repo_router.py"}]},
+    {"id": "INV-002", "statement": "Existing conservative risk/domain safety scanning and persisted route schema remain intact.", "evidence": [{"test": "tests/test_repo_router.py"}, {"test": "tests/test_hooks.py"}, {"receipt": "code_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue123 router intent precedence: explicit operational intent survives pull-request and review wording; exclude negated quoted and historical mentions and preserve ordinary routes.",
+    "success_metric": "The literal operational-intent matrix selects the intended route and review/gate obligations without using raw release substring scoring.",
+    "target": ".grok-stack/adaptive_grok/router.py and tests/test_repo_router.py"
+  },
+  "observability": [{"id": "SIG-001", "metric": "Route intent, write owner, workflow skills, required evidence and human gates expose the selected workflow without granting authority.", "proves": ["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

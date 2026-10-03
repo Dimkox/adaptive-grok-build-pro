@@ -1169,6 +1169,15 @@ class InstallerTests(unittest.TestCase):
             self.assertTrue((target / "scripts/grok_verify.py").is_file())
             self.assertTrue((target / "factory/runtime/setup_manager.py").is_file())
             self.assertFalse((target / ".github/workflows").exists())
+            self.assertTrue((target / "scripts/grok_agent.py").is_file())
+            self.assertFalse((target / ".grok-stack/runtime/agent-state.json").exists())
+            self.assertFalse((target / ".grok-stack/runtime/.agents.guard").exists())
+            command = subprocess.run(
+                ["python3", "scripts/grok_agent.py", "watchdog"], cwd=target,
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(command.returncode, 0, command.stderr)
+            self.assertEqual(json.loads(command.stdout)["agents"], [])
 
     def test_with_ci_remains_forbidden_without_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

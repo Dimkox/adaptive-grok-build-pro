@@ -207,15 +207,100 @@ def _score(text: str, mapping: dict[str, tuple[str, ...]]) -> dict[str, int]:
     return scores
 
 
-def _best_intent(text: str) -> str:
+def _has_operational_intent(text: str) -> bool:
+    """Recognize bounded EN/RU requests, never grant operational authority.
+
+    Quotes and historical/negative instruction prefixes are context. A current
+    command can still target an artifact built in the past or exclude a deploy
+    destination. Semicolons/contrast reset instruction scope; comma/and lists
+    preserve negation, history and descriptive plan infinitives.
+    """
+    lowered = text.lower()
+    lowered = re.sub(
+        r'```[\s\S]*?(?:```|$)|`[^`]*(?:`|$)|"[^"]*(?:"|$)|'
+        r'“[^”]*(?:”|$)|«[^»]*(?:»|$)|'
+        r"(?<!\w)'(?:[^']|(?<=\w)'(?=\w))*(?:'(?!\w)|$)",
+        ' ', lowered,
+    )
+    request = (
+        r'^(?:(?:please|kindly|пожалуйста)\s+)?'
+        r'(?:(?:can|could|would|will)\s+you\s+(?:please\s+)?|'
+        r'(?:i|we)\s+(?:want|need)\s+(?:you\s+)?to\s+|'
+        r'(?:нужно|надо|необходимо|прошу|хочу)\s+(?:тебя\s+)?)?'
+    )
+    command = re.compile(request + (
+        r'(?P<action>release|deploy|publish|rollback|roll\s+back|'
+        r'выпусти(?:те)?|выпустить|опубликуй(?:те)?|опубликовать|'
+        r'задеплой(?:те)?|задеплоить|разверни(?:те)?|развернуть|'
+        r'выкати(?:те)?|выкатить|откати(?:те)?|откатить)\b'
+    ))
+    prepare = re.compile(request + (
+        r'(?:prepare|ship|cut|create|make|run|подготовь(?:те)?|подготовить|'
+        r'сделай(?:те)?|сделать|создай(?:те)?|создать|запусти(?:те)?)\s+'
+        r'(?:(?:a|the|this|new|production|новый)\s+)*'
+        r'(?:release|deployment|canary\s+rollout|релиз)\b'
+    ))
+    descriptive = re.compile(
+        r'^\s*(?:notes?|plans?|checklists?|readiness|workflows?|polic(?:y|ies)|pipelines?|'
+        r'process(?:es)?|scripts?|installers?|jobs?|commands?|paths?|guides?|documentation|'
+        r'план\w*|чеклист\w*|заметк\w*)\b'
+    )
+    historical = re.compile(
+        r"^\s*(?:yesterday(?!['’]s\b)|previously|historically|"
+        r'last\s+(?:week|month|year)|вчера|ранее|исторически)\b|'
+        r'^\s*(?:on\s+)?\d{4}-\d{2}-\d{2}\b'
+    )
+    negative = re.compile(request + (
+        r"(?:do\s+not|don['’]t|never|not(?:\s+to)?|no\s+need\s+to|не|нельзя)\b"
+    ))
+    past_statement = re.compile(
+        r'^\s*(?:(?:the|a|this|этот)\s+)?'
+        r'(?:(?!(?:that|which|who|котор\w*)\b)[\w.-]+\s+){0,3}'
+        r'(?:was|were|has\s+been|had\s+been|был\w*)\b'
+    )
+    plan_infinitive = re.compile(
+        r'\b(?:plans?|checklists?|instructions?)\b.*\bto\s+'
+        r'(?:release|deploy|publish|rollback|roll\s+back)\b|'
+        r'\bплан(?:а|ы|ов)?\s*:?\s*(?:развернуть|опубликовать|выпустить|'
+        r'выкатить|откатить|задеплоить)\b'
+    )
+    for clause in re.split(r'[;\n!?]|(?<!\d)\.|\.(?!\d)|\b(?:but|however|но|однако|зато)\b', lowered):
+        historical_context = False
+        negated = False
+        plan_context = False
+        for part in re.split(r',|\b(?:and(?:\s+then)?|then|и(?:\s+затем)?|затем)\b', clause):
+            part = re.sub(r'^\s*(?:now|теперь|сейчас)\s+', '', part).strip()
+            historical_context = historical_context or bool(historical.match(part))
+            negated = negated or bool(negative.match(part))
+            if historical_context or negated or plan_context:
+                continue
+            match = command.match(part) or prepare.match(part)
+            if not match:
+                plan_context = bool(plan_infinitive.search(part))
+                continue
+            tail = part[match.end():]
+            if past_statement.match(tail):
+                historical_context = True
+                continue
+            # A direct publish/deploy is an action even when its object is notes;
+            # "release notes" and "prepare a release plan" are descriptive nouns.
+            if (match.re is prepare or match.group('action') == 'release') and descriptive.match(tail):
+                continue
+            return True
+    return False
+
+
+def _best_intent(text: str, *, operational_intent: bool) -> str:
     scores = _score(text, INTENT_KEYWORDS)
+    scores.pop('release', None)
+    if operational_intent:
+        scores['release'] = 1
     if not scores:
         return 'feature'
 
-    # Defect, release, review and architectural intent must not be masked by
-    # secondary words such as "add a regression test". Generic implementation
-    # verbs are deliberately lower priority than the concrete work type.
-    for intent in ('incident', 'bugfix', 'review', 'release', 'refactor', 'architecture', 'research', 'docs'):
+    # Active incidents retain containment priority. Explicit operational requests
+    # then outrank defect/review/PR transport; incidental release nouns do not.
+    for intent in ('incident', 'release', 'bugfix', 'review', 'refactor', 'architecture', 'research', 'docs'):
         if scores.get(intent):
             return intent
 
@@ -338,7 +423,8 @@ def build_route(
     base_fingerprint_override: str | object = _ROUTE_STATE_UNSET,
 ) -> Route:
     repo = detect_repo(root)
-    intent = _best_intent(prompt)
+    operational_intent = _has_operational_intent(prompt)
+    intent = _best_intent(prompt, operational_intent=operational_intent)
     domains, task_domains, matched_keywords = _domains(prompt, repo)
     risk, rationale = _risk(prompt, intent, domains)
     complexity = _complexity(intent, risk, domains, prompt)
@@ -390,6 +476,8 @@ def build_route(
         review.extend(_string_list(review_floors.get('docs' if intent == 'docs' else 'delivery')))
     elif intent == 'review':
         review.extend(_string_list(review_floors.get('review_intent')))
+    elif intent == 'release':
+        review.extend(_string_list(review_floors.get('delivery')))
     if 'bitrix' in domains:
         review.extend(_string_list(review_domain.get('bitrix')))
     if risk == 'high':
@@ -417,6 +505,8 @@ def build_route(
         'docs': 'task-triage',
     }.get(intent, 'feature-workflow')
     workflow_skills.append(intent_skill)
+    if operational_intent:
+        workflow_skills.append('release-readiness')
     for domain, skill in [
         ('bitrix', 'bitrix-development'),
         ('api', 'api-event-change'),
@@ -460,7 +550,7 @@ def build_route(
         human_gates.append('scope_and_design_approval')
     if any(d in domains for d in ('integration', 'data')) and risk == 'high':
         human_gates.append('migration_or_external_write_approval')
-    if intent == 'release' or any(_has_term(prompt, word) for word in ('production', 'прод', 'deploy', 'деплой')):
+    if operational_intent or any(_has_term(prompt, word) for word in ('production', 'прод', 'deploy', 'деплой')):
         human_gates.append('production_action_approval')
 
     delivery_expected = intent != 'research'

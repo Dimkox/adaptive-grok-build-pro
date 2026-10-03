@@ -128,33 +128,17 @@ def get_agent_state(root: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {'active': {}, 'history': []}
 
 
-def record_agent_start(root: Path, agent_id: str, agent_type: str) -> None:
-    with runtime_lock(root, 'agents'):
-        state = get_agent_state(root)
-        active = state.setdefault('active', {})
-        active[agent_id] = {'agent_type': agent_type, 'started_at': now_utc()}
-        state.setdefault('history', []).append({'event': 'start', 'agent_id': agent_id, 'agent_type': agent_type, 'at': now_utc()})
-        state['history'] = state['history'][-200:]
-        dump_json(agent_state_path(root), state)
+def record_agent_start(root: Path, agent_id: str, agent_type: str, *,
+                       now: datetime | None = None, generation: str | None = None) -> dict[str, Any]:
+    from .agent_lifecycle import start_agent
+    return start_agent(root, agent_id, agent_type, now=now, generation=generation)
 
 
-def record_agent_stop(root: Path, agent_id: str, agent_type: str) -> bool:
+def record_agent_stop(root: Path, agent_id: str, agent_type: str, *, generation: str | None = None,
+                      now: datetime | None = None, final: bool = False) -> bool:
     """Record a stop once. Returns True on the first stop, False if already stopped."""
-    with runtime_lock(root, 'agents'):
-        state = get_agent_state(root)
-        active = state.setdefault('active', {})
-        first = agent_id in active
-        active.pop(agent_id, None)
-        if first:
-            state.setdefault('history', []).append({
-                'event': 'stop',
-                'agent_id': agent_id,
-                'agent_type': agent_type,
-                'at': now_utc(),
-            })
-            state['history'] = state['history'][-200:]
-            dump_json(agent_state_path(root), state)
-        return first
+    from .agent_lifecycle import stop_agent
+    return stop_agent(root, agent_id, agent_type, generation=generation, now=now, final=final)
 
 
 def active_write_agents(root: Path, write_roles: set[str]) -> list[str]:

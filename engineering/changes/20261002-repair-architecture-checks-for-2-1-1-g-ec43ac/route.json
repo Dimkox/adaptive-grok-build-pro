@@ -1,0 +1,84 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "base_fingerprint": "1e3a7dd999f645559360dcd7fcd431dae38ea68bd546811913a47da0d5a3948d",
+  "change_id": "20261002-repair-local-architecture-and-additive-openapi-c-ec43ac",
+  "complexity": "standard",
+  "created_at": "2026-10-02T23:45:00+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "matched_keywords": {
+    "api": [
+      "api",
+      "openapi"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "ec43ac81e712",
+  "schema_version": 1,
+  "session_id": "v211-h-architecture-contract",
+  "status": "routed",
+  "task": "Fix local architecture fitness and OpenAPI compatibility: separate mandatory Trust CI architecture and API metadata bindings from implementation mixing, admit strictly additive component schemas, retain fail-closed existing contract constraints.",
+  "task_domains": [
+    "api"
+  ],
+  "updated_at": "2026-10-02T23:45:01+00:00",
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

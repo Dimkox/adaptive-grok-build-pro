@@ -283,6 +283,16 @@ class PolicyTests(unittest.TestCase):
             self.assertFalse(allowed)
             self.assertTrue('write owner' in (reason or '') or 'already active' in (reason or ''))
 
+    def test_blocks_second_same_role_writer(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Fix a PHP bug', 's1').to_dict()
+            set_active_route(root, route)
+            record_agent_start(root, 'first-writer', route['write_agent'])
+            allowed, reason = evaluate_pre_tool(root, {'tool_name': 'Agent',
+                'tool_input': {'agent_type': route['write_agent']}})
+            self.assertFalse(allowed)
+            self.assertIn('already active', reason or '')
+
     def test_mcp_write_requires_tool_bound_external_grant(self) -> None:
         tool = 'mcp__github__create_issue'
         with github_project() as root:

@@ -20,7 +20,7 @@ for _p in _ROOT_CANDIDATES:
         sys.path.insert(0, s)
 
 try:
-    from _lib import RootContext, emit, read_payload, root_context, session_id, tool_input, tool_name
+    from _lib import RootContext, agent_generation, agent_id, emit, read_payload, root_context, session_id, tool_input, tool_name
 except Exception:
     # If even _lib is missing, never block the agent
     print('{"decision":"allow"}')
@@ -245,6 +245,12 @@ def main() -> None:
         if current_tool == 'Bash' and context.has_ambiguous_command_evidence and action is None:
             action = 'ambiguous-sensitive-shell'
         root = context.effective_root or context.session_root
+        if root is not None:
+            try:
+                from adaptive_grok.agent_lifecycle import observe_tool
+                observe_tool(root, agent_id(payload), agent_generation(payload))
+            except (OSError, TimeoutError):
+                pass
         if action and not context.sensitive_safe:
             allowed = False
             reason = f'Sensitive action {action} denied: root resolution status is {context.resolution_status}.'

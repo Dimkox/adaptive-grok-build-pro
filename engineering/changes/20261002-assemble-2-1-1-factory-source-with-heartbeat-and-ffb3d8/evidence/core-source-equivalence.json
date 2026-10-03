@@ -1,0 +1,58 @@
+{
+  "comparison_base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "method": "git diff for tracked nonoverlap modules; git show exact bytes versus candidate for added files; planned overlaps excluded and separately reviewed",
+  "contours": [
+    {
+      "contour": "A",
+      "source": "0d22521f14eb4e45aa6869aee2258e6e61379722",
+      "exact_added_files": 23,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "B",
+      "source": "cb83a0e49fc5ba5e55144137f3d59e5aed9ac62b",
+      "exact_added_files": 31,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "C",
+      "source": "9b257246d56e4c65d268a1dd9efadd707f4298fd",
+      "exact_added_files": 22,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "D",
+      "source": "4293a77939c9c637de486bd6066167c80b9284b2",
+      "exact_added_files": 19,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "E",
+      "source": "d46ab620b7b29a1d675ac41b2f2902c9053b16e8",
+      "exact_added_files": 19,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "H",
+      "source": "3b192c9cfbec7e433024a04587c3bfd03fc5e147",
+      "exact_added_files": 17,
+      "nonoverlap_tracked_module_differences": []
+    },
+    {
+      "contour": "HB",
+      "source": "dc4062bcbc1e1da95cfe07077fc9cfbf273e0312",
+      "exact_added_files": 20,
+      "nonoverlap_tracked_module_differences": []
+    }
+  ],
+  "planned_overlaps": [
+    "verification.py A/D shared finalization",
+    "architecture.py D/H semantic hunks",
+    "test_architecture_model_preflight.py refusal/cancellation regression",
+    "test_repo_router.py B/C disclosure regression",
+    "test_agent_lifecycle.py hook/receipt/cancellation regression",
+    "README.md source identity and HB map",
+    "decisions.md and mistakes.md additive facts"
+  ],
+  "historical_source_evidence_only": true
+}

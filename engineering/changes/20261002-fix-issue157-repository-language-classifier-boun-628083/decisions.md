@@ -1,0 +1,1 @@
+Canonical root probes and a shared descriptor-rooted inventory preserve legacy readable-manifest routing while bounding every source walk/read. Separate detected languages disclose masked source evidence without changing specialist authorization. Discarding an overflowing directory entirely avoids a filesystem-order-dependent partial verdict.

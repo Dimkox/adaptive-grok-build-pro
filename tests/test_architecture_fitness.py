@@ -3685,6 +3685,98 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("FIT-SEPARATION", result.rule_ids)
 
+    def _trust_binding_repo(self):
+        snapshot = ARCHITECTURE.load_architecture(ROOT)
+        system = copy.deepcopy(snapshot.system)
+        nodes = {node["id"]: node for node in system["nodes"]}
+        # Freeze the pre-correction ownership even when this test runs in G's successor.
+        api_paths = nodes["NODE-TRUST-CI-API"]["repository_paths"]
+        api_paths[:] = [path for path in api_paths if path not in {
+            "trust-ci/src/adaptive_trust_ci/authority.py",
+            "trust-ci/src/adaptive_trust_ci/store.py",
+        }]
+        store = "trust-ci/src/adaptive_trust_ci/store.py"
+        if store not in nodes["NODE-TRUST-CI-POSTGRES"]["repository_paths"]:
+            nodes["NODE-TRUST-CI-POSTGRES"]["repository_paths"].append(store)
+        repo = GitArchitectureRepo(self)
+        repo.model(system, snapshot.rules)
+        for contract in system["contracts"]:
+            repo.write_bytes(contract["path"], (ROOT / contract["path"]).read_bytes())
+        base = repo.commit("registered Trust CI owners and contracts")
+        nodes = {node["id"]: node for node in system["nodes"]}
+        nodes["NODE-TRUST-CI-API"]["repository_paths"].extend([
+            "trust-ci/src/adaptive_trust_ci/authority.py",
+            "trust-ci/src/adaptive_trust_ci/store.py",
+        ])
+        nodes["NODE-TRUST-CI-POSTGRES"]["repository_paths"].remove(
+            "trust-ci/src/adaptive_trust_ci/store.py"
+        )
+        repo.write_json("architecture/system.yaml", system)
+        repo.write_text("trust-ci/src/adaptive_trust_ci/authority.py", "VALUE = 1\n")
+        repo.write_text("trust-ci/src/adaptive_trust_ci/store.py", "VALUE = 2\n")
+        contract_path = "engineering/contracts/openapi/trust-ci.v1.json"
+        document = json.loads((ROOT / contract_path).read_text())
+        document["info"]["description"] = document["info"].get("description", "") + " fixture metadata change"
+        repo.write_json(contract_path, document)
+        return repo, base, system
+
+    def test_change_separation_admits_bound_trust_ci_metadata(self) -> None:
+        repo, base, _ = self._trust_binding_repo()
+        head = repo.commit("Trust CI source and mandatory metadata")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
+        self.assertEqual(result.status, "pass", result.findings)
+        self.assertIn("qualified Trust CI metadata", result.applicability.predicate)
+        self.assertIn("architecture/system.yaml", result.applicability.predicate)
+        self.assertIn("engineering/contracts/openapi/trust-ci.v1.json", result.applicability.predicate)
+        missing_base = replace(diff, _base_state=None)
+        self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), missing_base).status, "fail")
+
+    def test_change_separation_metadata_does_not_hide_implementation(self) -> None:
+        for mutation in ("runtime", "secret", "edge", "owner", "other_source", "wildcard", "local", "rules", "schema", "contract", "contract_role", "checker"):
+            with self.subTest(mutation=mutation):
+                repo, base, system = self._trust_binding_repo()
+                nodes = {node["id"]: node for node in system["nodes"]}
+                api = nodes["NODE-TRUST-CI-API"]
+                if mutation == "runtime":
+                    api["runtime"]["network"] = "local_only"
+                elif mutation == "secret":
+                    api["secrets"].remove("SECRET-WEBHOOK")
+                elif mutation == "edge":
+                    system["edges"][0]["failure_behavior"]["timeout_ms"] += 1
+                elif mutation == "owner":
+                    api["owner"] = "another operator"
+                elif mutation == "other_source":
+                    source = "trust-ci/src/adaptive_trust_ci/lease.py"
+                    nodes["NODE-TRUST-CI-POSTGRES"]["repository_paths"].remove(source)
+                    api["repository_paths"].append(source)
+                    repo.write_text(source, "VALUE = 3\n")
+                elif mutation == "wildcard":
+                    api["repository_paths"].append("trust-ci/src/adaptive_trust_ci/new")
+                    repo.write_text("trust-ci/src/adaptive_trust_ci/new/module.py", "VALUE = 3\n")
+                elif mutation == "local":
+                    repo.write_text("factory/src/local.py", "VALUE = 3\n")
+                elif mutation == "checker":
+                    repo.write_text(".grok-stack/adaptive_grok/architecture.py", "VALUE = 3\n")
+                elif mutation == "rules":
+                    rules = copy.deepcopy(ARCHITECTURE.load_architecture(ROOT).rules)
+                    rules["change_separation_policies"][0]["severity"] = "warning"
+                    repo.write_json("architecture/rules.yaml", rules)
+                elif mutation == "schema":
+                    schema_path = "schemas/architecture-system.schema.json"
+                    schema = json.loads((ROOT / schema_path).read_text())
+                    schema["description"] = "Changed executable model schema"
+                    repo.write_json(schema_path, schema)
+                elif mutation == "contract":
+                    repo.write_json("engineering/contracts/openapi/unrelated.json", {"unknown": True})
+                elif mutation == "contract_role":
+                    next(item for item in system["contracts"] if item["id"] == "CONTRACT-TRUST-CI-OPENAPI")["compatibility"] = "exact"
+                repo.write_json("architecture/system.yaml", system)
+                head = repo.commit(mutation)
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
+                self.assertEqual(result.status, "fail", result.findings)
+
     def test_changed_code_budget_counts_bytes_lines_and_ast_complexity(self) -> None:
         metrics = (
             ("max_changed_bytes", 8, "VALUE = 'too large'\n"),

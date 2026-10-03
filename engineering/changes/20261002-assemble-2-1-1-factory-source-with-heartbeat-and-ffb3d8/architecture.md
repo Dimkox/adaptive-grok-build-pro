@@ -1,0 +1,11 @@
+# Core integration boundaries
+
+Use clean reconstructed contour heads, not dirty historical aggregate: A0d22521f14eb4e45aa6869aee2258e6e61379722, Bcb83a0e49fc5ba5e55144137f3d59e5aed9ac62b, C9b257246d56e4c65d268a1dd9efadd707f4298fd, D4293a77939c9c637de486bd6066167c80b9284b2, Ed46ab620b7b29a1d675ac41b2f2902c9053b16e8, H3b192c9cfbec7e433024a04587c3bfd03fc5e147, HBdc4062bcbc1e1da95cfe07077fc9cfbf273e0312. Preserve source identity/evidence metadata without importing stale receipts as current.
+
+A supplies outer verify finalization/shared run state. Merge D early located model preflight inside A _verification_run. D local record=False is insufficient: propagate receipt eligibility/refusal through shared state and report into BOTH normal and cancellation finalizers; evidence_status stays explicitly not_recorded after refused preflight. Add refusal-followed-cancellation regression before fixing that integration seam. Retain A file-close fault recovery/result notes/idempotency and all existing exact binding/security checks.
+
+Merge D/H architecture.py hunks semantically; retain descriptor no-follow/physical locations/alias bounds/reference/security/version semantics, H strictly proven metadata qualification, actual mixed executable rejection and additive API compatibility. E boundGit/projection security remains four existing product surfaces. B/C disclosure remains separate from route promotion.
+
+HB includes lifecycle state/CLI/hooks/prompt/runbook/installer tests as one coherent unit. Preserve A PostToolUse receipt invalidation when joining HB hooks. Installed helper from separately accepted fixture predecessor and F future M7 entries must later be additive unions, not overwrites. Generation-fenced heartbeat/progress instruction must be explicitly supplied to this selected datawriter; baseline lacks native automatic polling/healing, do not claim it.
+
+F and G remain required successors but no F migration/modules/test monoliths or G TrustCI implementation belong to this core diff. Actual core budget projection~758,494 governed bytes is only a planning estimate. Measure complete actual base..candidate inventory after integration; unchanged limits/rules/selector/TrustCI separation remain mandatory.

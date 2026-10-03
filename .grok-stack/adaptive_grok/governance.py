@@ -8,7 +8,6 @@ import math
 import os
 import re
 import stat
-import subprocess
 import unicodedata
 import weakref
 from dataclasses import dataclass
@@ -22,7 +21,12 @@ from .architecture import (
     load_architecture,
 )
 from .architecture_fitness import architecture_evidence as derive_architecture_evidence
-from .architecture_diff import _git_blobs as _read_exact_git_blobs
+from .architecture_diff import (
+    _exact_commit,
+    _git_blobs as _read_exact_git_blobs,
+    _git_object_id_length,
+    run_git_bounded,
+)
 from .spec import SpecError, _schema_preflight, validate_schema
 
 
@@ -33,6 +37,7 @@ MAX_RULES = 512
 MAX_DEBT_ENTRIES = 2048
 MAX_EXAMPLES = 256
 MAX_EVIDENCE_REFERENCES = 4096
+MAX_CONSUMED_INPUT_BYTES = 16_000_000
 
 RULES_PATH = Path("governance/rules/index.json")
 DEBT_PATH = Path("governance/debt/index.json")
@@ -336,6 +341,8 @@ class _AuthorityTopology:
 class _ConsumedInputRecorder:
     def __init__(self) -> None:
         self._contents: dict[str, bytes] = {}
+        self._total_bytes = 0
+        self._exhausted = False
 
     def observe(self, path: str, content: bytes) -> bytes:
         existing = self._contents.get(path)
@@ -350,7 +357,12 @@ class _ConsumedInputRecorder:
             raise GovernanceError(
                 "governance consumed-input limit exceeded", code="limit"
             )
+        next_total = self._total_bytes + len(content)
+        if next_total > MAX_CONSUMED_INPUT_BYTES:
+            self._exhausted = True
+            raise GovernanceError("governance consumed-input byte limit exceeded", code="limit")
         self._contents[path] = content
+        self._total_bytes = next_total
         return content
 
     def read(
@@ -360,6 +372,8 @@ class _ConsumedInputRecorder:
         *,
         label: str,
     ) -> bytes:
+        if self._exhausted:
+            raise GovernanceError("governance consumed-input byte limit exceeded", code="limit")
         normalized = _safe_relative_path(
             repository.descriptor, path, label=label
         )
@@ -376,6 +390,94 @@ class _ConsumedInputRecorder:
             path: hashlib.sha256(content).hexdigest()
             for path, content in self._contents.items()
         }
+
+    def verify(self, repository: _RepositoryHandle) -> None:
+        for path, content in self._contents.items():
+            current = _read_regular_bytes(repository.descriptor, path, label=path)
+            if current != content:
+                raise GovernanceError(f"governance input changed during evaluation: {path}", code="io")
+        _verify_repository(repository)
+
+
+class ProjectionSnapshot:
+    def __init__(self, repository: _RepositoryHandle,
+                 files: tuple[_PinnedAuthorityFile, ...], contents: dict[str, bytes]) -> None:
+        self._repository = repository
+        self._files = files
+        self._bytes = contents
+        self._closed = False
+        try:
+            self._text = {name: content.decode("utf-8", "strict") for name, content in contents.items()}
+        except UnicodeDecodeError as exc:
+            raise GovernanceError("projection input is not valid UTF-8", code="projection") from exc
+
+    @property
+    def bytes(self) -> dict[str, bytes]:
+        return dict(self._bytes)
+
+    @property
+    def text(self) -> dict[str, str]:
+        return dict(self._text)
+
+    def verify(self) -> None:
+        if self._closed:
+            raise GovernanceError("projection snapshot is closed", code="io")
+        try:
+            for item in self._files:
+                opened = os.fstat(item.descriptor)
+                named = _reopen_identity(item.parent_descriptor, item.name, directory=False)
+                if (not stat.S_ISREG(opened.st_mode) or not stat.S_ISREG(named.st_mode)
+                        or _file_identity(opened) != item.identity or _file_identity(named) != item.identity):
+                    raise GovernanceError(f"{item.name}: projection input changed", code="io")
+                if _read_pinned_authority_bytes(item) != self._bytes[item.name]:
+                    raise GovernanceError(f"{item.name}: projection content changed", code="io")
+            _verify_repository(self._repository)
+        except OSError as exc:
+            raise GovernanceError("projection input changed or is unavailable", code="io") from exc
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        for item in reversed(self._files):
+            os.close(item.descriptor)
+        os.close(self._repository.descriptor)
+
+    def __enter__(self) -> ProjectionSnapshot:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()
+
+
+def open_projection_snapshot(root: Path | str, *,
+                             _recorder: _ConsumedInputRecorder | None = None) -> ProjectionSnapshot:
+    repository = _open_repository(root)
+    files: list[_PinnedAuthorityFile] = []
+    recorder = _recorder if _recorder is not None else _ConsumedInputRecorder()
+    try:
+        no_follow, _directory, nonblock = _secure_open_flags(label="projection inputs")
+        for name in ("decisions.md", "mistakes.md"):
+            descriptor = os.open(name, os.O_RDONLY | no_follow | nonblock, dir_fd=repository.descriptor)
+            try:
+                info = os.fstat(descriptor)
+                if not stat.S_ISREG(info.st_mode):
+                    raise GovernanceError(f"{name}: must be a regular non-symlink file", code="io")
+            except BaseException:
+                os.close(descriptor)
+                raise
+            files.append(_PinnedAuthorityFile(Path(name), descriptor, repository.descriptor, name, _file_identity(info)))
+        contents = {item.name: recorder.observe(item.name, _read_pinned_authority_bytes(item)) for item in files}
+        snapshot = ProjectionSnapshot(repository, tuple(files), contents)
+        snapshot.verify()
+        return snapshot
+    except BaseException as exc:
+        for item in reversed(files):
+            os.close(item.descriptor)
+        os.close(repository.descriptor)
+        if isinstance(exc, OSError):
+            raise GovernanceError("projection input must be a regular non-symlink file", code="io") from exc
+        raise
 
 
 def _unsafe_text(value: str) -> bool:
@@ -1287,6 +1389,11 @@ def _has_human_governance_approval(rule: RuleRecord) -> bool:
     )
 
 
+def _has_external_rule_authority(_rule: RuleRecord) -> bool:
+    """M3 exposes no independently verified exact-record rule authority channel."""
+    return False
+
+
 def _has_evidence_digests(rule: RuleRecord) -> bool:
     return bool(rule.evidence) and all(
         evidence.path
@@ -1804,6 +1911,7 @@ def _rule_is_lifecycle_qualified(rule: RuleRecord, *, live_evidence: bool) -> bo
         and live_evidence
         and _has_independent_review(rule)
         and _has_human_governance_approval(rule)
+        and _has_external_rule_authority(rule)
     )
 
 
@@ -2256,6 +2364,12 @@ def validate_governance(
         findings: list[GovernanceFinding] = []
         for rule in rules:
             path = f"rules[{rule.rule_id}]"
+            if rule.status == "active" and not _has_external_rule_authority(rule):
+                findings.append(GovernanceFinding(
+                    "rule-external-authority-required",
+                    f"active rule {rule.rule_id} requires independently verified exact-record authority",
+                    path,
+                ))
             if rule.status != "candidate":
                 if not _has_independent_review(rule):
                     findings.append(
@@ -2556,25 +2670,16 @@ def _validate_architecture_evidence(
     return str(architecture["architecture_digest"])
 
 
-def _git_output(root: Path, arguments: list[str], *, label: str) -> bytes:
-    environment = dict(os.environ)
-    environment["GIT_OPTIONAL_LOCKS"] = "0"
-    environment["LC_ALL"] = "C"
+def _git_output(root: Path, arguments: list[str], *, label: str,
+                limit: int = MAX_DOCUMENT_BYTES) -> bytes:
     try:
-        result = subprocess.run(
-            ["git", "-C", str(root), *arguments],
-            check=False,
-            capture_output=True,
-            timeout=30,
-            env=environment,
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        raise GovernanceError(f"{label} failed", code="git") from exc
-    if result.returncode != 0:
+        result = run_git_bounded(root, arguments, limit=limit)
+    except ArchitectureError as exc:
+        code = "limit" if exc.code == "limit" else "git"
+        raise GovernanceError(f"{label} failed: {exc}", code=code) from exc
+    if result is None:
         raise GovernanceError(f"{label} failed", code="git")
-    if len(result.stdout) > MAX_DOCUMENT_BYTES:
-        raise GovernanceError(f"{label} output limit exceeded", code="limit")
-    return result.stdout
+    return result
 
 
 def _require_clean_exact_git_state(
@@ -2583,6 +2688,14 @@ def _require_clean_exact_git_state(
     base_sha: str,
     head_sha: str,
 ) -> None:
+    try:
+        object_id_length = _git_object_id_length(root)
+        if object_id_length != 40:
+            raise GovernanceError("GovernanceHandoffV1 requires SHA-1; SHA-256 needs a versioned handoff contract", code="unsupported")
+        for label, value in (("base", base_sha), ("head", head_sha)):
+            _exact_commit(root, value, label=label)
+    except ArchitectureError as exc:
+        raise GovernanceError(f"exact Git commit is invalid: {exc}", code="git") from exc
     for label, value in (("base", base_sha), ("head", head_sha)):
         if _SHA40_PATTERN.fullmatch(value) is None:
             raise GovernanceError(f"exact {label} SHA is invalid", code="sha")
@@ -2593,6 +2706,13 @@ def _require_clean_exact_git_state(
     ).decode("ascii", "strict").strip()
     if current_head != head_sha:
         raise GovernanceError("exact head SHA mismatch", code="sha")
+    try:
+        filters = run_git_bounded(root, ["config", "--name-only", "--get-regexp", r"^filter\."],
+                                  allow_failure=True, limit=MAX_DOCUMENT_BYTES)
+    except ArchitectureError as exc:
+        raise GovernanceError("Git filter configuration is unavailable", code="git") from exc
+    if filters:
+        raise GovernanceError("Git filters cannot be used for exact governance evidence", code="git")
     _git_output(
         root,
         ["cat-file", "-e", f"{base_sha}^{{commit}}"],
@@ -2847,6 +2967,16 @@ def build_governance_handoff(
             f"governance findings block handoff: {codes}", code="findings"
         )
     _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
+    # Git status can suppress paths marked assume-unchanged; compare observed
+    # authority and consumed content directly before constructing the handoff.
+    latest = load_governance(root)
+    if _snapshot_authority_source_digests(latest) != _snapshot_authority_source_digests(current):
+        raise GovernanceError("governance authority changed before publication", code="io")
+    repository = _open_repository(root)
+    try:
+        recorder.verify(repository)
+    finally:
+        os.close(repository.descriptor)
     handoff = GovernanceHandoffV1(
         governance_contract_version=1,
         governance_digest=evaluation["digests"]["governance_digest"],

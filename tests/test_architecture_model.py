@@ -3434,6 +3434,48 @@ class ArchitectureModelTests(unittest.TestCase):
             "unsupported",
         )
 
+    def test_openapi_additive_components_preserve_existing_contract_constraints(self) -> None:
+        for existing in ({}, {"Old": {"type": "string", "maxLength": 8}}):
+            base = _openapi()
+            base["components"] = {"schemas": copy.deepcopy(existing)}
+            head = copy.deepcopy(base)
+            head["components"]["schemas"]["New"] = {"type": "string", "maxLength": 16}
+            head["paths"]["/new"] = {"get": {"responses": {"200": {
+                "description": "new output", "content": {"application/json": {
+                    "schema": {"$ref": "#/components/schemas/New"}
+                }},
+            }}}}
+            before = self._record(base, kind="openapi", compatibility="bidirectional")
+            after = self._record(head, kind="openapi", compatibility="bidirectional")
+            with self.subTest(existing=existing):
+                self.assertEqual(ARCH.compare_contracts(before, after, "bidirectional").status, "compatible")
+                self.assertEqual(ARCH.compare_contracts(before, after, "exact").status, "incompatible")
+                self.assertEqual(ARCH.compare_contracts(before, after, "versioned_break").status, "incompatible")
+                with mock.patch.object(ARCH, "MAX_PARSED_NODES", 1):
+                    self.assertEqual(ARCH.compare_contracts(before, after, "bidirectional").status, "unsupported")
+                invalid = copy.deepcopy(head)
+                invalid["components"]["schemas"]["New"] = {"$ref": "#/components/schemas/Missing"}
+                self.assertEqual(ARCH.compare_contracts(before, self._record(invalid, kind="openapi"), "bidirectional").status, "unsupported")
+                invalid["components"]["schemas"]["New"] = {"$ref": "#/components/schemas/New"}
+                self.assertEqual(ARCH.compare_contracts(before, self._record(invalid, kind="openapi"), "bidirectional").status, "unsupported")
+                for new_schema in ({"type": "object", "patternProperties": {}}, {"type": "string", "maxLength": "invalid"}):
+                    invalid["components"]["schemas"]["New"] = new_schema
+                    self.assertEqual(ARCH.compare_contracts(before, self._record(invalid, kind="openapi"), "bidirectional").status, "unsupported")
+                changed_auth = copy.deepcopy(head)
+                changed_auth["components"]["securitySchemes"] = {"NewAuth": {"type": "http", "scheme": "bearer"}}
+                self.assertEqual(ARCH.compare_contracts(before, self._record(changed_auth, kind="openapi"), "bidirectional").status, "incompatible")
+                changed_operation = copy.deepcopy(head)
+                changed_operation["paths"].pop("/items")
+                self.assertEqual(ARCH.compare_contracts(before, self._record(changed_operation, kind="openapi"), "bidirectional").status, "incompatible")
+                if existing:
+                    for old_schema in (None, {"type": "string", "maxLength": 9}):
+                        altered = copy.deepcopy(head)
+                        if old_schema is None:
+                            altered["components"]["schemas"].pop("Old")
+                        else:
+                            altered["components"]["schemas"]["Old"] = old_schema
+                        self.assertEqual(ARCH.compare_contracts(before, self._record(altered, kind="openapi"), "bidirectional").status, "incompatible")
+
     def test_openapi_component_refs_headers_and_unreferenced_schemas_are_closed(self) -> None:
         base = _openapi(
             {

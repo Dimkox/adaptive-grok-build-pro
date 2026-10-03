@@ -1,0 +1,77 @@
+{
+  "scope": "fresh writer-focused repair evidence only; controller owns full PR verification, independent reviews and delivery",
+  "source_before_repair": "e1c7a01d3fe057c90e80e547c42aadddbae99d11",
+  "agreed_pr_base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "product_paths": [
+    ".grok-stack/adaptive_grok/router.py",
+    "tests/test_repo_router.py"
+  ],
+  "historical_evidence": "Prior full PR pass on e1c7a01 and both independent failed reviews bind their original exact identities; they are stale for this repaired candidate and are not reused as current passes.",
+  "root_causes": [
+    "Historical marker and past-state scans vetoed entire clauses/objects rather than historical instruction context.",
+    "Negation scanning vetoed object/destination modifiers instead of command prefixes.",
+    "Splitting coordinated infinitives discarded descriptive plan context.",
+    "Descriptive noun guard omitted supported plural forms.",
+    "Historical tests lacked marker-only cases independently exercising the guard."
+  ],
+  "red": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests",
+    "exit_code": 1,
+    "summary": "(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n----------------------------------------------------------------------\nRan 11 tests in 0.169s\n\nFAILED (failures=21)\n",
+    "failures": [
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Publish the artifact built yesterday through a pull request')",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt=\"Review yesterday's changes and publish v3 through PR\")",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Publish the artifact reviewed yesterday through a pull request')",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Опубликуй пакет собранный вчера после ревью')",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Publish the artifact that was reviewed through a pull request')",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Deploy the build that has been reviewed through a pull request')",
+      "FAIL: test_artifact_history_does_not_negate_a_current_operation (tests.test_repo_router.OperationalIntentTests.test_artifact_history_does_not_negate_a_current_operation) (prompt='Опубликуй пакет который был проверен на ревью')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Review the plan to deploy and publish the build')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Review the plans to deploy and publish the build')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Review the plan to deploy, then publish the build')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Create release plans')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Prepare release checklists')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Review the report; release plans are listed below')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Create release workflows')",
+      "FAIL: test_coordinated_plan_content_and_plural_nouns_remain_descriptive (tests.test_repo_router.OperationalIntentTests.test_coordinated_plan_content_and_plural_nouns_remain_descriptive) (prompt='Prepare release policies')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Опубликуй пакет без README через PR')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Выпусти релиз без деплоя через pull request')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Publish the package with no need to restart; review the PR')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Опубликуй пакет без изменения версии после ревью')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Publish the artifact not to production but to staging after review')",
+      "FAIL: test_object_and_destination_restrictions_do_not_negate_the_action (tests.test_repo_router.OperationalIntentTests.test_object_and_destination_restrictions_do_not_negate_the_action) (prompt='Can you not deploy and publish; review this PR')"
+    ]
+  },
+  "matrix_green": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests",
+    "exit_code": 0,
+    "output": "...........\n----------------------------------------------------------------------\nRan 11 tests in 0.165s\n\nOK\n"
+  },
+  "adjacent_green": {
+    "command": "taskset -c 16,17 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy",
+    "exit_code": 0,
+    "output": ".............................................................\n----------------------------------------------------------------------\nRan 81 tests in 43.897s\n\nOK\n"
+  },
+  "history_guard_self_probe": {
+    "kind": "developer in-memory self-check, not independent review",
+    "command": "taskset -c 17 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 - <<'PY'\nimport inspect\nimport sys\nimport unittest\nsys.path.insert(0, '.grok-stack')\nfrom adaptive_grok import router\nfrom tests.test_repo_router import OperationalIntentTests\nsource = inspect.getsource(router._has_operational_intent)\nfragment = 'historical_context = historical_context or bool(historical.match(part))'\nassert source.count(fragment) == 1\nnamespace = dict(router.__dict__)\nexec(source.replace(fragment, 'historical_context = historical_context'), namespace)\nrouter._has_operational_intent = namespace['_has_operational_intent']\nresult = unittest.TextTestRunner(verbosity=1).run(unittest.TestSuite([\n    OperationalIntentTests('test_historical_prefix_scopes_coordinated_action_shaped_content'),\n]))\nprint('in-memory history-prefix mutant; candidate files untouched')\nraise SystemExit(0 if result.wasSuccessful() else 1)\nPY",
+    "exit_code": 1,
+    "result": "killed by four assertion failures, zero errors",
+    "output": "FFFF\n======================================================================\nFAIL: test_historical_prefix_scopes_coordinated_action_shaped_content (tests.test_repo_router.OperationalIntentTests.test_historical_prefix_scopes_coordinated_action_shaped_content) (prompt='Review the report; yesterday, publish the artifact')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 144, in test_historical_prefix_scopes_coordinated_action_shaped_content\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_historical_prefix_scopes_coordinated_action_shaped_content (tests.test_repo_router.OperationalIntentTests.test_historical_prefix_scopes_coordinated_action_shaped_content) (prompt='Review the report; last week, deploy the build')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 144, in test_historical_prefix_scopes_coordinated_action_shaped_content\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_historical_prefix_scopes_coordinated_action_shaped_content (tests.test_repo_router.OperationalIntentTests.test_historical_prefix_scopes_coordinated_action_shaped_content) (prompt='Проведи ревью отчета; вчера, опубликуй пакет')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 144, in test_historical_prefix_scopes_coordinated_action_shaped_content\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_historical_prefix_scopes_coordinated_action_shaped_content (tests.test_repo_router.OperationalIntentTests.test_historical_prefix_scopes_coordinated_action_shaped_content) (prompt='Review the report; yesterday, deploy and publish the build')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 144, in test_historical_prefix_scopes_coordinated_action_shaped_content\n    self.assertEqual(route.intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.022s\n\nFAILED (failures=4)\nin-memory history-prefix mutant; candidate files untouched\n",
+    "files_modified": "none"
+  },
+  "static_checks": [
+    {
+      "command": "ruff check .grok-stack/adaptive_grok/router.py tests/test_repo_router.py",
+      "result": "All checks passed!"
+    },
+    {
+      "command": "python3 scripts/grok_spec.py validate --gate engineering/changes/20261002-fix-issue123-router-intent-precedence-explicit-o-03708e/change-spec.yaml",
+      "result": "ok true; errors []; 8/8 typed criteria mapped"
+    },
+    {
+      "command": "git diff --check",
+      "result": "exit 0, no output"
+    }
+  ]
+}

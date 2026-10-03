@@ -1,0 +1,11 @@
+# Startup and dependency plan
+
+2026-10-02T22:19:08Z. Startup discovery was recorded before repository inspection in controller runtime `startup-capacity-20261002T221908Z.md`. Host has 14 physical cores, 28 online logical CPUs (0-27). Default affinity is 0,1,8-27 (22); inherited cgroup cpuset 0-27 and no finite quota at session/user/root ancestors. Child-only widening probe succeeded with affinity 0-27 and nproc 28. Verified capacity: 28 workers; controller affinity unchanged.
+
+Route edd6ca692480 selects four independent read-only analyses, one general_implementer and code/test reviews. Analyses run concurrently, one worker each. Product writer starts after their findings are synthesized. Reviews follow implementation and passing verification; they do not mutate the candidate. Full verification uses an explicitly bounded child CPU allocation and no simultaneous verifier against a mutable candidate.
+
+Initial `taskset -c 0-27 python3 scripts/grok_verify.py --mode pr` completed: FAIL solely on unfinished draft change specs. Base/head both e5856acfd4bc7a186f40a740b54ec86459462db5; 22 dirty documentation/state paths; docs-state-focused, eligible; skipped python-unittest, coverage, factory-postgres-exit. Factory-unit and five focused modules passed. This is initial selector evidence, not implementation acceptance. Product runtime changes require full verification.
+
+Overall goal: publish working 2.1.1 including heartbeat/watchdog. 2.1.0 artifact PR237 is an existing independent predecessor. Existing dirty worktrees remain untouched. The approved 2.1.1 recovery design is in `.worktrees/v211-plan/docs/superpowers/specs/2026-10-01-v2.1.1-dirty-worktree-recovery-design.md`; integration analysis checks its A-G contours against actual main before final release scope is reported.
+
+Heartbeat design: additive active/history fields, separate liveness and useful progress, explicit activity, bounded status-request deadline, generation-fenced messages. Watchdog emits suspected-stall diagnostics and never releases ownership by age. Interrupt acknowledgement must precede same-task resume; old generations cannot resume or update. No background service, provider call or native harness restart is assumed. CLI/hook integration and operator instructions must state which native adapters are observed and which are manual.

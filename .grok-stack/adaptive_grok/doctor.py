@@ -5,6 +5,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from .architecture import architecture_inputs_present, preflight_architecture
 from .manifest import verify_manifest
 from .repo import detect_repo
 from .router import build_route
@@ -81,6 +82,15 @@ def run_doctor(root: Path) -> list[DoctorItem]:
         items.append(DoctorItem('pass', 'adaptive-routing', 'Bitrix route selects specialized agents'))
     else:
         items.append(DoctorItem('fail', 'adaptive-routing', str(sample.to_dict())))
+
+    if not architecture_inputs_present(root):
+        items.append(DoctorItem('info', 'architecture-model', 'architecture documents are not present; skipped'))
+    else:
+        findings = preflight_architecture(root)
+        items.append(DoctorItem(
+            'fail' if findings else 'pass', 'architecture-model',
+            findings[0].message if findings else 'bounded model and referenced-input preflight passed',
+        ))
 
     manifest_path = root / 'MANIFEST.sha256'
     if manifest_path.is_file():

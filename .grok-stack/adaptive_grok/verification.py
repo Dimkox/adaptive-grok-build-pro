@@ -5,13 +5,18 @@ import hashlib
 import json
 import os
 import re
+import signal
 import sys
 import tempfile
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 
 from .bitrix_checks import check_bitrix
-from .architecture import ArchitectureError, load_architecture, validate_repository_drift
+from .architecture import (
+    ArchitectureError, architecture_inputs_present, load_architecture,
+    preflight_architecture, validate_repository_drift,
+)
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
 from .architecture_diff import select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
@@ -23,7 +28,7 @@ from .receipts import (
 )
 from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
-from .python_test_runner import RunnerError, run_core_tests, selected_workers
+from .python_test_runner import RunCancelled, RunnerError, _cancellation, execute, run_core_tests, selected_workers
 from .util import (
     changed_file_statuses,
     changed_files,
@@ -55,6 +60,59 @@ class CheckResult:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+
+class VerificationCancelled(SystemExit):
+    def __init__(self, number: int, report: dict[str, object]):
+        super().__init__(128 + number)
+        self.signal_name = signal.Signals(number).name
+        self.report = report
+
+
+@dataclass
+class _RunState:
+    report: dict[str, object]
+    results: list[CheckResult] = field(default_factory=list)
+    stage: str = 'pre-dispatch'
+    receipt_eligible: bool = True
+
+
+@contextmanager
+def _retain_checks(results: list[CheckResult]):
+    try:
+        yield
+    except RunCancelled as exc:
+        exc.checks = [*results, *exc.checks]
+        raise
+
+
+def _failure_message(exc: BaseException) -> str:
+    message = ' '.join(''.join(' ' if ord(char) < 32 or ord(char) == 127 else char for char in str(exc)).split())
+    return f'{type(exc).__name__}: {message}'[:512]
+
+
+def _record_verification_receipt(root: Path, report: dict[str, object], fingerprint: str, *, interrupt_check=None) -> None:
+    report.setdefault('check_status', report['status'])
+    report.setdefault('terminal_state', 'completed')
+    report['evidence_status'] = 'recorded'
+    try:
+        write_receipt(root, 'verification', report['status'], details=report,
+                      expected_tree_fingerprint=fingerprint, interrupt_check=interrupt_check)
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        report['status'] = 'fail'
+        report['evidence_status'] = 'failed'
+        report['checks'].append(CheckResult(
+            'receipt-recording', 'fail', 'verification receipt was not recorded',
+            details=[{'severity': 'error', 'path': '.grok-stack/runtime/receipts',
+                      'code': 'receipt-recording-failed', 'message': _failure_message(exc)}],
+        ).to_dict())
+        # Invalidate an older pass even when binding validation failed before publication.
+        route_id = report.get('route_id')
+        if isinstance(route_id, str) and re.fullmatch(r'[A-Za-z0-9_-]{1,128}', route_id):
+            try:
+                (root / '.grok-stack/runtime/receipts' / route_id / 'verification.json').unlink(missing_ok=True)
+            except OSError as cleanup:
+                report['checks'].append(CheckResult('receipt-cleanup', 'fail', _failure_message(cleanup)).to_dict())
 
 
 @dataclass(frozen=True)
@@ -97,6 +155,18 @@ def _risk_level(route: dict[str, object] | None) -> str:
     risk = str((route or {}).get("risk") or "low")
     fallback = risk if risk in {"green", "yellow", "red"} else "red"
     return {"low": "green", "medium": "yellow", "high": "red"}.get(risk, fallback)
+
+
+def _architecture_preflight_check(root: Path) -> CheckResult:
+    if not architecture_inputs_present(root):
+        return CheckResult("architecture-inputs", "skip", "architecture authority inputs are absent; not executed")
+    findings = preflight_architecture(root)
+    if findings:
+        return CheckResult(
+            "architecture-inputs", "fail", findings[0].message,
+            details=[asdict(finding) for finding in findings],
+        )
+    return CheckResult("architecture-inputs", "pass", "bounded model and referenced-input preflight executed")
 
 
 def _architecture_check(
@@ -379,14 +449,24 @@ def _workflow_artifacts_check(
 
 
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300, *, env: dict[str, str] | None = None) -> CheckResult:
-    proc = run(command, cwd=root, timeout=timeout, env=env)
+    environment = os.environ.copy()
+    environment.update(env or {})
+    try:
+        proc = execute(command, root, environment, timeout=timeout)
+    except RunCancelled as exc:
+        proc = exc.result
+        exc.checks = [CheckResult(
+            name, 'cancelled', f'cancelled exit={exc.code}', command=command,
+            stdout=proc.stdout[-12000:] if proc else '', stderr=proc.stderr[-12000:] if proc else '',
+        )]
+        raise
     return CheckResult(
         name=name,
-        status='pass' if proc.returncode == 0 else 'fail',
+        status='pass' if proc.returncode == 0 and not proc.cleanup_error else 'fail',
         summary=f'exit={proc.returncode}',
         command=command,
         stdout=proc.stdout[-12000:],
-        stderr=proc.stderr[-12000:],
+        stderr=(proc.stderr + ('\ncleanup failed: ' + proc.cleanup_error if proc.cleanup_error else ''))[-12000:],
     )
 
 
@@ -1349,6 +1429,11 @@ def _change_specs(root: Path, files: list[str], route: dict[str, object] | None,
 
 def _composer(root: Path) -> list[CheckResult]:
     results: list[CheckResult] = []
+    with _retain_checks(results):
+        return _composer_checks(root, results)
+
+
+def _composer_checks(root: Path, results: list[CheckResult]) -> list[CheckResult]:
     if not (root / 'composer.json').is_file():
         return results
     if command_exists('composer'):
@@ -1445,6 +1530,12 @@ def _trivy_config(root: Path) -> CheckResult | None:
 
 
 def _node(root: Path, mode: str) -> list[CheckResult]:
+    results: list[CheckResult] = []
+    with _retain_checks(results):
+        return _node_checks(root, mode, results)
+
+
+def _node_checks(root: Path, mode: str, results: list[CheckResult]) -> list[CheckResult]:
     package = root / 'package.json'
     if not package.is_file():
         return []
@@ -1458,7 +1549,6 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
     names = ['lint', 'typecheck', 'test', 'prettier', 'format']
     if mode in {'pr', 'release'}:
         names.append('build')
-    results: list[CheckResult] = []
     for name in names:
         if name in scripts:
             command = ['npm', 'run', name]
@@ -1535,7 +1625,34 @@ def _focused_python(
 
 
 def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = None) -> list[CheckResult]:
-    results: list[CheckResult] = [_ruff(root), _bandit(root)]
+    results: list[CheckResult] = []
+    try:
+        return _python_checks(root, mode, scope, results)
+    except RunCancelled as exc:
+        exc.checks = [*results, *exc.checks]
+        completed = getattr(exc, 'core_run', None)
+        if completed is not None:
+            process = completed.tests
+            exc.checks.append(CheckResult('python-unittest', 'pass' if process.returncode == 0 else 'fail',
+                                          f'exit={process.returncode}', command=process.command,
+                                          stdout=process.stdout[-12000:], stderr=process.stderr[-12000:]))
+            process = exc.result
+            exc.checks.append(CheckResult('coverage', 'cancelled', f'cancelled exit={exc.code}',
+                                          command=process.command if process else None,
+                                          stdout=process.stdout[-12000:] if process else '',
+                                          stderr=process.stderr[-12000:] if process else ''))
+        if not exc.checks or all(item.status in {'pass', 'skip'} for item in exc.checks):
+            process = exc.result
+            exc.checks.append(CheckResult('python-unittest', 'cancelled', f'cancelled exit={exc.code}',
+                                          command=process.command if process else None,
+                                          stdout=process.stdout[-12000:] if process else '',
+                                          stderr=process.stderr[-12000:] if process else ''))
+        raise
+
+
+def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, results: list[CheckResult]) -> list[CheckResult]:
+    results.append(_ruff(root))
+    results.append(_bandit(root))
     focused = bool(scope and scope.get('eligible') is True)
     pilot_tests = root / 'pilot' / 'tests'
     if pilot_tests.is_dir() and any(pilot_tests.glob('test*.py')):
@@ -1582,9 +1699,10 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
             for name, process in [('python-unittest', core.tests), ('coverage', core.coverage)]:
                 if process is not None:
                     results.append(CheckResult(
-                        name, 'pass' if process.returncode == 0 else 'fail',
+                        name, 'pass' if process.returncode == 0 and not process.cleanup_error else 'fail',
                         f'{"pytest-xdist" if workers else "unittest"} workers={workers} exit={process.returncode} seconds={process.seconds:.3f}',
-                        command=process.command, stdout=process.stdout[-12000:], stderr=process.stderr[-12000:],
+                        command=process.command, stdout=process.stdout[-12000:],
+                        stderr=(process.stderr + ('\ncleanup failed: ' + process.cleanup_error if process.cleanup_error else ''))[-12000:],
                         details=[{'severity': 'info', 'path': 'tests',
                                   'message': f'backend={"pytest-xdist" if workers else "unittest"}; fresh invocation-owned coverage',
                                   'requested_workers': str(requested_workers),
@@ -1694,6 +1812,7 @@ def _verify_focused_static_seo_landing(
     checked_fingerprint: str,
     *,
     record: bool,
+    state: _RunState | None = None,
 ) -> dict[str, object]:
     active_change = get_active_change(root) or {}
     change_package = active_change.get('path')
@@ -1716,10 +1835,12 @@ def _verify_focused_static_seo_landing(
         ),
     )
     scope['mode'] = FOCUSED_STATIC_SEO_LANDING_MODE
-    results: list[CheckResult] = [
-        _git_diff_check(root, FOCUSED_STATIC_SEO_LANDING_MODE, git_ranges),
-        _focused_scope_check(scope),
-    ]
+    results: list[CheckResult] = state.results if state else []
+    if state:
+        state.report['verification_scope'] = scope
+        state.stage = 'focused-landing'
+    results.append(_git_diff_check(root, FOCUSED_STATIC_SEO_LANDING_MODE, git_ranges))
+    results.append(_focused_scope_check(scope))
     if scope.get('eligible') is True:
         results.append(_focused_landing_contract(root, scope))
 
@@ -1738,7 +1859,8 @@ def _verify_focused_static_seo_landing(
         'status': 'not_run',
         'reason': 'focused static SEO landing mode checks only scope, diff integrity, and its explicit contract',
     }
-    report = {
+    report = state.report if state else {}
+    report.update({
         'schema_version': 1,
         'created_at': now_utc(),
         'mode': FOCUSED_STATIC_SEO_LANDING_MODE,
@@ -1754,15 +1876,16 @@ def _verify_focused_static_seo_landing(
         'workflow_artifacts': not_run,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
-    }
+        'check_status': 'pass' if not failures else 'fail',
+        'terminal_state': 'completed',
+        'evidence_status': 'not_recorded',
+    })
+    with _cancellation() as cancellation:
+        cancellation.check()
     if record and route and source_stable:
-        write_receipt(
-            root,
-            'verification',
-            report['status'],
-            details=report,
-            expected_tree_fingerprint=final_fingerprint,
-        )
+        if state:
+            state.stage = 'receipt-publication'
+        _record_verification_receipt(root, report, final_fingerprint, interrupt_check=cancellation.check)
     return report
 
 
@@ -1815,9 +1938,57 @@ def _docs_state_status_inventory(
 
 
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
+    report = {
+        'schema_version': 1, 'created_at': now_utc(), 'mode': mode,
+        'profiles': profiles or ['base'], 'route_id': None, 'tree_fingerprint': None,
+        'changed_files': [], 'changed_file_inventory': {}, 'checks': [],
+        'spec': {}, 'architecture': {}, 'governance': {}, 'workflow_artifacts': {},
+        'status': 'fail', 'terminal_state': 'interrupted', 'evidence_status': 'not_recorded',
+    }
+    state = _RunState(report)
+    with _cancellation() as cancellation:
+        try:
+            return _verification_run(root, mode, profiles, record, state, cancellation)
+        except (RunCancelled, KeyboardInterrupt, SystemExit) as exc:
+            number = getattr(exc, 'signal_number', None)
+            if isinstance(exc, KeyboardInterrupt):
+                number = signal.SIGINT
+            elif number is None and isinstance(exc, SystemExit) and type(exc.code) is int:
+                number = {130: signal.SIGINT, 143: signal.SIGTERM, -2: signal.SIGINT, -15: signal.SIGTERM}.get(exc.code)
+            if number is None:
+                raise
+            state.results.extend(getattr(exc, 'checks', []))
+            report.setdefault('check_status', 'fail' if any(item.status == 'fail' for item in state.results) else 'incomplete')
+            report['status'] = 'fail'
+            report['terminal_state'] = 'cancelled'
+            report['cancellation'] = {'signal': signal.Signals(number).name, 'stage': state.stage}
+            retained_checks = report['checks'] or [item.to_dict() for item in state.results]
+            report['checks'] = retained_checks + [CheckResult(
+                'verification-interrupted', 'cancelled', f'verification cancelled during {state.stage}',
+                details=[{'severity': 'info', 'path': '.', 'message': f'signal={number}; stage={state.stage}'}],
+            ).to_dict()]
+            # One terminal publication attempt. Signals remain deferred and idempotent here.
+            try:
+                fingerprint = tree_fingerprint(root)
+                stable = report['tree_fingerprint'] in (None, fingerprint)
+                report['tree_fingerprint'] = fingerprint
+                if record and state.receipt_eligible and report['route_id'] and stable:
+                    _record_verification_receipt(root, report, fingerprint)
+            except (OSError, RuntimeError, TypeError, ValueError) as cleanup:
+                report['evidence_status'] = 'failed' if state.receipt_eligible else 'not_recorded'
+                report['checks'].append(CheckResult('cancellation-finalization', 'fail', _failure_message(cleanup)).to_dict())
+            raise VerificationCancelled(number, report) from None
+
+
+def _verification_run(root: Path, mode: str, profiles: list[str] | None, record: bool,
+                      state: _RunState, cancellation) -> dict[str, object]:
+    report = state.report
+    cancellation.check()
     checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
     active_profiles = profiles or (route.get('quality_profiles', ['base']) if route else ['base'])
+    report.update(tree_fingerprint=checked_fingerprint, route_id=route.get('route_id') if route else None,
+                  profiles=active_profiles)
     git_ranges = _git_range_selection(root, route, mode)
     files, changed_file_inventory = _changed_file_inventory(
         root,
@@ -1825,6 +1996,8 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         mode,
         git_ranges,
     )
+    report.update(changed_files=files, changed_file_inventory=changed_file_inventory)
+    cancellation.check()
 
     if mode == FOCUSED_STATIC_SEO_LANDING_MODE:
         return _verify_focused_static_seo_landing(
@@ -1836,9 +2009,12 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
             changed_file_inventory,
             checked_fingerprint,
             record=record,
+            state=state,
         )
 
     spec_check, spec_metadata = _change_specs(root, files, route, mode)
+    report['spec'] = spec_metadata
+    cancellation.check()
     if mode in _RANGE_MODES - {FOCUSED_STATIC_SEO_LANDING_MODE}:
         status_records, status_trusted = _docs_state_status_inventory(root, git_ranges)
     else:
@@ -1855,44 +2031,89 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
             target for target in FOCUSED_TEST_TARGETS if (root / target).is_file()
         ],
     )
-    architecture_check, architecture_metadata = _architecture_check(root, route)
-    governance_check, governance_metadata = _governance_check(
-        root, route, architecture_metadata
-    )
+    state.stage = 'architecture-inputs'
+    architecture_inputs = _architecture_preflight_check(root)
+    preflight_failed = architecture_inputs.status == 'fail'
+    # Retain the primary refusal before any subsequent consumer can cancel.
+    state.results.append(architecture_inputs)
+    if preflight_failed:
+        state.receipt_eligible = False
+        report['receipt_refusal'] = 'architecture input preflight failed'
+        architecture_inputs.details.append({
+            'severity': 'info', 'code': 'receipt-not-recorded', 'path': '.grok-stack/runtime/receipts',
+            'message': 'receipt not recorded: refused architecture inputs cannot provide the current binding',
+        })
+        architecture_check = CheckResult('architecture', 'fail', architecture_inputs.summary, details=architecture_inputs.details)
+        architecture_metadata = {
+            'configured': True, 'status': 'fail', 'error': architecture_inputs.summary,
+            'receipt_status': 'not_recorded', 'receipt_reason': report['receipt_refusal'],
+        }
+        governance_check = CheckResult('governance', 'skip', 'architecture input preflight failed; not executed')
+        governance_metadata = {'configured': True, 'status': 'not_run'}
+    else:
+        architecture_check, architecture_metadata = _architecture_check(root, route)
+        governance_check, governance_metadata = _governance_check(root, route, architecture_metadata)
+    report.update(docs_state_scope=docs_scope, architecture=architecture_metadata)
+    cancellation.check()
     workflow_check, workflow_metadata = _workflow_artifacts_check(
         root,
         route,
         get_active_change(root),
         checked_fingerprint,
     )
+    report.update(governance=governance_metadata, workflow_artifacts=workflow_metadata)
+    cancellation.check()
 
-    results: list[CheckResult] = [
-        _git_diff_check(root, mode, git_ranges),
-        _docs_state_scope_check(docs_scope),
-        spec_check,
-        architecture_check,
-        governance_check,
-        workflow_check,
-        _secret_scan(root, files),
-        _contracts(root, files),
-        _sql_safety(root, files),
-    ]
+    results = state.results
+    state.stage = 'repository'
+    results.append(_git_diff_check(root, mode, git_ranges))
+    results.extend([_docs_state_scope_check(docs_scope), spec_check, architecture_check, governance_check, workflow_check])
+    for check in (_secret_scan, _contracts, _sql_safety):
+        cancellation.check()
+        results.append(check(root, files))
     if 'php' in active_profiles or 'bitrix' in active_profiles or any(rel.endswith('.php') for rel in files):
+        state.stage = 'php'
+        cancellation.check()
         results.append(_php_lint(root, files))
         results.extend(_composer(root))
     if 'bitrix' in active_profiles:
+        state.stage = 'bitrix'
+        cancellation.check()
         results.append(_bitrix(root, files))
     if 'frontend' in active_profiles or (root / 'package.json').is_file():
+        state.stage = 'node'
+        cancellation.check()
         results.extend(_node(root, mode))
+    state.stage = 'semgrep'
+    cancellation.check()
     semgrep = _semgrep(root)
     if semgrep is not None:
         results.append(semgrep)
+    state.stage = 'trivy'
+    cancellation.check()
     trivy = _trivy_config(root)
     if trivy is not None:
         results.append(trivy)
-    results.extend(_python(root, mode, docs_scope))
+    state.stage = 'python'
+    cancellation.check()
+    if preflight_failed:
+        results.append(CheckResult('python-unittest', 'skip', 'architecture input preflight failed; discovery not started'))
+        if mode in {'pr', 'release'}:
+            results.append(CheckResult('coverage', 'skip', 'architecture input preflight failed; not started'))
+        if (root / 'factory/tests').is_dir():
+            results.append(CheckResult('factory-unit', 'skip', 'architecture input preflight failed; not started'))
+            if mode in {'pr', 'release'} and (root / 'factory/tests/run_disposable_exit.py').is_file():
+                results.append(CheckResult('factory-postgres-exit', 'skip', 'architecture input preflight failed; not started'))
+    else:
+        results.extend(_python(root, mode, docs_scope))
+    report['check_status'] = 'pass' if all(item.status in {'pass', 'skip'} for item in results) else 'fail'
 
-    final_fingerprint = tree_fingerprint(root)
+    state.stage = 'source-stability'
+    try:
+        final_fingerprint = tree_fingerprint(root)
+    except (OSError, RuntimeError, ValueError) as exc:
+        results.append(CheckResult('source-stability', 'fail', _failure_message(exc)))
+        final_fingerprint = None
     source_stable = final_fingerprint == checked_fingerprint
     results.append(
         CheckResult(
@@ -1907,7 +2128,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     )
 
     failures = [result for result in results if result.status == 'fail']
-    report = {
+    report.update({
         'schema_version': 1,
         'created_at': now_utc(),
         'mode': mode,
@@ -1925,13 +2146,12 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'workflow_artifacts': workflow_metadata,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
-    }
-    if record and route and governance_check.status != 'fail' and source_stable:
-        write_receipt(
-            root,
-            'verification',
-            report['status'],
-            details=report,
-            expected_tree_fingerprint=final_fingerprint,
-        )
+        'terminal_state': 'completed',
+        'evidence_status': 'not_recorded',
+    })
+    cancellation.check()
+    if record and state.receipt_eligible and route and governance_check.status != 'fail' and source_stable:
+        state.stage = 'receipt-publication'
+        _record_verification_receipt(root, report, final_fingerprint, interrupt_check=cancellation.check)
+    cancellation.check()
     return report

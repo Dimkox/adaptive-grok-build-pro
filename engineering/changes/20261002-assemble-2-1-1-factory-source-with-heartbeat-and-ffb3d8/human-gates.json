@@ -1,0 +1,55 @@
+{
+  "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:30:17+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Explicit owner decompose instruction retains core A-E/H/heartbeat-watchdog scope and required F/G successors; unchanged code budgets/separation/Trust CI",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "9a8b65116ba3c4dbf2d10bb6cca40364ea4f3396cd7b199429a65c58d72455e6"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:30:17+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing owner approval for scoped factory verification covers only existing025 guarded disposablePG controls; no F026migration, live target or external write authorized",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "9a8b65116ba3c4dbf2d10bb6cca40364ea4f3396cd7b199429a65c58d72455e6"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:47:16+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing owner instruction to complete2.1.1 and decompose under unchanged guards: frozen scoped implementation/test evidence, including diagnosed test-only lock-refusal acceptance; no new production behavior or authority",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "c07005e8364458c01f5547bde08938313a94b37e3775af7db7891a4b22e34563"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:47:16+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing authorized guarded disposable025 characterization only; bounded fixture cleanup, no live target/new migration/timeout or privilege change",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "c07005e8364458c01f5547bde08938313a94b37e3775af7db7891a4b22e34563"
+    }
+  ],
+  "route_id": "ffb3d81e031f",
+  "schema_version": 1
+}

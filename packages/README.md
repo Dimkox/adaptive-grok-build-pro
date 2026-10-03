@@ -6,7 +6,7 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptiv
 
 Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Published artifacts are not restacked for documentation-only successors.
 
-`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. `v2.0.19` is published and immutable. The `v2.1.0` pair is a local artifact candidate only; its delivery identities are not yet known.
+`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The later `2.0.16` release completed its source-parent-`R` plus artifact-only-child-`A` delivery through PR #79. `v2.0.19` is published and immutable. The `v2.1.0` pair retains its unpublished repository custody and original hashes in `historical_v2_1_0_artifact_custody`; its delivery identities remain unknown. Current `2.1.1` is a source candidate with no artifact built. F/G successor acceptance precedes any exact-source artifact child.
 
 | File | Version |
 | --- | --- |

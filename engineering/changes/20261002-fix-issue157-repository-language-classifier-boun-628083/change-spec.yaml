@@ -1,0 +1,37 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Disclose recognized source and manifest languages separately from confirmed routing languages; weak Swift evidence never masks another source language.", "evidence": [{"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_weak_swift_marker_does_not_mask_second_source_language"}, {"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_confirmed_swift_does_not_mask_other_sources"}]},
+    {"id": "AC-002", "statement": "Confirm Swift from bounded readable first-party source or recognizable canonical Package.swift metadata; refuse symlinked manifests, subtrees, roots and nonregular files.", "evidence": [{"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_readable_swift_package_confirms_swift"}, {"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_symlinked_manifests_and_sources_never_confirm_language"}, {"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_symlinked_subtrees_and_contracts_are_not_followed"}, {"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_fifo_manifest_is_not_opened_or_accepted"}]},
+    {"id": "AC-003", "statement": "Bound files, bytes, depth, directories, entries, per-directory entries and per-file reads; disclose every truncation and unreadable boundary without claiming a complete scan.", "evidence": [{"test": "tests/test_repo_language_disclosure.py"}]},
+    {"id": "AC-004", "statement": "Keep legacy PHP/Bitrix/Node/Python/Go/Rust fields and language ordering compatible for readable canonical evidence; report unknown extensions, manifest case variants/conflicts, empty trees and vendor/generated exclusions.", "evidence": [{"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_legacy_manifests_and_node_scripts_remain_compatible"}, {"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_case_conflict_is_disclosed_without_losing_canonical_legacy_language"}, {"test": "tests/test_repo_router.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-fix-issue157-repository-language-classifier-boun-628083",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [{"id": "FORBID-001", "statement": "Classifier source delivery must not add an Apple/macOS operational qualification or U4 contour.", "evidence": [{"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_readable_swift_package_confirms_swift"}]}],
+  "invariants": [{"id": "INV-001", "statement": "Existing profile fields remain present; extension-only non-Swift evidence is additive disclosure rather than a new specialist routing authorization.", "evidence": [{"test": "tests/test_repo_language_disclosure.py::RepoLanguageDisclosureTests::test_confirmed_swift_does_not_mask_other_sources"}, {"test": "tests/test_repo_router.py"}]}],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue157 repository language classifier: bounded Swift and other language signal detection, symlink-safe manifests, truncation and unknown reporting without suppressing detected signals.",
+    "success_metric": "Current focused classifier and downstream router tests pass with explicit hostile-filesystem and budget outcomes; full exact-tree verifier and independent reviews remain coordinator gates.",
+    "target": "All selected classifier scenarios pass; source inventory contains only repo.py and the dedicated classifier test module."
+  },
+  "observability": [{"id": "SIG-001", "metric": "Additive language_scan status, unknown flag, truncation reasons and file/byte/directory/entry/unreadable counters persisted in RepoProfile.to_dict().", "proves": ["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

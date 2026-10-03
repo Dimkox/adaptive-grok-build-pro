@@ -1419,15 +1419,22 @@ module.main()
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(candidate_version, '2.1.0')
+        self.assertEqual(candidate_version, '2.1.1')
         self.assertEqual(state['product_version'], candidate_version)
         candidate = state['local_candidate']
-        self.assertEqual(candidate['status'], 'artifact_candidate')
-        self.assertEqual(candidate['artifact_status'], 'built_reproducibly_repository_custody_pending_delivery')
+        self.assertEqual(candidate['status'], 'source_candidate')
+        self.assertEqual(candidate['artifact_status'], 'not_built')
+        self.assertIsNone(candidate['artifact'])
+        self.assertFalse((ROOT / 'packages/adaptive-grok-build-pro-v2.1.1.zip').exists())
+        self.assertFalse((ROOT / 'packages/adaptive-grok-build-pro-v2.1.1.zip.sha256').exists())
         self.assertNotIn('artifact_child', candidate)
         self.assertNotIn('zip_sha256', candidate)
         self.assertNotIn('sidecar_sha256', candidate)
-        candidate_artifact = candidate['artifact']
+        custody = state['historical_v2_1_0_artifact_custody']['local_candidate']
+        self.assertEqual(custody['version'], '2.1.0')
+        self.assertEqual(custody['status'], 'artifact_candidate')
+        self.assertEqual(custody['artifact_status'], 'built_reproducibly_repository_custody_pending_delivery')
+        candidate_artifact = custody['artifact']
         candidate_zip = ROOT / candidate_artifact['path']
         candidate_sidecar = ROOT / candidate_artifact['sidecar_path']
         self.assertEqual(hashlib.sha256(candidate_zip.read_bytes()).hexdigest(), candidate_artifact['sha256'])

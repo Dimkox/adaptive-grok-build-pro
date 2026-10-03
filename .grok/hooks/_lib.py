@@ -447,6 +447,11 @@ def agent_type(payload: dict[str, Any]) -> str:
     ))
 
 
+def agent_generation(payload: dict[str, Any]) -> str | None:
+    value = first(payload.get('generation'), payload.get('agent_generation'), payload.get('agentGeneration'))
+    return str(value) if value is not None else None
+
+
 def stop_hook_active(payload: dict[str, Any]) -> bool:
     return bool(first(payload.get('stop_hook_active'), payload.get('stopHookActive'), False))
 

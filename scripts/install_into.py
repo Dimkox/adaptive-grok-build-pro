@@ -53,6 +53,7 @@ MANAGED_FILES = (
     "scripts/grok_approve.py",
     "scripts/grok_doctor.py",
     "scripts/grok_status.py",
+    "scripts/grok_agent.py",
     "scripts/grok_deploy.py",
     "session_start.py",
     "user_prompt_submit.py",
