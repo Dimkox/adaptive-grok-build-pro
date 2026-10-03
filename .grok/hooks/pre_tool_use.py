@@ -218,6 +218,14 @@ def _record_denial(
     return exact_count, objective_count
 
 
+def _warn_observer_failure() -> None:
+    try:
+        sys.stderr.write('Adaptive Grok: lifecycle observation unavailable; authorization continues.\n')
+    except Exception:
+        # A broken diagnostics sink cannot bypass mandatory authorization either.
+        return
+
+
 def main() -> None:
     try:
         payload = read_payload()
@@ -251,7 +259,7 @@ def main() -> None:
                 observe_tool(root, agent_id(payload), agent_generation(payload))
             except Exception:
                 # Observation is advisory; failure must never skip authorization.
-                pass
+                _warn_observer_failure()
         if action and not context.sensitive_safe:
             allowed = False
             reason = f'Sensitive action {action} denied: root resolution status is {context.resolution_status}.'

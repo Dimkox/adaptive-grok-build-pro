@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import signal
 import subprocess
@@ -43,7 +44,15 @@ class AgentLifecycleTests(unittest.TestCase):
                                      ('Write', {'file_path': str(root / '.grok-stack/adaptive_grok/policy.py'), 'content': 'x'}),
                                      ('Read', {'file_path': str(root / 'VERSION')})]:
                     results = []
+                    warning = io.StringIO()
                     with patch.object(agent_lifecycle, 'observe_tool', side_effect=failure), \
+                         patch.object(sys, 'stderr', warning), \
+                         patch.dict(hook['main'].__globals__, {'read_payload': lambda: {**payload, 'tool_name': tool, 'tool_input': values}, 'emit': results.append}):
+                        hook['main']()
+                    self.assertEqual(results[-1]['decision'], 'allow' if tool == 'Read' else 'deny')
+                    self.assertEqual(warning.getvalue(), 'Adaptive Grok: lifecycle observation unavailable; authorization continues.\n')
+                    with patch.object(agent_lifecycle, 'observe_tool', side_effect=failure), \
+                         patch.object(sys.stderr, 'write', side_effect=OSError('private-marker')), \
                          patch.dict(hook['main'].__globals__, {'read_payload': lambda: {**payload, 'tool_name': tool, 'tool_input': values}, 'emit': results.append}):
                         hook['main']()
                     self.assertEqual(results[-1]['decision'], 'allow' if tool == 'Read' else 'deny')
