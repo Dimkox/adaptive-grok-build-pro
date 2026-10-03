@@ -1648,3 +1648,7 @@ Root cause: the local runner contract preserved a serial coverage fallback when 
 ## 2026-10-03 — Repeated full architecture diff made root-unittest miss the release budget
 
 Root cause: a broad regression test used 12 full Git-backed architecture diffs where a smaller representative set was enough for the release-candidate guard. Local profiling showed the single case at 64,5 seconds and the module still over 180 seconds before reduction. Use per-test timing before another full verifier cycle; do not spend another Trust CI attempt on an unchanged slow serial path.
+
+## 2026-10-03 — Coverage tests still asserted the pre-parallel executable fallback
+
+Root cause: two verifier-doctor tests still assumed PR coverage was controlled by the `coverage` executable on PATH after the runner moved to invocation-owned `python -m coverage` / pytest-cov. External root-unittest therefore failed with exit 1 after the timeout issue was reduced. Update tests with the actual measured contract before pushing another Trust CI candidate.

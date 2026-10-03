@@ -1864,7 +1864,7 @@ class QualityContourTests(unittest.TestCase):
             self.assertEqual(secret['status'], 'fail')
             self.assertIsNotNone(_check(report, 'bandit'))
 
-    def test_coverage_skip_when_missing_in_pr_mode(self) -> None:
+    def test_coverage_module_failure_is_not_skipped_when_executable_is_missing_in_pr_mode(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'
             tests_dir.mkdir()
@@ -1876,10 +1876,13 @@ class QualityContourTests(unittest.TestCase):
                 report = verify(root, mode='pr', record=False)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
-            self.assertEqual(coverage['status'], 'skip')
+            self.assertEqual(coverage['status'], 'fail')
+            self.assertIn('invalid current-run coverage', coverage['stderr'])
+            self.assertIn('fresh invocation-owned coverage', coverage['details'][0]['message'])
             unittest_check = _check(report, 'python-unittest')
             self.assertIsNotNone(unittest_check)
-            self.assertEqual(unittest_check['status'], 'pass')
+            self.assertEqual(unittest_check['status'], 'fail')
+            self.assertIn('Coverage failure', unittest_check['stdout'])
 
     def test_fast_mode_does_not_fail_closed_on_coverage(self) -> None:
         with project_copy(git=True) as root:
@@ -1899,7 +1902,7 @@ class QualityContourTests(unittest.TestCase):
             if coverage is not None:
                 self.assertNotEqual(coverage['status'], 'fail')
 
-    def test_coverage_fail_under_on_tiny_pr_fixture(self) -> None:
+    def test_coverage_executable_shim_does_not_replace_invocation_owned_module(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'
             tests_dir.mkdir()
@@ -1912,7 +1915,8 @@ class QualityContourTests(unittest.TestCase):
                 report = verify(root, mode='pr', record=False)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
-            self.assertEqual(coverage['status'], 'fail')
+            self.assertEqual(coverage['status'], 'pass')
+            self.assertIn('fresh invocation-owned coverage', coverage['details'][0]['message'])
 
     def test_this_repo_shaped_tree_omits_bucket_b(self) -> None:
         with project_copy(git=True) as root:

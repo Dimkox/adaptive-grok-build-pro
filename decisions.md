@@ -949,3 +949,7 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-03 — Срезать повторный full-diff в архитектурном тесте
 
 Профиль root-unittest показал, что один тест 12 раз строил полный exact Git diff и тратил 64,5 секунды локально. Для релизного кандидата оставить репрезентативные мутации runtime, contract_role и local: они покрывают основные способы, которыми metadata может скрыть implementation, и сокращают targeted test до 10,5 секунды. Это ускоряет внешний serial root-unittest, но не заменяет App-owned Trust CI.
+
+## 2026-10-03 — Coverage в PR проверяется invocation-owned Python module
+
+После перехода Core runner на параллельный measured path тесты не должны считать PATH executable `coverage` источником истины. PR/release проверка использует установленный `python -m coverage` / pytest-cov модуль и должна fail-closed при неквалифицированном покрытии, а fake executable shim не может подменить измерение. Это сохраняет внешний Trust CI contract и закрывает ложный skip.
