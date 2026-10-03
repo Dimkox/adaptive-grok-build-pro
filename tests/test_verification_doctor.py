@@ -39,7 +39,13 @@ from adaptive_grok.verification import (
     _sql_safety,
     verify,
 )
-from tests._support import project_copy
+from tests._support import project_copy as full_project_copy
+
+
+def project_copy(*, git: bool = False):
+    # Verifier fixtures exercise synthetic projects, not another copy of the
+    # complete runtime's scanner results. Full-source coverage stays explicit.
+    return full_project_copy(git=git, minimal_runtime=True)
 
 _PASSING_UNITTEST = (
     'import unittest\n'
@@ -294,6 +300,21 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_scanner_fixture_keeps_real_checks_and_full_source_negative_control(self) -> None:
+        from adaptive_grok.verification import _bandit, _ruff
+        with project_copy() as root:
+            self.assertTrue((root / '.grok-stack/adaptive_grok/__init__.py').is_file())
+            self.assertFalse((root / '.grok-stack/adaptive_grok/verification.py').exists())
+            for check in (_ruff(root), _bandit(root)):
+                self.assertEqual(check.status, 'pass' if shutil.which(check.name) else 'skip')
+        with full_project_copy() as root:
+            source = root / '.grok-stack/adaptive_grok/verification.py'
+            self.assertEqual(source.read_bytes(), (ROOT / '.grok-stack/adaptive_grok/verification.py').read_bytes())
+            if shutil.which('bandit'):
+                self.assertEqual(_bandit(root).status, 'pass')
+                (root / '.grok-stack/adaptive_grok/_unsafe_probe.py').write_text('value = eval("1 + 1")\n', encoding='utf-8')
+                self.assertEqual(_bandit(root).status, 'fail')
+
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
         for rel in (
