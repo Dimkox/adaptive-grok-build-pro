@@ -953,3 +953,7 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-03 — Coverage в PR проверяется invocation-owned Python module
 
 После перехода Core runner на параллельный measured path тесты не должны считать PATH executable `coverage` источником истины. PR/release проверка использует установленный `python -m coverage` / pytest-cov модуль и должна fail-closed при неквалифицированном покрытии, а fake executable shim не может подменить измерение. Это сохраняет внешний Trust CI contract и закрывает ложный skip.
+
+## 2026-10-03 — Shard unittest по файлам через discover
+
+В Trust CI runner image нет pytest/xdist, поэтому measured fallback использует stdlib unittest под coverage. Шард запускать как `unittest discover -s tests -p <file>` вместо импортного имени `tests.<module>`, потому что synthetic fixtures могут иметь каталог `tests` без `__init__.py`. Это сохраняет покрытие и убирает image-only `ModuleNotFoundError`.

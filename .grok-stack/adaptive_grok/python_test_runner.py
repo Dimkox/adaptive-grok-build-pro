@@ -350,9 +350,9 @@ def _pytest_command(workers: int, distribution: str) -> list[str]:
             f'--dist={distribution}', '--max-worker-restart=0', '--durations=20', '-ra']
 
 
-def _unittest_modules(root: Path) -> list[str]:
+def _unittest_files(root: Path) -> list[str]:
     tests = root / 'tests'
-    return [f'tests.{path.stem}' for path in sorted(tests.glob('test*.py')) if path.is_file()]
+    return [path.name for path in sorted(tests.glob('test*.py')) if path.is_file()]
 
 
 def _read_limited(path: Path) -> str:
@@ -364,36 +364,37 @@ def _read_limited(path: Path) -> str:
 
 
 def _parallel_coverage_unittest(root: Path, config: Path, data_file: Path, workers: int, environment: dict[str, str]) -> ProcessResult:
-    modules = _unittest_modules(root)
+    test_files = _unittest_files(root)
     command = [
         sys.executable, '-m', 'coverage', 'run', '--parallel-mode', f'--rcfile={config}',
-        '-m', 'unittest', '<module>',
+        '-m', 'unittest', 'discover', '-s', 'tests', '-p', '<test-file>',
     ]
-    if not modules:
+    if not test_files:
         return ProcessResult(command, 5, stderr='no unittest modules discovered')
     started = time.monotonic()
     active: list[tuple[str, subprocess.Popen, Path, Path]] = []
     completed: list[ProcessResult] = []
     cleanup_errors: list[str] = []
-    next_module = 0
-    workers = max(1, min(workers, len(modules)))
+    next_file = 0
+    workers = max(1, min(workers, len(test_files)))
     with _cancellation() as cancelled, tempfile.TemporaryDirectory(prefix='grok-core-parallel-') as out_dir:
         output_root = Path(out_dir)
         try:
-            while next_module < len(modules) or active:
+            while next_file < len(test_files) or active:
                 cancelled.check()
-                while next_module < len(modules) and len(active) < workers:
-                    module = modules[next_module]
-                    next_module += 1
-                    stdout = output_root / f'{module}.stdout'
-                    stderr = output_root / f'{module}.stderr'
+                while next_file < len(test_files) and len(active) < workers:
+                    test_file = test_files[next_file]
+                    next_file += 1
+                    stdout = output_root / f'{test_file}.stdout'
+                    stderr = output_root / f'{test_file}.stderr'
                     out_handle = stdout.open('wb')
                     err_handle = stderr.open('wb')
                     try:
                         process = subprocess.Popen(
                             [
                                 sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
-                                f'--rcfile={config}', '-m', 'unittest', module,
+                                f'--rcfile={config}', '-m', 'unittest', 'discover',
+                                '-s', 'tests', '-p', test_file,
                             ],
                             cwd=root,
                             env={**environment, '_GROK_TEST_CHILD': '1'},
@@ -404,38 +405,39 @@ def _parallel_coverage_unittest(root: Path, config: Path, data_file: Path, worke
                     except OSError as exc:
                         out_handle.close()
                         err_handle.close()
-                        completed.append(ProcessResult(command, 127, stderr=f'{module}: {exc}'))
+                        completed.append(ProcessResult(command, 127, stderr=f'{test_file}: {exc}'))
                         continue
                     out_handle.close()
                     err_handle.close()
-                    active.append((module, process, stdout, stderr))
+                    active.append((test_file, process, stdout, stderr))
                 for item in list(active):
-                    module, process, stdout, stderr = item
+                    test_file, process, stdout, stderr = item
                     if process.poll() is None:
                         continue
                     active.remove(item)
                     completed.append(ProcessResult(
                         [
                             sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
-                            f'--rcfile={config}', '-m', 'unittest', module,
+                            f'--rcfile={config}', '-m', 'unittest', 'discover',
+                            '-s', 'tests', '-p', test_file,
                         ],
                         process.returncode if process.returncode is not None else 1,
                         stdout=_read_limited(stdout),
                         stderr=_read_limited(stderr),
                     ))
                 if time.monotonic() - started > TIMEOUT:
-                    for _module, process, _stdout, _stderr in active:
+                    for _test_file, process, _stdout, _stderr in active:
                         _stop(process)
                     return ProcessResult(command, 124, stderr='parallel coverage unittest timeout',
                                          seconds=time.monotonic() - started, terminal_state='timeout')
                 if active:
                     time.sleep(0.05)
         except BaseException:
-            for module, process, _stdout, _stderr in active:
+            for test_file, process, _stdout, _stderr in active:
                 try:
                     _stop(process)
                 except Exception as exc:
-                    cleanup_errors.append(f'{module}: {type(exc).__name__}: {exc}'[:256])
+                    cleanup_errors.append(f'{test_file}: {type(exc).__name__}: {exc}'[:256])
             raise
     failed = [result for result in completed if result.returncode != 0]
     stdout = ''.join(result.stdout[-4000:] for result in failed[-20:])

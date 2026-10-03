@@ -1652,3 +1652,7 @@ Root cause: a broad regression test used 12 full Git-backed architecture diffs w
 ## 2026-10-03 — Coverage tests still asserted the pre-parallel executable fallback
 
 Root cause: two verifier-doctor tests still assumed PR coverage was controlled by the `coverage` executable on PATH after the runner moved to invocation-owned `python -m coverage` / pytest-cov. External root-unittest therefore failed with exit 1 after the timeout issue was reduced. Update tests with the actual measured contract before pushing another Trust CI candidate.
+
+## 2026-10-03 — Parallel unittest fallback assumed tests is an import package
+
+Root cause: the Trust CI image takes the no-pytest fallback and the new sharder invoked synthetic tests as `tests.test_ok`, but those fixtures do not create `tests/__init__.py`. Local pytest hid this because it collected by file. Reproduce fallback behavior in the immutable runner image before another push when local and Trust CI toolchains differ.
