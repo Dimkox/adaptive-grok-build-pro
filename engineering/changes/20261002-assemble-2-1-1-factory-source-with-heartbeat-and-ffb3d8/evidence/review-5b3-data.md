@@ -1,0 +1,22 @@
+# Fresh Core data review
+
+Verdict: PASS for the bounded Core schema-025 test-fixture/refusal changes; no data finding. This does not accept F/M7 durable lookup or migration026, production rollout, external approval, merge, or release.
+
+Source base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; candidate HEAD before/after: `5b3ee0026f8d1a7166e3d1cf16d1511d261c4d0c`; Git tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`. Canonical fingerprint before/after: `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`. Candidate porcelain inventory empty both times.
+
+reviewed-tree-modified: no
+
+Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/data-5b3-rou5Sn/snapshot`. `mktemp -d` created owner-only 0700 scratch below trusted owner-only 0700 parent. `git clone --quiet --no-hardlinks .worktrees/v211-combined-source <scratch>/snapshot` reproduced clean exact HEAD; canonical fingerprint matched before any scratch mutation. No candidate tests, generated artifacts, PostgreSQL, Docker, credentials, external actions, or subagents.
+
+Loaded complete fresh brief, selected data_reviewer instructions, adaptive-delivery/data-change/verification-evidence skills and package route ffb3d81e031f. Read approved recovery design and actual original-base product diff, reset leaf, both callers, surrounding disposable-target guard and migration tests. Historical e8a4 reports were not acceptance evidence.
+
+Commands and observed evidence:
+
+- `git diff --name-only 63799f8760d3a55028d83ab5ff0116ececf8f7d1..HEAD -- factory/src` and corresponding factory/migrations stat: empty. Existing runtime/schema/migrations001-025 are byte-unchanged; no new schema/index/backfill or production query-plan impact in this Core contour. Relevant factory inventory is exactly postgres_fixture_reset.py, postgres_restart_probe.py, test_execution_persistence_postgres.py, test_postgres_fixture_reset.py.
+- In scratch: `taskset -c 8,9 env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src python3 -m unittest factory.tests.test_postgres_fixture_reset.FixtureResetTests factory.tests.test_execution_persistence_postgres.RecoveryContentionAcceptanceTests factory.tests.test_migrations.MigrationTests`: 34 tests PASS, 0.171s. These execute the exact closed 43-table statement digest, no CASCADE, caller-specific counter/observation suffixes, exception identity, rollback-shaped context exit, and only typed wrapped LockNotAvailable admission; other timeout/SQL/integrity errors propagate. Migration unit tests cover immutable checksums, contiguous inventory and refusal/preflight/restart identity guards with synthetic subprocess inputs.
+- Reviewed guard ordering: exact container ID/name/image/running/nonce, loopback published port, closed owner URL fields, final PID1 and direct/inside cluster-system identity precede main migration/reset; restart revalidates identity before and after. Guard correctness beyond synthetic inputs was not independently executed here.
+- Parsed private `full-pr-5b3.json`: status pass; fingerprint matches candidate; factory-postgres-exit pass, `Ran 1016 tests in 521.738s; OK (skipped=2)`. This is fresh coordinator-run exact-candidate PostgreSQL evidence, not an independently rerun reviewer claim. Static review of new real-PG tests confirms assertions for unchanged migrations, rollback retaining rows, unlisted-FK refusal without CASCADE, runtime TRUNCATE denial, positively observed exact-holder lock contention, no partial effects after refusal, then one retry and no duplicate effects.
+
+Mutation: scratch-only leaf swallowed RuntimeError. `taskset -c 8,9 env PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src python3 -m unittest factory.tests.test_postgres_fixture_reset.FixtureResetTests.test_leaf_propagates_the_original_sql_failure factory.tests.test_postgres_fixture_reset.FixtureResetTests.test_caller_sql_failure_stops_suffix_and_exits_its_transaction`: exit1, 2 tests/3 failures (missing propagated error; both callers executed a second SQL statement). KILLED. Scratch deliberately retains mutant; candidate remains unchanged.
+
+Limitations: independently unexecuted actual PostgreSQL privileges, FK semantics, lock timing and transaction durability/restart effects, production volume/lock/downtime behavior, tenant lookup and F026; no production writes or qualification. Synthetic context tests establish wrapper behavior only. Existing two conditional full-suite skips remain skips, not passes. No blanket mutation score or external Trust CI acceptance claim.

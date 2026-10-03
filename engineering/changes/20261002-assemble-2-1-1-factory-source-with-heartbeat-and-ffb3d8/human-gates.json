@@ -108,6 +108,30 @@
       "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
       "route_id": "ffb3d81e031f",
       "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-release",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T04:10:48+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner delegates local gates and PR delivery for release 2.1.1; approve only PR238 metadata/readiness updates, not external human signatures or merge bypass.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls/238",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-release",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T04:10:49+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Standing release delegation permits exact PR238 merge only after fresh local verification, independent reviews, exact-head App Trust CI and required external approvals; no direct main push or admin bypass.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls/238/merge",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
     }
   ],
   "route_id": "ffb3d81e031f",
