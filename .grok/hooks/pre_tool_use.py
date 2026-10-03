@@ -249,7 +249,8 @@ def main() -> None:
             try:
                 from adaptive_grok.agent_lifecycle import observe_tool
                 observe_tool(root, agent_id(payload), agent_generation(payload))
-            except (OSError, TimeoutError):
+            except Exception:
+                # Observation is advisory; failure must never skip authorization.
                 pass
         if action and not context.sensitive_safe:
             allowed = False

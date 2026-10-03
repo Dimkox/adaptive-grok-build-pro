@@ -20,6 +20,52 @@ T0 = datetime(2030, 1, 1, tzinfo=timezone.utc)
 
 
 class AgentLifecycleTests(unittest.TestCase):
+    def test_observer_failures_cannot_authorize_sensitive_tools(self) -> None:
+        from adaptive_grok.router import build_route
+        with project_copy(git=True) as root:
+            set_active_route(root, build_route(root, 'Fix security policy boundary', 'synthetic').to_dict())
+            payload = {'cwd': str(root), 'agent_id': 'child', 'generation': 'generation'}
+            for state in ({'active': [], 'history': []}, {'active': {'child': []}, 'history': []},
+                          {'active': {'child': {'route_id': 'synthetic', 'task_id': 'synthetic'}}, 'history': {}}):
+                dump_json(root / '.grok-stack/runtime/agent-state.json', state)
+                for tool, values in [('Bash', {'command': 'git push origin feature'}),
+                                     ('Write', {'file_path': str(root / '.grok-stack/adaptive_grok/policy.py'), 'content': 'x'})]:
+                    with self.subTest(state=state, tool=tool):
+                        self.assertEqual(run_hook(root, 'pre_tool_use.py', {**payload, 'tool_name': tool, 'tool_input': values})[1]['decision'], 'deny')
+            # Inject arbitrary observer Exceptions at the actual hook boundary;
+            # policy evaluation and hook output remain real.
+            import runpy
+            from adaptive_grok import agent_lifecycle
+            with patch.object(sys, 'path', [str(root / '.grok/hooks'), *sys.path]):
+                hook = runpy.run_path(str(root / '.grok/hooks/pre_tool_use.py'))
+            for failure in (RuntimeError('observer'), TypeError('observer'), AttributeError('observer')):
+                for tool, values in [('Bash', {'command': 'git push origin feature'}),
+                                     ('Write', {'file_path': str(root / '.grok-stack/adaptive_grok/policy.py'), 'content': 'x'}),
+                                     ('Read', {'file_path': str(root / 'VERSION')})]:
+                    results = []
+                    with patch.object(agent_lifecycle, 'observe_tool', side_effect=failure), \
+                         patch.dict(hook['main'].__globals__, {'read_payload': lambda: {**payload, 'tool_name': tool, 'tool_input': values}, 'emit': results.append}):
+                        hook['main']()
+                    self.assertEqual(results[-1]['decision'], 'allow' if tool == 'Read' else 'deny')
+
+    def test_changed_active_task_refuses_heartbeat_ack_and_resume_without_mutation(self) -> None:
+        from adaptive_grok.state import get_active_route
+        for event in ('heartbeat', 'status-ack', 'interrupt-ack', 'resume'):
+            with self.subTest(event=event), project_copy() as root:
+                record = self.start(root)
+                status = self.event(root, record, 'status-request', 1)
+                interrupt = self.event(root, record, 'interrupt-request', 2)
+                values = {'request_id': (status if event == 'status-ack' else interrupt)['status_request' if event == 'status-ack' else 'interrupt_request']['request_id']}
+                if event == 'resume':
+                    self.event(root, record, 'interrupt-ack', 3, **values)
+                route = get_active_route(root)
+                route['change_id'] = 'different-task'
+                set_active_route(root, route)
+                before = get_agent_state(root)
+                with self.assertRaises(ValueError):
+                    self.event(root, record, event, 4, **(values if event.endswith('ack') else {}))
+                self.assertEqual(get_agent_state(root), before)
+
     def test_tool_receipt_invalidation_and_verifier_cancel_preserve_writer_progress(self) -> None:
         from adaptive_grok import verification as verifier
         from adaptive_grok.agent_lifecycle import update_agent
@@ -190,6 +236,7 @@ class AgentLifecycleTests(unittest.TestCase):
             self.assertNotEqual(resumed['generation'], record['generation'])
 
     def test_ascii_task_identity_remains_unchanged_and_unicode_session_fallback_is_supported(self) -> None:
+        from adaptive_grok.agent_lifecycle import update_agent
         with project_copy() as root:
             self.assertEqual(self.start(root)['task_id'], 'task-229')
         with project_copy() as root:
@@ -199,6 +246,12 @@ class AgentLifecycleTests(unittest.TestCase):
             self.assertRegex(record['task_id'], r'^task:[0-9a-f]{64}$')
             self.assertEqual(record_agent_start(root, 'ru-child', 'general_implementer')['task_id'],
                              record['task_id'])
+            update_agent(root, 'ru-child', record['generation'], 'route-ru', record['task_id'], 'heartbeat', now=T0)
+        with project_copy() as root:
+            set_active_route(root, {'route_id': 'route-229', 'write_agent': 'general_implementer'})
+            record = record_agent_start(root, 'writer-1', 'general_implementer', now=T0)
+            self.assertEqual(record['task_id'], 'route-229')
+            update_agent(root, 'writer-1', record['generation'], 'route-229', 'route-229', 'heartbeat', now=T0)
 
     def test_malformed_and_oversized_task_source_refuse_without_agent_state(self) -> None:
         for source in ('', None, [], 'task with spaces', 'task\nsecret', 'task@value',

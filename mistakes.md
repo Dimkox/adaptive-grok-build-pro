@@ -1620,3 +1620,11 @@ Root cause: I kept a diagnostic Python probe under ignored runtime storage, but 
 ### 2026-10-03 — Synthetic fixture literals still require the unchanged scanner
 
 Root cause: the fixture used a long static disposable password literal that the generic-secret rule correctly rejected, and the focused writer checks did not exercise that scanner before handoff. Generate an ephemeral local UUID password using the existing disposable-fixture pattern; both the repaired source and a separate private failing scanner control prove no regex waiver.
+
+## 2026-10-03 — Повторные полные проверки: максимум 3 минуты
+
+Причина: координатор запускал тяжёлую проверку до окончательной готовности дерева; дешёвые дефекты служебного Python-пробника и синтетического литерала обнаружились уже внутри полного прогона, а последующие изменения делали доказательство устаревшим. Успешный полный прогон Core e8a4 занял 14 минут 32 секунды и не соответствует новому прямому требованию пользователя: проверочный запуск максимум 180 секунд. Дешёвые условия проверять до запуска, кандидат замораживать, отчёты вносить одним пакетом; таймаут считать незавершённой проверкой, а безопасное сокращение полного набора до лимита — нерешённым ограничением, не разрешением пропустить тесты или Trust CI.
+
+## 2026-10-03 — Неопределённый результат оборвал параллельную координацию
+
+Причина: координатор передал отсутствующий exit_code в store(), который принимает только сериализуемые значения, и прервал обработку двух уже начатых отправок веток. Точные HEAD обеих веток подтверждены чтением GitHub; повторная отправка не потребовалась. Сохранять отсутствующие поля как null и обрабатывать результаты каждого задания отдельно, чтобы ошибка метаданных не теряла соседние результаты.

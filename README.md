@@ -43,6 +43,96 @@ On Linux, `auto` uses the minimum of 28, process affinity or CPU-count fallback,
 
 Where this runner cannot provide its required parallel-process cleanup, a positive request selects the existing `unittest-degraded` engine before execution. Supported parallel execution retains its strict pins; measured serial execution retains pinned coverage. An actual failed parallel run is never retried serially. The implementation lives in `.grok-stack/adaptive_grok/python_test_runner.py` and its private `_cpu_capacity.py` helper; native Windows and older-interpreter qualification remain separate from fixture-based evidence.
 
+## Как пользоваться кандидатом 2.1.1
+
+2.1.1 сейчас — исходный кандидат, а не опубликованный ZIP. Опубликованный релиз — v2.0.19. Наличие исходников F/G не означает их принятие, развёртывание Trust CI или готовую автономную фабрику. BB, rotator, VibeVM, FPF, prediction и Linux setup остаются выключенными по умолчанию; полный внешний пилот и эксплуатационная квалификация не подтверждены. U4/macOS в этот объём не входят.
+
+1. Получите исходники и зафиксируйте, что именно проверяете:
+
+   ```bash
+   git clone https://github.com/Dimkox/adaptive-grok-build-pro.git
+   cd adaptive-grok-build-pro
+   git fetch --all --prune
+   git switch --track origin/feat/v211-combined-source
+   git rev-parse HEAD
+   ```
+
+   Это ветка Core-кандидата, не подтверждённый полный релиз F/G. Для полного кандидата используйте только точную ветку/commit из актуального PROJECT_STATE.json и принятого PR; если такого указания нет, не подменяйте его тегом 2.1.1. Перед дальнейшей работой выполните измерение CPU/affinity/cgroup по AGENTS.md и сохраните результат локально; затем прочитайте START_HERE.md, PROJECT_STATE.json и AGENTS.md. Команды Git создают локальную копию/обновляют refs, но не меняют удалённый репозиторий.
+
+2. Проверьте инструменты:
+
+   ```bash
+   python3 scripts/grok_doctor.py --offer-install
+   ```
+
+   Doctor выводит состояние и предложения установки; он не устанавливает зависимости за вас. Для локального стека нужны Python ≥3.10 и Git ≥2.34; для Python-пакета factory — Python ≥3.11. Grok Build CLI нужен для TUI: установите его отдельно и выполните `grok` для входа. Node/npm, PHP/Composer нужны соответствующим профилям, Docker — отдельному операторскому/проверочному окружению. Не используйте scripts/bootstrap.sh: его старый вызов `--force` несовместим с текущим установщиком.
+
+3. Сначала получите план для явно выбранного своего репозитория:
+
+   ```bash
+   python3 scripts/install_into.py --dry-run /absolute/path/to/your/repo
+   # Эквивалентный явный режим:
+   python3 scripts/install_into.py --plan /absolute/path/to/your/repo
+   ```
+
+   План — JSON с управляемыми файлами, конфликтами и советами по зависимостям. Эти режимы читают существующую цель, не переписывают её и не запускают dependency runner. Примените план обычным проверяемым изменением в отдельной ветке своего репозитория. `--force` запрещён.
+
+   Для нового проекта на поддерживаемом Linux выберите ещё не существующий путь:
+
+   ```bash
+   python3 scripts/install_into.py --materialize-new /absolute/path/to/new/repo
+   ```
+
+   Эта команда создаёт файлы: сначала проверенный соседний staging-каталог, затем атомарно публикует новую цель. Существующая цель, symlink или отсутствие требуемых no-follow/renameat2 возможностей приводят к отказу. Установка доставляет scripts/, .grok/, .grok-stack/, AGENTS.md и исходный factory payload; не запускает сервис, миграции или inference. trust-ci/ и GitHub Actions не устанавливаются. Архитектурные system.yaml/rules.yaml/adoption.json принадлежат целевому проекту и требуют отдельного ручного принятия.
+
+4. Откройте целевой проект в Grok Build, доверьте проверенные project hooks через `/hooks-trust` и сформулируйте одну конкретную задачу. UserPromptSubmit создаёт локальный маршрут. Если интеграция не вызвала hook, создайте его явно:
+
+   ```bash
+   cd /absolute/path/to/your/repo
+   python3 scripts/grok_route.py "Добавить нужное поведение с указанными критериями приёмки" --session first-task --json
+   python3 scripts/grok_route.py --show --json
+   python3 scripts/grok_change.py start --title "Первая задача"
+   python3 scripts/grok_gate.py status
+   python3 scripts/grok_status.py
+   ```
+
+   `grok_route.py` создаёт маршрут, а `grok_change.py start` — пакет новой задачи; если пакет уже существует, повторный `start` пропустите. Создание маршрута/пакета пишет локальное состояние .grok-stack/runtime/active-route.json и engineering/changes/<id>/. Не перезаписывайте уже активную задачу новым маршрутом. Используйте `/adaptive-delivery`: только выбранные allowed_agents, один write_agent на изолированную ветку/worktree, проверки и независимые reviewers. Если route.human_gates содержит scope_and_design_approval, человек сначала утверждает конкретный scope/design; `grok_gate.py decide` лишь фиксирует уже принятое решение, не выдаёт внешнее разрешение. Production/external actions требуют собственного точного делегирования и применимых внешних approvals.
+
+5. Для уже реально созданного дочернего агента heartbeat/watchdog дают наблюдаемость. Hook SubagentStart регистрирует его автоматически; при отсутствии hook:
+
+   ```bash
+   python3 scripts/grok_agent.py start --agent-id child-1 --agent-type SELECTED_ROLE
+   ```
+
+   SELECTED_ROLE берите из маршрута; сохраните возвращённые generation, route_id и task_id. Ниже замените GENERATION/ROUTE/TASK точными значениями ответа, а не названием задачи:
+
+   ```bash
+   python3 scripts/grok_agent.py heartbeat --agent-id child-1 --generation GENERATION --route-id ROUTE --task-id TASK
+   python3 scripts/grok_agent.py progress --agent-id child-1 --generation GENERATION --route-id ROUTE --task-id TASK --checkpoint implementation
+   python3 scripts/grok_agent.py watchdog
+   python3 scripts/grok_agent.py watch --iterations 12 --interval 5
+   python3 scripts/grok_status.py
+   ```
+
+   heartbeat/progress обновляют локальный agent-state.json; watchdog/watch читают диагностические записи и печатают JSON. По умолчанию предупреждения начинаются после 180 секунд без heartbeat и 600 секунд без полезного checkpoint. Watch ограничен числом итераций; фонового daemon нет. Свежий heartbeat не доказывает продвижение. При зависании: status-request → реальное сообщение контроллера → status-ack после ответа. Для восстановления: interrupt-request → реальное native interrupt → interrupt-ack после наблюдаемого подтверждения → resume → native followup тому же агенту с новой generation. Watchdog сам никого не прерывает и не заменяет writer; подробные команды — engineering/runbooks/local-agent-watchdog.md.
+
+6. Проверяйте результат по файлам и свежему evidence, а не по сообщениям агента:
+
+   ```bash
+   git status --short
+   git diff
+   timeout --signal=TERM --kill-after=3s 177s python3 scripts/grok_verify.py --mode pr
+   python3 scripts/grok_status.py
+   ```
+
+   Каждый проверочный запуск ограничен 180 секундами: TERM на 177-й секунде и KILL спустя ещё 3 секунды. Таймаут (обычно код 124, при принудительном завершении 137) означает незавершённую проверку, не PASS. Исторический полный Core-прогон за 14 минут 32 секунды не укладывается в этот предел; сокращение полного обязательного набора до лимита пока не подтверждено. Не заменяйте обязательные проверки выборочным PASS.
+
+   Verifier запускает проверки и пишет локальные receipts в .grok-stack/runtime/receipts/<route-id>/. После CPU-снимка и маршрутизации запускайте его до тяжёлой проверки: он выбирает scope по действительному base..HEAD и dirty inventory. Зафиксируйте profile/reason, проверенные пути и skips; skipped не означает passed. Затем независимые route-selected reviewers проверяют этот кандидат; отчёты хранятся в engineering/changes/<id>/evidence/. После сохранения отчётов требуется финальная свежая проверка. Status показывает evidence_gaps, package_incomplete и agent_diagnostics; изменение дерева делает прежние receipts устаревшими.
+
+7. Доставка — отдельная ветка и PR. Только явно делегированные push/PR/merge/publish операции выполняются с точными ресурсами и соответствующими grants. Прямой push в main запрещён. Локальный PASS не разрешает merge: внешний GitHub App должен выдать adaptive-trust-ci/verified@<policy-sha12> на точный актуальный PR HEAD, а человек — требуемые подписанные approvals вне среды агента. Изменение HEAD/base/policy/holdout требует новой проверки и approvals. Установленный consumer stack не разворачивает эту внешнюю службу; её настраивает оператор отдельно.
+
+   При отказе verifier изучите конкретный failed check, верните минимальный ремонт тому же writer и повторите актуальные проверки. При отказе установщика сохраните указанный stage для ручной инспекции, если сообщено `manual cleanup required`; не удаляйте неизвестную цель. При неоднозначном runtime/provider результате сохраните состояние и audit, выполните документированное reconcile, не повторяйте публикацию/inference вслепую. Для реального factory control plane и L5 нужны отдельные операторские конфигурация, зависимости, authority и rollout/recovery runbooks; установка локального стека сама их не активирует и не выдаёт live URL.
+
 ## Verification scope selection
 
 This is the second mandatory [startup step](AGENTS.md#second-mandatory-startup-step-select-verification-scope-before-heavy-work), after measured capacity and route/dependency scheduling and before verification-heavy work: run `python3 scripts/grok_verify.py --mode pr` against the actual trusted base..HEAD plus the staged/unstaged/untracked inventory. Record the selector's profile/reason, exact identities, path digest and skips; no manual "factory unaffected" heuristic or historical component pass expands its closed allowlist. Historical/reused evidence retains its original exact Git identity and scope and never becomes a fresh pass. External exact-head Trust CI and approvals remain mandatory.

@@ -138,8 +138,10 @@ def _matching(root: Path, record: dict, generation: str, route_id: str, task_id:
     for value in (generation, route_id, task_id):
         _identity(value)
     route = get_active_route(root) or {}
+    current_task = _task_identity(route['change_id'] if 'change_id' in route else
+                                  route.get('session_id', route.get('route_id') or 'unrouted'))
     if (record.get('generation') != generation or record.get('route_id') != route_id or
-            record.get('task_id') != task_id or
+            record.get('task_id') != task_id or current_task != task_id or
             (route.get('route_id') and route['route_id'] != route_id)):
         raise ValueError('stale-or-mismatched-instance')
 
@@ -272,8 +274,12 @@ def observe_tool(root: Path, agent_id: str, generation: str | None, *, finished:
     """Only explicit, known child identity is eligible. Tool input/output is never stored."""
     if not generation:
         return
-    record = get_agent_state(root).get('active', {}).get(agent_id)
-    if not record:
+    state = get_agent_state(root)
+    active = state.get('active', {})
+    if not isinstance(active, dict) or not isinstance(state.get('history', []), list):
+        return
+    record = active.get(agent_id)
+    if not isinstance(record, dict) or not record:
         return
     try:
         update_agent(root, agent_id, generation, record['route_id'], record['task_id'], 'activity',
