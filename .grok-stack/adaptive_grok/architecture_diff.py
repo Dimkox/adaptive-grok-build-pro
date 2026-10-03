@@ -45,6 +45,33 @@ _SCHEMA_PATHS = (
 _GIT_EXECUTABLE = shutil.which("git")
 _GIT_TIMEOUT_SECONDS = 30.0
 _LINE_STAT_TIMEOUT_SECONDS = 2.0
+_GIT_FORMAT_CACHE: dict[tuple[object, ...], int] = {}
+_GIT_COMMIT_CACHE: dict[tuple[object, ...], bool] = {}
+_GIT_BLOB_CACHE: dict[tuple[object, ...], dict[str, bytes | None]] = {}
+_MATERIALIZED_STATE_CACHE: dict[tuple[object, ...], "_ArchitectureState | None"] = {}
+_GIT_BLOB_CACHE_LIMIT = 512
+_MATERIALIZED_STATE_CACHE_LIMIT = 128
+
+
+def _binding_key(binding: "_GitBinding") -> tuple[object, ...]:
+    return (
+        str(binding.root),
+        str(binding.git_directory),
+        tuple((str(path), identity) for path, identity in binding.registrations),
+        tuple(str(path) for path in binding.absent_registrations),
+    )
+
+
+def _remember_blob_cache(key: tuple[object, ...], values: dict[str, bytes | None]) -> None:
+    if len(_GIT_BLOB_CACHE) >= _GIT_BLOB_CACHE_LIMIT:
+        _GIT_BLOB_CACHE.clear()
+    _GIT_BLOB_CACHE[key] = values
+
+
+def _remember_materialized_state(key: tuple[object, ...], value: "_ArchitectureState | None") -> None:
+    if len(_MATERIALIZED_STATE_CACHE) >= _MATERIALIZED_STATE_CACHE_LIMIT:
+        _MATERIALIZED_STATE_CACHE.clear()
+    _MATERIALIZED_STATE_CACHE[key] = value
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -373,18 +400,40 @@ def _exact_commit(root: Path, value: str, *, label: str) -> str:
     object_id_length = _git_object_id_length(root)
     if not isinstance(value, str) or len(value) != object_id_length or _EXACT_SHA.fullmatch(value) is None:
         raise ArchitectureError(f"{label} must match the exact repository commit format", code="git")
-    kind = run_git_bounded(root, ["cat-file", "-t", value], allow_failure=True, limit=64)
+    binding = _git_binding(root)
+    key = (*_binding_key(binding), "commit", value)
+    if _GIT_COMMIT_CACHE.get(key) is True:
+        binding.verify()
+        return value
+    returncode, kind, _error = _run_capped(
+        _git_command(["cat-file", "-t", value], safe_directory=binding.root,
+                     git_directory=binding.git_directory, work_tree=binding.root),
+        cwd=binding.root, env=_git_environment(), stdout_limit=64,
+        stderr_limit=65_536, timeout=_GIT_TIMEOUT_SECONDS,
+    )
+    binding.verify()
+    if returncode:
+        kind = None
     if kind != b"commit\n":
         raise ArchitectureError(f"{label} is not an available commit object", code="git")
+    _GIT_COMMIT_CACHE[key] = True
     return value
 
 
 def _git_object_id_length(root: Path) -> int:
+    binding = _git_binding(root)
+    key = (*_binding_key(binding), "object-format")
+    cached = _GIT_FORMAT_CACHE.get(key)
+    if cached is not None:
+        binding.verify()
+        return cached
     value = _required_output(run_git_bounded(root, ["rev-parse", "--show-object-format"], limit=32),
                              operation="resolve Git object format")
     if value == b"sha1\n":
+        _GIT_FORMAT_CACHE[key] = 40
         return 40
     if value == b"sha256\n":
+        _GIT_FORMAT_CACHE[key] = 64
         return 64
     raise ArchitectureError("unsupported Git object format", code="git")
 
@@ -786,6 +835,27 @@ def _profile_git_blob(root: Path, sha: str, path: str) -> _BlobProfile | None:
     return _BlobProfile(size=size, digest=digest, binary=binary, content=None)
 
 
+def _profile_blob_value(value: bytes | None) -> _BlobProfile | None:
+    if value is None:
+        return None
+    return _BlobProfile(
+        size=len(value),
+        digest=hashlib.sha256(value).hexdigest(),
+        binary=b"\0" in value,
+        content=value,
+    )
+
+
+def _batch_git_profiles(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, _BlobProfile | None] | None:
+    try:
+        blobs = _git_blobs(root, sha, paths)
+    except ArchitectureError as exc:
+        if exc.code == "limit":
+            return None
+        raise
+    return {path: _profile_blob_value(value) for path, value in blobs.items()}
+
+
 @dataclass(frozen=True)
 class _ArchitectureState:
     snapshot: ArchitectureSnapshot
@@ -801,6 +871,18 @@ def _materialized_state(
     adoption_base: bool = False,
     bootstrap_baseline: bool = False,
 ) -> _ArchitectureState | None:
+    binding = _git_binding(root)
+    cache_key = (
+        *_binding_key(binding),
+        "materialized-state",
+        sha,
+        adoption_base,
+        bootstrap_baseline,
+        ADOPTION_BASE_SHA,
+    )
+    if cache_key in _MATERIALIZED_STATE_CACHE:
+        binding.verify()
+        return _MATERIALIZED_STATE_CACHE[cache_key]
     model_values = tuple(_git_blob(root, sha, path) for path in _MODEL_PATHS)
     marker_value = _git_blob(root, sha, _ADOPTION_PATH)
     if model_values == (None, None):
@@ -809,6 +891,7 @@ def _materialized_state(
                 "architecture adoption marker exists without the model", code="missing"
             )
         if (adoption_base and sha == ADOPTION_BASE_SHA) or bootstrap_baseline:
+            _remember_materialized_state(cache_key, None)
             return None
         raise ArchitectureError("architecture model is missing outside the adoption base", code="missing")
     if any(value is None for value in model_values):
@@ -834,12 +917,14 @@ def _materialized_state(
         raise ArchitectureError(
             "architecture adoption marker id does not match the model", code="schema"
         )
-    return _ArchitectureState(
+    state = _ArchitectureState(
         snapshot=snapshot,
         contracts=records,
         adoption_state="adopted",
         adoption_digest=adoption["digest"],
     )
+    _remember_materialized_state(cache_key, state)
+    return state
 
 
 def _worktree_state(root: Path) -> _ArchitectureState:
@@ -1071,7 +1156,13 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         raise ArchitectureError("diff file batch path limit exceeded", code="limit")
     if not requested:
         return {}
+    binding = _git_binding(root)
     _exact_commit(root, sha, label="commit_sha")
+    cache_key = (*_binding_key(binding), "blobs", sha, requested)
+    cached = _GIT_BLOB_CACHE.get(cache_key)
+    if cached is not None:
+        binding.verify()
+        return dict(cached)
     encoded = tuple(os.fsencode(path) for path in requested)
     if any(b"\0" in path for path in encoded) or sum(map(len, encoded)) > MAX_BATCH_INPUT_BYTES:
         raise ArchitectureError("diff file batch path input limit exceeded", code="limit")
@@ -1137,6 +1228,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         cursor = finish + 1
     if cursor != len(output):
         raise ArchitectureError("unexpected trailing Git blob batch output", code="git")
+    _remember_blob_cache(cache_key, dict(values))
     return values
 
 
@@ -1265,15 +1357,27 @@ def diff_architecture(
         bootstrap_baseline=bootstrap_baseline,
     )
     paths = _changed_paths(repository, base, head, worktree=worktree)
+    base_profiles = _batch_git_profiles(repository, base, paths)
+    head_profiles = (
+        None if worktree else _batch_git_profiles(repository, _required_head(head), paths)
+    )
     artifacts: list[ChangedArtifact] = []
     artifact_bytes = 0
     head_side = None if worktree else _required_head(head)
     for path in paths:
-        base_profile = _profile_git_blob(repository, base, path)
+        base_profile = (
+            base_profiles[path]
+            if base_profiles is not None
+            else _profile_git_blob(repository, base, path)
+        )
         head_profile = (
             _profile_worktree_blob(repository, path)
             if worktree
-            else _profile_git_blob(repository, head_side, path)
+            else (
+                head_profiles[path]
+                if head_profiles is not None
+                else _profile_git_blob(repository, head_side, path)
+            )
         )
         artifact_bytes += (base_profile.size if base_profile else 0) + (
             head_profile.size if head_profile else 0

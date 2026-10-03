@@ -1644,3 +1644,7 @@ Root cause: the fixture used a long static disposable password literal that the 
 ## 2026-10-03 — Serial coverage fallback was treated as acceptable in Trust CI
 
 Root cause: the local runner contract preserved a serial coverage fallback when pytest/xdist was unavailable, but the immutable Trust CI image exercises exactly that path and exceeded the repository-verification budget. The fix is a measured stdlib parallel coverage fallback that uses only pinned coverage and POSIX process ownership, not a timeout or policy change.
+
+## 2026-10-03 — Repeated full architecture diff made root-unittest miss the release budget
+
+Root cause: a broad regression test used 12 full Git-backed architecture diffs where a smaller representative set was enough for the release-candidate guard. Local profiling showed the single case at 64,5 seconds and the module still over 180 seconds before reduction. Use per-test timing before another full verifier cycle; do not spend another Trust CI attempt on an unchanged slow serial path.

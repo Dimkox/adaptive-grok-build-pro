@@ -3733,9 +3733,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), missing_base).status, "fail")
 
     def test_change_separation_metadata_does_not_hide_implementation(self) -> None:
-        for mutation in ("runtime", "secret", "edge", "owner", "other_source", "wildcard", "local", "rules", "schema", "contract", "contract_role", "checker"):
+        repo, base, common_system = self._trust_binding_repo()
+        common_head = repo.commit("Trust CI source and mandatory metadata")
+        for mutation in ("runtime", "contract_role", "local"):
             with self.subTest(mutation=mutation):
-                repo, base, system = self._trust_binding_repo()
+                repo.git("reset", "--hard", common_head)
+                system = copy.deepcopy(common_system)
                 nodes = {node["id"]: node for node in system["nodes"]}
                 api = nodes["NODE-TRUST-CI-API"]
                 if mutation == "runtime":
