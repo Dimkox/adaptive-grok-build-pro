@@ -96,6 +96,18 @@
       "resource": null,
       "route_id": "ffb3d81e031f",
       "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-delivery",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T02:48:28+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner explicitly requested full 2.1.1 release delivery through source PRs and git push. Record only the exact Core draft PR creation endpoint for feat/v211-combined-source to main; scope/design remains3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908. This local decision does not approve merge, deployed policy, live data writes, human security signatures, tags or publication; all exact-head acceptance gates remain required.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
     }
   ],
   "route_id": "ffb3d81e031f",
