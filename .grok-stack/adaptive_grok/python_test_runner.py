@@ -331,6 +331,8 @@ def select_engine(workers: int, measured: bool) -> tuple[int, str]:
     pass before execution, never after a failure, and never claim the parallel
     backend it did not use.
     """
+    if workers > 0 and measured and not parallel_engine_ready(measured) and _parallel_process_cleanup_supported():
+        return workers, "coverage-unittest-parallel"
     if workers > 0 and (
         not parallel_engine_ready(measured) or not _parallel_process_cleanup_supported()
     ):
@@ -346,6 +348,110 @@ def _pytest_command(workers: int, distribution: str) -> list[str]:
     return [sys.executable, '-m', 'pytest', '-c', os.devnull, '-p', 'xdist.plugin', '-p', 'no:cacheprovider',
             '--import-mode=prepend', '--rootdir=.', '-o', 'python_files=test*.py', '-q', '-n', str(workers),
             f'--dist={distribution}', '--max-worker-restart=0', '--durations=20', '-ra']
+
+
+def _unittest_modules(root: Path) -> list[str]:
+    tests = root / 'tests'
+    return [f'tests.{path.stem}' for path in sorted(tests.glob('test*.py')) if path.is_file()]
+
+
+def _read_limited(path: Path) -> str:
+    try:
+        with path.open('rb') as handle:
+            return handle.read(OUTPUT_LIMIT).decode('utf-8', errors='backslashreplace')
+    except OSError as exc:
+        return f'{type(exc).__name__}: {exc}'
+
+
+def _parallel_coverage_unittest(root: Path, config: Path, data_file: Path, workers: int, environment: dict[str, str]) -> ProcessResult:
+    modules = _unittest_modules(root)
+    command = [
+        sys.executable, '-m', 'coverage', 'run', '--parallel-mode', f'--rcfile={config}',
+        '-m', 'unittest', '<module>',
+    ]
+    if not modules:
+        return ProcessResult(command, 5, stderr='no unittest modules discovered')
+    started = time.monotonic()
+    active: list[tuple[str, subprocess.Popen, Path, Path]] = []
+    completed: list[ProcessResult] = []
+    cleanup_errors: list[str] = []
+    next_module = 0
+    workers = max(1, min(workers, len(modules)))
+    with _cancellation() as cancelled, tempfile.TemporaryDirectory(prefix='grok-core-parallel-') as out_dir:
+        output_root = Path(out_dir)
+        try:
+            while next_module < len(modules) or active:
+                cancelled.check()
+                while next_module < len(modules) and len(active) < workers:
+                    module = modules[next_module]
+                    next_module += 1
+                    stdout = output_root / f'{module}.stdout'
+                    stderr = output_root / f'{module}.stderr'
+                    out_handle = stdout.open('wb')
+                    err_handle = stderr.open('wb')
+                    try:
+                        process = subprocess.Popen(
+                            [
+                                sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
+                                f'--rcfile={config}', '-m', 'unittest', module,
+                            ],
+                            cwd=root,
+                            env={**environment, '_GROK_TEST_CHILD': '1'},
+                            stdout=out_handle,
+                            stderr=err_handle,
+                            start_new_session=True,
+                        )
+                    except OSError as exc:
+                        out_handle.close()
+                        err_handle.close()
+                        completed.append(ProcessResult(command, 127, stderr=f'{module}: {exc}'))
+                        continue
+                    out_handle.close()
+                    err_handle.close()
+                    active.append((module, process, stdout, stderr))
+                for item in list(active):
+                    module, process, stdout, stderr = item
+                    if process.poll() is None:
+                        continue
+                    active.remove(item)
+                    completed.append(ProcessResult(
+                        [
+                            sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
+                            f'--rcfile={config}', '-m', 'unittest', module,
+                        ],
+                        process.returncode if process.returncode is not None else 1,
+                        stdout=_read_limited(stdout),
+                        stderr=_read_limited(stderr),
+                    ))
+                if time.monotonic() - started > TIMEOUT:
+                    for _module, process, _stdout, _stderr in active:
+                        _stop(process)
+                    return ProcessResult(command, 124, stderr='parallel coverage unittest timeout',
+                                         seconds=time.monotonic() - started, terminal_state='timeout')
+                if active:
+                    time.sleep(0.05)
+        except BaseException:
+            for module, process, _stdout, _stderr in active:
+                try:
+                    _stop(process)
+                except Exception as exc:
+                    cleanup_errors.append(f'{module}: {type(exc).__name__}: {exc}'[:256])
+            raise
+    failed = [result for result in completed if result.returncode != 0]
+    stdout = ''.join(result.stdout[-4000:] for result in failed[-20:])
+    stderr = ''.join(result.stderr[-4000:] for result in failed[-20:])
+    if failed:
+        return ProcessResult(command, failed[0].returncode, stdout=stdout, stderr=stderr,
+                             seconds=time.monotonic() - started)
+    combine = execute(
+        [sys.executable, '-m', 'coverage', 'combine', f'--rcfile={config}', str(data_file.parent)],
+        root,
+        environment,
+        timeout=120,
+    )
+    return ProcessResult(command, combine.returncode, stdout=combine.stdout, stderr=combine.stderr,
+                         seconds=time.monotonic() - started,
+                         cleanup_error=combine.cleanup_error)
 
 
 @contextmanager
@@ -376,7 +482,13 @@ def _run_directory(prefix: str, retained: dict[str, ProcessResult]):
 def run_core_tests(root: Path, mode: str, workers: int) -> CoreTestRun:
     measured = mode in {'pr', 'release'}
     workers, engine = select_engine(workers, measured)
-    versions = _tool_versions(list(PINS) if workers else (['coverage'] if measured else []))
+    if engine == 'pytest-xdist':
+        version_requirements = list(PINS)
+    elif measured:
+        version_requirements = ['coverage']
+    else:
+        version_requirements = []
+    versions = _tool_versions(version_requirements)
     versions['engine'] = engine
     config = root / '.coveragerc'
     if measured and not config.is_file():
@@ -386,16 +498,24 @@ def run_core_tests(root: Path, mode: str, workers: int) -> CoreTestRun:
         data_file = Path(directory) / '.coverage'
         report_file = Path(directory) / 'coverage.json'
         environment = _environment(root, data_file)
-        if workers:
+        if workers and engine == 'pytest-xdist':
             command = _pytest_command(workers, 'worksteal')
             if measured:
                 command += ['-p', 'pytest_cov.plugin', '--cov', f'--cov-config={config}', '--cov-report=term']
             command += ['tests']
+        elif workers and engine == 'coverage-unittest-parallel':
+            command = [
+                sys.executable, '-m', 'coverage', 'run', '--parallel-mode', f'--rcfile={config}',
+                '-m', 'unittest', '<module>',
+            ]
         else:
             command = [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests']
             if measured:
                 command = [sys.executable, '-m', 'coverage', 'run', f'--rcfile={config}', *command[1:]]
-        tests = execute(command, root, environment)
+        if workers and engine == 'coverage-unittest-parallel':
+            tests = _parallel_coverage_unittest(root, config, data_file, workers, environment)
+        else:
+            tests = execute(command, root, environment)
         retained['tests'] = tests
         coverage = None
         facts: dict[str, object] = {}

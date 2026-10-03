@@ -934,6 +934,10 @@ Execute the normal pinned measured Core4 backend once against the frozen repair 
 
 Внешний неизменный Python3.12.14 образ показал5.381с на один receipt fixture, из них4.114с повторный Bandit по полной копии runtime; явный test-only минимальный runtime сократил тот же случай до2.001с/Bandit0.803с с реальными проверками. Полная копия остаётся режимом по умолчанию остальных тестов, а отдельный реальный full-source clean/unsafe scanner control сохраняет обнаружение дефектов исходников. Это измеренное устранение повторной работы одного случая, не доказательство причины всех900с или готовности внешнего CI.
 
+## 2026-10-03 — Parallel coverage fallback without pytest in Trust CI
+
+The immutable Trust CI image has pinned coverage but no pytest/xdist, so measured repository verification must not fall back to one serial coverage discovery pass. Use a POSIX stdlib unittest shard runner with coverage parallel data and combine/report for PR/release mode; keep fast mode and explicit non-POSIX degradation unchanged.
+
 ## 2026-10-03 — Разделять потоки Git, тестов и моделей
 
 Одно чтение Git-статусов с GIT_OPTIONAL_LOCKS=0 в 28 потоках заняло 6,171 секунды: 125 деревьев, 31 грязное, 94 чистых, ошибок чтения нет; сохранять этот датированный неатомарный инвентарь вместо повторных обходов. Для схемы n × x суммировать процессы всех активных групп, отдельно учитывать 14 физических ядер / 28 разрешённых логических CPU, предел выбранных анализов 10 и платформенные слоты агентов. Общий PostgreSQL не распараллеливать без изолированных баз; финальный local verifier и внешнюю exact-head проверку можно перекрыть по времени только после заморозки всех исходников и отчётов, с явно непроверенным транспортом ветки.

@@ -434,7 +434,7 @@ class PythonTestRunnerTests(unittest.TestCase):
                 self.assertEqual(command[command.index('-n') + 1], '2')
                 self.assertIn(f'--dist={distribution}', command)
 
-    def test_non_posix_measured_core_degrades_with_coverage_without_xdist_pins(self) -> None:
+    def test_measured_core_uses_parallel_coverage_without_xdist_pins(self) -> None:
         with fixture() as root:
             (root / 'subject.py').write_text('value = 42\n')
             sample = root / 'tests/test_sample.py'
@@ -449,16 +449,31 @@ class PythonTestRunnerTests(unittest.TestCase):
                     raise AssertionError(f'unexpected dependency pin check: {name}')
                 return real_version(name)
 
+            def fake_parallel(_root, _config, data_file, workers, _environment):
+                data_file.write_bytes(b'current-run-coverage')
+                return python_test_runner.ProcessResult(['parallel-coverage'], 0, seconds=0.01)
+
+            def fake_execute(command, _root, _environment, timeout=python_test_runner.TIMEOUT):
+                if command[3] == 'json':
+                    Path(command[command.index('-o') + 1]).write_text(json.dumps({
+                        'meta': {'branch_coverage': True},
+                        'files': {'subject.py': {}},
+                        'totals': {'covered_lines': 1},
+                    }))
+                return python_test_runner.ProcessResult(list(command), 0, seconds=0.01)
+
             with patch.object(python_test_runner, '_parallel_process_cleanup_supported',
-                              return_value=False, create=True), \
-                 patch.object(python_test_runner, 'parallel_engine_ready', return_value=True), \
-                 patch.object(python_test_runner.metadata, 'version', side_effect=coverage_only_version):
+                              return_value=True, create=True), \
+                 patch.object(python_test_runner, 'parallel_engine_ready', return_value=False), \
+                 patch.object(python_test_runner.metadata, 'version', side_effect=coverage_only_version), \
+                 patch.object(python_test_runner, '_parallel_coverage_unittest', side_effect=fake_parallel), \
+                 patch.object(python_test_runner, 'execute', side_effect=fake_execute):
                 core = python_test_runner.run_core_tests(root, 'pr', 2)
             self.assertEqual(core.tests.returncode, 0, core.tests.stdout + core.tests.stderr)
-            self.assertEqual(core.tests.command[1:4], ['-m', 'coverage', 'run'])
-            self.assertEqual(core.workers, 0)
+            self.assertEqual(core.tests.command, ['parallel-coverage'])
+            self.assertEqual(core.workers, 2)
             self.assertEqual(core.versions, {'coverage': real_version('coverage'),
-                                             'engine': 'unittest-degraded'})
+                                             'engine': 'coverage-unittest-parallel'})
             self.assertIsNotNone(core.coverage)
             self.assertEqual(core.coverage.returncode, 0, core.coverage.stdout + core.coverage.stderr)
             self.assertTrue(core.coverage_metadata['files'])
@@ -551,28 +566,29 @@ class PythonTestRunnerTests(unittest.TestCase):
                               result.summary)
                 self.assertFalse(list(root.glob('result-*')))
 
-    def test_repo_root_without_optin_keeps_legacy_verifier_path(self) -> None:
-        # AC-003 parity where it matters: THIS repository has no .grok-test-runner.json,
-        # so grok_verify's python-unittest/coverage checks must take the legacy serial
-        # commands and never enter the runner/pin machinery, even with GROK env noise.
+    def test_repo_root_without_optin_uses_measured_parallel_coverage_fallback(self) -> None:
+        # The Trust CI image lacks pytest/xdist, so measured PR verification must still
+        # avoid the legacy serial coverage timeout without requiring a repo-local opt-in file.
         repo_root = Path(__file__).resolve().parents[1]
         self.assertFalse((repo_root / '.grok-test-runner.json').exists())
         self.assertIsNone(selected_workers(repo_root))
-        seen: list[list[str]] = []
 
-        def capture(root, name, command, timeout=300, *, env=None):
-            seen.append(list(command))
-            return CheckResult(name, 'pass', 'exit=0', command=command)
+        class Core:
+            tests = python_test_runner.ProcessResult(['parallel'], 0)
+            coverage = python_test_runner.ProcessResult(['coverage'], 0)
+            workers = 2
+            versions = {'coverage': python_test_runner.PINS['coverage'], 'engine': 'coverage-unittest-parallel'}
+            coverage_metadata = {'files': ['.grok-stack/adaptive_grok/python_test_runner.py']}
 
-        environment = os.environ.copy()
-        environment.pop('GROK_TEST_WORKERS', None)
-        with patch.dict(os.environ, environment, clear=True), \
-             patch('adaptive_grok.verification._command_check', side_effect=capture):
+        with patch('adaptive_grok.verification._ruff', return_value=CheckResult('ruff', 'pass', 'fixture')), \
+             patch('adaptive_grok.verification._bandit', return_value=CheckResult('bandit', 'pass', 'fixture')), \
+             patch('adaptive_grok.verification._factory_unit', return_value=[]), \
+             patch('adaptive_grok.verification.run_core_tests', return_value=Core()) as runner, \
+             patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox'}):
             results = {check.name: check for check in _python(repo_root, mode='pr')}
         self.assertIn('python-unittest', results)
-        self.assertFalse(any('pytest' in cmd for cmd in seen), seen)
-        self.assertIn(['coverage', 'run'], [cmd[:2] for cmd in seen], seen)
-        self.assertTrue(any('discover' in cmd and '-s' in cmd and 'tests' in cmd for cmd in seen), seen)
+        self.assertEqual(runner.call_args.args[2], 2)
+        self.assertIn('coverage-unittest-parallel', results['python-unittest'].summary)
 
     def test_inherited_pytest_selection_cannot_omit_tests(self) -> None:
         with fixture() as root:

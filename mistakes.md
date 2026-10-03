@@ -1640,3 +1640,7 @@ Root cause: the fixture used a long static disposable password literal that the 
 ## 2026-10-03 — Синтетический verifier fixture повторно сканировал весь runtime
 
 Причина: общий project_copy доставлял полный runtime даже тестам небольшого синтетического проекта, поэтому каждая вложенная проверка снова запускала Bandit по неизменным посторонним исходникам. На точном внешнем образе один receipt case тратил4.114с из5.381с на этот скан; минимальный opt-in fixture сохранил реальные Ruff/Bandit и full-source отрицательный контроль. Не подменять это измерение доказанной причиной общего900с timeout и не менять deployed policy или число workers без самостоятельных данных.
+
+## 2026-10-03 — Serial coverage fallback was treated as acceptable in Trust CI
+
+Root cause: the local runner contract preserved a serial coverage fallback when pytest/xdist was unavailable, but the immutable Trust CI image exercises exactly that path and exceeded the repository-verification budget. The fix is a measured stdlib parallel coverage fallback that uses only pinned coverage and POSIX process ownership, not a timeout or policy change.

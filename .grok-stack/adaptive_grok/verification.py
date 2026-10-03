@@ -1688,6 +1688,8 @@ def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, resul
     if has_unittest_files:
         try:
             workers = selected_workers(root)
+            if workers is None and mode in {'pr', 'release'}:
+                workers = selected_workers(root) if (root / '.grok-test-runner.json').exists() else 2
             core = run_core_tests(root, mode, workers) if workers is not None else None
         except RunnerError as exc:
             results.append(CheckResult('python-unittest', 'fail', str(exc)))
@@ -1698,13 +1700,14 @@ def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, resul
             requested_workers, workers = workers, core.workers
             for name, process in [('python-unittest', core.tests), ('coverage', core.coverage)]:
                 if process is not None:
+                    backend = core.versions.get('engine', 'pytest-xdist' if workers else 'unittest')
                     results.append(CheckResult(
                         name, 'pass' if process.returncode == 0 and not process.cleanup_error else 'fail',
-                        f'{"pytest-xdist" if workers else "unittest"} workers={workers} exit={process.returncode} seconds={process.seconds:.3f}',
+                        f'{backend} workers={workers} exit={process.returncode} seconds={process.seconds:.3f}',
                         command=process.command, stdout=process.stdout[-12000:],
                         stderr=(process.stderr + ('\ncleanup failed: ' + process.cleanup_error if process.cleanup_error else ''))[-12000:],
                         details=[{'severity': 'info', 'path': 'tests',
-                                  'message': f'backend={"pytest-xdist" if workers else "unittest"}; fresh invocation-owned coverage',
+                                  'message': f'backend={backend}; fresh invocation-owned coverage',
                                   'requested_workers': str(requested_workers),
                                   'versions': json.dumps(core.versions, sort_keys=True),
                                   'coverage': json.dumps(core.coverage_metadata, sort_keys=True)}],
