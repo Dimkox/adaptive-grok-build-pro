@@ -9,3 +9,5 @@
 - [ ] Bind evidence to the final tree fingerprint.
 
 Implementation results and limitations: [evidence/implementation.md](evidence/implementation.md). Controller owns final verifier, selected independent reviews, fingerprint receipts and PR transport; these tasks are deliberately not represented as complete by the writer.
+
+The original full gate FAILED on `7bc5eba38329e2e9ae5a2e5409c7f28597c4e541`. Owner-refreshed mandatory architecture/fixture repair and its focused results are recorded in [evidence/binding-repair.md](evidence/binding-repair.md). Unchanged code-budget fitness findings remain for the aggregate controller; no passing full-gate claim or receipt is made here.

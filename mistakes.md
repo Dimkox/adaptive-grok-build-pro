@@ -1623,3 +1623,7 @@ Root cause: the fixture used a long static disposable password literal that the 
 ### 2026-10-02 — Use literal callbacks when rewriting SQL through JavaScript
 
 Root cause: JavaScript replacement strings interpreted SQL dollar delimiters and regex anchors as replacement directives, duplicating uncommitted migration fragments and causing a syntax failure. Rebuild from the preserved source with literal replacement callbacks, check file size, and apply the complete migration to an exact disposable database before claiming SQL success.
+
+### 2026-10-02 — Exercise old and new fixtures together after restart
+
+Root cause: isolated M7 PostgreSQL checks missed a legacy fixture's explicit foreign-key cleanup inventory and discovery-time DSN caching across another test's Docker restart; source reconstruction also omitted mandatory architecture ownership for three new modules. Reproduce the mixed fixture sequence using the mandatory runner identity, adopt only a freshly validated runner DSN, and check architecture ownership before handing off focused evidence.

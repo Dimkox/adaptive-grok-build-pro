@@ -24,6 +24,30 @@
       "resource": null,
       "route_id": "c34622ec1ccf",
       "scope_digest": "c373e9e44731b5c2816c279a5afbaceb14d4dd2c9e11ebaf2a90518016d292b5"
+    },
+    {
+      "action": null,
+      "actor": "user-approved-scope",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-02T23:49:29+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "User approved F M7.1 reconstruction and current 2.1.1 combined source scope; mandatory source ownership and exact disposable fixture binding repairs only; external authority unchanged.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "e00f2001d5e51efa95ec65513ab813eca96590c380e3bb7b0b800b7cab2fcebc"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "user-Dimkox",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-02T23:51:31+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Refresh existing approved additive026 and exact local disposable upgrade/restart fixture plan after mandatory source/fixture binding repair; no live database application or production effects.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "e00f2001d5e51efa95ec65513ab813eca96590c380e3bb7b0b800b7cab2fcebc"
     }
   ],
   "route_id": "c34622ec1ccf",

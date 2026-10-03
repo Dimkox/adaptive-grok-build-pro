@@ -41,3 +41,7 @@ Source byte comparison to starting baseline confirms every 001–025 migration u
 | 026_m7_durable_evidence.sql | a8f68bcabe2b7b4e28ad7f974b48f9eb9bce7152aee0e159b4b6fb5bbf0fb5ca |
 
 001–023 full hashes were printed by the fresh `hashlib.sha256`/`git show <base>:<path>` comparison; all 25 comparison assertions succeeded. No historic migration bytes or deployed database were modified.
+
+## Subsequent full-gate failure and bounded repair
+
+The controller's full gate on original final HEAD `7bc5eba38329e2e9ae5a2e5409c7f28597c4e541` FAILED. Mandatory architecture ownership and old/new mixed PostgreSQL fixture bindings were missing despite the isolated checks above. See [binding-repair.md](binding-repair.md) for preserved failure identity, fresh reproductions, narrowly approved repairs and remaining code-budget findings. Neither the original focused checks nor these repairs establish a passing full candidate gate.

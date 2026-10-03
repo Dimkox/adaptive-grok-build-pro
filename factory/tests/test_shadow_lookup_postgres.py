@@ -24,9 +24,15 @@ TABLES = ("m7_bundles", "m7_outcomes", "m7_checks", "m7_contexts", "m7_command_r
 
 
 def assert_disposable():
-    _assert_disposable_target(DATABASE_URL, os.environ.get("FACTORY_TEST_POSTGRES_CONTAINER", ""),
+    global DATABASE_URL
+    # Discovery imports this module before the legacy restart test can move the
+    # bound container's published port. Validate the runner's refreshed DSN before
+    # adopting it; never derive a trusted target from an arbitrary container.
+    current_url = os.environ.get("FACTORY_TEST_DATABASE_URL")
+    _assert_disposable_target(current_url, os.environ.get("FACTORY_TEST_POSTGRES_CONTAINER", ""),
                              os.environ.get("FACTORY_TEST_POSTGRES_CONTAINER_ID", ""),
                              os.environ.get("FACTORY_TEST_POSTGRES_NONCE", ""))
+    DATABASE_URL = current_url
 
 
 def registration_from_producer(facts):
@@ -67,6 +73,19 @@ def registration_from_producer(facts):
 
 @unittest.skipUnless(DATABASE_URL, "requires exact disposable PostgreSQL")
 class M7AMigrationPostgresTests(unittest.TestCase):
+    def test_disposable_fixture_refresh_refuses_wrong_port_and_database(self):
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+        from unittest.mock import patch
+        assert_disposable()
+        valid_url = DATABASE_URL
+        values = conninfo_to_dict(valid_url)
+        for field, invalid in (("port", "1"), ("dbname", "postgres")):
+            with self.subTest(field=field), patch.dict(os.environ, {
+                "FACTORY_TEST_DATABASE_URL": make_conninfo(**{**values, field: invalid}),
+            }), self.assertRaisesRegex(RuntimeError, "not the named disposable"):
+                assert_disposable()
+            self.assertEqual(DATABASE_URL, valid_url)
+
     def test_populated_025_upgrade_idempotence_and_checksum_drift_refusal(self):
         import psycopg
         from psycopg import sql

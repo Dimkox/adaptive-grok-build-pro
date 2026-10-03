@@ -161,6 +161,11 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertTrue(expected <= set(nodes))
         for node_id in expected:
             self.assertEqual(nodes[node_id]["trust_domain"], "TD-FACTORY-CONTROL")
+        self.assertTrue({
+            "factory/src/adaptive_factory/m7_preflight.py",
+            "factory/src/adaptive_factory/shadow_lookup.py",
+            "factory/src/adaptive_factory/shadow_sources.py",
+        } <= set(nodes["NODE-FACTORY-CONTROL"]["repository_paths"]))
         prohibited = {"NODE-TRUST-CI-POSTGRES", "NODE-TRUST-CI-API", "NODE-TRUST-CI-WORKER", "NODE-GITHUB", "NODE-DOCKER-ENGINE", "NODE-ISOLATED-RUNNER"}
         for edge in snapshot.system["edges"]:
             self.assertFalse(edge["from"] in expected and edge["to"] in prohibited, edge["id"])
