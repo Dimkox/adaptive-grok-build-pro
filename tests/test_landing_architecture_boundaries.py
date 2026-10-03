@@ -22,7 +22,10 @@ OFFLINE = frozenset(PREFIX + name for name in (
 GROUPS = {
     "offline": OFFLINE,
     "sqlite": frozenset({PREFIX + "landing_sqlite_store.py"}),
-    "host": frozenset({PREFIX + "landing_host.py", PREFIX + "landing_server.py", PREFIX + "landing_backend_api.py"}),
+    "host": frozenset({
+        PREFIX + "landing_host.py", PREFIX + "landing_server.py", PREFIX + "landing_backend_api.py",
+        PREFIX + "landing_activation_probe.py", PREFIX + "landing_probe_api.py",
+    }),
     "live": frozenset({PREFIX + "landing_live_executors.py", PREFIX + "landing_extra_providers.py"}),
     "caller_core": frozenset(PREFIX + name for name in ("landing_failover.py", "landing_failover_config.py", "landing_failover_journal.py", "landing_failover_cli.py")),
     "caller_transport": frozenset({PREFIX + "landing_failover_transport.py"}),

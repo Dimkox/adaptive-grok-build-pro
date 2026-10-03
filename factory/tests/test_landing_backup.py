@@ -161,6 +161,17 @@ class LandingBackupTests(HostFixture):
         return hashlib.sha256(raw).hexdigest()
 
     def test_round_trip_restores_inactive_sqlite_and_artifacts_without_replay(self):
+        store = self.reopen_store()
+        store.reserve_activation_probe(
+            probe_id="probe-snapshot",
+            idempotency_digest="e" * 64,
+            profile_id="qwen-intl",
+            provider_id="qwen",
+            model_id="qwen-plus",
+            profile_digest="a" * 64,
+            input_digest="b" * 64,
+        )
+        store.close()
         saved = self.save()
         self.assertEqual("snapshot_saved", saved["status"])
         self.assertFalse(saved["provider_replay"])
@@ -169,7 +180,28 @@ class LandingBackupTests(HostFixture):
         self.assertEqual({"status": "restored_inactive", "provider_replay": False,
                           "publication_reconciliation_required": True}, restored)
         self.assertEqual(b"opaque retained artifact bytes", self.artifact.read_bytes())
-        self.assertTrue(self.reopen_store().database_path.is_file())
+        with sqlite3.connect(Path(self.data["state_path"]) / "landing.sqlite3") as connection:
+            row = connection.execute(
+                "SELECT probe_id, revision, state, idempotency_digest FROM landing_activation_probes"
+            ).fetchone()
+        self.assertEqual(("probe-snapshot", 1, "pending", "e" * 64), row)
+        restored_store = self.reopen_store()
+        self.assertTrue(restored_store.database_path.is_file())
+        self.assertEqual("unknown", restored_store.get_activation_probe("probe-snapshot")["state"])
+
+    def test_snapshot_accepts_legacy_v2_database_and_restores_it(self):
+        database = Path(self.data["state_path"]) / "landing.sqlite3"
+        with sqlite3.connect(database) as connection:
+            connection.execute("DROP TRIGGER landing_activation_probes_no_delete")
+            connection.execute("DROP TRIGGER landing_activation_probes_no_update")
+            connection.execute("DROP TABLE landing_activation_probes")
+            connection.execute("PRAGMA user_version=2")
+        saved = self.save()
+        self.assertEqual("snapshot_saved", saved["status"])
+        self.move_old_roots()
+        landing_backup.restore_snapshot(self.config, self.snapshot, saved["manifest_sha256"])
+        restored = self.reopen_store()
+        self.assertEqual(3, restored._connection.execute("PRAGMA user_version").fetchone()[0])
 
     def test_restore_reserves_known_copy_budget_before_creating_any_root(self):
         probe = self.root / "probe-snapshot"

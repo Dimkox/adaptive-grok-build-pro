@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import fcntl
 import os
 from pathlib import Path
+import re
 import sqlite3
 import stat
 import threading
@@ -29,10 +30,44 @@ from .landing_service import (
 )
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 MIGRATION_002_EXPAND = "ALTER TABLE landing_jobs ADD COLUMN observation_json BLOB"
 APPLICATION_ID = 0x4C354C35
 MAX_RECOVERY_BATCH = 100
+_PROBE_TABLE = """
+CREATE TABLE landing_activation_probes (
+    probe_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    idempotency_digest TEXT UNIQUE,
+    state TEXT NOT NULL,
+    profile_id TEXT NOT NULL,
+    provider_id TEXT NOT NULL,
+    model_id TEXT NOT NULL,
+    profile_digest TEXT NOT NULL,
+    input_digest TEXT NOT NULL,
+    spec_digest TEXT,
+    response_digest TEXT,
+    usage_input_units INTEGER,
+    usage_output_units INTEGER,
+    provider_attempts INTEGER NOT NULL,
+    elapsed_ms INTEGER,
+    request_started_at TEXT NOT NULL,
+    completed_at TEXT,
+    failure_category TEXT,
+    http_status INTEGER,
+    PRIMARY KEY (probe_id, revision),
+    CHECK (state IN ('pending', 'normalized', 'failed', 'unknown')),
+    CHECK (revision >= 1),
+    CHECK (provider_attempts IN (0, 1)),
+    CHECK (http_status IS NULL OR http_status BETWEEN 100 AND 599)
+) STRICT;
+"""
+_PROBE_TRIGGERS = (
+    "CREATE TRIGGER landing_activation_probes_no_update BEFORE UPDATE ON landing_activation_probes "
+    "BEGIN SELECT RAISE(ABORT, 'landing activation probes are append-only'); END",
+    "CREATE TRIGGER landing_activation_probes_no_delete BEFORE DELETE ON landing_activation_probes "
+    "BEGIN SELECT RAISE(ABORT, 'landing activation probes are append-only'); END",
+)
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS landing_jobs (
     tenant_id TEXT NOT NULL,
@@ -88,12 +123,43 @@ _EXPECTED_COLUMNS = {
         ("input_digest", "TEXT", 1, 0),
         ("created_at", "TEXT", 1, 0),
     ),
+    "landing_activation_probes": (
+        ("probe_id", "TEXT", 1, 1),
+        ("revision", "INTEGER", 1, 2),
+        ("idempotency_digest", "TEXT", 0, 0),
+        ("state", "TEXT", 1, 0),
+        ("profile_id", "TEXT", 1, 0),
+        ("provider_id", "TEXT", 1, 0),
+        ("model_id", "TEXT", 1, 0),
+        ("profile_digest", "TEXT", 1, 0),
+        ("input_digest", "TEXT", 1, 0),
+        ("spec_digest", "TEXT", 0, 0),
+        ("response_digest", "TEXT", 0, 0),
+        ("usage_input_units", "INTEGER", 0, 0),
+        ("usage_output_units", "INTEGER", 0, 0),
+        ("provider_attempts", "INTEGER", 1, 0),
+        ("elapsed_ms", "INTEGER", 0, 0),
+        ("request_started_at", "TEXT", 1, 0),
+        ("completed_at", "TEXT", 0, 0),
+        ("failure_category", "TEXT", 0, 0),
+        ("http_status", "INTEGER", 0, 0),
+    ),
 }
 _EXPECTED_FOREIGN_KEY = (
     (0, "landing_jobs", "tenant_id", "tenant_id", "NO ACTION", "NO ACTION", "NONE"),
     (1, "landing_jobs", "repository_id", "repository_id", "NO ACTION", "NO ACTION", "NONE"),
     (2, "landing_jobs", "job_id", "job_id", "NO ACTION", "NO ACTION", "NONE"),
 )
+_PROBE_VIEW_KEYS = (
+    "probe_id", "revision", "state", "profile_id", "provider_id", "model_id",
+    "profile_digest", "input_digest", "spec_digest", "response_digest",
+    "usage_input_units", "usage_output_units", "provider_attempts", "elapsed_ms",
+    "request_started_at", "completed_at", "failure_category", "http_status",
+)
+_PROBE_FAILURE_CATEGORIES = frozenset({
+    "accounting", "authentication", "deadline", "permission", "policy", "protocol",
+    "rate_limit", "transport", "unavailable", "outcome_ambiguous",
+})
 
 
 class SQLiteLandingJobStore:
@@ -139,6 +205,7 @@ class SQLiteLandingJobStore:
             os.chmod(self._database_path, 0o600)
             self._configure(busy_timeout_ms)
             self._initialize_schema()
+            self._recover_pending_activation_probes()
             self._recover_interrupted(recovery_limit)
         except BaseException:
             try:
@@ -178,6 +245,157 @@ class SQLiteLandingJobStore:
     ) -> LandingJobRecord | None:
         with self._transaction():
             return self._select_record((tenant_id, repository_id, job_id))
+
+    def reserve_activation_probe(
+        self, *, probe_id: str, idempotency_digest: str, profile_id: str,
+        provider_id: str, model_id: str, profile_digest: str, input_digest: str,
+    ) -> tuple[dict[str, object], bool]:
+        if (not isinstance(probe_id, str) or not re.fullmatch(r"[A-Za-z0-9-]{1,64}", probe_id)
+                or not isinstance(idempotency_digest, str) or not HEX64.fullmatch(idempotency_digest)
+                or any(not isinstance(value, str) or not value or len(value) > 128
+                       for value in (profile_id, provider_id, model_id))
+                or not HEX64.fullmatch(profile_digest) or not HEX64.fullmatch(input_digest)):
+            raise LandingServiceError("probe_record", 422, "activation probe record invalid")
+        with self._transaction():
+            existing = self._connection.execute(
+                "SELECT probe_id, profile_id, provider_id, model_id, profile_digest, input_digest "
+                "FROM landing_activation_probes WHERE idempotency_digest = ?",
+                (idempotency_digest,),
+            ).fetchone()
+            if existing is not None:
+                existing_id, *identity = existing
+                if identity != [profile_id, provider_id, model_id, profile_digest, input_digest]:
+                    raise LandingServiceError("idempotency_conflict", 409, "activation probe idempotency conflict")
+                return self._select_activation_probe(existing_id), False
+            facts = {
+                "probe_id": probe_id, "revision": 1, "idempotency_digest": idempotency_digest,
+                "state": "pending", "profile_id": profile_id, "provider_id": provider_id,
+                "model_id": model_id, "profile_digest": profile_digest, "input_digest": input_digest,
+                "spec_digest": None, "response_digest": None, "usage_input_units": None,
+                "usage_output_units": None, "provider_attempts": 1, "elapsed_ms": None,
+                "request_started_at": self._timestamp(), "completed_at": None,
+                "failure_category": None, "http_status": None,
+            }
+            self._insert_activation_probe(facts)
+            return self._activation_probe_view(facts), True
+
+    def finish_activation_probe(
+        self, probe_id: str, outcome: dict[str, object],
+    ) -> dict[str, object]:
+        allowed = {"state", "spec_digest", "response_digest", "usage_input_units",
+                   "usage_output_units", "elapsed_ms", "failure_category", "http_status"}
+        if not isinstance(outcome, dict) or set(outcome) != allowed or outcome.get("state") not in {
+            "normalized", "failed", "unknown"
+        }:
+            raise LandingServiceError("probe_record", 422, "activation probe result invalid")
+        with self._transaction():
+            current = self._select_activation_probe(probe_id)
+            if current is None:
+                raise LandingServiceError("not_found", 404, "activation probe not found")
+            if current["state"] != "pending":
+                return current
+            facts = {key: value for key, value in current.items() if key in _PROBE_VIEW_KEYS}
+            facts.update(outcome)
+            facts["revision"] = int(current["revision"]) + 1
+            facts["idempotency_digest"] = None
+            facts["completed_at"] = self._timestamp()
+            self._validate_activation_probe_result(facts)
+            self._insert_activation_probe(facts)
+            return self._activation_probe_view(facts)
+
+    def get_activation_probe(self, probe_id: str) -> dict[str, object]:
+        if not isinstance(probe_id, str) or not re.fullmatch(r"[A-Za-z0-9-]{1,64}", probe_id):
+            raise LandingServiceError("probe_id", 400, "activation probe id invalid")
+        with self._transaction():
+            record = self._select_activation_probe(probe_id)
+            if record is None:
+                raise LandingServiceError("not_found", 404, "activation probe not found")
+            return record
+
+    def _recover_pending_activation_probes(self) -> None:
+        while True:
+            with self._transaction():
+                pending = self._connection.execute(
+                    """SELECT probe_id FROM landing_activation_probes AS p
+                         WHERE state = 'pending' AND revision = (
+                               SELECT MAX(latest.revision) FROM landing_activation_probes AS latest
+                                WHERE latest.probe_id = p.probe_id)
+                         ORDER BY probe_id LIMIT ?""",
+                    (MAX_RECOVERY_BATCH,),
+                ).fetchall()
+                for (probe_id,) in pending:
+                    current = self._select_activation_probe(probe_id)
+                    if current is None:
+                        raise LandingServiceError("probe_record", 500, "activation probe recovery failed")
+                    facts = {key: value for key, value in current.items() if key in _PROBE_VIEW_KEYS}
+                    facts.update(
+                        revision=int(current["revision"]) + 1, idempotency_digest=None,
+                        state="unknown", completed_at=self._timestamp(), failure_category="outcome_ambiguous",
+                    )
+                    self._insert_activation_probe(facts)
+            if len(pending) < MAX_RECOVERY_BATCH:
+                return
+
+    def _insert_activation_probe(self, facts: dict[str, object]) -> None:
+        self._connection.execute(
+            """INSERT INTO landing_activation_probes (
+                   probe_id, revision, idempotency_digest, state, profile_id, provider_id,
+                   model_id, profile_digest, input_digest, spec_digest, response_digest,
+                   usage_input_units, usage_output_units, provider_attempts, elapsed_ms,
+                   request_started_at, completed_at, failure_category, http_status
+               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                facts.get("probe_id"), facts.get("revision"), facts.get("idempotency_digest"),
+                facts.get("state"), facts.get("profile_id"), facts.get("provider_id"),
+                facts.get("model_id"), facts.get("profile_digest"), facts.get("input_digest"),
+                facts.get("spec_digest"), facts.get("response_digest"),
+                facts.get("usage_input_units"), facts.get("usage_output_units"),
+                facts.get("provider_attempts"), facts.get("elapsed_ms"),
+                facts.get("request_started_at"), facts.get("completed_at"),
+                facts.get("failure_category"), facts.get("http_status"),
+            ),
+        )
+
+    def _select_activation_probe(self, probe_id: str) -> dict[str, object] | None:
+        row = self._connection.execute(
+            """SELECT probe_id, revision, state, profile_id, provider_id, model_id,
+                      profile_digest, input_digest, spec_digest, response_digest,
+                      usage_input_units, usage_output_units, provider_attempts, elapsed_ms,
+                      request_started_at, completed_at, failure_category, http_status
+                 FROM landing_activation_probes
+                WHERE probe_id = ? ORDER BY revision DESC LIMIT 1""",
+            (probe_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._activation_probe_view(dict(zip(_PROBE_VIEW_KEYS, row)))
+
+    @staticmethod
+    def _activation_probe_view(facts: dict[str, object]) -> dict[str, object]:
+        return {"schema_version": 1, **{key: facts.get(key) for key in _PROBE_VIEW_KEYS}}
+
+    @staticmethod
+    def _validate_activation_probe_result(facts: dict[str, object]) -> None:
+        state = facts["state"]
+        if state == "normalized":
+            if (not isinstance(facts["spec_digest"], str) or not HEX64.fullmatch(facts["spec_digest"])
+                    or not isinstance(facts["response_digest"], str) or not HEX64.fullmatch(facts["response_digest"])
+                    or any(type(facts[name]) is not int or not 0 <= facts[name] <= 2_147_483_647
+                           for name in ("usage_input_units", "usage_output_units", "elapsed_ms"))
+                    or facts["failure_category"] is not None or facts["http_status"] is not None):
+                raise LandingServiceError("probe_record", 500, "activation probe result invalid")
+        elif state == "failed":
+            if (facts["failure_category"] not in _PROBE_FAILURE_CATEGORIES
+                    or (facts["http_status"] is not None
+                        and (type(facts["http_status"]) is not int or not 100 <= facts["http_status"] <= 599))
+                    or type(facts["elapsed_ms"]) is not int or not 0 <= facts["elapsed_ms"] <= 2_147_483_647
+                    or any(facts[name] is not None for name in (
+                        "spec_digest", "response_digest", "usage_input_units", "usage_output_units"
+                    ))):
+                raise LandingServiceError("probe_record", 500, "activation probe result invalid")
+        elif state == "unknown":
+            if facts["failure_category"] != "outcome_ambiguous":
+                raise LandingServiceError("probe_record", 500, "activation probe result invalid")
 
     def create_or_replay(
         self,
@@ -363,6 +581,9 @@ class SQLiteLandingJobStore:
                     for statement in _SCHEMA.split(";"):
                         if statement.strip():
                             self._connection.execute(statement)
+                    self._connection.execute(_PROBE_TABLE)
+                    for statement in _PROBE_TRIGGERS:
+                        self._connection.execute(statement)
                     self._connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
                     self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif identity == (1, APPLICATION_ID):
@@ -371,6 +592,17 @@ class SQLiteLandingJobStore:
                 _validate_schema(self._connection, version=1)
                 with self._transaction():
                     self._connection.execute(MIGRATION_002_EXPAND)
+                    self._connection.execute("PRAGMA user_version = 2")
+                    self._connection.execute(_PROBE_TABLE)
+                    for statement in _PROBE_TRIGGERS:
+                        self._connection.execute(statement)
+                    self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif identity == (2, APPLICATION_ID):
+                _validate_schema(self._connection, version=2)
+                with self._transaction():
+                    self._connection.execute(_PROBE_TABLE)
+                    for statement in _PROBE_TRIGGERS:
+                        self._connection.execute(statement)
                     self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             elif identity != (SCHEMA_VERSION, APPLICATION_ID):
                 raise _schema_error()
@@ -582,17 +814,26 @@ def _schema_inventory(connection: sqlite3.Connection) -> tuple[tuple[str, str], 
 
 
 def _validate_schema(connection: sqlite3.Connection, *, version: int = SCHEMA_VERSION) -> None:
-    if _schema_inventory(connection) != (
+    expected_inventory = (
         ("table", "landing_commands"),
         ("table", "landing_jobs"),
-    ):
+    ) if version in {1, 2} else (
+        ("table", "landing_activation_probes"),
+        ("table", "landing_commands"),
+        ("table", "landing_jobs"),
+        ("trigger", "landing_activation_probes_no_delete"),
+        ("trigger", "landing_activation_probes_no_update"),
+    )
+    if _schema_inventory(connection) != expected_inventory:
         raise _schema_error()
     table_list = {
         row[1]: (row[2], row[3], row[4], row[5])
         for row in connection.execute("PRAGMA table_list").fetchall()
         if row[0] == "main" and row[1] in _EXPECTED_COLUMNS
     }
-    for table, expected in _EXPECTED_COLUMNS.items():
+    expected_tables = ("landing_jobs", "landing_commands") if version in {1, 2} else tuple(_EXPECTED_COLUMNS)
+    for table in expected_tables:
+        expected = _EXPECTED_COLUMNS[table]
         if version == 1 and table == "landing_jobs":
             expected = expected[:-1]
         columns = tuple(

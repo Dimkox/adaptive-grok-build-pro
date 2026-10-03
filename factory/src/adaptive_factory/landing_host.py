@@ -34,7 +34,8 @@ def build_landing_app(config: LandingHostConfig, *, qwen_env_file: Path | None =
         raise SettingsError("dedicated landing host requires durable composition")
     try:
         app = create_app(None, Authenticator(load_actors(config.settings.actors_file)),
-                         execution_enabled=False, landing_service=owned.service, landing_only=True)
+                         execution_enabled=False, landing_service=owned.service, landing_only=True,
+                         landing_probe_service=owned.activation_probe_service)
 
         @asynccontextmanager
         async def lifespan(_application):

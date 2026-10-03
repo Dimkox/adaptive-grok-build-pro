@@ -18,6 +18,7 @@ from typing import Mapping
 import httpx
 
 from .landing_intake import PrivateLandingBlobStore
+from .landing_activation_probe import PROBE_PROFILES, SYNTHETIC_PROBE_BRIEF
 from .contracts import HEX64, canonical_json
 from .landing_contracts import LandingContractError, strict_json_object
 from .landing_http import (
@@ -709,10 +710,6 @@ def compose_env_landing(
     )
 
 
-# One tuple feeds both the CLI parser and probe_qwen, so the accepted set cannot drift in one of them.
-PROBE_PROFILES = ("qwen", "qwen-intl", "qwen-omni", "qwen-omni-intl")
-
-
 def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
     """Bounded classification for operator output; never includes an upstream body."""
 
@@ -726,15 +723,17 @@ def _probe_failure_fields(exc: LandingProviderError) -> dict[str, object]:
 
 
 def probe_qwen(*, profile_id: str = "qwen-intl", qwen_env_file: Path | None = None,
-               transport: httpx.AsyncBaseTransport | None = None) -> dict[str, object]:
+               transport: httpx.AsyncBaseTransport | None = None,
+               api_key: str | None = None) -> dict[str, object]:
     """One synthetic normalization request; never reads project or customer inputs."""
     if profile_id not in PROBE_PROFILES:
         raise LandingProviderError("http_profile_identity")
     profile = HttpLandingProfile.for_provider(profile_id, available=True)
     executor = qwen_landing_executor(
-        api_key=qwen_api_key(env_file=qwen_env_file), profile=profile, transport=transport,
+        api_key=api_key if api_key is not None else qwen_api_key(env_file=qwen_env_file),
+        profile=profile, transport=transport,
     )
-    brief = "Create an English landing page for a fictional local gardening club. One hero section. No links, prices, contacts or factual claims."
+    brief = SYNTHETIC_PROBE_BRIEF
     input_digest = hashlib.sha256(brief.encode()).hexdigest()
     payload = canonical_json({"instruction": HTTP_NORMALIZER_PROMPT, "request": {
         "protocol_version": HTTP_PROTOCOL_VERSION, "profile_digest": profile.profile_digest,

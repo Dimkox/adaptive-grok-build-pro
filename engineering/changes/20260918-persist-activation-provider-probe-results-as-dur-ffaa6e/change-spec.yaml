@@ -1,0 +1,168 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "An operator-scoped landing Unix-socket request creates a durable probe_id in pending state before the server initiates exactly one synthetic provider probe; retries for that ID return its current/final record and never dispatch another provider call.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_server.py"
+        },
+        {
+          "test": "factory/tests/test_landing_activation_probe.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The probe result is stored in a dedicated append-only table in the existing landing SQLite database, with profile/model identity and digest, synthetic input/spec/response digests, normalized terminal state or allowlisted failure category/status, usage, elapsed time, provider request attempts and timestamps; no key, raw prompt/response or provider body is stored.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_sqlite_store.py"
+        },
+        {
+          "test": "factory/tests/test_landing_activation_probe.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "A read-only operator lookup by probe_id returns the persisted record after server restart without making a provider request, and backup/restore preserves it.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_server.py"
+        },
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        },
+        {
+          "test": "factory/tests/test_landing_activation_probe.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Schema v1 and v2 databases migrate sequentially to v3 without changing existing landing jobs; snapshot identity validation and restore accept v3.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_sqlite_store.py"
+        },
+        {
+          "test": "factory/tests/test_landing_backup.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The historical 769/191 activation result remains explicitly attested and is not backfilled or represented as a durable observation; the durable mechanism applies only to new probe events.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260918-persist-activation-provider-probe-results-as-dur-ffaa6e",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": [
+      "factory/contracts/openapi/landing-probe.v1.json"
+    ]
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Do not model activation probes as landing jobs, accept client-posted provider results as verified observations, or replay a provider call automatically after an ambiguous crash.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Do not persist credentials, raw prompts, provider request/response bodies, or unbounded exception text.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Do not fabricate or backdate a durable record for the historical 769/191 event and do not make the historical dossier claim stronger than its attested evidence.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "The live SQLite store remains the sole database writer; the server reserves the probe ID and performs provider work through the owning landing runtime.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_sqlite_store.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Probe IDs are unique and immutable; same-ID retries are idempotent, and interrupted in-flight probes remain explicitly unknown/incomplete rather than being silently reissued.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_sqlite_store.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Probe routes are present only on the operator-only landing app and require actor.kind=operator plus a dedicated landing:probe scope in addition to Unix-socket filesystem permissions.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make new server-executed activation probes durably re-derivable while preserving the distinction between a probe and an end-to-end landing job.",
+    "success_metric": "Every new probe has one immutable durable record queryable after restart and present in the landing SQLite backup; retries create no duplicate provider request.",
+    "target": "100% of newly accepted probe IDs have a pending-before-call record and one terminal or explicitly ambiguous durable state; historical 769/191 remains attested only."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Probe state, request attempt count, elapsed time and allowlisted failure category/status are queryable by probe_id without another provider call.",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "Landing SQLite snapshots and restore checks retain probe rows with their original IDs and digests.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

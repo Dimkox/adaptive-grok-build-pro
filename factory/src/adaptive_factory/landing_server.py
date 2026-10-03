@@ -18,6 +18,7 @@ from .settings import FactorySettings, SettingsError
 class OwnedLandingRuntime:
     service: LandingApplicationService
     store: SQLiteLandingJobStore | None
+    activation_probe_service: object | None = None
 
     def close(self) -> None:
         if self.store is not None:
@@ -61,6 +62,7 @@ def compose_server_landing(
             source, scratch_root=settings.landing_scratch_path
         ).validate_source()
     owned_store = None
+    activation_probe_service = None
     try:
         # Acquire the store's process-lifetime writer lock before quarantine
         # startup purges or interrupted-job recovery can affect another process.
@@ -71,6 +73,10 @@ def compose_server_landing(
         blobs = PrivateLandingBlobStore(
             settings.landing_quarantine_path, repository_root=repository_root
         )
+        from .landing_activation_probe import LandingActivationProbeService
+
+        activation_probe_profiles = {}
+        activation_probe_runner = None
         if not settings.landing_live_enabled:
             service = compose_unavailable_landing(blobs, store=owned_store)
         else:
@@ -95,11 +101,12 @@ def compose_server_landing(
             key_name = GROK_API_KEY_ENV if settings.landing_provider in {"grok", "grok-vision"} else QWEN_API_KEY_ENV
             # This is runtime-only opt-in acquisition, after all path/source
             # validation and ownership checks. Never persist or log the value.
+            api_key = (provider_api_key(profile.provider_id, env_file=provider_env_file)
+                       if provider_env_file is not None or profile.provider_id not in {"qwen", "grok"}
+                       else api_key_from_environ(key_name) if profile.provider_id == "grok"
+                       else qwen_api_key(env_file=qwen_env_file))
             service = compose(
-                api_key=(provider_api_key(profile.provider_id, env_file=provider_env_file)
-                         if provider_env_file is not None or profile.provider_id not in {"qwen", "grok"}
-                         else api_key_from_environ(key_name) if profile.provider_id == "grok"
-                         else qwen_api_key(env_file=qwen_env_file)),
+                api_key=api_key,
                 binding=implemented_live_binding(enabled=True),
                 profile=profile,
                 source_repository=settings.landing_source_path,
@@ -107,7 +114,19 @@ def compose_server_landing(
                 output_directory=settings.landing_output_path,
                 blobs=blobs, store=owned_store,
             )
-        return OwnedLandingRuntime(service, owned_store)
+            if profile.provider_id == "qwen":
+                from .landing_activation_probe import PROBE_PROFILES, activation_probe_profile
+                from .landing_live_executors import probe_qwen
+
+                if profile.profile_id in PROBE_PROFILES:
+                    activation_probe_profiles[profile.profile_id] = activation_probe_profile(profile.profile_id)
+                    def activation_probe_runner(profile_id):
+                        return probe_qwen(profile_id=profile_id, api_key=api_key)
+        if owned_store is not None:
+            activation_probe_service = LandingActivationProbeService(
+                owned_store, profiles=activation_probe_profiles, runner=activation_probe_runner,
+            )
+        return OwnedLandingRuntime(service, owned_store, activation_probe_service)
     except BaseException:
         if owned_store is not None:
             owned_store.close()

@@ -22,7 +22,7 @@ from adaptive_factory.landing_service import (
     LandingJobRecord,
     LandingServiceError,
 )
-from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
+from adaptive_factory.landing_sqlite_store import SCHEMA_VERSION, SQLiteLandingJobStore
 from adaptive_factory.models import Actor
 
 
@@ -94,11 +94,11 @@ class SQLiteLandingJobStoreTests(unittest.TestCase):
         with sqlite3.connect(store.database_path) as connection:
             self.assertEqual("wal", connection.execute("PRAGMA journal_mode").fetchone()[0])
             self.assertEqual(2, connection.execute("PRAGMA synchronous").fetchone()[0])
-            self.assertEqual(2, connection.execute("PRAGMA user_version").fetchone()[0])
+            self.assertEqual(SCHEMA_VERSION, connection.execute("PRAGMA user_version").fetchone()[0])
         store.close()
 
         with sqlite3.connect(store.database_path) as connection:
-            connection.execute("PRAGMA user_version = 3")
+            connection.execute("PRAGMA user_version = 4")
         with self.assertRaisesRegex(LandingServiceError, "store_schema"):
             SQLiteLandingJobStore(
                 self.root,
@@ -143,6 +143,42 @@ class SQLiteLandingJobStoreTests(unittest.TestCase):
             connection.execute("ALTER TABLE landing_jobs ADD COLUMN unowned TEXT")
         with self.assertRaisesRegex(LandingServiceError, "store_schema"):
             SQLiteLandingJobStore(drifted, repository_root=self.repository_root)
+
+    def test_v1_and_v2_migrate_sequentially_to_v3_without_changing_existing_landing_job(self):
+        for version in (1, 2):
+            with self.subTest(version=version):
+                root = self.parent / f"schema-v{version}"
+                store = SQLiteLandingJobStore(
+                    root, repository_root=self.repository_root, recovery_limit=0,
+                )
+                original = LandingJobRecord(source(job_id=f"old-v{version}"), "accepted", None, None)
+                store.create_or_replay(
+                    original,
+                    command_key=original.source.job_id,
+                    request_digest=original.source.input_digest,
+                )
+                store.close()
+                database = root / "landing.sqlite3"
+                with sqlite3.connect(database) as connection:
+                    connection.execute("DROP TRIGGER landing_activation_probes_no_delete")
+                    connection.execute("DROP TRIGGER landing_activation_probes_no_update")
+                    connection.execute("DROP TABLE landing_activation_probes")
+                    if version == 1:
+                        connection.execute("ALTER TABLE landing_jobs DROP COLUMN observation_json")
+                    connection.execute(f"PRAGMA user_version = {version}")
+                    self.assertEqual(version, connection.execute("PRAGMA user_version").fetchone()[0])
+                upgraded = SQLiteLandingJobStore(
+                    root, repository_root=self.repository_root, recovery_limit=0,
+                )
+                self.addCleanup(upgraded.close)
+                self.assertEqual(original, upgraded.get(original.source.tenant_id,
+                                                        original.source.repository_id,
+                                                        original.source.job_id))
+                with sqlite3.connect(database) as connection:
+                    self.assertEqual(3, connection.execute("PRAGMA user_version").fetchone()[0])
+                    self.assertEqual(1, connection.execute(
+                        "SELECT count(*) FROM sqlite_schema WHERE type='table' AND name='landing_activation_probes'"
+                    ).fetchone()[0])
 
     def test_decoded_source_is_bound_to_physical_row_identity(self):
         first = source(job_id="job-a", payload=b"first")
