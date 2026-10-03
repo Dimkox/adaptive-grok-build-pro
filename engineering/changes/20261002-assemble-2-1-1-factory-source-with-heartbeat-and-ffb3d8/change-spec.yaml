@@ -136,6 +136,9 @@
       "statement": "Qualifying frozen test-only025 fixture preserves exact reset/caller/import/installer boundaries and explicit typed lock refusal, rollback and no duplicate retry; final joined fitness stays within unchanged limits",
       "evidence": [
         {
+          "test": "factory/tests/test_postgres_fixture_reset.py"
+        },
+        {
           "test": "factory/tests/test_migrations.py"
         },
         {

@@ -50,6 +50,7 @@ from adaptive_factory.protocol import EventStreamParser, ProtocolError, validate
 from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryCandidate,
+    ExecutionRecoveryClaim,
     ExecutionRecoveryNotDue,
 )
 from adaptive_factory.workspace import (
@@ -72,6 +73,7 @@ from factory.tests.test_execution_service import (
     trusted_registry,
 )
 from factory.tests.test_postgres_integration import DATABASE_URL, NOW, OPERATOR, WORKER
+from factory.tests.postgres_fixture_reset import reset_fixture_tables
 
 
 class TrustedArtifactBroker:
@@ -245,6 +247,63 @@ class PricedUsageContractTests(unittest.TestCase):
         self.assertEqual((terminal.status_code, service.calls[-1][2]["protocol_version"]), (200, PROTOCOL_VERSION_V2))
 
 
+def _claim_recovery_or_lock_refusal(store, candidate):
+    from psycopg.errors import LockNotAvailable
+
+    try:
+        return store.claim_execution_recovery(candidate, OPERATOR)
+    except StoreUnavailable as error:
+        if not isinstance(error.__cause__, LockNotAvailable):
+            raise
+        return error
+
+
+class RecoveryContentionAcceptanceTests(unittest.TestCase):
+    def test_typed_lock_refusal_is_explicit_and_both_futures_finish(self):
+        from psycopg.errors import LockNotAvailable
+
+        refused = StoreUnavailable("bounded contention")
+        refused.__cause__ = LockNotAvailable("lock bound")
+        candidate, claimed = object(), object()
+        stores = (
+            mock.Mock(claim_execution_recovery=mock.Mock(side_effect=refused)),
+            mock.Mock(claim_execution_recovery=mock.Mock(return_value=claimed)),
+        )
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = tuple(
+                executor.submit(_claim_recovery_or_lock_refusal, store, candidate)
+                for store in stores
+            )
+            try:
+                results = tuple(future.result(timeout=3) for future in futures)
+            except StoreUnavailable:
+                self.fail("typed lock refusal aborted concurrent acceptance")
+        self.assertEqual(results, (refused, claimed))
+        self.assertTrue(all(future.done() for future in futures))
+
+    def test_unrelated_availability_timeout_integrity_and_sql_errors_propagate(self):
+        import psycopg
+
+        wrapped = []
+        for cause in (
+            None, psycopg.errors.QueryCanceled("statement bound"),
+            psycopg.errors.UniqueViolation("integrity"),
+            psycopg.OperationalError("connection"),
+        ):
+            error = StoreUnavailable("unexpected unavailable")
+            error.__cause__ = cause
+            wrapped.append(error)
+        for error in (*wrapped, IntegrityError("invalid authority"),
+                      psycopg.errors.QueryCanceled("unwrapped timeout"),
+                      psycopg.errors.UniqueViolation("unwrapped integrity"),
+                      psycopg.errors.LockNotAvailable("unwrapped SQL failure")):
+            with self.subTest(error=type(error).__name__, cause=type(error.__cause__).__name__):
+                store = mock.Mock(claim_execution_recovery=mock.Mock(side_effect=error))
+                with self.assertRaises(type(error)) as raised:
+                    _claim_recovery_or_lock_refusal(store, object())
+                self.assertIs(raised.exception, error)
+
+
 @unittest.skipUnless(
     DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database"
 )
@@ -322,29 +381,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         import psycopg
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "TRUNCATE factory.next_model_request_outbox_v1, factory.result_admission_commands_v1, factory.result_sources_v1, "
-                "factory.decision_records_v1, factory.semantic_recovery_records, "
-                "factory.semantic_escalations, factory.semantic_child_task_bindings, "
-                "factory.semantic_child_proposals, factory.semantic_directives, "
-                "factory.semantic_verdicts, factory.semantic_coverage, "
-                "factory.semantic_findings, factory.semantic_assignments, "
-                "factory.semantic_metric_events, factory.semantic_command_results, "
-                "factory.semantic_subjects, factory.execution_recovery_outcomes, "
-                "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
-                "factory.workspace_results, "
-                "factory.execution_artifact_attestations, "
-                "factory.execution_proposals, "
-                "factory.execution_stage_events, factory.execution_manifests, "
-                "factory.execution_packets, factory.audit_log, factory.audit_heads, "
-                "factory.task_events, factory.command_results, factory.metric_counters, "
-                "factory.budget_reservations, factory.usage_observations, "
-                "factory.capacity_allocations, factory.attempts, factory.runs, "
-                "factory.lease_sequences, factory.kill_switches, "
-                "factory.reconciliation_runs, factory.tasks, factory.accepted_intents, "
-                "factory.intake_identities, factory.m0_authority_observations, "
-                "factory.m0_bootstrap_exceptions RESTART IDENTITY"
-            )
+            reset_fixture_tables(cursor)
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
                 cursor.execute("TRUNCATE factory.kill_switch_heads")
@@ -5266,13 +5303,21 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             results = tuple(
                 executor.map(
-                    lambda _index: self.runtime_store().claim_execution_recovery(
-                        candidate, OPERATOR
+                    lambda _index: _claim_recovery_or_lock_refusal(
+                        self.runtime_store(), candidate
                     ),
                     range(2),
                 )
             )
-        self.assertEqual(sum(value is not None for value in results), 1)
+        self.assertTrue(all(
+            value is None or isinstance(value, (ExecutionRecoveryClaim, StoreUnavailable))
+            for value in results
+        ))
+        self.assertEqual(sum(isinstance(value, ExecutionRecoveryClaim) for value in results), 1)
+        for value in results:
+            if isinstance(value, StoreUnavailable):
+                # The winner has committed; a fresh bounded transaction must not reclaim it.
+                self.assertIsNone(self.runtime_store().claim_execution_recovery(candidate, OPERATOR))
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT
@@ -5295,6 +5340,95 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 ),
             )
             self.assertEqual(cursor.fetchone(), (1, 1, 1, 1, 1))
+
+    def test_two_reconcilers_preserve_sql_assertions_after_injected_lock_refusal(self):
+        from psycopg.errors import LockNotAvailable
+
+        refused = StoreUnavailable("injected bounded refusal")
+        refused.__cause__ = LockNotAvailable("injected lock bound")
+        runtime_store = self.runtime_store
+        stores = []
+        lock = threading.Lock()
+
+        def one_refusal():
+            with lock:
+                store = (mock.Mock(claim_execution_recovery=mock.Mock(side_effect=refused))
+                         if not stores else runtime_store())
+                stores.append(store)
+                return store
+
+        with mock.patch.object(self, "runtime_store", side_effect=one_refusal):
+            self.test_two_reconcilers_create_one_terminal_stage_and_cleanup_claim()
+        # One injected refusal, one real winning transaction, one real fresh retry.
+        self.assertEqual(len(stores), 3)
+
+    def test_confirmed_recovery_lock_refusal_rolls_back_then_retries_once(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-confirmed-refusal", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s", (execution.lease.run_id,),
+            )
+        candidate = next(value for value in self.store.execution_recovery_candidates(
+            limit=10, cursor=None
+        ).candidates if value.run_id == execution.lease.run_id)
+
+        def effects():
+            with psycopg.connect(DATABASE_URL, connect_timeout=2,
+                                 options="-c statement_timeout=2000 -c lock_timeout=500") as connection:
+                return connection.execute(
+                    """SELECT
+                    (SELECT count(*) FROM factory.execution_stage_events
+                     WHERE manifest_digest=%s AND stage='orphaned'),
+                    (SELECT count(*) FROM factory.execution_recovery_jobs WHERE run_id=%s),
+                    (SELECT count(*) FROM factory.execution_recovery_claims WHERE run_id=%s),
+                    (SELECT count(*) FROM factory.task_events WHERE task_id=%s AND action='released'),
+                    (SELECT count(*) FROM factory.audit_log WHERE task_id=%s AND action='release'),
+                    (SELECT released_at IS NULL FROM factory.runs WHERE run_id=%s),
+                    (SELECT released_at IS NULL FROM factory.capacity_allocations WHERE run_id=%s),
+                    (SELECT active_count FROM factory.capacity_counters WHERE scope_key='global:writer')""",
+                    (execution.manifest_digest, execution.lease.run_id, execution.lease.run_id,
+                     task.task_id, task.task_id, execution.lease.run_id, execution.lease.run_id),
+                ).fetchone()
+
+        with psycopg.connect(DATABASE_URL, connect_timeout=2,
+                             options="-c transaction_timeout=2000 -c statement_timeout=2000 -c lock_timeout=500") as holder:
+            self.assertIsNotNone(holder.execute(
+                "SELECT scope_key FROM factory.capacity_counters "
+                "WHERE scope_key='global:writer' FOR UPDATE"
+            ).fetchone())
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_claim_recovery_or_lock_refusal, self.runtime_store(), candidate)
+                with psycopg.connect(DATABASE_URL, autocommit=True, connect_timeout=2,
+                                     options="-c statement_timeout=1000 -c lock_timeout=500") as observer:
+                    deadline = time.monotonic() + 0.4
+                    waiting = False
+                    while time.monotonic() < deadline:
+                        waiting = observer.execute(
+                            "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() "
+                            "AND usename=%s AND %s=ANY(pg_blocking_pids(pid)))",
+                            (self.runtime_login, holder.info.backend_pid),
+                        ).fetchone()[0]
+                        if waiting:
+                            break
+                        time.sleep(0.005)
+                    self.assertTrue(waiting, "claimant was not positively blocked by exact holder")
+                held_at = time.monotonic()
+                time.sleep(0.6)  # Controlled holder exceeds the unchanged 500ms lock bound.
+                refused = future.result(timeout=1)
+                self.assertIsInstance(refused, StoreUnavailable)
+                self.assertIsInstance(refused.__cause__, psycopg.errors.LockNotAvailable)
+                self.assertLess(time.monotonic() - held_at, 2)
+                self.assertEqual(effects(), (0, 0, 0, 0, 0, True, True, 1))
+        claim = self.runtime_store().claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsInstance(claim, ExecutionRecoveryClaim)
+        self.assertEqual(effects(), (1, 1, 1, 1, 1, False, False, 0))
+        self.assertIsNone(self.runtime_store().claim_execution_recovery(candidate, OPERATOR))
+        self.assertEqual(effects(), (1, 1, 1, 1, 1, False, False, 0))
 
     def test_heartbeat_winner_revalidation_prevents_recovery_mutation(self):
         import psycopg

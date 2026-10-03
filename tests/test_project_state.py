@@ -818,6 +818,12 @@ class ProjectStateTests(unittest.TestCase):
             self.assertFalse(local[field])
         self.assertEqual(local["qualification_status"], "not_qualified")
         self.assertEqual(local["core_contours"], ["A", "B", "C", "D", "E", "H", "HB"])
+        self.assertEqual(local["joined_fixture"], {
+            "source_head": "c7610544936bd8d5a1774d903e3b3d410fa117ad",
+            "schema_version": "025",
+            "scope": "test_only",
+            "status": "pending_full_gate_and_acceptance",
+        })
         for record in (current, local, delivery):
             obligations = record["retained_successor_obligations"]
             self.assertEqual([item["contour"] for item in obligations], ["F", "G"])

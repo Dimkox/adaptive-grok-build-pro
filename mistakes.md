@@ -1592,3 +1592,15 @@ The same fixture initially omitted the stop event's role identity, which correct
 ### 2026-10-03 — Preserve fixed-width Git status headers
 
 Root cause: trimming leading whitespace before parsing porcelain status shifted the first path and caused the scoped staging command to fail. Parse each unchanged status line at its documented path offset and check each command's result before dependent commit steps; no source was lost or committed by the failed attempt.
+
+### 2026-10-03 — Validate synthetic fixture identity before creation
+
+Root cause: I manually counted the disposable name suffix and produced 13 hex characters instead of the exact 12-character contract. The unchanged target guard refused it before tests or database mutation, and exact binding-checked cleanup removed that container; validate both name and nonce against their closed regexes before launch.
+
+### 2026-10-03 — Discover current source paths before opening them
+
+Root cause: remembered resource/helper locations led to failed reads and an incorrect private-symbol import during the continuation. Use rg --files and rg on the current tree before selecting exact paths or analysis-module imports.
+
+### 2026-10-03 — Capture complete structured diagnostics before parsing
+
+Root cause: the tool output cap truncated the complete joined budget JSON before parsing, so the local capture could not establish metrics and required one diagnostic rerun. Capture the full structured result into session memory with sufficient tool-output capacity, then display only concise metrics; a truncated payload must never support a passing claim.

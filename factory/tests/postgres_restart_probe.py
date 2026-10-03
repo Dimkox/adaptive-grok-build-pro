@@ -17,6 +17,11 @@ import uuid
 SOURCE = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE))
 
+if __package__:
+    from .postgres_fixture_reset import reset_fixture_tables
+else:
+    from postgres_fixture_reset import reset_fixture_tables
+
 from adaptive_factory.adapters import (
     AdapterConformance,
     AdapterRegistry,
@@ -362,29 +367,7 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
         "06ecf1c875bc" + "9" * 52,
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
-        cursor.execute(
-            "TRUNCATE factory.next_model_request_outbox_v1, "
-            "factory.result_admission_commands_v1, factory.result_sources_v1, "
-            "factory.decision_records_v1, factory.semantic_recovery_records, "
-            "factory.semantic_escalations, factory.semantic_child_task_bindings, "
-            "factory.semantic_child_proposals, factory.semantic_directives, "
-            "factory.semantic_verdicts, factory.semantic_coverage, "
-            "factory.semantic_findings, factory.semantic_assignments, "
-            "factory.semantic_metric_events, factory.semantic_command_results, "
-            "factory.semantic_subjects, factory.execution_recovery_outcomes, "
-            "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
-            "factory.workspace_results, factory.execution_artifact_attestations, "
-            "factory.execution_proposals, factory.execution_stage_events, "
-            "factory.execution_manifests, factory.execution_packets, "
-            "factory.audit_log, factory.audit_heads, factory.task_events, "
-            "factory.command_results, factory.metric_counters, "
-            "factory.budget_reservations, factory.usage_observations, "
-            "factory.capacity_allocations, factory.attempts, factory.runs, "
-            "factory.lease_sequences, factory.kill_switches, "
-            "factory.reconciliation_runs, factory.tasks, factory.accepted_intents, "
-            "factory.intake_identities, factory.m0_authority_observations, "
-            "factory.m0_bootstrap_exceptions RESTART IDENTITY"
-        )
+        reset_fixture_tables(cursor)
         cursor.execute("TRUNCATE factory.kill_switch_heads")
         cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
         cursor.execute("UPDATE factory.capacity_counters SET active_count=0")

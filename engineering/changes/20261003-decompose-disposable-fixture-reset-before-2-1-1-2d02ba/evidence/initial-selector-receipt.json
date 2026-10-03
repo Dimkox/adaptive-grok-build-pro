@@ -1,0 +1,682 @@
+{
+  "architecture_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+  "architecture_base_kind": "route_model",
+  "architecture_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "architecture_bootstrap_baseline": false,
+  "architecture_contract_digests": {
+    "engineering/contracts/openapi/adaptive-demo.v1.json": "cc3c027f8475fb17a67e7a628f5954bb89ec222cdab9b3bee23bc83fcd820241",
+    "engineering/contracts/openapi/factory-result-admission.v2.json": "4e76a53526a80b50a85ae1efaa3f4fbf6034802874dbc44353017e3647b390c8",
+    "engineering/contracts/openapi/trust-ci.v1.json": "5cc9c7dcfa2c737ba2fa555d9760c2219b7cf5705932dd25f122f182e884e5f4",
+    "engineering/contracts/schemas/github-pull-request-projection.v1.json": "2796de1418c7cf390b2d70affd1aa4e2f62d503f6e8ff67b23a60f8248962049",
+    "engineering/contracts/schemas/trust-ci-approval-envelope.v1.json": "5ee108450527132c2cc9642e49c25ce2b8c4df652754e7d73548f8de919dc6db",
+    "engineering/contracts/schemas/trust-ci-attestation-envelope.v1.json": "50758123b2843a896b421458dc0c0d3578b46b6df718c495c1c456a503558e01",
+    "factory/contracts/jsonschema/context-manifest.v1.schema.json": "3d917568479c1eb51612e24733377722df7f1f5a894bed8b9d73e967af3869fb",
+    "factory/contracts/jsonschema/landing-attempt-status.v1.schema.json": "85e6f6aec9199d6d69bbc3ee00557fddca8b0f5c5d2a020ffe7e5a11b07e4b1b",
+    "factory/contracts/jsonschema/landing-attempt.v1.schema.json": "d34b2b13bd8ac6004c0d1387e463f0fefb8406c6b94df6a44c5adec75902b69a",
+    "factory/contracts/jsonschema/landing-backend-capability.v1.schema.json": "6ece032b101344e4f2923b5c274164983539c75a731bc2248fd3a59b70808b16",
+    "factory/contracts/jsonschema/landing-evaluation.v1.schema.json": "5691845dfe45e84e2c0391f1992b42cad02644a806a859731f17b96dab5be887",
+    "factory/contracts/jsonschema/landing-failover-config.v1.schema.json": "075ab7a38d5f079a185412d57b4911a7dc2b70405a9a866532fa0b8807e6b36e",
+    "factory/contracts/jsonschema/landing-failover-result.v1.schema.json": "e925c47835ffae3a2daaaf5a8aaf9dab69847e59502360cda610971e5986a2a6",
+    "factory/contracts/jsonschema/landing-input.v1.schema.json": "ec063e195846a746f42844225423c0455680cffc71d1e14a7179041d9b983de4",
+    "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json": "67ab4380cf6f5a465c0aa6e60223e77beba28f785af6088867a3acbc33ec8afd",
+    "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json": "888ddf6ee0042cb332ae17904d1c0f7269894e863ee37ba3b7a950e463bc9eeb",
+    "factory/contracts/jsonschema/landing-provider-observation.v1.schema.json": "94788fc20159c612654d8122713e1218ffc65ab1e11a6238fa45ded2ae8d0a59",
+    "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json": "1fd67237ceaa323eb4560b99ab6ed30e0f6303c91a954d46bb201c5ed8e5a573",
+    "factory/contracts/jsonschema/m7-predecessor-bridges.v1.schema.json": "198adf3427b52f6063b8c1084bcf3bdcfb7ddaa37e34d7221fb31e6e6eefb855",
+    "factory/contracts/jsonschema/native-result-handoff.v1.schema.json": "403b3c4202a771dcffca28f0a9b5263151e376448e97f1ec9abcc16331ff59fc",
+    "factory/contracts/jsonschema/operator-handoff-proposal.v1.schema.json": "10812753a1170503b9c4e191064800660582e7d24d37fe97a6c1de68a1663b38",
+    "factory/contracts/jsonschema/ready-for-pr-bundle.v1.schema.json": "fecc73c590f0416fa976983bbb4d0a4494c81586555cb680e20a23e92441214e",
+    "factory/contracts/jsonschema/repair-directive.v1.schema.json": "dc87303d3424cdcfb5b7f6a2b98f4ed7693398cea36a707e5b4185f04ab66415",
+    "factory/contracts/jsonschema/result-channel-qualification.v1.schema.json": "eea2dcc62c431ddf227e6278f086954d457f570068038dcbfce0e53292b148f7",
+    "factory/contracts/jsonschema/result-channel-qualification.v2.schema.json": "c9955567764cbaa699a84e0e7c2df585fbfee8ea6fec9de2ff5f91718bd4f97e",
+    "factory/contracts/jsonschema/result-envelope.v1.schema.json": "e79ca93775953ee3a65c77efbf6c58a55ee0c1286dc563f52658c4aed920539f",
+    "factory/contracts/jsonschema/result-envelope.v2.schema.json": "4e8f7360c59d402da5b2e707b5b2caf40ad58e199678bfec1125eb77e82060c3",
+    "factory/contracts/jsonschema/semantic-coverage.v1.schema.json": "df79a103cd842d88c6a6c08f7b289a7658e5b4ab49f75bd61c91dada7589607a",
+    "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json": "42f688897e1d04b8da952b6c82132e630ad3508014520103df55b792dafa615c",
+    "factory/contracts/jsonschema/semantic-finding.v1.schema.json": "7fe3308a09e9c99f78d0f338f9b8e272dde194e86833c0b864c893a445008527",
+    "factory/contracts/jsonschema/semantic-subject.v1.schema.json": "cf763dcb8195d0e8bba69efcd9aad587c0b14905fd83df67959b1b47073f191d",
+    "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json": "c9a321391819dcecd7c38b638b5713c15458ff9eb30ce6357473bbdfdf22b2b6",
+    "factory/contracts/jsonschema/semantic-verdict.v1.schema.json": "90deef614e62df04fa9c26f88605712ddeb7ca6e35e3bc44e4a5e429f4234df6",
+    "factory/contracts/jsonschema/shadow-cohort.v1.schema.json": "8fc8937d6c6a1525774767c9db11f5aaca6a3c410a925cfb4d36eab219461d0b",
+    "factory/contracts/jsonschema/shadow-outcome.v1.schema.json": "c1636828f83f8619acb8ef5ad1318686062186035cee7f4fac9c9377604d5d83",
+    "factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json": "c8d88932381d8a3974ac4e58daceaae41321f5b2907989f316738a8b092f2c98",
+    "factory/contracts/jsonschema/static-landing-spec.v1.schema.json": "a7cc2c092e1411341d8b4a0bdc51cb4d8577d6e57c2572e4903f64a58aa33dec",
+    "factory/contracts/openapi/factory-control.v1.json": "566209fdcf4db042ba4b7fa0c349d3308b86832208849dd4cbe3b8bf86ecec9e",
+    "factory/contracts/openapi/factory-execution.v1.json": "30bb6feab2623052fffe099d66fb758cd60c76b69ad13d85610791ae70c83e61",
+    "factory/contracts/openapi/factory-execution.v2.json": "3f258dc526f72b9830d720d845493046ec5f2a5d221fdc21f59e9aadf64df775",
+    "factory/contracts/openapi/factory-execution.v3.json": "b318d9f660080b53ad1a49b7a5024c3f28447e9d7bad09b7c7c6ac489a81d82d",
+    "factory/contracts/openapi/factory-result-admission.v1.json": "7cf8e89ba6d6da3644ef93c10a3cbf662780fa5583a509023b4fd2c024af5d52",
+    "factory/contracts/openapi/factory-semantic.v1.json": "c52767cb2e2b69d62484605048bf3c99a15e22aca3fb33fefd4e548e69a4734f",
+    "factory/contracts/openapi/landing-dogfood.v1.json": "4aa733b43c6f2fca9ec6f40d442ebd5c585fc96d489006b0c05054963da55dd3",
+    "factory/contracts/openapi/landing-failover.v1.json": "d316ac7942ac47fc4cf99e340f2098dd5521aef92a68af9dfcc1a7c521bb8dde",
+    "factory/contracts/schemas/execution-event.v1.json": "e27a849da6a56e3ec341fc652107daae65ac4e35777c7ce9efd4d02527007bf5",
+    "factory/contracts/schemas/execution-invocation.v1.json": "4a4c3e3386fdc48da21d5bde0b824b69246be95bf86531c45004459ada7b2d83",
+    "factory/contracts/schemas/task-packet.v1.json": "0e5495dd96db547570cbdd7d031a7b025ee48cf04e2414fe13970a751be2f0f0",
+    "factory/contracts/schemas/workspace-result.v1.json": "ec4b90cfa792fe75864b10eb1e48ef77decb674b6b7b657821529f015b4820bb",
+    "factory/contracts/v15/decision-record.v1.schema.json": "813760ee5adc7ccb6fc4e51fc36b27091d6b3924cd86e27b93a464907c43b51b",
+    "pilot/contracts/jsonschema/candidate-change.v1.schema.json": "7bb3740fb54f9f80f49328e1ce98677e47fc7151b2f25647ccdf1ce1785d3277",
+    "pilot/contracts/jsonschema/candidate-validation.v1.schema.json": "a87f5bd0b8489c9f81dc052857fad62084410a9625ad1d60de0296953b13354a",
+    "pilot/contracts/jsonschema/design-partner-outcome.v1.schema.json": "f089b66c3f5fe750b3900918ca618fe56e29a3cddb2af8341a81c4f295fa84c4",
+    "pilot/contracts/jsonschema/issue-snapshot.v1.schema.json": "669826326c08e3003e9fee84e74af63c41345293f52bc0282ebfdb4d4b492968",
+    "pilot/contracts/jsonschema/pull-request-proposal.v1.schema.json": "3f1ca0a5d1bcf35dca6c27476ed851b304d64895c3d42bc0b68fda2ce0405436",
+    "schemas/governance-handoff-v1.schema.json": "5fbfc210fad4d5c0281a59305639aea2b86e9c3b7a22c45bfc794205f22f88f7",
+    "schemas/workflow-convergence-report-v1.schema.json": "1e93dec8892e200ba2b406ee498c94de0429aa373b2b2a091780874c4c37b174",
+    "schemas/workflow-source-v1.schema.json": "9ab27a408c70d3dbf2e577884e23addc0741fab1d4442dc846d96774aa97e65f",
+    "schemas/workflow-task-graph-v1.schema.json": "b50596d656e2bd073763d138758dc26fbf1a45e24f10015ea4817592a50feb13"
+  },
+  "architecture_contract_inventory_digest": "221704d4a5a04484d2c7a16b30c066a44f6d673513ae421c151d0ef07ce851c9",
+  "architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+  "architecture_fingerprint": "54fd13f8aa40a6703c10708afeba189aa1104dae45519292ebe8fbc786cb7131",
+  "architecture_head_commit": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "architecture_head_kind": "worktree",
+  "architecture_route_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "architecture_rules_digest": "98df77357e869882c05cd294d58acae22a79c2457d5453f3801eeebf0fc7d621",
+  "architecture_schema_digest": "c849231d6d3e1ea35afa4da52f612893bf9c4586934670007b9bfb495afc8769",
+  "architecture_system_digest": "2479a8ffa9129713f2418d2cd6b0c1f44647069b02b4fbcc9d73abd47b8364fb",
+  "created_at": "2026-10-03T00:18:48+00:00",
+  "criterion_ids": [],
+  "details": {
+    "architecture": {
+      "adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+      "architecture_base_kind": "route_model",
+      "architecture_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "architecture_bootstrap_baseline": false,
+      "architecture_contract_version": 1,
+      "architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+      "architecture_evidence_digest": "ad0c2e5ab4aaab5bb0438048ef9586202a1afd149295793efe99147703305a49",
+      "architecture_fingerprint": "54fd13f8aa40a6703c10708afeba189aa1104dae45519292ebe8fbc786cb7131",
+      "architecture_head_commit": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "architecture_route_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "base_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+      "base_adoption_state": "adopted",
+      "base_kind": "commit",
+      "baseline_introduced": false,
+      "configured": true,
+      "contract_inventory_digest": "221704d4a5a04484d2c7a16b30c066a44f6d673513ae421c151d0ef07ce851c9",
+      "diagram_mismatches": [],
+      "diagram_status": "pass",
+      "diff_digest": "9b88367e20a533d21d9c2a60f12e7d2ebba3a6e3169fd8b99a140a239ee4229f",
+      "drift_findings": [],
+      "drift_status": "pass",
+      "exact_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "fitness_evidence_digest": "4529d836bf2be3b1a6b8cbc777c976de244c9242f21499837846282a4fa62836",
+      "fitness_status": "pass",
+      "generated_artifact_digests": {
+        "container.mmd": "da0ecc12272c5b546b626f48d649c2b5dabefa4aa98a5692cddd5ac90b45f8a5",
+        "context.mmd": "4a8b63305ab5ccc98faf216305b09bc6e08926876b5769d1a5c84dab27dea76d",
+        "data-flow.mmd": "defbb77a18efc03d697dcb106b5c7e213c19ce076fce929e23a966ee31468907",
+        "deployment.mmd": "f671867835eaa3b391d9c892035ef0d714352e1fb4dce029edea9b2583a88bab",
+        "trust-boundary.mmd": "6b0f83efafd7336d682f65115857d5ba16f6ef389210833efa3c028b876631b7"
+      },
+      "head_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+      "head_adoption_state": "adopted",
+      "head_kind": "worktree",
+      "repository_inventory_digest": "63b2d8fa651b889e65d0de60ce77580a89360521764896c9478e99f1a0a9c518",
+      "risk_escalation": "green",
+      "risk_post": "red",
+      "risk_pre": "red",
+      "rules_digest": "98df77357e869882c05cd294d58acae22a79c2457d5453f3801eeebf0fc7d621",
+      "schema_digest": "c849231d6d3e1ea35afa4da52f612893bf9c4586934670007b9bfb495afc8769",
+      "status": "pass",
+      "system_digest": "2479a8ffa9129713f2418d2cd6b0c1f44647069b02b4fbcc9d73abd47b8364fb"
+    },
+    "changed_file_inventory": {
+      "bases": [
+        {
+          "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+          "count": 13,
+          "kind": "route",
+          "source": "route.base_commit",
+          "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+        },
+        {
+          "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+          "count": 13,
+          "kind": "pr-target",
+          "source": "refs/remotes/origin/main",
+          "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+        }
+      ],
+      "mode": "range-union",
+      "selection_findings": [],
+      "union_count": 13,
+      "worktree_count": 13
+    },
+    "changed_files": [
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/architecture.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/brief.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/README.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-brief.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/startup-capacity-and-dependencies.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/release.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/requirements.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/rollback.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/route.json",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/state.json",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/tasks.md",
+      "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/test-plan.md"
+    ],
+    "checks": [
+      {
+        "command": null,
+        "details": [
+          {
+            "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+            "code": "checked-range",
+            "kind": "route",
+            "message": "checked 63799f8760d3a55028d83ab5ff0116ececf8f7d1..HEAD",
+            "path": "route.base_commit",
+            "severity": "info",
+            "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+          },
+          {
+            "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+            "code": "checked-range",
+            "kind": "pr-target",
+            "message": "checked 63799f8760d3a55028d83ab5ff0116ececf8f7d1..HEAD",
+            "path": "refs/remotes/origin/main",
+            "severity": "info",
+            "target": "63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+          }
+        ],
+        "duration_hint": null,
+        "name": "git-diff-check",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "4/4 checks passed; bases=route:63799f8760d3a55028d83ab5ff0116ececf8f7d1,pr-target:63799f8760d3a55028d83ab5ff0116ececf8f7d1"
+      },
+      {
+        "command": null,
+        "details": [
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/architecture.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/brief.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/README.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-brief.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/startup-capacity-and-dependencies.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/release.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/requirements.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/rollback.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/route.json",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/state.json",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/tasks.md",
+            "severity": "info"
+          },
+          {
+            "code": "eligible",
+            "message": "admitted by the focused documentation/state profile",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/test-plan.md",
+            "severity": "info"
+          },
+          {
+            "code": "focused-scope-skip",
+            "message": "python-unittest is not measured by the focused documentation/state profile",
+            "path": "python-unittest",
+            "severity": "warning"
+          },
+          {
+            "code": "focused-scope-skip",
+            "message": "coverage is not measured by the focused documentation/state profile",
+            "path": "coverage",
+            "severity": "warning"
+          },
+          {
+            "code": "focused-scope-skip",
+            "message": "factory-postgres-exit is not measured by the focused documentation/state profile",
+            "path": "factory-postgres-exit",
+            "severity": "warning"
+          }
+        ],
+        "duration_hint": null,
+        "name": "docs-state-scope",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "profile=docs-state-focused; evidence=verification:docs-state-focused; reason=eligible; paths=13; skipped=python-unittest,coverage,factory-postgres-exit"
+      },
+      {
+        "command": null,
+        "details": [
+          {
+            "code": "change-spec-invalid",
+            "message": "/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-fixture-reset/engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml: objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes",
+            "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+            "severity": "error"
+          }
+        ],
+        "duration_hint": null,
+        "name": "change-spec",
+        "status": "fail",
+        "stderr": "",
+        "stdout": "",
+        "summary": "1 specs checked; exempt=False"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "architecture",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "drift=pass; fitness=pass; diagrams=pass"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "governance",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "governance registries and evidence are current"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "workflow-artifacts",
+        "status": "skip",
+        "stderr": "",
+        "stdout": "",
+        "summary": "workflow artifacts are not configured"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "secret-scan",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "0 potential secrets"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "contract-structure",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "0 contracts checked"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "sql-safety",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "0 unsafe SQL findings"
+      },
+      {
+        "command": [
+          "ruff",
+          "check",
+          ".grok-stack/adaptive_grok",
+          "scripts",
+          "tests",
+          ".grok/hooks",
+          "user_prompt_submit.py",
+          "pre_tool_use.py",
+          "post_tool_use.py",
+          "pre_compact.py",
+          "session_start.py",
+          "session_end.py",
+          "stop_gate.py",
+          "subagent_start.py",
+          "subagent_stop.py",
+          "factory/src/adaptive_factory"
+        ],
+        "details": [],
+        "duration_hint": null,
+        "name": "ruff",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "All checks passed!\n",
+        "summary": "exit=0"
+      },
+      {
+        "command": [
+          "bandit",
+          "-c",
+          "bandit.yaml",
+          "-q",
+          "-r",
+          ".grok-stack/adaptive_grok",
+          "scripts",
+          ".grok/hooks",
+          "user_prompt_submit.py",
+          "pre_tool_use.py",
+          "post_tool_use.py",
+          "pre_compact.py",
+          "session_start.py",
+          "session_end.py",
+          "stop_gate.py",
+          "subagent_start.py",
+          "subagent_stop.py",
+          "factory/src/adaptive_factory"
+        ],
+        "details": [],
+        "duration_hint": null,
+        "name": "bandit",
+        "status": "pass",
+        "stderr": "[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n",
+        "stdout": "",
+        "summary": "exit=0"
+      },
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "pilot/tests",
+          "-t",
+          ".",
+          "-v"
+        ],
+        "details": [],
+        "duration_hint": null,
+        "name": "pilot-unittest",
+        "status": "pass",
+        "stderr": "test_any_server_request_is_denied_without_response (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_any_server_request_is_denied_without_response) ... ok\ntest_broad_workspace_profile_is_rejected_before_model_turn (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_broad_workspace_profile_is_rejected_before_model_turn) ... ok\ntest_malformed_or_non_success_terminal_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_malformed_or_non_success_terminal_fails_closed) ... ok\ntest_one_closed_app_server_thread_and_turn_returns_synthetic_success (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_one_closed_app_server_thread_and_turn_returns_synthetic_success) ... ok\ntest_wrong_response_id_or_timeout_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_wrong_response_id_or_timeout_fails_closed) ... ok\ntest_all_five_pilot_contracts_are_in_the_executable_inventory (pilot.tests.test_architecture.PilotArchitectureTests.test_all_five_pilot_contracts_are_in_the_executable_inventory) ... ok\ntest_pilot_has_separate_trust_domains_and_factory_has_no_external_edge (pilot.tests.test_architecture.PilotArchitectureTests.test_pilot_has_separate_trust_domains_and_factory_has_no_external_edge) ... ok\ntest_exact_request_resource_is_accepted_and_digest_bound (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_exact_request_resource_is_accepted_and_digest_bound) ... ok\ntest_wildcard_coarse_stale_or_ambiguous_grants_fail_closed (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_wildcard_coarse_stale_or_ambiguous_grants_fail_closed) ... ok\ntest_closed_config_dispatches_three_live_phases_and_read_only_status (pilot.tests.test_cli.PilotCliTests.test_closed_config_dispatches_three_live_phases_and_read_only_status) ... ok\ntest_effect_phases_are_disabled_without_live_flag_or_config (pilot.tests.test_cli.PilotCliTests.test_effect_phases_are_disabled_without_live_flag_or_config) ... ok\ntest_main_has_a_built_in_host_runner_not_an_adapter_placeholder (pilot.tests.test_cli.PilotCliTests.test_main_has_a_built_in_host_runner_not_an_adapter_placeholder) ... ok\ntest_exact_argv_starts_once_and_persists_the_sealed_candidate (pilot.tests.test_codex_executor.CodexExecutorTests.test_exact_argv_starts_once_and_persists_the_sealed_candidate) ... ok\ntest_failed_sandbox_proof_starts_zero_processes (pilot.tests.test_codex_executor.CodexExecutorTests.test_failed_sandbox_proof_starts_zero_processes) ... ok\ntest_installed_sandbox_denies_outside_reads_and_unix_sockets (pilot.tests.test_codex_executor.CodexExecutorTests.test_installed_sandbox_denies_outside_reads_and_unix_sockets) ... skipped 'requires explicit pinned local Codex sandbox'\ntest_contract_rejects_unknown_fields_and_digest_substitution (pilot.tests.test_contracts.PilotContractTests.test_contract_rejects_unknown_fields_and_digest_substitution) ... ok\ntest_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain (pilot.tests.test_contracts.PilotContractTests.test_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain) ... ok\ntest_untrusted_issue_text_does_not_change_the_profile_digest (pilot.tests.test_contracts.PilotContractTests.test_untrusted_issue_text_does_not_change_the_profile_digest) ... ok\ntest_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect (pilot.tests.test_coordinator.PilotCoordinatorTests.test_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect) ... ok\ntest_restart_reopens_workspace_at_each_recoverable_local_state (pilot.tests.test_coordinator.PilotCoordinatorTests.test_restart_reopens_workspace_at_each_recoverable_local_state) ... ok\ntest_ambiguous_restart_reconciles_branch_and_pr_without_second_write (pilot.tests.test_github.GitHubPublicationTests.test_ambiguous_restart_reconciles_branch_and_pr_without_second_write) ... ok\ntest_exact_command_shapes_are_non_force_single_ref_and_draft_only (pilot.tests.test_github.GitHubPublicationTests.test_exact_command_shapes_are_non_force_single_ref_and_draft_only) ... ok\ntest_base_or_issue_identity_drift_fails_closed (pilot.tests.test_issue_source.IssueSourceTests.test_base_or_issue_identity_drift_fails_closed) ... ok\ntest_snapshot_uses_only_the_exact_profile_for_routing (pilot.tests.test_issue_source.IssueSourceTests.test_snapshot_uses_only_the_exact_profile_for_routing) ... ok\ntest_in_flight_branch_restart_observes_without_a_second_push (pilot.tests.test_live.PilotPhasesTests.test_in_flight_branch_restart_observes_without_a_second_push) ... ok\ntest_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted (pilot.tests.test_live.PilotPhasesTests.test_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted) ... ok\ntest_runtime_roots_reject_a_symlinked_parent_into_control (pilot.tests.test_live.PilotPhasesTests.test_runtime_roots_reject_a_symlinked_parent_into_control) ... ok\ntest_three_process_phases_use_distinct_grants_and_replay_zero_writes (pilot.tests.test_live.PilotPhasesTests.test_three_process_phases_use_distinct_grants_and_replay_zero_writes) ... ok\ntest_observes_then_executes_only_exact_push_and_draft_post (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_observes_then_executes_only_exact_push_and_draft_post) ... ok\ntest_reads_only_exact_repo_issue_and_base_ref_facts (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_reads_only_exact_repo_issue_and_base_ref_facts) ... ok\ntest_interrupted_invocation_is_terminal_and_cannot_start_again (pilot.tests.test_recovery.PilotRecoveryTests.test_interrupted_invocation_is_terminal_and_cannot_start_again) ... ok\ntest_loads_one_literal_grant_bound_to_observed_control_state (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_loads_one_literal_grant_bound_to_observed_control_state) ... ok\ntest_stale_wildcard_or_multiple_runtime_grants_fail_closed (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_stale_wildcard_or_multiple_runtime_grants_fail_closed) ... ok\ntest_conflicting_replay_and_tampered_record_fail_closed (pilot.tests.test_store.PilotStoreTests.test_conflicting_replay_and_tampered_record_fail_closed) ... ok\ntest_read_only_status_does_not_recover_or_change_database (pilot.tests.test_store.PilotStoreTests.test_read_only_status_does_not_recover_or_change_database) ... ok\ntest_replay_is_exact_and_candidate_survives_close_reopen (pilot.tests.test_store.PilotStoreTests.test_replay_is_exact_and_candidate_survives_close_reopen) ... ok\ntest_bwrap_argv_has_minimal_read_only_source_and_no_network (pilot.tests.test_validation.ValidationTests.test_bwrap_argv_has_minimal_read_only_source_and_no_network) ... ok\ntest_fixed_test_and_semantic_pass_persist_one_exact_validation (pilot.tests.test_validation.ValidationTests.test_fixed_test_and_semantic_pass_persist_one_exact_validation) ... ok\ntest_semantic_gate_proves_exact_versions_labels_csp_and_protected_css (pilot.tests.test_validation.ValidationTests.test_semantic_gate_proves_exact_versions_labels_csp_and_protected_css) ... ok\ntest_semantic_gate_rejects_extra_padding_and_csp_policy_changes (pilot.tests.test_validation.ValidationTests.test_semantic_gate_rejects_extra_padding_and_csp_policy_changes) ... ok\ntest_tree_mutation_is_terminal_even_when_test_exit_is_zero (pilot.tests.test_validation.ValidationTests.test_tree_mutation_is_terminal_even_when_test_exit_is_zero) ... ok\ntest_disallowed_or_special_change_is_rejected_without_commit (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_disallowed_or_special_change_is_rejected_without_commit) ... ok\ntest_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate) ... ok\ntest_sealed_workspace_recovers_by_job_and_rejects_tamper (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_sealed_workspace_recovers_by_job_and_rejects_tamper) ... ok\n\n----------------------------------------------------------------------\nRan 44 tests in 4.078s\n\nOK (skipped=1)\n",
+        "stdout": "",
+        "summary": "exit=0"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "python-unittest",
+        "status": "skip",
+        "stderr": "",
+        "stdout": "",
+        "summary": "focused documentation/state profile runs the admitted lockstep modules instead of full test discovery"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "coverage",
+        "status": "skip",
+        "stderr": "",
+        "stdout": "",
+        "summary": "focused documentation/state profile does not measure full-suite coverage; the admitted inventory changes no executed product statement"
+      },
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-m",
+          "unittest",
+          "tests.test_structure",
+          "tests.test_project_state",
+          "tests.test_manifest_package",
+          "tests.test_workflow_sources",
+          "tests.test_repo_router"
+        ],
+        "details": [],
+        "duration_hint": null,
+        "name": "python-focused-unittest",
+        "status": "pass",
+        "stderr": ".....................................................................................................................................\n----------------------------------------------------------------------\nRan 133 tests in 16.895s\n\nOK\n",
+        "stdout": "/tmp/tmp12otr2km/publish/project.zip\n56b4061f9397eda0a6efa8fcc18b81059b59823252c3efb6484506e533e8d156\n",
+        "summary": "exit=0"
+      },
+      {
+        "command": [
+          "/usr/bin/python3",
+          "-m",
+          "unittest",
+          "factory.tests.test_contracts",
+          "factory.tests.test_state",
+          "factory.tests.test_migrations",
+          "factory.tests.test_service"
+        ],
+        "details": [],
+        "duration_hint": null,
+        "name": "factory-unit",
+        "status": "pass",
+        "stderr": "...............................................................\n----------------------------------------------------------------------\nRan 63 tests in 0.178s\n\nOK\n",
+        "stdout": "",
+        "summary": "exit=0"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "factory-postgres-exit",
+        "status": "skip",
+        "stderr": "",
+        "stdout": "",
+        "summary": "focused documentation/state profile changes no factory runtime path"
+      },
+      {
+        "command": null,
+        "details": [],
+        "duration_hint": null,
+        "name": "source-stability",
+        "status": "pass",
+        "stderr": "",
+        "stdout": "",
+        "summary": "repository fingerprint remained stable"
+      }
+    ],
+    "created_at": "2026-10-03T00:18:47+00:00",
+    "docs_state_scope": {
+      "artifact_files": [],
+      "changed_lockstep_tests": [],
+      "changed_paths_digest": "6f76e5e787f64cfe31211debe9512c1b6cecfe1a2f0045726b88720c7fc9879b",
+      "checked_files": [
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/architecture.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/brief.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/README.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-brief.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/startup-capacity-and-dependencies.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/release.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/requirements.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/rollback.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/route.json",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/state.json",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/tasks.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/test-plan.md"
+      ],
+      "documentation_files": [
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/architecture.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/brief.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/README.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-brief.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/startup-capacity-and-dependencies.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/release.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/requirements.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/rollback.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/route.json",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/state.json",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/tasks.md",
+        "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/test-plan.md"
+      ],
+      "eligible": true,
+      "evidence_kind": "verification:docs-state-focused",
+      "focused_tests": [
+        "tests/test_structure.py",
+        "tests/test_project_state.py",
+        "tests/test_manifest_package.py",
+        "tests/test_workflow_sources.py",
+        "tests/test_repo_router.py"
+      ],
+      "mode": "pr",
+      "profile": "docs-state-focused",
+      "reason": "documentation/dated-state/lockstep-test inventory only",
+      "reason_code": "eligible",
+      "rejected_files": [],
+      "rejection": null,
+      "skipped_checks": [
+        "python-unittest",
+        "coverage",
+        "factory-postgres-exit"
+      ],
+      "state_files": []
+    },
+    "governance": {
+      "architecture_status": "pass",
+      "configured": true,
+      "governance_applicable_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "governance_applicable_head_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+      "governance_architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+      "governance_contract_version": 1,
+      "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
+      "governance_evidence_digest": "853ece8fd24acb34e6cec6ade85dbead9c34624e5c7a7377202e756ed2b0d077",
+      "status": "pass"
+    },
+    "mode": "pr",
+    "profiles": [
+      "base",
+      "contracts",
+      "data"
+    ],
+    "route_id": "2d02ba9e25dc",
+    "schema_version": 1,
+    "spec": {
+      "active_path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+      "exempt": false,
+      "specs": [
+        {
+          "coverage": {
+            "all_criterion_mapped": 0,
+            "all_criterion_total": 0,
+            "all_mapped_ids": [],
+            "all_unmapped_ids": [],
+            "attestation_ac": {
+              "criterion_mapped": 0,
+              "criterion_total": 0,
+              "spec_count": 1,
+              "unmapped_ids": []
+            },
+            "categories": {
+              "acceptance_criteria": {
+                "criterion_mapped": 0,
+                "criterion_total": 0,
+                "mapped_ids": [],
+                "unmapped_ids": []
+              },
+              "forbidden_outcomes": {
+                "criterion_mapped": 0,
+                "criterion_total": 0,
+                "mapped_ids": [],
+                "unmapped_ids": []
+              },
+              "invariants": {
+                "criterion_mapped": 0,
+                "criterion_total": 0,
+                "mapped_ids": [],
+                "unmapped_ids": []
+              }
+            },
+            "criterion_mapped": 0,
+            "criterion_total": 0,
+            "evidence_counts": {
+              "attestation": 0,
+              "production_signal": 0,
+              "receipt": 0,
+              "test": 0
+            },
+            "mapped_ids": [],
+            "spec_count": 1,
+            "unmapped_ids": []
+          },
+          "errors": [
+            "/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-fixture-reset/engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml: objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes"
+          ],
+          "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+          "profile": "gate",
+          "valid": false
+        }
+      ]
+    },
+    "status": "fail",
+    "tree_fingerprint": "ca2bfa31372ad6b3dcf168eb3a3c38850053636e4c1f62233b9654a661ca706d",
+    "workflow_artifacts": {
+      "configured": false,
+      "status": "not_configured"
+    }
+  },
+  "governance_applicable_base_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "governance_applicable_head_sha": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "governance_architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+  "governance_contract_version": 1,
+  "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
+  "governance_evidence_digest": "853ece8fd24acb34e6cec6ade85dbead9c34624e5c7a7377202e756ed2b0d077",
+  "kind": "verification",
+  "report": null,
+  "route_id": "2d02ba9e25dc",
+  "schema_version": 1,
+  "spec_digest": "8958e0d4f4aa26ab88243e3146819b9b69f15bd4ac0ac0b5678384b558646bf5",
+  "spec_fingerprint": "c514b4def92a7763b96afa8ca5f56b701e648609c32df489ed71df493fd77dd1",
+  "status": "fail",
+  "tree_fingerprint": "ca2bfa31372ad6b3dcf168eb3a3c38850053636e4c1f62233b9654a661ca706d"
+}

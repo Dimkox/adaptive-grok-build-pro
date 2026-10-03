@@ -1,0 +1,13 @@
+# Test-only reset seam
+
+The helper is a leaf accepting only the existing owner cursor. It owns one constant, schema-qualified, ordered43-table TRUNCATE statement with RESTART IDENTITY, byte-equivalent to baseline SQL SHA256 a67d8339b86d2af81a72d3f8e953cf29ce8bb81067f1cefe4921555a0c075de9. It does not connect, commit, rollback, close, migrate, read credentials, discover relations, accept names/fragments or use CASCADE.
+
+The narrow constant-only seam is intentionally complete-current-schema025, not a new version dispatcher. Existing migration/version/container/nonce/loopback/session/time-budget guards remain at their caller boundaries. Execution retains conditional legacy metric singleton reseeding; restart retains unconditional reseeding and its returned observation tuple. All counter updates and authority seeds stay in callers.
+
+The restart script must import the helper in both package and direct-script modes without importing either monolithic test caller or adaptive_factory. Installer MANAGED_FILES and exact inventory tests must include the helper; a focused characterization module is ordinarily discovered and, if installed, explicitly bound in the same inventory. Existing architecture owner binding must admit the test helper; if a specific binding is required, report it before expanding scope.
+
+Future F separately adds bounded schema-version-aware025/026 inventory dispatch and the exact six M7 tables, removing its obsolete inline edits from these two callers. This prerequisite contains no026 tables. Keep migrations001-025, rules, budgets, selector, deployed Trust CI and branch protection byte unchanged.
+
+Initial two-caller charge343,589bytes/265AST plus helper/tests fits only by exact final remeasurement, not assertion. An all-source A-F/H/HB union still projects1,821,803 governed bytes against1,300,000. Approved decomposition therefore continues fixture prerequisite -> A-E/H/HB core -> F -> G -> artifacts. These projections are not assembled verifier passes; each successor uses the actual accepted base.
+
+Concurrency contract repair stays test-only in the already-charged execution test module. Treat StoreUnavailable ONLY when its underlying cause is psycopg.errors.LockNotAvailable as an explicit observed refusal, not success. Complete both initial futures, preserve one successful claim and all canonical exact-once effects, then bounded fresh-transaction post-contention retry must produce no duplicate claim/effects. Unexpected availability, timeout, integrity or SQL exceptions still fail. A deterministic injected refusal control and real confirmed-holder control must prove rollback/no duplication; no production retry loop or bound change. Existing reset seam suffix/transaction preservation still applies.

@@ -1,0 +1,55 @@
+{
+  "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+      "decided_at": "2026-10-03T00:27:19+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner explicitly ordered decompose; existing approved full recovery scope is preserved by isolated test-only025 helper precursor, unchanged budgets and Trust CI separation",
+      "resource": null,
+      "route_id": "2d02ba9e25dc",
+      "scope_digest": "f01a69dd483e19c6721c5354bd36d3e5ef25eb3382cf681460b5a2864c493140"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+      "decided_at": "2026-10-03T00:27:19+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner approved decomposition and guarded disposable test workflow; only existing025 disposablePG17 characterization and bounded fixture cleanup, no new migration or live target",
+      "resource": null,
+      "route_id": "2d02ba9e25dc",
+      "scope_digest": "f01a69dd483e19c6721c5354bd36d3e5ef25eb3382cf681460b5a2864c493140"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+      "decided_at": "2026-10-03T00:47:15+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing owner instruction to complete2.1.1 and decompose under unchanged guards: frozen scoped implementation/test evidence, including diagnosed test-only lock-refusal acceptance; no new production behavior or authority",
+      "resource": null,
+      "route_id": "2d02ba9e25dc",
+      "scope_digest": "04a3f4966e61eecb28a6891cacab2a69cc427315af013b66d25aa1877465f62c"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+      "decided_at": "2026-10-03T00:47:16+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing authorized guarded disposable025 characterization only; bounded fixture cleanup, no live target/new migration/timeout or privilege change",
+      "resource": null,
+      "route_id": "2d02ba9e25dc",
+      "scope_digest": "04a3f4966e61eecb28a6891cacab2a69cc427315af013b66d25aa1877465f62c"
+    }
+  ],
+  "route_id": "2d02ba9e25dc",
+  "schema_version": 1
+}

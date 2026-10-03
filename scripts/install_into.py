@@ -32,6 +32,7 @@ MANAGED_FILES = (
     "factory/pyproject.toml",
     "factory/uv.lock",
     "factory/tests/__init__.py",
+    "factory/tests/postgres_fixture_reset.py",
     "factory/tests/postgres_restart_probe.py",
     "factory/tests/run_disposable_exit.py",
     "factory/tests/test_api.py",

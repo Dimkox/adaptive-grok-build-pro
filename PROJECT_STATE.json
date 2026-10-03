@@ -633,7 +633,8 @@
     "scope": [
       "A-E verifier recovery, operational routing, bounded repository language disclosure, architecture preflight and governance input hardening",
       "H additive compatibility and proven Trust CI metadata qualification",
-      "Generation-fenced local heartbeat/watchdog and truthful source state"
+      "Generation-fenced local heartbeat/watchdog and truthful source state",
+      "Frozen test-only025 fixture reset and cause-specific bounded lock-refusal acceptance; conditional on unchanged joined fitness"
     ],
     "retained_successor_obligations": [
       {
@@ -655,7 +656,7 @@
       "code_budgets": "unchanged",
       "u4_macos": "excluded_by_owner"
     },
-    "next_action": "Complete core verification and five independent reviews; deliver fixture prerequisite then core, F durable evidence and separate G Trust CI source before an exact-source artifact child and publication.",
+    "next_action": "Qualify frozen fixture plus core under unchanged joined fitness, then complete full verification and five independent reviews; deliver this first source, F and separate G before the artifact child. If joined budgets fail, accept the fixture separately before core.",
     "tag_and_release": "Not built or published; final exact merged source requires an artifact-only child after F/G acceptance."
   },
   "delivered_change_history": {
@@ -1466,6 +1467,12 @@
       "H",
       "HB"
     ],
+    "joined_fixture": {
+      "source_head": "c7610544936bd8d5a1774d903e3b3d410fa117ad",
+      "schema_version": "025",
+      "scope": "test_only",
+      "status": "pending_full_gate_and_acceptance"
+    },
     "retained_successor_obligations": [
       {
         "contour": "F",
@@ -1482,7 +1489,7 @@
     "deployed": false,
     "external_effect": false,
     "operational_activation": false,
-    "notes": "Core source candidate only. F/G remain required and not accepted; no 2.1.1 artifact, source acceptance, external pilot, deployment or activation is claimed. Historical 2.1.0 custody is archived without changing its hashes or delivery identities."
+    "notes": "Core plus frozen test-only025 fixture source candidate only. F/G remain required and not accepted; no 2.1.1 artifact, source acceptance, external pilot, deployment or activation is claimed. Historical 2.1.0 custody is archived without changing its hashes or delivery identities."
   },
   "delivered_non_milestone_work": [
     {
@@ -1515,7 +1522,7 @@
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Complete core verification and five independent reviews; deliver fixture prerequisite then core, F durable evidence and separate G Trust CI source before an exact-source artifact child and publication.",
+    "next_action": "Qualify frozen fixture plus core under unchanged joined fitness, then complete full verification and five independent reviews; deliver this first source, F and separate G before the artifact child. If joined budgets fail, accept the fixture separately before core.",
     "local_source_gate": {
       "status": "pending_full_pr_verification_and_five_reviews",
       "checked_head": null,

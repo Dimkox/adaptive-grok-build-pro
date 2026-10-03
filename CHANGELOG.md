@@ -5,6 +5,7 @@
 - Integrates reconstructed verifier cancellation and output recovery, operational route precedence, bounded repository language disclosure, located architecture preflight and hostile Git/governance input refusal.
 - Adds generation-fenced local heartbeat/progress, bounded watchdog observations and acknowledged same-task recovery; native harness healing and hang causality remain unproven.
 - Repairs additive API component compatibility and narrowly proven Trust CI metadata qualification while retaining executable separation and unchanged budgets.
+- Includes the frozen test-only025 cursor reset seam and cause-specific bounded lock-refusal acceptance controls in the conditional first source; no026 migration/runtime feature is added.
 - Retains F durable evidence and separate G Trust CI authority as required, not accepted successors in the release-wide ledger. No 2.1.1 artifact is built, published, deployed or activated.
 - Archives exact unpublished 2.1.0 artifact custody and preserves all published release bytes. Optional contours remain default-off; external pilot, M8 activation, general M9 qualification and U4/macOS remain unestablished or excluded.
 

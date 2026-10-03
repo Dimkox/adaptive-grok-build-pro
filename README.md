@@ -14,6 +14,8 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 Identity: **2.1.1 source candidate**. The core integrates verifier recovery, operational routing, bounded language disclosure, architecture preflight, hardened governance inputs, additive architecture compatibility and the local heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) retains F M7 durable evidence and G Trust CI authority as required, not accepted successors. Full verification and independent reviews are pending; no 2.1.1 artifact is built, published or deployed. The published `v2.0.19` record remains immutable.
 
+The conditional first source also includes the frozen test-only025 [cursor reset seam](factory/tests/postgres_fixture_reset.py), its two unchanged-boundary callers and narrowly typed lock-refusal acceptance controls. Actual joined fitness must pass unchanged limits; source acceptance still requires full verification, reviews and external trust. F's026 inventory/runtime work remains absent.
+
 The candidate also carries closed default-off BB contracts, an authenticated offline-only model-rotator registry, a bounded explicit-root VibeVM package store, and an opt-in offline Linux setup manager. U4/macOS remains excluded; no component activates providers, models, services, deployment, or production authority.
 
 | Layer | Dated source and runtime observations |

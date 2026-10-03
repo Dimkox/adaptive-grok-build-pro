@@ -889,3 +889,15 @@ The approved fixture → core A-E/H/HB → F → G → artifact sequence keeps t
 ### 2026-10-03 — Preserve exact approved design Markdown bytes
 
 Use the existing exact-path `.gitattributes` archival precedent for the four intentional Markdown hard breaks in the approved recovery design. Its SHA256 remains byte-identical and the normal Git whitespace check continues to run for all other paths; this preserves syntax and source provenance without changing verification selectors, budgets or trust policy.
+
+### 2026-10-03 — Keep disposable reset extraction cursor-only
+
+Extract only the byte-identical 025 TRUNCATE operation, leaving each caller's different singleton branch, transaction, counter updates and observation seed in place. This makes later inventory changes small without granting the helper target selection or cleanup authority; future 026 support still requires its separately approved explicit inventory/version handling.
+
+### 2026-10-03 — Keep bounded recovery refusal distinct from success
+
+Concurrent acceptance recognizes only StoreUnavailable directly caused by LockNotAvailable as an explicit refused attempt, completes the initial calls, and retries that attempt once after contention ends. A confirmed holder proved rollback before retry and exactly one canonical claim afterward; unrelated failures still propagate and the production 500ms/3s bounds remain unchanged.
+
+### 2026-10-03 — Qualify the frozen test-only fixture/core join by actual accounting
+
+Additively joining the frozen fixture with core A-E/H/HB passed exact-base unchanged whole-file fitness, while preserving both installer additions and every F/G successor obligation. This removes one source/review wave without hiding the monolithic caller charge, substituting projected acceptance or importing F026/G runtime bytes; full verification and external trust remain separate.

@@ -2,6 +2,8 @@
 
 This ledger preserves every original selected obligation across the budget-driven PR split. Core source acceptance never marks F/G accepted; final2.1.1 release requires their exact successor evidence. Original approved source design SHA2561d6ef0470458ac5f061fec8af2d6da26545389739fee98f395d5d5b7b7759f6b. The analysis below is historical scope mapping, not a verification/review receipt; superseded two-PR delivery assumptions are replaced by delivery-topology-addendum.md.
 
+Current conditional delivery order: qualifying frozen test-only025 fixture plus A-E/H/HB core first source, then F, then separate G, then artifact/release. The actual joined exact-base all-category fitness result, full verification and independent reviews are mandatory; a projection cannot qualify the join. If unchanged budgets fail, accept the fixture separately before the core rather than increasing limits or changing the accounting base. AC-008 adds the fixture/reset/typed-refusal evidence without removing any original A-F/G/H/HB obligation; original scope mapping and approved design below remain intact.
+
 # task_analyst: approved scope and acceptance dependencies
 
 Route ffb3d81e031f; read-only analysis, 2026-10-03. Scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-task-analysis-2ThReK` (observed mode0700, owner pall). Startup measurement recorded in capacity.md before repository inspection. Assigned one lightweight worker; no tests, probes, cache generation, candidate mutations, subagents or external writes. reviewed-tree-modified: no

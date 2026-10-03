@@ -78,6 +78,24 @@ def _broken_local_links(document: Path, root: Path) -> list[str]:
 
 
 class InstallerTests(unittest.TestCase):
+    def test_installed_fixture_reset_leaf_is_byte_identical_and_importable(self) -> None:
+        relative = "factory/tests/postgres_fixture_reset.py"
+        for profile in ("generic", "bitrix"):
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as tmp:
+                payload = MODULE.build_payload(ROOT, profile_kind=profile)
+                self.assertIn(relative, {entry.path for entry in payload})
+                target = Path(tmp) / "consumer"
+                with patch.object(MODULE, "build_payload", return_value=payload):
+                    MODULE.materialize_new(ROOT, target)
+                self.assertEqual((target / relative).read_bytes(), (ROOT / relative).read_bytes())
+                for directory, module in ((target, "factory.tests.postgres_fixture_reset"),
+                                          (target / "factory/tests", "postgres_fixture_reset")):
+                    result = subprocess.run([sys.executable, "-c",
+                        f"import {module} as m; assert callable(m.reset_fixture_tables)"],
+                        cwd=directory, capture_output=True, text=True, timeout=10,
+                        env={key: value for key, value in os.environ.items() if key != "PYTHONPATH"})
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_disposable_exit_full_suite_timeout_is_bounded_and_has_growth_margin(self) -> None:
         spec = importlib.util.spec_from_file_location(
             "disposable_exit_timeout_contract",
@@ -501,6 +519,7 @@ class InstallerTests(unittest.TestCase):
             {path for path in generic_paths if path.startswith("factory/tests/")},
             {
                 "factory/tests/__init__.py",
+                "factory/tests/postgres_fixture_reset.py",
                 "factory/tests/postgres_restart_probe.py",
                 "factory/tests/run_disposable_exit.py",
                 "factory/tests/test_api.py",
