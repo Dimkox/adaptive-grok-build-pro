@@ -30,7 +30,11 @@ from adaptive_grok.verification_scope import (
     is_immutable_historical_evidence,
     select_docs_state_scope,
 )
-from tests._support import project_copy
+from tests._support import project_copy as full_project_copy
+
+
+def project_copy(*, git: bool = False):
+    return full_project_copy(git=git, minimal_runtime=True)
 
 # The inventory of the v2.0.19 release sync and its artifact child, reduced to the path
 # classes they actually contain. This is the case issue 205 is about.

@@ -24,7 +24,11 @@ from adaptive_grok import util
 from adaptive_grok import verification as verifier
 from adaptive_grok.router import build_route
 from adaptive_grok.state import set_active_route
-from tests._support import project_copy
+from tests._support import project_copy as full_project_copy
+
+
+def project_copy(*, git: bool = False):
+    return full_project_copy(git=git, minimal_runtime=True)
 
 
 @contextlib.contextmanager
