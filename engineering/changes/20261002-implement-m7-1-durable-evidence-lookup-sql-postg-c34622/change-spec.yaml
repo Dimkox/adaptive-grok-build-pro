@@ -6,6 +6,9 @@
       "evidence": [
         {
           "test": "factory/tests/test_shadow_lookup.py"
+        },
+        {
+          "test": "factory/tests/test_postgres_fixture_reset.py"
         }
       ]
     }
@@ -36,7 +39,7 @@
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "Exact repository and immutable recorded identity boundaries fail closed and preserve existing callers.",
+      "statement": "Exact repository and immutable recorded identity boundaries fail closed and preserve existing callers; byte-identical extracted legacy callers use the closed025/026 test-only seam selected by a bounded existing-cursor query of the installed migration ledger integer version, preserving025 bytes, six immutable026 table identities, transaction ownership and typed concurrent-refusal retry bounds. Unknown ledger versions refuse before reset. Frozen c50e083 preparation does not establish an accepted F PR base.",
       "evidence": [
         {
           "test": "factory/tests/test_shadow_lookup.py"

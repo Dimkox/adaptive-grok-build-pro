@@ -48,6 +48,54 @@
       "resource": null,
       "route_id": "c34622ec1ccf",
       "scope_digest": "e00f2001d5e51efa95ec65513ab813eca96590c380e3bb7b0b800b7cab2fcebc"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-03T01:28:41+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing full 2.1.1 F scope and approved decomposition: explicit025/026 fixture-helper mapping only; original F obligations, limits and external trust boundary retained. Local preparation on c50 is not an accepted main base.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "55daaaa5ed47bc294f32de55b5206589dff0b0509852b53d95ff09cae1982ea9"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-03T01:28:41+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing approved additive026 plan and exact disposable025/026 fixture controls only. No live database, deployed policy, privilege/time-budget waiver or external operation is authorized; current provisional fitness still fails and must be repaired.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "55daaaa5ed47bc294f32de55b5206589dff0b0509852b53d95ff09cae1982ea9"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-03T01:32:52+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing full 2.1.1 F scope and approved decomposition: final closed025/026 fixture dispatch from the existing integer schema_migrations contract, bounded SELECT in the existing caller cursor/transaction, unchanged large callers and all F obligations. Provisional c50 preparation is not accepted-base evidence.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "15ece4f5073588754116f3a73bca59c7c21e20709c2431970b4f0c08114063f1"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-implement-m7-1-durable-evidence-lookup-sql-postg-c34622",
+      "decided_at": "2026-10-03T01:32:52+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing additive026 plan and exact disposable025/026 controls only. Closed helper refuses unsupported state before TRUNCATE; original001-025 bytes and production bounds remain unchanged. No live database, deployed CI or external operation is authorized.",
+      "resource": null,
+      "route_id": "c34622ec1ccf",
+      "scope_digest": "15ece4f5073588754116f3a73bca59c7c21e20709c2431970b4f0c08114063f1"
     }
   ],
   "route_id": "c34622ec1ccf",

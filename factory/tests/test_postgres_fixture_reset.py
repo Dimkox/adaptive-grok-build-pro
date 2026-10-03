@@ -13,11 +13,13 @@ EXPECTED_SHA256 = "a67d8339b86d2af81a72d3f8e953cf29ce8bb81067f1cefe4921555a0c075
 
 
 class RecordingCursor:
-    def __init__(self, marker=None, fail=False):
+    def __init__(self, marker=None, fail=False, schema_version=26, fail_on=None):
         self.calls = []
         self.marker = marker
         self.fail = fail
         self.failure = RuntimeError("synthetic reset failure")
+        self.schema_version = schema_version
+        self.fail_on = fail_on
 
     def __enter__(self):
         return self
@@ -27,10 +29,12 @@ class RecordingCursor:
 
     def execute(self, statement, parameters=None):
         self.calls.append((statement, parameters))
-        if self.fail:
+        if self.fail or len(self.calls) == self.fail_on:
             raise self.failure
 
     def fetchone(self):
+        if self.calls[-1][0].startswith("SELECT version FROM factory.schema_migrations"):
+            return None if self.schema_version is None else (self.schema_version,)
         return (self.marker,)
 
 
@@ -51,6 +55,45 @@ class RecordingConnection:
 
 
 class FixtureResetTests(unittest.TestCase):
+    def test_026_inventory_is_exact_additive_and_unknown_versions_refuse_before_sql(self):
+        from adaptive_factory.migrations import discover_migrations
+        import re
+
+        helper = self.helper()
+        migration = next(row for row in discover_migrations() if row.version == 26)
+        tables = tuple(re.findall(r"CREATE TABLE factory\.(m7_[a-z_]+) \(", migration.sql))
+        self.assertEqual(len(tables), 6)
+        cursor = RecordingCursor()
+        helper.reset_fixture_tables(cursor, schema_version=26)
+        statement, parameters = cursor.calls[0]
+        prefix = statement.removesuffix(helper.RESET_SQL.removeprefix("TRUNCATE "))
+        self.assertEqual(set(re.findall(r"factory\.(m7_[a-z_]+)", prefix)), set(tables))
+        self.assertEqual(len(re.findall(r"factory\.m7_", prefix)), 6)
+        self.assertEqual(len(cursor.calls), 1)
+        self.assertIsNone(parameters)
+        self.assertNotIn("CASCADE", statement)
+        for version in (24, 27, "26", True, 26.0):
+            refused = RecordingCursor()
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                helper.reset_fixture_tables(refused, schema_version=version)
+            self.assertEqual(refused.calls, [])
+
+    def test_default_reads_bounded_installed_version_and_refuses_unknown_ledger(self):
+        for version in (25, 26):
+            cursor = RecordingCursor(schema_version=version)
+            self.helper().reset_fixture_tables(cursor)
+            expected = RecordingCursor()
+            self.helper().reset_fixture_tables(expected, schema_version=version)
+            self.assertEqual(cursor.calls, [(
+                "SELECT version FROM factory.schema_migrations ORDER BY version DESC LIMIT 1", None
+            ), expected.calls[0]])
+        for version in (None, 24, 27, True, "26", 26.0):
+            cursor = RecordingCursor(schema_version=version)
+            with self.subTest(version=version), self.assertRaises(ValueError):
+                self.helper().reset_fixture_tables(cursor)
+            self.assertEqual(len(cursor.calls), 1)
+            self.assertNotIn("TRUNCATE", cursor.calls[0][0])
+
     def helper(self):
         try:
             return importlib.import_module("factory.tests.postgres_fixture_reset")
@@ -59,7 +102,7 @@ class FixtureResetTests(unittest.TestCase):
 
     def test_exact_025_statement_is_one_closed_cursor_operation(self):
         cursor = RecordingCursor()
-        self.assertIsNone(self.helper().reset_fixture_tables(cursor))
+        self.assertIsNone(self.helper().reset_fixture_tables(cursor, schema_version=25))
         self.assertEqual(len(cursor.calls), 1)
         statement, parameters = cursor.calls[0]
         self.assertIsNone(parameters)
@@ -100,7 +143,9 @@ class FixtureResetTests(unittest.TestCase):
                 cursor = RecordingCursor(marker=marker)
                 connection, observation = self.call_wrapper(caller, cursor)
                 statements = [row[0] for row in cursor.calls]
-                self.assertEqual(hashlib.sha256(statements[0].encode()).hexdigest(), EXPECTED_SHA256)
+                expected = RecordingCursor()
+                self.helper().reset_fixture_tables(expected, schema_version=26)
+                self.assertEqual(statements[1], expected.calls[0][0])
                 self.assertEqual("TRUNCATE factory.kill_switch_heads" in statements, singleton)
                 self.assertEqual("INSERT INTO factory.metric_counters(singleton) VALUES (true)" in statements, singleton)
                 self.assertIn("UPDATE factory.capacity_counters SET active_count=0", statements)
@@ -120,6 +165,22 @@ class FixtureResetTests(unittest.TestCase):
                 self.assertEqual(len(cursor.calls), 1)
                 self.assertEqual(self.last_connection.outcome, "rollback")
 
+    def test_callers_dispatch_both_installed_versions_and_reset_fault_rolls_back(self):
+        for caller in ("execution", "restart"):
+            for version in (25, 26):
+                with self.subTest(caller=caller, version=version):
+                    cursor = RecordingCursor(schema_version=version)
+                    self.call_wrapper(caller, cursor)
+                    expected = RecordingCursor()
+                    self.helper().reset_fixture_tables(expected, schema_version=version)
+                    self.assertEqual(cursor.calls[1], expected.calls[0])
+                    fault = RecordingCursor(schema_version=version, fail_on=2)
+                    with self.assertRaises(RuntimeError) as caught:
+                        self.call_wrapper(caller, fault)
+                    self.assertIs(caught.exception, fault.failure)
+                    self.assertEqual(len(fault.calls), 2)
+                    self.assertEqual(self.last_connection.outcome, "rollback")
+
     def test_package_and_sibling_imports_resolve_the_same_leaf(self):
         helper = self.helper()
         result = subprocess.run([sys.executable, "-c",
@@ -131,7 +192,7 @@ class FixtureResetTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get("FACTORY_TEST_DATABASE_URL"), "requires exact disposable PostgreSQL")
 class FixtureResetPostgresTests(unittest.TestCase):
-    def test_025_effects_rollback_unlisted_fk_and_runtime_refusal(self):
+    def test_026_effects_rollback_unlisted_fk_and_runtime_refusal(self):
         import psycopg
         from psycopg import sql
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
@@ -145,7 +206,7 @@ class FixtureResetPostgresTests(unittest.TestCase):
         migrator = PostgresMigrator(url)
         migrator.apply()
         before = migrator.status()
-        self.assertEqual([row.version for row in before], list(range(1, 26)))
+        self.assertEqual([row.version for row in before], list(range(1, 27)))
         login = "factory_reset_runtime_" + str(os.getpid())
         password = f"local-{uuid.uuid4().hex}"
         provision_runtime_login(url, login, password)
@@ -154,7 +215,7 @@ class FixtureResetPostgresTests(unittest.TestCase):
             with psycopg.connect(url, options="-c statement_timeout=10000 -c lock_timeout=3000") as db:
                 db.execute("INSERT INTO factory.intake_identities VALUES('reset/repository','manual','retained')")
                 db.commit()
-                reset_fixture_tables(db.cursor())
+                reset_fixture_tables(db.cursor(), schema_version=26)
                 self.assertEqual(db.execute("SELECT count(*) FROM factory.intake_identities").fetchone()[0], 0)
                 db.rollback()
                 self.assertEqual(db.execute("SELECT source_id FROM factory.intake_identities WHERE repository_id='reset/repository'").fetchone()[0], "retained")
@@ -162,7 +223,7 @@ class FixtureResetPostgresTests(unittest.TestCase):
                     "FOREIGN KEY(repository_id,source_type,source_id) REFERENCES factory.intake_identities)")
                 db.commit()
                 with self.assertRaises(psycopg.errors.FeatureNotSupported):
-                    reset_fixture_tables(db.cursor())
+                    reset_fixture_tables(db.cursor(), schema_version=26)
                 db.rollback()
                 self.assertEqual(db.execute("SELECT source_id FROM factory.intake_identities WHERE repository_id='reset/repository'").fetchone()[0], "retained")
                 db.execute("DROP TABLE factory.fixture_reset_blocker")
@@ -170,10 +231,10 @@ class FixtureResetPostgresTests(unittest.TestCase):
                 with psycopg.connect(runtime, options="-c statement_timeout=10000 -c lock_timeout=3000") as denied:
                     denied.execute("SET ROLE factory_runtime")
                     with self.assertRaises(psycopg.errors.InsufficientPrivilege):
-                        reset_fixture_tables(denied.cursor())
+                        reset_fixture_tables(denied.cursor(), schema_version=26)
                     denied.rollback()
                 self.assertEqual(db.execute("SELECT source_id FROM factory.intake_identities WHERE repository_id='reset/repository'").fetchone()[0], "retained")
-                reset_fixture_tables(db.cursor())
+                reset_fixture_tables(db.cursor(), schema_version=26)
                 db.commit()
                 self.assertEqual(db.execute("SELECT count(*) FROM factory.intake_identities").fetchone()[0], 0)
             self.assertEqual(migrator.status(), before)

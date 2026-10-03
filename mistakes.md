@@ -1627,3 +1627,7 @@ Root cause: JavaScript replacement strings interpreted SQL dollar delimiters and
 ### 2026-10-02 — Exercise old and new fixtures together after restart
 
 Root cause: isolated M7 PostgreSQL checks missed a legacy fixture's explicit foreign-key cleanup inventory and discovery-time DSN caching across another test's Docker restart; source reconstruction also omitted mandatory architecture ownership for three new modules. Reproduce the mixed fixture sequence using the mandatory runner identity, adopt only a freshly validated runner DSN, and check architecture ownership before handing off focused evidence.
+
+### 2026-10-03 — Explicit caller keywords charged the complete legacy fixtures
+
+Root cause: adding schema_version=26 to both large callers ignored the unchanged whole-file changed-path accounting policy, so the provisional F split still exceeded its budgets. Move installed-version selection into the existing closed test-only helper and prove both callers byte-identical to the frozen predecessor before remeasuring.
