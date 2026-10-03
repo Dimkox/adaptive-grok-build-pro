@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+import uuid
 from unittest.mock import patch
 
 EXPECTED_SHA256 = "a67d8339b86d2af81a72d3f8e953cf29ce8bb81067f1cefe4921555a0c075de9"
@@ -146,7 +147,7 @@ class FixtureResetPostgresTests(unittest.TestCase):
         before = migrator.status()
         self.assertEqual([row.version for row in before], list(range(1, 26)))
         login = "factory_reset_runtime_" + str(os.getpid())
-        password = "synthetic-reset-only"
+        password = f"local-{uuid.uuid4().hex}"
         provision_runtime_login(url, login, password)
         runtime = make_conninfo(**{**conninfo_to_dict(url), "user": login, "password": password})
         try:

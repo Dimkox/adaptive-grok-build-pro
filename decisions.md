@@ -901,3 +901,19 @@ Concurrent acceptance recognizes only StoreUnavailable directly caused by LockNo
 ### 2026-10-03 — Qualify the frozen test-only fixture/core join by actual accounting
 
 Additively joining the frozen fixture with core A-E/H/HB passed exact-base unchanged whole-file fitness, while preserving both installer additions and every F/G successor obligation. This removes one source/review wave without hiding the monolithic caller charge, substituting projected acceptance or importing F026/G runtime bytes; full verification and external trust remain separate.
+
+### 2026-10-03 — Compare CI runtimes only with their workload identity
+
+Nine successful historical Actions runs took 50–64 seconds on 2.0.11, whereas the two observed current App-owned checks took 25m44s and 26m11s with a different product/trust workload. Keeping version, scope and sample count attached prevents a false 26-fold speedup claim; a parallel critical-path calculation is an estimate until the same current workload is measured.
+
+## 2026-10-03 — Сократить расход координатора
+
+Продолжать работу по короткому сохранённому handoff: точный HEAD, результат последней проверки и следующий шаг; читать только нужные изменения, а не всю историю. Передавать субагентам отдельный brief и ссылки на файлы через `fork_turns=none`, выбирать достаточную модель для задачи и выводить краткие результаты вместо полных отчётов. Не повторять законченный общий анализ; выполнять обязательные проверки актуального кандидата и независимые ревью в установленном порядке без ослабления Trust CI.
+
+## 2026-10-03 — Один райтер на финальный процесс
+
+Финальный кандидат меняет ровно один выбранный исполнитель; подготовленный F заморожен, второй райтер параллельно не запускается. Проверки и независимые ревью могут работать параллельно только без изменения кандидата, с отдельными приватными копиями для проб. Координатор сохраняет отчёты после завершения всей волны, затем получает свежие проверки и подтверждения для точного итогового дерева.
+
+### 2026-10-03 — Preserve complete Core output outside source discovery
+
+Execute the normal pinned measured Core4 backend once against the frozen repair and capture its complete process results before any receipt publication or workflow evidence changes. Private0700 non-.py artifacts retained the fresh passing test/coverage output and stable before/after fingerprint without recreating the undeclared-source defect; old unretained failure names remain unknown.
