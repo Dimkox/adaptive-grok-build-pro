@@ -1,0 +1,159 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_dead_member_of_an_exact_set_is_rejected_and_named"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "A criterion declaring an exact expectation set whose member css-link-count is proven and whose member frozen-plan-text has no probe is rejected, and the finding names frozen-plan-text, the criterion id and the missing liveness proof."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_every_member_with_a_probe_is_accepted"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetProbeTests::test_liveness_probe_css_link_count"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetProbeTests::test_liveness_probe_frozen_plan_text"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "The same declaration becomes valid once every declared member is named by test evidence of that criterion, so the obligation is discharged by a probe rather than by rewording."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_upper_bound_without_non_emptiness_can_never_fail"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_upper_bound_with_non_emptiness_is_accepted"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "A criterion may instead declare the set as an upper bound, but only together with a non-emptiness assertion, because an upper bound without it is satisfied by an empty observation and can never fail."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_placeholders_counts_and_code_are_not_expectation_sets"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_declaration_without_a_quantifier_imposes_no_obligation"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Ordinary prose is not turned into an expectation set: an empty brace group, a numeric or single-character placeholder, an all-uppercase template variable, a JSON literal and a brace list with no quantifier impose no new obligation."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_no_existing_package_declares_an_unsatisfiable_set"
+        },
+        {
+          "receipt": "verification"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "The shipped validator and the repaired validator return byte-identical error lists for every change package already recorded under engineering/changes, so no historical package is rejected or rewritten by the new obligation."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260925-reject-unsatisfiable-expectation-set-members-in-113055",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "schemas/change-spec.schema.json"
+    ],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_dead_member_of_an_exact_set_is_rejected_and_named"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "The check must not survive as a warning that keeps a defective spec passing: disabling the rule, restricting it to the gate profile, or letting any other evidence kind prove liveness breaks the delivered tests."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_criterion_shape_stays_inside_the_deployed_holdout_contract"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_no_existing_package_declares_an_unsatisfiable_set"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "The repair must not be bought by editing historical packages, by bumping the spec schema version, or by adding a field that the externally deployed holdout does not accept."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_criterion_shape_stays_inside_the_deployed_holdout_contract"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "The change-spec document shape is unchanged: the criterion keys the local contract accepts stay exactly the keys the independent holdout accepts, so no authored spec can become locally valid and externally rejectable."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_invariants_and_forbidden_outcomes_are_covered"
+        },
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_the_obligation_holds_while_the_spec_is_only_a_draft"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "The obligation covers all three criterion collections and applies in the draft profile as well as the gate profile, because an unsatisfiable declaration is wrong while it is being written."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_spec_expectation_sets.py::ExpectationSetTests::test_non_test_evidence_never_proves_liveness"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "Only test evidence proves a member reachable; receipt, attestation and production-signal evidence naming the same member never satisfy the obligation."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make a typed specification that declares an expectation set containing a member no rule of the stack can ever produce fail while the specification is still a plan, instead of during implementation when the implementer has to improvise a weaker rule.",
+    "success_metric": "expectation_set_liveness_tests_green_and_historical_verdicts_unchanged",
+    "target": "dead_member_rejected_by_name_in_gate_and_draft_profiles"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "change_spec_gate_findings_with_reason_liveness_proof",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 2,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

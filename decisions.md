@@ -840,6 +840,9 @@ Focused verification now consumes a status-preserving Git inventory and rejects 
 
 When a predecessor merges, first restack the continuation branch and bind its route/evidence to the new protected-main SHA. Only then run one final full verifier, record receipts, push, and enqueue Trust CI; this prevents expensive checks from becoming stale because of a later base change.
 
+## 2026-09-25 — Carry new spec obligations on existing document fields
+
+Issue #202 needed a per-member liveness obligation inside `change-spec.yaml`, but the independently deployed holdout accepts a criterion containing exactly `id`, `statement` and `evidence`, and repository changes cannot modify that deployed bundle. The obligation was therefore expressed as semantics over the existing prose and the existing `test` evidence kind instead of a new field, so no spec can become locally valid and externally rejectable.
 ### 2026-09-24 — Select verification scope from the changed-path inventory, not from the route label
 
 `docs-state-focused` admits only prose, `PROJECT_STATE.json`, `VERSION`, tracked `packages/**` and the three lockstep state tests, and it re-derives eligibility from a status-preserving Git inventory; anything else stays on the 629 s full suite. Why: the route label is unreliable (issue #123) and a prose/state diff cannot move an executed product statement, so the path inventory is the only honest scope proof. The classifier lives outside its own allowlist and records `docs_state_scope.evidence_kind` in the receipt, so a shortcut can never verify its own change.
