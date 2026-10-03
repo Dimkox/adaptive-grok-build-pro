@@ -1,0 +1,70 @@
+{
+  "scope": "focused writer evidence only; not a full verifier receipt, independent review or merge authority",
+  "base_head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+  "product_paths": [
+    ".grok-stack/adaptive_grok/router.py",
+    "tests/test_repo_router.py"
+  ],
+  "initial_red": {
+    "command": "taskset -c 2,3 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests",
+    "exit_code": 1,
+    "summary": "self.assertEqual(self.route(Path(tmp), prompt).intent, 'release')\nAssertionError: 'review' != 'release'\n- review\n+ release\n\n\n----------------------------------------------------------------------\nRan 6 tests in 0.109s\n\nFAILED (failures=31)\n",
+    "failures": [
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Release the artifact through a pull request')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Please release v2.1.1 via PR after review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Review this PR, then deploy the build')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Fix the bug and publish the package through a pull request')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Can you deploy this build after code review?')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='We need to release v2.1.1 through a pull request')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='I want you to publish the artifact after review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Prepare the production release through PR')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Run the canary rollout after review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Roll back the deployment after review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Выпусти релиз через pull request после review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Проведи ревью PR, затем опубликуй пакет')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Исправь баг и выкати релиз через PR')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Нужно развернуть сборку после code review')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Подготовь production release и canary rollout через PR')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Сделай релиз через pull request')",
+      "FAIL: test_affirmative_operation_survives_pr_review_and_fix_words (tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words) (prompt='Откати сборку после ревью')",
+      "FAIL: test_incident_priority_retains_explicit_operation_controls (tests.test_repo_router.OperationalIntentTests.test_incident_priority_retains_explicit_operation_controls) (prompt='Production down; fix the incident and release the patch via PR')",
+      "FAIL: test_incident_priority_retains_explicit_operation_controls (tests.test_repo_router.OperationalIntentTests.test_incident_priority_retains_explicit_operation_controls) (prompt='Авария: исправь баг и опубликуй пакет через PR')",
+      "FAIL: test_incidental_and_descriptive_mentions_keep_ordinary_intent (tests.test_repo_router.OperationalIntentTests.test_incidental_and_descriptive_mentions_keep_ordinary_intent) (prompt='Update release notes documentation')",
+      "FAIL: test_incidental_and_descriptive_mentions_keep_ordinary_intent (tests.test_repo_router.OperationalIntentTests.test_incidental_and_descriptive_mentions_keep_ordinary_intent) (prompt='Create a release plan')",
+      "FAIL: test_incidental_and_descriptive_mentions_keep_ordinary_intent (tests.test_repo_router.OperationalIntentTests.test_incidental_and_descriptive_mentions_keep_ordinary_intent) (prompt='Prepare release notes')",
+      "FAIL: test_incidental_and_descriptive_mentions_keep_ordinary_intent (tests.test_repo_router.OperationalIntentTests.test_incidental_and_descriptive_mentions_keep_ordinary_intent) (prompt='Создай план релиза')",
+      "FAIL: test_incidental_and_descriptive_mentions_keep_ordinary_intent (tests.test_repo_router.OperationalIntentTests.test_incidental_and_descriptive_mentions_keep_ordinary_intent) (prompt='Сделай релизный checklist')",
+      "FAIL: test_negation_is_bounded_before_an_affirmative_operation (tests.test_repo_router.OperationalIntentTests.test_negation_is_bounded_before_an_affirmative_operation) (prompt='Do not deploy, but release the source through a pull request')",
+      "FAIL: test_negation_is_bounded_before_an_affirmative_operation (tests.test_repo_router.OperationalIntentTests.test_negation_is_bounded_before_an_affirmative_operation) (prompt=\"Don't publish; release the build via PR\")",
+      "FAIL: test_negation_is_bounded_before_an_affirmative_operation (tests.test_repo_router.OperationalIntentTests.test_negation_is_bounded_before_an_affirmative_operation) (prompt='Не выкатывай в production, но опубликуй пакет через PR')",
+      "FAIL: test_negation_is_bounded_before_an_affirmative_operation (tests.test_repo_router.OperationalIntentTests.test_negation_is_bounded_before_an_affirmative_operation) (prompt='Не публикуй; затем выпусти релиз через pull request')",
+      "FAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt='Review \"do not release\"; release the build via PR')",
+      "FAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt='Yesterday we deployed v2; publish v3 through PR')",
+      "FAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt='Ранее выпустили релиз; теперь опубликуй пакет через PR')"
+    ]
+  },
+  "quote_boundary_red": {
+    "command": "taskset -c 4,5 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only",
+    "exit_code": 1,
+    "output": "FFF\n======================================================================\nFAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt=\"Review the example 'don't deploy and publish the package'\")\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 169, in test_quoted_and_historical_operations_are_context_only\n    self.assertEqual(self.route(Path(tmp), prompt).intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt='Review the example \"deploy the build\\nand publish the package\"')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 169, in test_quoted_and_historical_operations_are_context_only\n    self.assertEqual(self.route(Path(tmp), prompt).intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n======================================================================\nFAIL: test_quoted_and_historical_operations_are_context_only (tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only) (prompt='Review the incomplete example \"deploy the build\\nand publish the package')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router/tests/test_repo_router.py\", line 169, in test_quoted_and_historical_operations_are_context_only\n    self.assertEqual(self.route(Path(tmp), prompt).intent, 'review')\nAssertionError: 'release' != 'review'\n- release\n+ review\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.038s\n\nFAILED (failures=3)\n"
+  },
+  "final_green": {
+    "command": "taskset -c 4,5 env GROK_TEST_WORKERS=2 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy",
+    "exit_code": 0,
+    "observed": "Ran 76 tests in 28.136s; OK"
+  },
+  "package_gate": {
+    "command": "python3 scripts/grok_spec.py validate --gate engineering/changes/20261002-fix-issue123-router-intent-precedence-explicit-o-03708e/change-spec.yaml",
+    "exit_code": 0,
+    "observed": "8/8 typed criteria mapped; errors []; ok true"
+  },
+  "diff_check": {
+    "command": "git diff --check",
+    "exit_code": 0
+  },
+  "unexecuted": [
+    "full PR verifier: controller owned",
+    "independent code/test reviews: controller dispatched after verifier",
+    "external Trust CI and any operational delivery: controller owned"
+  ]
+}

@@ -1,0 +1,14 @@
+# Read-only aggregate analysis assignments
+
+Projectroot /home/pall/grok-projects/adaptive-grok-build-pro. Aggregate .worktrees/v211-combined-source routeffb3d81e031f. OwnerapprovedTWOsourcePRspreservingseparation. Sixselectedrolesmustfinishnarrowindependentanalysisbeforeaggregatewriter. Startuprootcapacity28recorded23:20:51UTC; eachagent remeasuresbeforeinspection, private0700scratchINSIDEproject, allocatedoneCPU. Sourcewritersareisolated, aggregatehasnoapplicationwriteruntilanalysesfinish.
+
+Sources: A .worktrees/v211-a-verifier HEAD0d22521f14eb4e45aa6869aee2258e6e61379722; B v211-b-router cb83a0e49fc5ba5e55144137f3d59e5aed9ac62b; C v211-c-classifier9b257246d56e4c65d268a1dd9efadd707f4298fd; D v211-d-architecture4293a7793 (reviewreportsadded after oldfullpass); E v211-e-governance d46ab620b (typedreferencesfixedafterfailedCLIreceipt); F v211-f-evidence7bc5eba... repairs inprogress; H v211-h-architecture-contract atmainrepairs inprogress; HB issue229-watchdogdc4062bcbc1e1da95cfe07077fc9cfbf273e0312. G v211-g-authority3423e7d5... NOTimported.
+
+repo_explorer: exactsourceinventory/overlapmap, minimalcommitimportboundaries; no broadhistorycrawl.
+task_analyst: approvedfullscope/acceptance/dependencycoveragegapcheck and testedvsunqualifiedtruth.
+architect: A/D/H integration and concreteFcodebudgets, normalcomponentmodelcorrectionvsnamedrequirednewdecision; no budgetwaiver.
+docs_researcher: version/source-artifactREADME/statebindingplan, no claimsnotqualified; currentnamingheuristicfalsecontractavoid.
+data_architect: F026oldmigrations/actualdisposableDSNandFKcleanup plus HB500msfailure; specifyboundedisolatedfive-trialholdtelemetry afterFfixturefinish, noguard/timebudgetweakening. AssessM7existingnodeownershipvsbudgetfailure.
+integration_architect: combinedAPI/installer/workflow hooks/source ownership and GsecondPR separation boundaries, additivebindings.
+
+Readonlyallcandidates; nogitindex/ref/cache/generatedfiles/testexecutionsincandidate; optionalprobesonlyownscratchifexplicitnamedclaim. No subagents/privatekeys/liveDB/externalwrites/fullsuite. Returnconciseevidence+identity+limitsoutofbandandSAVEreportownscratch; no candidatewriting. Independentreviewlaterappliestoactualfinalcandidate, notthisanalysis.

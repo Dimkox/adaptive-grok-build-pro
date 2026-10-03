@@ -22,6 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 import adaptive_grok.governance as governance
+import adaptive_grok.architecture_diff as architecture_diff
+from adaptive_grok.architecture import ArchitectureError
 from adaptive_grok.architecture_fitness import architecture_evidence
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
@@ -1059,8 +1061,16 @@ class GovernanceLifecycleTests(unittest.TestCase):
 
         self.assertIsNot(bound, clone)
         self.assertNotEqual(bound, clone)
-        self.assertEqual(effective_rules(snapshot, now=self.NOW), (bound,))
+        self.assertEqual(effective_rules(snapshot, now=self.NOW), ())
         self.assertEqual(effective_rules(cloned_snapshot, now=self.NOW), ())
+
+    def test_repository_human_claim_cannot_confer_active_rule_authority(self) -> None:
+        rule = _active_rule("RULE-EXTERNAL-AUTHORITY")
+        root = self._fixture(rules=[rule], materialize_evidence=True)
+        snapshot = load_governance(root)
+        findings = validate_governance(snapshot, root, now=self.NOW)
+        self.assertIn("rule-external-authority-required", {item.code for item in findings})
+        self.assertEqual(effective_rules(snapshot, now=self.NOW), ())
 
     def test_effective_rules_reject_missing_and_mismatched_evidence(self) -> None:
         for case, materialize in (("missing", False), ("mismatch", True)):
@@ -1121,10 +1131,7 @@ class GovernanceLifecycleTests(unittest.TestCase):
         )
         snapshot = load_governance(root)
 
-        self.assertEqual(
-            [item.rule_id for item in effective_rules(snapshot, now=self.NOW)],
-            ["RULE-LIVE"],
-        )
+        self.assertEqual(effective_rules(snapshot, now=self.NOW), ())
         self.assertIn(
             "rule-expired",
             {item.code for item in validate_governance(snapshot, root, now=self.NOW)},
@@ -1651,6 +1658,7 @@ class GovernanceHandoffTests(unittest.TestCase):
             check=False,
             capture_output=True,
             text=True,
+            timeout=10,
         )
 
     def test_handoff_has_exact_closed_immutable_v1_shape(self) -> None:
@@ -1717,6 +1725,21 @@ class GovernanceHandoffTests(unittest.TestCase):
                 consumed_input_digests={},
             )
 
+    def test_handoff_rechecks_governance_mutation_hidden_from_git_status(self) -> None:
+        root, snapshot, head, architecture = self._clean_fixture()
+        relative = "governance/rules/index.json"
+        subprocess.run(["git", "update-index", "--assume-unchanged", relative], cwd=root, check=True)
+        real_derive = governance.derive_architecture_evidence
+
+        def mutate_after_derivation(*args: object, **kwargs: object) -> dict[str, object]:
+            derived = real_derive(*args, **kwargs)
+            (root / relative).write_bytes(b'{"changed":"after derivation"}\n')
+            return derived
+
+        with mock.patch.object(governance, "derive_architecture_evidence", side_effect=mutate_after_derivation):
+            with self.assertRaises(GovernanceError):
+                build_governance_handoff(snapshot, architecture=architecture, base_sha=head, head_sha=head, now=self.NOW)
+
     def test_handoff_binds_repeated_evidence_path_to_first_observation(self) -> None:
         shared_path = "engineering/evidence/shared.json"
         first_bytes = b'{"generation":"A"}\n'
@@ -1724,6 +1747,8 @@ class GovernanceHandoffTests(unittest.TestCase):
 
         def fixture(*, first_digest: str) -> tuple[Path, object, str, dict[str, object]]:
             rules = [_active_rule("RULE-SHARED-A"), _active_rule("RULE-SHARED-B")]
+            for rule in rules:
+                rule.update({"approved_by": [], "revision": 2, "status": "reviewed"})
             rules[1]["scope"]["repository_paths"] = ["lib"]
             for rule, digest in zip(
                 rules,
@@ -1800,7 +1825,9 @@ class GovernanceHandoffTests(unittest.TestCase):
                 head_sha=head,
                 now=self.NOW,
             )
-        self.assertEqual(reads, 1)
+        # Evaluation reuses the first observation; publication independently
+        # rechecks it once so a status-hidden mutation cannot be emitted.
+        self.assertEqual(reads, 2)
 
     def test_handoff_rejects_dirty_worktree_sha_and_digest_mismatches(self) -> None:
         root, snapshot, head, architecture = self._clean_fixture()
@@ -2041,6 +2068,281 @@ class GovernanceHandoffTests(unittest.TestCase):
         self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
         self.assertTrue(json.loads(checked.stdout)["ok"])
         self.assertEqual(before, {path: path.read_bytes() for path in paths})
+
+
+class GovernanceInputBoundaryTests(unittest.TestCase):
+    """Hostile inputs must never redirect Git or publish a mutable projection."""
+
+    def _repository(self, *, object_format: str = "sha1") -> tuple[Path, str]:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        result = subprocess.run(
+            ["git", "init", "-q", f"--object-format={object_format}"],
+            cwd=root, capture_output=True, check=False,
+        )
+        if result.returncode:
+            self.skipTest(f"Git does not support {object_format}")
+        for arguments in (("config", "user.email", "boundary@example.invalid"),
+                          ("config", "user.name", "Boundary Tests")):
+            subprocess.run(["git", *arguments], cwd=root, check=True)
+        (root / "decisions.md").write_bytes(b"# decisions\n")
+        (root / "mistakes.md").write_bytes(b"# mistakes\n")
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "boundary fixture"], cwd=root, check=True)
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
+        return root, head
+
+    def test_ambient_git_overrides_cannot_redirect_governance(self) -> None:
+        root, head = self._repository()
+        foreign, _ = self._repository()
+        (foreign / "decisions.md").write_bytes(b"foreign\n")
+        subprocess.run(["git", "add", "."], cwd=foreign, check=True)
+        subprocess.run(["git", "commit", "-qm", "foreign"], cwd=foreign, check=True)
+        overrides = {
+            "GIT_DIR": str(foreign / ".git"), "GIT_WORK_TREE": str(foreign),
+            "GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.worktree",
+            "GIT_CONFIG_VALUE_0": str(foreign),
+            "GIT_OBJECT_DIRECTORY": str(foreign / ".git/objects"),
+        }
+        with mock.patch.dict(os.environ, overrides):
+            actual = governance._git_output(root, ["rev-parse", "HEAD"], label="exact head")
+        self.assertEqual(actual.decode().strip(), head)
+
+    def test_git_reads_bind_explicit_git_dir_and_linked_worktree(self) -> None:
+        root, head = self._repository()
+        linked = root.parent / f"{root.name}-linked"
+        self.addCleanup(shutil.rmtree, linked, True)
+        subprocess.run(["git", "worktree", "add", "-q", "--detach", str(linked), head], cwd=root, check=True)
+        real_run = architecture_diff._run_capped
+        commands: list[list[str]] = []
+
+        def observed(command: list[str], **kwargs: object) -> tuple[int, bytes, bytes]:
+            commands.append(command)
+            return real_run(command, **kwargs)
+
+        for worktree in (root, linked):
+            with self.subTest(worktree=worktree), mock.patch.object(architecture_diff, "_run_capped", side_effect=observed):
+                self.assertEqual(architecture_diff._git(worktree, ["rev-parse", "HEAD"]), (head + "\n").encode())
+                operation = commands[-1]
+                self.assertTrue(any(value.startswith("--git-dir=") for value in operation))
+                self.assertIn(f"--work-tree={worktree}", operation)
+
+    def test_git_refuses_subdirectory_and_wrong_worktree_binding(self) -> None:
+        root, _ = self._repository()
+        child = root / "child"
+        child.mkdir()
+        with self.assertRaises(ArchitectureError):
+            architecture_diff._git(child, ["rev-parse", "HEAD"])
+        foreign, _ = self._repository()
+        subprocess.run(["git", "config", "core.worktree", str(foreign)], cwd=root, check=True)
+        with self.assertRaises(ArchitectureError):
+            architecture_diff._git(root, ["rev-parse", "HEAD"])
+
+    def test_git_registration_mutation_during_binding_is_refused(self) -> None:
+        root, head = self._repository()
+        foreign, _ = self._repository()
+        linked = root.parent / f"{root.name}-race-linked"
+        self.addCleanup(shutil.rmtree, linked, True)
+        subprocess.run(["git", "worktree", "add", "-q", "--detach", str(linked), head], cwd=root, check=True)
+        real_pointer = architecture_diff._git_pointer
+
+        def mutate(path: Path) -> bytes:
+            content = real_pointer(path)
+            if path == linked / ".git":
+                path.write_text(f"gitdir: {foreign / '.git'}\n", encoding="utf-8")
+            return content
+
+        with mock.patch.object(architecture_diff, "_git_pointer", side_effect=mutate):
+            with self.assertRaises(ArchitectureError):
+                architecture_diff._git(linked, ["rev-parse", "HEAD"])
+
+    def test_linked_worktree_cannot_redirect_its_common_object_store(self) -> None:
+        root, head = self._repository()
+        foreign, _ = self._repository()
+        linked = root.parent / f"{root.name}-common-linked"
+        self.addCleanup(shutil.rmtree, linked, True)
+        subprocess.run(["git", "worktree", "add", "-q", "--detach", str(linked), head], cwd=root, check=True)
+        git_directory = Path((linked / ".git").read_text().removeprefix("gitdir: ").strip())
+        (git_directory / "commondir").write_text(str(foreign / ".git") + "\n", encoding="utf-8")
+        with self.assertRaises(ArchitectureError):
+            architecture_diff._git(linked, ["rev-parse", "HEAD"])
+
+    def test_regular_repository_cannot_redirect_its_common_object_store(self) -> None:
+        root, _ = self._repository()
+        foreign, _ = self._repository()
+        (root / ".git/commondir").write_text(str(foreign / ".git") + "\n", encoding="utf-8")
+        with self.assertRaises(ArchitectureError):
+            architecture_diff._git(root, ["rev-parse", "HEAD"])
+
+    def test_exact_commit_accepts_full_repository_format_and_rejects_other_identities(self) -> None:
+        for object_format in ("sha1", "sha256"):
+            with self.subTest(object_format=object_format):
+                root, head = self._repository(object_format=object_format)
+                self.assertEqual(architecture_diff._exact_commit(root, head, label="head"), head)
+                blob = subprocess.check_output(["git", "rev-parse", "HEAD:decisions.md"], cwd=root).decode().strip()
+                for value in (head[:12], blob, "0" * len(head), "a" * (64 if len(head) == 40 else 40)):
+                    with self.subTest(value=value), self.assertRaises(ArchitectureError):
+                        architecture_diff._exact_commit(root, value, label="head")
+                self.assertEqual(architecture_diff._git_blobs(root, head, ("decisions.md",)), {"decisions.md": b"# decisions\n"})
+                if object_format == "sha256":
+                    with self.assertRaises(GovernanceError) as caught:
+                        governance._require_clean_exact_git_state(root, base_sha=head, head_sha=head)
+                    self.assertIn(caught.exception.code, {"git", "unsupported"})
+
+    def test_replacement_object_never_changes_committed_governance_bytes(self) -> None:
+        root, head = self._repository()
+        (root / "decisions.md").write_bytes(b"replacement\n")
+        subprocess.run(["git", "add", "."], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "replacement"], cwd=root, check=True)
+        replacement_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
+        subprocess.run(["git", "replace", head, replacement_head], cwd=root, check=True)
+        self.assertEqual(governance._git_output(root, ["show", f"{head}:decisions.md"], label="exact blob"), b"# decisions\n")
+
+    def test_clean_gate_refuses_filters_before_they_can_execute(self) -> None:
+        root, head = self._repository()
+        (root / ".gitattributes").write_text("decisions.md filter=hostile\n", encoding="utf-8")
+        sentinel = root / "filter-ran"
+        subprocess.run(["git", "config", "filter.hostile.clean", f"touch {sentinel}; cat"], cwd=root, check=True)
+        (root / "decisions.md").write_bytes(b"changed\n")
+        with self.assertRaises(GovernanceError) as caught:
+            governance._require_clean_exact_git_state(root, base_sha=head, head_sha=head)
+        self.assertEqual(caught.exception.code, "git")
+        self.assertFalse(sentinel.exists())
+
+    def test_committed_gitlink_is_not_a_regular_governance_input(self) -> None:
+        root, head = self._repository()
+        subprocess.run(["git", "update-index", "--add", "--cacheinfo", f"160000,{head},sub"], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-qm", "gitlink"], cwd=root, check=True)
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
+        with self.assertRaises(ArchitectureError):
+            architecture_diff._git_blobs(root, head, ("sub",))
+
+    def test_git_output_is_capped_while_streaming(self) -> None:
+        root, _ = self._repository()
+        with self.assertRaises(GovernanceError) as caught:
+            governance._git_output(root, ["show", "HEAD:decisions.md"], label="bounded blob", limit=4)
+        self.assertEqual(caught.exception.code, "limit")
+
+    def test_unique_consumed_byte_budget_counts_each_path_once(self) -> None:
+        recorder = governance._ConsumedInputRecorder()
+        with mock.patch.object(governance, "MAX_CONSUMED_INPUT_BYTES", 5, create=True):
+            recorder.observe("first", b"abc")
+            recorder.observe("first", b"abc")
+            recorder.observe("second", b"de")
+            with self.assertRaises(GovernanceError) as caught:
+                recorder.observe("third", b"f")
+        self.assertEqual(caught.exception.code, "limit")
+
+    def test_exhausted_budget_stops_reading_more_distinct_evidence(self) -> None:
+        root, _ = self._repository()
+        for name in ("first", "second", "third"):
+            (root / name).write_bytes(b"abc")
+        repository = governance._open_repository(root)
+        self.addCleanup(os.close, repository.descriptor)
+        recorder = governance._ConsumedInputRecorder()
+        with mock.patch.object(governance, "MAX_CONSUMED_INPUT_BYTES", 3):
+            with mock.patch.object(governance, "_read_regular_bytes", wraps=governance._read_regular_bytes) as reads:
+                self.assertEqual(recorder.read(repository, "first", label="first"), b"abc")
+                for name in ("second", "third"):
+                    with self.assertRaises(GovernanceError):
+                        recorder.read(repository, name, label=name)
+                self.assertEqual(reads.call_count, 2)
+
+    def test_projection_refuses_special_files_symlinks_and_invalid_utf8(self) -> None:
+        for case in ("symlink", "fifo", "device", "oversize", "invalid-utf8"):
+            with self.subTest(case=case):
+                root, _ = self._repository()
+                path = root / "decisions.md"
+                path.unlink()
+                if case == "symlink":
+                    path.symlink_to(root / "mistakes.md")
+                elif case == "fifo":
+                    os.mkfifo(path)
+                elif case == "device":
+                    # A character device is supplied by /dev/null through a symlink;
+                    # direct device nodes require privileges and remain separately refused by fstat.
+                    path.symlink_to("/dev/null")
+                elif case == "oversize":
+                    path.write_bytes(b"x" * (MAX_DOCUMENT_BYTES + 1))
+                else:
+                    path.write_bytes(b"\xff")
+                with self.assertRaises(GovernanceError):
+                    governance.open_projection_snapshot(root)
+
+    def test_projection_reader_refuses_a_real_character_device_descriptor(self) -> None:
+        descriptor = os.open(os.devnull, os.O_RDONLY | os.O_NONBLOCK)
+        self.addCleanup(os.close, descriptor)
+        info = os.fstat(descriptor)
+        item = governance._PinnedAuthorityFile(
+            Path("decisions.md"), descriptor, -1, "decisions.md", governance._file_identity(info)
+        )
+        with self.assertRaises(GovernanceError) as caught:
+            governance._read_pinned_authority_bytes(item)
+        self.assertEqual(caught.exception.code, "io")
+
+    def test_projection_pins_content_and_refuses_name_or_root_swap(self) -> None:
+        for case in ("content", "name", "root"):
+            with self.subTest(case=case):
+                root, _ = self._repository()
+                moved = root.with_name(root.name + "-moved")
+                self.addCleanup(shutil.rmtree, moved, True)
+                with governance.open_projection_snapshot(root) as snapshot:
+                    self.assertEqual(snapshot.bytes["decisions.md"], b"# decisions\n")
+                    if case == "content":
+                        (root / "decisions.md").write_bytes(b"# decisions\nchanged")
+                    elif case == "name":
+                        (root / "decisions.md").rename(root / "old-decisions.md")
+                        (root / "decisions.md").write_bytes(snapshot.bytes["decisions.md"])
+                    else:
+                        root.rename(moved)
+                        root.mkdir()
+                    with self.assertRaises(GovernanceError):
+                        snapshot.verify()
+
+    def test_projection_uses_shared_byte_budget_and_reuses_one_observation(self) -> None:
+        root, _ = self._repository()
+        total = len(b"# decisions\n") + len(b"# mistakes\n")
+        with mock.patch.object(governance, "MAX_CONSUMED_INPUT_BYTES", total, create=True):
+            with governance.open_projection_snapshot(root) as snapshot:
+                self.assertEqual(snapshot.text, {"decisions.md": "# decisions\n", "mistakes.md": "# mistakes\n"})
+                self.assertEqual(snapshot.bytes, snapshot.bytes)
+                snapshot.verify()
+        with mock.patch.object(governance, "MAX_CONSUMED_INPUT_BYTES", total - 1, create=True):
+            with self.assertRaises(GovernanceError) as caught:
+                governance.open_projection_snapshot(root)
+        self.assertEqual(caught.exception.code, "limit")
+
+    def test_projection_cli_refuses_symlink_before_reading_its_content(self) -> None:
+        root = _make_fixture(self)
+        (root / "mistakes.md").write_bytes(b"# mistakes\n")
+        (root / "decisions.md").symlink_to(root / "mistakes.md")
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/grok_governance.py"), "--root", str(root), "project"],
+                                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertEqual(json.loads(result.stdout)["code"], "io")
+
+    def test_projection_cli_rechecks_snapshot_before_publication(self) -> None:
+        root = _make_fixture(self)
+        (root / "decisions.md").write_bytes(b"# decisions\n")
+        (root / "mistakes.md").write_bytes(b"# mistakes\n")
+        cli = runpy.run_path(str(ROOT / "scripts/grok_governance.py"))
+        globals_ = cli["main"].__globals__
+        real_merge = cli["_merge_projection"]
+        emitted: list[object] = []
+
+        def mutate(existing: str, projection: str, *, name: str) -> str:
+            merged = real_merge(existing, projection, name=name)
+            if name == "mistakes.md":
+                (root / "decisions.md").write_bytes(b"changed after observation\n")
+            return merged
+
+        with mock.patch.dict(globals_, {"_merge_projection": mutate, "_emit": emitted.append}):
+            with mock.patch.object(sys, "argv", ["grok_governance.py", "--root", str(root), "project"]):
+                self.assertEqual(cli["main"](), 2)
+        self.assertEqual(len(emitted), 1)
+        self.assertEqual(emitted[0]["code"], "io")
+        self.assertNotIn("projections", emitted[0])
 
 
 if __name__ == "__main__":

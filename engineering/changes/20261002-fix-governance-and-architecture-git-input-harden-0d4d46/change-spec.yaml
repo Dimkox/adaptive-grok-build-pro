@@ -1,0 +1,43 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Git reads bind a validated regular or registered linked worktree to its explicit Git directory and ignore ambient Git environment overrides.","evidence":[{"test":"tests/test_governance.py::GovernanceInputBoundaryTests"}]},
+    {"id":"AC-002","statement":"Exact committed reads validate full SHA-1/SHA-256 commit identities and reject wrong-kind, missing, abbreviated, gitlink and unsafe entries without executing filters or replacement objects.","evidence":[{"test":"tests/test_governance.py::GovernanceInputBoundaryTests"}]},
+    {"id":"AC-003","statement":"Projection CLI uses descriptor-pinned regular non-symlink UTF-8 inputs, a shared unique-byte budget and a final mutation recheck before output.","evidence":[{"test":"tests/test_governance.py::GovernanceInputBoundaryTests"}]},
+    {"id":"AC-004","statement":"Handoff preserves frozen v1 schema, clean/current-head requirements, exact governance content binding and refusal of repository-authored external authority.","evidence":[{"test":"tests/test_governance.py::GovernanceHandoffTests"},{"test":"tests/test_governance.py::GovernanceLifecycleTests"}]},
+    {"id":"AC-005","statement":"Current candidate passes full PR verification and independent routed code and test review before local completion.","evidence":[{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-fix-governance-and-architecture-git-input-harden-0d4d46",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No historical worktree write, deployed Trust CI change, version/state update, secret access, direct protected-branch push, merge or publication.","evidence":[{"receipt":"code_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Product inventory is exactly architecture_diff.py, governance.py, scripts/grok_governance.py and tests/test_governance.py; helper call signatures and successful CLI shapes stay compatible.","evidence":[{"test":"tests/test_governance.py::GovernanceHandoffTests"},{"receipt":"code_review"}]},
+    {"id":"INV-002","statement":"GovernanceHandoffV1 stays SHA-1-only; SHA-256 committed architecture helpers work but governance refuses the unsupported frozen handoff contract.","evidence":[{"test":"tests/test_governance.py::GovernanceInputBoundaryTests"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix governance and architecture Git input hardening: explicit repository object binding, controlled Git environment, filter-free committed reads and pinned bounded regular-file projections.",
+    "success_metric": "Fresh hostile-input RED/GREEN controls plus compatible governance/architecture suites and current full PR/review receipts",
+    "target": "All AC-001 through AC-005 pass on the exact isolated candidate"
+  },
+  "observability": [{"id":"SIG-001","metric":"CLI JSON code, ok and exit status expose bounded refusal without publishing projections or handoff","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

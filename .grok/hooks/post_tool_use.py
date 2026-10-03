@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from _lib import emit, read_payload, root_from
+from _lib import agent_generation, agent_id, emit, read_payload, root_from
+from adaptive_grok.agent_lifecycle import observe_tool
 from adaptive_grok.receipts import invalidate_receipts
 from adaptive_grok.state import get_active_route
 from adaptive_grok.util import dump_json, load_json, runtime_dir, tree_fingerprint
@@ -10,6 +11,10 @@ from adaptive_grok.util import dump_json, load_json, runtime_dir, tree_fingerpri
 def main() -> None:
     payload = read_payload()
     root = root_from(payload)
+    try:
+        observe_tool(root, agent_id(payload), agent_generation(payload), finished=True)
+    except (OSError, TimeoutError):
+        pass
     marker = runtime_dir(root) / 'last-fingerprint.json'
     current = tree_fingerprint(root)
     previous = load_json(marker, {}) or {}

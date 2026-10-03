@@ -14,6 +14,7 @@ import os
 from adaptive_grok.package_status import collect_worktree, inspect_package, receipt_inputs_unavailable
 from adaptive_grok.receipts import validate_evidence
 from adaptive_grok.human_gates import ARTIFACT_NOTICE, gate_statuses
+from adaptive_grok.agent_lifecycle import watchdog
 from adaptive_grok.state import get_active_change, get_active_route, get_agent_state
 from adaptive_grok.util import find_root
 
@@ -34,6 +35,7 @@ print(json.dumps({
     'route': route,
     'change': active,
     'agents': get_agent_state(root),
+    'agent_diagnostics': watchdog(root),
     'human_gates': gate_statuses(root),
     'human_gate_notice': ARTIFACT_NOTICE,
     'evidence_gaps': evidence_gaps,

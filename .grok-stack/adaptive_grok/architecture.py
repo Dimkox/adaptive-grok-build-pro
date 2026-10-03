@@ -8,6 +8,7 @@ import posixpath
 import re
 import stat
 import unicodedata
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Container, Iterable, Mapping
@@ -71,9 +72,15 @@ RULE_PATH_FIELDS = {
 
 
 class ArchitectureError(ValueError):
-    def __init__(self, message: str, *, code: str = "invalid") -> None:
+    def __init__(
+        self, message: str, *, code: str = "invalid", document: str | None = None,
+        line: int | None = None, column: int | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
+        self.document = document
+        self.line = line
+        self.column = column
 
 
 @dataclass(frozen=True)
@@ -119,27 +126,137 @@ def _unsafe_text(value: str) -> bool:
     )
 
 
-def _safe_relative_path(value: str, *, label: str) -> str:
+def _path_shape_problem(value: object) -> str:
     if not isinstance(value, str):
-        raise ArchitectureError(f"{label}: path must be a string", code="path")
-    pure = PurePosixPath(value)
-    raw_parts = value.split("/")
-    if (
-        not value
-        or _unsafe_text(value)
-        or unicodedata.normalize("NFC", value) != value
-        or "\\" in value
-        or pure.is_absolute()
-        or value.endswith("/")
-        or "//" in value
-        or any(part in {"", ".", ".."} for part in raw_parts)
-    ):
-        raise ArchitectureError(f"{label}: unsafe repository-relative path {value!r}", code="path")
-    return pure.as_posix()
+        return "must be a string"
+    if not value:
+        return "is empty"
+    if _unsafe_text(value):
+        return "contains control or formatting characters"
+    if unicodedata.normalize("NFC", value) != value:
+        return "is not NFC-normalized"
+    if "\\" in value:
+        return "contains a backslash separator"
+    if PurePosixPath(value).is_absolute():
+        return "is absolute"
+    if value.endswith("/"):
+        return "has a trailing separator"
+    if "//" in value:
+        return "contains an empty segment ('//')"
+    if any(part in {"", ".", ".."} for part in value.split("/")):
+        return "contains a '.' or '..' segment"
+    return ""
+
+
+def _safe_relative_path(value: str, *, label: str) -> str:
+    problem = _path_shape_problem(value)
+    if problem:
+        raise ArchitectureError(
+            f"{label}: unsafe repository-relative path {value!r} ({problem})", code="path"
+        )
+    return PurePosixPath(value).as_posix()
+
+
+def _at_document(
+    error: ArchitectureError, document: str, *, line: int | None = None, column: int | None = None,
+) -> ArchitectureError:
+    if error.document is not None:
+        return error
+    suffix = f":{line}:{column}" if line is not None and column is not None else ""
+    return ArchitectureError(
+        f"{document}{suffix}: {error}", code=error.code,
+        document=document, line=line, column=column,
+    )
+
+
+def _source_coordinates(text: str, offset: int) -> tuple[int, int]:
+    # JSON permits U+0085/U+2028/U+2029 inside strings. Only physical LF bytes
+    # separate its source lines; splitlines() would send the operator to a wrong line.
+    return text.count("\n", 0, offset) + 1, offset - text.rfind("\n", 0, offset)
+
+
+def _model_coordinates(
+    text: str, model: dict[str, Any], location: tuple[str | int, ...],
+) -> tuple[int, int] | None:
+    """Locate a structural value after canonical-source validation, even if repeated."""
+    if not location:
+        return 1, 1
+    candidate = deepcopy(model)
+    cursor: Any = candidate
+    try:
+        for part in location[:-1]:
+            cursor = cursor[part]
+        cursor[location[-1]]
+    except (IndexError, KeyError, TypeError):
+        return None
+    sentinel = "__ADAPTIVE_GROK_LOCATION__"
+    while json.dumps(sentinel, ensure_ascii=False) in text:
+        sentinel += "_"
+    cursor[location[-1]] = sentinel
+    rendered = _canonical_source_bytes(candidate).decode("utf-8")
+    return _source_coordinates(rendered, rendered.index(json.dumps(sentinel)))
+
+
+def _located_model_error(
+    error: ArchitectureError, document: str, text: str, model: dict[str, Any],
+    location: tuple[str | int, ...],
+) -> ArchitectureError:
+    coordinates = _model_coordinates(text, model, location)
+    if coordinates is None:
+        return _at_document(error, document)
+    return _at_document(error, document, line=coordinates[0], column=coordinates[1])
+
+
+def _declared_paths(model: dict[str, Any]) -> Iterable[tuple[object, str, tuple[str | int, ...], str]]:
+    # Shape diagnosis precedes schema validation, so malformed container shapes
+    # remain the schema validator's responsibility rather than raising TypeError.
+    for collection, field, group in (("contracts", "path", "contract"), ("nodes", "repository_paths", "repository")):
+        entries = model.get(collection)
+        if not isinstance(entries, list):
+            continue
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict) or field not in entry:
+                continue
+            label = f"{group} {entry.get('id', index)} {field}"
+            if field == "path":
+                yield entry[field], label, (collection, index, field), group
+            elif isinstance(entry[field], list):
+                for value_index, value in enumerate(entry[field]):
+                    yield value, label, (collection, index, field, value_index), group
+    for collection in RULE_COLLECTIONS:
+        entries = model.get(collection)
+        if not isinstance(entries, list):
+            continue
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            for field in sorted(RULE_PATH_FIELDS & set(entry)):
+                if isinstance(entry[field], list):
+                    for value_index, value in enumerate(entry[field]):
+                        yield value, f"rule {entry.get('id', index)} {field}", (collection, index, field, value_index), "rule"
+
+
+def _validate_declared_paths(model: dict[str, Any], *, document: str, text: str) -> None:
+    seen: dict[tuple[str, str], str] = {}
+    for value, label, location, group in _declared_paths(model):
+        try:
+            normalized = _safe_relative_path(value, label=label)
+            key = group, normalized
+            if group != "rule" and key in seen:
+                reason = "repository path ownership tie" if group == "repository" else "duplicate normalized contract path"
+                raise ArchitectureError(f"{label}: {reason}: {normalized} (also {seen[key]})", code="path")
+            seen[key] = label
+        except ArchitectureError as exc:
+            raise _located_model_error(exc, document, text, model, location) from None
 
 
 def _document_relative(root: Path, path: Path | str, *, label: str) -> str:
     root_real = root.resolve(strict=True)
+    raw = os.fspath(path)
+    if not os.path.isabs(raw):
+        _safe_relative_path(raw, label=label)
+    elif "//" in raw or raw.endswith("/") or any(part in {".", ".."} for part in raw.split("/")):
+        raise ArchitectureError(f"{label}: unsafe absolute document path {raw!r}", code="path")
     candidate = Path(path)
     if not candidate.is_absolute():
         raw = candidate.as_posix()
@@ -174,11 +291,14 @@ def _secure_open_flags(*, label: str) -> tuple[int, int, int]:
     return no_follow, directory, nonblock
 
 
-def _read_regular_bytes(root: Path, relative: str, *, label: str) -> bytes:
-    no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
+def _read_regular_bytes(
+    root: Path, relative: str, *, label: str,
+    identities: dict[tuple[int, int], str] | None = None,
+) -> bytes:
     parts = PurePosixPath(relative).parts
     descriptors: list[int] = []
     try:
+        no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
         current = os.open(
             root.resolve(strict=True),
             os.O_RDONLY | directory_flag | no_follow,
@@ -200,6 +320,11 @@ def _read_regular_bytes(root: Path, relative: str, *, label: str) -> bytes:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             raise ArchitectureError(f"{label}: must be a regular non-symlink file", code="io")
+        if identities is not None:
+            identity = before.st_dev, before.st_ino
+            if identity in identities and identities[identity] != relative:
+                raise ArchitectureError(f"{label}: filesystem alias of {identities[identity]}", code="path")
+            identities[identity] = relative
         if before.st_size > MAX_DOCUMENT_BYTES:
             raise ArchitectureError(f"{label}: document byte limit exceeded", code="limit")
         chunks: list[bytes] = []
@@ -230,10 +355,13 @@ def _read_regular_bytes(root: Path, relative: str, *, label: str) -> bytes:
         if total != before.st_size or identity_after != identity_before:
             raise ArchitectureError(f"{label}: file changed while reading", code="io")
         return b"".join(chunks)
-    except ArchitectureError:
-        raise
+    except ArchitectureError as exc:
+        raise _at_document(exc, relative) from None
     except (OSError, ValueError) as exc:
-        raise ArchitectureError(f"{label}: cannot safely read {relative}: {exc}", code="io") from exc
+        reason = f"missing input ({exc})" if isinstance(exc, FileNotFoundError) else str(exc)
+        raise _at_document(
+            ArchitectureError(f"{label}: cannot safely read {relative}: {reason}", code="io"), relative
+        ) from exc
     finally:
         for descriptor in reversed(descriptors):
             os.close(descriptor)
@@ -279,7 +407,7 @@ def _bounded_walk(
 
 def _parse_json(data: bytes, *, label: str, counter: list[int] | None = None) -> dict[str, Any]:
     if data.startswith(b"\xef\xbb\xbf"):
-        raise ArchitectureError(f"{label}: UTF-8 BOM is forbidden", code="parse")
+        raise _at_document(ArchitectureError("UTF-8 BOM is forbidden", code="parse"), label, line=1, column=1)
     try:
         text = data.decode("utf-8", errors="strict")
         value = json.loads(
@@ -287,13 +415,47 @@ def _parse_json(data: bytes, *, label: str, counter: list[int] | None = None) ->
             object_pairs_hook=_duplicate_rejecting_object,
             parse_constant=_reject_non_finite,
         )
-    except ArchitectureError:
-        raise
-    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
-        raise ArchitectureError(f"{label}: invalid canonical JSON: {exc}", code="parse") from exc
+    except ArchitectureError as exc:
+        coordinates = None
+        if str(exc).startswith("duplicate JSON key:"):
+            stack: list[tuple[set[str] | None, int | None]] = []
+            for token in re.finditer(r'"(?:[^"\\]|\\.)*"|[{}\[\]]', text):
+                literal = token.group()
+                if literal in {"{", "["}:
+                    stack.append((set() if literal == "{" else None, None))
+                elif literal in {"}", "]"}:
+                    _, duplicate = stack.pop()
+                    # object_pairs_hook refuses completed objects in postorder;
+                    # a nested duplicate can precede an earlier textual root one.
+                    if literal == "}" and duplicate is not None:
+                        coordinates = _source_coordinates(text, duplicate)
+                        break
+                elif stack and stack[-1][0] is not None:
+                    cursor = token.end()
+                    while cursor < len(text) and text[cursor] in " \t\r\n":
+                        cursor += 1
+                    if cursor == len(text) or text[cursor] != ":":
+                        continue
+                    key = json.loads(literal)
+                    seen, duplicate = stack[-1]
+                    if key in seen and duplicate is None:
+                        stack[-1] = seen, token.start()
+                    seen.add(key)
+        raise _at_document(exc, label, line=coordinates[0] if coordinates else None,
+                           column=coordinates[1] if coordinates else None) from None
+    except json.JSONDecodeError as exc:
+        raise _at_document(
+            ArchitectureError(f"invalid canonical JSON: {exc.msg}", code="parse"),
+            label, line=exc.lineno, column=exc.colno,
+        ) from exc
+    except (UnicodeDecodeError, RecursionError, ValueError) as exc:
+        raise _at_document(ArchitectureError(f"invalid canonical JSON: {exc}", code="parse"), label) from exc
     if not isinstance(value, dict):
-        raise ArchitectureError(f"{label}: root must be an object", code="parse")
-    _bounded_walk(value, counter=counter)
+        raise _at_document(ArchitectureError("root must be an object", code="parse"), label, line=1, column=1)
+    try:
+        _bounded_walk(value, counter=counter)
+    except ArchitectureError as exc:
+        raise _at_document(exc, label) from None
     return value
 
 
@@ -324,21 +486,34 @@ def parse_adoption_marker(data: bytes, *, label: str = "architecture adoption") 
     }
 
 
-def _load_schema(root: Path, relative: Path) -> dict[str, Any]:
+def _load_schema(
+    root: Path, relative: Path, *, identities: dict[tuple[int, int], str] | None = None,
+) -> dict[str, Any]:
     label = relative.as_posix()
-    value = _parse_json(_read_regular_bytes(root, label, label=label), label=label)
+    value = _parse_json(_read_regular_bytes(root, label, label=label, identities=identities), label=label)
     try:
         _schema_preflight(value)
     except SpecError as exc:
-        raise ArchitectureError(f"{label}: {exc}", code="schema") from exc
+        raise _at_document(ArchitectureError(str(exc), code="schema"), label) from exc
     return value
 
 
-def _validate_against_schema(value: dict[str, Any], schema: dict[str, Any], *, label: str) -> None:
+def _validate_against_schema(
+    value: dict[str, Any], schema: dict[str, Any], *, label: str,
+    text: str | None = None,
+) -> None:
     try:
         validate_schema(value, schema)
     except SpecError as exc:
-        raise ArchitectureError(f"{label}: {exc}", code="schema") from exc
+        error = ArchitectureError(str(exc), code="schema")
+        if text is not None:
+            structural_path = str(exc).split(":", 1)[0]
+            location = tuple(
+                name if name else int(index)
+                for name, index in re.findall(r"\.([A-Za-z_][A-Za-z_0-9]*)|\[([0-9]+)\]", structural_path)
+            )
+            raise _located_model_error(error, label, text, value, location) from exc
+        raise _at_document(error, label) from exc
 
 
 def _stable_ids(document: dict[str, Any], collections: tuple[str, ...], *, label: str) -> set[str]:
@@ -516,10 +691,9 @@ def _canonical_source_bytes(value: Any) -> bytes:
 
 def _require_canonical_source(data: bytes, value: dict[str, Any], *, label: str) -> None:
     if data != _canonical_source_bytes(value):
-        raise ArchitectureError(
-            f"{label}: authority document is not canonical sorted two-space JSON with one newline",
-            code="canonical",
-        )
+        raise _at_document(ArchitectureError(
+            "authority document is not canonical sorted two-space JSON with one newline", code="canonical"
+        ), label)
 
 
 def _sha256(value: Any) -> str:
@@ -530,6 +704,8 @@ def load_architecture(
     root: Path | str,
     system_path: Path | str | None = None,
     rules_path: Path | str | None = None,
+    *,
+    _input_identities: dict[tuple[int, int], str] | None = None,
 ) -> ArchitectureSnapshot:
     repository = Path(root)
     try:
@@ -540,38 +716,55 @@ def load_architecture(
         raise ArchitectureError("repository root must be a directory", code="io")
 
     system_relative = _document_relative(
-        repository, system_path or SYSTEM_PATH, label="architecture system"
+        repository, SYSTEM_PATH if system_path is None else system_path, label="architecture system"
     )
-    rules_relative = _document_relative(repository, rules_path or RULES_PATH, label="architecture rules")
+    rules_relative = _document_relative(
+        repository, RULES_PATH if rules_path is None else rules_path, label="architecture rules"
+    )
+    if system_relative == rules_relative:
+        raise _at_document(ArchitectureError("duplicate normalized model document path", code="path"), rules_relative)
     counter = [0]
-    system_data = _read_regular_bytes(repository, system_relative, label="architecture system")
-    rules_data = _read_regular_bytes(repository, rules_relative, label="architecture rules")
+    identities = _input_identities if _input_identities is not None else {}
+    system_data = _read_regular_bytes(repository, system_relative, label="architecture system", identities=identities)
+    rules_data = _read_regular_bytes(repository, rules_relative, label="architecture rules", identities=identities)
     system = _parse_json(
         system_data,
-        label="architecture system",
+        label=system_relative,
         counter=counter,
     )
     rules = _parse_json(
         rules_data,
-        label="architecture rules",
+        label=rules_relative,
         counter=counter,
     )
-    _require_canonical_source(system_data, system, label="architecture system")
-    _require_canonical_source(rules_data, rules, label="architecture rules")
-    system_schema = _load_schema(repository, SYSTEM_SCHEMA_PATH)
-    rules_schema = _load_schema(repository, RULES_SCHEMA_PATH)
-    _validate_against_schema(system, system_schema, label="architecture system")
-    _validate_against_schema(rules, rules_schema, label="architecture rules")
+    _require_canonical_source(system_data, system, label=system_relative)
+    _require_canonical_source(rules_data, rules, label=rules_relative)
+    system_text, rules_text = system_data.decode("utf-8"), rules_data.decode("utf-8")
+    _validate_declared_paths(system, document=system_relative, text=system_text)
+    _validate_declared_paths(rules, document=rules_relative, text=rules_text)
+    system_schema = _load_schema(repository, SYSTEM_SCHEMA_PATH, identities=identities)
+    rules_schema = _load_schema(repository, RULES_SCHEMA_PATH, identities=identities)
+    _validate_against_schema(system, system_schema, label=system_relative, text=system_text)
+    _validate_against_schema(rules, rules_schema, label=rules_relative, text=rules_text)
     if system["schema_version"] != 1 or rules["schema_version"] != 1:
         raise ArchitectureError("unsupported architecture schema version", code="version")
     if system["architecture_id"] != rules["architecture_id"]:
-        raise ArchitectureError("system and rules architecture_id must match", code="reference")
+        raise _located_model_error(
+            ArchitectureError("system and rules architecture_id must match", code="reference"),
+            rules_relative, rules_text, rules, ("architecture_id",),
+        )
     if len(system["nodes"]) > MAX_MODEL_NODES:
         raise ArchitectureError("system model node limit exceeded", code="limit")
     if len(system["edges"]) > MAX_MODEL_EDGES:
         raise ArchitectureError("system model edge limit exceeded", code="limit")
-    _validate_system_semantics(system)
-    _validate_rule_semantics(rules, system)
+    try:
+        _validate_system_semantics(system)
+    except ArchitectureError as exc:
+        raise _at_document(exc, system_relative) from None
+    try:
+        _validate_rule_semantics(rules, system)
+    except ArchitectureError as exc:
+        raise _at_document(exc, rules_relative) from None
     return ArchitectureSnapshot(
         system=_normalize(system),
         rules=_normalize(rules),
@@ -650,6 +843,46 @@ def validate_architecture(
             code = "missing_contract" if result == "missing" else "unsafe_contract_path"
             findings.append(ArchitectureFinding(code, f"contract path is {result}: {path}", path))
     return tuple(sorted(findings, key=lambda item: (item.code, item.path, item.message)))
+
+
+def architecture_inputs_present(root: Path) -> bool:
+    """Absence is compatible; dangling symlinks and unreadable inputs are present."""
+    if (root / "architecture").is_symlink():
+        return True
+    for relative in (SYSTEM_PATH, RULES_PATH, Path("architecture/adoption.json")):
+        try:
+            (root / relative).lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            return True
+        return True
+    return False
+
+
+def preflight_architecture(root: Path | str) -> tuple[ArchitectureFinding, ...]:
+    """Bounded refusal before Git binding, fitness, drift inventory or test discovery.
+
+    Return the first blocking defect rather than cascading failures from consumers.
+    No adoption or comparison-base authority is inferred by this input-only check.
+    """
+    repository = Path(root)
+    try:
+        identities: dict[tuple[int, int], str] = {}
+        snapshot = load_architecture(repository, _input_identities=identities)
+        # Ownership anchors are source inventory, not documents loaded by the
+        # architecture model. Their filesystem drift retains its existing check.
+        counter = [0]
+        for contract in snapshot.system["contracts"]:
+            path = contract["path"]
+            data = _read_regular_bytes(repository, path, label=f"contract {contract['id']}", identities=identities)
+            _parse_json(data, label=path, counter=counter)
+    except ArchitectureError as exc:
+        document = exc.document or SYSTEM_PATH.as_posix()
+        return (ArchitectureFinding(exc.code, str(exc), document),)
+    except (OSError, ValueError) as exc:
+        return (ArchitectureFinding("io", f"architecture model cannot be read: {exc}", SYSTEM_PATH.as_posix()),)
+    return ()
 
 
 def contract_inventory(
@@ -2984,7 +3217,7 @@ def _compare_openapi(
     head_components = head.get("components", {}).get("schemas", {})
     base_component_names = _comparison_keys(base_components, base_resolver)
     head_component_names = _comparison_keys(head_components, head_resolver)
-    if base_component_names != head_component_names:
+    if base_component_names - head_component_names:
         reasons.add("changed_constraint")
     for name in sorted(base_component_names & head_component_names):
         for direction in ("consumer", "producer"):

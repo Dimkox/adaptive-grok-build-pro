@@ -13,10 +13,12 @@ sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 from adaptive_grok.governance import (  # noqa: E402
     GovernanceError,
+    ProjectionSnapshot,
     build_governance_handoff,
     governance_summary,
     load_architecture_evidence,
     load_governance,
+    open_projection_snapshot,
     render_markdown_projections,
 )
 
@@ -94,15 +96,21 @@ def _merge_projection(existing: str, projection: str, *, name: str) -> str:
 def _projection_payload(
     root: Path,
     projections: dict[str, str],
+    *,
+    snapshot: ProjectionSnapshot | None = None,
 ) -> tuple[dict[str, str], dict[str, str]]:
+    if snapshot is None:
+        with open_projection_snapshot(root) as pinned:
+            result = _projection_payload(root, projections, snapshot=pinned)
+            pinned.verify()
+            return result
     proposed: dict[str, str] = {}
     digests: dict[str, str] = {}
+    existing_inputs = snapshot.text
+    if set(projections) != set(existing_inputs):
+        raise GovernanceError("projection names do not match fixed inputs", code="projection")
     for name in sorted(projections):
-        path = root / name
-        try:
-            existing = path.read_text(encoding="utf-8")
-        except OSError as exc:
-            raise GovernanceError(f"cannot read {name}", code="io") from exc
+        existing = existing_inputs[name]
         content = _merge_projection(existing, projections[name], name=name)
         proposed[name] = content
         digests[name] = hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -112,7 +120,7 @@ def _projection_payload(
 def main() -> int:
     args = _parser().parse_args()
     try:
-        root = Path(args.root).resolve(strict=True)
+        root = Path(args.root).absolute()
         now = _evaluation_time(getattr(args, "now", None))
         snapshot = load_governance(root)
         if args.command in {"validate", "summary"}:
@@ -141,30 +149,19 @@ def main() -> int:
             _emit(handoff.to_dict())
             return 0
         projections = render_markdown_projections(snapshot, now=now)
-        proposed, digests = _projection_payload(root, projections)
-        if args.command == "project":
-            _emit(
-                {
-                    "digests": digests,
-                    "mutated": False,
-                    "projections": proposed,
-                }
-            )
-            return 0
-        mismatches = sorted(
-            name
-            for name, content in proposed.items()
-            if (root / name).read_text(encoding="utf-8") != content
-        )
-        _emit(
-            {
-                "digests": digests,
-                "mismatches": mismatches,
-                "mutated": False,
-                "ok": not mismatches,
-            }
-        )
-        return 0 if not mismatches else 1
+        with open_projection_snapshot(root) as pinned:
+            proposed, digests = _projection_payload(root, projections, snapshot=pinned)
+            if args.command == "project":
+                payload = {"digests": digests, "mutated": False, "projections": proposed}
+                result = 0
+            else:
+                original = pinned.text
+                mismatches = sorted(name for name, content in proposed.items() if original[name] != content)
+                payload = {"digests": digests, "mismatches": mismatches, "mutated": False, "ok": not mismatches}
+                result = 0 if not mismatches else 1
+            pinned.verify()
+            _emit(payload)
+            return result
     except GovernanceError as exc:
         _emit({"code": exc.code, "error": str(exc), "ok": False})
         return 2 if exc.code in {"git", "io", "usage"} else 1

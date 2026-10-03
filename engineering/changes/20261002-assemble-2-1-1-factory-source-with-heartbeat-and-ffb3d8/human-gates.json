@@ -1,0 +1,139 @@
+{
+  "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:30:17+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Explicit owner decompose instruction retains core A-E/H/heartbeat-watchdog scope and required F/G successors; unchanged code budgets/separation/Trust CI",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "9a8b65116ba3c4dbf2d10bb6cca40364ea4f3396cd7b199429a65c58d72455e6"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:30:17+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing owner approval for scoped factory verification covers only existing025 guarded disposablePG controls; no F026migration, live target or external write authorized",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "9a8b65116ba3c4dbf2d10bb6cca40364ea4f3396cd7b199429a65c58d72455e6"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:47:16+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing owner instruction to complete2.1.1 and decompose under unchanged guards: frozen scoped implementation/test evidence, including diagnosed test-only lock-refusal acceptance; no new production behavior or authority",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "c07005e8364458c01f5547bde08938313a94b37e3775af7db7891a4b22e34563"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:47:16+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Existing authorized guarded disposable025 characterization only; bounded fixture cleanup, no live target/new migration/timeout or privilege change",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "c07005e8364458c01f5547bde08938313a94b37e3775af7db7891a4b22e34563"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:56:19+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner ordered full2.1.1 and decomposition with unchanged limits: frozen conditionalcore+test-fixture join replaces one serialized source gate only after actual fitnesspass; F/Gremain separate pending",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "ff9944a586800260b5a2c0b217e53c4d95da23b7824b4f5249f66ee93d1540bc"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T00:56:19+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Only existing authorized025guarded disposable tests and exactcleanup; no production target,026migration,privilege or timeoutchanges",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "ff9944a586800260b5a2c0b217e53c4d95da23b7824b4f5249f66ee93d1540bc"
+    },
+    {
+      "action": null,
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T01:13:53+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Standing user-approved full 2.1.1 scope and decomposition; AC-008 adds the disposable fixture helper test mapping only. Trust boundary and fitness limits unchanged.",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "coordinator-standing-user-scope",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T01:13:53+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Standing user-approved decomposition: existing guarded schema-025 disposable fixture verification only; no schema-026 application, live database write, privilege or timeout change. Local workflow decision is not external security approval.",
+      "resource": null,
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-delivery",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T02:48:28+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner explicitly requested full 2.1.1 release delivery through source PRs and git push. Record only the exact Core draft PR creation endpoint for feat/v211-combined-source to main; scope/design remains3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908. This local decision does not approve merge, deployed policy, live data writes, human security signatures, tags or publication; all exact-head acceptance gates remain required.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-release",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T04:10:48+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner delegates local gates and PR delivery for release 2.1.1; approve only PR238 metadata/readiness updates, not external human signatures or merge bypass.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls/238",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    },
+    {
+      "action": "external-write",
+      "actor": "coordinator-standing-user-release",
+      "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+      "decided_at": "2026-10-03T04:10:49+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Standing release delegation permits exact PR238 merge only after fresh local verification, independent reviews, exact-head App Trust CI and required external approvals; no direct main push or admin bypass.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls/238/merge",
+      "route_id": "ffb3d81e031f",
+      "scope_digest": "3fe9f9db8512aa9293b1d8f7211618f30a1ef5b5c0a8369c11be06ff0a430908"
+    }
+  ],
+  "route_id": "ffb3d81e031f",
+  "schema_version": 1
+}

@@ -64,6 +64,7 @@
     "grok_route.py",
     "grok_spec.py",
     "grok_status.py",
+    "grok_agent.py",
     "grok_verify.py"
   ]
 }

@@ -1,0 +1,43 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Malformed declared paths are refused with their structural source document, physical LF line and column before downstream consumers run.", "evidence": [{"test": "tests/test_architecture_model_preflight.py"}, {"receipt": "verification"}]},
+    {"id": "AC-002", "statement": "Missing, symlinked, aliased, malformed and bounded-out authority or referenced contract inputs fail the mandatory architecture-inputs check; an absent unconfigured model is explicitly skipped.", "evidence": [{"test": "tests/test_architecture_model_preflight.py"}, {"receipt": "verification"}]},
+    {"id": "AC-003", "statement": "Input refusal prevents architecture binding/fitness, governance evaluation and Python discovery; not-run checks disclose skip instead of pass.", "evidence": [{"test": "tests/test_architecture_model_preflight.py"}, {"receipt": "verification"}]},
+    {"id": "AC-004", "statement": "Valid architecture models retain their loader results, digests, generated projections and comparison-base trust behavior.", "evidence": [{"test": "tests/test_architecture_model.py"}, {"test": "tests/test_architecture_fitness.py"}, {"test": "tests/test_verification_doctor.py"}, {"receipt": "code_review"}, {"receipt": "test_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261002-fix-issue50-architecture-diagnostics-exact-sourc-c117d6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "No product version/state bump, modification to preserved dirty trees, deployed settings, trust authority or external operation is part of this contour.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Architecture canonical input, secure descriptor reads and existing resource bounds remain mandatory.", "evidence": [{"test": "tests/test_architecture_model.py"}, {"receipt": "test_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix issue50 architecture diagnostics: exact source locations, malformed path and line-skip rejection, bounded architecture input preflight in verifier.",
+    "success_metric": "First blocking input defect is located and no expensive architecture/test consumer starts after refusal",
+    "target": "All focused refusal and compatibility fixtures pass on the current isolated candidate"
+  },
+  "observability": [
+    {"id": "SIG-001", "metric": "architecture-inputs check status, summary and structured first finding", "proves": ["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

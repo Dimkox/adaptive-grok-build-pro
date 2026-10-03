@@ -1,0 +1,11 @@
+# Exact core verification
+
+Initial mandatory PR selector84020 completed focused on workflow-only13paths; historical only, not source validation. Executable core requires full PR suite, no reused contour pass or ad hoc skip.
+
+Before finalfull run focused reconstructed modules tests/test_verifier_recovery.py, tests/test_repo_router.py, tests/test_repo_language_disclosure.py, tests/test_architecture_model_preflight.py, tests/test_governance.py, tests/test_architecture_model.py, tests/test_architecture_fitness.py, tests/test_agent_lifecycle.py plus existing runner/doctor/receipts/hooks/installer/state bindings. Add RED integration control for D preflight refusal followed by A cancellation; normal and cancelled reports must not rebind forbidden evidence.
+
+Preserve existing architecture/installer union and version-state lockstep tests. Actual source tree must have valid typed specs and positive unchanged budgets before heavy gate. Historical C900s failed timeout and HB500ms lock failure stay unqualified until fresh exact evidence; no timeout/safety relaxation. F DB fixture successor stays separate.
+
+Root owns finalfull python3 scripts/grok_verify.py --mode pr with4Core workers and one guarded disposablePGexit fixture. Core writer CPU16-19/max4, focused CPUtests only while fixture writer owns PG. Controller serializes DB-heavy jobs, not independent source work. After implementation and full verification dispatch route code/test/security/release/data read-only reviewers in private0700scratch; persist all complete reports and then refresh full verification/receipts. External App exact-head/up-to-date-base check and required signed scopes remain distinct.
+
+If fixture join qualifies, also run factory/tests/test_postgres_fixture_reset.py, repaired ExecutionPersistencePostgresTests concurrent/controlled-holder cases, existing migration/restart controls and helper installer bindings. Preserve exact43-table SQL digest, both caller modes and typed error-refusal negative controls. Actual final full PR suite includes normally discovered factory tests; root grants only one exact disposablePGheavy slot at a time. Core writer may perform CPU-only focused union tests now; precursor owns its current boundedPG until cleanup.

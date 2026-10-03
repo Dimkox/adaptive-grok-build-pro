@@ -95,6 +95,37 @@ class ProcessResult:
     stdout: str = ''
     stderr: str = ''
     seconds: float = 0.0
+    terminal_state: str = 'completed'
+    cleanup_error: str = ''
+
+
+class RunCancelled(SystemExit):
+    """Signal exit with the last owned child's result still available."""
+
+    def __init__(self, number: int, result: ProcessResult | None = None):
+        super().__init__(128 + number)
+        self.signal_number = number
+        self.result = result
+        self.checks: list[object] = []
+
+
+@dataclass
+class Cancellation:
+    signal_number: int | None = None
+
+    def __call__(self) -> int | None:
+        return self.signal_number
+
+    def check(self, result: ProcessResult | None = None) -> None:
+        if self.signal_number is not None:
+            if result is not None:
+                result.terminal_state = 'cancelled'
+            raise RunCancelled(self.signal_number, result)
+
+
+_active_cancellation: Cancellation | None = None
+_TERM_GRACE = 0.25
+_KILL_REAP_TIMEOUT = 2.0
 
 
 @dataclass
@@ -107,78 +138,153 @@ class CoreTestRun:
 
 
 def _stop(process: subprocess.Popen) -> None:
+    """Stop only the new session created by execute; repeated calls are safe."""
     if os.name == 'posix':
         try:
-            os.killpg(process.pid, signal.SIGKILL)
+            os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
+        else:
+            # Also terminate descendants when their group leader already exited.
+            deadline = time.monotonic() + _TERM_GRACE
+            while time.monotonic() < deadline:
+                process.poll()
+                try:
+                    os.killpg(process.pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.01)
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
     elif process.poll() is None:
         process.kill()
     try:
-        process.wait(timeout=10)
+        process.wait(timeout=_KILL_REAP_TIMEOUT)
     except subprocess.TimeoutExpired:
         process.kill()
         try:
-            process.wait(timeout=10)
+            process.wait(timeout=_KILL_REAP_TIMEOUT)
         except subprocess.TimeoutExpired:
             raise RunnerError('owned process refused to exit after SIGKILL') from None
 
 
 @contextmanager
 def _cancellation():
+    global _active_cancellation
     if threading.current_thread() is not threading.main_thread():
         raise RunnerError('test process ownership requires the main thread')
-    interrupted = False
-    previous = signal.getsignal(signal.SIGTERM)
+    if _active_cancellation is not None:
+        yield _active_cancellation
+        return
+    cancellation = Cancellation()
+    previous = {number: signal.getsignal(number) for number in (signal.SIGTERM, signal.SIGINT)}
 
     def cancel(signum, frame):
-        nonlocal interrupted
-        interrupted = True
+        if cancellation.signal_number is None:
+            cancellation.signal_number = signum
 
-    signal.signal(signal.SIGTERM, cancel)
+    for number in previous:
+        signal.signal(number, cancel)
+    _active_cancellation = cancellation
     try:
-        yield lambda: interrupted
+        yield cancellation
     finally:
-        signal.signal(signal.SIGTERM, previous)
-        if interrupted:
-            raise SystemExit(128 + signal.SIGTERM)
+        _active_cancellation = None
+        for number, handler in previous.items():
+            signal.signal(number, handler)
+
+
+@contextmanager
+def _output_file(retained: dict[str, ProcessResult], label: str, cancellation: Cancellation):
+    """Close each output file without replacing a result or primary exception."""
+    manager = tempfile.TemporaryFile()
+    handle = manager.__enter__()
+    primary: BaseException | None = None
+    try:
+        yield handle
+    except BaseException as exc:
+        primary = exc
+        raise
+    finally:
+        try:
+            manager.__exit__(type(primary) if primary else None, primary,
+                             primary.__traceback__ if primary else None)
+        except Exception as cleanup:
+            diagnostic = f'{label} output cleanup failed: {type(cleanup).__name__}: {cleanup}'[:512]
+            result = retained.get('result')
+            if result is None and isinstance(primary, RunCancelled):
+                result = primary.result
+            if result is not None:
+                result.cleanup_error = '; '.join(filter(None, (result.cleanup_error, diagnostic)))
+            elif primary is None:
+                raise
+            if primary is not None:
+                primary.add_note(diagnostic)
+        if primary is None and retained.get('result') is not None:
+            cancellation.check(retained['result'])
 
 
 def execute(command: list[str], root: Path, environment: dict[str, str], *, timeout: int = TIMEOUT) -> ProcessResult:
     """Bound output and stop this invocation's process group on interruption."""
     started = time.monotonic()
-    with _cancellation() as cancelled, tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+    retained: dict[str, ProcessResult] = {}
+    with _cancellation() as cancelled, _output_file(retained, 'stdout', cancelled) as stdout, \
+            _output_file(retained, 'stderr', cancelled) as stderr:
+        cancelled.check(ProcessResult(command, 128 + (cancelled() or 0), terminal_state='cancelled'))
         try:
             process = subprocess.Popen(
                 command, cwd=root, env=environment, stdout=stdout, stderr=stderr,
                 start_new_session=os.name == 'posix',
             )
         except OSError as exc:
-            return ProcessResult(command, 127, stderr=str(exc))
+            result = ProcessResult(command, 127, stderr=str(exc))
+            retained['result'] = result
+            return result
         reason = ''
+        cleanup_error = ''
         try:
             while process.poll() is None:
                 if cancelled():
-                    reason = 'test process cancelled by SIGTERM'
-                if time.monotonic() - started > timeout:
+                    reason = f'test process cancelled by {signal.Signals(cancelled()).name}'
+                    break
+                elif time.monotonic() - started > timeout:
                     reason = 'test process timeout'
-                if os.fstat(stdout.fileno()).st_size + os.fstat(stderr.fileno()).st_size > OUTPUT_LIMIT:
+                elif os.fstat(stdout.fileno()).st_size + os.fstat(stderr.fileno()).st_size > OUTPUT_LIMIT:
                     reason = 'test process output limit exceeded'
                 if reason:
-                    _stop(process)
                     break
                 time.sleep(0.05)
-        except BaseException:
-            _stop(process)
+        except BaseException as exc:
+            try:
+                _stop(process)
+            except Exception as cleanup:
+                exc.add_note(f'owned process cleanup failed: {cleanup}')
             raise
-        _stop(process)
+        original_returncode = process.returncode
+        try:
+            _stop(process)
+        except Exception as exc:
+            cleanup_error = f'{type(exc).__name__}: {exc}'[:512]
         if os.fstat(stdout.fileno()).st_size + os.fstat(stderr.fileno()).st_size > OUTPUT_LIMIT:
             reason = 'test process output limit exceeded'
         stdout.seek(0)
         stderr.seek(0)
-        out = stdout.read(OUTPUT_LIMIT).decode('utf-8', errors='replace')
-        err = stderr.read(OUTPUT_LIMIT).decode('utf-8', errors='replace')
-        return ProcessResult(command, 124 if reason else process.returncode, out, err + reason, time.monotonic() - started)
+        out = stdout.read(OUTPUT_LIMIT).decode('utf-8', errors='backslashreplace')
+        err = stderr.read(OUTPUT_LIMIT).decode('utf-8', errors='backslashreplace')
+        code = original_returncode if original_returncode is not None else process.returncode
+        if cancelled():
+            code = code if original_returncode is not None else 128 + cancelled()
+        elif reason:
+            code = 124
+        if code is None:
+            code = 1
+        result = ProcessResult(command, code, out, err + reason, time.monotonic() - started,
+                               'timeout' if reason == 'test process timeout' else 'completed', cleanup_error)
+        retained['result'] = result
+        cancelled.check(result)
+        return result
 
 
 def _environment(root: Path, data_file: Path) -> dict[str, str]:
@@ -225,6 +331,8 @@ def select_engine(workers: int, measured: bool) -> tuple[int, str]:
     pass before execution, never after a failure, and never claim the parallel
     backend it did not use.
     """
+    if workers > 0 and measured and not parallel_engine_ready(measured) and _parallel_process_cleanup_supported():
+        return workers, "coverage-unittest-parallel"
     if workers > 0 and (
         not parallel_engine_ready(measured) or not _parallel_process_cleanup_supported()
     ):
@@ -242,28 +350,175 @@ def _pytest_command(workers: int, distribution: str) -> list[str]:
             f'--dist={distribution}', '--max-worker-restart=0', '--durations=20', '-ra']
 
 
+def _unittest_files(root: Path) -> list[str]:
+    tests = root / 'tests'
+    return [path.name for path in sorted(tests.glob('test*.py')) if path.is_file()]
+
+
+def _read_limited(path: Path) -> str:
+    try:
+        with path.open('rb') as handle:
+            return handle.read(OUTPUT_LIMIT).decode('utf-8', errors='backslashreplace')
+    except OSError as exc:
+        return f'{type(exc).__name__}: {exc}'
+
+
+def _parallel_coverage_unittest(root: Path, config: Path, data_file: Path, workers: int, environment: dict[str, str]) -> ProcessResult:
+    test_files = _unittest_files(root)
+    command = [
+        sys.executable, '-m', 'coverage', 'run', '--parallel-mode', f'--rcfile={config}',
+        '-m', 'unittest', 'discover', '-s', 'tests', '-p', '<test-file>',
+    ]
+    if not test_files:
+        return ProcessResult(command, 5, stderr='no unittest modules discovered')
+    started = time.monotonic()
+    active: list[tuple[str, subprocess.Popen, Path, Path]] = []
+    completed: list[ProcessResult] = []
+    cleanup_errors: list[str] = []
+    next_file = 0
+    workers = max(1, min(workers, len(test_files)))
+    with _cancellation() as cancelled, tempfile.TemporaryDirectory(prefix='grok-core-parallel-') as out_dir:
+        output_root = Path(out_dir)
+        try:
+            while next_file < len(test_files) or active:
+                cancelled.check()
+                while next_file < len(test_files) and len(active) < workers:
+                    test_file = test_files[next_file]
+                    next_file += 1
+                    stdout = output_root / f'{test_file}.stdout'
+                    stderr = output_root / f'{test_file}.stderr'
+                    out_handle = stdout.open('wb')
+                    err_handle = stderr.open('wb')
+                    try:
+                        process = subprocess.Popen(
+                            [
+                                sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
+                                f'--rcfile={config}', '-m', 'unittest', 'discover',
+                                '-s', 'tests', '-p', test_file,
+                            ],
+                            cwd=root,
+                            env={**environment, '_GROK_TEST_CHILD': '1'},
+                            stdout=out_handle,
+                            stderr=err_handle,
+                            start_new_session=True,
+                        )
+                    except OSError as exc:
+                        out_handle.close()
+                        err_handle.close()
+                        completed.append(ProcessResult(command, 127, stderr=f'{test_file}: {exc}'))
+                        continue
+                    out_handle.close()
+                    err_handle.close()
+                    active.append((test_file, process, stdout, stderr))
+                for item in list(active):
+                    test_file, process, stdout, stderr = item
+                    if process.poll() is None:
+                        continue
+                    active.remove(item)
+                    completed.append(ProcessResult(
+                        [
+                            sys.executable, '-m', 'coverage', 'run', '--parallel-mode',
+                            f'--rcfile={config}', '-m', 'unittest', 'discover',
+                            '-s', 'tests', '-p', test_file,
+                        ],
+                        process.returncode if process.returncode is not None else 1,
+                        stdout=_read_limited(stdout),
+                        stderr=_read_limited(stderr),
+                    ))
+                if time.monotonic() - started > TIMEOUT:
+                    for _test_file, process, _stdout, _stderr in active:
+                        _stop(process)
+                    return ProcessResult(command, 124, stderr='parallel coverage unittest timeout',
+                                         seconds=time.monotonic() - started, terminal_state='timeout')
+                if active:
+                    time.sleep(0.05)
+        except BaseException:
+            for test_file, process, _stdout, _stderr in active:
+                try:
+                    _stop(process)
+                except Exception as exc:
+                    cleanup_errors.append(f'{test_file}: {type(exc).__name__}: {exc}'[:256])
+            raise
+    failed = [result for result in completed if result.returncode != 0]
+    stdout = ''.join(result.stdout[-4000:] for result in failed[-20:])
+    stderr = ''.join(result.stderr[-4000:] for result in failed[-20:])
+    if failed:
+        return ProcessResult(command, failed[0].returncode, stdout=stdout, stderr=stderr,
+                             seconds=time.monotonic() - started)
+    combine = execute(
+        [sys.executable, '-m', 'coverage', 'combine', f'--rcfile={config}', str(data_file.parent)],
+        root,
+        environment,
+        timeout=120,
+    )
+    return ProcessResult(command, combine.returncode, stdout=combine.stdout, stderr=combine.stderr,
+                         seconds=time.monotonic() - started,
+                         cleanup_error=combine.cleanup_error)
+
+
+@contextmanager
+def _run_directory(prefix: str, retained: dict[str, ProcessResult]):
+    """Cleanup cannot replace a completed test verdict or a signal exception."""
+    directory = tempfile.TemporaryDirectory(prefix=prefix)
+    primary: BaseException | None = None
+    try:
+        yield directory.name
+    except BaseException as exc:
+        primary = exc
+        raise
+    finally:
+        try:
+            directory.cleanup()
+        except Exception as cleanup:
+            result = retained.get('tests')
+            if result is not None:
+                result.cleanup_error = f'{type(cleanup).__name__}: {cleanup}'[:512]
+            elif isinstance(primary, RunCancelled) and primary.result is not None:
+                primary.result.cleanup_error = f'{type(cleanup).__name__}: {cleanup}'[:512]
+            elif primary is None:
+                raise
+            if primary is not None:
+                primary.add_note(f'coverage scratch cleanup failed: {cleanup}')
+
+
 def run_core_tests(root: Path, mode: str, workers: int) -> CoreTestRun:
     measured = mode in {'pr', 'release'}
     workers, engine = select_engine(workers, measured)
-    versions = _tool_versions(list(PINS) if workers else (['coverage'] if measured else []))
+    if engine == 'pytest-xdist':
+        version_requirements = list(PINS)
+    elif measured:
+        version_requirements = ['coverage']
+    else:
+        version_requirements = []
+    versions = _tool_versions(version_requirements)
     versions['engine'] = engine
     config = root / '.coveragerc'
     if measured and not config.is_file():
         raise RunnerError('required .coveragerc is missing')
-    with tempfile.TemporaryDirectory(prefix='grok-core-coverage-') as directory:
+    retained: dict[str, ProcessResult] = {}
+    with _run_directory('grok-core-coverage-', retained) as directory:
         data_file = Path(directory) / '.coverage'
         report_file = Path(directory) / 'coverage.json'
         environment = _environment(root, data_file)
-        if workers:
+        if workers and engine == 'pytest-xdist':
             command = _pytest_command(workers, 'worksteal')
             if measured:
                 command += ['-p', 'pytest_cov.plugin', '--cov', f'--cov-config={config}', '--cov-report=term']
             command += ['tests']
+        elif workers and engine == 'coverage-unittest-parallel':
+            command = [
+                sys.executable, '-m', 'coverage', 'run', '--parallel-mode', f'--rcfile={config}',
+                '-m', 'unittest', '<module>',
+            ]
         else:
             command = [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests']
             if measured:
                 command = [sys.executable, '-m', 'coverage', 'run', f'--rcfile={config}', *command[1:]]
-        tests = execute(command, root, environment)
+        if workers and engine == 'coverage-unittest-parallel':
+            tests = _parallel_coverage_unittest(root, config, data_file, workers, environment)
+        else:
+            tests = execute(command, root, environment)
+        retained['tests'] = tests
         coverage = None
         facts: dict[str, object] = {}
         if measured:
@@ -271,17 +526,26 @@ def run_core_tests(root: Path, mode: str, workers: int) -> CoreTestRun:
             if not data_file.is_file():
                 coverage = ProcessResult(coverage_command, 1, stderr='current run produced no coverage data')
             else:
-                coverage = execute(coverage_command, root, environment, timeout=120)
-                exported = execute([sys.executable, '-m', 'coverage', 'json', f'--rcfile={config}', '-o', str(report_file)], root, environment, timeout=120)
+                try:
+                    coverage = execute(coverage_command, root, environment, timeout=120)
+                    exported = execute([sys.executable, '-m', 'coverage', 'json', f'--rcfile={config}', '-o', str(report_file)], root, environment, timeout=120)
+                except RunCancelled as exc:
+                    exc.core_run = CoreTestRun(tests, exc.result, workers, versions, facts)
+                    raise
                 try:
                     document = json.loads(report_file.read_text())
                     settings = configparser.ConfigParser()
                     settings.read(config)
                     expected_branch = settings.getboolean('run', 'branch', fallback=False)
-                    if not document['files'] or document['meta']['branch_coverage'] != expected_branch:
+                    if (not isinstance(document, dict)
+                            or not isinstance(document.get('files'), dict) or not document['files']
+                            or not isinstance(document.get('meta'), dict)
+                            or type(document['meta'].get('branch_coverage')) is not bool
+                            or document['meta']['branch_coverage'] != expected_branch
+                            or not isinstance(document.get('totals'), dict)):
                         raise ValueError('coverage source or branch data missing')
                     facts = {'totals': document['totals'], 'branch_coverage': expected_branch, 'files': sorted(document['files'])}
-                except (OSError, ValueError, KeyError, configparser.Error) as exc:
+                except (OSError, ValueError, TypeError, KeyError, configparser.Error) as exc:
                     coverage.returncode = 1
                     coverage.stderr += f'\ninvalid current-run coverage: {exc}'
                 if exported.returncode or tests.returncode or 'failed to return coverage data' in tests.stdout + tests.stderr:
@@ -322,6 +586,9 @@ def main() -> int:
           f'seconds={result.seconds:.3f}; exit={result.returncode}')
     print(result.stdout, end='')
     print(result.stderr, end='', file=sys.stderr)
+    if result.cleanup_error:
+        print(f'owned test cleanup failed: {result.cleanup_error}', file=sys.stderr)
+        return 1
     return result.returncode if result.returncode >= 0 else 1
 
 

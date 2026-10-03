@@ -35,7 +35,7 @@ MAX_ANALYZED_FILE_BYTES = 10_000_000
 BLOB_STREAM_CHUNK_BYTES = 64 * 1024
 MAX_DIFF_ARTIFACT_BYTES = 50_000_000
 MAX_LINE_STAT_LINES = 100_000
-_EXACT_SHA = re.compile(r"[0-9a-f]{40}")
+_EXACT_SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})")
 _ADOPTION_PATH = "architecture/adoption.json"
 _MODEL_PATHS = ("architecture/system.yaml", "architecture/rules.yaml")
 _SCHEMA_PATHS = (
@@ -45,6 +45,33 @@ _SCHEMA_PATHS = (
 _GIT_EXECUTABLE = shutil.which("git")
 _GIT_TIMEOUT_SECONDS = 30.0
 _LINE_STAT_TIMEOUT_SECONDS = 2.0
+_GIT_FORMAT_CACHE: dict[tuple[object, ...], int] = {}
+_GIT_COMMIT_CACHE: dict[tuple[object, ...], bool] = {}
+_GIT_BLOB_CACHE: dict[tuple[object, ...], dict[str, bytes | None]] = {}
+_MATERIALIZED_STATE_CACHE: dict[tuple[object, ...], "_ArchitectureState | None"] = {}
+_GIT_BLOB_CACHE_LIMIT = 512
+_MATERIALIZED_STATE_CACHE_LIMIT = 128
+
+
+def _binding_key(binding: "_GitBinding") -> tuple[object, ...]:
+    return (
+        str(binding.root),
+        str(binding.git_directory),
+        tuple((str(path), identity) for path, identity in binding.registrations),
+        tuple(str(path) for path in binding.absent_registrations),
+    )
+
+
+def _remember_blob_cache(key: tuple[object, ...], values: dict[str, bytes | None]) -> None:
+    if len(_GIT_BLOB_CACHE) >= _GIT_BLOB_CACHE_LIMIT:
+        _GIT_BLOB_CACHE.clear()
+    _GIT_BLOB_CACHE[key] = values
+
+
+def _remember_materialized_state(key: tuple[object, ...], value: "_ArchitectureState | None") -> None:
+    if len(_MATERIALIZED_STATE_CACHE) >= _MATERIALIZED_STATE_CACHE_LIMIT:
+        _MATERIALIZED_STATE_CACHE.clear()
+    _MATERIALIZED_STATE_CACHE[key] = value
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -175,6 +202,8 @@ def _git_command(
     arguments: list[str],
     *,
     safe_directory: Path | None = None,
+    git_directory: Path | None = None,
+    work_tree: Path | None = None,
 ) -> list[str]:
     if _GIT_EXECUTABLE is None:
         raise ArchitectureError("Git executable is unavailable", code="git")
@@ -182,6 +211,10 @@ def _git_command(
         _GIT_EXECUTABLE,
         "--no-replace-objects",
     ]
+    if git_directory is not None:
+        command.append(f"--git-dir={git_directory}")
+    if work_tree is not None:
+        command.append(f"--work-tree={work_tree}")
     if safe_directory is not None:
         command.extend(("-c", f"safe.directory={safe_directory}"))
     command.extend([
@@ -208,6 +241,137 @@ def _git_command(
     return command
 
 
+def _git_path_identity(path: Path) -> tuple[int, int, int, int, int, int]:
+    info = path.lstat()
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_size,
+            info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _git_pointer(path: Path) -> bytes:
+    """Read Git's small registration files without following a substituted name."""
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > 4_096:
+            raise ArchitectureError("Git registration is not a bounded regular file", code="git")
+        content = os.read(descriptor, 4_097)
+        after = os.fstat(descriptor)
+        if (len(content) != before.st_size
+                or (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns)
+                != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+                or _git_path_identity(path) != (before.st_dev, before.st_ino,
+                    before.st_mode, before.st_size, before.st_mtime_ns, before.st_ctime_ns)):
+            raise ArchitectureError("Git registration changed while reading", code="git")
+        return content
+    finally:
+        os.close(descriptor)
+
+
+@dataclass(frozen=True)
+class _GitBinding:
+    root: Path
+    git_directory: Path
+    registrations: tuple[tuple[Path, tuple[int, int, int, int, int, int]], ...]
+    absent_registrations: tuple[Path, ...] = ()
+
+    def verify(self) -> None:
+        try:
+            if any(_git_path_identity(path) != identity for path, identity in self.registrations):
+                raise ArchitectureError("Git worktree binding changed", code="git")
+            for path in self.absent_registrations:
+                try:
+                    path.lstat()
+                except FileNotFoundError:
+                    continue
+                raise ArchitectureError("Git common-directory registration changed", code="git")
+        except OSError as exc:
+            raise ArchitectureError("Git worktree binding is unavailable", code="git") from exc
+
+
+def _git_binding(root: Path) -> _GitBinding:
+    try:
+        named_root = Path(os.path.abspath(root))
+        if not stat.S_ISDIR(named_root.lstat().st_mode):
+            raise ArchitectureError("Git worktree root must be a non-symlink directory", code="git")
+        repository = named_root.resolve(strict=True)
+        dot_git = repository / ".git"
+        registration = dot_git.lstat()
+        registrations = {path: _git_path_identity(path) for path in (repository, dot_git)}
+        absent_registrations: tuple[Path, ...] = ()
+        if stat.S_ISDIR(registration.st_mode):
+            git_directory = dot_git
+            absent_registrations = (dot_git / "commondir",)
+        elif stat.S_ISREG(registration.st_mode):
+            content = _git_pointer(dot_git)
+            if not content.startswith(b"gitdir: ") or not content.endswith(b"\n") or b"\0" in content:
+                raise ArchitectureError("Git worktree registration is invalid", code="git")
+            target = Path(os.fsdecode(content[8:-1]))
+            git_directory = (repository / target).resolve(strict=True)
+            backlink = git_directory / "gitdir"
+            common_registration = git_directory / "commondir"
+            registrations.update({path: _git_path_identity(path) for path in (git_directory, backlink, common_registration)})
+            common_content = _git_pointer(common_registration)
+            if not common_content.endswith(b"\n") or b"\0" in common_content:
+                raise ArchitectureError("Git common-directory registration is invalid", code="git")
+            common_directory = (git_directory / Path(os.fsdecode(common_content[:-1]))).resolve(strict=True)
+            if git_directory.parent.name != "worktrees" or common_directory != git_directory.parent.parent:
+                raise ArchitectureError("Git common-directory relationship does not match registered worktree", code="git")
+            registrations[common_directory] = _git_path_identity(common_directory)
+            backlink_content = _git_pointer(backlink)
+            if not backlink_content.endswith(b"\n") or b"\0" in backlink_content:
+                raise ArchitectureError("Git worktree backlink is invalid", code="git")
+            backlink_path = Path(os.fsdecode(backlink_content[:-1]))
+            if (git_directory / backlink_path).resolve(strict=True) != dot_git:
+                raise ArchitectureError("Git worktree backlink does not match root", code="git")
+        else:
+            raise ArchitectureError("Git worktree registration is not a directory or regular file", code="git")
+        if not stat.S_ISDIR(git_directory.lstat().st_mode):
+            raise ArchitectureError("Git directory is not a non-symlink directory", code="git")
+        binding = _GitBinding(repository, git_directory, tuple(registrations.items()), absent_registrations)
+        binding.verify()
+        returncode, output, _error = _run_capped(
+            _git_command(["rev-parse", "--absolute-git-dir", "--show-toplevel", "--is-bare-repository"],
+                         safe_directory=repository, git_directory=git_directory),
+            cwd=repository, env=_git_environment(), stdout_limit=16_384,
+            stderr_limit=65_536, timeout=_GIT_TIMEOUT_SECONDS,
+        )
+        if returncode or output.splitlines() != [os.fsencode(git_directory), os.fsencode(repository), b"false"]:
+            raise ArchitectureError("Git directory/worktree relationship does not match root", code="git")
+        binding.verify()
+        return binding
+    except ArchitectureError:
+        raise
+    except (OSError, ValueError) as exc:
+        raise ArchitectureError("Git worktree binding is unavailable", code="git") from exc
+
+
+def run_git_bounded(
+    root: Path,
+    arguments: list[str],
+    *,
+    allow_failure: bool = False,
+    limit: int = MAX_GIT_OUTPUT_BYTES,
+    stdin_data: bytes | None = None,
+) -> bytes | None:
+    binding = _git_binding(root)
+    try:
+        returncode, output, error = _run_capped(
+            _git_command(arguments, safe_directory=binding.root,
+                         git_directory=binding.git_directory, work_tree=binding.root),
+            cwd=binding.root, env=_git_environment(), stdout_limit=limit,
+            stderr_limit=65_536, timeout=_GIT_TIMEOUT_SECONDS, stdin_data=stdin_data,
+        )
+    except OSError as exc:
+        raise ArchitectureError("Git object operation is unavailable", code="git") from exc
+    binding.verify()
+    if returncode:
+        if allow_failure:
+            return None
+        message = error.decode("utf-8", "replace").strip()
+        raise ArchitectureError(f"Git object operation failed: {message}", code="git")
+    return output
+
+
 def _git(
     root: Path,
     arguments: list[str],
@@ -216,22 +380,8 @@ def _git(
     limit: int = MAX_GIT_OUTPUT_BYTES,
     stdin_data: bytes | None = None,
 ) -> bytes | None:
-    repository = Path(root).resolve(strict=True)
-    returncode, output, error = _run_capped(
-        _git_command(arguments, safe_directory=repository),
-        cwd=repository,
-        env=_git_environment(),
-        stdout_limit=limit,
-        stderr_limit=65_536,
-        timeout=_GIT_TIMEOUT_SECONDS,
-        stdin_data=stdin_data,
-    )
-    if returncode:
-        if allow_failure:
-            return None
-        message = error.decode("utf-8", "replace").strip()
-        raise ArchitectureError(f"Git object operation failed: {message}", code="git")
-    return output
+    return run_git_bounded(root, arguments, allow_failure=allow_failure,
+                           limit=limit, stdin_data=stdin_data)
 
 
 def _required_output(value: bytes | None, *, operation: str) -> bytes:
@@ -247,12 +397,45 @@ def _required_head(value: str | None) -> str:
 
 
 def _exact_commit(root: Path, value: str, *, label: str) -> str:
-    if not isinstance(value, str) or _EXACT_SHA.fullmatch(value) is None:
-        raise ArchitectureError(f"{label} must be an exact 40-character commit SHA", code="git")
-    kind = _git(root, ["cat-file", "-t", value], allow_failure=True, limit=64)
+    object_id_length = _git_object_id_length(root)
+    if not isinstance(value, str) or len(value) != object_id_length or _EXACT_SHA.fullmatch(value) is None:
+        raise ArchitectureError(f"{label} must match the exact repository commit format", code="git")
+    binding = _git_binding(root)
+    key = (*_binding_key(binding), "commit", value)
+    if _GIT_COMMIT_CACHE.get(key) is True:
+        binding.verify()
+        return value
+    returncode, kind, _error = _run_capped(
+        _git_command(["cat-file", "-t", value], safe_directory=binding.root,
+                     git_directory=binding.git_directory, work_tree=binding.root),
+        cwd=binding.root, env=_git_environment(), stdout_limit=64,
+        stderr_limit=65_536, timeout=_GIT_TIMEOUT_SECONDS,
+    )
+    binding.verify()
+    if returncode:
+        kind = None
     if kind != b"commit\n":
         raise ArchitectureError(f"{label} is not an available commit object", code="git")
+    _GIT_COMMIT_CACHE[key] = True
     return value
+
+
+def _git_object_id_length(root: Path) -> int:
+    binding = _git_binding(root)
+    key = (*_binding_key(binding), "object-format")
+    cached = _GIT_FORMAT_CACHE.get(key)
+    if cached is not None:
+        binding.verify()
+        return cached
+    value = _required_output(run_git_bounded(root, ["rev-parse", "--show-object-format"], limit=32),
+                             operation="resolve Git object format")
+    if value == b"sha1\n":
+        _GIT_FORMAT_CACHE[key] = 40
+        return 40
+    if value == b"sha256\n":
+        _GIT_FORMAT_CACHE[key] = 64
+        return 64
+    raise ArchitectureError("unsupported Git object format", code="git")
 
 
 def _head_commit(root: Path) -> str:
@@ -505,9 +688,14 @@ def _stream_git_blob(root: Path, object_id: str, expected_size: int, path: str) 
     """Hash one Git blob without buffering it, enforcing the same deadline and output caps as
     `_run_capped`; returns the SHA-256 and whether a NUL byte appeared anywhere in the object."""
 
+    try:
+        binding = _git_binding(root)
+    except ArchitectureError as exc:
+        raise ArchitectureError(f"streamed blob setup failed: {path}: {exc}", code=exc.code) from exc
     process = subprocess.Popen(  # nosec B603
-        _git_command(["cat-file", "blob", object_id], safe_directory=root),
-        cwd=root,
+        _git_command(["cat-file", "blob", object_id], safe_directory=binding.root,
+                     git_directory=binding.git_directory, work_tree=binding.root),
+        cwd=binding.root,
         env=_git_environment(),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
@@ -580,10 +768,12 @@ def _stream_git_blob(root: Path, object_id: str, expected_size: int, path: str) 
             f"Git blob stream was truncated for {path}: {total} of {expected_size} bytes",
             code="io",
         )
+    binding.verify()
     return digest.hexdigest(), binary
 
 
 def _git_blob_entry(root: Path, sha: str, path: str) -> tuple[str, int] | None:
+    _exact_commit(root, sha, label="commit_sha")
     encoded = os.fsencode(path)
     if b"\0" in encoded:
         raise ArchitectureError("invalid Git blob path", code="path")
@@ -617,7 +807,7 @@ def _git_blob_entry(root: Path, sha: str, path: str) -> tuple[str, int] | None:
     mode, kind, object_id, size_raw = fields
     if kind != b"blob" or mode not in {b"100644", b"100755"}:
         raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
-    if _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
+    if len(object_id) != len(sha) or _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
         raise ArchitectureError(f"invalid Git blob identity for {path}", code="git")
     if not size_raw.isdigit():
         raise ArchitectureError(f"invalid Git blob size for {path}", code="git")
@@ -645,6 +835,27 @@ def _profile_git_blob(root: Path, sha: str, path: str) -> _BlobProfile | None:
     return _BlobProfile(size=size, digest=digest, binary=binary, content=None)
 
 
+def _profile_blob_value(value: bytes | None) -> _BlobProfile | None:
+    if value is None:
+        return None
+    return _BlobProfile(
+        size=len(value),
+        digest=hashlib.sha256(value).hexdigest(),
+        binary=b"\0" in value,
+        content=value,
+    )
+
+
+def _batch_git_profiles(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, _BlobProfile | None] | None:
+    try:
+        blobs = _git_blobs(root, sha, paths)
+    except ArchitectureError as exc:
+        if exc.code == "limit":
+            return None
+        raise
+    return {path: _profile_blob_value(value) for path, value in blobs.items()}
+
+
 @dataclass(frozen=True)
 class _ArchitectureState:
     snapshot: ArchitectureSnapshot
@@ -660,6 +871,18 @@ def _materialized_state(
     adoption_base: bool = False,
     bootstrap_baseline: bool = False,
 ) -> _ArchitectureState | None:
+    binding = _git_binding(root)
+    cache_key = (
+        *_binding_key(binding),
+        "materialized-state",
+        sha,
+        adoption_base,
+        bootstrap_baseline,
+        ADOPTION_BASE_SHA,
+    )
+    if cache_key in _MATERIALIZED_STATE_CACHE:
+        binding.verify()
+        return _MATERIALIZED_STATE_CACHE[cache_key]
     model_values = tuple(_git_blob(root, sha, path) for path in _MODEL_PATHS)
     marker_value = _git_blob(root, sha, _ADOPTION_PATH)
     if model_values == (None, None):
@@ -668,6 +891,7 @@ def _materialized_state(
                 "architecture adoption marker exists without the model", code="missing"
             )
         if (adoption_base and sha == ADOPTION_BASE_SHA) or bootstrap_baseline:
+            _remember_materialized_state(cache_key, None)
             return None
         raise ArchitectureError("architecture model is missing outside the adoption base", code="missing")
     if any(value is None for value in model_values):
@@ -693,12 +917,14 @@ def _materialized_state(
         raise ArchitectureError(
             "architecture adoption marker id does not match the model", code="schema"
         )
-    return _ArchitectureState(
+    state = _ArchitectureState(
         snapshot=snapshot,
         contracts=records,
         adoption_state="adopted",
         adoption_digest=adoption["digest"],
     )
+    _remember_materialized_state(cache_key, state)
+    return state
 
 
 def _worktree_state(root: Path) -> _ArchitectureState:
@@ -930,6 +1156,13 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         raise ArchitectureError("diff file batch path limit exceeded", code="limit")
     if not requested:
         return {}
+    binding = _git_binding(root)
+    _exact_commit(root, sha, label="commit_sha")
+    cache_key = (*_binding_key(binding), "blobs", sha, requested)
+    cached = _GIT_BLOB_CACHE.get(cache_key)
+    if cached is not None:
+        binding.verify()
+        return dict(cached)
     encoded = tuple(os.fsencode(path) for path in requested)
     if any(b"\0" in path for path in encoded) or sum(map(len, encoded)) > MAX_BATCH_INPUT_BYTES:
         raise ArchitectureError("diff file batch path input limit exceeded", code="limit")
@@ -953,7 +1186,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         mode, kind, object_id, size_raw = fields
         if kind != b"blob" or mode not in {b"100644", b"100755"}:
             raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
-        if _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
+        if len(object_id) != len(sha) or _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
             raise ArchitectureError(f"invalid Git blob identity for {path}", code="git")
         if not size_raw.isdigit():
             raise ArchitectureError(f"invalid Git blob size for {path}", code="git")
@@ -995,6 +1228,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         cursor = finish + 1
     if cursor != len(output):
         raise ArchitectureError("unexpected trailing Git blob batch output", code="git")
+    _remember_blob_cache(cache_key, dict(values))
     return values
 
 
@@ -1023,6 +1257,7 @@ def read_diff_files(
 
 
 def git_tree_paths(root: Path, sha: str, prefixes: tuple[str, ...]) -> tuple[str, ...]:
+    _exact_commit(root, sha, label="commit_sha")
     raw = _required_output(
         _git(root, ["ls-tree", "-r", "--name-only", "-z", "--full-tree", sha]),
         operation="list Git tree paths",
@@ -1122,15 +1357,27 @@ def diff_architecture(
         bootstrap_baseline=bootstrap_baseline,
     )
     paths = _changed_paths(repository, base, head, worktree=worktree)
+    base_profiles = _batch_git_profiles(repository, base, paths)
+    head_profiles = (
+        None if worktree else _batch_git_profiles(repository, _required_head(head), paths)
+    )
     artifacts: list[ChangedArtifact] = []
     artifact_bytes = 0
     head_side = None if worktree else _required_head(head)
     for path in paths:
-        base_profile = _profile_git_blob(repository, base, path)
+        base_profile = (
+            base_profiles[path]
+            if base_profiles is not None
+            else _profile_git_blob(repository, base, path)
+        )
         head_profile = (
             _profile_worktree_blob(repository, path)
             if worktree
-            else _profile_git_blob(repository, head_side, path)
+            else (
+                head_profiles[path]
+                if head_profiles is not None
+                else _profile_git_blob(repository, head_side, path)
+            )
         )
         artifact_bytes += (base_profile.size if base_profile else 0) + (
             head_profile.size if head_profile else 0

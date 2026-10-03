@@ -1,0 +1,221 @@
+{
+  "evidence_kind": "writer_exact_blob_and_union_check_not_independent_review",
+  "base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "pre_join_head": "76837faad333f10cb30e0c510d72def9f76347f6",
+  "frozen_precursor_head": "c7610544936bd8d5a1774d903e3b3d410fa117ad",
+  "frozen_precursor_fingerprint": "a5c263308f0c27b8b5e749e2af6108c5c39c43cce61b5546a61a40749b71c887",
+  "checked_fingerprint": "8844c1afebf38b6cab822031cdd5535dbeba6d356f68c6339316f7a6d445dc3d",
+  "exact_blob_matches": [
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/architecture.md",
+      "source_blob": "359dcf2c6b2c3147398f7b74b00e3dc5394e378b",
+      "current_blob": "359dcf2c6b2c3147398f7b74b00e3dc5394e378b",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/brief.md",
+      "source_blob": "2fe173226b73ecea8732bf32cfda7f254ed251fb",
+      "current_blob": "2fe173226b73ecea8732bf32cfda7f254ed251fb",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
+      "source_blob": "89a26665996949045e43d22f3075e72d3ed49a82",
+      "current_blob": "89a26665996949045e43d22f3075e72d3ed49a82",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/README.md",
+      "source_blob": "514f12136cf5b4b1c5d881e1cce61fa7d1216038",
+      "current_blob": "514f12136cf5b4b1c5d881e1cce61fa7d1216038",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-architect.md",
+      "source_blob": "c039cb4320e832c6f3a8f25d904be76b695f682d",
+      "current_blob": "c039cb4320e832c6f3a8f25d904be76b695f682d",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-brief.md",
+      "source_blob": "02e35feafa6b36baa290e02acf4f3fb3256bf03b",
+      "current_blob": "02e35feafa6b36baa290e02acf4f3fb3256bf03b",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-data_architect.md",
+      "source_blob": "34cccd2708011e848962ec1f17f19be5628071b6",
+      "current_blob": "34cccd2708011e848962ec1f17f19be5628071b6",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-docs_researcher.md",
+      "source_blob": "bb91df38b32c37009764c93b3f884823f75ccfa5",
+      "current_blob": "bb91df38b32c37009764c93b3f884823f75ccfa5",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-integration_architect.md",
+      "source_blob": "2f49c098b6710d595d7c6f961f1d05aa957ba8c7",
+      "current_blob": "2f49c098b6710d595d7c6f961f1d05aa957ba8c7",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/analysis-repo_explorer.md",
+      "source_blob": "4c57bef7e8763c41a959942d70ea987d4977c650",
+      "current_blob": "4c57bef7e8763c41a959942d70ea987d4977c650",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/contention-repair.md",
+      "source_blob": "a78120596f8de4be95e442218a7c296aeb47b5b2",
+      "current_blob": "a78120596f8de4be95e442218a7c296aeb47b5b2",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/hb-contention-diagnosis.md",
+      "source_blob": "90f2f8594b2585d8fe31e613991e074cce084a54",
+      "current_blob": "90f2f8594b2585d8fe31e613991e074cce084a54",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/implementation.md",
+      "source_blob": "2b8c0614905ca5cd348174fa4a11845e5dc761b7",
+      "current_blob": "2b8c0614905ca5cd348174fa4a11845e5dc761b7",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/initial-selector-receipt.json",
+      "source_blob": "ef6ecf826af61c4d27cc59ca912b200664784137",
+      "current_blob": "ef6ecf826af61c4d27cc59ca912b200664784137",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/initial-selector.md",
+      "source_blob": "90e6324ae29ec29bff14d81f38156e0d946c64fe",
+      "current_blob": "90e6324ae29ec29bff14d81f38156e0d946c64fe",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/evidence/startup-capacity-and-dependencies.md",
+      "source_blob": "7c2241daf02d13beafea4c0e95da5ccf90d48a22",
+      "current_blob": "7c2241daf02d13beafea4c0e95da5ccf90d48a22",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/human-gates.json",
+      "source_blob": "504d96a35599613ef6f56ecd3f20debfceb44ae3",
+      "current_blob": "504d96a35599613ef6f56ecd3f20debfceb44ae3",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/implementation-plan.md",
+      "source_blob": "549ae379511d6f74338f158a646a773562180f43",
+      "current_blob": "549ae379511d6f74338f158a646a773562180f43",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/release.md",
+      "source_blob": "ed5ce06ef0b49604ecfa2a1af3b5664776047584",
+      "current_blob": "ed5ce06ef0b49604ecfa2a1af3b5664776047584",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/requirements.md",
+      "source_blob": "90426c04b01e8a5eac546a278b6c3166604e6dde",
+      "current_blob": "90426c04b01e8a5eac546a278b6c3166604e6dde",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/rollback.md",
+      "source_blob": "4217ba06b2c1b1c48fb78c82409e0ce459e6bd73",
+      "current_blob": "4217ba06b2c1b1c48fb78c82409e0ce459e6bd73",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/route.json",
+      "source_blob": "cfaa43a72525cb0b6ff3e8d22ad4e4e9c0c97f33",
+      "current_blob": "cfaa43a72525cb0b6ff3e8d22ad4e4e9c0c97f33",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/state.json",
+      "source_blob": "0bb99cfebe9c9a6978fbc36fd7f0613f53b376e1",
+      "current_blob": "0bb99cfebe9c9a6978fbc36fd7f0613f53b376e1",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/tasks.md",
+      "source_blob": "777b84cfc7af9c9e2943f7b3b5f68be263022833",
+      "current_blob": "777b84cfc7af9c9e2943f7b3b5f68be263022833",
+      "equal": true
+    },
+    {
+      "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/test-plan.md",
+      "source_blob": "70ec630d77e131e818310049dfb0bb81a0e836f6",
+      "current_blob": "70ec630d77e131e818310049dfb0bb81a0e836f6",
+      "equal": true
+    },
+    {
+      "path": "factory/tests/postgres_fixture_reset.py",
+      "source_blob": "afd9a37ea34663181e3b3897663e7c69a5483b26",
+      "current_blob": "afd9a37ea34663181e3b3897663e7c69a5483b26",
+      "equal": true
+    },
+    {
+      "path": "factory/tests/postgres_restart_probe.py",
+      "source_blob": "717a3319c1000e1458d6638c68418c4e37a65614",
+      "current_blob": "717a3319c1000e1458d6638c68418c4e37a65614",
+      "equal": true
+    },
+    {
+      "path": "factory/tests/test_execution_persistence_postgres.py",
+      "source_blob": "da775d37dddeff183647f09242f21835bcbbfdf9",
+      "current_blob": "da775d37dddeff183647f09242f21835bcbbfdf9",
+      "equal": true
+    },
+    {
+      "path": "factory/tests/test_postgres_fixture_reset.py",
+      "source_blob": "81bd5d0ece30480669996f55fbef0f422a5e2206",
+      "current_blob": "81bd5d0ece30480669996f55fbef0f422a5e2206",
+      "equal": true
+    }
+  ],
+  "shared_union_checks": [
+    {
+      "path": "scripts/install_into.py",
+      "fixture_plus_retained_core_only": true,
+      "retained_core_addition_sha256": "b84706e2484c720adb2d27132b8ce1d52433589f4d55a77e77244de7e2001075"
+    },
+    {
+      "path": "tests/test_installer.py",
+      "fixture_plus_retained_core_only": true,
+      "retained_core_addition_sha256": "a9c3ae98a4bd171ed536cdce893f0e8f7f5ccea8ec129d7dd8d095e3dd63f80f"
+    },
+    {
+      "path": "decisions.md",
+      "core_prefix_preserved": true
+    },
+    {
+      "path": "mistakes.md",
+      "core_prefix_preserved": true
+    }
+  ],
+  "excluded_source_paths": [
+    "factory/src",
+    "factory/contracts",
+    "factory/runtime",
+    "factory/migrations",
+    "trust-ci",
+    "architecture/rules.yaml",
+    ".grok-stack/adaptive_grok/verification_scope.py",
+    ".github/workflows",
+    "factory/tests/test_postgres_integration.py"
+  ],
+  "excluded_exact_base_diff_empty": true,
+  "limitations": [
+    "Complete imported precursor workflow evidence is historical source evidence, not current joined receipts.",
+    "PG tests and historical783 restart/install controls were not rerun by the joined writer.",
+    "Current full verification, independent reviews and external acceptance remain controller-owned and pending."
+  ]
+}

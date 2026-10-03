@@ -5,10 +5,12 @@ import json
 import os
 import re
 import stat
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from collections.abc import Callable
 
 from .architecture import (
     ArchitectureError,
@@ -499,6 +501,50 @@ def _active_spec_binding(root: Path, route: dict[str, Any], kind: str) -> dict[s
     }
 
 
+def _write_receipt_bytes(handle, content: str) -> None:
+    handle.write(content)
+    handle.flush()
+    os.fsync(handle.fileno())
+
+
+def _publish_receipt(path: Path, data: dict[str, Any], interrupt_check: Callable[[], None] | None) -> None:
+    """Publish complete bytes, fsync the file and directory, invalidate on failure."""
+    temporary = None
+    directory = None
+    try:
+        content = json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n'
+        if len(content.encode('utf-8')) > MAX_RECEIPT_BYTES:
+            raise ValueError('receipt exceeds the byte limit')
+        descriptor, temporary = tempfile.mkstemp(prefix=f'.{path.name}.', dir=path.parent)
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
+            _write_receipt_bytes(handle, content)
+        if interrupt_check:
+            interrupt_check()
+        os.replace(temporary, path)
+        directory = os.open(path.parent, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+        os.fsync(directory)
+        if interrupt_check:
+            interrupt_check()
+    except BaseException:
+        # A prior pass, or a rename whose directory durability failed, cannot qualify.
+        try:
+            path.unlink(missing_ok=True)
+            if directory is None:
+                directory = os.open(path.parent, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+            os.fsync(directory)
+        except OSError:
+            pass
+        raise
+    finally:
+        if directory is not None:
+            os.close(directory)
+        if temporary is not None:
+            try:
+                os.unlink(temporary)
+            except FileNotFoundError:
+                pass
+
+
 def write_receipt(
     root: Path,
     kind: str,
@@ -510,11 +556,13 @@ def write_receipt(
     spec_digest: str | None = None,
     spec_fingerprint: str | None = None,
     expected_tree_fingerprint: str | None = None,
+    interrupt_check: Callable[[], None] | None = None,
 ) -> Path:
     route = get_active_route(root)
     if not route:
         raise RuntimeError('no active route')
     before_tree = tree_fingerprint(root)
+    before_head = _exact_head(root)
     if (
         expected_tree_fingerprint is not None
         and before_tree != expected_tree_fingerprint
@@ -545,6 +593,7 @@ def write_receipt(
         'status': status,
         'created_at': now_utc(),
         'tree_fingerprint': before_tree,
+        'git_head': before_head,
         'report': report,
         'details': details or {},
         **binding,
@@ -557,13 +606,14 @@ def write_receipt(
     after_governance = active_governance_binding(root, route, after_architecture)
     if (
         after_tree != before_tree
+        or _exact_head(root) != before_head
         or after_binding != current
         or after_architecture != current_architecture
         or after_governance != current_governance
     ):
         raise RuntimeError('repository, spec, architecture, or governance changed while receipt was written')
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
-    dump_json(path, data)
+    _publish_receipt(path, data, interrupt_check)
     return path
 
 
@@ -701,6 +751,8 @@ def validate_evidence(
             missing.append(f'{kind}: explicitly invalidated')
         if receipt.get('tree_fingerprint') != current:
             missing.append(f'{kind}: stale after repository changes')
+        if 'git_head' in receipt and receipt['git_head'] != _exact_head(root):
+            missing.append(f'{kind}: stale after Git head changes')
         try:
             binding = _active_spec_binding(root, route, kind)
         except (RuntimeError, ValueError) as exc:

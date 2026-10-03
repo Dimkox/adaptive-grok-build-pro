@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "change_id": "20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Extract only shared disposable025 reset SQL while preserving caller security and transaction semantics; enable subsequent bounded F reconstruction",
+    "success_metric": "Five scoped criteria with focused RED/GREEN, guarded disposable controls and final exact-state full verification/reviews",
+    "target": "AC-001 through AC-006 satisfied with unchanged budgets and trust"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Exact legacy reset statement, closed43-table inventory and side-effect-free leaf cursor seam",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Both existing callers preserve distinct suffixes, observations, transactions, guards and timeouts",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "data_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Source/direct/installed helper imports and exact managed inventory stay valid",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Guarded disposable025 reset, rollback, refusal and actual restart controls preserve permissions and migration history",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "data_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Final exact-state full verification and selected reviews pass under unchanged budgets; external merge authority remains separate",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "release_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Two-reconciler acceptance retains exact-once effects, permits only typed bounded lock refusal, and verifies safe bounded post-contention retry without hiding other failures",
+      "evidence": [
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Unchanged migrations001-025, guards, permissions, timeouts, budgets, rules, selector and deployed trust boundary",
+      "evidence": [
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No live target, migration026, arbitrary cleanup/CASCADE, credential access, production role expansion or unverified completion",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "data_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "approvals": {
+    "required_scopes": [
+      "security",
+      "data"
+    ]
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact SQL characterization, disposable guard refusals, rollback/restart effects and measured architecture/code budgets",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  }
+}

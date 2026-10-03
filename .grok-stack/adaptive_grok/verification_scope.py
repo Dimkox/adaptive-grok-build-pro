@@ -377,5 +377,5 @@ def focused_command(test_targets: list[str]) -> list[str]:
         sys.executable,
         '-m',
         'unittest',
-        *[target[:-3].replace('/', '.') for target in test_targets],
+        *test_targets,
     ]

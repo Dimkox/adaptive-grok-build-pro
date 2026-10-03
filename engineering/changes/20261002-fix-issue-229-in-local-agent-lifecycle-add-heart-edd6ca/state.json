@@ -1,0 +1,119 @@
+{
+  "change_id": "20261002-fix-issue-229-in-local-agent-lifecycle-add-heart-edd6ca",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/issue-229-heartbeat-watchdog",
+      "change_id": "20261002-fix-issue-229-in-local-agent-lifecycle-add-heart-edd6ca",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-02T22:20:25+00:00",
+      "route_id": "edd6ca692480"
+    },
+    {
+      "branch": "fix/issue-229-heartbeat-watchdog",
+      "change_id": "20261002-fix-issue-229-in-local-agent-lifecycle-add-heart-edd6ca",
+      "detached": false,
+      "dirty_product_paths": [
+        ".grok-stack/adaptive_grok/_policy_legacy.py",
+        ".grok-stack/adaptive_grok/agent_lifecycle.py",
+        ".grok-stack/adaptive_grok/state.py",
+        ".grok-stack/config/managed.json",
+        ".grok/agents/general_implementer.md",
+        ".grok/agents/general_implementer.toml",
+        ".grok/hooks/README.md",
+        ".grok/hooks/_lib.py",
+        ".grok/hooks/post_tool_use.py",
+        ".grok/hooks/pre_tool_use.py",
+        ".grok/hooks/subagent_start.py",
+        ".grok/hooks/subagent_stop.py",
+        "README.md",
+        "decisions.md",
+        "engineering/runbooks/local-agent-watchdog.md",
+        "mistakes.md",
+        "scripts/grok_agent.py",
+        "scripts/grok_status.py",
+        "scripts/install_into.py",
+        "tests/test_agent_lifecycle.py",
+        "tests/test_installer.py",
+        "tests/test_policy.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-02T22:39:53+00:00",
+      "route_id": "edd6ca692480"
+    }
+  ],
+  "created_at": "2026-10-02T22:20:25+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "Focused 112-test contour passed after Russian task identity repair; coordinator fresh full PR verification pending.",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "Coordinator independent final-tree review pending.",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "Coordinator independent final-tree review pending.",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-02T22:20:25+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-02T22:39:53+00:00",
+      "from": "draft",
+      "reason": "Bounded local lifecycle design and typed acceptance written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-02T22:39:53+00:00",
+      "from": "scoped",
+      "reason": "Existing explicit implementation authorization; route has no human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-02T22:39:53+00:00",
+      "from": "approved",
+      "reason": "RED duplicate writer and missing lifecycle fixtures observed; implementation in progress",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "a0c9946ddb754d7647d35b3fe8ad08c0427162e634e97d68285ce35b058278f5",
+  "route_id": "edd6ca692480",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Fix issue 229 in local agent lifecycle: add heartbeat and useful-progress timestamps, activity diagnostics, bounded stall watchdog warnings, and acknowledged interrupt/resume preserving a single write owner.",
+  "updated_at": "2026-10-02T22:39:53+00:00"
+}

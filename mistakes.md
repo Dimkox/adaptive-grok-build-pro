@@ -1543,3 +1543,120 @@ exact error assertions so broader platform admission or removal of a named root 
 Root cause: the result-schema test imported third-party `jsonschema`, which is not installed in the
 Trust CI runner image, and unittest discovery therefore failed during import. Use the repository's
 dependency-free schema subset validator and bind free-function assertions into unittest discovery.
+## 2026-10-02 — A global worker override contaminated legacy runner tests
+
+Setting GROK_TEST_WORKERS=2 on the unittest harness overrode three fixtures that intentionally require the legacy unset-worker path, producing three false failures in a 296-second run. Pin harness affinity and let fixtures own worker selection; rerunning those controls with the variable unset passed.
+
+## 2026-10-02 — A cancellation regression sent SIGTERM before a safe baseline handler existed
+
+The first RED harness exited 143 when a signal-control test exercised the unimplemented verifier against the process's default handler. Signal fixtures now install/restore a benign baseline handler, while real child reaping is exercised in a disposable subprocess, so missing cancellation handling fails an assertion without terminating the entire suite.
+
+
+### 2026-10-02 — Include output-file exits in cleanup preservation
+
+Root cause: the initial recovery implementation protected owned-process stop and TemporaryDirectory cleanup, but left both TemporaryFile context exits outside result/primary-exception retention. Independent reviews reproduced lost exit7/output and RunCancelled after the existing controls passed; add separate real-file close faults for stdout, stderr and both, then preserve the retained result and primary exception across those exits.
+## 2026-10-02 — Keep file identities across the complete architecture input set
+
+Separate inode maps for authority/schema files and referenced contracts allowed a contract hard-link to an authority file to pass preflight. The root cause was resetting identity tracking at the input-group boundary; share one descriptor-derived map across the bounded loader and contract reads, while allowing a legitimate exact-path reread.
+
+## 2026-10-02 — Match duplicate-key diagnostics to decoder traversal
+
+A first-textual-duplicate scan named a root key even when the object decoder first refused a completed nested object. The root cause was ignoring object_pairs_hook's postorder traversal; track each object's first duplicate and report the first completed rejected object, as the nested same-key regression verifies.
+
+## 2026-10-02 — Distinguish loaded architecture inputs from source ownership inventory
+
+An initial preflight reused the full repository-path existence validator, so valid adopted-consumer fixtures lost binding metadata because their declared ownership anchors were intentionally outside the fixture. The root cause was treating source inventory as documents loaded by the architecture model; keep ownership drift downstream and preflight the actual model, schema and referenced contract documents.
+
+
+### 2026-10-02 — Negative operation words can misroute local implementation
+
+Root cause: the phrase excluding host deployment and Trust CI changes still matched release routing keywords, generating the abandoned ea3a12 release package with no writer. The controller rerouted the bounded local lifecycle repair to edd6ca before implementation and removed only its verified untouched default package files. Scope and 2.1.1 inclusion were already authorized; no new operational authority was inferred.
+
+### 2026-10-02 — Keep generation lineage when a child ID is reused
+
+Root cause: initial acquisition assigned generation number one after every termination, which let a legacy unversioned stop remove a reused child's new instance. A failing reused-ID regression now carries recorded generation lineage into acquisition and requires a token after the first execution. Resume already rotates its token while retaining ownership.
+
+### 2026-10-02 — Distinguish source task IDs from diagnostic tokens
+
+Root cause: lifecycle startup applied the ASCII diagnostic-token validator directly to change IDs, but the existing slug generator deliberately preserves Cyrillic. Russian change/session startup now derives an opaque token from bounded Unicode source bytes while retaining valid ASCII tokens, and malformed explicit sources cannot silently fall back. The failing Russian lifecycle and malformed-source fixtures bind this compatibility repair.
+### 2026-10-03 — Do not infer consolidation capacity from line deltas
+
+Root cause: planning counted small patch hunks while the code budget charges max(base, head) bytes and complexity of each whole changed file. The owner ordered decomposition; core remains separate from large F test/store surfaces and G executable Trust CI, with unchanged limits and the original obligations retained.
+
+### 2026-10-03 — Assert receipt staleness separately from retained verdict
+
+Root cause: the first lifecycle overlap assertion expected invalidation to replace the original receipt verdict with `stale`, but the established API preserves that verdict and adds a separate `stale` flag. The corrected control checks both fields, preserving the original result while proving the receipt no longer supplies current evidence.
+
+The same fixture initially omitted the stop event's role identity, which correctly preserved the writer reservation. Supply the exact child ID, role and generation when testing an observed native termination; a partial hook payload is not release authority.
+
+### 2026-10-03 — Preserve fixed-width Git status headers
+
+Root cause: trimming leading whitespace before parsing porcelain status shifted the first path and caused the scoped staging command to fail. Parse each unchanged status line at its documented path offset and check each command's result before dependent commit steps; no source was lost or committed by the failed attempt.
+
+### 2026-10-03 — Validate synthetic fixture identity before creation
+
+Root cause: I manually counted the disposable name suffix and produced 13 hex characters instead of the exact 12-character contract. The unchanged target guard refused it before tests or database mutation, and exact binding-checked cleanup removed that container; validate both name and nonce against their closed regexes before launch.
+
+### 2026-10-03 — Discover current source paths before opening them
+
+Root cause: remembered resource/helper locations led to failed reads and an incorrect private-symbol import during the continuation. Use rg --files and rg on the current tree before selecting exact paths or analysis-module imports.
+
+### 2026-10-03 — Capture complete structured diagnostics before parsing
+
+Root cause: the tool output cap truncated the complete joined budget JSON before parsing, so the local capture could not establish metrics and required one diagnostic rerun. Capture the full structured result into session memory with sufficient tool-output capacity, then display only concise metrics; a truncated payload must never support a passing claim.
+
+### 2026-10-03 — Stop repeated coordinator analysis before delivery
+
+Root cause: repeated analysis, intermediate verification waves and oversized diagnostic output consumed effort without moving a stable candidate through acceptance. Reuse explicitly historical diagnostic evidence for its original narrow claim, stop new general analysis once the scope and writer handoff are fixed, and run the required final-candidate gates in prerequisite order. The user's reported quota percentage is not independently measured and is not asserted as a local metric.
+
+## 2026-10-03 — Перерасход на координацию и повторное чтение
+
+Причина: координатор повторял общие анализы и промежуточные проверки, выводил большие отчёты и повторно читал длинный контекст вместо доставки готового кандидата. Эти действия увеличивали расход модели без сопоставимого продвижения к релизу. Точная доля списаний по агентам неизвестна; сообщённые пользователем проценты не выдаём за измерение.
+
+### 2026-10-03 — Git-ignored Python is still executable source inventory
+
+Root cause: I kept a diagnostic Python probe under ignored runtime storage, but the architecture filesystem inventory still discovers Python source there and correctly refused its undeclared ownership. Preserve this owned probe byte-for-byte as a non-source .txt recovery artifact; Git exclusion is not architectural permission and no drift rule is relaxed.
+
+### 2026-10-03 — Synthetic fixture literals still require the unchanged scanner
+
+Root cause: the fixture used a long static disposable password literal that the generic-secret rule correctly rejected, and the focused writer checks did not exercise that scanner before handoff. Generate an ephemeral local UUID password using the existing disposable-fixture pattern; both the repaired source and a separate private failing scanner control prove no regex waiver.
+
+## 2026-10-03 — Повторные полные проверки: максимум 3 минуты
+
+Причина: координатор запускал тяжёлую проверку до окончательной готовности дерева; дешёвые дефекты служебного Python-пробника и синтетического литерала обнаружились уже внутри полного прогона, а последующие изменения делали доказательство устаревшим. Успешный полный прогон Core e8a4 занял 14 минут 32 секунды и не соответствует новому прямому требованию пользователя: проверочный запуск максимум 180 секунд. Дешёвые условия проверять до запуска, кандидат замораживать, отчёты вносить одним пакетом; таймаут считать незавершённой проверкой, а безопасное сокращение полного набора до лимита — нерешённым ограничением, не разрешением пропустить тесты или Trust CI.
+
+## 2026-10-03 — Неопределённый результат оборвал параллельную координацию
+
+Причина: координатор передал отсутствующий exit_code в store(), который принимает только сериализуемые значения, и прервал обработку двух уже начатых отправок веток. Точные HEAD обеих веток подтверждены чтением GitHub; повторная отправка не потребовалась. Сохранять отсутствующие поля как null и обрабатывать результаты каждого задания отдельно, чтобы ошибка метаданных не теряла соседние результаты.
+
+## 2026-10-03 — Не измерен последовательный запуск внешнего Trust CI
+
+Причина ошибки планирования: длительность локального параллельного pytest использовалась без отдельного замера обязательного последовательного root-unittest. На точном HEAD e4135921 в PR #238 внешний root-unittest завершился с кодом 124; проверки целостности holdout и external-holdout прошли, но весь Trust CI не прошёл. Исходный пример политики задаёт 900 секунд и два CPU; фактическая причина замедления и ресурсы развёрнутого runner пока не установлены, поэтому выполняется один диагностический прогон в приватной копии без изменения политики и без повторной отправки того же HEAD.
+
+## 2026-10-03 — Дешёвый Bandit не был выполнен перед полным прогоном
+
+Причина: ремонт S1 проверял изоляцию observer и Ruff, но пропустил обязательный дешёвый Bandit, поэтому новый широкий `except Exception: pass` вызвал B110 и три вложенных verifier-теста упали на e413. Исправление сохраняет авторизацию и выдаёт короткое фиксированное предупреждение без содержимого исключения; даже отказ stderr не обходит policy. Выполнять Bandit, Ruff, secret scan и проверки исходников до полного прогона; причина внешнего root-unittest timeout этим замечанием не доказана.
+
+## 2026-10-03 — Синтетический verifier fixture повторно сканировал весь runtime
+
+Причина: общий project_copy доставлял полный runtime даже тестам небольшого синтетического проекта, поэтому каждая вложенная проверка снова запускала Bandit по неизменным посторонним исходникам. На точном внешнем образе один receipt case тратил4.114с из5.381с на этот скан; минимальный opt-in fixture сохранил реальные Ruff/Bandit и full-source отрицательный контроль. Не подменять это измерение доказанной причиной общего900с timeout и не менять deployed policy или число workers без самостоятельных данных.
+
+## 2026-10-03 — Serial coverage fallback was treated as acceptable in Trust CI
+
+Root cause: the local runner contract preserved a serial coverage fallback when pytest/xdist was unavailable, but the immutable Trust CI image exercises exactly that path and exceeded the repository-verification budget. The fix is a measured stdlib parallel coverage fallback that uses only pinned coverage and POSIX process ownership, not a timeout or policy change.
+
+## 2026-10-03 — Repeated full architecture diff made root-unittest miss the release budget
+
+Root cause: a broad regression test used 12 full Git-backed architecture diffs where a smaller representative set was enough for the release-candidate guard. Local profiling showed the single case at 64,5 seconds and the module still over 180 seconds before reduction. Use per-test timing before another full verifier cycle; do not spend another Trust CI attempt on an unchanged slow serial path.
+
+## 2026-10-03 — Coverage tests still asserted the pre-parallel executable fallback
+
+Root cause: two verifier-doctor tests still assumed PR coverage was controlled by the `coverage` executable on PATH after the runner moved to invocation-owned `python -m coverage` / pytest-cov. External root-unittest therefore failed with exit 1 after the timeout issue was reduced. Update tests with the actual measured contract before pushing another Trust CI candidate.
+
+## 2026-10-03 — Parallel unittest fallback assumed tests is an import package
+
+Root cause: the Trust CI image takes the no-pytest fallback and the new sharder invoked synthetic tests as `tests.test_ok`, but those fixtures do not create `tests/__init__.py`. Local pytest hid this because it collected by file. Reproduce fallback behavior in the immutable runner image before another push when local and Trust CI toolchains differ.
+
+## 2026-10-03 — Focused-profile tests still expected the old module invocation
+
+Root cause: the implementation switched the focused runner to path-based unittest targets, but the contract test still asserted module names and the minimal project-copy fixture omitted the tracked `.superpowers` root entry required by `test_structure.py`. Keep test fixtures aligned with the exact runner command and canonical tracked root inventory before pushing another Trust CI attempt.

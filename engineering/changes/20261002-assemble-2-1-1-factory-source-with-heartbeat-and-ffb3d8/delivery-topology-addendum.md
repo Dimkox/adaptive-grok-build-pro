@@ -1,0 +1,7 @@
+# Owner-approved topology revision —2026-10-03
+
+Original feature/design scope preserved; U4excluded. Owner chose two source PRs rather than one mixed TrustCI PR, then explicitly ordered decomposition rather than higher budgets. Exact whole-file budget projection prevents all A-F/H/HB fitting together after fixture extraction. The owner subsequently authorized one conditional first-source join: frozen test-only025 fixture plus A-E/H/HB core, then F durable evidence, G read-only authority, artifact child, exact merged tag/release plus downloaded ZIP/hash verification. The join qualifies only if actual assembled exact-base fitness passes all unchanged categories and limits; otherwise the fixture remains a separately accepted prerequisite before the core.
+
+Frozen fixture source: c7610544936bd8d5a1774d903e3b3d410fa117ad, comparison base63799f8760d3a55028d83ab5ff0116ececf8f7d1. The prior separate-fixture ordering and its archived workflow reports remain historical planning, not current merge acceptance. No F/G executable bytes enter this joined source, and neither successor is marked accepted.
+
+Each PR uses its actual agreed accepted base, full inventory selection/verification, independent reviews, authoritative App check and required signed scopes. Parallel isolated implementation does not waive serialized merge dependencies. Do not replace base merely to conceal changes. Source candidates/default-off systems do not establish external qualification or deployed operational factory.

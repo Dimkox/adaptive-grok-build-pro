@@ -1,0 +1,112 @@
+{
+  "schema_version": 2,
+  "change_id": "20261002-repair-architecture-checks-for-2-1-1-g-ec43ac",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Permit strictly proven Trust CI binding metadata and additive API schemas without weakening separation or existing contracts",
+    "success_metric": "Focused RED/GREEN controls and final aggregate exact-state full verifier/reviews",
+    "target": "AC-001 through AC-004 satisfied"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Only proven Trust CI binding metadata can qualify; real mixed implementation and unknown/authority changes fail closed",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Additive components and operations retain all existing compatibility constraints",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Invalid references, schemas, budgets and exact compatibility policy retain refusal",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Final candidate requires exact bound full verification and independent review; external authority remains separate",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No architecture rules/schema or deployed Trust CI/branch-protection changes",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No blanket metadata exemption, mixed executable bypass or stale completion claim",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "approvals": {
+    "required_scopes": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Fitness qualified metadata paths and compatibility/refusal codes",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "restore",
+    "maximum_steps": 1
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "recorded_at": "2026-10-02T22:36:15Z",
+  "worker": "v211_b_general_implementer",
+  "commands": [
+    "lscpu",
+    "nproc --all",
+    "nproc",
+    "taskset -pc $$",
+    "cat /proc/self/cgroup",
+    "cat /proc/self/mountinfo | rg cgroup|cpuset",
+    "read cpuset.cpus.effective and cpu.max at membership and every ancestor",
+    "taskset -c 0-27 bash child: nproc, affinity, membership, ancestor cpu.max"
+  ],
+  "physical_cores": 14,
+  "online_logical_cpus": 28,
+  "online_cpu_ids": "0-27",
+  "default_nproc": 22,
+  "default_affinity": "0,1,8-27",
+  "cgroup_mount": "/sys/fs/cgroup",
+  "cgroup_membership": "/user.slice/user-1000.slice/session-2050.scope",
+  "effective_cpuset": "0-27 inherited from root/user.slice",
+  "quota_bounds": {
+    "root": "cpu.max absent",
+    "user.slice": "max 100000",
+    "user-1000.slice": "max 100000",
+    "session-2050.scope": "max 100000"
+  },
+  "probe": {
+    "status": "success",
+    "child_nproc": 28,
+    "child_affinity": "0-27",
+    "membership_and_ancestor_quotas": "unchanged"
+  },
+  "verified_effective_cpu_capacity": 28,
+  "allocated_test_workers": 2,
+  "agent_limit": "parent selects sole writer; no subagents"
+}

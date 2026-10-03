@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "change_id": "20261002-fix-issue-229-in-local-agent-lifecycle-add-heart-edd6ca",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Supply local heartbeat/watchdog and acknowledged same-task recovery for release 2.1.1.",
+    "success_metric": "Deterministic lifecycle, ownership, hooks and installed CLI checks pass; final independent evidence is coordinator-owned.",
+    "target": "One retained writer, rejected stale generations and distinct heartbeat/progress/ACK warnings."
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Read-only watchdog separates heartbeat, progress, bounded activity and overdue ACK.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Acknowledged resume rotates generation and preserves task/workspace/uncommitted bytes.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Same-role and concurrent acquisition cannot produce two writers.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        },
+        {
+          "test": "tests/test_policy.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Installed CLI and explicit child hooks retain empty stop and runtime exclusion.",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py"
+        },
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Age, warning, polling and interruption cannot release ownership.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Only known explicit child identity and exact generation renew observations.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Never store arbitrary diagnostics or claim local intent proves native interruption.",
+      "evidence": [
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Closed watchdog warning classes and terminal report classifications.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 3
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+  "base_fingerprint": "1e3a7dd999f645559360dcd7fcd431dae38ea68bd546811913a47da0d5a3948d",
+  "complexity": "high-risk",
+  "created_at": "2026-10-02T23:58:14+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "data",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "architecture",
+  "matched_keywords": {
+    "api": [
+      "api"
+    ],
+    "data": [
+      "postgres",
+      "sql"
+    ],
+    "security": [
+      "auth",
+      "tenant isolation"
+    ]
+  },
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk signal: tenant isolation",
+    "intent=architecture",
+    "domains=security,data,api",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "ffb3d81e031f",
+  "schema_version": 1,
+  "session_id": "v211-combined-source",
+  "status": "routed",
+  "task": "Implement consolidated 2.1.1 factory source: verifier recovery, operational routing, repository language disclosure, architecture input preflight, governance inputs, M7 SQL PostgreSQL durable evidence lookup with tenant isolation and authenticated source binding, API schema compatibility and local agent heartbeat watchdog.",
+  "task_domains": [
+    "security",
+    "data",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}

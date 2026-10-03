@@ -1,0 +1,234 @@
+{
+  "schema_version": 2,
+  "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Assemble approved2.1.1 core A-E/H/heartbeat-watchdog and qualifying frozen test-only fixture; retain F/G required successors under unchanged budgets",
+    "success_metric": "Full core requirement ledger, exact-state full PR verification and selected independent reviews",
+    "target": "Eight core/fixture acceptance criteria verified; no unclaimed qualification"
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Fail-closed verifier retention and durable exact-state receipts",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "test": "tests/test_verifier_recovery.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Bounded backward-compatible operational routing and language disclosure",
+      "evidence": [
+        {
+          "test": "tests/test_repo_router.py"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "test": "tests/test_repo_language_disclosure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Located architecture preflight and hostile Git/projection refusal",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "test": "tests/test_governance.py"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "test": "tests/test_architecture_model_preflight.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Unchanged whole-file code budgets/migrations and TrustCI executable separation; F/G implementation remains successor scope",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Bounded heartbeat/watchdog generation and acknowledgement controls",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py"
+        },
+        {
+          "test": "tests/test_agent_lifecycle.py"
+        },
+        {
+          "test": "tests/test_installer.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Additive schema and proven metadata qualification without real-mixing bypass",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "test": "tests/test_architecture_model.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "Truthful source state and final exact verification plus independent review",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "release_review"
+        },
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "Qualifying frozen test-only025 fixture preserves exact reset/caller/import/installer boundaries and explicit typed lock refusal, rollback and no duplicate retry; final joined fitness stays within unchanged limits",
+      "evidence": [
+        {
+          "test": "factory/tests/test_postgres_fixture_reset.py"
+        },
+        {
+          "test": "factory/tests/test_migrations.py"
+        },
+        {
+          "test": "factory/tests/test_execution_persistence_postgres.py"
+        },
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "receipt": "test_review"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Migration001-025 and deployedtrust/branchprotection remainunchanged",
+      "evidence": [
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "F and G implementations remain separate successor PRs; original release scope retained and code budgets not waived",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No directmainpush, privateapprovalkey or undelegatedpublication/deployment",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "approvals": {
+    "required_scopes": [
+      "security",
+      "data"
+    ]
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-state verdicts, preflight refusals, lifecycle generations and measured code budgets",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "security",
+      "data",
+      "api"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "strategy": "restore",
+    "maximum_steps": 1
+  }
+}

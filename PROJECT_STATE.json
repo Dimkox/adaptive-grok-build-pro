@@ -4,7 +4,7 @@
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-  "product_version": "2.1.0",
+  "product_version": "2.1.1",
   "latest_published_release": "v2.0.19",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -237,212 +237,427 @@
       }
     }
   ],
+  "historical_v2_1_0_artifact_custody": {
+    "current_unreleased_change": {
+      "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "route_id": "a0ff84051275",
+      "branch": "release/v2.1.0-artifact",
+      "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "identity": "v2.1.0 artifact-child candidate built twice from exact source",
+      "status": "artifact_candidate",
+      "stage": "artifact_child_candidate_pending_pr_tag_release",
+      "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+      "target_version": "2.1.0",
+      "scope": [
+        "Repository custody for the twice-reproducible v2.1.0 ZIP and checksum sidecar",
+        "PROJECT_STATE and release documentation bind exact source, tree and artifact hashes without delivery claims",
+        "Binding tests enforce immutable v2.0.19 publication identity and v2.1.0 candidate boundaries"
+      ],
+      "predecessors": [
+        {
+          "kind": "published_release",
+          "tag": "v2.0.19",
+          "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+          "published_at": "2026-09-24T21:30:52Z"
+        },
+        {
+          "kind": "post_v2_0_19_source_landing",
+          "pull_request": 236,
+          "head": "5dc835f84543c71ff0faf3c3e3e5cf3041175903",
+          "merge_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+          "merged_at": "2026-10-02T21:10:22Z",
+          "check_run_id": 111022092183
+        }
+      ],
+      "historical_v2_0_19_landing_archive": [
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 111,
+          "head": "176c3c6331241929c5e9091c93833c04d0d010d2",
+          "merge_commit": "d8b396cafc0c5953f2b419a29ce7eac292138d27",
+          "merged_at": "2026-09-16T15:58:23Z",
+          "check_run_id": 104861527743
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 112,
+          "head": "f541250196f6f08e13b6ad703d30434492fea2ff",
+          "merge_commit": "b1ac155b9829ba50ae482403ca4beb2bda13fe1e",
+          "merged_at": "2026-09-16T17:03:23Z",
+          "check_run_id": 104886975501
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 113,
+          "head": "2d1c0208faba0ca5635e37acfd46cace6182057a",
+          "merge_commit": "35cbbe0f857bdb03dec4eb0ecff542a148b84658",
+          "merged_at": "2026-09-16T17:24:50Z",
+          "check_run_id": 104894438685
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 114,
+          "head": "245e565e95797032d94a310264e80ed803d95450",
+          "merge_commit": "379c64197aac82a0b70c1c2a98b249b381410305",
+          "merged_at": "2026-09-16T18:49:42Z",
+          "check_run_id": 104923457470
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 115,
+          "head": "55dbb6b243a6523c38ee8332153a82d0885227a6",
+          "merge_commit": "05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3",
+          "merged_at": "2026-09-16T22:53:12Z",
+          "check_run_id": 105002122003
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 116,
+          "head": "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
+          "merge_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
+          "merged_at": "2026-09-17T02:51:57Z",
+          "check_run_id": 105053306144
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 133,
+          "head": "2cbfa12f8ab6ff6f1b84c53792a0a5a0bd36b38b",
+          "merge_commit": "d871ea6d5d654406281dd65626a3dce61bf933fa",
+          "merged_at": "2026-09-19T03:58:35Z",
+          "check_run_id": 105815267537
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 149,
+          "head": "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
+          "merge_commit": "b51b1175e2441cbbfcbeee607d8d25ebd789a3b4",
+          "merged_at": "2026-09-19T10:13:40Z",
+          "check_run_id": 105878090745
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 150,
+          "head": "c335a33b9cffde4d8912b173803c3adec3348d06",
+          "merge_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
+          "merged_at": "2026-09-19T10:54:42Z",
+          "check_run_id": 105883016776
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 154,
+          "head": "a4023258047a03e1176daa3a35695c9d9b49f8be",
+          "merge_commit": "f12807c2b75750072ba768fc95ed492362ae6489",
+          "merged_at": "2026-09-19T19:35:28Z",
+          "check_run_id": 105951303627
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 151,
+          "head": "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
+          "merge_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
+          "merged_at": "2026-09-19T20:27:56Z",
+          "check_run_id": 105959227264
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 170,
+          "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
+          "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
+          "merged_at": "2026-09-21T09:06:51Z",
+          "check_run_id": 106268338358
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 173,
+          "head": "23984e55560c6d559a46445061f10331ca05bcf9",
+          "merge_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
+          "merged_at": "2026-09-21T11:27:32Z",
+          "check_run_id": 106308434581
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 174,
+          "head": "73a8edd7678b4d605f6335569534653c6587eabc",
+          "merge_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
+          "merged_at": "2026-09-21T12:46:35Z",
+          "check_run_id": 106331000728
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 184,
+          "head": "0d16a5370537e697657fd60c7b27d994f45bd4b2",
+          "merge_commit": "f50912a2521be1da8f1da9ba3c956a824eb696bc",
+          "merged_at": "2026-09-21T20:52:15Z",
+          "check_run_id": 106483792325
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 185,
+          "head": "17489bf52ae1f6fac7923d8e3448bcae26f54163",
+          "merge_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
+          "merged_at": "2026-09-21T21:58:06Z",
+          "check_run_id": 106525969438
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 192,
+          "head": "ee3da48e653b0dcaad956d10d40a295e283963f7",
+          "merge_commit": "08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc",
+          "merged_at": "2026-09-24T14:45:31Z",
+          "check_run_id": 107666547252
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 194,
+          "head": "7ed7444f01785a17749e157c3d0d1d6f2fd35748",
+          "merge_commit": "6cc360e48e608ef22fc6a68feff16ec9d78712b0",
+          "merged_at": "2026-09-24T16:27:14Z",
+          "check_run_id": 107718010308
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 191,
+          "head": "b7b4ab501a1bdcb83ab83198e583220256272244",
+          "merge_commit": "9312702d03f25e2256d1f3aa456bc41907c0c436",
+          "merged_at": "2026-09-24T18:07:28Z",
+          "check_run_id": 107756831859
+        },
+        {
+          "kind": "post_v2_0_18_landing",
+          "pull_request": 193,
+          "head": "78148986b1ce3712ee2fd9ba378137f51b08dc36",
+          "merge_commit": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
+          "merged_at": "2026-09-24T18:53:58Z",
+          "check_run_id": 107775220562
+        }
+      ],
+      "explanation": "The v2.1.0 ZIP and sidecar were built twice byte-identically from the exact clean source and are now held in repository custody. Delivery identities remain unknown and the published v2.0.19 record stays immutable.",
+      "external_effect": false,
+      "frozen": {
+        "published_release": "v2.0.19",
+        "package_bytes": true,
+        "postgresql_migrations": "001-018"
+      },
+      "operational_activation": false,
+      "record_scope": "Repository custody for the v2.1.0 artifact candidate only; pull request, check, merge, tag, publication, deployment and activation are not claimed.",
+      "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
+      "tag_and_release": "Not created. v2.0.19 remains the newest immutable tag and GitHub Release; v2.1.0 delivery identities are unknown.",
+      "artifact_child": "Repository custody: packages/adaptive-grok-build-pro-v2.1.0.zip and its sidecar were built twice byte-identically from source e5856acfd4bc7a186f40a740b54ec86459462db5 and tree 0dfa04f3ec3ea9c7a04c723e9d127603fc72999b; no delivery or publication is claimed."
+    },
+    "local_candidate": {
+      "version": "2.1.0",
+      "status": "artifact_candidate",
+      "route_id": "a0ff84051275",
+      "branch": "release/v2.1.0-artifact",
+      "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+      "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+      "artifact_status": "built_reproducibly_repository_custody_pending_delivery",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.1.0.zip",
+        "sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
+        "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
+        "reproducible_build_count": 2
+      },
+      "pull_request": null,
+      "checked_head": null,
+      "merge_commit": null,
+      "tag": null,
+      "default_enabled": false,
+      "qualification_status": "not_qualified",
+      "included_default_off_contours": [
+        "prediction_observation_and_explanation",
+        "fpf_snapshot",
+        "bb_contracts",
+        "model_rotator_registry",
+        "vibevm_store",
+        "linux_setup_manager"
+      ],
+      "published": false,
+      "external_effect": false,
+      "operational_activation": false,
+      "notes": "Repository-custodied v2.1.0 artifact candidate built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
+    },
+    "active_delivery": {
+      "route_id": "a0ff84051275",
+      "branch": "release/v2.1.0-artifact",
+      "pull_request": null,
+      "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
+      "status": "artifact_custody_pending_delivery",
+      "highest_implemented_milestone": "M9",
+      "current_provisional_milestone": null,
+      "next_roadmap_milestone": null,
+      "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
+      "local_source_gate": {
+        "status": "passed_for_artifact_source_parent",
+        "artifact_head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
+        "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+        "record_scope": "The v2.1.0 artifact bytes were built twice from the exact clean source; the artifact-child candidate still requires its own pull request and App-owned exact-head check."
+      },
+      "package_handoff": {
+        "status": "repository_custody_pending_artifact_delivery",
+        "artifact_child": null,
+        "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
+        "delta_paths": [
+          "packages/adaptive-grok-build-pro-v2.1.0.zip",
+          "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
+        ],
+        "zip_sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
+        "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
+        "release": "v2.1.0",
+        "tag_target": null
+      },
+      "repository_delivery": {
+        "status": "pending_exact_head_external_check",
+        "pull_request": null,
+        "checked_head": null,
+        "merge_commit": null,
+        "tree": null,
+        "release": "v2.1.0",
+        "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "check_run_id": null,
+        "attestation_id": null,
+        "published": false,
+        "operational_activation": false,
+        "record_scope": "The v2.1.0 artifact bytes are in repository custody; no artifact-child pull request check, merge, tag or GitHub Release publication has occurred yet."
+      },
+      "integrated_stack": {
+        "status": "delivered_to_main",
+        "m4_head": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",
+        "m5_head": "85cd4343143915ce9342634e7fe81886b6394871",
+        "m6_head": "c6d48ffd8594b3baab1a575021452ea5dfa2a98b",
+        "m7_head": "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f",
+        "m8_head": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
+        "m9_source_head": "64b10689ce78a0464a494440f3fa981e18789687",
+        "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
+        "tree": "03e122a30fb2dbb59907f4c4c28e17f93cbf0751",
+        "release": "v2.0.13",
+        "migrations": "001-018 byte-preserved",
+        "production_authorized": false
+      },
+      "schedule": {
+        "basis": "dependency_relative",
+        "m4_local_ready_target": "2026-09-03",
+        "t0": {
+          "definition": "externally accepted exact M4 SHA",
+          "status": "accepted_via_pr22",
+          "sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+          "accepted_at": "2026-09-04T08:31:49Z",
+          "requires": [
+            "separately_authorized_pull_request",
+            "exact_sha_external_trust_ci",
+            "protected_merge_and_acceptance_record"
+          ]
+        },
+        "sequential_acceptance_order": [
+          "M4",
+          "M5",
+          "M6",
+          "M7",
+          "M8",
+          "M9"
+        ],
+        "m8_calendar": {
+          "status": "indeterminate",
+          "minimum_human_accepted_tasks": 30
+        },
+        "m9_entry_requires": [
+          "accepted_m8",
+          "signed_artifact",
+          "environment_evidence",
+          "recovery_evidence"
+        ],
+        "superseded_target": {
+          "at": "2026-09-08T00:00:00+03:00",
+          "status": "superseded_unachievable_historical_target",
+          "gate_waiver": false
+        }
+      },
+      "m4_dimensions": {
+        "implementation_source": {
+          "status": "delivered_to_main",
+          "components": [
+            "typed_intake_and_task_state",
+            "postgresql_migrations_001_013",
+            "leases_fences_capacity_and_retry",
+            "budgets_kills_audit_and_reconciliation",
+            "semantic_work_identity_and_command_replay",
+            "bounded_immutable_lifecycle_history_and_fenced_phases",
+            "sole_checked_closed_inline_17_operation_http_contract",
+            "authenticated_uds_api_cli_and_admin",
+            "disposable_postgresql_and_restart_tests",
+            "restored_m2_and_nested_factory_architecture_budgets"
+          ]
+        },
+        "local_exact_head_verification": {
+          "status": "passed_for_release_head",
+          "head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+          "notes": "Local verification was preflight evidence; the App-owned exact-head check supplied merge authority."
+        },
+        "independent_review": {
+          "status": "passed_for_release_head",
+          "head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+          "notes": "All five route-selected review phases completed before delivery; their receipts remain local workflow evidence."
+        },
+        "pr_external_merge_delivery": {
+          "status": "published",
+          "pull_request": 22,
+          "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+          "external_exact_head_check": "success",
+          "check_run_id": 100955508827,
+          "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
+          "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
+          "merged_at": "2026-09-04T08:31:49Z",
+          "release": "v2.0.13",
+          "published_at": "2026-09-04T08:33:19Z",
+          "artifact_sha256": "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c",
+          "notes": "M4-M9 are delivered as repository product source. M8 activation and M9 operational deployment remain separately gated."
+        }
+      }
+    }
+  },
   "current_unreleased_change": {
-    "change_id": "20261002-implement-repository-custody-for-already-built-d-a0ff84",
-    "route_id": "a0ff84051275",
-    "branch": "release/v2.1.0-artifact",
-    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
-    "identity": "v2.1.0 artifact-child candidate built twice from exact source",
-    "status": "artifact_candidate",
-    "stage": "artifact_child_candidate_pending_pr_tag_release",
-    "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
-    "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-    "target_version": "2.1.0",
+    "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+    "route_id": "ffb3d81e031f",
+    "branch": "feat/v211-combined-source",
+    "change_package": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+    "identity": "v2.1.1 core source candidate",
+    "status": "source_candidate",
+    "stage": "core_source_candidate_pending_verification_reviews_pr",
+    "source_base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+    "source_tree": null,
+    "target_version": "2.1.1",
     "scope": [
-      "Repository custody for the twice-reproducible v2.1.0 ZIP and checksum sidecar",
-      "PROJECT_STATE and release documentation bind exact source, tree and artifact hashes without delivery claims",
-      "Binding tests enforce immutable v2.0.19 publication identity and v2.1.0 candidate boundaries"
+      "A-E verifier recovery, operational routing, bounded repository language disclosure, architecture preflight and governance input hardening",
+      "H additive compatibility and proven Trust CI metadata qualification",
+      "Generation-fenced local heartbeat/watchdog and truthful source state",
+      "Frozen test-only025 fixture reset and cause-specific bounded lock-refusal acceptance; conditional on unchanged joined fitness"
     ],
-    "predecessors": [
+    "retained_successor_obligations": [
       {
-        "kind": "published_release",
-        "tag": "v2.0.19",
-        "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
-        "published_at": "2026-09-24T21:30:52Z"
+        "contour": "F",
+        "status": "not_accepted",
+        "scope": "M7 durable evidence lookup; CR001/TR001/SEC001/SEC002 and F1-7 remain required"
       },
       {
-        "kind": "post_v2_0_19_source_landing",
-        "pull_request": 236,
-        "head": "5dc835f84543c71ff0faf3c3e3e5cf3041175903",
-        "merge_commit": "e5856acfd4bc7a186f40a740b54ec86459462db5",
-        "merged_at": "2026-10-02T21:10:22Z",
-        "check_run_id": 111022092183
+        "contour": "G",
+        "status": "not_accepted",
+        "scope": "Separate Trust CI current-authority endpoint; G1-7 remain required"
       }
     ],
-    "historical_v2_0_19_landing_archive": [
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 111,
-        "head": "176c3c6331241929c5e9091c93833c04d0d010d2",
-        "merge_commit": "d8b396cafc0c5953f2b419a29ce7eac292138d27",
-        "merged_at": "2026-09-16T15:58:23Z",
-        "check_run_id": 104861527743
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 112,
-        "head": "f541250196f6f08e13b6ad703d30434492fea2ff",
-        "merge_commit": "b1ac155b9829ba50ae482403ca4beb2bda13fe1e",
-        "merged_at": "2026-09-16T17:03:23Z",
-        "check_run_id": 104886975501
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 113,
-        "head": "2d1c0208faba0ca5635e37acfd46cace6182057a",
-        "merge_commit": "35cbbe0f857bdb03dec4eb0ecff542a148b84658",
-        "merged_at": "2026-09-16T17:24:50Z",
-        "check_run_id": 104894438685
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 114,
-        "head": "245e565e95797032d94a310264e80ed803d95450",
-        "merge_commit": "379c64197aac82a0b70c1c2a98b249b381410305",
-        "merged_at": "2026-09-16T18:49:42Z",
-        "check_run_id": 104923457470
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 115,
-        "head": "55dbb6b243a6523c38ee8332153a82d0885227a6",
-        "merge_commit": "05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3",
-        "merged_at": "2026-09-16T22:53:12Z",
-        "check_run_id": 105002122003
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 116,
-        "head": "72d7340ef7d8df40262c3c1f5793d1cf3173571f",
-        "merge_commit": "2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217",
-        "merged_at": "2026-09-17T02:51:57Z",
-        "check_run_id": 105053306144
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 133,
-        "head": "2cbfa12f8ab6ff6f1b84c53792a0a5a0bd36b38b",
-        "merge_commit": "d871ea6d5d654406281dd65626a3dce61bf933fa",
-        "merged_at": "2026-09-19T03:58:35Z",
-        "check_run_id": 105815267537
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 149,
-        "head": "c7b557d8bbee8ddf2fc539383c8452112cba6b31",
-        "merge_commit": "b51b1175e2441cbbfcbeee607d8d25ebd789a3b4",
-        "merged_at": "2026-09-19T10:13:40Z",
-        "check_run_id": 105878090745
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 150,
-        "head": "c335a33b9cffde4d8912b173803c3adec3348d06",
-        "merge_commit": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
-        "merged_at": "2026-09-19T10:54:42Z",
-        "check_run_id": 105883016776
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 154,
-        "head": "a4023258047a03e1176daa3a35695c9d9b49f8be",
-        "merge_commit": "f12807c2b75750072ba768fc95ed492362ae6489",
-        "merged_at": "2026-09-19T19:35:28Z",
-        "check_run_id": 105951303627
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 151,
-        "head": "b4c0c5f6516e5b34a4726a59bb530dd100b31a03",
-        "merge_commit": "90078959ff816068af374ad42f4bb80fdbaec866",
-        "merged_at": "2026-09-19T20:27:56Z",
-        "check_run_id": 105959227264
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 170,
-        "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
-        "merge_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
-        "merged_at": "2026-09-21T09:06:51Z",
-        "check_run_id": 106268338358
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 173,
-        "head": "23984e55560c6d559a46445061f10331ca05bcf9",
-        "merge_commit": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",
-        "merged_at": "2026-09-21T11:27:32Z",
-        "check_run_id": 106308434581
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 174,
-        "head": "73a8edd7678b4d605f6335569534653c6587eabc",
-        "merge_commit": "21ced3709dff48abf3e15aff62e2493de75f2fa0",
-        "merged_at": "2026-09-21T12:46:35Z",
-        "check_run_id": 106331000728
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 184,
-        "head": "0d16a5370537e697657fd60c7b27d994f45bd4b2",
-        "merge_commit": "f50912a2521be1da8f1da9ba3c956a824eb696bc",
-        "merged_at": "2026-09-21T20:52:15Z",
-        "check_run_id": 106483792325
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 185,
-        "head": "17489bf52ae1f6fac7923d8e3448bcae26f54163",
-        "merge_commit": "130ce4a42d9f9bbd1b56772d40b19ae530283205",
-        "merged_at": "2026-09-21T21:58:06Z",
-        "check_run_id": 106525969438
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 192,
-        "head": "ee3da48e653b0dcaad956d10d40a295e283963f7",
-        "merge_commit": "08b1cdc8ae50212f596fd891fa1ae2a4a8d1b5dc",
-        "merged_at": "2026-09-24T14:45:31Z",
-        "check_run_id": 107666547252
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 194,
-        "head": "7ed7444f01785a17749e157c3d0d1d6f2fd35748",
-        "merge_commit": "6cc360e48e608ef22fc6a68feff16ec9d78712b0",
-        "merged_at": "2026-09-24T16:27:14Z",
-        "check_run_id": 107718010308
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 191,
-        "head": "b7b4ab501a1bdcb83ab83198e583220256272244",
-        "merge_commit": "9312702d03f25e2256d1f3aa456bc41907c0c436",
-        "merged_at": "2026-09-24T18:07:28Z",
-        "check_run_id": 107756831859
-      },
-      {
-        "kind": "post_v2_0_18_landing",
-        "pull_request": 193,
-        "head": "78148986b1ce3712ee2fd9ba378137f51b08dc36",
-        "merge_commit": "7650a5e12aad55bdcf730cd37e2faf162bec0486",
-        "merged_at": "2026-09-24T18:53:58Z",
-        "check_run_id": 107775220562
-      }
-    ],
-    "explanation": "The v2.1.0 ZIP and sidecar were built twice byte-identically from the exact clean source and are now held in repository custody. Delivery identities remain unknown and the published v2.0.19 record stays immutable.",
-    "external_effect": false,
+    "original_design_sha256": "1d6ef0470458ac5f061fec8af2d6da26545389739fee98f395d5d5b7b7759f6b",
+    "release_scope_ledger": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/release-scope-ledger.md",
     "frozen": {
       "published_release": "v2.0.19",
-      "package_bytes": true,
-      "postgresql_migrations": "001-018"
+      "historical_migrations": "001-025 byte-preserved",
+      "code_budgets": "unchanged",
+      "u4_macos": "excluded_by_owner"
     },
-    "operational_activation": false,
-    "record_scope": "Repository custody for the v2.1.0 artifact candidate only; pull request, check, merge, tag, publication, deployment and activation are not claimed.",
-    "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
-    "tag_and_release": "Not created. v2.0.19 remains the newest immutable tag and GitHub Release; v2.1.0 delivery identities are unknown.",
-    "artifact_child": "Repository custody: packages/adaptive-grok-build-pro-v2.1.0.zip and its sidecar were built twice byte-identically from source e5856acfd4bc7a186f40a740b54ec86459462db5 and tree 0dfa04f3ec3ea9c7a04c723e9d127603fc72999b; no delivery or publication is claimed."
+    "next_action": "Qualify frozen fixture plus core under unchanged joined fitness, then complete full verification and five independent reviews; deliver this first source, F and separate G before the artifact child. If joined budgets fail, accept the fixture separately before core.",
+    "tag_and_release": "Not built or published; final exact merged source requires an artifact-only child after F/G acceptance."
   },
   "delivered_change_history": {
     "design_partner_pilot": {
@@ -1220,21 +1435,15 @@
     }
   },
   "local_candidate": {
-    "version": "2.1.0",
-    "status": "artifact_candidate",
-    "route_id": "a0ff84051275",
-    "branch": "release/v2.1.0-artifact",
-    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
-    "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
-    "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-    "artifact_status": "built_reproducibly_repository_custody_pending_delivery",
-    "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.1.0.zip",
-      "sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
-      "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
-      "reproducible_build_count": 2
-    },
+    "version": "2.1.1",
+    "status": "source_candidate",
+    "route_id": "ffb3d81e031f",
+    "branch": "feat/v211-combined-source",
+    "change_package": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
+    "source_base": "63799f8760d3a55028d83ab5ff0116ececf8f7d1",
+    "source_tree": null,
+    "artifact_status": "not_built",
+    "artifact": null,
     "pull_request": null,
     "checked_head": null,
     "merge_commit": null,
@@ -1249,10 +1458,38 @@
       "vibevm_store",
       "linux_setup_manager"
     ],
+    "core_contours": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "H",
+      "HB"
+    ],
+    "joined_fixture": {
+      "source_head": "c7610544936bd8d5a1774d903e3b3d410fa117ad",
+      "schema_version": "025",
+      "scope": "test_only",
+      "status": "pending_full_gate_and_acceptance"
+    },
+    "retained_successor_obligations": [
+      {
+        "contour": "F",
+        "status": "not_accepted",
+        "scope": "M7 durable evidence lookup; CR001/TR001/SEC001/SEC002 and F1-7 remain required"
+      },
+      {
+        "contour": "G",
+        "status": "not_accepted",
+        "scope": "Separate Trust CI current-authority endpoint; G1-7 remain required"
+      }
+    ],
     "published": false,
+    "deployed": false,
     "external_effect": false,
     "operational_activation": false,
-    "notes": "Repository-custodied v2.1.0 artifact candidate built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
+    "notes": "Core plus frozen test-only025 fixture source candidate only. F/G remain required and not accepted; no 2.1.1 artifact, source acceptance, external pilot, deployment or activation is claimed. Historical 2.1.0 custody is archived without changing its hashes or delivery identities."
   },
   "delivered_non_milestone_work": [
     {
@@ -1277,32 +1514,24 @@
     }
   ],
   "active_delivery": {
-    "route_id": "a0ff84051275",
-    "branch": "release/v2.1.0-artifact",
+    "route_id": "ffb3d81e031f",
+    "branch": "feat/v211-combined-source",
+    "change_package": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
     "pull_request": null,
-    "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
-    "status": "artifact_custody_pending_delivery",
+    "status": "core_source_implementation_pending_full_gate",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "Open the v2.1.0 artifact-child pull request and obtain App-owned exact-head Trust CI before any separately authorized merge, tag or publication action.",
+    "next_action": "Qualify frozen fixture plus core under unchanged joined fitness, then complete full verification and five independent reviews; deliver this first source, F and separate G before the artifact child. If joined budgets fail, accept the fixture separately before core.",
     "local_source_gate": {
-      "status": "passed_for_artifact_source_parent",
-      "artifact_head": "e5856acfd4bc7a186f40a740b54ec86459462db5",
-      "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-      "record_scope": "The v2.1.0 artifact bytes were built twice from the exact clean source; the artifact-child candidate still requires its own pull request and App-owned exact-head check."
+      "status": "pending_full_pr_verification_and_five_reviews",
+      "checked_head": null,
+      "tree_fingerprint": null
     },
     "package_handoff": {
-      "status": "repository_custody_pending_artifact_delivery",
+      "status": "not_built",
+      "release": "v2.1.1",
       "artifact_child": null,
-      "artifact_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-      "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.1.0.zip",
-        "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256"
-      ],
-      "zip_sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
-      "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
-      "release": "v2.1.0",
       "tag_target": null
     },
     "repository_delivery": {
@@ -1311,108 +1540,26 @@
       "checked_head": null,
       "merge_commit": null,
       "tree": null,
-      "release": "v2.1.0",
+      "release": "v2.1.1",
       "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
       "check_run_id": null,
       "attestation_id": null,
       "published": false,
-      "operational_activation": false,
-      "record_scope": "The v2.1.0 artifact bytes are in repository custody; no artifact-child pull request check, merge, tag or GitHub Release publication has occurred yet."
+      "deployed": false,
+      "operational_activation": false
     },
-    "integrated_stack": {
-      "status": "delivered_to_main",
-      "m4_head": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",
-      "m5_head": "85cd4343143915ce9342634e7fe81886b6394871",
-      "m6_head": "c6d48ffd8594b3baab1a575021452ea5dfa2a98b",
-      "m7_head": "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f",
-      "m8_head": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
-      "m9_source_head": "64b10689ce78a0464a494440f3fa981e18789687",
-      "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-      "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
-      "tree": "03e122a30fb2dbb59907f4c4c28e17f93cbf0751",
-      "release": "v2.0.13",
-      "migrations": "001-018 byte-preserved",
-      "production_authorized": false
-    },
-    "schedule": {
-      "basis": "dependency_relative",
-      "m4_local_ready_target": "2026-09-03",
-      "t0": {
-        "definition": "externally accepted exact M4 SHA",
-        "status": "accepted_via_pr22",
-        "sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-        "accepted_at": "2026-09-04T08:31:49Z",
-        "requires": [
-          "separately_authorized_pull_request",
-          "exact_sha_external_trust_ci",
-          "protected_merge_and_acceptance_record"
-        ]
+    "retained_successor_obligations": [
+      {
+        "contour": "F",
+        "status": "not_accepted",
+        "scope": "M7 durable evidence lookup; CR001/TR001/SEC001/SEC002 and F1-7 remain required"
       },
-      "sequential_acceptance_order": [
-        "M4",
-        "M5",
-        "M6",
-        "M7",
-        "M8",
-        "M9"
-      ],
-      "m8_calendar": {
-        "status": "indeterminate",
-        "minimum_human_accepted_tasks": 30
-      },
-      "m9_entry_requires": [
-        "accepted_m8",
-        "signed_artifact",
-        "environment_evidence",
-        "recovery_evidence"
-      ],
-      "superseded_target": {
-        "at": "2026-09-08T00:00:00+03:00",
-        "status": "superseded_unachievable_historical_target",
-        "gate_waiver": false
+      {
+        "contour": "G",
+        "status": "not_accepted",
+        "scope": "Separate Trust CI current-authority endpoint; G1-7 remain required"
       }
-    },
-    "m4_dimensions": {
-      "implementation_source": {
-        "status": "delivered_to_main",
-        "components": [
-          "typed_intake_and_task_state",
-          "postgresql_migrations_001_013",
-          "leases_fences_capacity_and_retry",
-          "budgets_kills_audit_and_reconciliation",
-          "semantic_work_identity_and_command_replay",
-          "bounded_immutable_lifecycle_history_and_fenced_phases",
-          "sole_checked_closed_inline_17_operation_http_contract",
-          "authenticated_uds_api_cli_and_admin",
-          "disposable_postgresql_and_restart_tests",
-          "restored_m2_and_nested_factory_architecture_budgets"
-        ]
-      },
-      "local_exact_head_verification": {
-        "status": "passed_for_release_head",
-        "head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-        "notes": "Local verification was preflight evidence; the App-owned exact-head check supplied merge authority."
-      },
-      "independent_review": {
-        "status": "passed_for_release_head",
-        "head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-        "notes": "All five route-selected review phases completed before delivery; their receipts remain local workflow evidence."
-      },
-      "pr_external_merge_delivery": {
-        "status": "published",
-        "pull_request": 22,
-        "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-        "external_exact_head_check": "success",
-        "check_run_id": 100955508827,
-        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
-        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
-        "merged_at": "2026-09-04T08:31:49Z",
-        "release": "v2.0.13",
-        "published_at": "2026-09-04T08:33:19Z",
-        "artifact_sha256": "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c",
-        "notes": "M4-M9 are delivered as repository product source. M8 activation and M9 operational deployment remain separately gated."
-      }
-    }
+    ]
   },
   "milestones": {
     "M0": {

@@ -1,0 +1,7 @@
+"""One exact schema-025 reset operation; caller owns target and transaction."""
+
+RESET_SQL = "TRUNCATE factory.next_model_request_outbox_v1, factory.result_admission_commands_v1, factory.result_sources_v1, factory.decision_records_v1, factory.semantic_recovery_records, factory.semantic_escalations, factory.semantic_child_task_bindings, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+
+
+def reset_fixture_tables(cursor) -> None:
+    cursor.execute(RESET_SQL)

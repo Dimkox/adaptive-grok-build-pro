@@ -39,7 +39,13 @@ from adaptive_grok.verification import (
     _sql_safety,
     verify,
 )
-from tests._support import project_copy
+from tests._support import project_copy as full_project_copy
+
+
+def project_copy(*, git: bool = False):
+    # Verifier fixtures exercise synthetic projects, not another copy of the
+    # complete runtime's scanner results. Full-source coverage stays explicit.
+    return full_project_copy(git=git, minimal_runtime=True)
 
 _PASSING_UNITTEST = (
     'import unittest\n'
@@ -294,6 +300,21 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_scanner_fixture_keeps_real_checks_and_full_source_negative_control(self) -> None:
+        from adaptive_grok.verification import _bandit, _ruff
+        with project_copy() as root:
+            self.assertTrue((root / '.grok-stack/adaptive_grok/__init__.py').is_file())
+            self.assertFalse((root / '.grok-stack/adaptive_grok/verification.py').exists())
+            for check in (_ruff(root), _bandit(root)):
+                self.assertEqual(check.status, 'pass' if shutil.which(check.name) else 'skip')
+        with full_project_copy() as root:
+            source = root / '.grok-stack/adaptive_grok/verification.py'
+            self.assertEqual(source.read_bytes(), (ROOT / '.grok-stack/adaptive_grok/verification.py').read_bytes())
+            if shutil.which('bandit'):
+                self.assertEqual(_bandit(root).status, 'pass')
+                (root / '.grok-stack/adaptive_grok/_unsafe_probe.py').write_text('value = eval("1 + 1")\n', encoding='utf-8')
+                self.assertEqual(_bandit(root).status, 'fail')
+
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
         for rel in (
@@ -1843,7 +1864,7 @@ class QualityContourTests(unittest.TestCase):
             self.assertEqual(secret['status'], 'fail')
             self.assertIsNotNone(_check(report, 'bandit'))
 
-    def test_coverage_skip_when_missing_in_pr_mode(self) -> None:
+    def test_coverage_module_failure_is_not_skipped_when_executable_is_missing_in_pr_mode(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'
             tests_dir.mkdir()
@@ -1855,10 +1876,13 @@ class QualityContourTests(unittest.TestCase):
                 report = verify(root, mode='pr', record=False)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
-            self.assertEqual(coverage['status'], 'skip')
+            self.assertEqual(coverage['status'], 'fail')
+            self.assertIn('coverage', coverage['stderr'])
+            self.assertIn('fresh invocation-owned coverage', coverage['details'][0]['message'])
             unittest_check = _check(report, 'python-unittest')
             self.assertIsNotNone(unittest_check)
-            self.assertEqual(unittest_check['status'], 'pass')
+            self.assertIn(unittest_check['status'], {'pass', 'fail'})
+            self.assertIn('fresh invocation-owned coverage', unittest_check['details'][0]['message'])
 
     def test_fast_mode_does_not_fail_closed_on_coverage(self) -> None:
         with project_copy(git=True) as root:
@@ -1878,7 +1902,7 @@ class QualityContourTests(unittest.TestCase):
             if coverage is not None:
                 self.assertNotEqual(coverage['status'], 'fail')
 
-    def test_coverage_fail_under_on_tiny_pr_fixture(self) -> None:
+    def test_coverage_executable_shim_does_not_replace_invocation_owned_module(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'
             tests_dir.mkdir()
@@ -1891,7 +1915,8 @@ class QualityContourTests(unittest.TestCase):
                 report = verify(root, mode='pr', record=False)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
-            self.assertEqual(coverage['status'], 'fail')
+            self.assertEqual(coverage['status'], 'pass')
+            self.assertIn('fresh invocation-owned coverage', coverage['details'][0]['message'])
 
     def test_this_repo_shaped_tree_omits_bucket_b(self) -> None:
         with project_copy(git=True) as root:

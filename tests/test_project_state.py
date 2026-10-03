@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import re
 import subprocess
@@ -118,7 +119,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.1.0")
+        self.assertEqual(state["product_version"], "2.1.1")
         self.assertEqual(state["latest_published_release"], "v2.0.19")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
@@ -418,7 +419,8 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[5]["merge_commit"], RELEASE_MERGE_SHA)
         self.assertEqual(prior[5]["tree"], RELEASE_TREE)
         self.assertEqual(prior[5]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
-        local = state["local_candidate"]
+        custody = state["historical_v2_1_0_artifact_custody"]
+        local = custody["local_candidate"]
         self.assertEqual(local["version"], "2.1.0")
         self.assertEqual(local["status"], "artifact_candidate")
         self.assertEqual(local["route_id"], "a0ff84051275")
@@ -446,7 +448,7 @@ class ProjectStateTests(unittest.TestCase):
         }
         self.assertEqual(forbidden_claims & set(local), set())
         self.assertNotIn("2.0.19", json.dumps(local, sort_keys=True))
-        current = state["current_unreleased_change"]
+        current = custody["current_unreleased_change"]
         self.assertEqual(
             current["change_id"],
             "20261002-implement-repository-custody-for-already-built-d-a0ff84",
@@ -522,9 +524,10 @@ class ProjectStateTests(unittest.TestCase):
         )
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
-        dimensions = self.state["active_delivery"]["m4_dimensions"]
-        current = self.state["current_unreleased_change"]
-        delivery = self.state["active_delivery"]
+        custody = self.state["historical_v2_1_0_artifact_custody"]
+        dimensions = custody["active_delivery"]["m4_dimensions"]
+        current = custody["current_unreleased_change"]
+        delivery = custody["active_delivery"]
         self.assertEqual(current["source_base"], "e5856acfd4bc7a186f40a740b54ec86459462db5")
         self.assertEqual(current["source_tree"], "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b")
         self.assertEqual(current["status"], "artifact_candidate")
@@ -632,7 +635,7 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertNotIn(claim, content, (relative, claim))
 
     def test_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates(self) -> None:
-        schedule = self.state["active_delivery"]["schedule"]
+        schedule = self.state["historical_v2_1_0_artifact_custody"]["active_delivery"]["schedule"]
         self.assertEqual(schedule["basis"], "dependency_relative")
         self.assertEqual(schedule["m4_local_ready_target"], "2026-09-03")
         self.assertEqual(
@@ -789,6 +792,49 @@ class ProjectStateTests(unittest.TestCase):
                 milestones["M3"]["implementation"]["commit"],
             ],
         )
+
+    def test_current_core_source_has_no_artifact_or_successor_acceptance(self) -> None:
+        state = self.state
+        custody_bytes = json.dumps(state["historical_v2_1_0_artifact_custody"], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        self.assertEqual(hashlib.sha256(custody_bytes).hexdigest(), "d6bfb9fc56e7e239c244e4ee6accd39daa5e9e3e54fb49f6b3570538ed093c77")
+        local = state["local_candidate"]
+        current = state["current_unreleased_change"]
+        delivery = state["active_delivery"]
+        self.assertEqual(local["version"], "2.1.1")
+        self.assertEqual(local["status"], "source_candidate")
+        self.assertEqual(current["status"], "source_candidate")
+        self.assertEqual(current["identity"], "v2.1.1 core source candidate")
+        self.assertEqual(current["target_version"], local["version"])
+        self.assertEqual(local["source_base"], "63799f8760d3a55028d83ab5ff0116ececf8f7d1")
+        self.assertEqual(local["artifact_status"], "not_built")
+        self.assertIsNone(local["artifact"])
+        self.assertIsNone(local["source_tree"])
+        self.assertIsNone(current["source_tree"])
+        self.assertFalse((ROOT / "packages/adaptive-grok-build-pro-v2.1.1.zip").exists())
+        self.assertFalse((ROOT / "packages/adaptive-grok-build-pro-v2.1.1.zip.sha256").exists())
+        for field in ("pull_request", "checked_head", "merge_commit", "tag"):
+            self.assertIsNone(local[field])
+        for field in ("published", "deployed", "external_effect", "operational_activation", "default_enabled"):
+            self.assertFalse(local[field])
+        self.assertEqual(local["qualification_status"], "not_qualified")
+        self.assertEqual(local["core_contours"], ["A", "B", "C", "D", "E", "H", "HB"])
+        self.assertEqual(local["joined_fixture"], {
+            "source_head": "c7610544936bd8d5a1774d903e3b3d410fa117ad",
+            "schema_version": "025",
+            "scope": "test_only",
+            "status": "pending_full_gate_and_acceptance",
+        })
+        for record in (current, local, delivery):
+            obligations = record["retained_successor_obligations"]
+            self.assertEqual([item["contour"] for item in obligations], ["F", "G"])
+            self.assertTrue(all(item["status"] == "not_accepted" for item in obligations))
+        for field in ("route_id", "branch", "change_package", "next_action"):
+            self.assertEqual(delivery[field], current[field])
+        self.assertEqual(local["route_id"], "ffb3d81e031f")
+        self.assertEqual(local["branch"], "feat/v211-combined-source")
+        self.assertEqual(delivery["package_handoff"]["status"], "not_built")
+        self.assertEqual(delivery["local_source_gate"]["status"], "pending_full_pr_verification_and_five_reviews")
+        self.assertEqual(current["original_design_sha256"], "1d6ef0470458ac5f061fec8af2d6da26545389739fee98f395d5d5b7b7759f6b")
 
     def test_current_epoch_and_app_are_consistent_in_handoff_documents(self) -> None:
         trust = self.state["trust_ci"]

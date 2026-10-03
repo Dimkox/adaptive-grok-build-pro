@@ -646,7 +646,7 @@ def evaluate_pre_tool(
                 if expected != agent_type:
                     return False, f'Route permits only write owner {expected}, not {agent_type}'
                 active = active_write_agents(root, roles)
-                if active and agent_type not in active:
+                if active:
                     return False, f'Another write agent is already active: {active}'
 
     if tool.startswith('mcp__') and SIDE_EFFECT_TOOL.search(tool):

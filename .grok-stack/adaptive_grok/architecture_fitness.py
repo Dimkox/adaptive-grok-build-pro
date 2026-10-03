@@ -7,7 +7,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass, replace
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Mapping, NamedTuple
 
 from .architecture import (
@@ -1631,15 +1631,122 @@ def _production_imports(diff: ArchitectureDiff, python: _PythonInventory) -> Fit
     )
 
 
+def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
+    """Qualify source bindings, never runtime authority, from validated paired states."""
+    if diff._base_state is None:
+        return ()
+    base = diff._base_state.snapshot.system
+    head = diff._head_state.snapshot.system
+    before = {node["id"]: node for node in base["nodes"]}
+    after = {node["id"]: node for node in head["nodes"]}
+    domains = {domain["id"] for domain in base["trust_domains"] if domain["kind"] == "trust_ci_control"}
+
+    def properties(node: dict[str, Any]) -> dict[str, Any]:
+        return {key: value for key, value in node.items() if key != "repository_paths"}
+
+    def source(path: str) -> bool:
+        return (
+            str(PurePosixPath(path)) == path
+            and ".." not in PurePosixPath(path).parts
+            and not any(character in path for character in "*?[]\\")
+            and path.startswith("trust-ci/src/adaptive_trust_ci/")
+            and path.endswith(".py")
+            and path in diff.changed_paths
+        )
+
+    qualified: list[str] = []
+    same_envelope = (
+        {key: value for key, value in base.items() if key != "nodes"}
+        == {key: value for key, value in head.items() if key != "nodes"}
+        and before.keys() == after.keys()
+        and all(properties(before[key]) == properties(after[key]) for key in before)
+    )
+    bindings_valid = same_envelope
+    changed_bindings = False
+    if same_envelope:
+        old_owners: dict[str, set[str]] = {}
+        new_owners: dict[str, set[str]] = {}
+        for identity in before:
+            old_paths = set(before[identity]["repository_paths"])
+            new_paths = set(after[identity]["repository_paths"])
+            if old_paths == new_paths:
+                continue
+            changed_bindings = True
+            node = before[identity]
+            if node["trust_domain"] not in domains or node["type"] not in {"service", "datastore", "local_component"}:
+                bindings_valid = False
+            for path in old_paths ^ new_paths:
+                if not source(path):
+                    bindings_valid = False
+        for identity, node in before.items():
+            for path in node["repository_paths"]:
+                old_owners.setdefault(path, set()).add(identity)
+        for identity, node in after.items():
+            for path in node["repository_paths"]:
+                new_owners.setdefault(path, set()).add(identity)
+        for path in old_owners.keys() | new_owners.keys():
+            old = old_owners.get(path, set())
+            new = new_owners.get(path, set())
+            if old == new:
+                continue
+            if not old and len(new) == 1:
+                # A new exact source registration cannot expand an existing prefix owner.
+                if any(_matches(path, node["repository_paths"]) for node in before.values()):
+                    bindings_valid = False
+                continue
+            # Approved correction: store.py is the API's existing PostgreSQL client,
+            # not the PostgreSQL server. No other ownership transfer is metadata.
+            api = before.get("NODE-TRUST-CI-API", {})
+            postgres = before.get("NODE-TRUST-CI-POSTGRES", {})
+            if not (
+                path == "trust-ci/src/adaptive_trust_ci/store.py"
+                and old == {"NODE-TRUST-CI-POSTGRES"}
+                and new == {"NODE-TRUST-CI-API"}
+                and api.get("type") == "service"
+                and api.get("runtime", {}).get("kind") == "container"
+                and postgres.get("type") == "datastore"
+                and postgres.get("runtime", {}).get("kind") == "postgresql"
+                and api.get("owner") == postgres.get("owner") == "Trust CI operators"
+                and api.get("trust_domain") == postgres.get("trust_domain")
+                and api.get("trust_domain") in domains
+            ):
+                bindings_valid = False
+    if bindings_valid and changed_bindings and "architecture/system.yaml" in diff.changed_paths:
+        qualified.append("architecture/system.yaml")
+
+    contract_path = "engineering/contracts/openapi/trust-ci.v1.json"
+    old_contracts = {item["id"]: item for item in base["contracts"]}
+    new_contracts = {item["id"]: item for item in head["contracts"]}
+    contract = old_contracts.get("CONTRACT-TRUST-CI-OPENAPI")
+    owners = {identity for identity, node in before.items() if "CONTRACT-TRUST-CI-OPENAPI" in node["public_contracts"]}
+    head_owners = {identity for identity, node in after.items() if "CONTRACT-TRUST-CI-OPENAPI" in node["public_contracts"]}
+    if (
+        contract_path in diff.changed_paths
+        and contract is not None
+        and contract == new_contracts.get("CONTRACT-TRUST-CI-OPENAPI")
+        and contract["path"] == contract_path
+        and contract["kind"] == "openapi"
+        and contract["role"] == contract["compatibility"] == "bidirectional"
+        and owners == head_owners == {"NODE-TRUST-CI-API"}
+        and properties(before["NODE-TRUST-CI-API"]) == properties(after["NODE-TRUST-CI-API"])
+        and before["NODE-TRUST-CI-API"]["trust_domain"] in domains
+        and before["NODE-TRUST-CI-API"]["type"] == "service"
+    ):
+        qualified.append(contract_path)
+    return tuple(sorted(qualified))
+
+
 def _change_separation(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
     rules = snapshot.rules["change_separation_policies"]
     predicate = "changed paths intersect an implementation or Trust CI separation boundary"
     if not rules:
         return _not_applicable("change_separation", predicate, diff.changed_paths, "no_declared_rules")
+    metadata = _trust_ci_metadata_paths(diff)
+    predicate += "; qualified Trust CI metadata from paired source/owner bindings: " + repr(metadata)
     findings: list[str] = []
     applicable = False
     for rule in rules:
-        implementation = tuple(path for path in diff.changed_paths if _matches(path, rule["implementation_prefixes"]))
+        implementation = tuple(path for path in diff.changed_paths if path not in metadata and _matches(path, rule["implementation_prefixes"]))
         trust_ci = tuple(path for path in diff.changed_paths if _matches(path, rule["trust_ci_prefixes"]))
         applicable = applicable or bool(implementation or trust_ci)
         if implementation and trust_ci:

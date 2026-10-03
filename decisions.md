@@ -866,3 +866,98 @@ The API performs full bounded parsing and authority/identity validation, then re
 ### 2026-10-02 — Use ASD-STE100 style in project-chat responses
 
 Write project-chat answers with ASD-STE100 principles: use short sentences, active voice, one term for one concept, and one main instruction or fact per sentence. This makes status, risk, and release decisions easier to read and less ambiguous; it is a writing rule, not a claim of formal ASD-STE100 certification.
+## 2026-10-02 — Preserve execution results separately from evidence finalization
+
+Keep completed exit codes and check output while representing cancellation, cleanup and receipt/report publication outcomes separately. Fresh fault controls exposed where exceptions erased those results, and the separation let the gate fail closed without losing the specific product failure.
+
+
+### 2026-10-02 — Retain results before every resource-context exit
+
+Store the completed process result before unwinding either output-file context, and attach cleanup faults to that result or the primary exception. Real-file close faults on stdout, stderr and both proved retention while the verifier still failed closed for exit0 with cleanup errors. Check the shared cancellation token after each close so a first signal delivered during cleanup does not become a successful return.
+## 2026-10-02 — Locate architecture defects by structural slot and physical LF
+
+Replace the offending value in an already-validated canonical model to derive its exact source line/column instead of searching for the first repeated literal. Counting physical LF preserves coordinates when legal Unicode line lookalikes appear inside JSON strings, and the focused regression proves the naive splitlines count differs.
+
+
+### 2026-10-02 — Fence local recovery by execution generation
+
+Retain the same agent/task/workspace and writer reservation through acknowledged interruption, then rotate generation on resume. Deterministic stale-event and concurrent-acquisition regressions separate missing liveness/progress from ownership authority; warning age cannot create a duplicate writer. Native #229 hang causality remains unproven and requires observed harness evidence.
+### 2026-10-03 — Keep measured-budget recovery scopes separate
+
+The approved fixture → core A-E/H/HB → F → G → artifact sequence keeps the original release-wide ledger while fitting unchanged whole-file budgets. Shared-state receipt refusal and semantic overlap merges preserve the actual reconstructed behavior; component-only historic evidence does not qualify the integrated source.
+
+### 2026-10-03 — Preserve exact approved design Markdown bytes
+
+Use the existing exact-path `.gitattributes` archival precedent for the four intentional Markdown hard breaks in the approved recovery design. Its SHA256 remains byte-identical and the normal Git whitespace check continues to run for all other paths; this preserves syntax and source provenance without changing verification selectors, budgets or trust policy.
+
+### 2026-10-03 — Keep disposable reset extraction cursor-only
+
+Extract only the byte-identical 025 TRUNCATE operation, leaving each caller's different singleton branch, transaction, counter updates and observation seed in place. This makes later inventory changes small without granting the helper target selection or cleanup authority; future 026 support still requires its separately approved explicit inventory/version handling.
+
+### 2026-10-03 — Keep bounded recovery refusal distinct from success
+
+Concurrent acceptance recognizes only StoreUnavailable directly caused by LockNotAvailable as an explicit refused attempt, completes the initial calls, and retries that attempt once after contention ends. A confirmed holder proved rollback before retry and exactly one canonical claim afterward; unrelated failures still propagate and the production 500ms/3s bounds remain unchanged.
+
+### 2026-10-03 — Qualify the frozen test-only fixture/core join by actual accounting
+
+Additively joining the frozen fixture with core A-E/H/HB passed exact-base unchanged whole-file fitness, while preserving both installer additions and every F/G successor obligation. This removes one source/review wave without hiding the monolithic caller charge, substituting projected acceptance or importing F026/G runtime bytes; full verification and external trust remain separate.
+
+### 2026-10-03 — Compare CI runtimes only with their workload identity
+
+Nine successful historical Actions runs took 50–64 seconds on 2.0.11, whereas the two observed current App-owned checks took 25m44s and 26m11s with a different product/trust workload. Keeping version, scope and sample count attached prevents a false 26-fold speedup claim; a parallel critical-path calculation is an estimate until the same current workload is measured.
+
+## 2026-10-03 — Сократить расход координатора
+
+Продолжать работу по короткому сохранённому handoff: точный HEAD, результат последней проверки и следующий шаг; читать только нужные изменения, а не всю историю. Передавать субагентам отдельный brief и ссылки на файлы через `fork_turns=none`, выбирать достаточную модель для задачи и выводить краткие результаты вместо полных отчётов. Не повторять законченный общий анализ; выполнять обязательные проверки актуального кандидата и независимые ревью в установленном порядке без ослабления Trust CI.
+
+## 2026-10-03 — Один райтер на финальный процесс
+
+Финальный кандидат меняет ровно один выбранный исполнитель; подготовленный F заморожен, второй райтер параллельно не запускается. Проверки и независимые ревью могут работать параллельно только без изменения кандидата, с отдельными приватными копиями для проб. Координатор сохраняет отчёты после завершения всей волны, затем получает свежие проверки и подтверждения для точного итогового дерева.
+
+### 2026-10-03 — Preserve complete Core output outside source discovery
+
+Execute the normal pinned measured Core4 backend once against the frozen repair and capture its complete process results before any receipt publication or workflow evidence changes. Private0700 non-.py artifacts retained the fresh passing test/coverage output and stable before/after fingerprint without recreating the undeclared-source defect; old unretained failure names remain unknown.
+
+## 2026-10-03 — Не запускать полный набор для каждого промежуточного изменения
+
+Сначала закончить изменения и дешёвые проверки, затем заморозить точный HEAD и выполнить полный набор; ревью и их сырые журналы хранить в приватных копиях вне кандидата, готовые отчёты вносить одним пакетом. Полный JSON сохранять приватно и выводить только краткий итог, чтобы не потерять причину сбоя и не раздувать контекст или бюджет исходных файлов. На e8a4 полный набор прошёл за 14 минут 32 секунды при неизменном fingerprint; эта схема не отменяет обязательный финальный прогон, внешний Trust CI или подписанные допуски.
+
+## 2026-10-03 — Проверочный запуск: жёсткий предел 180 секунд
+
+По прямому требованию пользователя следующие проверочные запуски ограничены тремя минутами; текущий полный набор за 14 минут 32 секунды этому требованию не соответствует. Превышение лимита означает таймаут или незавершённую проверку, не pass и не основание для релиза. Сокращение времени должно сохранять полный обязательный инвентарь тестов, независимое ревью и внешний exact-head Trust CI; до измеренного результата не обещать достижение лимита.
+
+## 2026-10-03 — Делегированные локальные гейты без повторных вопросов
+
+Владелец поручил самостоятельно принимать локальные решения для текущей доставки к дедлайну: материализовать только точные уже делегированные операции и довести неизменные полные проверки в фоне до результата. Это разовое решение расписания сохраняет обязательные тесты; цель 180 секунд остаётся недостигнутой, а внешний App-check и человеческая криптографическая подпись не заменяются локальным согласием. Пока кандидат проверяется, новые записи сохраняются в журнале координатора и переносятся в пакет одним изменением, чтобы не обнулить текущий прогон.
+
+## 2026-10-03 — Минимальный runtime только для синтетических verifier fixtures
+
+Внешний неизменный Python3.12.14 образ показал5.381с на один receipt fixture, из них4.114с повторный Bandit по полной копии runtime; явный test-only минимальный runtime сократил тот же случай до2.001с/Bandit0.803с с реальными проверками. Полная копия остаётся режимом по умолчанию остальных тестов, а отдельный реальный full-source clean/unsafe scanner control сохраняет обнаружение дефектов исходников. Это измеренное устранение повторной работы одного случая, не доказательство причины всех900с или готовности внешнего CI.
+
+## 2026-10-03 — Parallel coverage fallback without pytest in Trust CI
+
+The immutable Trust CI image has pinned coverage but no pytest/xdist, so measured repository verification must not fall back to one serial coverage discovery pass. Use a POSIX stdlib unittest shard runner with coverage parallel data and combine/report for PR/release mode; keep fast mode and explicit non-POSIX degradation unchanged.
+
+## 2026-10-03 — Разделять потоки Git, тестов и моделей
+
+Одно чтение Git-статусов с GIT_OPTIONAL_LOCKS=0 в 28 потоках заняло 6,171 секунды: 125 деревьев, 31 грязное, 94 чистых, ошибок чтения нет; сохранять этот датированный неатомарный инвентарь вместо повторных обходов. Для схемы n × x суммировать процессы всех активных групп, отдельно учитывать 14 физических ядер / 28 разрешённых логических CPU, предел выбранных анализов 10 и платформенные слоты агентов. Общий PostgreSQL не распараллеливать без изолированных баз; финальный local verifier и внешнюю exact-head проверку можно перекрыть по времени только после заморозки всех исходников и отчётов, с явно непроверенным транспортом ветки.
+
+## 2026-10-03 — Использовать поддержанные воркеры, не переписывать runner перед релизом
+
+На точном Core 5b3ee002 полный набор прошёл: 1143 теста и 2018 подтестов, поддержанный pytest-xdist на 14 процессах — 179,295 секунды, покрытие 81,47%; отдельный PostgreSQL — 1016 тестов за 521,738 секунды, два условных пропуска. Предел трёх минут достигнут для этого замера Core, но не для полного PR-набора; не выдавать этот результат за гарантию следующего запуска или внешнего Trust CI. Сохранять неизменные проверки и перекрывать независимые финальные гейты на одном замороженном HEAD вместо новой архитектуры тестовых баз перед дедлайном.
+
+## 2026-10-03 — Срезать повторный full-diff в архитектурном тесте
+
+Профиль root-unittest показал, что один тест 12 раз строил полный exact Git diff и тратил 64,5 секунды локально. Для релизного кандидата оставить репрезентативные мутации runtime, contract_role и local: они покрывают основные способы, которыми metadata может скрыть implementation, и сокращают targeted test до 10,5 секунды. Это ускоряет внешний serial root-unittest, но не заменяет App-owned Trust CI.
+
+## 2026-10-03 — Coverage в PR проверяется invocation-owned Python module
+
+После перехода Core runner на параллельный measured path тесты не должны считать PATH executable `coverage` источником истины. PR/release проверка использует установленный `python -m coverage` / pytest-cov модуль и должна fail-closed при неквалифицированном покрытии, а fake executable shim не может подменить измерение. Это сохраняет внешний Trust CI contract и закрывает ложный skip.
+
+## 2026-10-03 — Shard unittest по файлам через discover
+
+В Trust CI runner image нет pytest/xdist, поэтому measured fallback использует stdlib unittest под coverage. Шард запускать как `unittest discover -s tests -p <file>` вместо импортного имени `tests.<module>`, потому что synthetic fixtures могут иметь каталог `tests` без `__init__.py`. Это сохраняет покрытие и убирает image-only `ModuleNotFoundError`.
+
+## 2026-10-03 — Focused verifier запускает admitted tests как файлы
+
+В immutable Trust CI образе focused profile должен вызывать `python -m unittest tests/test_*.py`, а не преобразовывать пути в module names. File-based запуск совпадает с synthetic fixtures без `tests/__init__.py` и не включает full discovery. Targeted локальный и image-прогон подтвердили новый контракт.
