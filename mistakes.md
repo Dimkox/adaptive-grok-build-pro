@@ -1656,3 +1656,7 @@ Root cause: two verifier-doctor tests still assumed PR coverage was controlled b
 ## 2026-10-03 — Parallel unittest fallback assumed tests is an import package
 
 Root cause: the Trust CI image takes the no-pytest fallback and the new sharder invoked synthetic tests as `tests.test_ok`, but those fixtures do not create `tests/__init__.py`. Local pytest hid this because it collected by file. Reproduce fallback behavior in the immutable runner image before another push when local and Trust CI toolchains differ.
+
+## 2026-10-03 — Focused-profile tests still expected the old module invocation
+
+Root cause: the implementation switched the focused runner to path-based unittest targets, but the contract test still asserted module names and the minimal project-copy fixture omitted the tracked `.superpowers` root entry required by `test_structure.py`. Keep test fixtures aligned with the exact runner command and canonical tracked root inventory before pushing another Trust CI attempt.

@@ -957,3 +957,7 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-03 — Shard unittest по файлам через discover
 
 В Trust CI runner image нет pytest/xdist, поэтому measured fallback использует stdlib unittest под coverage. Шард запускать как `unittest discover -s tests -p <file>` вместо импортного имени `tests.<module>`, потому что synthetic fixtures могут иметь каталог `tests` без `__init__.py`. Это сохраняет покрытие и убирает image-only `ModuleNotFoundError`.
+
+## 2026-10-03 — Focused verifier запускает admitted tests как файлы
+
+В immutable Trust CI образе focused profile должен вызывать `python -m unittest tests/test_*.py`, а не преобразовывать пути в module names. File-based запуск совпадает с synthetic fixtures без `tests/__init__.py` и не включает full discovery. Targeted локальный и image-прогон подтвердили новый контракт.

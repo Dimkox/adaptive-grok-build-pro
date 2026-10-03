@@ -16,7 +16,7 @@ def project_copy(*, git: bool = False, minimal_runtime: bool = False) -> Iterato
     with tempfile.TemporaryDirectory(prefix='adaptive-grok-test-') as tmp:
         root = Path(tmp) / 'project'
         root.mkdir()
-        for rel in ('.grok', '.agents', '.grok-stack'):
+        for rel in ('.grok', '.agents', '.grok-stack', '.superpowers'):
             src = PROJECT / rel
             if not src.is_dir():
                 continue

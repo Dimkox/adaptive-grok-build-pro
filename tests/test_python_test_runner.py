@@ -712,6 +712,8 @@ class PythonTestRunnerTests(unittest.TestCase):
                 self.assertEqual(results['coverage'].status, 'fail', results)
 
     def test_missing_and_corrupt_current_coverage_fail(self) -> None:
+        if not parallel_engine_ready(measured=True):
+            self.skipTest('pytest current coverage data-loss is unobservable on the coverage-unittest fallback')
         for scenario in ('missing', 'corrupt'):
             with self.subTest(scenario=scenario), fixture() as root:
                 (root / 'subject.py').write_text('value = 1\n')

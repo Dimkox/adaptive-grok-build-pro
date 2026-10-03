@@ -427,22 +427,13 @@ class DocsStateScopeSelectionTests(unittest.TestCase):
         self.assertEqual(scope['reason_code'], 'lockstep-target-unavailable')
         self.assertIn('tests/test_manifest_package.py', scope['rejected_files'])
 
-    def test_focused_command_names_modules_not_discovery(self) -> None:
+    def test_focused_command_names_files_not_discovery(self) -> None:
         command = focused_command(list(FOCUSED_TEST_TARGETS))
 
         self.assertEqual(command[0], sys.executable)
         self.assertEqual(command[1:3], ['-m', 'unittest'])
         self.assertNotIn('discover', command)
-        self.assertEqual(
-            command[3:],
-            [
-                'tests.test_structure',
-                'tests.test_project_state',
-                'tests.test_manifest_package',
-                'tests.test_workflow_sources',
-                'tests.test_repo_router',
-            ],
-        )
+        self.assertEqual(command[3:], list(FOCUSED_TEST_TARGETS))
 
     def test_every_admitted_content_class_is_re_derived_by_a_module_this_lane_runs(self) -> None:
         # Finding 1 of the review of head a08060c1: README's Workflow-sources table and a
