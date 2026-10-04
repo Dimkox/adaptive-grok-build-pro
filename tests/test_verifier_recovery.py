@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import io
 import json
 import os
 from pathlib import Path
 import signal
+import stat
 import runpy
 import subprocess
 import sys
@@ -471,6 +473,227 @@ class OwnedRunnerRecoveryTests(unittest.TestCase):
 
 
 class DurableReceiptRecoveryTests(unittest.TestCase):
+    def test_large_scope_metadata_roundtrips_through_bounded_report(self):
+        with routed_fixture() as (root, route):
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            fingerprint = util.tree_fingerprint(root)
+            head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+            paths = [f'engineering/changes/20260918-historical-delivery-provenance-and-acceptance-123abc/evidence/historical-{index:05d}-source-contract.md' for index in range(1442)]
+            scope = {'profile': 'full-pr-suite', 'eligible': False, 'evidence_kind': 'verification:full-pr', 'reason_code': 'unsafe-file-status', 'reason': 'renamed historical inventory requires full verification', 'changed_paths_digest': 'a' * 64, 'checked_files': paths, 'rejected_files': paths[:488], 'skipped_checks': [], 'status_channels': {'comparison': 'trusted', 'staged': 'trusted', 'unstaged': 'trusted', 'untracked': 'trusted'}}
+            report = {'status': 'pass', 'mode': 'pr', 'route_id': route['route_id'], 'tree_fingerprint': fingerprint, 'changed_files': paths, 'changed_file_inventory': {'bases': [{'base': head, 'target': head}], 'union_count': len(paths), 'status_channels': scope['status_channels']}, 'docs_state_scope': scope, 'checks': [verifier._docs_state_scope_check(scope).to_dict()]}
+            self.assertEqual(len(scope['checked_files']), 1442)
+            self.assertEqual(len(scope['rejected_files']), 488)
+            self.assertGreater(len(json.dumps(report, ensure_ascii=True, separators=(',', ':')).encode()), receipts.MAX_RECEIPT_BYTES)
+            verifier._record_verification_receipt(root, report, fingerprint)
+            self.assertEqual(report['status'], 'pass', report['checks'][-1])
+            receipt = receipts.get_receipt(root, route['route_id'], 'verification')
+            self.assertEqual(receipt['details'], report)
+            self.assertEqual(receipts.validate_evidence(root, route), [])
+
+    def test_large_verification_report_preserves_complete_logs_and_scope(self):
+        with routed_fixture() as (root, route):
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            fingerprint = util.tree_fingerprint(root)
+            head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+            paths = [f'engineering/changes/example/evidence/checked-{index:05d}.md' for index in range(1500)]
+            captured = 'captured output\n' * 750  # Each log respects the actual 12,000-character capture bound.
+            scope = {'profile': 'full-pr', 'eligible': False, 'evidence_kind': 'verification:full-pr', 'reason_code': 'unsafe-file-status', 'changed_paths_digest': 'a' * 64, 'checked_files': paths, 'skipped_checks': ['historical-only-check']}
+            checks = [verifier.CheckResult('python-unittest', 'pass', 'exit=0', command=['python3', '-m', 'unittest'], stdout=captured).to_dict()]
+            checks.extend(verifier.CheckResult(f'captured-check-{index}', 'pass', 'exit=0', stdout=captured).to_dict() for index in range(8))
+            checks.append(verifier.CheckResult('historical-only-check', 'skip', 'historical evidence is not current execution').to_dict())
+            report = {'status': 'pass', 'mode': 'pr', 'route_id': route['route_id'], 'tree_fingerprint': fingerprint, 'changed_files': paths, 'changed_file_inventory': {'bases': [{'base': head, 'target': head}], 'union_count': len(paths)}, 'docs_state_scope': scope, 'checks': checks}
+            self.assertGreater(len(json.dumps(report).encode()), receipts.MAX_RECEIPT_BYTES)
+            verifier._record_verification_receipt(root, report, fingerprint)
+            self.assertEqual(report['status'], 'pass', report['checks'][-1])
+            receipt = receipts.get_receipt(root, route['route_id'], 'verification')
+            self.assertIsNotNone(receipt)
+            self.assertLessEqual((receipts.receipt_dir(root, route['route_id']) / 'verification.json').stat().st_size, receipts.MAX_RECEIPT_BYTES)
+            self.assertEqual(receipt['tree_fingerprint'], fingerprint)
+            self.assertEqual(receipt['git_head'], head)
+            details = receipt['details']
+            self.assertEqual(details['changed_file_inventory']['bases'], report['changed_file_inventory']['bases'])
+            for field in ('profile', 'evidence_kind', 'reason_code', 'changed_paths_digest', 'skipped_checks'):
+                self.assertEqual(details['docs_state_scope'][field], scope[field])
+            self.assertEqual([(item['name'], item['status'], item['summary']) for item in details['checks']], [(item['name'], item['status'], item['summary']) for item in report['checks']])
+            self.assertEqual(details['changed_files'], paths)
+            self.assertEqual(details['docs_state_scope'], scope)
+            self.assertEqual(details, report)
+            reference = receipt['details_reference']
+            artifact_bytes = (root / reference['path']).read_bytes()
+            self.assertEqual(reference['bytes'], len(artifact_bytes))
+            self.assertEqual(reference['sha256'], hashlib.sha256(artifact_bytes).hexdigest())
+            self.assertEqual(json.loads(artifact_bytes)['details'], report)
+            self.assertEqual(len(report['changed_files']), len(paths))
+            self.assertEqual(report['checks'][0]['stdout'], captured)
+            self.assertEqual(receipts.validate_evidence(root, route), [])
+            with (root / 'VERSION').open('a', encoding='utf-8') as handle:
+                handle.write('\nstale product edit\n')
+            self.assertIn('verification: stale after repository changes', receipts.validate_evidence(root, route))
+
+    def test_bounded_report_does_not_bypass_expected_tree_binding(self):
+        with routed_fixture() as (root, route):
+            report = {'status': 'pass', 'route_id': route['route_id'], 'checks': [verifier.CheckResult('python-unittest', 'pass', 'exit=0', stdout='x' * receipts.MAX_RECEIPT_BYTES).to_dict()]}
+            verifier._record_verification_receipt(root, report, '0' * 64)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['checks'][-1]['name'], 'receipt-recording')
+            self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+            self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('reports/*.json')))
+
+    def test_oversized_report_still_fails_and_invalidates_prior_receipt(self):
+        with routed_fixture() as (root, route):
+            fingerprint = util.tree_fingerprint(root)
+            receipts.write_receipt(root, 'verification', 'pass')
+            paths = [f'engineering/changes/example/evidence/checked-{index:05d}.md' for index in range(10000)]
+            report = {'status': 'pass', 'route_id': route['route_id'], 'tree_fingerprint': fingerprint, 'changed_files': paths, 'checks': [verifier.CheckResult('python-unittest', 'pass', 'exit=0').to_dict()]}
+            with patch.object(receipts, 'MAX_VERIFICATION_REPORT_BYTES', 65536):
+                verifier._record_verification_receipt(root, report, fingerprint)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['evidence_status'], 'failed')
+            self.assertEqual(report['changed_files'], paths)
+            self.assertEqual(report['checks'][-1]['name'], 'receipt-recording')
+            self.assertIn('verification report exceeds the byte limit', report['checks'][-1]['details'][0]['message'])
+            self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+
+    def test_spilled_report_missing_tampered_and_unsafe_files_fail_closed(self):
+        for mutation in ('missing', 'tampered', 'symlink-file', 'symlink-directory', 'fifo', 'oversized'):
+            with self.subTest(mutation=mutation), routed_fixture() as (root, route):
+                receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+                receipt = receipts.get_receipt(root, route['route_id'], 'verification')
+                artifact = root / receipt['details_reference']['path']
+                content = artifact.read_bytes()
+                if mutation == 'missing':
+                    artifact.unlink()
+                elif mutation == 'tampered':
+                    artifact.write_bytes(content.replace(b'xxxx', b'yyyy', 1))
+                elif mutation == 'symlink-file':
+                    saved = artifact.with_suffix('.saved')
+                    artifact.rename(saved)
+                    artifact.symlink_to(saved)
+                elif mutation == 'symlink-directory':
+                    saved = artifact.parent.with_name('saved-reports')
+                    artifact.parent.rename(saved)
+                    artifact.parent.symlink_to(saved, target_is_directory=True)
+                elif mutation == 'fifo':
+                    artifact.unlink()
+                    os.mkfifo(artifact)
+                else:
+                    artifact.write_bytes(b'x' * (receipts.MAX_VERIFICATION_REPORT_BYTES + 1))
+                with self.assertRaises(RuntimeError):
+                    receipts.get_receipt(root, route['route_id'], 'verification')
+                gaps = receipts.validate_evidence(root, {**route, 'required_evidence': ['verification']})
+                self.assertTrue(any('unsafe receipt' in gap for gap in gaps), gaps)
+
+    def test_spilled_report_reference_and_all_envelope_bindings_are_closed(self):
+        with routed_fixture() as (root, route):
+            path = receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+            original = json.loads(path.read_bytes())
+            changes = [('path', '../outside.json'), ('sha256', 'f' * 64), ('bytes', True), ('bytes', 0), ('bytes', original['details']['_verification_report']['bytes'] + 1), ('contract', 'unknown'), ('extra', 'unknown')]
+            for field, value in changes:
+                with self.subTest(reference=field, value=value):
+                    envelope = json.loads(json.dumps(original))
+                    envelope['details']['_verification_report'][field] = value
+                    path.write_text(json.dumps(envelope), encoding='utf-8')
+                    with self.assertRaises(RuntimeError):
+                        receipts.get_receipt(root, route['route_id'], 'verification')
+            for field in ('route_id', 'kind', 'status', 'git_head', 'tree_fingerprint', 'criterion_ids', 'spec_digest', 'spec_fingerprint', 'architecture_digest', 'governance_digest'):
+                with self.subTest(binding=field):
+                    envelope = json.loads(json.dumps(original))
+                    envelope[field] = ['AC-999'] if field == 'criterion_ids' else 'tampered'
+                    path.write_text(json.dumps(envelope), encoding='utf-8')
+                    with self.assertRaisesRegex(RuntimeError, 'binding does not match'):
+                        receipts.get_receipt(root, route['route_id'], 'verification')
+            path.write_text(json.dumps(original), encoding='utf-8')
+            receipts.invalidate_receipts(root, route['route_id'], 'explicit invalidation')
+            self.assertTrue(receipts.get_receipt(root, route['route_id'], 'verification')['stale'])
+            self.assertTrue(any('explicitly invalidated' in gap for gap in receipts.validate_evidence(root, {**route, 'required_evidence': ['verification']})))
+            self.assertLessEqual(path.stat().st_size, receipts.MAX_RECEIPT_BYTES)
+
+    def test_spilled_report_rejects_invalid_json_even_with_matching_hash(self):
+        for content in (b'{"schema_version":1,"schema_version":1}', b'{"schema_version":NaN}', b'[]', b'{"schema_version":1}'):
+            with self.subTest(content=content), routed_fixture() as (root, route):
+                path = receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+                envelope = json.loads(path.read_bytes())
+                reference = envelope['details']['_verification_report']
+                digest = hashlib.sha256(content).hexdigest()
+                reference.update(sha256=digest, bytes=len(content), path=f'.grok-stack/runtime/receipts/{route["route_id"]}/reports/{digest}.json')
+                (root / reference['path']).write_bytes(content)
+                path.write_text(json.dumps(envelope), encoding='utf-8')
+                with self.assertRaises(RuntimeError):
+                    receipts.get_receipt(root, route['route_id'], 'verification')
+
+    def test_spilled_report_publication_faults_retire_prior_pass(self):
+        for boundary in ('write', 'replace', 'file-fsync', 'directory-fsync', 'cancel', 'post-rename-cancel'):
+            with self.subTest(boundary=boundary), routed_fixture() as (root, route):
+                receipts.write_receipt(root, 'verification', 'pass')
+                original_fsync = receipts.os.fsync
+                original_replace = receipts.os.replace
+                report_renamed = False
+                def observe_replace(*args, **kwargs):
+                    nonlocal report_renamed
+                    result = original_replace(*args, **kwargs)
+                    if 'src_dir_fd' in kwargs:
+                        report_renamed = True
+                    return result
+                def fsync_fault(fd):
+                    mode = os.fstat(fd).st_mode
+                    if boundary == 'file-fsync' and stat.S_ISREG(mode):
+                        raise OSError('report file fsync fault')
+                    if boundary == 'directory-fsync' and report_renamed and stat.S_ISDIR(mode):
+                        raise OSError('report directory fsync fault')
+                    return original_fsync(fd)
+                def cancel():
+                    if boundary == 'cancel' or report_renamed:
+                        raise RuntimeError('report publication cancelled')
+                fault = (patch.object(receipts, '_write_receipt_bytes', side_effect=OSError('report write fault'))
+                         if boundary == 'write' else patch.object(receipts.os, 'replace', side_effect=OSError('report rename fault'))
+                         if boundary == 'replace' else patch.object(receipts.os, 'fsync', side_effect=fsync_fault))
+                observer = contextlib.nullcontext() if boundary == 'replace' else patch.object(receipts.os, 'replace', side_effect=observe_replace)
+                with fault, observer, self.assertRaises((OSError, RuntimeError)):
+                    receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES}, interrupt_check=cancel if boundary in ('cancel', 'post-rename-cancel') else None)
+                self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+                self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('*.tmp')))
+
+    def test_report_publication_rejects_symlink_directory_without_external_write(self):
+        with routed_fixture() as (root, route):
+            receipts.write_receipt(root, 'verification', 'pass')
+            outside = root / 'outside-reports'
+            outside.mkdir()
+            before = util.tree_fingerprint(root)
+            (receipts.receipt_dir(root, route['route_id']) / 'reports').symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(OSError):
+                receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+            self.assertEqual(list(outside.iterdir()), [])
+            self.assertEqual(util.tree_fingerprint(root), before)
+            self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+
+    def test_report_publication_rechecks_source_before_receipt(self):
+        with routed_fixture() as (root, route):
+            receipts.write_receipt(root, 'verification', 'pass')
+            fingerprint = util.tree_fingerprint(root)
+            def mutate():
+                (root / 'VERSION').write_text('changed during publication\n', encoding='utf-8')
+            with self.assertRaisesRegex(RuntimeError, 'changed while verification report'):
+                receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES}, expected_tree_fingerprint=fingerprint, interrupt_check=mutate)
+            self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+
+    def test_spilled_report_preserves_failed_cancelled_and_skipped_results(self):
+        with routed_fixture() as (root, route):
+            details = {'status': 'fail', 'terminal_state': 'cancelled', 'checks': [verifier.CheckResult(status, status, 'original result', stdout='x' * 12000).to_dict() for status in ('pass', 'fail', 'skip', 'cancelled')], 'captured': 'x' * receipts.MAX_RECEIPT_BYTES}
+            receipts.write_receipt(root, 'verification', 'fail', details=details)
+            receipt = receipts.get_receipt(root, route['route_id'], 'verification')
+            self.assertEqual(receipt['status'], 'fail')
+            self.assertEqual(receipt['details'], details)
+            self.assertTrue(any('status=fail' in gap for gap in receipts.validate_evidence(root, {**route, 'required_evidence': ['verification']})))
+
+    def test_other_receipt_kinds_do_not_spill(self):
+        with routed_fixture() as (root, route):
+            for kind in sorted(receipts.RECEIPT_KINDS - {'verification'}):
+                with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, 'receipt exceeds the byte limit'):
+                    receipts.write_receipt(root, kind, 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+            self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('reports/*.json')))
+
     def test_same_tree_new_head_invalidates_receipt(self):
         with routed_fixture() as (root, route):
             receipt_route = {**route, 'required_evidence': ['verification']}

@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Preserve complete verification evidence in a bounded runtime artifact
+
+Large verification reports are durably stored in ignored runtime with a finite 8 MiB cap before the unchanged-size receipt publishes a closed path, exact-byte count and SHA-256 reference. Descriptor-safe readers verify the complete report and every immutable envelope binding before hydrating details, preserving all paths, scope, skips, results and logs without invented artifact claims. Small receipts and other receipt kinds remain inline; missing, tampered, unsafe or oversized reports fail closed.
+
 ## 2026-10-04 — Distinguish cycle closure from new depth
 
 Cycle membership must be recognized before charging another adapter-depth step, because returning to an existing module does not enter a ninth module. Reordering those checks removes the false limit exception while preserving unsupported cyclic adapters, the depth-eight cap and genuine queue fail-closed behavior.

@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import stat
 import tempfile
 from dataclasses import dataclass
@@ -53,6 +54,154 @@ RECEIPT_KINDS = frozenset(
     }
 )
 MAX_RECEIPT_BYTES = 262_144
+MAX_VERIFICATION_REPORT_BYTES = 8_388_608
+VERIFICATION_REPORT_CONTRACT = 'adaptive-grok.verification-report/v1'
+
+
+def _open_receipt_directory(root: Path, route_id: str, *, create: bool = False) -> int:
+    """Pin the route directory; never traverse a runtime symlink."""
+    if not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', route_id):
+        raise RuntimeError('receipt route is outside the closed set')
+    required_flags = ('O_DIRECTORY', 'O_NOFOLLOW', 'O_CLOEXEC', 'O_NONBLOCK')
+    if any(not hasattr(os, name) for name in required_flags) or os.open not in getattr(os, 'supports_dir_fd', set()):
+        raise RuntimeError('descriptor-safe receipt reads are unavailable')
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+    descriptor = os.open(root.resolve(strict=True), flags)
+    try:
+        for component in ('.grok-stack', 'runtime', 'receipts', route_id):
+            if create:
+                try:
+                    os.mkdir(component, mode=0o700, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                os.fsync(descriptor)
+            next_fd = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = next_fd
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_bounded_json(directory_fd: int, name: str, limit: int, label: str) -> tuple[dict[str, Any], bytes]:
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK
+    descriptor = os.open(name, flags, dir_fd=directory_fd)
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+            raise RuntimeError(f'{label} is not a bounded regular file')
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(descriptor, min(65_536, limit + 1 - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > limit:
+                raise RuntimeError(f'{label} exceeds the byte limit')
+        after = os.fstat(descriptor)
+        if (_metadata_identity(before), before.st_size) != (_metadata_identity(after), after.st_size):
+            raise RuntimeError(f'{label} changed while being read')
+
+        def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+            value: dict[str, Any] = {}
+            for key, item in items:
+                if key in value:
+                    raise RuntimeError(f'{label} contains a duplicate JSON key')
+                value[key] = item
+            return value
+
+        content = b''.join(chunks)
+        data = json.loads(content.decode('utf-8', 'strict'), object_pairs_hook=pairs,
+                          parse_constant=lambda token: (_ for _ in ()).throw(RuntimeError(f'invalid {label} value: {token}')))
+        if not isinstance(data, dict):
+            raise RuntimeError(f'{label} must be a JSON object')
+        return data, content
+    finally:
+        os.close(descriptor)
+
+
+def _verification_report_binding(receipt: dict[str, Any]) -> dict[str, Any]:
+    # Explicit invalidation remains on the envelope, not in the immutable artifact.
+    return {key: value for key, value in receipt.items() if key not in {'details', 'stale', 'stale_reason', 'stale_at'}}
+
+
+def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, Any], interrupt_check: Callable[[], None] | None) -> dict[str, Any]:
+    """Durably publish complete details before any receipt may reference them."""
+    artifact = {'schema_version': 1, 'binding': _verification_report_binding(receipt), 'details': receipt['details']}
+    content = json.dumps(artifact, ensure_ascii=True, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n'
+    payload = content.encode('utf-8')
+    if len(payload) > MAX_VERIFICATION_REPORT_BYTES:
+        raise ValueError('verification report exceeds the byte limit')
+    digest = hashlib.sha256(payload).hexdigest()
+    filename = f'{digest}.json'
+    route_fd = _open_receipt_directory(root, route_id, create=True)
+    reports_fd = None
+    temporary = None
+    try:
+        try:
+            os.mkdir('reports', mode=0o700, dir_fd=route_fd)
+        except FileExistsError:
+            pass
+        os.fsync(route_fd)
+        reports_fd = os.open('reports', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=route_fd)
+        temporary = f'.{digest}.{secrets.token_hex(16)}.tmp'
+        descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=reports_fd)
+        with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
+            _write_receipt_bytes(handle, content)
+        if interrupt_check:
+            interrupt_check()
+        os.replace(temporary, filename, src_dir_fd=reports_fd, dst_dir_fd=reports_fd)
+        os.fsync(reports_fd)
+        if interrupt_check:
+            interrupt_check()
+        return {'contract': VERIFICATION_REPORT_CONTRACT, 'path': f'.grok-stack/runtime/receipts/{route_id}/reports/{filename}', 'sha256': digest, 'bytes': len(payload)}
+    finally:
+        try:
+            if temporary is not None:
+                try:
+                    os.unlink(temporary, dir_fd=reports_fd)
+                except FileNotFoundError:
+                    pass
+        finally:
+            if reports_fd is not None:
+                os.close(reports_fd)
+            os.close(route_fd)
+
+
+def _hydrate_verification_report(directory_fd: int, route_id: str, receipt: dict[str, Any]) -> None:
+    details = receipt.get('details')
+    if not isinstance(details, dict) or '_verification_report' not in details:
+        return
+    reference = details['_verification_report']
+    if set(details) != {'_verification_report'} or not isinstance(reference, dict) or set(reference) != {'contract', 'path', 'sha256', 'bytes'}:
+        raise RuntimeError('verification report reference has an invalid schema')
+    digest = reference['sha256']
+    size = reference['bytes']
+    if (reference['contract'] != VERIFICATION_REPORT_CONTRACT or not isinstance(digest, str)
+            or not re.fullmatch(r'[0-9a-f]{64}', digest) or type(size) is not int
+            or not 0 < size <= MAX_VERIFICATION_REPORT_BYTES
+            or reference['path'] != f'.grok-stack/runtime/receipts/{route_id}/reports/{digest}.json'):
+        raise RuntimeError('verification report reference is outside the closed contract')
+    reports_fd = None
+    try:
+        reports_fd = os.open('reports', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=directory_fd)
+        artifact, content = _read_bounded_json(reports_fd, f'{digest}.json', MAX_VERIFICATION_REPORT_BYTES, 'verification report')
+    except FileNotFoundError as exc:
+        raise RuntimeError('referenced verification report is missing') from exc
+    finally:
+        if reports_fd is not None:
+            os.close(reports_fd)
+    if len(content) != size or hashlib.sha256(content).hexdigest() != digest:
+        raise RuntimeError('verification report digest or byte count does not match')
+    if (set(artifact) != {'schema_version', 'binding', 'details'} or type(artifact['schema_version']) is not int
+            or artifact['schema_version'] != 1 or not isinstance(artifact['details'], dict)
+            or artifact['binding'] != _verification_report_binding(receipt)):
+        raise RuntimeError('verification report binding does not match its receipt')
+    receipt['details'] = artifact['details']
+    receipt['details_reference'] = reference
 
 
 def _exact_head(root: Path) -> str | None:
@@ -613,69 +762,43 @@ def write_receipt(
     ):
         raise RuntimeError('repository, spec, architecture, or governance changed while receipt was written')
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
-    _publish_receipt(path, data, interrupt_check)
+    spill = kind == 'verification' and len((json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n').encode('utf-8')) > MAX_RECEIPT_BYTES
+    try:
+        if spill:
+            reference = _publish_verification_report(root, route['route_id'], data, interrupt_check)
+            report_architecture = active_architecture_binding(root, route)
+            if (tree_fingerprint(root) != before_tree or _exact_head(root) != before_head
+                    or _active_spec_binding(root, route, kind) != current
+                    or report_architecture != current_architecture
+                    or active_governance_binding(root, route, report_architecture) != current_governance):
+                raise RuntimeError('repository or authority changed while verification report was written')
+            data['details'] = {'_verification_report': reference}
+        _publish_receipt(path, data, interrupt_check)
+    except BaseException:
+        if spill:
+            directory_fd = None
+            try:
+                directory_fd = _open_receipt_directory(root, route['route_id'])
+                os.unlink(f'{kind}.json', dir_fd=directory_fd)
+                os.fsync(directory_fd)
+            except OSError:
+                pass
+            finally:
+                if directory_fd is not None:
+                    os.close(directory_fd)
+        raise
     return path
 
 
 def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", route_id) or kind not in RECEIPT_KINDS:
         raise RuntimeError("receipt route or kind is outside the closed set")
-    required_flags = ("O_DIRECTORY", "O_NOFOLLOW", "O_CLOEXEC", "O_NONBLOCK")
-    if any(not hasattr(os, name) for name in required_flags) or os.open not in getattr(os, "supports_dir_fd", set()):
-        raise RuntimeError("descriptor-safe receipt reads are unavailable")
-    canonical = root.resolve(strict=True)
     directory_fd: int | None = None
-    receipt_fd: int | None = None
-    flags_dir = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
-    flags_file = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK
     try:
-        directory_fd = os.open(canonical, flags_dir)
-        for component in (".grok-stack", "runtime", "receipts", route_id):
-            next_fd = os.open(component, flags_dir, dir_fd=directory_fd)
-            os.close(directory_fd)
-            directory_fd = next_fd
-        receipt_fd = os.open(f"{kind}.json", flags_file, dir_fd=directory_fd)
-        before = os.fstat(receipt_fd)
-        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_RECEIPT_BYTES:
-            raise RuntimeError("receipt is not a bounded regular file")
-        chunks: list[bytes] = []
-        total = 0
-        while True:
-            chunk = os.read(receipt_fd, min(65_536, MAX_RECEIPT_BYTES + 1 - total))
-            if not chunk:
-                break
-            chunks.append(chunk)
-            total += len(chunk)
-            if total > MAX_RECEIPT_BYTES:
-                raise RuntimeError("receipt exceeds the byte limit")
-        after = os.fstat(receipt_fd)
-        def identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
-            return (
-                value.st_dev,
-                value.st_ino,
-                value.st_mode,
-                value.st_size,
-                value.st_mtime_ns,
-                value.st_ctime_ns,
-            )
-        if identity(before) != identity(after):
-            raise RuntimeError("receipt changed while being read")
-
-        def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
-            value: dict[str, Any] = {}
-            for key, item in items:
-                if key in value:
-                    raise RuntimeError("receipt contains a duplicate JSON key")
-                value[key] = item
-            return value
-
-        data = json.loads(
-            b"".join(chunks).decode("utf-8", "strict"),
-            object_pairs_hook=pairs,
-            parse_constant=lambda token: (_ for _ in ()).throw(RuntimeError(f"invalid receipt value: {token}")),
-        )
-        if not isinstance(data, dict):
-            raise RuntimeError("receipt must be a JSON object")
+        directory_fd = _open_receipt_directory(root, route_id)
+        data, _ = _read_bounded_json(directory_fd, f'{kind}.json', MAX_RECEIPT_BYTES, 'receipt')
+        if kind == 'verification':
+            _hydrate_verification_report(directory_fd, route_id, data)
         return data
     except FileNotFoundError:
         return None
@@ -684,8 +807,6 @@ def get_receipt(root: Path, route_id: str, kind: str) -> dict[str, Any] | None:
     except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
         raise RuntimeError(f"receipt cannot be read safely: {exc}") from exc
     finally:
-        if receipt_fd is not None:
-            os.close(receipt_fd)
         if directory_fd is not None:
             os.close(directory_fd)
 

@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Full verifier output exceeded the receipt envelope
+
+Duplicated mandatory path/scope metadata alone exceeded the unchanged 262,144-byte receipt limit even though all selected checks passed; the first log-only repair therefore could not handle the real 1,442-path/488-rejection inventory. A failing metadata-only regression now drives bounded complete-report runtime publication and integrity-checked receipt hydration, rather than deleting authoritative fields. Publication failures retire prior receipts, and missing, tampered, unsafe or over-cap reports remain non-qualifying.
+
 ## 2026-10-04 — An idle writer was messaged without being resumed
 
 The coordinator sent actionable repair work with non-resuming `send_message` to a completed writer, so implementation remained idle. Use `followup_task` for actionable idle-agent work and confirm its running status.
