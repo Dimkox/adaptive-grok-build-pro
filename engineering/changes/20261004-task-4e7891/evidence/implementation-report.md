@@ -1,6 +1,8 @@
 # Sole-writer implementation report
 
-Route 4e78915ad1ab; selected general_implementer; isolated candidate /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/m8-liqvera-accepted; branch feat/m8-liqvera-accepted.
+Public path projection: only the host-local absolute repository prefix is replaced with `<repository-root>`; the complete original is retained in private scratch. Exact SHAs, fingerprints, repository-relative scratch paths, remaining command arguments, findings and results are unchanged.
+
+Route 4e78915ad1ab; selected general_implementer; isolated candidate <repository-root>/.review-scratch/m8-liqvera-accepted; branch feat/m8-liqvera-accepted.
 Comparison base f97966c4173fff9a3954389498568038dc57776b.
 Committed candidate HEAD 88b1856c3881d248258c708f9716da0191cb00b3.
 Candidate tree fingerprint bbdac35b748bded9abe58910dc72749defc923f45cc84dea23e284172ba9e9ee.
