@@ -28,6 +28,24 @@ ROOT_ENTRIES = frozenset(
 
 
 class StructureTests(unittest.TestCase):
+    def test_historical_source_audit_remains_parseable_after_path_redaction(self) -> None:
+        import ast
+
+        path = ROOT / 'engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-source-audit.py'
+        tree = ast.parse(path.read_text(encoding='utf-8'), filename=path.name)
+        commands = [
+            node.args[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'run' and node.args and isinstance(node.args[0], ast.List)
+        ]
+        self.assertTrue(any(
+            len(command.elts) >= 2 and isinstance(command.elts[0], ast.Constant)
+            and command.elts[0].value == 'ruff' and isinstance(command.elts[1], ast.Constant)
+            and command.elts[1].value == 'check'
+            for command in commands
+        ))
+
     def test_repository_root_holds_only_canonical_entries(self):
         tracked = subprocess.run(
             ("git", "ls-tree", "--name-only", "HEAD"),

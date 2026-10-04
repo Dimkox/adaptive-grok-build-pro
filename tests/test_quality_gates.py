@@ -30,6 +30,36 @@ BASE_PR_CHECKS = [
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_scoped_full_discovery_skips_require_a_focused_result(self) -> None:
+        checks = [item for item in BASE_PR_CHECKS if item.name not in {'python-unittest', 'coverage'}]
+        checks.extend([check('python-unittest', 'skip'), check('coverage', 'skip')])
+        scope = {'eligible': True, 'skipped_checks': ['python-unittest', 'coverage']}
+        decision = evaluate_quality_gate(mode='pr', checks=checks, docs_scope=scope)
+        self.assertEqual(decision.status, 'fail')
+        self.assertIn('python-discovery', {item['path'] for item in decision.details})
+
+    def test_focused_discovery_requires_scope_and_disclosed_replacements(self) -> None:
+        checks = [item for item in BASE_PR_CHECKS if item.name not in {'python-unittest', 'coverage'}]
+        checks.append(check('python-focused-unittest'))
+        for scope in (None, {'eligible': False}, {'eligible': True, 'skipped_checks': ['coverage']}):
+            with self.subTest(scope=scope):
+                decision = evaluate_quality_gate(mode='pr', checks=checks, docs_scope=scope)
+                self.assertEqual(decision.status, 'fail')
+        # A declared omission must also have a result record; it is never silently absent.
+        decision = evaluate_quality_gate(mode='pr', checks=checks, docs_scope={'eligible': True, 'skipped_checks': ['python-unittest', 'coverage']})
+        self.assertEqual(decision.status, 'fail')
+
+    def test_pytest_requires_coverage_record_and_retains_explicit_skip_allowance(self) -> None:
+        checks = [item for item in BASE_PR_CHECKS if item.name not in {'python-unittest', 'coverage'}]
+        checks.append(check('pytest'))
+        missing = evaluate_quality_gate(mode='pr', checks=checks)
+        self.assertEqual(missing.status, 'fail')
+        self.assertIn('coverage', {item['path'] for item in missing.details})
+        for coverage in (check('coverage'), check('coverage', 'skip', 'pytest runner owns tests; measure unittest trees only')):
+            with self.subTest(status=coverage.status):
+                decision = evaluate_quality_gate(mode='pr', checks=[*checks, coverage])
+                self.assertEqual(decision.status, 'pass')
+
     def test_pr_fails_when_mandatory_check_is_missing(self) -> None:
         decision = evaluate_quality_gate(
             mode="pr",

@@ -1,5 +1,17 @@
 # Mistakes
 
+## 2026-10-04 — Read-only Git commands changed verifier binding metadata
+
+Concurrent Git commands that appear read-only may refresh the index and change `.git/worktrees` metadata while the architecture verifier checks its bound repository. Use `GIT_OPTIONAL_LOCKS=0` for read-only Git operations and serialize all Git mutation outside verifier execution. Keep binding checks strict rather than accepting a changed repository identity.
+
+## 2026-10-04 — Sanitization broke Python syntax and omitted a discovery result
+
+A host-path replacement removed a closing quote from the historical split-C audit, so static fitness could not parse the changed source. QG01 also counted skipped full-runner names as discovery evidence even when no focused result existed. Parse every changed Python file after text sanitization and require an actual full discovery result or an admitted focused result.
+
+## 2026-10-04 — Discovery runner names were mistaken for complete admission evidence
+
+QG01 accepted a focused runner without eligible scope or replacement records and required coverage only for the unittest runner, leaving pytest evidence incomplete. The archive checksum regression also changed YAML into an invalid document, so parsing could reject the mutant even with checksum validation removed. Require scoped disclosed replacement evidence for focused discovery, coverage records for both full runners, and valid-document byte mutations for digest regressions.
+
 ## 2026-10-04 — Substring sanitization corrupted ordinary Russian words
 
 The cleanup matched offensive substrings inside the benign words “ослаблять”, “ослабляет” and “дубля”, corrupting requirement text and breaking immutable owner-document hashes. Restore those words and keep the deliberate host redaction separately pinned as a public projection; do not re-label edited bytes as the original owner document.

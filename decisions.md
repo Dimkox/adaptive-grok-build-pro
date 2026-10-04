@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Bind replacement discovery to disclosed scope
+
+Focused discovery requires an eligible documentation/state scope, a passing scope check, and explicit skipped records for coverage and its declared replaced runner. Every full discovery runner, including pytest, requires a coverage record; the documented pytest-owned skip stays explicit and valid. Valid YAML comment tampering proves archive rejection depends on its byte digest rather than incidental parse errors.
+
 ## 2026-10-04 — Test synthesized payloads and retained historical contracts
 
 Installer parity tests compare generated root hook entries to the retained shim template rather than deleted root copies. Historical package tests keep exact release digest and tag/tree bindings in the retained custody record without requiring removed ZIPs or claiming fresh binary verification; sanitized owner documents have separate provenance with no qualification effect.

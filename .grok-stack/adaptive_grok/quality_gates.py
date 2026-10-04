@@ -104,8 +104,26 @@ def evaluate_quality_gate(
         for name in sorted(required - set(check_map)):
             details.append(_detail("mandatory-check-missing", name, f"{name} did not run"))
 
-        discovery_names = FULL_DISCOVERY_RUNNERS | FOCUSED_DISCOVERY_RUNNERS
-        if not (set(check_map) & discovery_names):
+        full_runners = set(check_map) & FULL_DISCOVERY_RUNNERS
+        full_discovery_reported = any(_value(check_map[name], 'status') != 'skip' for name in full_runners)
+        focused_reported = bool(set(check_map) & FOCUSED_DISCOVERY_RUNNERS)
+        focused_admitted = (
+            focused_reported
+            and _value(check_map.get('docs-state-scope'), 'status') == 'pass'
+            and _docs_declares_skip(docs_scope, 'coverage')
+            and _value(check_map.get('coverage'), 'status') == 'skip'
+            and any(
+                _docs_declares_skip(docs_scope, name)
+                and _value(check_map[name], 'status') == 'skip'
+                for name in full_runners
+            )
+        )
+        if focused_reported and not full_discovery_reported and not focused_admitted:
+            details.append(_detail(
+                'focused-discovery-unscoped', 'python-focused-unittest',
+                'focused discovery requires an eligible documentation/state scope and explicit replaced-runner and coverage skip records',
+            ))
+        if not (full_discovery_reported or focused_admitted):
             details.append(
                 _detail(
                     "mandatory-check-missing",
@@ -113,7 +131,7 @@ def evaluate_quality_gate(
                     "no Python discovery runner reported a result",
                 )
             )
-        elif {"python-unittest", "coverage"}.intersection(check_map) and "coverage" not in check_map:
+        if full_runners and "coverage" not in check_map:
             details.append(_detail("mandatory-check-missing", "coverage", "coverage did not run"))
 
     for name, check in sorted(check_map.items()):

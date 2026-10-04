@@ -1690,6 +1690,16 @@ class TypedSpecVerificationTests(unittest.TestCase):
                     check, _ = _change_specs(root, files, route, 'pr')
                 self.assertEqual(check.status, 'fail', check.details)
 
+    def test_archive_digest_rejects_valid_yaml_comment_tampering(self) -> None:
+        with project_copy(git=True) as root:
+            origin, target, route = self._migration_fixture(root)
+            payload = (root / target).read_text(encoding='utf-8')
+            (root / target).write_text(payload + '# Valid historical YAML; bytes changed.\n', encoding='utf-8')
+            self.assertEqual(verification_module.load_spec(root / target)['schema_version'], 1)
+            check, _ = _change_specs(root, [origin, target], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            self.assertTrue(any(item['code'] == 'historical-spec-migration-invalid' and 'digest mismatch' in item['message'] for item in check.details), check.details)
+
     def test_v2_cannot_be_archived_and_relocation_keeps_strict_gate(self) -> None:
         with project_copy(git=True) as root:
             origin, target, route = self._migration_fixture(root, version=2)
