@@ -1049,3 +1049,7 @@ PR/release now share the closed per-result QG policy at dispatch boundaries; act
 ## 2026-10-04 — Qualify once after persisted independent reviews
 
 The user selected bounded committed-HEAD observations → independent reviews → persist both reports/commit/freeze → one final full local PR gate in parallel with App-owned exact-head Trust CI after exact delegated UNVERIFIED transport. This removes the duplicate preliminary full cycle without reducing checks or reusing historical PASS; receipts, approvals and protected PR eligibility remain exact-head requirements. Ten minutes is an unconfirmed target: the observed prior full took about674s, including serial PostgreSQL506.003s, and Core/PostgreSQL overlap is not implemented.
+
+## 2026-10-04 — Transfer complete review artifacts without model reserialization
+
+A private bounded probe passed prepared artifact bytes directly from a read-tool result to `apply_patch`, after validating its single exact target, without repeating the body through model generation. Future reviewers should leave complete reports and addition patches in private scratch; the coordinator checks content/hash and closed report targets, waits for every review, then persists them as the only candidate writer. This preserves complete evidence while avoiding the duplicate serialization that delayed this cycle; it is a handoff pattern, not a verification cache or ten-minute guarantee.

@@ -1787,3 +1787,7 @@ Root cause: delivery guidance required a full local gate before reviews and anot
 ## 2026-10-04 — Duplicate control-flow sites need anchored mutation patches
 
 Root cause: a reviewer mutation patch matched the earlier landing stability assignment instead of the PR assignment, so PR-only controls did not kill it. The reviewer restored the scratch source, anchored the correct PR site and observed both relevant controls fail. Match the enclosing flow as well as the assignment and disclose incorrectly targeted probes rather than counting them as successful kills.
+
+## 2026-10-04 — Untracked reports were absent from the whitespace precheck
+
+Root cause: the coordinator ran `git diff --check` before staging newly created reports, so their trailing Markdown spaces were outside that inventory and later failed the committed-range gate. Stage the exact delivery files first and check `git diff --cached --check <actual-base>`, then check the final committed range. Fail-fast retained the refusal and disclosed all undispatched checks; historical source PASS did not override it.

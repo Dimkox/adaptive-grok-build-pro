@@ -2,10 +2,10 @@ Code review: PASS within the bounded reviewed scope. No blocking findings.
 
 Source: `<repo>/.review-scratch/verify-fast-fail`, branch `feat/verify-fast-fail`, route `89578a99758f`, change `20261004-task-89578a`.
 
-Base: `ee3911869419204154e02900e58bf31492ee744c`  
-HEAD before/after: `3c18e9b9da5ef343f0f0d8e11f38986622ed96e5`  
-Fingerprint before/after: `7a38a99b43036bcbec723a013f0fe357d246dee920f256d953d21a4c478ded4d`  
-Git inventory before/after: clean.  
+Base: `ee3911869419204154e02900e58bf31492ee744c`
+HEAD before/after: `3c18e9b9da5ef343f0f0d8e11f38986622ed96e5`
+Fingerprint before/after: `7a38a99b43036bcbec723a013f0fe357d246dee920f256d953d21a4c478ded4d`
+Git inventory before/after: clean.
 reviewed-tree-modified: no
 
 Exact committed snapshot reproduced using `git clone --quiet --no-hardlinks --no-local <source> /tmp/grok-code-review.NFCxqE/candidate`; scratch HEAD/fingerprint matched before probes and after restoration. Private parent, candidate and TMPDIR were mode `0700`. Resource discovery recorded privately at `/tmp/grok-code-review.NFCxqE/capacity.md`: 14 physical cores, 28 logical CPUs, inherited cpuset `0-27`, no finite ancestor quota observed; bounded child affinity probe verified `0-27`. Allocation remained at most six workers.
