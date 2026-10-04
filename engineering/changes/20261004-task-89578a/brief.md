@@ -22,6 +22,7 @@ Stop local verification after a decisive required refusal, retain the actual fai
 
 - Existing verifier/CLI/tests and concise delivery instructions; reuse existing fast behavior where possible. Committed-HEAD short checks must use the same Core import environment and cannot replace full gates.
 - Batch review fixes through the same writer, persist complete reviews before freezing, overlap final local verification and exact-head external check only after delegated UNVERIFIED branch transport.
+- Integrate exact isolated shim commit24e5db19e2a971e0b8bf8f303082ad858fba9426: delete nine redundant source-root wrappers while preserving canonical hooks, installer/template bytes and generic/Bitrix consumer aliases; retain its committed characterization and architecture bindings.
 
 ### Out of scope
 
@@ -44,3 +45,5 @@ Startup snapshot recorded before route inspection at 2026-10-04T19:51:32Z:14 phy
 4. After all reviews finish, coordinator persists both complete reports, commits and freezes the candidate. Run ONE final full local PR gate in parallel with external App-owned exact-head Trust CI after exact delegated UNVERIFIED branch transport; the unchanged selector selects scope before heavy checks. Current receipts, approvals and protected PR eligibility remain mandatory. An identical merged tree is a no-op. This user-approved order supersedes earlier pre-review full-gate guidance and does not cache or reuse a historical PASS.
 
 No named human gates on route89578a99758f. Prior explicit user implementation approval applies to this bounded existing-flow change. Technical rulings are recorded here rather than prompting again.
+
+Bounded integration ruling: both already-selected isolated tasks use the same general writer/reviews, and the user prefers one product PR. The failed external check already requires fresh qualification, so combine this compatibility-preserving cleanup in PR242 without rerouting or manufacturing authority; retain base/contracts profiles and full scope, refresh both reviews, then qualify once after persisted reports/freeze. No history, release bytes, deployed policy, approvals or branch protection changes.

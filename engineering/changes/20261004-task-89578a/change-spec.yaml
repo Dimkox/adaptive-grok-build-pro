@@ -59,6 +59,24 @@
           "receipt": "verification"
         }
       ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Delete exactly nine redundant committed source-root hook wrappers while preserving installer/template/canonical-hook runtime bytes and all generated generic/Bitrix aliases; HEAD-based root inventory, installer characterization and architecture bindings remain valid.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
     }
   ],
   "approvals": {
@@ -100,9 +118,9 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Reduce nonqualifying local verifier execution without weakening successful gate evidence.",
+    "statement": "Reduce nonqualifying local verifier execution without weakening successful gate evidence, and remove nine redundant source-root hook wrappers with installer consumer compatibility preserved.",
     "success_metric": "required_refusal_stops_downstream_checks_and_smoke_is_bounded",
-    "target": "pass for refusal, successful-scope, receipt and named-smoke controls"
+    "target": "pass for refusal, successful-scope, receipt, named-smoke, installed-alias, committed-root and architecture controls"
   },
   "observability": [],
   "risk": {

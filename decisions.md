@@ -1057,3 +1057,7 @@ A private bounded probe passed prepared artifact bytes directly from a read-tool
 ## 2026-10-04 — Distinguish virtual managed aliases from physical source inventory
 
 The installer inventory deliberately appends `MANAGED_FILES`, then excludes `ROOT_HOOK_SHIMS` from source reads and renders aliases from one validated template snapshot. Reading both the inventory producer and payload consumer established that physical root wrappers can be removed without changing installer runtime; generic/Bitrix alias byte, mode and execution characterization protects that boundary.
+
+## 2026-10-04 — Combine frozen compatible source changes before requalification
+
+The user prefers one product PR, and the external refusal already invalidated qualification, so the same selected writer integrates the exact frozen shim cleanup into PR242 before refreshed reviews and one final gate. This avoids two new expensive full/App cycles without caching PASS, changing selected profiles or reducing the test inventory. Canonical hooks, installer/template bytes, deployed policy, external approvals and protection remain unchanged.
