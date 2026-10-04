@@ -1965,16 +1965,7 @@
       "repository_paths": [
         ".grok",
         ".grok-stack/adaptive_grok",
-        ".grok-stack/templates",
-        "post_tool_use.py",
-        "pre_compact.py",
-        "pre_tool_use.py",
-        "session_end.py",
-        "session_start.py",
-        "stop_gate.py",
-        "subagent_start.py",
-        "subagent_stop.py",
-        "user_prompt_submit.py"
+        ".grok-stack/templates"
       ],
       "runtime": {
         "evidence": "source_described",

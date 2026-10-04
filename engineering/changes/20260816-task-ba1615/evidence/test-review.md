@@ -1,9 +1,9 @@
 # Test review — root decisions.md / mistakes.md lock
 
-Change: `20260816-task-ba1615`  
-Route: `ba1615416da5`  
-Reviewer: `test_reviewer` (read-only) · write owner: `general_implementer`  
-Reviewed: 2026-08-16  
+Change: `20260816-task-ba1615`
+Route: `ba1615416da5`
+Reviewer: `test_reviewer` (read-only) · write owner: `general_implementer`
+Reviewed: 2026-08-16
 Did **not** re-run unittest / `grok_verify` (would dirty receipts). Inspected `tests/test_structure.py`, current `AGENTS.md` / root logs / `engineering/` stubs, `test-plan.md`, `requirements.md`, `evidence/implementation.md`, prior d55ce4 test wording, and the official verification receipt.
 
 **PASS.**

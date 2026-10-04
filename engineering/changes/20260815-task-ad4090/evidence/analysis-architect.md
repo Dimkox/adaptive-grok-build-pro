@@ -1,8 +1,8 @@
 # Analysis — architect
 
-Change: `20260815-task-ad4090`  
-Active route (this continue): `e85418e33648` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer`  
-Durable change route: `ad4090c51ca6` · intent=`release` · write=`null` · reviews=`security_reviewer`+`release_reviewer` · status=`verifying`  
+Change: `20260815-task-ad4090`
+Active route (this continue): `e85418e33648` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer`
+Durable change route: `ad4090c51ca6` · intent=`release` · write=`null` · reviews=`security_reviewer`+`release_reviewer` · status=`verifying`
 HEAD / origin/main: `33a02f1` (tag `v2.0.4`). Working `VERSION` is `2.0.5`. Tag `v2.0.5` absent.
 
 Read-only design. No implementation. No `.env` read. No push / tag / `gh release`.

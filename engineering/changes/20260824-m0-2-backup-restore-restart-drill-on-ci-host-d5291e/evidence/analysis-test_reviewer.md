@@ -1,8 +1,8 @@
 # Test review (pre-implementation) — M0.2 backup / restore / restart drill on <ci-host>
 
-Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`  
-Route: `d5291e6a1516`  
-Agent: `test_reviewer` (read-only)  
+Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`
+Route: `d5291e6a1516`
+Agent: `test_reviewer` (read-only)
 Tree: product tests inspected; no `.env` / PEM / credentials read.
 
 ## Verdict

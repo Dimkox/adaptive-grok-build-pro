@@ -1,7 +1,7 @@
 # Analysis — architect
 
-Change: `20260816-task-ff295d`  
-Route: `ff295dada3ef` · write owner: `general_implementer`  
+Change: `20260816-task-ff295d`
+Route: `ff295dada3ef` · write owner: `general_implementer`
 Question: exact commands — `rm` abandoned untracked packages; `git add` only keeper change-package files + this `ff295d` package; commit; later controller pushes. Do not restore deleted product. Do not add leftover `state.json` from unrelated packages if those packages are DELETE.
 
 Read-only. No application-code edits. No `.env`. Architect does **not** commit, push, merge, or deploy.

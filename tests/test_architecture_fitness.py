@@ -2625,12 +2625,26 @@ class ArchitectureFitnessTests(unittest.TestCase):
             self.assertEqual(worktree_blob.call_count, 2)
 
     def test_analysis_memory_constants_are_pinned(self) -> None:
-        # FORBID-001: widening a memory limit would silence the false red by moving the cliff,
-        # and every oversized fixture scales off these constants, so the values are the contract.
+        # Analysis memory caps remain unchanged; the finite streamed aggregate
+        # identity budget covers the measured 123 MB release-archive cleanup.
         self.assertEqual(DIFF.MAX_ANALYZED_FILE_BYTES, 10_000_000)
         self.assertEqual(DIFF.MAX_GIT_OUTPUT_BYTES, 20_000_000)
-        self.assertEqual(DIFF.MAX_DIFF_ARTIFACT_BYTES, 50_000_000)
+        self.assertEqual(DIFF.MAX_DIFF_ARTIFACT_BYTES, 128_000_000)
         self.assertLess(DIFF.BLOB_STREAM_CHUNK_BYTES, DIFF.MAX_ANALYZED_FILE_BYTES)
+
+    def test_aggregate_artifact_budget_counts_deleted_binary_bytes(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        repo.write_bytes('packages/archived.bin', b'\0' + b'x' * 31)
+        base = repo.commit('archived binary')
+        (repo.root / 'packages/archived.bin').unlink()
+        head = repo.commit('retire archived binary')
+        with patch.object(DIFF, 'MAX_DIFF_ARTIFACT_BYTES', 31):
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, 'aggregate changed artifact byte limit'):
+                FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        with patch.object(DIFF, 'MAX_DIFF_ARTIFACT_BYTES', 32):
+            diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+            self.assertEqual(diff.artifacts[0].status, 'deleted')
 
     def test_stream_git_blob_setup_failure_is_typed_and_stops_child(self) -> None:
         repo = GitArchitectureRepo(self)

@@ -1,8 +1,8 @@
 # Code review — move agent-prompt logs to the repo root
 
-Change: `20260816-task-ba1615`  
-Route: `ba1615416da5` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`  
-Reviewed: 2026-08-16  
+Change: `20260816-task-ba1615`
+Route: `ba1615416da5` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`
+Reviewed: 2026-08-16
 Base: `22762a77ea4133cc34398f9a70194daa427bd096` (`Release v2.0.8`, `HEAD` == `origin/main`)
 
 **PASS.** I would not block.

@@ -1,9 +1,9 @@
 # Code review — M0.0 live trust authority (design freeze)
 
-**Agent:** code_reviewer  
-**Route:** `3722694830f7`  
-**Change:** `20260824-task-372269`  
-**HEAD inspected:** `48cb973` plus uncommitted M0.0 files only (listed below)  
+**Agent:** code_reviewer
+**Route:** `3722694830f7`
+**Change:** `20260824-task-372269`
+**HEAD inspected:** `48cb973` plus uncommitted M0.0 files only (listed below)
 **Scope:** the four assigned files. No `grok_verify`, no push/merge, no `.env`/PEM reads.
 
 ## Files reviewed

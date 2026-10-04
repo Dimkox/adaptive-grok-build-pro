@@ -1,6 +1,6 @@
 # Analysis — repo_explorer (merge)
 
-Change: `20260815-task-ad4090`  
+Change: `20260815-task-ad4090`
 Route: `e2b4b7341a5c` · task: «смерджи все» · write owner: `general_implementer`
 
 Read-only. No `git status` / `git log` / `git push` / `git merge`. Facts from local refs, working tree, and public GitHub API `https://api.github.com/repos/Dimkox/adaptive-grok-build-pro`.
@@ -53,7 +53,7 @@ Exactly one commit, on `main`, parent = current `origin/main`:
         └── 7c0ae7573535ddd0cfe3800f81278991ced81584  (local main; not on origin)
 ```
 
-Reflog line: `.git/logs/refs/heads/main` last entry `33a02f1… 7c0ae75… commit: Release v2.0.5: hook shims, toolchain pins, track zip and checksum`.  
+Reflog line: `.git/logs/refs/heads/main` last entry `33a02f1… 7c0ae75… commit: Release v2.0.5: hook shims, toolchain pins, track zip and checksum`.
 `origin` reflog last event is the push of `33a02f1` (`.git/logs/refs/remotes/origin/main` last line). No later `update by push`.
 
 Recorded in `evidence/implementation.md:35-40`: 121 files, +4301 / −67. Tag `v2.0.5` still absent at that write.

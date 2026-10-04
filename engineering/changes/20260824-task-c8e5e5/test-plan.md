@@ -19,4 +19,4 @@ Historical sanitized change package 20260824-task-c8e5e5
 
 ## Manual checks
 
-- 
+-

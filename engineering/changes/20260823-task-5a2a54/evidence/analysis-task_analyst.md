@@ -1,7 +1,7 @@
 # task_analyst — first slice: M1 typed change spec (M0 ops-blocked)
 
-Change: `20260823-task-5a2a54`  
-Route: `5a2a54f045d1` write-owner=`general_implementer`  
+Change: `20260823-task-5a2a54`
+Route: `5a2a54f045d1` write-owner=`general_implementer`
 HEAD: `d8cf1a1` on `docs/dark-factory-roadmap`; product base `origin/main` = `3e140079c94e22a204b0805ac2e3b7774426f739`
 
 ## Outcome (this session)

@@ -2,9 +2,9 @@
 
 **Verdict:** pass
 
-**Reviewer:** code_reviewer (route `5a2a54f045d1`)  
-**Change:** `20260823-task-5a2a54`  
-**HEAD:** `3e140079c94e22a204b0805ac2e3b7774426f739` (`milestone/m1-typed-intent`)  
+**Reviewer:** code_reviewer (route `5a2a54f045d1`)
+**Change:** `20260823-task-5a2a54`
+**HEAD:** `3e140079c94e22a204b0805ac2e3b7774426f739` (`milestone/m1-typed-intent`)
 **Scope:** working-tree product slice vs HEAD. Read-only. Local `grok_verify --mode pr` is not merge authority.
 
 This report does **not** record `grok_review.py`.

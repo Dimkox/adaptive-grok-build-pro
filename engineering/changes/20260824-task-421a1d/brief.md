@@ -22,11 +22,11 @@ Describe the observable user or business result.
 
 ### In scope
 
-- 
+-
 
 ### Out of scope
 
-- 
+-
 
 ## Constraints
 

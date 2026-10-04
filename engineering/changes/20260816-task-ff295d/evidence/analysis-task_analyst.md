@@ -1,7 +1,7 @@
 # Analysis — task_analyst
 
-Change: `20260816-task-ff295d`  
-Route: `ff295dada3ef` · write=`general_implementer` · reviews=`code_reviewer` + `test_reviewer`  
+Change: `20260816-task-ff295d`
+Route: `ff295dada3ef` · write=`general_implementer` · reviews=`code_reviewer` + `test_reviewer`
 Skills: `/adaptive-delivery`, `feature-workflow`. Allowed agents only. Read-only.
 
 User: «применяй все изменения, старые и неактуальные удаляй, новые пуш в репо».

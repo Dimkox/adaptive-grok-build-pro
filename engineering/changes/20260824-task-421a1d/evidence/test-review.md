@@ -1,9 +1,9 @@
 # Test review — App ID / Installation ID (421a1ddd7770)
 
-**Agent:** test_reviewer (read-only except this report)  
-**Route:** `421a1ddd7770`  
-**Change:** `20260824-task-421a1d`  
-**Parent:** `grok_verify --mode pr` PASS (preflight; not merge authority)  
+**Agent:** test_reviewer (read-only except this report)
+**Route:** `421a1ddd7770`
+**Change:** `20260824-task-421a1d`
+**Parent:** `grok_verify --mode pr` PASS (preflight; not merge authority)
 **Verdict:** **PASS**
 
 ## Scope vs tests

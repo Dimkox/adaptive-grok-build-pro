@@ -1,9 +1,9 @@
 # Test review — restore AGENTS.md self-learning as first section
 
-Change: `20260816-task-d55ce4`  
-Route: `70e08d7b09b5` (active rematch; original `d55ce4cd4015`)  
-Reviewer: `test_reviewer` (read-only) · write owner: `general_implementer`  
-Reviewed: 2026-08-16  
+Change: `20260816-task-d55ce4`
+Route: `70e08d7b09b5` (active rematch; original `d55ce4cd4015`)
+Reviewer: `test_reviewer` (read-only) · write owner: `general_implementer`
+Reviewed: 2026-08-16
 Did **not** re-run unittest / `grok_verify` (would dirty receipts). Inspected `tests/test_structure.py`, `AGENTS.md` lines 1–20, `test-plan.md`, `evidence/implementation.md`, `evidence/code-review.md`, and the official verification receipt.
 
 **PASS.**
@@ -86,7 +86,7 @@ This is not “assert the file exists.” That weaker check is `test_required_fi
 
 `evidence/implementation.md` claims:
 
-1. Red: `python3 -m unittest tests.test_structure.StructureTests.test_agents_md_starts_with_self_learning`  
+1. Red: `python3 -m unittest tests.test_structure.StructureTests.test_agents_md_starts_with_self_learning`
    `AssertionError: '## Mandatory entrypoint' != '## Agent self-learning'`
 2. Green: `python3 -m unittest tests.test_structure` → `Ran 14 tests in 0.009s` / `OK`
 

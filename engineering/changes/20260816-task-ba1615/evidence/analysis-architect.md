@@ -1,7 +1,7 @@
 # Analysis — architect
 
-Change: `20260816-task-ba1615`  
-Route: `ba1615416da5` · write owner: `general_implementer` · reviews: `code_reviewer` + `test_reviewer`  
+Change: `20260816-task-ba1615`
+Route: `ba1615416da5` · write owner: `general_implementer` · reviews: `code_reviewer` + `test_reviewer`
 Question: How should we place `decisions.md` and `mistakes.md` in the repo root without splitting the log into two sources of truth?
 
 Options: **move**, **copy**, **stub pointer under `engineering/`**. Recommend one. Note installer/packager impact. Do not add `pyproject.toml`. Do not restore GitHub Actions.
@@ -29,7 +29,7 @@ That means:
 
 This is the same shape the approved package already sketches (`architecture.md` steps 1–3, `requirements.md` “pointers, not a second log”). This report makes that the named option and bounds installer/packager so the write owner does not invent a second seed.
 
-Do **not** add `pyproject.toml` / `requirements.txt` / `setup.py`.  
+Do **not** add `pyproject.toml` / `requirements.txt` / `setup.py`.
 Do **not** restore `.github/workflows`, Dependabot, `--with-ci`, or any CI SaaS.
 
 ---

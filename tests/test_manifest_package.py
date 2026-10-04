@@ -1442,14 +1442,14 @@ module.main()
         self.assertFalse(candidate_sidecar.exists())
         self.assertEqual(candidate_artifact['reproducible_build_count'], 2)
         published_version = published['tag'].removeprefix('v')
-        self.assertEqual(published_version, '2.0.19')
+        self.assertEqual(published_version, '2.1.1')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
         self.assertEqual(artifact['storage'], 'github_release_asset')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
-        expected_digest = '4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9'
+        expected_digest = 'f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1'
         self.assertEqual(artifact['sha256'], expected_digest)
 
         zip_path = ROOT / expected_relative
@@ -1458,13 +1458,13 @@ module.main()
         self.assertFalse(sidecar_path.exists())
         self.assertEqual(
             artifact['url'],
-            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/'
-            'adaptive-grok-build-pro-v2.0.19.zip',
+            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/'
+            'adaptive-grok-build-pro-v2.1.1.zip',
         )
         self.assertEqual(
             artifact['sidecar_url'],
-            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/'
-            'adaptive-grok-build-pro-v2.0.19.zip.sha256',
+            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/'
+            'adaptive-grok-build-pro-v2.1.1.zip.sha256',
         )
 
     def test_write_archive_preserves_source_manifest_and_embeds_current_bytes(self) -> None:

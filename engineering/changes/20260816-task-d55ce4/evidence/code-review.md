@@ -1,8 +1,8 @@
 # Code review — restore AGENTS.md self-learning as first section
 
-Change: `20260816-task-d55ce4`  
-Route: `d55ce4cd4015` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`  
-Reviewed: 2026-08-16  
+Change: `20260816-task-d55ce4`
+Route: `d55ce4cd4015` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`
+Reviewed: 2026-08-16
 Base: `02376cc097d7640d56dd308b98efe4e026f4c253` (`Release v2.0.7`, `HEAD` == `origin/main`)
 
 **PASS.** I would not block.

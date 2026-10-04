@@ -1,8 +1,8 @@
 # Implementation — leftover 2.0.5 publish-prep
 
-Change: `20260815-task-ad4090`  
-Active route: `e85418e33648` · write owner: `general_implementer`  
-HEAD: `7c0ae7573535ddd0cfe3800f81278991ced81584`  
+Change: `20260815-task-ad4090`
+Active route: `e85418e33648` · write owner: `general_implementer`
+HEAD: `7c0ae7573535ddd0cfe3800f81278991ced81584`
 Parent: `33a02f1128ab0a865bfb1c853248f997dcf9e39b` (tag `v2.0.4`)
 
 ## What landed

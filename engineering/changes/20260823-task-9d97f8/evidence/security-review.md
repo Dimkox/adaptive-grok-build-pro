@@ -2,11 +2,11 @@
 
 **PASS** (re-review after FAIL)
 
-Route: `9d97f8dcae59` (intent=`release`, risk=`high`, `write_agent: null`)  
-Change: `20260823-task-9d97f8`  
-Object reviewed: dirty working tree vs HEAD `bb143d3b64644f905c8f5a21868fd3be7139e17e` (`feat/trust-ci-control-plane`) plus rebuilt `packages/adaptive-grok-build-pro-v2.0.12.zip` (`28c40c32751b3b30be05c1191e18dace4ced26f01b951c84e99370608609cc4a`)  
-Reviewer: `security_reviewer` (read-only except this report; in `allowed_agents`)  
-Skills: `/adaptive-delivery`, `release-readiness`, `security-sensitive-change`  
+Route: `9d97f8dcae59` (intent=`release`, risk=`high`, `write_agent: null`)
+Change: `20260823-task-9d97f8`
+Object reviewed: dirty working tree vs HEAD `bb143d3b64644f905c8f5a21868fd3be7139e17e` (`feat/trust-ci-control-plane`) plus rebuilt `packages/adaptive-grok-build-pro-v2.0.12.zip` (`28c40c32751b3b30be05c1191e18dace4ced26f01b951c84e99370608609cc4a`)
+Reviewer: `security_reviewer` (read-only except this report; in `allowed_agents`)
+Skills: `/adaptive-delivery`, `release-readiness`, `security-sensitive-change`
 `.env`, PEMs, pin-env values, and `approvals.json` were not opened. No push, merge, tag, deploy, or grant mint from this agent.
 
 Would I still block? **No.** The prior FAIL (live GHCR pin env and leftover `20260817-вычисти*` inside the 2.0.12 zip) is remediated. I would block again only if leftover/pin/PEM/workflows appear in the git index, or if anyone forges `adaptive-trust-ci/verified@*`.

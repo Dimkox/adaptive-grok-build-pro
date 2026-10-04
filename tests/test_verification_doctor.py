@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import json
 import os
@@ -1641,6 +1642,76 @@ class VerificationTests(unittest.TestCase):
 
 
 class TypedSpecVerificationTests(unittest.TestCase):
+    def _migration_fixture(self, root: Path, *, version: int = 1, kind: str = 'legacy_archive'):
+        origin = 'engineering/changes/20260826-origin/change-spec.yaml'
+        source = root / origin
+        source.parent.mkdir(parents=True)
+        content = 'schema_version: 1\nchange_id: 20260826-origin\n' if version == 1 else dump_canonical_spec(_valid_change_spec('20260826-origin'))
+        source.write_text(content, encoding='utf-8')
+        subprocess.run(['git', 'add', origin], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'historical source'], cwd=root, check=True)
+        base = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+        blob = subprocess.check_output(['git', 'rev-parse', f'{base}:{origin}'], cwd=root, text=True).strip()
+        subprocess.run(['git', 'update-ref', 'refs/heads/main', base], cwd=root, check=True)
+        route = build_route(root, 'Review relocation', 's1').to_dict()
+        route['delivery_expected'] = False
+        target = 'engineering/changes/20260826-archive/' + ('historical-spec.yaml' if kind == 'legacy_archive' else 'change-spec.yaml')
+        destination = root / target
+        destination.parent.mkdir(parents=True)
+        destination.write_text(content.replace('20260826-origin', '20260826-archive'), encoding='utf-8')
+        source.unlink()
+        manifest = {'schema_version': 1, 'source_base': base, 'entries': [{'kind': kind, 'original_blob': blob, 'target': target, 'sha256': hashlib.sha256(destination.read_bytes()).hexdigest()}]}
+        (root / 'engineering/archived-change-specs.json').write_text(json.dumps(manifest), encoding='utf-8')
+        return origin, target, route
+
+    def test_proven_v1_retirement_is_disclosed_without_current_gate_evidence(self) -> None:
+        with project_copy(git=True) as root:
+            origin, target, route = self._migration_fixture(root)
+            alias = str(Path(target).parent / 'change-spec.yaml')
+            check, metadata = _change_specs(root, [origin, alias, target], route, 'pr')
+            self.assertEqual(check.status, 'pass', check.details)
+            self.assertEqual(metadata['specs'], [])
+            self.assertEqual(metadata['historical_migrations'][0]['evidence_kind'], 'historical_archival')
+
+    def test_retirement_rejects_tampered_missing_active_current_and_unknown_specs(self) -> None:
+        for mutation in ('tampered', 'missing', 'active', 'current', 'unknown'):
+            with self.subTest(mutation=mutation), project_copy(git=True) as root:
+                origin, target, route = self._migration_fixture(root)
+                files = [origin, target]
+                if mutation == 'tampered':
+                    (root / target).write_text('schema_version: 1\n', encoding='utf-8')
+                elif mutation == 'missing':
+                    (root / target).unlink()
+                elif mutation == 'current':
+                    (root / origin).write_text('schema_version: 1\nchange_id: 20260826-origin\n', encoding='utf-8')
+                elif mutation == 'unknown':
+                    files.append('engineering/changes/unknown/change-spec.yaml')
+                with patch.object(verification_module, 'get_active_change', return_value={'path': str(Path(origin).parent)} if mutation == 'active' else None):
+                    check, _ = _change_specs(root, files, route, 'pr')
+                self.assertEqual(check.status, 'fail', check.details)
+
+    def test_v2_cannot_be_archived_and_relocation_keeps_strict_gate(self) -> None:
+        with project_copy(git=True) as root:
+            origin, target, route = self._migration_fixture(root, version=2)
+            check, _ = _change_specs(root, [origin, target], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+        with project_copy(git=True) as root:
+            origin, target, route = self._migration_fixture(root, version=2, kind='v2_relocation')
+            check, metadata = _change_specs(root, [origin, target], route, 'pr')
+            self.assertEqual(check.status, 'pass', check.details)
+            self.assertEqual(metadata['specs'][0]['profile'], 'gate')
+            self.assertEqual(metadata['historical_migrations'][0]['evidence_kind'], 'strict_v2_relocation')
+            spec = json.loads((root / target).read_text())
+            spec['objective']['target'] = 'UNKNOWN'
+            (root / target).write_text(dump_canonical_spec(spec), encoding='utf-8')
+            manifest_path = root / 'engineering/archived-change-specs.json'
+            manifest = json.loads(manifest_path.read_text())
+            manifest['entries'][0]['sha256'] = hashlib.sha256((root / target).read_bytes()).hexdigest()
+            manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+            check, _ = _change_specs(root, [origin, target], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            self.assertTrue(any(item['code'] == 'change-spec-invalid' for item in check.details))
+
     def test_gate_fails_unmapped_non_ac_criteria_and_keeps_coverage(self) -> None:
         for category, criterion_id, finding in (
             ('invariants', 'INV-001', 'unmapped invariants criteria: INV-001'),

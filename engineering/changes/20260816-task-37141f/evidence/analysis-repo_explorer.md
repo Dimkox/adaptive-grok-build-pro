@@ -1,6 +1,6 @@
 # Analysis — repo_explorer
 
-Change: `20260816-task-37141f`  
+Change: `20260816-task-37141f`
 Route: `37141fbe6302` · write owner: `general_implementer` · analysis-only
 
 Read-only. Local refs + public GitHub HTML. No product edits, tag, push, or `gh release`.

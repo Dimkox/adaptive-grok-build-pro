@@ -1,9 +1,9 @@
 # Test review — change-spec M1 typed intent
 
-**Route:** `5a2a54f045d1`  
-**Change:** `20260823-task-5a2a54`  
-**Branch:** `milestone/m1-typed-intent`  
-**Reviewer:** test_reviewer (read-only)  
+**Route:** `5a2a54f045d1`
+**Change:** `20260823-task-5a2a54`
+**Branch:** `milestone/m1-typed-intent`
+**Reviewer:** test_reviewer (read-only)
 **Verdict:** **pass**
 
 Characterization of validate/map, extra keys, risk tiers, completeness, generate-UNKNOWN, YAML fail-closed, empty flow collections, brief-vs-spec, factory/GHA absence, schema `$id`/`additionalProperties`, unsupported keywords, and `scripts/grok_spec.py` CLI happy paths is adequate for this slice.

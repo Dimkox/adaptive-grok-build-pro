@@ -1,6 +1,6 @@
 # Implementation
 
-Change: `20260816-task-d55ce4`  
+Change: `20260816-task-d55ce4`
 Route: `d55ce4cd4015` · write owner: `general_implementer`
 
 Restored the agent self-learning instruction as the first `##` section in `AGENTS.md` and locked it with a structure test. Did not bump `VERSION`, publish, edit Bitrix core, add `pyproject.toml`, or add GitHub Actions.

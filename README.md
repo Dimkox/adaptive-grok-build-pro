@@ -7,7 +7,7 @@ MIT-licensed tooling for task-routed AI-assisted development, external verificat
 Adaptive Grok Build Pro installs a local Grok/Codex-style agent workflow into another repository. The short path is:
 
 1. inspect a target repository without changing it;
-2. install local hooks, skills and scripts only when the plan is acceptable;
+2. apply the accepted plan as a reviewed branch change in the target repository;
 3. let the agent turn one task into a route, a change package and a branch;
 4. run local verification and review evidence;
 5. ship through a pull request instead of trusting chat output.
@@ -23,7 +23,7 @@ python3 scripts/grok_doctor.py --offer-install
 python3 scripts/install_into.py --plan /absolute/path/to/your/repo
 ```
 
-If the plan looks right, apply it in a normal branch of the target repository. For a brand-new Linux target, use an absent path:
+For an existing repository the installer only reads and reports a plan. Apply that plan manually as a reviewed change in a normal branch of the target repository. For a brand-new Linux target, use an absent path:
 
 ```bash
 python3 scripts/install_into.py --materialize-new /absolute/path/to/new/repo
@@ -32,6 +32,7 @@ python3 scripts/install_into.py --materialize-new /absolute/path/to/new/repo
 Then open the target in Grok, trust the project hooks, and give one concrete task. The local loop is:
 
 ```bash
+cd /absolute/path/to/your/repo
 python3 scripts/grok_route.py "Добавить поведение с явными критериями приёмки" --session first-task --json
 python3 scripts/grok_change.py start --title "Первая задача"
 python3 scripts/grok_status.py
@@ -78,7 +79,7 @@ Known weak seams this line is closing:
 - A timeout or interrupted verifier is incomplete, not a pass.
 - A restarted attempt cannot reuse an old model/config/profile identity without requalification.
 
-The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The current public status is also deliberately narrow: this tree is a `2.1.1` source candidate; no `2.1.1` artifact is published by this README, and the external pilot remains unqualified.
+The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The published release is `v2.1.1`; the external pilot remains unqualified, and publication does not confer production authority.
 
 ## Advanced startup baseline
 
@@ -90,7 +91,7 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.1.1 source candidate**. The core integrates verifier recovery, operational routing, bounded language disclosure, architecture preflight, hardened governance inputs, additive architecture compatibility and the local heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) retains F M7 durable evidence and G Trust CI authority as required, not accepted successors. Full verification and independent reviews are pending; no 2.1.1 artifact is built, published or deployed. The published `v2.0.19` record remains immutable.
+Identity: **2.1.1 published release**. [v2.1.1](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.1.1) was published on 2026-10-03 from PR #238, targeting `97a7581238022356b2de8d193a9bd8363fc92dc3`. ZIP SHA-256: `f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1`. Its core includes verifier recovery, architecture and governance hardening, and heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) still retains F durable evidence and G current-authority behavior as required successors; publication establishes no deployment, pilot qualification or activation. This cleanup is a successor PR and requires fresh verification and independent review. Prior release records remain immutable.
 
 The conditional first source also includes the frozen test-only025 [cursor reset seam](factory/tests/postgres_fixture_reset.py), its two unchanged-boundary callers and narrowly typed lock-refusal acceptance controls. Actual joined fitness must pass unchanged limits; source acceptance still requires full verification, reviews and external trust. F's026 inventory/runtime work remains absent.
 

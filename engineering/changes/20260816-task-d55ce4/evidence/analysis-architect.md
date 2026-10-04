@@ -1,7 +1,7 @@
 # Analysis — architect
 
-Change: `20260816-task-d55ce4`  
-Route: `d55ce4cd4015` · write owner: `general_implementer`  
+Change: `20260816-task-d55ce4`
+Route: `d55ce4cd4015` · write owner: `general_implementer`
 Question: authorship of `AGENTS.md`; was the self-learning loop (`decisions.md` / `mistakes.md`) intentionally replaced by “record it in the change package”, or dropped as collateral?
 
 Read-only. No application edits. No `.env`. No push / merge / deploy.

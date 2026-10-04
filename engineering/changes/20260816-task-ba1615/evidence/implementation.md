@@ -1,6 +1,6 @@
 # Implementation
 
-Change: `20260816-task-ba1615`  
+Change: `20260816-task-ba1615`
 Route: `ba1615416da5` · write owner: `general_implementer`
 
 ## What changed

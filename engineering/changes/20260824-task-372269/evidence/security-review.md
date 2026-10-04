@@ -1,10 +1,10 @@
 # Security review — M0.0 docs + invariant tests
 
-**Agent:** `security_reviewer` (read-only; in route `allowed_agents`)  
-**Route:** `3722694830f7`  
-**Change:** `20260824-task-372269`  
-**HEAD:** `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` plus uncommitted M0.0 files listed below  
-**Skills:** `/adaptive-delivery`, `/security-sensitive-change`  
+**Agent:** `security_reviewer` (read-only; in route `allowed_agents`)
+**Route:** `3722694830f7`
+**Change:** `20260824-task-372269`
+**HEAD:** `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` plus uncommitted M0.0 files listed below
+**Skills:** `/adaptive-delivery`, `/security-sensitive-change`
 **This review is not merge authority.** Local receipts cannot create `adaptive-trust-ci/verified@<policy-sha12>`.
 
 Did not read `.env`, `*.pem`, private keys, trust-store private material, or `trust-ci/env/*.env`. Did not push, merge, deploy, compose-up, webhook, `branch-protect`, or run `grok_review.py`.

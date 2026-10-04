@@ -1,8 +1,8 @@
 # Analysis — task_analyst
 
-Change: `20260815-task-ad4090`  
-Active route (this continue): `e85418e33648` · intent=`feature` · write=`general_implementer`  
-Durable route (the work): `ad4090c51ca6` · intent=`release` · write=`null` · status=`verifying`  
+Change: `20260815-task-ad4090`
+Active route (this continue): `e85418e33648` · intent=`feature` · write=`general_implementer`
+Durable route (the work): `ad4090c51ca6` · intent=`release` · write=`null` · status=`verifying`
 User said only «продолжай». No new product features.
 
 ## 1. Remaining acceptance criteria (all still unchecked)

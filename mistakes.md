@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Archive cleanup omitted provenance and fresh release observation
+
+Renaming historical packages without a spec migration record made strict Git-range selection treat missing origins and legacy destinations as current gate evidence. The handoff also retained a pre-publication 2.1.1 candidate after the release was published because it was copied without checking remote release identities. Bind migrations to the trusted exact base and retained bytes, and preserve dated candidate observations separately from current remote publication.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

@@ -1,8 +1,8 @@
 # Docs research — merge / after push+tag+release
 
-Route: `e2b4b7341a5c` (user «смерджи все»).  
-Durable change: `20260815-task-ad4090` (`ad4090c51ca6`).  
-Prior reports: `evidence/analysis-docs_researcher.md`, `evidence/analysis-docs_researcher-continue.md`.  
+Route: `e2b4b7341a5c` (user «смерджи все»).
+Durable change: `20260815-task-ad4090` (`ad4090c51ca6`).
+Prior reports: `evidence/analysis-docs_researcher.md`, `evidence/analysis-docs_researcher-continue.md`.
 This report answers only: after a successful last-mile `git push origin main` + tag `v2.0.5` + `gh release create v2.0.5`, what a **fresh clone** and a **parallel Grok** will see.
 
 No APIs invented. `engineering/adr/` is empty. `engineering/contracts/{openapi,asyncapi,schemas}/` have no product contracts. `.env` was not read. This agent did not push, merge, tag, or release.

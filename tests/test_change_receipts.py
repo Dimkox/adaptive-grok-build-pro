@@ -68,9 +68,18 @@ class ChangeTests(unittest.TestCase):
             self.assertIn('bitrix', (change / 'route.json').read_text(encoding='utf-8'))
             self.assertEqual(get_active_route(root)['change_id'], state['change_id'])
 
-    def test_public_change_slug_does_not_publish_raw_abusive_prompt(self) -> None:
-        self.assertEqual(public_change_slug('user' + '-query raw prompt text'), 'task')
-        self.assertEqual(public_change_slug('Добавить Bitrix webhook'), 'добавить-bitrix-webhook')
+    def test_public_change_slug_is_neutral_for_every_title(self) -> None:
+        for title in ('', 'user' + '-query raw prompt text', 'Добавить Bitrix webhook', 'Customer private request'):
+            self.assertEqual(public_change_slug(title), 'task')
+
+    def test_change_path_does_not_depend_on_title_and_start_is_idempotent(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            first = start_change(root, 'First private title')
+            second = start_change(root, 'Another private title')
+            self.assertEqual(first['change_id'], second['change_id'])
+            self.assertEqual(list((root / 'engineering/changes').iterdir()), [root / str(get_active_change(root)['path'])])
 
     def test_valid_transitions(self) -> None:
         with project_copy() as root:

@@ -162,8 +162,8 @@ Optional product patch **only after P0 Check Run exists** and checkout is the re
 
 **Secret file:** gitignored `trust-ci/env/api.env`, key `TRUST_CI_WEBHOOK_SECRET`. API-only. Never copy into `worker.env`. Never print, `cat`, `echo`, `set -x`, or paste into chat/activation-report.
 
-**URL:** `POST http://<loopback-trust-ci>/webhooks/github`  
-**Headers:** `Content-Type: application/json`, `X-GitHub-Event: pull_request`, `X-Hub-Signature-256: sha256=<64 lowercase hex>`  
+**URL:** `POST http://<loopback-trust-ci>/webhooks/github`
+**Headers:** `Content-Type: application/json`, `X-GitHub-Event: pull_request`, `X-Hub-Signature-256: sha256=<64 lowercase hex>`
 HMAC-SHA256 over the **raw body bytes** with the secret as UTF-8. FastAPI does not require `X-GitHub-Delivery`.
 
 **PR #5 (confirm SHA immediately before POST; a new push invalidates the body):**

@@ -1,6 +1,6 @@
 # architect — M0.3 bind-main: docs/tests encoding, bootstrap supersede, trust domain, actor-mismatch proof
 
-Route `54313e326a39`. Change `20260824-task-54313e`.  
+Route `54313e326a39`. Change `20260824-task-54313e`.
 Read-only design. No product edits. No `.env`/PEM. No merge of PR #5. No human approval private keys. No Administration grant to GitHub App `<redacted-app-id>`.
 
 **Sources:** this package `brief.md` + `evidence/branch-protection-payload.json`; `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md`; `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md`; `engineering/runbooks/trust-ci-activation-report.md`; `trust-ci/src/adaptive_trust_ci/github.py`; `trust-ci/src/adaptive_trust_ci/cli.py`; `trust-ci/tests/test_ops.py`; `trust-ci/tests/test_webhooks_github.py`; `trust-ci/tests/test_m0_invariants.py`; `trust-ci/holdout.example/validate.py`; `AGENTS.md`; sibling `analysis-docs_researcher.md` / `analysis-repo_explorer.md`. GitHub REST: protected-branch `checks[].app_id`; Checks API write is App-only.

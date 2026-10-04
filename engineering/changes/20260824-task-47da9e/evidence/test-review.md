@@ -1,9 +1,9 @@
 # Test review — route 47da9efaec38
 
-**Status:** PASS  
-**Reviewer:** test_reviewer  
-**Change:** `20260824-task-47da9e`  
-**Scope inspected:** `trust-ci/tests/test_m0_invariants.py` vs `trust-ci/compose.yaml` and M0 spec/plan docs.  
+**Status:** PASS
+**Reviewer:** test_reviewer
+**Change:** `20260824-task-47da9e`
+**Scope inspected:** `trust-ci/tests/test_m0_invariants.py` vs `trust-ci/compose.yaml` and M0 spec/plan docs.
 **Verification:** `python3 scripts/grok_verify.py --mode pr` reported PASS (given by dispatch; not re-run here).
 
 ## Adequacy

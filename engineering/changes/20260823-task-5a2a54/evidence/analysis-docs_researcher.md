@@ -1,7 +1,7 @@
 # docs_researcher — Dark Factory M0/M1, remaining Trust CI ops, merge trust
 
-Change: `20260823-task-5a2a54`  
-Route: `5a2a54f045d1` (`docs_researcher` is in `allowed_agents`)  
+Change: `20260823-task-5a2a54`
+Route: `5a2a54f045d1` (`docs_researcher` is in `allowed_agents`)
 Sources: `DARK_FACTORY_ROADMAP.md`, `GROK_BUILD_HANDOFF.md`, `engineering/runbooks/trust-ci-rollout.md`, `AGENTS.md`, `trust-ci/README.md`. No APIs invented.
 
 ## M0 is operations, not in-tree product files

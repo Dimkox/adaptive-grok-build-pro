@@ -1,7 +1,7 @@
 # Analysis — repo_explorer
 
-Change: `20260816-task-ff295d`  
-Route: `ff295dada3ef` · HEAD / `origin/main`: `7152b75b610bada0ecc7468752900ab1515324f1`  
+Change: `20260816-task-ff295d`
+Route: `ff295dada3ef` · HEAD / `origin/main`: `7152b75b610bada0ecc7468752900ab1515324f1`
 Question: for every dirty or untracked `engineering/changes/*` package **except this `ff295d` package**, KEEP (commit remaining files) or DELETE (rm -rf untracked leftover / restore committed files to HEAD).
 
 Product is already shipped. This is paperwork cleanup only. No product files, tags, or GitHub Releases in this ruling.

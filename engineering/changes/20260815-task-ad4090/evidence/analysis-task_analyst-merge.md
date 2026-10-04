@@ -1,9 +1,9 @@
 # Analysis — task_analyst («смерджи все»)
 
-Change: `20260815-task-ad4090`  
-Active route (this session): `e2b4b7341a5c` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer` · gates=`[]` · evidence=`verification`+`code_review`+`test_review`  
-Prior continue route: `e85418e33648` (receipts exist; wrong route_id for this Stop)  
-Durable package route: `ad4090c51ca6` · intent=`release` · write=`null` · status=`ready`  
+Change: `20260815-task-ad4090`
+Active route (this session): `e2b4b7341a5c` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer` · gates=`[]` · evidence=`verification`+`code_review`+`test_review`
+Prior continue route: `e85418e33648` (receipts exist; wrong route_id for this Stop)
+Durable package route: `ad4090c51ca6` · intent=`release` · write=`null` · status=`ready`
 User said «смерджи все» after local 2.0.5 prep, because a parallel Grok only saw 2.0.4.
 
 Read-only. No `.env` read. No push / tag / `gh release` / merge from this agent.

@@ -2,7 +2,7 @@
 
 Read-only map. No product edits, no secrets, no merge, no Funnel/socat.
 
-**Change:** `20260824-task-54313e`  
+**Change:** `20260824-task-54313e`
 **Question:** files that document or implement GitHub branch protection for `main`, required check `adaptive-trust-ci/verified@6737355947c2`, App ID `<redacted-app-id>`, leftover Actions workflow `trusted-ci` id `340420982`, bootstrap-exception language, and activation-report cells for M0.3.
 
 ## Verdict
@@ -114,10 +114,10 @@ Local receipts, `grok_approve.py` grants, GitGuardian, leftover Actions `3404209
 
 ## 9. Impact surface for the write owner (docs only, after live GitHub ops)
 
-1. Fill activation-report cells: `main` protected, Protection `app_id`, leftover workflow, bootstrap-exception superseded.  
-2. New `decisions.md` entry: exception **revoked because live App-owned check exists**, not because a check was forged.  
-3. README current-state L11: drop “check is not live / PR #2 bootstrap exception” once that is no longer true of the product tree.  
-4. Check off plan M0.3 and roadmap branch-protection items.  
+1. Fill activation-report cells: `main` protected, Protection `app_id`, leftover workflow, bootstrap-exception superseded.
+2. New `decisions.md` entry: exception **revoked because live App-owned check exists**, not because a check was forged.
+3. README current-state L11: drop “check is not live / PR #2 bootstrap exception” once that is no longer true of the product tree.
+4. Check off plan M0.3 and roadmap branch-protection items.
 5. Do **not** merge PR #5 in this slice (brief). Do **not** grant Administration to App `<redacted-app-id>`.
 
 ## Out of scope / not implementation of protection

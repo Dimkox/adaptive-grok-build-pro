@@ -1,6 +1,6 @@
 # Analysis — repo_explorer
 
-Change: `20260815-task-ad4090`  
+Change: `20260815-task-ad4090`
 Route: `ad4090c51ca6` · write owner: none · intent: release
 
 Read-only. No `git status`/`git show` shell. Facts from local refs, working tree, and public GitHub API.
@@ -90,12 +90,12 @@ Sequence (human-owned; agents must not run push/tag/`gh release` — `publish-v2
 5. `git push origin main` (`097f5c9` then `33a02f1`) and `git push origin v2.0.4` (`e584b3/evidence/human-approval.md:7-8`).
 6. `gh release create v2.0.4 packages/…zip packages/…sha256 --notes-file dist/RELEASE-NOTES.md` (`publish-v2.0.4.md:23`, `deploy.py:33`).
 
-Live release: https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.4  
+Live release: https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.4
 id `370918434`, published 2026-08-15T01:27:26Z, assets zip + sha256 only (no source tar attached as extra assets; GitHub still offers tag tarball). e584b3 `state.json` is `released` (`state.json:52-57`).
 
 Same printed command set will target **2.0.5** once `VERSION` is 2.0.5 (`deploy.py:13-17,26-33`). Change is still `draft` (`ad4090/state.json:14`); `prepare_deploy` requires status `ready`/`released` plus evidence (`deploy.py:10,55-63`). Route human gates: `scope_and_design_approval`, `production_action_approval`.
 
 ## 6. Remote
 
-`.git/config:9-10`: `origin` = `https://github.com/Dimkox/adaptive-grok-build-pro.git`  
+`.git/config:9-10`: `origin` = `https://github.com/Dimkox/adaptive-grok-build-pro.git`
 `branch.main.merge` = `refs/heads/main`. Public API confirms the same repo and `main` @ `33a02f1`.

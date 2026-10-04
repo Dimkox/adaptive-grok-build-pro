@@ -1,8 +1,8 @@
 # Analysis — architect (release sequence)
 
-Change: `20260823-task-9d97f8`  
-Route: `9d97f8dcae59` · intent=`release` · write=`null` · reviews=`security_reviewer`+`release_reviewer`  
-Gates: `scope_and_design_approval` + `production_action_approval`  
+Change: `20260823-task-9d97f8`
+Route: `9d97f8dcae59` · intent=`release` · write=`null` · reviews=`security_reviewer`+`release_reviewer`
+Gates: `scope_and_design_approval` + `production_action_approval`
 Related activation package (not this slice’s deploy): `20260823-p0-trust-ci-control-plane-postgresql-integration-f771ec`
 
 Read-only except this report. Did not read `.env`, PEMs, docker auth, or pin hex. Did not push, merge, tag, deploy, or mint a grant.

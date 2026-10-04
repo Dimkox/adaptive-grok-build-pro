@@ -1,8 +1,8 @@
 # architect — BINDING M0 live Trust Authority design
 
-Change: `20260824-task-372269`  
-Route: `3722694830f7` · intent=`review` · write_agent=`null` · gates=`scope_and_design_approval` + `migration_or_external_write_approval`  
-Authority: user M0-only order, `DARK_FACTORY_ROADMAP.md` M0, `trust-ci/README.md`, `engineering/runbooks/trust-ci-rollout.md`, live GitHub/host probes.  
+Change: `20260824-task-372269`
+Route: `3722694830f7` · intent=`review` · write_agent=`null` · gates=`scope_and_design_approval` + `migration_or_external_write_approval`
+Authority: user M0-only order, `DARK_FACTORY_ROADMAP.md` M0, `trust-ci/README.md`, `engineering/runbooks/trust-ci-rollout.md`, live GitHub/host probes.
 Read-only except this report. Did not read `.env`, `*.pem`, or credential bodies. Did not push, merge, deploy, compose-up, webhook, or branch-protect.
 
 ## Ruling

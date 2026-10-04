@@ -1,0 +1,22 @@
+{
+  "observed_at": "2026-10-04T12:16:00Z",
+  "source": "GitHub release API and exact-head Check Runs API",
+  "tag": "v2.1.1",
+  "published_at": "2026-10-03T09:11:19Z",
+  "merge_commit": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+  "tree": "9aecfc9fa6ba17f94acd1a9fac069acee218b393",
+  "pull_request": 238,
+  "checked_head": "4c5be3ab2370792e71bfa43a031d7f074cfb78f5",
+  "zip_sha256": "f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1",
+  "sidecar_sha256": "07ddeb5f9fa7c9d8135c347defc84a271c102947724744ec8288370bd5c60269",
+  "zip_size": 15512695,
+  "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.1.1",
+  "trust_ci": {
+    "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "check_run_id": 111167969839,
+    "github_app_id": "<redacted-app-id>",
+    "conclusion": "success",
+    "completed_at": "2026-10-03T09:07:03Z"
+  },
+  "notes": "Publication is verified from the remote API. Existing files falsely describe an unbuilt 2.1.1 candidate and 2.0.19 as latest. Operational provider/pilot qualification is not inferred. This cleanup PR is a successor to the published release."
+}

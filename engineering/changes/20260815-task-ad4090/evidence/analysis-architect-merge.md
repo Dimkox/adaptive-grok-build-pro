@@ -1,9 +1,9 @@
 # Analysis — architect (merge / land 2.0.5)
 
-Change: `20260815-task-ad4090`  
-Active route: `e2b4b7341a5c` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer` · gates=`[]`  
-Prior continue: `e85418e33648` (receipts exist; wrong `route_id` for this Stop)  
-Durable package: `ad4090c51ca6` · status=`ready` · original intent=`release`  
+Change: `20260815-task-ad4090`
+Active route: `e2b4b7341a5c` · intent=`feature` · write=`general_implementer` · reviews=`code_reviewer`+`test_reviewer` · gates=`[]`
+Prior continue: `e85418e33648` (receipts exist; wrong `route_id` for this Stop)
+Durable package: `ad4090c51ca6` · status=`ready` · original intent=`release`
 User: «смерджи все»
 
 Read-only design. No implementation. No `.env` read. No push / tag / merge / `gh release`.

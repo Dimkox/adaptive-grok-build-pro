@@ -1,6 +1,6 @@
 # Pre-implementation analysis: backup / restore CLI (code_reviewer)
 
-Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`  
+Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`
 Scope: read-only inspection of `adaptive_trust_ci` backup CLI, `backup.py`, and `restore-drill.sh`. No live restore. No secrets quoted.
 
 ## Commands in `cli.py`
@@ -26,7 +26,7 @@ Dispatch:
 - Init: `CREATE ROLE trust_ci_backup LOGIN … NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION` (`trust-ci/postgres/init/001_roles.sh` around 33–45).
 - Grants: `GRANT SELECT ON ALL TABLES/SEQUENCES IN SCHEMA public TO trust_ci_backup` (`trust-ci/sql/003_database_roles.sql` 23–35). No INSERT/UPDATE/DELETE grants to that role (`test_database_roles.py` 37–38).
 - Env template: `TRUST_CI_BACKUP_DATABASE_URL=postgresql://trust_ci_backup@…` (`trust-ci/env/backup.env.example`).
-- Systemd oneshot remaps identity at runtime (`trust-ci/systemd/adaptive-trust-ci-backup.service` 11):  
+- Systemd oneshot remaps identity at runtime (`trust-ci/systemd/adaptive-trust-ci-backup.service` 11):
   `docker compose run … --env TRUST_CI_DATABASE_URL="$TRUST_CI_BACKUP_DATABASE_URL" … api backup-create …`
 
 **CLI itself does not hard-code the backup role.** `backup-create` always dumps `CommonSettings.database_url` (`TRUST_CI_DATABASE_URL`). If an operator runs `api backup-create` without the systemd override, the dump uses whatever identity the **api** container has (`trust_ci_api`), which is **not** SELECT-only. pg_dump still only reads; the extra risk is using a write-capable login, not a different dump format.

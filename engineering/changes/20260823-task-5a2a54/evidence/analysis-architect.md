@@ -1,7 +1,7 @@
 # architect — M1 typed change spec (bounded vertical)
 
-Change: `20260823-task-5a2a54`  
-Route: `5a2a54f045d1` · write owner: `general_implementer` · reviews: `code_reviewer` + `test_reviewer`  
+Change: `20260823-task-5a2a54`
+Route: `5a2a54f045d1` · write owner: `general_implementer` · reviews: `code_reviewer` + `test_reviewer`
 Authority: `DARK_FACTORY_ROADMAP.md` M1, active route, sibling analysis. Read-only except this report. No `.env`, keys, push, merge, or deploy.
 
 ## Ruling

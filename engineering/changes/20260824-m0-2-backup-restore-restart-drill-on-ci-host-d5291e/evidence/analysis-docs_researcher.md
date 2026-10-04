@@ -1,7 +1,7 @@
 # Docs research — M0.2 backup / restore / restart drill
 
-Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`  
-Route: `d5291e6a1516`  
+Change: `20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e`
+Route: `d5291e6a1516`
 Scope: recover **documented** commands and report/plan rules. No invented flags. This slice does **not** complete M0.2 and does **not** register a GitHub webhook.
 
 Invariant tests that docs/report must keep green (`trust-ci/tests/test_m0_invariants.py`):
@@ -15,12 +15,12 @@ Invariant tests that docs/report must keep green (`trust-ci/tests/test_m0_invari
 
 ## 1. Exact CLI and script invocations (required flags)
 
-Source of truth for flags: `trust-ci/src/adaptive_trust_ci/cli.py`.  
+Source of truth for flags: `trust-ci/src/adaptive_trust_ci/cli.py`.
 `QUICKSTART.md` backup block is **incomplete** (omits `--database-label`, `--dump`, `--manifest`). Do not copy it as-is.
 
 ### `backup-create`
 
-Required: `--database-label`.  
+Required: `--database-label`.
 `--output-dir` optional; if omitted, `TRUST_CI_BACKUP_DIR` is required.
 
 ```bash
@@ -85,8 +85,8 @@ docker compose -f trust-ci/compose.yaml run --rm --no-deps \
 
 ### `restore-drill`
 
-Required args: `--dump`, `--manifest`.  
-Required flag: `--confirm-disposable` (`backup.py` raises without it).  
+Required args: `--dump`, `--manifest`.
+Required flag: `--confirm-disposable` (`backup.py` raises without it).
 Required env: `TRUST_CI_RESTORE_DATABASE_URL` (CLI `SystemExit` if empty). Target is disposable only.
 
 ```bash

@@ -1,7 +1,7 @@
 # Analysis — repo_explorer
 
-Change: `20260816-task-d55ce4`  
-Route: `d55ce4cd4015` · write owner: `general_implementer`  
+Change: `20260816-task-d55ce4`
+Route: `d55ce4cd4015` · write owner: `general_implementer`
 Question: where did the agent self-learning instruction disappear from `AGENTS.md`?
 
 Missing instruction (user quote):

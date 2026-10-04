@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -9,7 +8,7 @@ from typing import Any
 from .package_status import collect_worktree, read_package_file
 from .state import get_active_route, set_active_change, update_route
 from .spec import dump_canonical_spec, generate_spec
-from .util import atomic_write_text, dump_json, now_utc, slugify
+from .util import atomic_write_text, dump_json, now_utc
 
 GOVERNANCE_AUTHORITY_NOTICE = (
     "Canonical governance JSON under `governance/` remains separately reviewed "
@@ -17,26 +16,9 @@ GOVERNANCE_AUTHORITY_NOTICE = (
     "context until the verifier rederives current governance evidence."
 )
 
-_UNSAFE_PUBLIC_SLUG = re.compile(
-    r"(?:^|-)("
-    r"user-query|"
-    r"пизд[а-яё]*|ебан[а-яё]*|бля[а-яё]*|нах[а-яё]*|хуй[а-яё]*|"
-    r"пидр[а-яё]*|сука|кончен[а-яё]*"
-    r")(?:-|$)",
-    re.IGNORECASE,
-)
-
-
 def public_change_slug(title: str) -> str:
-    """Return a public-safe change slug.
-
-    The package may still store the original task text inside reviewed evidence. The path
-    itself must not expose raw prompts, profanity or harassment when the repository is public.
-    """
-    slug = slugify(title)
-    if _UNSAFE_PUBLIC_SLUG.search(slug):
-        return "task"
-    return slug
+    """Keep public paths independent of task text; date and route identify the change."""
+    return "task"
 
 TRANSITIONS = {
     'draft': {'scoped', 'cancelled'},

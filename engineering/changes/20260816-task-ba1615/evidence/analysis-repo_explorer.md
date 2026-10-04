@@ -1,7 +1,7 @@
 # Analysis — repo_explorer
 
-Change: `20260816-task-ba1615`  
-Route: `ba1615416da5` · write owner: `general_implementer`  
+Change: `20260816-task-ba1615`
+Route: `ba1615416da5` · write owner: `general_implementer`
 Question: Which files does the agent self-learning prompt name, and where do they actually live?
 
 User: «я все еще не вижу файлов из промпта для агентов в корне»

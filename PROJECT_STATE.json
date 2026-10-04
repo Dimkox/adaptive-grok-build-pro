@@ -5,7 +5,7 @@
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.1.1",
-  "latest_published_release": "v2.0.19",
+  "latest_published_release": "v2.1.1",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -34,42 +34,80 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.19",
-    "published_at": "2026-09-24T21:30:52Z",
-    "pull_request": 203,
-    "checked_head": "7b1686ec5b0ca4917fd6865794da714e0c581756",
-    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
-    "merged_at": "2026-09-24T21:29:33Z",
-    "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
-    "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
+    "tag": "v2.1.1",
+    "published_at": "2026-10-03T09:11:19Z",
+    "pull_request": 238,
+    "checked_head": "4c5be3ab2370792e71bfa43a031d7f074cfb78f5",
+    "merge_commit": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "merged_at": null,
+    "tag_object": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "tag_kind": "lightweight",
+    "tree": "9aecfc9fa6ba17f94acd1a9fac069acee218b393",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
-      "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
+      "path": "packages/adaptive-grok-build-pro-v2.1.1.zip",
+      "sha256": "f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.1.zip.sha256",
+      "sidecar_sha256": "07ddeb5f9fa7c9d8135c347defc84a271c102947724744ec8288370bd5c60269",
       "binding": "immutable_release_tag",
       "storage": "github_release_asset",
-      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip",
-      "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/adaptive-grok-build-pro-v2.1.1.zip",
+      "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/adaptive-grok-build-pro-v2.1.1.zip.sha256"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "check_run_id": 111167969839,
+      "github_app_id": "<redacted-app-id>",
       "conclusion": "SUCCESS",
-      "check_run_id": 107833930893,
-      "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
-      "signer": "0519cf1d47436f2e",
-      "github_app_id": "<redacted-app-id>"
+      "completed_at": "2026-10-03T09:07:03Z",
+      "attestation_id": null,
+      "signer": null
     },
     "gitguardian": {
       "conclusion": "SUCCESS",
-      "check_run_id": 107833930933,
-      "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      "check_run_id": 111167989942,
+      "note": "Informational exact PR-head check, not merge authority."
     },
     "merge_tag_target_check_runs": [],
     "operational_activation": false,
-    "notes": "The artifact is bound to immutable v2.0.19 tag target cb9af4073ba6c3d515145164d771c75ebdfa3224. Trust CI and GitGuardian succeeded on artifact-child PR #203 head 7b1686ec5b0ca4917fd6865794da714e0c581756; this record claims zero check runs on the distinct merge/tag target. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "notes": "Observed from GitHub on 2026-10-04. Trust CI succeeded on PR238 head; release assets bind the distinct immutable merged tag target. Publication establishes no F/G successor acceptance, pilot qualification, deployment or activation. Unknown merge time and attestation identity are not inferred."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.19",
+      "published_at": "2026-09-24T21:30:52Z",
+      "pull_request": 203,
+      "checked_head": "7b1686ec5b0ca4917fd6865794da714e0c581756",
+      "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "merged_at": "2026-09-24T21:29:33Z",
+      "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
+      "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
+        "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+        "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
+        "binding": "immutable_release_tag",
+        "storage": "github_release_asset",
+        "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip",
+        "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 107833930893,
+        "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": "<redacted-app-id>"
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS",
+        "check_run_id": 107833930933,
+        "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      },
+      "merge_tag_target_check_runs": [],
+      "operational_activation": false,
+      "notes": "The artifact is bound to immutable v2.0.19 tag target cb9af4073ba6c3d515145164d771c75ebdfa3224. Trust CI and GitGuardian succeeded on artifact-child PR #203 head 7b1686ec5b0ca4917fd6865794da714e0c581756; this record claims zero check runs on the distinct merge/tag target. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    },
     {
       "tag": "v2.0.18",
       "published_at": "2026-09-16T13:52:24Z",
@@ -1440,6 +1478,7 @@
     }
   },
   "local_candidate": {
+    "record_scope": "Historical pre-publication core source observation; preserved values do not describe current publication. Current immutable publication is recorded separately in published_release.",
     "version": "2.1.1",
     "status": "source_candidate",
     "route_id": "ffb3d81e031f",

@@ -1,10 +1,10 @@
 # Code review — local image build-without-push smoke (frozen docs/toolchain tree)
 
-Change: `20260823-p0-trust-ci-control-plane-postgresql-integration-f771ec`  
-Route: `d2ba49e0570d` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`  
+Change: `20260823-p0-trust-ci-control-plane-postgresql-integration-f771ec`
+Route: `d2ba49e0570d` · reviewer: `code_reviewer` (read-only) · write owner: `general_implementer`
 Reviewed: 2026-08-23
 
-HEAD: `5915b56db7d6aedcd52a6c023418db84d45dd98f` on `feat/trust-ci-control-plane`.  
+HEAD: `5915b56db7d6aedcd52a6c023418db84d45dd98f` on `feat/trust-ci-control-plane`.
 Product identity `VERSION` **2.0.11**. Trust CI identity **2.1.0**. Working tree is dirty. No commit, push, merge, or deploy in this review.
 
 Parent stated `python3 scripts/grok_verify.py --mode pr` **PASS** (git-diff-check, secret-scan, ruff, bandit, python-unittest, coverage). This review did not re-run verify or Docker inspect; it inspected the actual `git diff HEAD`, surrounding examples/contracts, and `evidence/implementation-images.md`.
@@ -147,7 +147,7 @@ Architect allowed quoting an Id in the tracked summary **if** labeled `local-ima
 
 ## 6. Leftover `20260817-вычисти*`
 
-Directory exists: `engineering/changes/20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/`.  
+Directory exists: `engineering/changes/20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/`.
 `git status --short` lists it as `??`. It is not in `git diff HEAD`. Architecture now says do not commit it. Residual only: keep it out of any later `git add`.
 
 ---

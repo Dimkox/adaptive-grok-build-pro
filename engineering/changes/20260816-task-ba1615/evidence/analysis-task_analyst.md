@@ -1,10 +1,10 @@
 # Analysis — task_analyst
 
-Change: `20260816-task-ba1615`  
-Route: `ba1615416da5` · intent=`feature` · risk=`low` · write=`general_implementer`  
-Reviews after implementation: `code_reviewer` + `test_reviewer`  
-Evidence kinds: `verification`, `code_review`, `test_review`  
-Human gates on this route: none  
+Change: `20260816-task-ba1615`
+Route: `ba1615416da5` · intent=`feature` · risk=`low` · write=`general_implementer`
+Reviews after implementation: `code_reviewer` + `test_reviewer`
+Evidence kinds: `verification`, `code_review`, `test_review`
+Human gates on this route: none
 Narrow question: **What is the acceptance criteria for putting the agent-prompt log files in the repo root?**
 
 Read-only. No application-code edits. No `.env`. No push / tag / merge / deploy.

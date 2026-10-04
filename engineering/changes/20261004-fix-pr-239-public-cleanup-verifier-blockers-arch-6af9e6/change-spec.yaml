@@ -1,0 +1,95 @@
+{
+  "schema_version": 2,
+  "change_id": "20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Repair PR 239 public repository cleanup without changing current gate authority.",
+    "success_metric": "cleanup_regressions_and_required_checks",
+    "target": "pass with preserved strict current specs"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Architecture describes retained hook sources and installer preserves consumer hook output.",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py"
+        },
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Historical spec retirement requires explicit base-bound migration and cannot retire active/current specs.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "New package directory names do not depend on prompt text.",
+      "evidence": [
+        {
+          "test": "tests/test_change_receipts.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Public documentation matches artifact storage and routes commands in the target repository.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Current specs still require canonical version 2 gate validation.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Historical metadata grants merge authority or claims release publication.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

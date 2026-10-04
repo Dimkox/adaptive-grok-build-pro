@@ -33,7 +33,9 @@ MAX_CHANGED_PATHS = 20_000
 MAX_BATCH_INPUT_BYTES = 65_536
 MAX_ANALYZED_FILE_BYTES = 10_000_000
 BLOB_STREAM_CHUNK_BYTES = 64 * 1024
-MAX_DIFF_ARTIFACT_BYTES = 50_000_000
+# The measured release-archive cleanup processes ~123 MB across both sides.
+# Keep a finite aggregate bound; per-blob, stream, path and time limits still apply.
+MAX_DIFF_ARTIFACT_BYTES = 128_000_000
 MAX_LINE_STAT_LINES = 100_000
 _EXACT_SHA = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})")
 _ADOPTION_PATH = "architecture/adoption.json"

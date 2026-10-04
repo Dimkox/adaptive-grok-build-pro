@@ -1,8 +1,8 @@
 # architect — BINDING ruling: M0 CI host is <ci-host>, not a laptop
 
-Change: `20260824-task-c8e5e5`  
-Route: `c8e5e567a15d` · write_agent=`general_implementer` · gates=`[]` · branch=`milestone/m0-live-trust-authority` · PR=#5 draft (`9f84dfd7b5458e5394314c5f6913aa5c6631c058`)  
-Authority: user source-of-truth #1 (hostname **<ci-host>**, Xeon E5-2680 v4, ~16 GiB ECC); sibling `analysis-repo_explorer.md`, `analysis-task_analyst.md`; retract `analysis-docs_researcher.md` where it forbids <ci-host> as CI host.  
+Change: `20260824-task-c8e5e5`
+Route: `c8e5e567a15d` · write_agent=`general_implementer` · gates=`[]` · branch=`milestone/m0-live-trust-authority` · PR=#5 draft (`9f84dfd7b5458e5394314c5f6913aa5c6631c058`)
+Authority: user source-of-truth #1 (hostname **<ci-host>**, Xeon E5-2680 v4, ~16 GiB ECC); sibling `analysis-repo_explorer.md`, `analysis-task_analyst.md`; retract `analysis-docs_researcher.md` where it forbids <ci-host> as CI host.
 Read-only except this report. Did not read `.env`, PEM, or credential bodies. Did not push, merge, deploy, compose-up, webhook, or branch-protect.
 
 ## Ruling
