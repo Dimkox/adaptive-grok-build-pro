@@ -78,6 +78,60 @@ def _broken_local_links(document: Path, root: Path) -> list[str]:
 
 
 class InstallerTests(unittest.TestCase):
+    def test_legacy_root_hook_names_delegate_and_preserve_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / MODULE.ROOT_HOOK_SHIM_TEMPLATE
+            template.parent.mkdir(parents=True)
+            template.write_bytes((ROOT / MODULE.ROOT_HOOK_SHIM_TEMPLATE).read_bytes())
+            hooks = root / '.grok/hooks'
+            hooks.mkdir(parents=True)
+            for name in sorted(MODULE.ROOT_HOOK_SHIMS):
+                with self.subTest(name=name):
+                    source = ROOT / name
+                    self.assertTrue(source.is_file(), f'legacy hook command missing: {name}')
+                    self.assertFalse(source.is_symlink())
+                    self.assertLessEqual(len(source.read_text().splitlines()), 12)
+                    (root / name).write_bytes(source.read_bytes())
+                    canonical = hooks / name
+                    canonical.write_text('import json, sys\nfrom pathlib import Path\nprint(json.dumps({"name": Path(sys.argv[0]).name, "payload": json.load(sys.stdin)}))\n')
+                    result = subprocess.run([sys.executable, name], cwd=root, input='{"sentinel": 1}', text=True, capture_output=True, timeout=10)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(json.loads(result.stdout), {'name': name, 'payload': {'sentinel': 1}})
+                    canonical.unlink()
+                    fallback = subprocess.run([sys.executable, name], cwd=root, input='{}', text=True, capture_output=True, timeout=10)
+                    self.assertEqual(fallback.returncode, 0, fallback.stderr)
+                    self.assertEqual(json.loads(fallback.stdout), {'decision': 'allow'} if name == 'pre_tool_use.py' else {})
+
+    def test_hook_aliases_use_the_inventoried_template_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'source'
+            template = source / MODULE.ROOT_HOOK_SHIM_TEMPLATE
+            template.parent.mkdir(parents=True)
+            old = (ROOT / MODULE.ROOT_HOOK_SHIM_TEMPLATE).read_bytes()
+            template.write_bytes(old)
+            template.chmod(0o640)
+            (source / MODULE.CONSUMER_AGENTS_TEMPLATE).write_text('fixture consumer contract\n')
+            original_read = MODULE._SourceTree.read
+            reads = []
+            def mutate_after_bound_read(tree, relative, limit, expected_identity=None):
+                result = original_read(tree, relative, limit, expected_identity)
+                if relative == MODULE.ROOT_HOOK_SHIM_TEMPLATE:
+                    reads.append(expected_identity)
+                    template.write_bytes(old + b'\n# changed after validated inventory read\n')
+                    template.chmod(0o600)
+                return result
+            with patch.object(MODULE, 'MANAGED_DIRS', ('.grok-stack',)), \
+                 patch.object(MODULE, 'MANAGED_FILES', tuple(sorted(MODULE.ROOT_HOOK_SHIMS))), \
+                 patch.object(MODULE._SourceTree, 'read', mutate_after_bound_read):
+                payload = {entry.path: entry for entry in MODULE.build_payload(source)}
+            self.assertEqual(len(reads), 1)
+            self.assertIsNotNone(reads[0])
+            for name in MODULE.ROOT_HOOK_SHIMS:
+                self.assertEqual(payload[name].content, payload[MODULE.ROOT_HOOK_SHIM_TEMPLATE].content)
+                self.assertEqual(payload[name].content, old)
+                self.assertEqual(payload[name].mode, 0o640)
+
     def test_installed_fixture_reset_leaf_is_byte_identical_and_importable(self) -> None:
         relative = "factory/tests/postgres_fixture_reset.py"
         for profile in ("generic", "bitrix"):

@@ -128,7 +128,44 @@ def _verification_report_binding(receipt: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in receipt.items() if key not in {'details', 'stale', 'stale_reason', 'stale_at'}}
 
 
-def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, Any], interrupt_check: Callable[[], None] | None) -> dict[str, Any]:
+@dataclass
+class _PublishedVerificationReport:
+    reference: dict[str, Any]
+    route_fd: int
+    reports_fd: int
+    owned_file_identity: tuple[int, int] | None = None
+    owned_identity: tuple[int, ...] | None = None
+
+    def close(self) -> None:
+        os.close(self.reports_fd)
+        os.close(self.route_fd)
+
+
+def _cleanup_verification_report(publication: _PublishedVerificationReport) -> None:
+    """Retire only this attempt's unchanged, unreferenced digest file."""
+    if publication.owned_file_identity is None:
+        return
+    try:
+        try:
+            envelope, _ = _read_bounded_json(publication.route_fd, 'verification.json', MAX_RECEIPT_BYTES, 'receipt')
+        except FileNotFoundError:
+            envelope = {}
+        if envelope.get('details') == {'_verification_report': publication.reference}:
+            return
+        filename = f'{publication.reference["sha256"]}.json'
+        metadata = os.stat(filename, dir_fd=publication.reports_fd, follow_symlinks=False)
+        if (stat.S_ISREG(metadata.st_mode)
+                and (metadata.st_dev, metadata.st_ino) == publication.owned_file_identity
+                and (publication.owned_identity is None
+                     or _metadata_identity(metadata) + (metadata.st_size,) == publication.owned_identity)):
+            os.unlink(filename, dir_fd=publication.reports_fd)
+            os.fsync(publication.reports_fd)
+    except (OSError, RuntimeError, ValueError):
+        # Unsafe/changed evidence is not ours to delete; preserve the original fault.
+        pass
+
+
+def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, Any], interrupt_check: Callable[[], None] | None) -> _PublishedVerificationReport:
     """Durably publish complete details before any receipt may reference them."""
     artifact = {'schema_version': 1, 'binding': _verification_report_binding(receipt), 'details': receipt['details']}
     content = json.dumps(artifact, ensure_ascii=True, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n'
@@ -140,6 +177,8 @@ def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, A
     route_fd = _open_receipt_directory(root, route_id, create=True)
     reports_fd = None
     temporary = None
+    publication = None
+    completed = False
     try:
         try:
             os.mkdir('reports', mode=0o700, dir_fd=route_fd)
@@ -151,13 +190,42 @@ def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, A
         descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=reports_fd)
         with os.fdopen(descriptor, 'w', encoding='utf-8', newline='\n') as handle:
             _write_receipt_bytes(handle, content)
+            staged_metadata = os.fstat(handle.fileno())
         if interrupt_check:
             interrupt_check()
-        os.replace(temporary, filename, src_dir_fd=reports_fd, dst_dir_fd=reports_fd)
+        reference = {'contract': VERIFICATION_REPORT_CONTRACT, 'path': f'.grok-stack/runtime/receipts/{route_id}/reports/{filename}', 'sha256': digest, 'bytes': len(payload)}
+        publication = _PublishedVerificationReport(reference, route_fd, reports_fd)
+        # Pin ownership before publication, including a fault immediately after link.
+        publication.owned_file_identity = (staged_metadata.st_dev, staged_metadata.st_ino)
+        try:
+            # Atomic no-clobber publication: an existing digest is reused, never replaced.
+            os.link(temporary, filename, src_dir_fd=reports_fd, dst_dir_fd=reports_fd, follow_symlinks=False)
+        except FileExistsError:
+            publication.owned_file_identity = None
+            _, existing = _read_bounded_json(reports_fd, filename, MAX_VERIFICATION_REPORT_BYTES, 'verification report')
+            if existing != payload:
+                raise RuntimeError('existing verification report differs from its digest')
+        else:
+            metadata = os.stat(filename, dir_fd=reports_fd, follow_symlinks=False)
+            if (metadata.st_dev, metadata.st_ino) != (staged_metadata.st_dev, staged_metadata.st_ino):
+                raise RuntimeError('published verification report identity changed')
+            publication.owned_identity = _metadata_identity(metadata) + (metadata.st_size,)
+        os.unlink(temporary, dir_fd=reports_fd)
+        temporary = None
+        if publication.owned_identity is not None:
+            metadata = os.stat(filename, dir_fd=reports_fd, follow_symlinks=False)
+            if (metadata.st_dev, metadata.st_ino) != (staged_metadata.st_dev, staged_metadata.st_ino):
+                raise RuntimeError('published verification report identity changed')
+            publication.owned_identity = _metadata_identity(metadata) + (metadata.st_size,)
         os.fsync(reports_fd)
         if interrupt_check:
             interrupt_check()
-        return {'contract': VERIFICATION_REPORT_CONTRACT, 'path': f'.grok-stack/runtime/receipts/{route_id}/reports/{filename}', 'sha256': digest, 'bytes': len(payload)}
+        completed = True
+        return publication
+    except BaseException:
+        if publication is not None:
+            _cleanup_verification_report(publication)
+        raise
     finally:
         try:
             if temporary is not None:
@@ -166,9 +234,10 @@ def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, A
                 except FileNotFoundError:
                     pass
         finally:
-            if reports_fd is not None:
-                os.close(reports_fd)
-            os.close(route_fd)
+            if not completed:
+                if reports_fd is not None:
+                    os.close(reports_fd)
+                os.close(route_fd)
 
 
 def _hydrate_verification_report(directory_fd: int, route_id: str, receipt: dict[str, Any]) -> None:
@@ -763,18 +832,19 @@ def write_receipt(
         raise RuntimeError('repository, spec, architecture, or governance changed while receipt was written')
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
     spill = kind == 'verification'
+    publication = None
     try:
         # Classification can fail to serialize; that must retire an older pass too.
         spill = spill and len((json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n').encode('utf-8')) > MAX_RECEIPT_BYTES
         if spill:
-            reference = _publish_verification_report(root, route['route_id'], data, interrupt_check)
+            publication = _publish_verification_report(root, route['route_id'], data, interrupt_check)
             report_architecture = active_architecture_binding(root, route)
             if (tree_fingerprint(root) != before_tree or _exact_head(root) != before_head
                     or _active_spec_binding(root, route, kind) != current
                     or report_architecture != current_architecture
                     or active_governance_binding(root, route, report_architecture) != current_governance):
                 raise RuntimeError('repository or authority changed while verification report was written')
-            data['details'] = {'_verification_report': reference}
+            data['details'] = {'_verification_report': publication.reference}
         _publish_receipt(path, data, interrupt_check)
     except BaseException:
         if spill:
@@ -788,7 +858,12 @@ def write_receipt(
             finally:
                 if directory_fd is not None:
                     os.close(directory_fd)
+        if publication is not None:
+            _cleanup_verification_report(publication)
         raise
+    finally:
+        if publication is not None:
+            publication.close()
     return path
 
 

@@ -10,7 +10,23 @@
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
   "current_continuation": {
-    "pull_request": 239,
+    "pull_request": 241,
+    "superseded_pull_requests": [239],
+    "historical_pull_requests": [
+      {"pull_request": 239, "record_scope": "historical", "status": "superseded", "successor_pull_request": 241}
+    ],
+    "historical_external_observations": [
+      {
+        "record_scope": "historical",
+        "evidence_kind": "App-owned Check Run observation",
+        "head_sha": "69f5e29f57c3bbc7169ae43d8e9ad9e3dcf98321",
+        "check_run_id": 111478461651,
+        "completed_at": "2026-10-04T16:47:22Z",
+        "conclusion": "SUCCESS",
+        "reported_pass_checks": ["holdout-bundle-integrity", "external-holdout", "root-unittest", "trust-ci-unittest", "compileall", "repository-verification"],
+        "current_verification": false
+      }
+    ],
     "route_id": "6af9e6eed1d8",
     "branch": "feat/qg01-gate-artifact-admission",
     "change_package": "engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6",
@@ -52,7 +68,7 @@
     "checked_head": null,
     "merge_commit": null,
     "external_success": null,
-    "next_action": "PR240 is merged at the observed exact main commit; refresh remote PR239/base state and complete the actual-main integration, then run fresh full verification, independent reviews, receipts and exact-head external Trust CI for PR239. Historical next_action fields are provenance, not continuation instructions; preserve published v2.1.1 without rebuilding or retagging it."
+    "next_action": "Refresh actual PR241 state; its seven confirmed repairs are already in this tree, PR239 is superseded, and PR240 is merged at the observed exact main base. If PR241 is merged, record delivered state and treat unchanged source as a no-op: do not reopen or reverify it. If still open, complete frozen independent review, persist the complete reports, run one final full verifier on the report-containing head, and require fresh exact-head external Trust CI and approvals before merge. Historical checks and next_action fields are not current authority; preserve published v2.1.1 without rebuilding or retagging it."
   },
   "delivered_milestones_on_main": [
     "M0",

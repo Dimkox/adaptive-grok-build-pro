@@ -116,7 +116,17 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertTrue('current_continuation' in state, 'missing current continuation record')
         continuation = state['current_continuation']
-        self.assertEqual(continuation['pull_request'], 239)
+        self.assertEqual(continuation['pull_request'], 241)
+        self.assertEqual(continuation['superseded_pull_requests'], [239])
+        self.assertEqual(continuation['historical_pull_requests'], [{'pull_request': 239, 'record_scope': 'historical', 'status': 'superseded', 'successor_pull_request': 241}])
+        historical = continuation['historical_external_observations'][0]
+        self.assertEqual(historical['head_sha'], '69f5e29f57c3bbc7169ae43d8e9ad9e3dcf98321')
+        self.assertEqual(historical['record_scope'], 'historical')
+        self.assertFalse(historical['current_verification'])
+        self.assertIn('PR241', continuation['next_action'])
+        self.assertIn('merged', continuation['next_action'])
+        self.assertIn('no-op', continuation['next_action'])
+        self.assertIn('already in this tree', continuation['next_action'])
         self.assertEqual(continuation['route_id'], '6af9e6eed1d8')
         self.assertEqual(continuation['branch'], 'feat/qg01-gate-artifact-admission')
         package = 'engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6'
@@ -157,7 +167,8 @@ class ProjectStateTests(unittest.TestCase):
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         active_line = next(line for line in start.splitlines() if line.startswith('- **Active delivery:**'))
         for document in (active_line, _section(readme, 'Current state')):
-            self.assertIn('PR #239', document)
+            self.assertIn('PR #241', document)
+            self.assertIn('no-op', document)
             self.assertIn('PR #240', document)
             self.assertIn(package, document)
         self.assertNotIn('20261002-assemble-2-1-1', active_line)

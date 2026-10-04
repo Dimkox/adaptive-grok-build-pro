@@ -589,9 +589,6 @@ def _source_entry(
         raise UnsafeInstallTarget(f"target-owned architecture cannot be managed: {relative}")
     if relative in TARGET_OWNED_GOVERNANCE:
         raise UnsafeInstallTarget(f"target-owned governance cannot be managed: {relative}")
-    if relative in ROOT_HOOK_SHIMS:
-        content, mode = tree.read(ROOT_HOOK_SHIM_TEMPLATE, MAX_SOURCE_FILE_BYTES)
-        return InstallEntry(relative, content, mode)
     content, mode = tree.read(relative, MAX_SOURCE_FILE_BYTES, expected_identity)
     return InstallEntry(relative, content, mode)
 
@@ -604,14 +601,20 @@ def build_payload(
     if profile_kind not in {"generic", "bitrix"}:
         raise UnsafeInstallTarget(f"unsupported explicit profile kind: {profile_kind}")
     with _SourceTree(source) as tree:
+        inventory = tree.inventory()
         entries = [
             _source_entry(relative, tree, expected_identity)
-            for relative, expected_identity in tree.inventory()
+            for relative, expected_identity in inventory
+            if relative not in ROOT_HOOK_SHIMS
         ]
         # Render from the descriptor-validated inventory bytes, so the shipped
         # templates and generated documents belong to the same source snapshot.
         by_path = {entry.path: entry for entry in entries}
         try:
+            aliases = [relative for relative, _ in inventory if relative in ROOT_HOOK_SHIMS]
+            if aliases:
+                shim = by_path[ROOT_HOOK_SHIM_TEMPLATE]
+                entries.extend(InstallEntry(relative, shim.content, shim.mode) for relative in aliases)
             agents_content = by_path[CONSUMER_AGENTS_TEMPLATE].content
             if "factory/README.md" in by_path:
                 readme = by_path[CONSUMER_FACTORY_README_TEMPLATE]

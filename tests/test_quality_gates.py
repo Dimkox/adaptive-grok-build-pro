@@ -30,6 +30,24 @@ BASE_PR_CHECKS = [
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_exact_consumer_and_micro_skip_reasons_are_admitted(self) -> None:
+        allowances = {
+            'architecture-inputs': 'architecture authority inputs are absent; not executed',
+            'bandit': 'bandit not available',
+            'change-spec': '0 specs checked; exempt=True',
+        }
+        for mode in ('pr', 'release'):
+            for name, reason in allowances.items():
+                with self.subTest(mode=mode, name=name):
+                    checks = [item for item in BASE_PR_CHECKS if item.name != name]
+                    self.assertEqual(evaluate_quality_gate(mode=mode, checks=[*checks, check(name, 'skip', reason)]).status, 'pass')
+                    for invalid in (reason + '; unknown', 'not executed'):
+                        self.assertEqual(evaluate_quality_gate(mode=mode, checks=[*checks, check(name, 'skip', invalid)]).status, 'fail')
+                    self.assertEqual(evaluate_quality_gate(mode=mode, checks=checks).status, 'fail')
+                    other = 'secret-scan'
+                    wrong = [item for item in BASE_PR_CHECKS if item.name != other]
+                    self.assertEqual(evaluate_quality_gate(mode=mode, checks=[*wrong, check(other, 'skip', reason)]).status, 'fail')
+
     def test_discovery_status_matrix_requires_execution(self) -> None:
         for mode in ('pr', 'release'):
             for runner in ('python-unittest', 'pytest', 'python-focused-unittest'):

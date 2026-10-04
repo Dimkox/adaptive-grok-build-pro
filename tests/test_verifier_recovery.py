@@ -473,6 +473,108 @@ class OwnedRunnerRecoveryTests(unittest.TestCase):
 
 
 class DurableReceiptRecoveryTests(unittest.TestCase):
+    def test_report_helper_does_not_adopt_replacement_between_link_and_stat(self):
+        with routed_fixture() as (root, route):
+            original_link = receipts.os.link
+            def replace_after_link(source, destination, **kwargs):
+                original_link(source, destination, **kwargs)
+                directory_fd = kwargs['dst_dir_fd']
+                os.unlink(destination, dir_fd=directory_fd)
+                descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory_fd)
+                with os.fdopen(descriptor, 'wb') as handle:
+                    handle.write(b'foreign replacement')
+            with patch.object(receipts.os, 'link', side_effect=replace_after_link), self.assertRaisesRegex(RuntimeError, 'identity changed'):
+                receipts._publish_verification_report(root, route['route_id'], {'kind': 'verification', 'details': {}}, None)
+            files = list(receipts.receipt_dir(root, route['route_id']).glob('reports/*.json'))
+            self.assertEqual(len(files), 1)
+            self.assertEqual(files[0].read_bytes(), b'foreign replacement')
+            self.assertFalse(list(files[0].parent.glob('*.tmp')))
+
+    def test_report_helper_post_link_stat_fault_cleans_descriptor_owned_artifact(self):
+        with routed_fixture() as (root, route):
+            original_stat = receipts.os.stat
+            failed = False
+            def fail_once(path, *args, **kwargs):
+                nonlocal failed
+                if not failed and isinstance(path, str) and len(path) == 69 and path.endswith('.json') and 'dir_fd' in kwargs:
+                    failed = True
+                    raise OSError('post-link stat fault')
+                return original_stat(path, *args, **kwargs)
+            with patch.object(receipts.os, 'stat', side_effect=fail_once), self.assertRaisesRegex(OSError, 'post-link stat fault'):
+                receipts._publish_verification_report(root, route['route_id'], {'kind': 'verification', 'details': {}}, None)
+            self.assertTrue(failed)
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('reports/*.json')))
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('*.tmp')))
+
+    def test_report_helper_post_publication_cancellation_removes_owned_artifact(self):
+        with routed_fixture() as (root, route):
+            calls = 0
+            def cancel_after_publication():
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise RuntimeError('cancel after digest publication')
+            with self.assertRaisesRegex(RuntimeError, 'cancel after digest publication'):
+                receipts._publish_verification_report(root, route['route_id'], {'kind': 'verification', 'details': {'captured': 'x' * receipts.MAX_RECEIPT_BYTES}}, cancel_after_publication)
+            self.assertEqual(calls, 2)
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('reports/*.json')))
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('*.tmp')))
+
+    def test_envelope_failures_do_not_accumulate_new_report_orphans(self):
+        with routed_fixture() as (root, route):
+            for attempt in range(3):
+                with self.subTest(attempt=attempt), patch.object(receipts, '_publish_receipt', side_effect=OSError('envelope failed')):
+                    with self.assertRaisesRegex(OSError, 'envelope failed'):
+                        receipts.write_receipt(root, 'verification', 'pass', details={'captured': str(attempt) * receipts.MAX_RECEIPT_BYTES})
+                self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+                self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('reports/*.json')))
+
+    def test_aborted_reused_report_preserves_preexisting_referenced_digest(self):
+        with routed_fixture() as (root, route), patch.object(receipts, 'now_utc', return_value='2026-10-04T00:00:00Z'):
+            details = {'captured': 'x' * receipts.MAX_RECEIPT_BYTES}
+            path = receipts.write_receipt(root, 'verification', 'pass', details=details)
+            envelope = json.loads(path.read_bytes())
+            artifact = root / envelope['details']['_verification_report']['path']
+            original_bytes = artifact.read_bytes()
+            original_identity = artifact.stat().st_ino
+            with patch.object(receipts, '_publish_receipt', side_effect=OSError('envelope failed')):
+                with self.assertRaises(OSError):
+                    receipts.write_receipt(root, 'verification', 'pass', details=details)
+            self.assertEqual(artifact.read_bytes(), original_bytes)
+            self.assertEqual(artifact.stat().st_ino, original_identity)
+            self.assertEqual(list(artifact.parent.glob('*.json')), [artifact])
+
+    def test_report_helper_abort_preserves_a_referenced_reused_artifact(self):
+        with routed_fixture() as (root, route):
+            details = {'captured': 'x' * receipts.MAX_RECEIPT_BYTES}
+            path = receipts.write_receipt(root, 'verification', 'pass', details=details)
+            envelope = json.loads(path.read_bytes())
+            artifact = root / envelope['details']['_verification_report']['path']
+            before = (artifact.read_bytes(), artifact.stat().st_ino)
+            envelope['details'] = details
+            calls = 0
+            def cancel_after_publication():
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise RuntimeError('cancel reused artifact')
+            with self.assertRaises(RuntimeError):
+                receipts._publish_verification_report(root, route['route_id'], envelope, cancel_after_publication)
+            self.assertEqual((artifact.read_bytes(), artifact.stat().st_ino), before)
+            self.assertEqual(receipts.get_receipt(root, route['route_id'], 'verification')['details'], details)
+
+    def test_abort_cleanup_does_not_unlink_identity_changed_report(self):
+        with routed_fixture() as (root, route):
+            artifact = None
+            def replace_before_envelope_failure(*args):
+                nonlocal artifact
+                artifact = next(receipts.receipt_dir(root, route['route_id']).glob('reports/*.json'))
+                artifact.write_bytes(b'foreign replacement bytes')
+                raise OSError('envelope failed after report identity changed')
+            with patch.object(receipts, '_publish_receipt', side_effect=replace_before_envelope_failure), self.assertRaises(OSError):
+                receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES})
+            self.assertEqual(artifact.read_bytes(), b'foreign replacement bytes')
+
     def test_large_scope_metadata_roundtrips_through_bounded_report(self):
         with routed_fixture() as (root, route):
             route['required_evidence'] = ['verification']
@@ -624,15 +726,15 @@ class DurableReceiptRecoveryTests(unittest.TestCase):
                     receipts.get_receipt(root, route['route_id'], 'verification')
 
     def test_spilled_report_publication_faults_retire_prior_pass(self):
-        for boundary in ('write', 'replace', 'file-fsync', 'directory-fsync', 'cancel', 'post-rename-cancel'):
+        for boundary in ('write', 'link', 'file-fsync', 'directory-fsync', 'cancel', 'post-rename-cancel'):
             with self.subTest(boundary=boundary), routed_fixture() as (root, route):
                 receipts.write_receipt(root, 'verification', 'pass')
                 original_fsync = receipts.os.fsync
-                original_replace = receipts.os.replace
+                original_link = receipts.os.link
                 report_renamed = False
-                def observe_replace(*args, **kwargs):
+                def observe_link(*args, **kwargs):
                     nonlocal report_renamed
-                    result = original_replace(*args, **kwargs)
+                    result = original_link(*args, **kwargs)
                     if 'src_dir_fd' in kwargs:
                         report_renamed = True
                     return result
@@ -647,13 +749,14 @@ class DurableReceiptRecoveryTests(unittest.TestCase):
                     if boundary == 'cancel' or report_renamed:
                         raise RuntimeError('report publication cancelled')
                 fault = (patch.object(receipts, '_write_receipt_bytes', side_effect=OSError('report write fault'))
-                         if boundary == 'write' else patch.object(receipts.os, 'replace', side_effect=OSError('report rename fault'))
-                         if boundary == 'replace' else patch.object(receipts.os, 'fsync', side_effect=fsync_fault))
-                observer = contextlib.nullcontext() if boundary == 'replace' else patch.object(receipts.os, 'replace', side_effect=observe_replace)
+                         if boundary == 'write' else patch.object(receipts.os, 'link', side_effect=OSError('report publication fault'))
+                         if boundary == 'link' else patch.object(receipts.os, 'fsync', side_effect=fsync_fault))
+                observer = contextlib.nullcontext() if boundary == 'link' else patch.object(receipts.os, 'link', side_effect=observe_link)
                 with fault, observer, self.assertRaises((OSError, RuntimeError)):
                     receipts.write_receipt(root, 'verification', 'pass', details={'captured': 'x' * receipts.MAX_RECEIPT_BYTES}, interrupt_check=cancel if boundary in ('cancel', 'post-rename-cancel') else None)
                 self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
                 self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('*.tmp')))
+                self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('reports/*.json')))
 
     def test_verification_classification_serialization_faults_retire_prior_pass(self):
         for failure, error in (('circular', ValueError), ('unserializable', TypeError)):

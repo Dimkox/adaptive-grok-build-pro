@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Compatibility and abort ownership were incompletely checked
+
+QG-01's consumer allowances did not match three exact producer skip contracts, and installer alias rendering reread the template rather than using its validated inventory entry. Fresh-install tests synthesized missing aliases from that template, masking the retained legacy configuration's broken commands in an updated source checkout; handoff prose also kept superseded PR239 as current. Report cleanup tracked ownership only through the temporary filename, not the published digest across envelope publication, so cancellation and later faults stranded newly owned files; regressions now distinguish those files from reused or replaced evidence.
+
 ## 2026-10-04 — Raw cancelled preflight output exposed a local operator path
 
 The coordinator published a raw cancelled preflight report without a public projection, exposing an operator-home prefix in a captured coverage argv. Retain the exact original privately before replacing that one historical argv value, and explicitly label the public projection cancelled/incomplete with no receipt or current-verification authority. Preserve scope, base/head, changed paths, results and skips rather than sanitizing their meaning.

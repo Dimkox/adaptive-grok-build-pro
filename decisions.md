@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Repair PR241 compatibility and publication boundaries
+
+Repair the seven confirmed findings with exact check/reason skip allowances, inventory-bound hook template bytes, additive PR241 continuation, nine tiny shared-dispatch launchers, and ownership-aware aborted-report cleanup. Add deterministic failing controls before each repair, preserve unknown/missing admission failures and immutable historical identities, then run bounded targeted checks and freeze one commit for independent review. The prior exact-head App success is historical after this delta; full verification and external delivery remain coordinator-owned.
+
 ## 2026-10-04 — Retain the original while publishing a non-authoritative projection
 
 The exact cancelled preflight original is retained in an ignored private copy with verified 25,603-byte size and SHA-256, while the public projection replaces only one operator-project argv prefix. The private copy is not publicly dereferenceable; the historical Git blob remains unchanged, and neither copy supplies current or complete verification. A canonical body digest pins every unaffected identity, scope, result and log value.
