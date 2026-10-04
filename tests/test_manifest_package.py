@@ -4,7 +4,6 @@ import hashlib
 import importlib.util
 import json
 import os
-import re
 import stat
 import subprocess
 import sys
@@ -1433,18 +1432,21 @@ module.main()
         custody = state['historical_v2_1_0_artifact_custody']['local_candidate']
         self.assertEqual(custody['version'], '2.1.0')
         self.assertEqual(custody['status'], 'artifact_candidate')
-        self.assertEqual(custody['artifact_status'], 'built_reproducibly_repository_custody_pending_delivery')
+        self.assertEqual(custody['artifact_status'], 'built_reproducibly_local_custody_removed_from_git_pending_delivery')
         candidate_artifact = custody['artifact']
         candidate_zip = ROOT / candidate_artifact['path']
         candidate_sidecar = ROOT / candidate_artifact['sidecar_path']
-        self.assertEqual(hashlib.sha256(candidate_zip.read_bytes()).hexdigest(), candidate_artifact['sha256'])
-        self.assertEqual(hashlib.sha256(candidate_sidecar.read_bytes()).hexdigest(), candidate_artifact['sidecar_sha256'])
+        self.assertEqual(candidate_artifact['storage'], 'external_or_release_asset_required')
+        self.assertTrue(candidate_artifact['repository_file_removed'])
+        self.assertFalse(candidate_zip.exists())
+        self.assertFalse(candidate_sidecar.exists())
         self.assertEqual(candidate_artifact['reproducible_build_count'], 2)
         published_version = published['tag'].removeprefix('v')
         self.assertEqual(published_version, '2.0.19')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
+        self.assertEqual(artifact['storage'], 'github_release_asset')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
         expected_digest = '4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9'
@@ -1452,74 +1454,18 @@ module.main()
 
         zip_path = ROOT / expected_relative
         sidecar_path = zip_path.with_suffix('.zip.sha256')
-        self.assertTrue(zip_path.is_file())
-        self.assertTrue(sidecar_path.is_file())
-        digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-        self.assertEqual(digest, expected_digest)
+        self.assertFalse(zip_path.exists())
+        self.assertFalse(sidecar_path.exists())
         self.assertEqual(
-            sidecar_path.read_text(encoding='ascii'),
-            f'{expected_digest}  {zip_path.name}\n',
+            artifact['url'],
+            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/'
+            'adaptive-grok-build-pro-v2.0.19.zip',
         )
         self.assertEqual(
-            hashlib.sha256(sidecar_path.read_bytes()).hexdigest(),
-            artifact['sidecar_sha256'],
+            artifact['sidecar_url'],
+            'https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/'
+            'adaptive-grok-build-pro-v2.0.19.zip.sha256',
         )
-
-        with zipfile.ZipFile(zip_path) as archive:
-            self.assertIsNone(archive.testzip())
-            names = archive.namelist()
-            self.assertEqual(names, sorted(names))
-            self.assertEqual(len(names), len(set(names)))
-            prefix = 'adaptive-grok-build-pro/'
-            self.assertTrue(all(name.startswith(prefix) for name in names))
-            manifest_member = f'{prefix}MANIFEST.sha256'
-            self.assertIn(manifest_member, names)
-            manifest = archive.read(manifest_member).decode('utf-8')
-            self.assertTrue(manifest.endswith('\n'))
-            entries: list[tuple[str, str]] = []
-            for line in manifest.splitlines():
-                match = re.fullmatch(r'([0-9a-f]{64})  ([^\\\x00]+)', line)
-                self.assertIsNotNone(match, line)
-                assert match is not None
-                relative = match.group(2)
-                path = PurePosixPath(relative)
-                self.assertFalse(path.is_absolute())
-                self.assertNotIn('..', path.parts)
-                self.assertNotIn('.', path.parts)
-                self.assertNotEqual(relative, 'MANIFEST.sha256')
-                entries.append((relative, match.group(1)))
-            relative_names = [relative for relative, _digest in entries]
-            self.assertEqual(relative_names, sorted(relative_names))
-            self.assertEqual(len(relative_names), len(set(relative_names)))
-            self.assertEqual(
-                {f'{prefix}{relative}' for relative in relative_names},
-                set(names) - {manifest_member},
-            )
-            for relative, member_digest in entries:
-                member = f'{prefix}{relative}'
-                self.assertEqual(
-                    hashlib.sha256(archive.read(member)).hexdigest(),
-                    member_digest,
-                    relative,
-                )
-            for info in archive.infolist():
-                self.assertEqual(info.create_system, 3, info.filename)
-                self.assertIn(
-                    info.external_attr >> 16,
-                    {stat.S_IFREG | 0o644, stat.S_IFREG | 0o755},
-                    info.filename,
-                )
-            self.assertEqual(
-                archive.getinfo(manifest_member).external_attr >> 16,
-                stat.S_IFREG | 0o644,
-            )
-            self.assertEqual(
-                archive.read(f'{prefix}VERSION').decode('utf-8').strip(),
-                published_version,
-            )
-            self.assertFalse(any('.github/workflows/' in name for name in names))
-            self.assertNotIn(f'{prefix}.github/dependabot.yml', names)
-            self.assertNotIn(f'{prefix}.grok-stack/templates/ci/github-actions.yml', names)
 
     def test_write_archive_preserves_source_manifest_and_embeds_current_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

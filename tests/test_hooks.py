@@ -36,7 +36,7 @@ class HookTests(unittest.TestCase):
 
     def test_root_shim_dispatches_pre_tool_use(self) -> None:
         with project_copy() as root:
-            shim = (ROOT / 'pre_tool_use.py').read_text(encoding='utf-8')
+            shim = (ROOT / '.grok-stack/templates/hook_root_shim.py').read_text(encoding='utf-8')
             (root / 'pre_tool_use.py').write_text(shim, encoding='utf-8')
             proc = subprocess.run(
                 ['python3', 'pre_tool_use.py'],
@@ -53,7 +53,7 @@ class HookTests(unittest.TestCase):
 
     def test_root_shim_fail_open_when_canonical_missing(self) -> None:
         with project_copy() as root:
-            shim = (ROOT / 'pre_tool_use.py').read_text(encoding='utf-8')
+            shim = (ROOT / '.grok-stack/templates/hook_root_shim.py').read_text(encoding='utf-8')
             (root / 'pre_tool_use.py').write_text(shim, encoding='utf-8')
             (root / '.grok/hooks/pre_tool_use.py').unlink()
             proc = subprocess.run(

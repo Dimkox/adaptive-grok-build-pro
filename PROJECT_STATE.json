@@ -47,7 +47,10 @@
       "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
       "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
       "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "binding": "immutable_release_tag"
+      "binding": "immutable_release_tag",
+      "storage": "github_release_asset",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip",
+      "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip.sha256"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
@@ -243,14 +246,14 @@
       "route_id": "a0ff84051275",
       "branch": "release/v2.1.0-artifact",
       "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
-      "identity": "v2.1.0 artifact-child candidate built twice from exact source",
+      "identity": "v2.1.0 artifact-child candidate built twice from exact source; git custody removed",
       "status": "artifact_candidate",
-      "stage": "artifact_child_candidate_pending_pr_tag_release",
+      "stage": "artifact_child_candidate_removed_from_git_pending_external_release_asset",
       "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
       "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
       "target_version": "2.1.0",
       "scope": [
-        "Repository custody for the twice-reproducible v2.1.0 ZIP and checksum sidecar",
+        "External release-asset custody for twice-reproducible v2.1.0 ZIP and checksum sidecar",
         "PROJECT_STATE and release documentation bind exact source, tree and artifact hashes without delivery claims",
         "Binding tests enforce immutable v2.0.19 publication identity and v2.1.0 candidate boundaries"
       ],
@@ -453,13 +456,15 @@
       "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
       "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
       "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-      "artifact_status": "built_reproducibly_repository_custody_pending_delivery",
+      "artifact_status": "built_reproducibly_local_custody_removed_from_git_pending_delivery",
       "artifact": {
         "path": "packages/adaptive-grok-build-pro-v2.1.0.zip",
         "sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
         "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
         "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
-        "reproducible_build_count": 2
+        "reproducible_build_count": 2,
+        "storage": "external_or_release_asset_required",
+        "repository_file_removed": true
       },
       "pull_request": null,
       "checked_head": null,
@@ -478,7 +483,7 @@
       "published": false,
       "external_effect": false,
       "operational_activation": false,
-      "notes": "Repository-custodied v2.1.0 artifact candidate built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
+      "notes": "Historical v2.1.0 artifact candidate was built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. ZIP bytes are no longer tracked in git; publishable archives must live in GitHub Releases or external artifact storage. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
     },
     "active_delivery": {
       "route_id": "a0ff84051275",

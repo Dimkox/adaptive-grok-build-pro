@@ -429,7 +429,7 @@ class ProjectStateTests(unittest.TestCase):
             local["change_package"],
             "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
         )
-        self.assertEqual(local["artifact_status"], "built_reproducibly_repository_custody_pending_delivery")
+        self.assertEqual(local["artifact_status"], "built_reproducibly_local_custody_removed_from_git_pending_delivery")
         self.assertFalse(local["default_enabled"])
         self.assertEqual(local["qualification_status"], "not_qualified")
         self.assertFalse(local["published"])
@@ -457,7 +457,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["branch"], local["branch"])
         self.assertEqual(current["change_package"], local["change_package"])
         self.assertEqual(current["target_version"], "2.1.0")
-        self.assertEqual(current["stage"], "artifact_child_candidate_pending_pr_tag_release")
+        self.assertEqual(current["stage"], "artifact_child_candidate_removed_from_git_pending_external_release_asset")
         self.assertEqual(current["source_base"], local["source_base"])
         self.assertEqual(current["source_tree"], local["source_tree"])
         self.assertEqual(current["frozen"]["published_release"], "v2.0.19")
@@ -533,7 +533,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(current["status"], "artifact_candidate")
         self.assertEqual(
             current["identity"],
-            "v2.1.0 artifact-child candidate built twice from exact source",
+            "v2.1.0 artifact-child candidate built twice from exact source; git custody removed",
         )
         self.assertEqual(current["route_id"], "a0ff84051275")
         self.assertEqual(current["target_version"], "2.1.0")
@@ -796,7 +796,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_current_core_source_has_no_artifact_or_successor_acceptance(self) -> None:
         state = self.state
         custody_bytes = json.dumps(state["historical_v2_1_0_artifact_custody"], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-        self.assertEqual(hashlib.sha256(custody_bytes).hexdigest(), "d6bfb9fc56e7e239c244e4ee6accd39daa5e9e3e54fb49f6b3570538ed093c77")
+        self.assertEqual(hashlib.sha256(custody_bytes).hexdigest(), "4946161882bdd7509b81e491cfca8f797e90f86c8489884232cc0b3bf67cdfa9")
         local = state["local_candidate"]
         current = state["current_unreleased_change"]
         delivery = state["active_delivery"]

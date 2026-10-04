@@ -80,6 +80,20 @@ MANAGED_FILES = (
     "schemas/workflow-task-graph-v1.schema.json",
     "schemas/workflow-convergence-report-v1.schema.json",
 )
+ROOT_HOOK_SHIMS = frozenset(
+    {
+        "session_start.py",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "stop_gate.py",
+        "session_end.py",
+    }
+)
+ROOT_HOOK_SHIM_TEMPLATE = ".grok-stack/templates/hook_root_shim.py"
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(
     {
@@ -575,6 +589,9 @@ def _source_entry(
         raise UnsafeInstallTarget(f"target-owned architecture cannot be managed: {relative}")
     if relative in TARGET_OWNED_GOVERNANCE:
         raise UnsafeInstallTarget(f"target-owned governance cannot be managed: {relative}")
+    if relative in ROOT_HOOK_SHIMS:
+        content, mode = tree.read(ROOT_HOOK_SHIM_TEMPLATE, MAX_SOURCE_FILE_BYTES)
+        return InstallEntry(relative, content, mode)
     content, mode = tree.read(relative, MAX_SOURCE_FILE_BYTES, expected_identity)
     return InstallEntry(relative, content, mode)
 

@@ -1680,3 +1680,11 @@ Root cause: `start_change()` built public directory names from `slugify(title)` 
 ## 2026-10-04 — Historical evidence published operator topology
 
 Root cause: evidence files treated host paths, app IDs and network observations as harmless operational facts even when the repository was public. Redact current-tree documentation and evidence, and do not claim cleanup is complete until history rewrite and release-asset rotation are separately executed.
+
+## 2026-10-04 — Release ZIPs kept stale public evidence alive
+
+Root cause: repository-custodied binary release archives were treated as source evidence, so old path names and logs stayed visible even after current-tree text cleanup. Release artifacts must live outside git and be referenced by hash and URL, then history rewrite can remove old blobs in one coordinated pass.
+
+## 2026-10-04 — Compatibility shims were copied into the public root
+
+Root cause: installer compatibility files were stored as nine duplicate root files instead of one template plus install-time materialization. This made the public root noisy and created extra canonical-root maintenance every time hook compatibility changed.

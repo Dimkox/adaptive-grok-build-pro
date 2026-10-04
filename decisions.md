@@ -981,3 +981,11 @@ Change package directory names now use a public-safe slug, with an opaque `task`
 ## 2026-10-04 — Public evidence must redact host/network identity
 
 Public documentation and historical evidence should preserve the control fact without publishing operator topology. Host paths, network addresses, tailnet hostnames and exact app/installation numeric IDs are redacted in the current tree; any true removal from Git history requires a separately planned `git filter-repo` rewrite and coordinated force-push.
+
+## 2026-10-04 — Release archives are assets, not source files
+
+Tracked ZIP releases made clone size larger and preserved stale public paths inside binary blobs. Keep release archive bytes in GitHub Releases or external artifact storage, and keep only hashes, URLs and provenance records in the source tree.
+
+## 2026-10-04 — Root hook shims are install output, not repository root content
+
+The nine root hook shims duplicated one template and made the public root look like compatibility debris. Keep one canonical shim template under `.grok-stack/templates/` and let the installer materialize root hook files into target projects.

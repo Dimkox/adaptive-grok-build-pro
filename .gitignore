@@ -25,7 +25,16 @@ err.log
 # Packager writes this then embeds it in the zip; do not leave it at root.
 MANIFEST.sha256
 
-# Scratch builds. Versioned release zips live in packages/ and are tracked.
+# Release archives belong in GitHub Releases, not in git history.
+packages/*.zip
+packages/*.zip.sha256
+
+# Runtime evidence logs belong in local/private evidence storage.
+*.out
+*.log
+*.err
+
+# Scratch builds.
 # Dependencies and build output
 vendor/
 node_modules/

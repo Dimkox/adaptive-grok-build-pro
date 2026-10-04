@@ -21,10 +21,8 @@ ROOT_ENTRIES = frozenset(
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
         "delivery", "docs", "engineering", "examples", "factory", "governance",
-        "mistakes.md", "packages", "pilot", "post_tool_use.py", "pre_compact.py",
-        "pre_tool_use.py", "ruff.toml", "schemas", "scripts", "session_end.py",
-        "session_start.py", "side-projects", "stop_gate.py", "subagent_start.py",
-        "subagent_stop.py", "tests", "trust-ci", "user_prompt_submit.py",
+        "mistakes.md", "packages", "pilot", "ruff.toml", "schemas", "scripts",
+        "side-projects", "tests", "trust-ci",
     }
 )
 

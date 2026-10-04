@@ -143,7 +143,7 @@ Where this runner cannot provide its required parallel-process cleanup, a positi
    python3 scripts/grok_doctor.py --offer-install
    ```
 
-   Doctor выводит состояние и предложения установки; он не устанавливает зависимости за вас. Для локального стека нужны Python ≥3.10 и Git ≥2.34; для Python-пакета factory — Python ≥3.11. Grok Build CLI нужен для TUI: установите его отдельно и выполните `grok` для входа. Node/npm, PHP/Composer нужны соответствующим профилям, Docker — отдельному операторскому/проверочному окружению. Не используйте scripts/bootstrap.sh: его старый вызов `--force` несовместим с текущим установщиком.
+   Doctor выводит состояние и предложения установки; он не устанавливает зависимости за вас. Для локального стека нужны Python ≥3.10 и Git ≥2.34; для Python-пакета factory — Python ≥3.11. Grok Build CLI нужен для TUI: установите его отдельно и выполните `grok` для входа. Node/npm, PHP/Composer нужны соответствующим профилям, Docker — отдельному операторскому/проверочному окружению. Старый `scripts/bootstrap.sh` удалён; используйте явные команды doctor/install из этого README.
 
 3. Сначала получите план для явно выбранного своего репозитория:
 
