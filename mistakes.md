@@ -1783,3 +1783,7 @@ Root cause: synthetic PR fixtures omitted a valid spec or contained Ruff-invalid
 ## 2026-10-04 — Preliminary full gate duplicated the serial PostgreSQL cycle
 
 Root cause: delivery guidance required a full local gate before reviews and another after persisting their reports, repeating the expensive serial PostgreSQL checks. The user-approved sequence uses bounded committed-HEAD observations before review and one final qualifying full run on the frozen report-containing candidate. Historical PASS is never cached qualification; the ten-minute target and Core/PostgreSQL overlap remain unproven/unimplemented.
+
+## 2026-10-04 — Duplicate control-flow sites need anchored mutation patches
+
+Root cause: a reviewer mutation patch matched the earlier landing stability assignment instead of the PR assignment, so PR-only controls did not kill it. The reviewer restored the scratch source, anchored the correct PR site and observed both relevant controls fail. Match the enclosing flow as well as the assignment and disclose incorrectly targeted probes rather than counting them as successful kills.
