@@ -1791,3 +1791,7 @@ Root cause: a reviewer mutation patch matched the earlier landing stability assi
 ## 2026-10-04 — Untracked reports were absent from the whitespace precheck
 
 Root cause: the coordinator ran `git diff --check` before staging newly created reports, so their trailing Markdown spaces were outside that inventory and later failed the committed-range gate. Stage the exact delivery files first and check `git diff --cached --check <actual-base>`, then check the final committed range. Fail-fast retained the refusal and disclosed all undispatched checks; historical source PASS did not override it.
+
+## 2026-10-04 — Dispatch fixtures inherited the outer verifier capability
+
+Root cause: two fake local-dispatch controls inherited `GROK_VERIFY_CAPABILITY=repository-sandbox`, so the production verifier correctly skipped PostgreSQL while those tests expected dispatch. Reproducing both failures isolated the fixture defect; only the fixture now clears and restores that flag, with an explicit inherited-sandbox regression. Production capability checks and allowed skips remain unchanged; prior local/review evidence is historical after this repair.

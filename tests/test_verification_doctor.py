@@ -2107,6 +2107,17 @@ class FailFastVerificationTests(unittest.TestCase):
             self.assertEqual([item.name for item in checks], ['ruff', 'bandit', 'pilot-unittest', 'python-unittest', 'coverage', 'factory-unit', 'factory-postgres-exit'])
             self.assertTrue(all(item.status == 'pass' or (item.name == 'bandit' and item.status == 'skip') for item in checks))
 
+    def test_dispatch_fixture_isolates_and_restores_inherited_sandbox_capability(self):
+        with patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox'}):
+            with self.python_tree() as root:
+                def command(project, name, args, timeout=300, **kwargs):
+                    return CheckResult(name, 'pass', 'actual success', command=args)
+                with patch.object(verification_module, '_command_check', side_effect=command):
+                    checks = {item.name: item for item in _python(root, 'pr')}
+                self.assertEqual(checks['factory-postgres-exit'].status, 'pass')
+                self.assertIsNotNone(checks['factory-postgres-exit'].command)
+            self.assertEqual(os.environ.get('GROK_VERIFY_CAPABILITY'), 'repository-sandbox')
+
     def test_early_refusal_still_detects_mutation_and_refuses_receipt(self):
         with self.routed_tree() as (root, route):
             def refusal(project, files):
@@ -2172,7 +2183,10 @@ class FailFastVerificationTests(unittest.TestCase):
                  patch.object(verification_module, '_bandit', return_value=CheckResult('bandit', 'skip', 'bandit not available')), \
                  patch.object(verification_module, 'selected_workers', return_value=None), \
                  patch.object(verification_module, 'run_core_tests', return_value=None), \
-                 patch.object(verification_module, 'command_exists', side_effect=lambda name: name == 'coverage'):
+                 patch.object(verification_module, 'command_exists', side_effect=lambda name: name == 'coverage'), \
+                 patch.dict(os.environ, {}, clear=False):
+                # The fake dispatcher models a local runner, not the outer CI sandbox.
+                os.environ.pop('GROK_VERIFY_CAPABILITY', None)
                 yield root
 
     def test_python_refusal_prevents_later_subprocess_dispatch(self):
