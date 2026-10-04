@@ -45,6 +45,7 @@ DOCUMENT_ROOT_FILES = frozenset({
     'AGENTS.md',
     'CHANGELOG.md',
     'DARK_FACTORY_ROADMAP.md',
+    'FACTORY_TZ_v1.5_ADDENDUM_QG-01.md',
     'GROK_BUILD_HANDOFF.md',
     'LICENSE',
     'QUICKSTART.md',

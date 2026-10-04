@@ -1660,3 +1660,7 @@ Root cause: the Trust CI image takes the no-pytest fallback and the new sharder 
 ## 2026-10-03 — Focused-profile tests still expected the old module invocation
 
 Root cause: the implementation switched the focused runner to path-based unittest targets, but the contract test still asserted module names and the minimal project-copy fixture omitted the tracked `.superpowers` root entry required by `test_structure.py`. Keep test fixtures aligned with the exact runner command and canonical tracked root inventory before pushing another Trust CI attempt.
+
+## 2026-10-04 — Full PR verifier was run before the new root file was committed
+
+Root cause: `tests/test_structure.py` compares canonical root entries against `git ls-tree HEAD`, so a new root ТЗ file remains invisible until it is committed. Run targeted tests before commit, but run full PR verification only after the candidate tree is frozen and committed.

@@ -961,3 +961,7 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-03 — Focused verifier запускает admitted tests как файлы
 
 В immutable Trust CI образе focused profile должен вызывать `python -m unittest tests/test_*.py`, а не преобразовывать пути в module names. File-based запуск совпадает с synthetic fixtures без `tests/__init__.py` и не включает full discovery. Targeted локальный и image-прогон подтвердили новый контракт.
+
+## 2026-10-04 — QG-01 как отдельный admission check
+
+Обязательность verifier-гейтов оформлена отдельным результатом `quality-gate`, а не скрыта в общем вычислении `status`. Это сохраняет видимость всех исходных проверок и явно блокирует PR/release, если обязательный check отсутствует или `skip` не разрешён политикой.

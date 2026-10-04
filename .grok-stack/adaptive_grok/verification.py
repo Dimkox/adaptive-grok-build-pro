@@ -20,6 +20,7 @@ from .architecture import (
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
 from .architecture_diff import select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
+from .quality_gates import evaluate_quality_gate
 from .receipts import (
     active_architecture_binding,
     active_governance_binding,
@@ -2109,8 +2110,6 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
                 results.append(CheckResult('factory-postgres-exit', 'skip', 'architecture input preflight failed; not started'))
     else:
         results.extend(_python(root, mode, docs_scope))
-    report['check_status'] = 'pass' if all(item.status in {'pass', 'skip'} for item in results) else 'fail'
-
     state.stage = 'source-stability'
     try:
         final_fingerprint = tree_fingerprint(root)
@@ -2127,6 +2126,15 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
                 if source_stable
                 else "repository changed during verification checks"
             ),
+        )
+    )
+    quality_gate = evaluate_quality_gate(mode=mode, checks=results, docs_scope=docs_scope)
+    results.append(
+        CheckResult(
+            "quality-gate",
+            quality_gate.status,
+            quality_gate.summary,
+            details=quality_gate.details,
         )
     )
 
@@ -2148,6 +2156,7 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
         'governance': governance_metadata,
         'workflow_artifacts': workflow_metadata,
         'status': 'pass' if not failures else 'fail',
+        'check_status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
         'terminal_state': 'completed',
         'evidence_status': 'not_recorded',
