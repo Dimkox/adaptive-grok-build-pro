@@ -1,5 +1,13 @@
 # Decisions
 
+## 2026-10-04 — Bind the closed root inventory to committed compatibility commands
+
+The canonical root set explicitly includes exactly the nine restored thin compatibility commands, without accepting arbitrary Python files or weakening the closed inventory check. Rerun the HEAD-based assertion after commit, alongside the existing launcher behavior regression, so newly tracked entries are actually in its comparison tree.
+
+## 2026-10-04 — Give synthetic focused-test fixtures their own package identity
+
+Exactly three temporary scope fixture constructors now create an empty `tests/__init__.py`, preventing Core's inherited PYTHONPATH from resolving their test modules to the candidate's regular package. Their assertions require exactly five synthetic tests to execute, so fixing the root inventory cannot mask an unintended green run of the real 152 binding tests. Production runners, environment handling, selector admission and gates are unchanged.
+
 ## 2026-10-04 — Qualify abort cleanup by staged bytes, not a pre-unlink ctime
 
 Cleanup requires the staged device/inode plus a bounded stable no-follow read whose exact byte count and SHA-256 match the original report reference. This preserves foreign in-place rewrites while allowing our own hardlink unlink to change ctime without stranding unchanged reports. Reused or referenced files stay outside abort ownership; caps, envelope schema and authority bindings remain unchanged.

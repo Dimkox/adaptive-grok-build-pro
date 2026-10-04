@@ -653,6 +653,7 @@ class FocusedPythonExecutionTests(unittest.TestCase):
 
     def _tree(self, root: Path) -> None:
         (root / 'tests').mkdir(parents=True, exist_ok=True)
+        (root / 'tests' / '__init__.py').write_text('', encoding='utf-8')
         (root / '.coveragerc').write_text(
             '[run]\nbranch = False\nsource =\n    tests\n\n[report]\nshow_missing = False\n',
             encoding='utf-8',
@@ -693,6 +694,7 @@ class FocusedPythonExecutionTests(unittest.TestCase):
 
             self.assertIn('python-focused-unittest', checks)
             self.assertEqual(checks['python-focused-unittest'].status, 'pass')
+            self.assertIn('Ran 5 tests', checks['python-focused-unittest'].stderr)
             self.assertEqual(checks['python-unittest'].status, 'skip')
             self.assertEqual(checks['coverage'].status, 'skip')
             self.assertEqual(checks['factory-postgres-exit'].status, 'skip')
@@ -792,6 +794,7 @@ class FocusedPythonEmptyTargetTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='grok-scope-empty-') as tmp:
             root = Path(tmp)
             (root / 'tests').mkdir(parents=True)
+            (root / 'tests' / '__init__.py').write_text('', encoding='utf-8')
             for target in FOCUSED_TEST_TARGETS:
                 path = root / target
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -808,6 +811,7 @@ class FocusedPythonEmptyTargetTests(unittest.TestCase):
             # full-discovery runner is python-unittest and that is the skip that must appear.
             self.assertEqual(checks['python-unittest'].status, 'skip')
             self.assertEqual(checks['python-focused-unittest'].status, 'pass')
+            self.assertIn('Ran 5 tests', checks['python-focused-unittest'].stderr)
 
 
 class DocsStateStatusInventoryTests(unittest.TestCase):
@@ -1027,6 +1031,7 @@ class VerifyDocsStateScopeEndToEndTests(unittest.TestCase):
     def _repo(self, root: Path, omit: tuple[str, ...] = ()) -> tuple[object, str]:
         git = _init_repo(root)
         (root / 'tests').mkdir()
+        (root / 'tests' / '__init__.py').write_text('', encoding='utf-8')
         for target in FOCUSED_TEST_TARGETS:
             if target in omit:
                 continue
@@ -1078,6 +1083,8 @@ class VerifyDocsStateScopeEndToEndTests(unittest.TestCase):
             self.assertEqual(scope['evidence_kind'], f'verification:{DOCS_STATE_PROFILE}')
             checks = self._checks(report)
             self.assertEqual(checks.get('python-focused-unittest'), 'pass')
+            focused = next(item for item in report['checks'] if item['name'] == 'python-focused-unittest')
+            self.assertIn('Ran 5 tests', focused['stderr'])
             self.assertEqual(checks.get('python-unittest'), 'skip')
             self.assertEqual(checks.get('coverage'), 'skip')
             self.assertEqual(checks.get('factory-postgres-exit'), 'skip')

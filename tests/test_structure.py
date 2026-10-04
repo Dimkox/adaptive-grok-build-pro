@@ -23,6 +23,9 @@ ROOT_ENTRIES = frozenset(
         "delivery", "docs", "engineering", "examples", "factory", "governance",
         "mistakes.md", "packages", "pilot", "ruff.toml", "schemas", "scripts",
         "side-projects", "tests", "trust-ci",
+        "session_start.py", "user_prompt_submit.py", "pre_tool_use.py",
+        "post_tool_use.py", "pre_compact.py", "subagent_start.py",
+        "subagent_stop.py", "stop_gate.py", "session_end.py",
     }
 )
 

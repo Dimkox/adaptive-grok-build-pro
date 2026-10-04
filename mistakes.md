@@ -1,5 +1,13 @@
 # Mistakes
 
+## 2026-10-04 — Pre-commit HEAD inventory masked newly tracked launchers
+
+The root inventory test reads `git ls-tree HEAD`, so the pre-commit binding run checked the old commit where restored launchers were still absent rather than the pending candidate that introduced them. The exact nine compatibility entries were therefore not added to its closed expected set until committed full verification exposed the mismatch. Tests whose input is HEAD must be rerun after commit; passing a dirty-tree test run alone does not establish the committed candidate's inventory.
+
+## 2026-10-04 — Synthetic scope fixtures did not own their package namespace
+
+Temporary tests directories lacked `__init__.py`, so inherited Core PYTHONPATH let nested unittest resolve the real candidate's regular tests package instead of the five synthetic modules. Standalone runs without that inherited path hid the leak, and a status-only assertion could become green again after repairing the unrelated real root inventory. Explicit package identity and a five-test execution-count assertion expose the error without changing production environment or selector behavior.
+
 ## 2026-10-04 — Stat-fault cleanup confused inode ownership with unchanged data
 
 If the first post-link stat failed, inode-only cleanup could delete foreign in-place bytes; if the second stat failed, the earlier ctime snapshot could instead strand our unchanged report after our own temporary hardlink unlink. The missing invariant was matching staged content during a stable bounded read, not adopting fallback metadata or freezing pre-unlink ctime. Combined first-stat rewrite and second-stat clock-boundary regressions now cover both failure paths, including valid same-length foreign JSON.
