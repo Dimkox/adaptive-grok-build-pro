@@ -1,0 +1,109 @@
+{
+  "change_id": "20261004-task-89578a",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feat/verify-fast-fail",
+      "change_id": "20261004-task-89578a",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "ee3911869419204154e02900e58bf31492ee744c",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-04T19:53:48+00:00",
+      "route_id": "89578a99758f"
+    },
+    {
+      "branch": "feat/verify-fast-fail",
+      "change_id": "20261004-task-89578a",
+      "detached": false,
+      "dirty_product_paths": [
+        ".grok-stack/adaptive_grok/python_test_runner.py",
+        ".grok-stack/adaptive_grok/quality_gates.py",
+        ".grok-stack/adaptive_grok/verification.py",
+        "AGENTS.md",
+        "README.md",
+        "decisions.md",
+        "mistakes.md",
+        "scripts/grok_verify.py",
+        "tests/test_python_test_runner.py",
+        "tests/test_quality_gates.py",
+        "tests/test_verification_doctor.py",
+        "tests/test_verification_scope.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "ee3911869419204154e02900e58bf31492ee744c",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-04T20:30:42+00:00",
+      "route_id": "89578a99758f"
+    }
+  ],
+  "created_at": "2026-10-04T19:53:48+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "full PR verification pending after bounded writer controls",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "independent code review pending",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "independent test review pending",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T19:53:48+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-04T20:05:00+00:00",
+      "from": "draft",
+      "reason": "bounded scope, typed acceptance and resource/dependency plan recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-04T20:05:00+00:00",
+      "from": "scoped",
+      "reason": "user explicitly requested implementation; route has no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-04T20:30:42+00:00",
+      "from": "approved",
+      "reason": "Sole writer added refusal dispatch and committed-HEAD smoke with RED/GREEN controls; full gates and independent reviews remain pending",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "f91274bf9afe3358274ccbc9a6506ac80a6b4697c9c1857861f161efa99b06c4",
+  "route_id": "89578a99758f",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Local verifier fail-fast and bounded delivery cycle",
+  "updated_at": "2026-10-04T20:30:42+00:00"
+}

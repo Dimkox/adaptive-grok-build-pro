@@ -1775,3 +1775,27 @@ Root cause: the PR verifier produced no output for about two minutes before inte
 ## 2026-10-04 — A private directory name was mistaken for Git exclusion
 
 Root cause: the coordinator assumed `.review-scratch` was ignored without checking Git's actual exclusion rules. The retained raw report was private by filesystem permissions but untracked, not ignored; before delivery, an exact local exclusion was added and independently checked alongside its hash and permissions. Check actual exclusion before storing raw host-local evidence, rather than relying on a directory name.
+
+## 2026-10-04 — Refusal fixtures relied on earlier failures being ignored
+
+Root cause: synthetic PR fixtures omitted a valid spec or contained Ruff-invalid sample Python, then expected a later check to execute despite that earlier refusal. The new boundaries exposed this in a bounded covering run (12 failures, 233 passes, 42.73 s); diagnostic fixtures now explicitly request keep-going, while successful scope fixtures provide lint-valid source and a real typed binding. Establish valid prerequisites before injecting the refusal a behavioral test is meant to observe.
+
+## 2026-10-04 — Preliminary full gate duplicated the serial PostgreSQL cycle
+
+Root cause: delivery guidance required a full local gate before reviews and another after persisting their reports, repeating the expensive serial PostgreSQL checks. The user-approved sequence uses bounded committed-HEAD observations before review and one final qualifying full run on the frozen report-containing candidate. Historical PASS is never cached qualification; the ten-minute target and Core/PostgreSQL overlap remain unproven/unimplemented.
+
+## 2026-10-04 — Duplicate control-flow sites need anchored mutation patches
+
+Root cause: a reviewer mutation patch matched the earlier landing stability assignment instead of the PR assignment, so PR-only controls did not kill it. The reviewer restored the scratch source, anchored the correct PR site and observed both relevant controls fail. Match the enclosing flow as well as the assignment and disclose incorrectly targeted probes rather than counting them as successful kills.
+
+## 2026-10-04 — Untracked reports were absent from the whitespace precheck
+
+Root cause: the coordinator ran `git diff --check` before staging newly created reports, so their trailing Markdown spaces were outside that inventory and later failed the committed-range gate. Stage the exact delivery files first and check `git diff --cached --check <actual-base>`, then check the final committed range. Fail-fast retained the refusal and disclosed all undispatched checks; historical source PASS did not override it.
+
+## 2026-10-04 — Dispatch fixtures inherited the outer verifier capability
+
+Root cause: two fake local-dispatch controls inherited `GROK_VERIFY_CAPABILITY=repository-sandbox`, so the production verifier correctly skipped PostgreSQL while those tests expected dispatch. Reproducing both failures isolated the fixture defect; only the fixture now clears and restores that flag, with an explicit inherited-sandbox regression. Production capability checks and allowed skips remain unchanged; prior local/review evidence is historical after this repair.
+
+## 2026-10-04 — Inventory membership was mistaken for source-file existence
+
+Root cause: an analysis inferred alias source-file existence from managed inventory membership without reading the inventory producer and alias rendering branch. `_SourceTree.inventory()` inserts virtual managed names and `build_payload()` skips their source reads, so the warning was corrected before runtime edits; inspect both sides of this seam before changing the installer.

@@ -8,7 +8,7 @@ Project hooks need `/hooks-trust` in the Grok TUI.
 - **Stop**: evidence gaps are **warnings only**, never block the agent
 
 Hard lockouts (exit 2 / infinite stop loops) are intentional bugs — fixed in 2.0.4.
-Older `adaptive.json` files call `python3 pre_tool_use.py` from the project root. Root shims dispatch into `.grok/hooks/` or fail-open so a `git pull` cannot freeze the agent.
+Canonical source hooks live in `.grok/hooks/`. For older `adaptive.json` files that call `python3 pre_tool_use.py` from a consumer project root, the installer generates nine compatibility aliases from `.grok-stack/templates/hook_root_shim.py`; these aliases dispatch to canonical hooks or preserve the fail-open JSON fallback. Generated consumer aliases are not tracked source-root files.
 
 ## Disable all hooks
 

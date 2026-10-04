@@ -1041,3 +1041,23 @@ Tracked ZIP releases made clone size larger and preserved stale public paths ins
 ## 2026-10-04 — Root hook shims are install output, not repository root content
 
 The nine root hook shims duplicated one template and made the public root look like compatibility debris. Keep one canonical shim template under `.grok-stack/templates/` and let the installer materialize root hook files into target projects.
+
+## 2026-10-04 — Stop nonqualifying dispatch, retain final admission
+
+PR/release now share the closed per-result QG policy at dispatch boundaries; actual refusals retain their output, and undispatched checks remain explicit skips while source stability and final QG still run. The first 29 bounded controls passed in 20.390 s, including real Core-import smoke, timeout and unchanged receipt controls; this is targeted evidence, not full verification. Named smoke uses the existing Core environment and subprocess ownership rather than another discovery runner; its 1–180 s process budget adds bounded cleanup and identity-check overhead.
+
+## 2026-10-04 — Qualify once after persisted independent reviews
+
+The user selected bounded committed-HEAD observations → independent reviews → persist both reports/commit/freeze → one final full local PR gate in parallel with App-owned exact-head Trust CI after exact delegated UNVERIFIED transport. This removes the duplicate preliminary full cycle without reducing checks or reusing historical PASS; receipts, approvals and protected PR eligibility remain exact-head requirements. Ten minutes is an unconfirmed target: the observed prior full took about674s, including serial PostgreSQL506.003s, and Core/PostgreSQL overlap is not implemented.
+
+## 2026-10-04 — Transfer complete review artifacts without model reserialization
+
+A private bounded probe passed prepared artifact bytes directly from a read-tool result to `apply_patch`, after validating its single exact target, without repeating the body through model generation. Future reviewers should leave complete reports and addition patches in private scratch; the coordinator checks content/hash and closed report targets, waits for every review, then persists them as the only candidate writer. This preserves complete evidence while avoiding the duplicate serialization that delayed this cycle; it is a handoff pattern, not a verification cache or ten-minute guarantee.
+
+## 2026-10-04 — Distinguish virtual managed aliases from physical source inventory
+
+The installer inventory deliberately appends `MANAGED_FILES`, then excludes `ROOT_HOOK_SHIMS` from source reads and renders aliases from one validated template snapshot. Reading both the inventory producer and payload consumer established that physical root wrappers can be removed without changing installer runtime; generic/Bitrix alias byte, mode and execution characterization protects that boundary.
+
+## 2026-10-04 — Combine frozen compatible source changes before requalification
+
+The user prefers one product PR, and the external refusal already invalidated qualification, so the same selected writer integrates the exact frozen shim cleanup into PR242 before refreshed reviews and one final gate. This avoids two new expensive full/App cycles without caching PASS, changing selected profiles or reducing the test inventory. Canonical hooks, installer/template bytes, deployed policy, external approvals and protection remain unchanged.

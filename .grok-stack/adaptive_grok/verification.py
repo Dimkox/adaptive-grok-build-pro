@@ -20,7 +20,7 @@ from .architecture import (
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
 from .architecture_diff import _git, _git_blob, select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
-from .quality_gates import evaluate_quality_gate
+from .quality_gates import evaluate_quality_gate, required_check_refused
 from .receipts import (
     active_architecture_binding,
     active_governance_binding,
@@ -30,11 +30,12 @@ from .receipts import (
 from .spec import _parse_canonical_json, canonical_spec_digest, criterion_coverage, load_spec, parse_yaml_subset, spec_fingerprint, validate_spec
 from .package_status import read_package_file
 from .state import get_active_change, get_active_route
-from .python_test_runner import RunCancelled, RunnerError, _cancellation, execute, run_core_tests, selected_workers
+from .python_test_runner import ProcessResult, RunCancelled, RunnerError, _cancellation, execute, run_core_tests, run_named_tests, selected_workers
 from .util import (
     changed_file_statuses,
     changed_files,
     command_exists,
+    git_head,
     now_utc,
     read_text_limited,
     run,
@@ -77,6 +78,39 @@ class _RunState:
     results: list[CheckResult] = field(default_factory=list)
     stage: str = 'pre-dispatch'
     receipt_eligible: bool = True
+
+
+class _CheckDispatch:
+    """Retain completed results and disclose remaining scheduled work after refusal."""
+
+    def __init__(self, results, mode, scope=None, *, keep_going=False, blocked_by=None):
+        self.results, self.mode, self.scope = results, mode, scope
+        self.fail_fast = mode in {'pr', 'release'} and not keep_going
+        self.blocked_by = blocked_by
+
+    def add(self, check):
+        self.results.append(check)
+        if self.fail_fast and self.blocked_by is None and required_check_refused(check, mode=self.mode, docs_scope=self.scope):
+            self.blocked_by = check.name
+        return check
+
+    def run(self, name, callback):
+        if self.blocked_by:
+            return self.add(CheckResult(name, 'skip', 'not executed after required refusal', details=[{
+                'severity': 'info', 'code': 'not-executed-after-required-refusal', 'path': name,
+                'execution': 'not_executed', 'blocked_by': self.blocked_by,
+                'message': f'not executed after {self.blocked_by} refused verification',
+            }]))
+        check = callback()
+        return self.add(check) if check is not None else None
+
+    def batch(self, names, callback):
+        if self.blocked_by:
+            for name in names:
+                self.run(name, None)
+        else:
+            for check in callback():
+                self.add(check)
 
 
 @contextmanager
@@ -1516,19 +1550,19 @@ def _change_specs(root: Path, files: list[str], route: dict[str, object] | None,
     return CheckResult('change-spec', 'fail' if findings else ('skip' if exempt and not selected else 'pass'), f'{len(records)} specs checked; exempt={exempt}', details=findings), metadata
 
 
-def _composer(root: Path) -> list[CheckResult]:
+def _composer(root: Path, mode: str = 'fast', *, keep_going=False, blocked_by=None) -> list[CheckResult]:
     results: list[CheckResult] = []
     with _retain_checks(results):
-        return _composer_checks(root, results)
+        return _composer_checks(root, results, _CheckDispatch(results, mode, keep_going=keep_going, blocked_by=blocked_by))
 
 
-def _composer_checks(root: Path, results: list[CheckResult]) -> list[CheckResult]:
+def _composer_checks(root: Path, results: list[CheckResult], dispatch: _CheckDispatch) -> list[CheckResult]:
     if not (root / 'composer.json').is_file():
         return results
     if command_exists('composer'):
-        results.append(_command_check(root, 'composer-validate', ['composer', 'validate', '--no-check-publish'], 120))
+        dispatch.run('composer-validate', lambda: _command_check(root, 'composer-validate', ['composer', 'validate', '--no-check-publish'], 120))
     else:
-        results.append(CheckResult('composer-validate', 'skip', 'composer not available'))
+        dispatch.run('composer-validate', lambda: CheckResult('composer-validate', 'skip', 'composer not available'))
     for name, path, args in [
         ('phpunit', 'vendor/bin/phpunit', ['vendor/bin/phpunit']),
         ('phpstan', 'vendor/bin/phpstan', ['vendor/bin/phpstan', 'analyse', '--no-progress']),
@@ -1536,7 +1570,7 @@ def _composer_checks(root: Path, results: list[CheckResult]) -> list[CheckResult
         ('deptrac', 'vendor/bin/deptrac', ['vendor/bin/deptrac', 'analyse']),
     ]:
         if (root / path).is_file():
-            results.append(_command_check(root, name, args, 600))
+            dispatch.run(name, lambda: _command_check(root, name, args, 600))
     return results
 
 
@@ -1587,6 +1621,15 @@ def _bandit(root: Path) -> CheckResult:
 
 
 def _semgrep(root: Path) -> CheckResult | None:
+    config = _semgrep_config(root)
+    if config is None:
+        return None
+    if not command_exists('semgrep'):
+        return CheckResult('semgrep', 'skip', 'semgrep not available')
+    return _command_check(root, 'semgrep', ['semgrep', 'scan', '--error', '--config', config], 600)
+
+
+def _semgrep_config(root: Path) -> str | None:
     config: str | None = None
     for name in _SEMGREP_CONFIGS:
         if (root / name).is_file():
@@ -1601,40 +1644,42 @@ def _semgrep(root: Path) -> CheckResult | None:
                 pass
             else:
                 config = '.semgrep'
-    if config is None:
-        return None
-    if not command_exists('semgrep'):
-        return CheckResult('semgrep', 'skip', 'semgrep not available')
-    return _command_check(root, 'semgrep', ['semgrep', 'scan', '--error', '--config', config], 600)
+    return config
 
 
 def _trivy_config(root: Path) -> CheckResult | None:
-    has_file = any((root / name).is_file() for name in _TRIVY_FILES)
-    has_compose = bool(list(root.glob('docker-compose*.yml')) or list(root.glob('docker-compose*.yaml')))
-    if not has_file and not has_compose:
+    if not _trivy_config_present(root):
         return None
     if not command_exists('trivy'):
         return CheckResult('trivy-config', 'skip', 'trivy not available')
     return _command_check(root, 'trivy-config', ['trivy', 'config', '--exit-code', '1', '.'], 600)
 
 
-def _node(root: Path, mode: str) -> list[CheckResult]:
+def _trivy_config_present(root: Path) -> bool:
+    return any((root / name).is_file() for name in _TRIVY_FILES) or bool(
+        list(root.glob('docker-compose*.yml')) or list(root.glob('docker-compose*.yaml'))
+    )
+
+
+def _node(root: Path, mode: str, *, keep_going=False, blocked_by=None) -> list[CheckResult]:
     results: list[CheckResult] = []
     with _retain_checks(results):
-        return _node_checks(root, mode, results)
+        return _node_checks(root, mode, results, _CheckDispatch(results, mode, keep_going=keep_going, blocked_by=blocked_by))
 
 
-def _node_checks(root: Path, mode: str, results: list[CheckResult]) -> list[CheckResult]:
+def _node_checks(root: Path, mode: str, results: list[CheckResult], dispatch: _CheckDispatch) -> list[CheckResult]:
     package = root / 'package.json'
     if not package.is_file():
         return []
     try:
         scripts = json.loads(package.read_text(encoding='utf-8')).get('scripts', {})
     except (json.JSONDecodeError, OSError, AttributeError):
-        return [CheckResult('package-json', 'fail', 'invalid package.json')]
+        dispatch.run('package-json', lambda: CheckResult('package-json', 'fail', 'invalid package.json'))
+        return results
     runner = 'npm' if command_exists('npm') else None
     if not runner:
-        return [CheckResult('node-tooling', 'skip', 'npm not available')]
+        dispatch.run('node-tooling', lambda: CheckResult('node-tooling', 'skip', 'npm not available'))
+        return results
     names = ['lint', 'typecheck', 'test', 'prettier', 'format']
     if mode in {'pr', 'release'}:
         names.append('build')
@@ -1644,7 +1689,7 @@ def _node_checks(root: Path, mode: str, results: list[CheckResult]) -> list[Chec
             if name == 'test':
                 command.append('--')
                 command.append('--runInBand') if 'jest' in str(scripts[name]) else None
-            results.append(_command_check(root, f'npm-{name}', command, 900))
+            dispatch.run(f'npm-{name}', lambda: _command_check(root, f'npm-{name}', command, 900))
     return results
 
 
@@ -1672,6 +1717,8 @@ def _focused_python(
     results: list[CheckResult],
     scope: dict[str, object],
     replaced_runner: str = 'python-unittest',
+    *,
+    dispatch: _CheckDispatch | None = None,
 ) -> list[CheckResult]:
     """Run the admitted lockstep modules instead of full discovery or coverage measurement.
 
@@ -1703,9 +1750,10 @@ def _focused_python(
         'focused documentation/state profile does not measure full-suite coverage; '
         'the admitted inventory changes no executed product statement',
     ))
-    results.append(_command_check(root, 'python-focused-unittest', focused_command(targets), 300))
-    results.extend(_factory_unit(root))
-    results.append(CheckResult(
+    dispatch = dispatch or _CheckDispatch(results, 'fast', scope)
+    dispatch.run('python-focused-unittest', lambda: _command_check(root, 'python-focused-unittest', focused_command(targets), 300))
+    _dispatch_factory_unit(root, dispatch)
+    dispatch.run('factory-postgres-exit', lambda: CheckResult(
         'factory-postgres-exit',
         'skip',
         'focused documentation/state profile changes no factory runtime path',
@@ -1713,10 +1761,11 @@ def _focused_python(
     return results
 
 
-def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = None) -> list[CheckResult]:
+def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = None, *,
+            keep_going: bool = False, blocked_by: str | None = None) -> list[CheckResult]:
     results: list[CheckResult] = []
     try:
-        return _python_checks(root, mode, scope, results)
+        return _python_checks(root, mode, scope, results, keep_going=keep_going, blocked_by=blocked_by)
     except RunCancelled as exc:
         exc.checks = [*results, *exc.checks]
         completed = getattr(exc, 'core_run', None)
@@ -1739,20 +1788,27 @@ def _python(root: Path, mode: str = 'fast', scope: dict[str, object] | None = No
         raise
 
 
-def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, results: list[CheckResult]) -> list[CheckResult]:
-    results.append(_ruff(root))
-    results.append(_bandit(root))
+def _dispatch_factory_unit(root: Path, dispatch: _CheckDispatch) -> None:
+    if (root / 'factory/pyproject.toml').is_file() and any(
+        (root / f'factory/tests/test_{name}.py').is_file() for name in ('contracts', 'state', 'migrations', 'service')
+    ):
+        dispatch.batch(['factory-unit'], lambda: _factory_unit(root))
+
+
+def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, results: list[CheckResult], *,
+                   keep_going: bool = False, blocked_by: str | None = None) -> list[CheckResult]:
+    dispatch = _CheckDispatch(results, mode, scope, keep_going=keep_going, blocked_by=blocked_by)
+    dispatch.run('ruff', lambda: _ruff(root))
+    dispatch.run('bandit', lambda: _bandit(root))
     focused = bool(scope and scope.get('eligible') is True)
     pilot_tests = root / 'pilot' / 'tests'
     if pilot_tests.is_dir() and any(pilot_tests.glob('test*.py')):
-        results.append(
-            _command_check(
+        dispatch.run('pilot-unittest', lambda: _command_check(
                 root,
                 'pilot-unittest',
                 [sys.executable, '-m', 'unittest', 'discover', '-s', 'pilot/tests', '-t', '.', '-v'],
                 300,
-            )
-        )
+            ))
     has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
     tests_dir = root / 'tests'
     uses_pytest_runner = has_project and command_exists('pytest') and tests_dir.is_dir()
@@ -1764,17 +1820,43 @@ def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, resul
             results,
             scope or {},
             'pytest' if uses_pytest_runner else 'python-unittest',
+            dispatch=dispatch,
         )
     has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
+    names = ['pytest' if uses_pytest_runner else 'python-unittest']
+    if mode in {'pr', 'release'}:
+        names.append('coverage')
+    if uses_pytest_runner or has_unittest_files:
+        dispatch.batch(names, lambda: _core_python_checks(root, mode, uses_pytest_runner, keep_going=keep_going))
     if uses_pytest_runner:
-        results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
-        if mode in {'pr', 'release'}:
-            if command_exists('coverage'):
-                results.append(CheckResult('coverage', 'skip', 'pytest runner owns tests; measure unittest trees only'))
-            else:
-                results.append(CheckResult('coverage', 'skip', 'coverage not available'))
         return results
-    if has_unittest_files:
+    _dispatch_factory_unit(root, dispatch)
+    factory_exit = root / 'factory/tests/run_disposable_exit.py'
+    if mode in {'pr', 'release'} and factory_exit.is_file():
+        dispatch.run('factory-postgres-exit', lambda: (
+            CheckResult('factory-postgres-exit', 'skip', 'repository-sandbox has no nested-container/database capability')
+            if os.environ.get('GROK_VERIFY_CAPABILITY') == 'repository-sandbox' else
+            _command_check(root, 'factory-postgres-exit', [sys.executable, str(factory_exit.relative_to(root))],
+                           _FACTORY_POSTGRES_EXIT_TIMEOUT_SECONDS)
+        ))
+    return results
+
+
+def _core_python_checks(root: Path, mode: str, uses_pytest_runner: bool, *, keep_going: bool) -> list[CheckResult]:
+    results: list[CheckResult] = []
+    with _retain_checks(results):
+        return _core_python_run(root, mode, uses_pytest_runner, results, keep_going=keep_going)
+
+
+def _core_python_run(root: Path, mode: str, uses_pytest_runner: bool, results: list[CheckResult], *, keep_going: bool) -> list[CheckResult]:
+    dispatch = _CheckDispatch(results, mode, keep_going=keep_going)
+    if uses_pytest_runner:
+        dispatch.run('pytest', lambda: _command_check(root, 'pytest', ['pytest', '-q'], 900))
+        if mode in {'pr', 'release'}:
+            dispatch.run('coverage', lambda: CheckResult('coverage', 'skip',
+                         'pytest runner owns tests; measure unittest trees only' if command_exists('coverage') else 'coverage not available'))
+        return results
+    if (root / 'tests').is_dir():
         try:
             workers = selected_workers(root)
             if workers is None and mode in {'pr', 'release'}:
@@ -1806,12 +1888,12 @@ def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, resul
         elif mode in {'pr', 'release'} and command_exists('coverage'):
             with tempfile.TemporaryDirectory(prefix='grok-legacy-coverage-') as directory:
                 coverage_env = {'COVERAGE_FILE': str(Path(directory) / '.coverage')}
-                results.append(_command_check(
+                dispatch.run('python-unittest', lambda: _command_check(
                     root, 'python-unittest',
                     ['coverage', 'run', '--rcfile=.coveragerc', '-m', 'unittest', 'discover', '-s', 'tests'],
                     900, env=coverage_env,
                 ))
-                results.append(_command_check(
+                dispatch.run('coverage', lambda: _command_check(
                     root, 'coverage', ['coverage', 'report', '--rcfile=.coveragerc'],
                     120, env=coverage_env,
                 ))
@@ -1826,27 +1908,6 @@ def _python_checks(root: Path, mode: str, scope: dict[str, object] | None, resul
             )
             if mode in {'pr', 'release'}:
                 results.append(CheckResult('coverage', 'skip', 'coverage not available'))
-    factory_tests = root / 'factory' / 'tests'
-    results.extend(_factory_unit(root))
-    factory_exit = factory_tests / 'run_disposable_exit.py'
-    if mode in {'pr', 'release'} and factory_exit.is_file():
-        if os.environ.get('GROK_VERIFY_CAPABILITY') == 'repository-sandbox':
-            results.append(
-                CheckResult(
-                    'factory-postgres-exit',
-                    'skip',
-                    'repository-sandbox has no nested-container/database capability',
-                )
-            )
-        else:
-            results.append(
-                _command_check(
-                    root,
-                    'factory-postgres-exit',
-                    [sys.executable, str(factory_exit.relative_to(root))],
-                    _FACTORY_POSTGRES_EXIT_TIMEOUT_SECONDS,
-                )
-            )
     return results
 
 
@@ -2029,7 +2090,48 @@ def _docs_state_status_inventory(
     return records, trusted
 
 
-def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
+def verify_named_tests(root: Path, targets: list[str], *, budget: int = 180) -> dict[str, object]:
+    """Observe explicit tests on a clean committed HEAD; never publish a receipt."""
+    head_before = git_head(root)
+    status = run(['git', 'status', '--porcelain=v1', '--untracked-files=all'], cwd=root, timeout=30)
+    if not head_before or status.returncode != 0 or status.stdout:
+        raise RunnerError('named smoke requires a clean committed HEAD')
+    fingerprint = tree_fingerprint(root)
+    cancelled = None
+    try:
+        process = run_named_tests(root, targets, budget=budget)
+    except RunCancelled as exc:
+        cancelled = exc
+        process = exc.result
+        if process is None:
+            process = ProcessResult([sys.executable, '-m', 'unittest', *targets], exc.code, terminal_state='cancelled')
+    head_after, final_fingerprint = git_head(root), tree_fingerprint(root)
+    checks = [CheckResult(
+        'python-named-smoke', 'cancelled' if cancelled else ('pass' if process.returncode == 0 and not process.cleanup_error else 'fail'),
+        f'exit={process.returncode} seconds={process.seconds:.3f} budget={budget}', command=process.command,
+        stdout=process.stdout[-12000:], stderr=(process.stderr + process.cleanup_error)[-12000:],
+        details=[{'severity': 'info', 'path': 'tests', 'message': 'observation only; no verification receipt'}],
+    ), CheckResult(
+        'source-stability', 'pass' if head_before == head_after and fingerprint == final_fingerprint else 'fail',
+        'repository fingerprint remained stable' if head_before == head_after and fingerprint == final_fingerprint
+        else 'repository changed during named smoke',
+    )]
+    report = {
+        'schema_version': 1, 'created_at': now_utc(), 'mode': 'fast', 'profiles': [], 'route_id': None,
+        'tree_fingerprint': final_fingerprint, 'fingerprint_before': fingerprint,
+        'head_before': head_before, 'head_after': head_after, 'changed_files': [],
+        'checks': [check.to_dict() for check in checks],
+        'status': 'fail' if any(check.status in {'fail', 'cancelled'} for check in checks) else 'pass',
+        'terminal_state': 'cancelled' if cancelled else 'completed', 'evidence_status': 'not_recorded',
+    }
+    if cancelled:
+        report['cancellation'] = {'signal': signal.Signals(cancelled.signal_number).name, 'stage': 'python-named-smoke'}
+        raise VerificationCancelled(cancelled.signal_number, report)
+    return report
+
+
+def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True, *,
+           keep_going: bool = False) -> dict[str, object]:
     report = {
         'schema_version': 1, 'created_at': now_utc(), 'mode': mode,
         'profiles': profiles or ['base'], 'route_id': None, 'tree_fingerprint': None,
@@ -2040,7 +2142,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     state = _RunState(report)
     with _cancellation() as cancellation:
         try:
-            return _verification_run(root, mode, profiles, record, state, cancellation)
+            return _verification_run(root, mode, profiles, record, state, cancellation, keep_going=keep_going)
         except (RunCancelled, KeyboardInterrupt, SystemExit) as exc:
             number = getattr(exc, 'signal_number', None)
             if isinstance(exc, KeyboardInterrupt):
@@ -2073,7 +2175,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
 
 
 def _verification_run(root: Path, mode: str, profiles: list[str] | None, record: bool,
-                      state: _RunState, cancellation) -> dict[str, object]:
+                      state: _RunState, cancellation, *, keep_going: bool = False) -> dict[str, object]:
     report = state.report
     cancellation.check()
     checked_fingerprint = tree_fingerprint(root)
@@ -2128,6 +2230,14 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
     preflight_failed = architecture_inputs.status == 'fail'
     # Retain the primary refusal before any subsequent consumer can cancel.
     state.results.append(architecture_inputs)
+    dispatch = _CheckDispatch(state.results, mode, docs_scope, keep_going=keep_going)
+    if required_check_refused(architecture_inputs, mode=mode, docs_scope=docs_scope) and not keep_going:
+        dispatch.blocked_by = architecture_inputs.name
+    dispatch.add(_docs_state_scope_check(docs_scope))
+    dispatch.add(spec_check)
+    if spec_check.status == 'fail':
+        state.receipt_eligible = False
+        report['receipt_refusal'] = 'change specification cannot provide the current binding'
     if preflight_failed:
         state.receipt_eligible = False
         report['receipt_refusal'] = 'architecture input preflight failed'
@@ -2140,64 +2250,81 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
             'configured': True, 'status': 'fail', 'error': architecture_inputs.summary,
             'receipt_status': 'not_recorded', 'receipt_reason': report['receipt_refusal'],
         }
-        governance_check = CheckResult('governance', 'skip', 'architecture input preflight failed; not executed')
+        dispatch.add(architecture_check)
+        if mode in {'pr', 'release'}:
+            dispatch.blocked_by = 'architecture-inputs'
+            governance_check = dispatch.run('governance', None)
+        else:
+            governance_check = dispatch.add(CheckResult('governance', 'skip', 'architecture input preflight failed; not executed'))
         governance_metadata = {'configured': True, 'status': 'not_run'}
     else:
-        architecture_check, architecture_metadata = _architecture_check(root, route)
-        governance_check, governance_metadata = _governance_check(root, route, architecture_metadata)
+        if dispatch.blocked_by:
+            architecture_check = dispatch.run('architecture', None)
+            architecture_metadata = {'status': 'not_run'}
+        else:
+            architecture_check, architecture_metadata = _architecture_check(root, route)
+            dispatch.add(architecture_check)
+        if dispatch.blocked_by:
+            governance_check = dispatch.run('governance', None)
+            governance_metadata = {'status': 'not_run'}
+        else:
+            governance_check, governance_metadata = _governance_check(root, route, architecture_metadata)
+            dispatch.add(governance_check)
+    if architecture_check.status == 'fail' or governance_check.status == 'fail':
+        state.receipt_eligible = False
+        report.setdefault('receipt_refusal', 'architecture or governance cannot provide the current binding')
     report.update(docs_state_scope=docs_scope, architecture=architecture_metadata)
     cancellation.check()
-    workflow_check, workflow_metadata = _workflow_artifacts_check(
-        root,
-        route,
-        get_active_change(root),
-        checked_fingerprint,
-    )
+    if dispatch.blocked_by:
+        workflow_check = dispatch.run('workflow-artifacts', None)
+        workflow_metadata = {'status': 'not_run'}
+    else:
+        workflow_check, workflow_metadata = _workflow_artifacts_check(
+            root, route, get_active_change(root), checked_fingerprint,
+        )
+        dispatch.add(workflow_check)
     report.update(governance=governance_metadata, workflow_artifacts=workflow_metadata)
     cancellation.check()
 
     results = state.results
     state.stage = 'repository'
-    results.append(_git_diff_check(root, mode, git_ranges))
-    results.extend([_docs_state_scope_check(docs_scope), spec_check, architecture_check, governance_check, workflow_check])
-    for check in (_secret_scan, _contracts, _sql_safety):
+    dispatch.run('git-diff-check', lambda: _git_diff_check(root, mode, git_ranges))
+    # Preserve the successful report inventory order while authority checks run first.
+    results.insert(1, results.pop())
+    for name, check in (('secret-scan', _secret_scan), ('contract-structure', _contracts), ('sql-safety', _sql_safety)):
         cancellation.check()
-        results.append(check(root, files))
+        dispatch.run(name, lambda: check(root, files))
     if 'php' in active_profiles or 'bitrix' in active_profiles or any(rel.endswith('.php') for rel in files):
         state.stage = 'php'
         cancellation.check()
-        results.append(_php_lint(root, files))
-        results.extend(_composer(root))
+        dispatch.run('php-lint', lambda: _php_lint(root, files))
+        for check in _composer(root, mode, keep_going=keep_going, blocked_by=dispatch.blocked_by):
+            dispatch.add(check)
     if 'bitrix' in active_profiles:
         state.stage = 'bitrix'
         cancellation.check()
-        results.append(_bitrix(root, files))
+        dispatch.run('bitrix', lambda: _bitrix(root, files))
     if 'frontend' in active_profiles or (root / 'package.json').is_file():
         state.stage = 'node'
         cancellation.check()
-        results.extend(_node(root, mode))
+        for check in _node(root, mode, keep_going=keep_going, blocked_by=dispatch.blocked_by):
+            dispatch.add(check)
     state.stage = 'semgrep'
     cancellation.check()
-    semgrep = _semgrep(root)
-    if semgrep is not None:
-        results.append(semgrep)
+    if _semgrep_config(root) is not None:
+        dispatch.run('semgrep', lambda: _semgrep(root))
     state.stage = 'trivy'
     cancellation.check()
-    trivy = _trivy_config(root)
-    if trivy is not None:
-        results.append(trivy)
+    if _trivy_config_present(root):
+        dispatch.run('trivy-config', lambda: _trivy_config(root))
     state.stage = 'python'
     cancellation.check()
-    if preflight_failed:
+    if preflight_failed and mode not in {'pr', 'release'}:
         results.append(CheckResult('python-unittest', 'skip', 'architecture input preflight failed; discovery not started'))
-        if mode in {'pr', 'release'}:
-            results.append(CheckResult('coverage', 'skip', 'architecture input preflight failed; not started'))
         if (root / 'factory/tests').is_dir():
             results.append(CheckResult('factory-unit', 'skip', 'architecture input preflight failed; not started'))
-            if mode in {'pr', 'release'} and (root / 'factory/tests/run_disposable_exit.py').is_file():
-                results.append(CheckResult('factory-postgres-exit', 'skip', 'architecture input preflight failed; not started'))
     else:
-        results.extend(_python(root, mode, docs_scope))
+        results.extend(_python(root, mode, docs_scope, keep_going=keep_going, blocked_by=dispatch.blocked_by))
     state.stage = 'source-stability'
     try:
         final_fingerprint = tree_fingerprint(root)
@@ -2226,7 +2353,7 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
         )
     )
 
-    failures = [result for result in results if result.status == 'fail']
+    failures = [result for result in results if result.status in {'fail', 'cancelled'}]
     report.update({
         'schema_version': 1,
         'created_at': now_utc(),

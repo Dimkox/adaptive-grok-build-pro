@@ -16,7 +16,7 @@ An explicitly delegated push of an exact isolated branch/HEAD before verificatio
 
 ## Second mandatory startup step: select verification scope before heavy work
 
-After capacity discovery and route/dependency scheduling, and before launching verification-heavy work, invoke `python3 scripts/grok_verify.py --mode pr` with the verified CPU allocation. Its merged fail-closed selector (`.grok-stack/adaptive_grok/verification_scope.py`, issue #205 / PR #207) derives scope from the trusted exact comparison base..HEAD plus staged, unstaged and untracked inventory and Git statuses; a route label or an agent's assertion that factory is unaffected is not scope evidence. Refresh an outdated comparison base only to the actual agreed PR base, never to hide candidate changes.
+After capacity discovery and route/dependency scheduling, record the trusted exact comparison base/HEAD and staged, unstaged and untracked inventory/statuses. Run bounded committed-HEAD controls as observations before independent reviews; they create no verification receipt or scope admission. After all selected reviews are persisted and the report-containing candidate is committed/frozen, invoke `python3 scripts/grok_verify.py --mode pr` once as the final qualifying local gate with the verified CPU allocation. Its merged fail-closed selector (`.grok-stack/adaptive_grok/verification_scope.py`, issue #205 / PR #207) selects scope inside that run before its heavy checks; a route label or an agent's assertion that factory is unaffected is not scope evidence. Refresh an outdated comparison base only to the actual agreed PR base, never to hide candidate changes.
 
 The selector's closed focused inventory admits its named documentation/state paths, tracked `packages/**` release bytes, and exactly five binding test modules: `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py`, `tests/test_workflow_sources.py` and `tests/test_repo_router.py`. For that admitted inventory, `docs-state-focused` skips the replaced full-discovery runner, `coverage` and `factory-postgres-exit` while retaining the other selected checks, including factory-unit checks. All other executable changes (including factory runtime/tests, database/migrations/schema/contracts and the selector itself), non-admitted paths or ambiguous inventories retain the full PR suite. The measured historical comparison is **629 s for serial Core coverage versus about 14 s for the five focused modules**, not a promise about total verifier duration or this host.
 
@@ -82,7 +82,7 @@ For every software-development task:
 5. Use only agents listed in `allowed_agents`.
 6. Use the recorded startup capacity and dependency plan to dispatch all independent route-permitted work in parallel within measured limits and prerequisite order.
 7. Use exactly one `write_agent` per isolated task/route/branch/worktree; independent isolated writers may run concurrently.
-8. Run the listed review agents only after implementation and verification.
+8. After implementation and bounded committed-HEAD controls, dispatch every listed independent review agent. Persist all complete reports, commit and freeze, then run one final qualifying local PR gate.
 9. Record fingerprint-bound local receipts before declaring local completion.
 10. Deliver the branch through a pull request and wait for external Trust CI.
 
@@ -107,6 +107,9 @@ When sources conflict, stop only for a named human gate or an irreversible/secur
 - Review agents are read-only and must inspect the actual diff and surrounding implementation.
 - Do not let an implementer approve its own work.
 - Do not spawn an agent that the active route did not select; the hook may block it.
+- Give each agent a narrow brief with route, exact repository/HEAD/base, one question, dependencies, CPU allocation and write/read-only boundary. Prefer a clean brief over repeated full-history reads.
+- Collect related failures and review findings into one repair batch for the same write owner; rerun affected bounded committed-HEAD controls and affected reviews before final freeze. Named smoke uses `grok_verify.py --mode fast --no-record --test tests.test_module --budget 180` on clean committed HEAD; its subprocess timeout permits bounded cleanup afterward and creates no verification receipt or scope admission.
+- Persist all complete review reports, commit, then freeze the candidate. After exact delegated UNVERIFIED branch transport, run one final qualifying local PR gate in parallel with external App-owned exact-head Trust CI; keep their outcomes separate. No preliminary full local gate is required before review. A ten-minute delivery cycle is an unconfirmed target; Core/PostgreSQL overlap is not implemented. A fetched identical merged tree with no new product changes is a no-op and requires no repeated full gate.
 
 ## Tool-denial circuit breaker
 
@@ -169,13 +172,13 @@ For static side-project changes, classify the final product changed-file invento
 
 For successors within the closed admitted inventory, `--mode pr` and `--mode release` classify the changed-path inventory and may select the disclosed `docs-state-focused` profile instead of the full-suite coverage run. Admission is by explicit content role, not by directory name alone: named prose/dated state, tracked release bytes and exactly the five binding test modules below; admitted content is re-derived by those modules or has no machine binding to lose. The admitted inventory is the named prose file set (root documentation files, `docs/INVESTOR_DEMO.md`, `docs/package-status.md`, `engineering/decisions.md`, `engineering/mistakes.md`, `docs/superpowers/plans|specs/**` and the `engineering/` prose directories), `PROJECT_STATE.json`, `VERSION`, tracked `packages/**` release bytes, and five admitted modules — the lockstep trio `tests/test_structure.py`, `tests/test_project_state.py`, `tests/test_manifest_package.py` plus the binding tests `tests/test_workflow_sources.py` and `tests/test_repo_router.py`, which always run because they re-derive admitted content. Rejected despite living under a documentation path: `docs/bitrix-local-AGENTS.md` (installed verbatim as `local/AGENTS.md` into every consumer Bitrix install, so it is executed product) and any `**/evidence/historical-*` bundle (bytes `tests/test_history.py` pins literally). Every other path, plus an empty or invalid or unnormalized inventory, a deleted/renamed/copied/unmerged Git status, a status channel not positively reported as trusted, an unresolvable comparison base, an absent route or an absent admitted module, keeps the full PR suite. The profile name, reason code, admitted paths and each omitted check — the replaced full-discovery runner (`python-unittest`, or `pytest` where that is the install's runner), `coverage`, `factory-postgres-exit` — are reported by the `docs-state-scope` check and stored in the fingerprint-bound receipt as `docs_state_scope.evidence_kind`, so the reduction is disclosed rather than silent; `--full-scope` or `GROK_VERIFY_FORCE_FULL=1` forces the full suite. The "never silently downgrade" duty above is preserved: the landing focused contract remains a separate explicit mode, and neither profile relaxes independent review or the App-owned exact-SHA Trust CI check.
 
-Run:
+Before reviews, run bounded committed-HEAD controls as observations:
 
 ```bash
-python3 scripts/grok_verify.py --mode pr
+python3 scripts/grok_verify.py --mode fast --no-record --test tests.test_quality_gates --budget 180
 ```
 
-Then dispatch every review agent listed by the active route. Store each review report under the active change package or `engineering/reviews/`, and record it:
+Then dispatch every independent review agent listed by the active route. Store every complete report under the active change package or `engineering/reviews/`, commit and freeze the report-containing candidate. Run one final `python3 scripts/grok_verify.py --mode pr` with its unchanged fail-closed scope and selected checks, in parallel with external exact-head Trust CI after exact delegated UNVERIFIED branch transport. On a passing final local gate, record each review against the current candidate:
 
 ```bash
 python3 scripts/grok_review.py code_review --status pass --report <path>
@@ -185,7 +188,7 @@ Use the exact local evidence kind requested by the route. A local receipt is sta
 
 For merge eligibility, open or update the pull request and require the App-owned check named by the deployed policy, currently shaped as `adaptive-trust-ci/verified@<policy-sha12>`, on the exact head SHA. Local receipts and delegated grants cannot create that check.
 
-Reviewers return complete reports to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists reports under the change evidence directory, then reruns final verification and records fresh fingerprint-bound receipts for the tree containing those reports.
+Reviewers return complete reports to the coordinator out-of-band and do not write into the candidate worktree. After all reviews finish, the coordinator persists reports under the change evidence directory, commits/freezes that tree, then runs the single final qualifying verification and records fresh fingerprint-bound receipts. A source change after freeze requires the same writer's repair, affected controls/reviews, a new frozen candidate and fresh exact-head gates; an older or historical PASS never substitutes for that run.
 
 ### Reviewer mutation evidence
 

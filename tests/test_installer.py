@@ -78,30 +78,41 @@ def _broken_local_links(document: Path, root: Path) -> list[str]:
 
 
 class InstallerTests(unittest.TestCase):
-    def test_legacy_root_hook_names_delegate_and_preserve_fallback(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            template = root / MODULE.ROOT_HOOK_SHIM_TEMPLATE
-            template.parent.mkdir(parents=True)
-            template.write_bytes((ROOT / MODULE.ROOT_HOOK_SHIM_TEMPLATE).read_bytes())
-            hooks = root / '.grok/hooks'
-            hooks.mkdir(parents=True)
-            for name in sorted(MODULE.ROOT_HOOK_SHIMS):
-                with self.subTest(name=name):
-                    source = ROOT / name
-                    self.assertTrue(source.is_file(), f'legacy hook command missing: {name}')
-                    self.assertFalse(source.is_symlink())
-                    self.assertLessEqual(len(source.read_text().splitlines()), 12)
-                    (root / name).write_bytes(source.read_bytes())
-                    canonical = hooks / name
-                    canonical.write_text('import json, sys\nfrom pathlib import Path\nprint(json.dumps({"name": Path(sys.argv[0]).name, "payload": json.load(sys.stdin)}))\n')
-                    result = subprocess.run([sys.executable, name], cwd=root, input='{"sentinel": 1}', text=True, capture_output=True, timeout=10)
-                    self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertEqual(json.loads(result.stdout), {'name': name, 'payload': {'sentinel': 1}})
-                    canonical.unlink()
-                    fallback = subprocess.run([sys.executable, name], cwd=root, input='{}', text=True, capture_output=True, timeout=10)
-                    self.assertEqual(fallback.returncode, 0, fallback.stderr)
-                    self.assertEqual(json.loads(fallback.stdout), {'decision': 'allow'} if name == 'pre_tool_use.py' else {})
+    def test_installed_root_hook_aliases_delegate_and_preserve_fallback(self) -> None:
+        names = {
+            'session_start.py', 'user_prompt_submit.py', 'pre_tool_use.py',
+            'post_tool_use.py', 'pre_compact.py', 'subagent_start.py',
+            'subagent_stop.py', 'stop_gate.py', 'session_end.py',
+        }
+        template = ROOT / MODULE.ROOT_HOOK_SHIM_TEMPLATE
+        expected_bytes = template.read_bytes()
+        expected_mode = stat.S_IMODE(template.stat().st_mode)
+        self.assertEqual(MODULE.ROOT_HOOK_SHIMS, names)
+        for profile in ('generic', 'bitrix'):
+            with self.subTest(profile=profile), tempfile.TemporaryDirectory() as tmp:
+                payload = MODULE.build_payload(ROOT, profile_kind=profile)
+                entries = {entry.path: entry for entry in payload}
+                self.assertTrue(names <= entries.keys())
+                root = Path(tmp) / 'consumer'
+                with patch.object(MODULE, 'build_payload', return_value=payload):
+                    MODULE.materialize_new(ROOT, root)
+                for name in sorted(names):
+                    with self.subTest(name=name):
+                        self.assertEqual(entries[name].content, expected_bytes)
+                        self.assertEqual(entries[name].mode, expected_mode)
+                        alias = root / name
+                        self.assertFalse(alias.is_symlink())
+                        self.assertEqual(alias.read_bytes(), expected_bytes)
+                        self.assertEqual(stat.S_IMODE(alias.stat().st_mode), expected_mode)
+                        canonical = root / '.grok/hooks' / name
+                        canonical.write_text('import json, sys\nfrom pathlib import Path\nprint(json.dumps({"name": Path(sys.argv[0]).name, "payload": json.load(sys.stdin)}))\n')
+                        result = subprocess.run([sys.executable, name], cwd=root, input='{"sentinel": 1}', text=True, capture_output=True, timeout=10)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(json.loads(result.stdout), {'name': name, 'payload': {'sentinel': 1}})
+                        canonical.unlink()
+                        fallback = subprocess.run([sys.executable, name], cwd=root, input='{}', text=True, capture_output=True, timeout=10)
+                        self.assertEqual(fallback.returncode, 0, fallback.stderr)
+                        self.assertEqual(json.loads(fallback.stdout), {'decision': 'allow'} if name == 'pre_tool_use.py' else {})
 
     def test_hook_aliases_use_the_inventoried_template_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

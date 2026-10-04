@@ -606,7 +606,7 @@ class VerificationTests(unittest.TestCase):
                 patch.object(verification_module, '_verify_focused_static_seo_landing') as focused_verify,
                 patch.object(verification_module, '_focused_landing_contract') as focused_contract,
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             self.assertEqual(report['mode'], 'pr')
             self.assertNotIn('verification_scope', report)
@@ -706,7 +706,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
@@ -792,7 +792,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             self.assertIn(contract, report['changed_files'])
             inventory = report['changed_file_inventory']
@@ -828,7 +828,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
@@ -859,7 +859,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
@@ -908,7 +908,7 @@ class VerificationTests(unittest.TestCase):
                     'adaptive_grok.verification.command_exists',
                     side_effect=_which_only('git'),
                 ):
-                    report = verify(root, mode='pr', record=False)
+                    report = verify(root, mode='pr', record=False, keep_going=True)
 
                 check = _check(report, 'git-diff-check')
                 self.assertIsNotNone(check)
@@ -952,7 +952,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
@@ -981,7 +981,7 @@ class VerificationTests(unittest.TestCase):
                 'adaptive_grok.verification.command_exists',
                 side_effect=_which_only('git'),
             ):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
 
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
@@ -1011,7 +1011,7 @@ class VerificationTests(unittest.TestCase):
                     'adaptive_grok.verification.command_exists',
                     side_effect=_which_only('git'),
                 ):
-                    report = verify(root, mode='pr', record=False)
+                    report = verify(root, mode='pr', record=False, keep_going=True)
 
                 check = _check(report, 'git-diff-check')
                 self.assertIsNotNone(check)
@@ -1954,7 +1954,7 @@ class QualityContourTests(unittest.TestCase):
             route['quality_profiles'] = ['base']
             set_active_route(root, route)
             with patch('adaptive_grok.verification.command_exists', side_effect=_which_except('coverage', 'ruff', 'bandit', 'pytest')):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
             self.assertEqual(coverage['status'], 'fail')
@@ -1993,7 +1993,7 @@ class QualityContourTests(unittest.TestCase):
             route['quality_profiles'] = ['base']
             set_active_route(root, route)
             with _PathTools({'coverage': _FAKE_COVERAGE_FAIL_REPORT}):
-                report = verify(root, mode='pr', record=False)
+                report = verify(root, mode='pr', record=False, keep_going=True)
             coverage = _check(report, 'coverage')
             self.assertIsNotNone(coverage)
             self.assertEqual(coverage['status'], 'pass')
@@ -2049,6 +2049,209 @@ class QualityContourTests(unittest.TestCase):
             ):
                 results = _node(root, 'fast')
             self.assertIn('npm-prettier', _names(results))
+
+
+class FailFastVerificationTests(unittest.TestCase):
+    @contextlib.contextmanager
+    def routed_tree(self):
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 'fail-fast').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root)
+            (root / active['path'] / 'change-spec.yaml').write_text(dump_canonical_spec(_valid_change_spec(active['change_id'])))
+            yield root, route
+
+    def test_unallowed_skip_and_unknown_status_block_actual_python_dispatch(self):
+        for status in ('skip', 'unknown'):
+            with self.subTest(status=status), self.python_tree() as root, \
+                 patch.object(verification_module, '_ruff', return_value=CheckResult('ruff', status, 'ruff not available')), \
+                 patch.object(verification_module, '_bandit', side_effect=AssertionError('bandit dispatched')), \
+                 patch.object(verification_module, '_command_check', side_effect=AssertionError('subprocess dispatched')):
+                checks = {item.name: item for item in _python(root, 'pr')}
+                self.assertEqual(checks['ruff'].status, status)
+                self.assertEqual(checks['factory-postgres-exit'].details[0]['blocked_by'], 'ruff')
+
+    def test_architecture_preflight_stays_closed_in_keep_going_diagnostics(self):
+        with self.routed_tree() as (root, route), \
+             patch.object(verification_module, '_architecture_preflight_check', return_value=CheckResult('architecture-inputs', 'fail', 'invalid authority')), \
+             patch.object(verification_module, '_architecture_check', side_effect=AssertionError('unsafe architecture consumer')), \
+             patch.object(verification_module, '_ruff', side_effect=AssertionError('unsafe test dispatch')):
+            report = verify(root, 'pr', keep_going=True)
+            checks = {item['name']: item for item in report['checks']}
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['evidence_status'], 'not_recorded')
+            self.assertEqual(checks['source-stability']['status'], 'pass')
+            self.assertEqual(checks['quality-gate']['status'], 'fail')
+            self.assertFalse((root / '.grok-stack/runtime/receipts' / route['route_id'] / 'verification.json').exists())
+
+    def test_fast_authority_refusal_keeps_repository_diagnostics_compatible(self):
+        with self.routed_tree() as (root, route), \
+             patch.object(verification_module, '_architecture_preflight_check', return_value=CheckResult('architecture-inputs', 'fail', 'invalid authority')), \
+             patch.object(verification_module, '_ruff', side_effect=AssertionError('unsafe discovery')):
+            report = verify(root, 'fast', record=False)
+            self.assertEqual(_check(report, 'contract-structure')['status'], 'pass')
+            self.assertEqual(_check(report, 'sql-safety')['status'], 'pass')
+            self.assertEqual(_check(report, 'python-unittest')['status'], 'skip')
+
+    def test_default_optional_skip_keeps_successful_python_inventory(self):
+        with self.python_tree() as root:
+            executed = []
+            def command(project, name, args, timeout=300, **kwargs):
+                executed.append(name)
+                return CheckResult(name, 'pass', 'actual success', command=args)
+            with patch.object(verification_module, '_command_check', side_effect=command):
+                checks = _python(root, 'pr')
+            self.assertEqual(executed, ['pilot-unittest', 'python-unittest', 'coverage', 'factory-unit', 'factory-postgres-exit'])
+            self.assertEqual([item.name for item in checks], ['ruff', 'bandit', 'pilot-unittest', 'python-unittest', 'coverage', 'factory-unit', 'factory-postgres-exit'])
+            self.assertTrue(all(item.status == 'pass' or (item.name == 'bandit' and item.status == 'skip') for item in checks))
+
+    def test_dispatch_fixture_isolates_and_restores_inherited_sandbox_capability(self):
+        with patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox'}):
+            with self.python_tree() as root:
+                def command(project, name, args, timeout=300, **kwargs):
+                    return CheckResult(name, 'pass', 'actual success', command=args)
+                with patch.object(verification_module, '_command_check', side_effect=command):
+                    checks = {item.name: item for item in _python(root, 'pr')}
+                self.assertEqual(checks['factory-postgres-exit'].status, 'pass')
+                self.assertIsNotNone(checks['factory-postgres-exit'].command)
+            self.assertEqual(os.environ.get('GROK_VERIFY_CAPABILITY'), 'repository-sandbox')
+
+    def test_early_refusal_still_detects_mutation_and_refuses_receipt(self):
+        with self.routed_tree() as (root, route):
+            def refusal(project, files):
+                (project / 'changed.txt').write_text('changed')
+                return CheckResult('secret-scan', 'fail', 'actual refusal')
+            with patch.object(verification_module, '_secret_scan', side_effect=refusal):
+                report = verify(root, 'pr')
+            self.assertEqual(_check(report, 'source-stability')['status'], 'fail')
+            self.assertEqual(report['evidence_status'], 'not_recorded')
+            self.assertFalse((root / '.grok-stack/runtime/receipts' / route['route_id'] / 'verification.json').exists())
+
+    def test_optional_configuration_disappearing_still_reaches_source_finalization(self):
+        with self.routed_tree() as (root, route):
+            config = root / 'semgrep.yaml'
+            config.write_text('# configured\n')
+            def disappear(project):
+                config.unlink()
+                return None
+            with patch.object(verification_module, '_semgrep', side_effect=disappear):
+                report = verify(root, 'fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(_check(report, 'source-stability')['status'], 'fail')
+            self.assertEqual(report['terminal_state'], 'completed')
+
+    def test_keep_going_retains_primary_failure_and_executes_repository_diagnostics(self):
+        with self.routed_tree() as (root, route), \
+             patch.object(verification_module, '_secret_scan', return_value=CheckResult('secret-scan', 'fail', 'primary failure')):
+            report = verify(root, 'release', keep_going=True)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(_check(report, 'contract-structure')['status'], 'pass')
+            self.assertEqual(_check(report, 'sql-safety')['status'], 'pass')
+            self.assertEqual(_check(report, 'source-stability')['status'], 'pass')
+
+    def test_node_and_composer_refusals_stop_later_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'package.json').write_text(json.dumps({'scripts': {'lint': 'lint', 'test': 'test', 'build': 'build'}}))
+            (root / 'composer.json').write_text('{}')
+            (root / 'vendor/bin').mkdir(parents=True)
+            (root / 'vendor/bin/phpunit').write_text('fixture')
+            for invoke in (lambda: _node(root, 'pr'), lambda: verification_module._composer(root, 'pr')):
+                executed = []
+                def command(project, name, args, timeout=300, **kwargs):
+                    executed.append(name)
+                    return CheckResult(name, 'fail', 'specific failure', command=args)
+                with patch.object(verification_module, 'command_exists', return_value=True), \
+                     patch.object(verification_module, '_command_check', side_effect=command):
+                    checks = invoke()
+                self.assertEqual(len(executed), 1)
+                self.assertEqual(checks[0].status, 'fail')
+                self.assertTrue(all(item.status == 'skip' and item.command is None for item in checks[1:]))
+
+    @contextlib.contextmanager
+    def python_tree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for rel in ('tests', 'pilot/tests', 'factory/tests'):
+                (root / rel).mkdir(parents=True)
+            for rel in ('tests/test_ok.py', 'pilot/tests/test_ok.py', 'factory/tests/test_contracts.py',
+                        'factory/tests/run_disposable_exit.py', 'factory/pyproject.toml'):
+                (root / rel).write_text('# dispatch fixture\n')
+            with patch.object(verification_module, '_ruff', return_value=CheckResult('ruff', 'pass', 'ok')), \
+                 patch.object(verification_module, '_bandit', return_value=CheckResult('bandit', 'skip', 'bandit not available')), \
+                 patch.object(verification_module, 'selected_workers', return_value=None), \
+                 patch.object(verification_module, 'run_core_tests', return_value=None), \
+                 patch.object(verification_module, 'command_exists', side_effect=lambda name: name == 'coverage'), \
+                 patch.dict(os.environ, {}, clear=False):
+                # The fake dispatcher models a local runner, not the outer CI sandbox.
+                os.environ.pop('GROK_VERIFY_CAPABILITY', None)
+                yield root
+
+    def test_python_refusal_prevents_later_subprocess_dispatch(self):
+        for failed in ('ruff', 'bandit', 'pilot-unittest', 'python-unittest', 'factory-unit'):
+            with self.subTest(failed=failed), self.python_tree() as root:
+                executed = []
+                def command(project, name, args, timeout=300, **kwargs):
+                    executed.append(name)
+                    return CheckResult(name, 'fail' if name == failed else 'pass', 'actual result',
+                                       command=args, stdout='retained output')
+                with patch.object(verification_module, '_command_check', side_effect=command), \
+                     patch.object(verification_module, '_ruff', return_value=CheckResult('ruff', 'fail' if failed == 'ruff' else 'pass', 'actual result')), \
+                     patch.object(verification_module, '_bandit', return_value=CheckResult('bandit', 'fail' if failed == 'bandit' else 'pass', 'actual result')):
+                    checks = {item.name: item for item in _python(root, 'pr')}
+                order = ['ruff', 'bandit', 'pilot-unittest', 'python-unittest', 'factory-unit', 'factory-postgres-exit']
+                for name in order[order.index(failed) + 1:]:
+                    self.assertNotIn(name, executed)
+                    self.assertEqual(checks[name].status, 'skip')
+                    self.assertIsNone(checks[name].command)
+                    self.assertEqual(checks[name].stdout, '')
+                    self.assertEqual(checks[name].details[0]['blocked_by'], failed)
+                    self.assertEqual(checks[name].details[0]['execution'], 'not_executed')
+
+    def test_optional_skips_keep_success_inventory_and_keep_going_collects_failures(self):
+        with self.python_tree() as root:
+            executed = []
+            def command(project, name, args, timeout=300, **kwargs):
+                executed.append(name)
+                return CheckResult(name, 'fail' if name == 'pilot-unittest' else 'pass', 'actual', command=args)
+            with patch.object(verification_module, '_command_check', side_effect=command):
+                checks = _python(root, 'release', keep_going=True)
+            self.assertEqual(executed, ['pilot-unittest', 'python-unittest', 'coverage', 'factory-unit', 'factory-postgres-exit'])
+            self.assertEqual([item.name for item in checks], ['ruff', 'bandit', 'pilot-unittest', 'python-unittest', 'coverage', 'factory-unit', 'factory-postgres-exit'])
+
+    def test_focused_failure_blocks_factory_without_forging_discovery(self):
+        for failed in ('pilot-unittest', 'python-focused-unittest'):
+            with self.subTest(failed=failed), self.python_tree() as root:
+                scope = {'eligible': True, 'focused_tests': ['tests.test_ok'],
+                         'skipped_checks': ['python-unittest', 'coverage', 'factory-postgres-exit']}
+                executed = []
+                def command(project, name, args, timeout=300, **kwargs):
+                    executed.append(name)
+                    return CheckResult(name, 'fail' if name == failed else 'pass', 'actual focused failure', command=args)
+                with patch.object(verification_module, '_command_check', side_effect=command):
+                    checks = {item.name: item for item in _python(root, 'pr', scope)}
+                self.assertEqual(executed, ['pilot-unittest'] if failed == 'pilot-unittest' else ['pilot-unittest', 'python-focused-unittest'])
+                self.assertEqual(checks['python-focused-unittest'].status, 'skip' if failed == 'pilot-unittest' else 'fail')
+                self.assertEqual(checks['factory-unit'].details[0]['blocked_by'], failed)
+
+    def test_repository_refusal_finalizes_fail_receipt_and_stability(self):
+        with self.routed_tree() as (root, route):
+            with patch.object(verification_module, '_secret_scan', return_value=CheckResult('secret-scan', 'fail', 'primary failure', stdout='actual output')), \
+                 patch.object(verification_module, '_contracts', side_effect=AssertionError('later contracts dispatched')), \
+                 patch.object(verification_module, '_ruff', side_effect=AssertionError('later Python dispatched')):
+                report = verify(root, 'pr')
+            checks = {item['name']: item for item in report['checks']}
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['terminal_state'], 'completed')
+            self.assertEqual(checks['secret-scan']['stdout'], 'actual output')
+            self.assertEqual(checks['source-stability']['status'], 'pass')
+            self.assertEqual(checks['quality-gate']['status'], 'fail')
+            self.assertEqual(checks['contract-structure']['details'][0]['blocked_by'], 'secret-scan')
+            self.assertEqual(report['evidence_status'], 'recorded')
+            receipt = root / '.grok-stack/runtime/receipts' / route['route_id'] / 'verification.json'
+            self.assertEqual(json.loads(receipt.read_text())['status'], 'fail')
 
 
 class DoctorTests(unittest.TestCase):

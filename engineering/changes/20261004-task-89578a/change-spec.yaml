@@ -1,0 +1,137 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "PR/release verification stops downstream expensive checks after a decisive failed result or disallowed skip; primary refusal is retained and unexecuted work is disclosed.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_doctor.py"
+        },
+        {
+          "test": "tests/test_quality_gates.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Source-stability and unchanged final QG run on early refusal; valid-binding failures publish FAIL receipts, invalid authority and unstable source retain explicit recording refusal.",
+      "evidence": [
+        {
+          "test": "tests/test_verifier_recovery.py"
+        },
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Successful scope/check inventory and optional allowed skips remain unchanged; explicit diagnostic continuation never weakens safety preflight or final admission.",
+      "evidence": [
+        {
+          "test": "tests/test_verification_scope.py"
+        },
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Explicit named short controls use the existing CLI and Core environment, require clean committed HEAD, enforce a positive budget at most180s and never record verification evidence.",
+      "evidence": [
+        {
+          "test": "tests/test_python_test_runner.py"
+        },
+        {
+          "test": "tests/test_verification_doctor.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Bounded committed-HEAD observations without receipt or scope admission precede both independent selected reviews; persist both reports, commit and freeze, then run one final full local PR gate in parallel with external App-owned exact-head Trust CI after exact delegated UNVERIFIED transport, preserving fresh receipts, approvals and protected PR eligibility.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Delete exactly nine redundant committed source-root hook wrappers while preserving installer/template/canonical-hook runtime bytes and all generated generic/Bitrix aliases; HEAD-based root inventory, installer characterization and architecture bindings remain valid.",
+      "evidence": [
+        {
+          "test": "tests/test_installer.py"
+        },
+        {
+          "test": "tests/test_structure.py"
+        },
+        {
+          "test": "tests/test_architecture_model.py"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261004-task-89578a",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Optimization creates merge authority, widens skip allowances, alters deployed Trust CI or forges qualified evidence for incomplete work.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "A skip or unexecuted result is never passed or silently reused; PR/release scope and external authority remain unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_quality_gates.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Reduce nonqualifying local verifier execution without weakening successful gate evidence, and remove nine redundant source-root hook wrappers with installer consumer compatibility preserved.",
+    "success_metric": "required_refusal_stops_downstream_checks_and_smoke_is_bounded",
+    "target": "pass for refusal, successful-scope, receipt, named-smoke, installed-alias, committed-root and architecture controls"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "schema_version": 2
+}

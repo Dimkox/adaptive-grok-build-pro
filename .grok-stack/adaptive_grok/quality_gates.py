@@ -92,6 +92,23 @@ def _detail(code: str, name: str, message: str) -> dict[str, str]:
     return {"severity": "error", "code": code, "path": name, "message": message}
 
 
+def _status_findings(check: object, mode: str, docs_scope: dict[str, object] | None) -> list[dict[str, str]]:
+    name, status, summary = (_value(check, key) for key in ('name', 'status', 'summary'))
+    if status == 'skip' and mode in {'pr', 'release'} and not _allowed_skip(name, summary, docs_scope):
+        return [_detail('mandatory-check-skipped', name,
+                        f'{name} was skipped without an explicit QG-01 allowance: {summary}')]
+    if status not in {'pass', 'fail', 'skip', 'cancelled'}:
+        return [_detail('unknown-check-status', name, f'{name} returned {status!r}')]
+    return []
+
+
+def required_check_refused(check: object, *, mode: str, docs_scope: dict[str, object] | None = None) -> bool:
+    """Inspect one completed result without claiming future admission completeness."""
+    return mode in {'pr', 'release'} and (
+        _value(check, 'status') in {'fail', 'cancelled'} or bool(_status_findings(check, mode, docs_scope))
+    )
+
+
 def evaluate_quality_gate(
     *,
     mode: str,
@@ -139,18 +156,7 @@ def evaluate_quality_gate(
             details.append(_detail("mandatory-check-missing", "coverage", "coverage did not run"))
 
     for name, check in sorted(check_map.items()):
-        status = _value(check, "status")
-        summary = _value(check, "summary")
-        if status == "skip" and mode in {"pr", "release"} and not _allowed_skip(name, summary, docs_scope):
-            details.append(
-                _detail(
-                    "mandatory-check-skipped",
-                    name,
-                    f"{name} was skipped without an explicit QG-01 allowance: {summary}",
-                )
-            )
-        elif status not in {"pass", "fail", "skip", "cancelled"}:
-            details.append(_detail("unknown-check-status", name, f"{name} returned {status!r}"))
+        details.extend(_status_findings(check, mode, docs_scope))
 
     if details:
         return QualityGateDecision("fail", f"QG-01 blocked admission: {len(details)} finding(s)", details)
