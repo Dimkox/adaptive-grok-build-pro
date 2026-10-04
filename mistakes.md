@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Stat-fault cleanup confused inode ownership with unchanged data
+
+If the first post-link stat failed, inode-only cleanup could delete foreign in-place bytes; if the second stat failed, the earlier ctime snapshot could instead strand our unchanged report after our own temporary hardlink unlink. The missing invariant was matching staged content during a stable bounded read, not adopting fallback metadata or freezing pre-unlink ctime. Combined first-stat rewrite and second-stat clock-boundary regressions now cover both failure paths, including valid same-length foreign JSON.
+
 ## 2026-10-04 — Compatibility and abort ownership were incompletely checked
 
 QG-01's consumer allowances did not match three exact producer skip contracts, and installer alias rendering reread the template rather than using its validated inventory entry. Fresh-install tests synthesized missing aliases from that template, masking the retained legacy configuration's broken commands in an updated source checkout; handoff prose also kept superseded PR239 as current. Report cleanup tracked ownership only through the temporary filename, not the published digest across envelope publication, so cancellation and later faults stranded newly owned files; regressions now distinguish those files from reused or replaced evidence.

@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Qualify abort cleanup by staged bytes, not a pre-unlink ctime
+
+Cleanup requires the staged device/inode plus a bounded stable no-follow read whose exact byte count and SHA-256 match the original report reference. This preserves foreign in-place rewrites while allowing our own hardlink unlink to change ctime without stranding unchanged reports. Reused or referenced files stay outside abort ownership; caps, envelope schema and authority bindings remain unchanged.
+
 ## 2026-10-04 — Repair PR241 compatibility and publication boundaries
 
 Repair the seven confirmed findings with exact check/reason skip allowances, inventory-bound hook template bytes, additive PR241 continuation, nine tiny shared-dispatch launchers, and ownership-aware aborted-report cleanup. Add deterministic failing controls before each repair, preserve unknown/missing admission failures and immutable historical identities, then run bounded targeted checks and freeze one commit for independent review. The prior exact-head App success is historical after this delta; full verification and external delivery remain coordinator-owned.

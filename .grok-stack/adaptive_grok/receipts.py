@@ -134,7 +134,6 @@ class _PublishedVerificationReport:
     route_fd: int
     reports_fd: int
     owned_file_identity: tuple[int, int] | None = None
-    owned_identity: tuple[int, ...] | None = None
 
     def close(self) -> None:
         os.close(self.reports_fd)
@@ -154,10 +153,15 @@ def _cleanup_verification_report(publication: _PublishedVerificationReport) -> N
             return
         filename = f'{publication.reference["sha256"]}.json'
         metadata = os.stat(filename, dir_fd=publication.reports_fd, follow_symlinks=False)
-        if (stat.S_ISREG(metadata.st_mode)
-                and (metadata.st_dev, metadata.st_ino) == publication.owned_file_identity
-                and (publication.owned_identity is None
-                     or _metadata_identity(metadata) + (metadata.st_size,) == publication.owned_identity)):
+        if not stat.S_ISREG(metadata.st_mode) or (metadata.st_dev, metadata.st_ino) != publication.owned_file_identity:
+            return
+        # Own link/unlink may change ctime; qualify bytes against the staged digest,
+        # then require stable metadata throughout this bounded descriptor-safe read.
+        _, content = _read_bounded_json(publication.reports_fd, filename, MAX_VERIFICATION_REPORT_BYTES, 'verification report')
+        if len(content) != publication.reference['bytes'] or hashlib.sha256(content).hexdigest() != publication.reference['sha256']:
+            return
+        after = os.stat(filename, dir_fd=publication.reports_fd, follow_symlinks=False)
+        if (_metadata_identity(metadata), metadata.st_size) == (_metadata_identity(after), after.st_size):
             os.unlink(filename, dir_fd=publication.reports_fd)
             os.fsync(publication.reports_fd)
     except (OSError, RuntimeError, ValueError):
@@ -209,14 +213,12 @@ def _publish_verification_report(root: Path, route_id: str, receipt: dict[str, A
             metadata = os.stat(filename, dir_fd=reports_fd, follow_symlinks=False)
             if (metadata.st_dev, metadata.st_ino) != (staged_metadata.st_dev, staged_metadata.st_ino):
                 raise RuntimeError('published verification report identity changed')
-            publication.owned_identity = _metadata_identity(metadata) + (metadata.st_size,)
         os.unlink(temporary, dir_fd=reports_fd)
         temporary = None
-        if publication.owned_identity is not None:
+        if publication.owned_file_identity is not None:
             metadata = os.stat(filename, dir_fd=reports_fd, follow_symlinks=False)
             if (metadata.st_dev, metadata.st_ino) != (staged_metadata.st_dev, staged_metadata.st_ino):
                 raise RuntimeError('published verification report identity changed')
-            publication.owned_identity = _metadata_identity(metadata) + (metadata.st_size,)
         os.fsync(reports_fd)
         if interrupt_check:
             interrupt_check()

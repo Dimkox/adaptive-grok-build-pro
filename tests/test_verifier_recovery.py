@@ -473,6 +473,58 @@ class OwnedRunnerRecoveryTests(unittest.TestCase):
 
 
 class DurableReceiptRecoveryTests(unittest.TestCase):
+    def test_first_post_link_stat_fault_preserves_in_place_foreign_bytes(self):
+        replacements = (b'foreign in-place replacement', b'{"binding":{"kind":"foreignxxxxx"},"details":{},"schema_version":1}\n')
+        for replacement in replacements:
+            with self.subTest(replacement=replacement), routed_fixture() as (root, route):
+                original_stat = receipts.os.stat
+                failed = False
+                def rewrite_then_fail_once(path, *args, **kwargs):
+                    nonlocal failed
+                    if not failed and isinstance(path, str) and len(path) == 69 and path.endswith('.json') and 'dir_fd' in kwargs:
+                        failed = True
+                        if replacement.startswith(b'{'):
+                            self.assertEqual(len(replacement), original_stat(path, *args, **kwargs).st_size)
+                            self.assertIsInstance(json.loads(replacement), dict)
+                        descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW, dir_fd=kwargs['dir_fd'])
+                        with os.fdopen(descriptor, 'wb') as handle:
+                            handle.write(replacement)
+                        raise OSError('first stat failed after in-place rewrite')
+                    return original_stat(path, *args, **kwargs)
+                with patch.object(receipts.os, 'stat', side_effect=rewrite_then_fail_once), self.assertRaisesRegex(OSError, 'first stat failed'):
+                    receipts._publish_verification_report(root, route['route_id'], {'kind': 'verification', 'details': {}}, None)
+                self.assertTrue(failed)
+                files = list(receipts.receipt_dir(root, route['route_id']).glob('reports/*.json'))
+                self.assertEqual(len(files), 1)
+                self.assertEqual(files[0].read_bytes(), replacement)
+                self.assertFalse(list(files[0].parent.glob('*.tmp')))
+
+    def test_second_post_link_stat_fault_cleans_unchanged_bytes_across_ctime_boundary(self):
+        with routed_fixture() as (root, route):
+            original_stat = receipts.os.stat
+            calls = 0
+            first_metadata = None
+            def fail_second_after_clock_boundary(path, *args, **kwargs):
+                nonlocal calls, first_metadata
+                if isinstance(path, str) and len(path) == 69 and path.endswith('.json') and 'dir_fd' in kwargs:
+                    calls += 1
+                    if calls == 1:
+                        first_metadata = original_stat(path, *args, **kwargs)
+                        time.sleep(0.025)
+                        return first_metadata
+                    if calls == 2:
+                        current = original_stat(path, *args, **kwargs)
+                        self.assertEqual((current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns),
+                                         (first_metadata.st_dev, first_metadata.st_ino, first_metadata.st_size, first_metadata.st_mtime_ns))
+                        self.assertNotEqual(current.st_ctime_ns, first_metadata.st_ctime_ns)
+                        raise OSError('second stat failed after own temporary unlink')
+                return original_stat(path, *args, **kwargs)
+            with patch.object(receipts.os, 'stat', side_effect=fail_second_after_clock_boundary), self.assertRaisesRegex(OSError, 'second stat failed'):
+                receipts._publish_verification_report(root, route['route_id'], {'kind': 'verification', 'details': {}}, None)
+            self.assertGreaterEqual(calls, 2)
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('reports/*.json')))
+            self.assertFalse(list(receipts.receipt_dir(root, route['route_id']).rglob('*.tmp')))
+
     def test_report_helper_does_not_adopt_replacement_between_link_and_stat(self):
         with routed_fixture() as (root, route):
             original_link = receipts.os.link
