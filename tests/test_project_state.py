@@ -133,9 +133,23 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(dependency['branch'], 'fix/trust-ci-public-doc-bindings')
         self.assertEqual(dependency['change_package'], 'engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e')
         self.assertTrue(continuation['remote_state_refresh_required'])
-        for record in (continuation, dependency):
-            for field in ('checked_head', 'merge_commit', 'external_success'):
-                self.assertIsNone(record[field])
+        for field in ('checked_head', 'merge_commit', 'external_success'):
+            self.assertIsNone(continuation[field])
+        self.assertEqual(dependency['checked_head'], '63cd1e0e6be67d01815a85375f306b09beba8499')
+        self.assertEqual(dependency['merge_commit'], '6dbbc7dbe81812d919851c2300db6f4917033d43')
+        self.assertEqual(dependency['merged_at'], '2026-10-04T14:54:42Z')
+        self.assertEqual(dependency['status'], 'merged')
+        observed = dependency['external_success']
+        self.assertEqual(observed['head_sha'], dependency['checked_head'])
+        self.assertEqual(observed['name'], CURRENT_CHECK)
+        self.assertEqual(observed['check_run_id'], 111457382604)
+        self.assertEqual(observed['conclusion'], 'SUCCESS')
+        self.assertEqual(observed['started_at'], '2026-10-04T14:29:08Z')
+        self.assertEqual(observed['completed_at'], '2026-10-04T14:51:16Z')
+        self.assertEqual(observed['attestation_id_in_check_summary'], '3d7912e4-8a28-414e-bc06-5b9321fcd7ba')
+        self.assertEqual(observed['signer_in_check_summary'], '0519cf1d47436f2e')
+        self.assertEqual(observed['evidence_kind'], 'App-owned Check Run observation')
+        self.assertFalse(observed['cryptographic_envelope_verified'])
         self.assertEqual(state['fresh_clone']['continuation_record'], 'current_continuation')
         for field in ('active_delivery', 'current_unreleased_change', 'active_source_delivery'):
             self.assertEqual(state[field]['record_scope'], 'historical')

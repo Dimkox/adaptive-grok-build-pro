@@ -6,7 +6,7 @@
     "integration_architect",
     "code_reviewer",
     "test_reviewer",
-    "general_implementer"
+    "integration_implementer"
   ],
   "analysis_agents": [
     "repo_explorer",
@@ -14,17 +14,21 @@
     "docs_researcher",
     "integration_architect"
   ],
-  "base_commit": "6dbbc7dbe81812d919851c2300db6f4917033d43",
-  "base_fingerprint": "ddbe4442415c8f813e0a68fd9e334034a183e9491fd8e5d639f7b3c1523046c4",
+  "base_commit": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+  "base_fingerprint": "b8a5e4a87996ef8498b4f36f7f4b29a5dc882d218d3634979efa961f4643fc58",
   "complexity": "standard",
-  "created_at": "2026-10-04T12:08:34+00:00",
+  "created_at": "2026-10-04T13:54:22+00:00",
   "delivery_expected": true,
   "domains": [
     "api"
   ],
   "human_gates": [],
   "intent": "bugfix",
-  "matched_keywords": {},
+  "matched_keywords": {
+    "api": [
+      "api"
+    ]
+  },
   "primary_skill": "adaptive-delivery",
   "quality_profiles": [
     "base",
@@ -35,13 +39,12 @@
     "intent=bugfix",
     "domains=api",
     "repository=generic",
-    "write-owner=general_implementer",
+    "write-owner=integration_implementer",
     "analysis-wave=4/10"
   ],
   "repo": {
     "bitrix_modules": [],
     "detected_languages": [
-      "javascript",
       "php",
       "python"
     ],
@@ -50,9 +53,9 @@
     ],
     "kind": "generic",
     "language_scan": {
-      "bytes": 3257690,
-      "directories": 427,
-      "entries": 4515,
+      "bytes": 2580187,
+      "directories": 409,
+      "entries": 4474,
       "files": 4000,
       "incomplete_reasons": [
         "files:4000",
@@ -64,19 +67,19 @@
       "truncated": true,
       "unknown": true,
       "unknown_extensions": {
-        ".css": 1,
-        ".html": 1,
+        ".err": 5,
         ".in": 1,
-        ".json": 814,
+        ".json": 790,
         ".jsonl": 4,
+        ".log": 22,
+        ".out": 55,
         ".patch": 1,
-        ".ps1": 1,
         ".sh": 1,
-        ".sha256": 3,
+        ".sha256": 16,
         ".sql": 26,
-        ".toml": 3,
+        ".toml": 2,
         ".xml": 1,
-        ".yaml": 136
+        ".yaml": 134
       },
       "unreadable": 0
     },
@@ -85,22 +88,21 @@
     "signals": [
       "contract:engineering/contracts/openapi",
       "undetected-language",
-      "undetected-language:javascript=1",
       "undetected-language:php=8",
-      "undetected-language:python=254",
-      "undetected-source-extension:.css=1",
-      "undetected-source-extension:.html=1",
+      "undetected-language:python=186",
+      "undetected-source-extension:.err=5",
       "undetected-source-extension:.in=1",
-      "undetected-source-extension:.json=814",
+      "undetected-source-extension:.json=790",
       "undetected-source-extension:.jsonl=4",
+      "undetected-source-extension:.log=22",
+      "undetected-source-extension:.out=55",
       "undetected-source-extension:.patch=1",
-      "undetected-source-extension:.ps1=1",
       "undetected-source-extension:.sh=1",
-      "undetected-source-extension:.sha256=3",
+      "undetected-source-extension:.sha256=16",
       "undetected-source-extension:.sql=26",
-      "undetected-source-extension:.toml=3",
+      "undetected-source-extension:.toml=2",
       "undetected-source-extension:.xml=1",
-      "undetected-source-extension:.yaml=136",
+      "undetected-source-extension:.yaml=134",
       "language-scan:incomplete=files:4000",
       "language-scan:incomplete=source-bytes:65536"
     ]
@@ -115,16 +117,18 @@
     "test_reviewer"
   ],
   "risk": "medium",
-  "route_id": "6af9e6eed1d8",
+  "route_id": "e5372ed69c31",
   "schema_version": 1,
-  "session_id": "cleanup-pr239-20261004",
+  "session_id": "cleanup-trust-ci-public-docs",
   "status": "routed",
-  "task": "Fix PR 239 public cleanup verifier blockers: architecture hook template, historical change-package migrations, diff whitespace and safe change IDs",
-  "task_domains": [],
+  "task": "Fix regression in trust-ci/tests/test_m0_invariants.py after public operator documentation redaction. Change test bindings only, preserve App-owned exact-SHA check, protected main, API-worker separation, no Actions, and all deployed policy and holdout. Separate companion PR before product cleanup PR239.",
+  "task_domains": [
+    "api"
+  ],
   "workflow_skills": [
     "adaptive-delivery",
     "bugfix-workflow",
     "api-event-change"
   ],
-  "write_agent": "general_implementer"
+  "write_agent": "integration_implementer"
 }

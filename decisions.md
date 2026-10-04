@@ -28,6 +28,10 @@ Installer parity tests compare generated root hook entries to the retained shim 
 
 Neutral date/route package names prevent every title from leaking into public paths. Explicit original Git blob and retained-byte digest mappings let historical v1 specs be archived while relocated v2 specs still pass the current strict gate; unknown, active, missing or tampered specs fail. A measured 123.1 MB archive batch uses a finite 128 MB aggregate identity budget while analysis-memory and per-blob limits remain unchanged.
 
+## 2026-10-04 — Bind public operator fields by their documented roles
+
+Read dedicated-host, inbound Funnel webhook and GitHub App identifiers from their named sections and report cells, then validate syntax and cross-document equality. Synthetic concrete fixtures and exact public placeholders keep historical documentation compatible while rejecting missing, duplicate, misplaced or inconsistent declarations. These document relationships provide no live identity or merge authority.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

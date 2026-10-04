@@ -14,21 +14,45 @@
     "route_id": "6af9e6eed1d8",
     "branch": "feat/qg01-gate-artifact-admission",
     "change_package": "engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6",
-    "source_base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "source_base": "6dbbc7dbe81812d919851c2300db6f4917033d43",
     "dependency": {
       "pull_request": 240,
       "route_id": "e5372ed69c31",
       "branch": "fix/trust-ci-public-doc-bindings",
       "change_package": "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e",
-      "checked_head": null,
-      "merge_commit": null,
-      "external_success": null
+      "status": "merged",
+      "checked_head": "63cd1e0e6be67d01815a85375f306b09beba8499",
+      "merge_commit": "6dbbc7dbe81812d919851c2300db6f4917033d43",
+      "merged_at": "2026-10-04T14:54:42Z",
+      "external_success": {
+        "evidence_kind": "App-owned Check Run observation",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "check_run_id": 111457382604,
+        "head_sha": "63cd1e0e6be67d01815a85375f306b09beba8499",
+        "github_app_id": "<redacted-app-id>",
+        "app_owner_matches_main_protection_observed": true,
+        "started_at": "2026-10-04T14:29:08Z",
+        "completed_at": "2026-10-04T14:51:16Z",
+        "conclusion": "SUCCESS",
+        "reported_pass_checks": [
+          "holdout-bundle-integrity",
+          "external-holdout",
+          "root-unittest",
+          "trust-ci-unittest",
+          "compileall",
+          "repository-verification"
+        ],
+        "attestation_id_in_check_summary": "3d7912e4-8a28-414e-bc06-5b9321fcd7ba",
+        "signer_in_check_summary": "0519cf1d47436f2e",
+        "cryptographic_envelope_verified": false,
+        "record_scope": "Observed PR240 delivery only; not PR239 verification, merge authority or a separately verified cryptographic envelope."
+      }
     },
     "remote_state_refresh_required": true,
     "checked_head": null,
     "merge_commit": null,
     "external_success": null,
-    "next_action": "Refresh remote PR239/PR240 state; deliver the separate PR240 dependency through its exact-head external gates, refresh the actual PR comparison base, then run fresh full verification, independent reviews, receipts and exact-head external Trust CI for PR239. Historical next_action fields are provenance, not continuation instructions; preserve published v2.1.1 without rebuilding or retagging it."
+    "next_action": "PR240 is merged at the observed exact main commit; refresh remote PR239/base state and complete the actual-main integration, then run fresh full verification, independent reviews, receipts and exact-head external Trust CI for PR239. Historical next_action fields are provenance, not continuation instructions; preserve published v2.1.1 without rebuilding or retagging it."
   },
   "delivered_milestones_on_main": [
     "M0",

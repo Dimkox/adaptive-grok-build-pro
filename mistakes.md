@@ -1,5 +1,12 @@
 # Mistakes
 
+## 2026-10-04 — Choose the protected branch's admitted merge method
+
+The coordinator's --merge API request was rejected by protected main's linear-history rule; the separately admitted --squash operation succeeded. This was enforcement of protection, not a bypass, and no forced ref update was used.
+
+## 2026-10-04 — An old in-progress check did not prove queue latency
+
+The coordinator inferred queue delay from an old GitHub in-progress check without sufficient runtime evidence: the durable superseded-head cancellation path can leave that old presentation unchanged, and retry started_at is not execution duration. Exact companion head 63cd1e0e6be67d01815a85375f306b09beba8499 reported 22m08s for the new App check, but the cause remains undetermined. Keep status observations separate from timing/root-cause conclusions; no database or private-key lookup was performed.
 ## 2026-10-04 — Receipt spill classification escaped failure retirement
 
 Moving JSON size classification ahead of the publication guard let circular or unserializable verification details throw while an older pass remained valid. Classification now runs inside that guard with retirement enabled before serialization starts, restoring the original fail-closed behavior. Regressions cover both ValueError and TypeError without changing report caps, bindings or readers.
@@ -57,6 +64,10 @@ _No overdue governance debt._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
+
+## 2026-10-04 — Keep worker scratch within the project boundary
+
+A worker created its startup snapshot above the project because it treated a trusted home-directory parent as sufficient and missed the user's project-contained scratch requirement. The exact self-created directory was moved intact into `.review-scratch/`; future worker snapshots and test projections use that trusted private project directory.
 
 ## 2026-09-23 — Reviewed the inherited parent commit instead of the route base
 
