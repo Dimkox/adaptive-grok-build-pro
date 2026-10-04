@@ -1,0 +1,488 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-04T14:09:36+00:00",
+  "mode": "pr",
+  "profiles": [
+    "base",
+    "contracts"
+  ],
+  "route_id": "e5372ed69c31",
+  "tree_fingerprint": "ade6dbb1afc9c9609b7391812dad71f6a2eeeb2420b5ca8ec234db2a7fa9b720",
+  "changed_files": [
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/architecture.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/brief.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/change-spec.yaml",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/README.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/analysis-summary.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/startup-capacity.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/release.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/requirements.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/rollback.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/route.json",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/state.json",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/tasks.md",
+    "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/test-plan.md",
+    "trust-ci/tests/test_m0_invariants.py"
+  ],
+  "changed_file_inventory": {
+    "mode": "range-union",
+    "bases": [
+      {
+        "kind": "route",
+        "source": "route.base_commit",
+        "base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+        "target": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+        "count": 14
+      },
+      {
+        "kind": "pr-target",
+        "source": "refs/remotes/origin/main",
+        "base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+        "target": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+        "count": 14
+      }
+    ],
+    "worktree_count": 14,
+    "union_count": 14,
+    "selection_findings": []
+  },
+  "checks": [
+    {
+      "name": "architecture-inputs",
+      "status": "pass",
+      "summary": "bounded model and referenced-input preflight executed",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "git-diff-check",
+      "status": "pass",
+      "summary": "4/4 checks passed; bases=route:97a7581238022356b2de8d193a9bd8363fc92dc3,pr-target:97a7581238022356b2de8d193a9bd8363fc92dc3",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "code": "checked-range",
+          "path": "route.base_commit",
+          "message": "checked 97a7581238022356b2de8d193a9bd8363fc92dc3..HEAD",
+          "kind": "route",
+          "base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+          "target": "97a7581238022356b2de8d193a9bd8363fc92dc3"
+        },
+        {
+          "severity": "info",
+          "code": "checked-range",
+          "path": "refs/remotes/origin/main",
+          "message": "checked 97a7581238022356b2de8d193a9bd8363fc92dc3..HEAD",
+          "kind": "pr-target",
+          "base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+          "target": "97a7581238022356b2de8d193a9bd8363fc92dc3"
+        }
+      ]
+    },
+    {
+      "name": "docs-state-scope",
+      "status": "pass",
+      "summary": "profile=full-pr-suite; evidence=verification:full-pr-suite; reason=unallowlisted-path; paths=0; skipped=none",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "trust-ci/tests/test_m0_invariants.py",
+          "message": "not admitted by the focused documentation/state profile"
+        },
+        {
+          "severity": "info",
+          "code": "unallowlisted-path",
+          "path": "",
+          "message": "full PR suite is required: one or more changed paths cannot be verified by the focused documentation/state profile"
+        }
+      ]
+    },
+    {
+      "name": "change-spec",
+      "status": "pass",
+      "summary": "1 specs checked; exempt=False",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "drift=pass; fitness=pass; diagrams=pass",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "governance registries and evidence are current",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "workflow-artifacts",
+      "status": "skip",
+      "summary": "workflow artifacts are not configured",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "secret-scan",
+      "status": "pass",
+      "summary": "0 potential secrets",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "contract-structure",
+      "status": "pass",
+      "summary": "0 contracts checked",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "sql-safety",
+      "status": "pass",
+      "summary": "0 unsafe SQL findings",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "ruff",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "ruff",
+        "check",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        "tests",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "bandit",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "bandit",
+        "-c",
+        "bandit.yaml",
+        "-q",
+        "-r",
+        ".grok-stack/adaptive_grok",
+        "scripts",
+        ".grok/hooks",
+        "user_prompt_submit.py",
+        "pre_tool_use.py",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "session_start.py",
+        "session_end.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "factory/src/adaptive_factory"
+      ],
+      "stdout": "",
+      "stderr": "[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:91\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n[tester]\tWARNING\tnosec encountered (B105), but no failed test on file .grok-stack/adaptive_grok/shell_targets.py:235\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "pilot-unittest",
+      "status": "pass",
+      "summary": "exit=0",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "pilot/tests",
+        "-t",
+        ".",
+        "-v"
+      ],
+      "stdout": "",
+      "stderr": "test_any_server_request_is_denied_without_response (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_any_server_request_is_denied_without_response) ... ok\ntest_broad_workspace_profile_is_rejected_before_model_turn (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_broad_workspace_profile_is_rejected_before_model_turn) ... ok\ntest_malformed_or_non_success_terminal_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_malformed_or_non_success_terminal_fails_closed) ... ok\ntest_one_closed_app_server_thread_and_turn_returns_synthetic_success (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_one_closed_app_server_thread_and_turn_returns_synthetic_success) ... ok\ntest_wrong_response_id_or_timeout_fails_closed (pilot.tests.test_app_server_codex.AppServerCodexRunnerTests.test_wrong_response_id_or_timeout_fails_closed) ... ok\ntest_all_five_pilot_contracts_are_in_the_executable_inventory (pilot.tests.test_architecture.PilotArchitectureTests.test_all_five_pilot_contracts_are_in_the_executable_inventory) ... ok\ntest_pilot_has_separate_trust_domains_and_factory_has_no_external_edge (pilot.tests.test_architecture.PilotArchitectureTests.test_pilot_has_separate_trust_domains_and_factory_has_no_external_edge) ... ok\ntest_exact_request_resource_is_accepted_and_digest_bound (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_exact_request_resource_is_accepted_and_digest_bound) ... ok\ntest_wildcard_coarse_stale_or_ambiguous_grants_fail_closed (pilot.tests.test_authority.LiteralGrantAuthorityTests.test_wildcard_coarse_stale_or_ambiguous_grants_fail_closed) ... ok\ntest_closed_config_dispatches_three_live_phases_and_read_only_status (pilot.tests.test_cli.PilotCliTests.test_closed_config_dispatches_three_live_phases_and_read_only_status) ... ok\ntest_effect_phases_are_disabled_without_live_flag_or_config (pilot.tests.test_cli.PilotCliTests.test_effect_phases_are_disabled_without_live_flag_or_config) ... ok\ntest_main_has_a_built_in_host_runner_not_an_adapter_placeholder (pilot.tests.test_cli.PilotCliTests.test_main_has_a_built_in_host_runner_not_an_adapter_placeholder) ... ok\ntest_exact_argv_starts_once_and_persists_the_sealed_candidate (pilot.tests.test_codex_executor.CodexExecutorTests.test_exact_argv_starts_once_and_persists_the_sealed_candidate) ... ok\ntest_failed_sandbox_proof_starts_zero_processes (pilot.tests.test_codex_executor.CodexExecutorTests.test_failed_sandbox_proof_starts_zero_processes) ... ok\ntest_installed_sandbox_denies_outside_reads_and_unix_sockets (pilot.tests.test_codex_executor.CodexExecutorTests.test_installed_sandbox_denies_outside_reads_and_unix_sockets) ... skipped 'requires explicit pinned local Codex sandbox'\ntest_contract_rejects_unknown_fields_and_digest_substitution (pilot.tests.test_contracts.PilotContractTests.test_contract_rejects_unknown_fields_and_digest_substitution) ... ok\ntest_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain (pilot.tests.test_contracts.PilotContractTests.test_exact_profile_and_five_outputs_form_a_closed_schema_valid_chain) ... ok\ntest_untrusted_issue_text_does_not_change_the_profile_digest (pilot.tests.test_contracts.PilotContractTests.test_untrusted_issue_text_does_not_change_the_profile_digest) ... ok\ntest_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect (pilot.tests.test_coordinator.PilotCoordinatorTests.test_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect) ... ok\ntest_restart_reopens_workspace_at_each_recoverable_local_state (pilot.tests.test_coordinator.PilotCoordinatorTests.test_restart_reopens_workspace_at_each_recoverable_local_state) ... ok\ntest_ambiguous_restart_reconciles_branch_and_pr_without_second_write (pilot.tests.test_github.GitHubPublicationTests.test_ambiguous_restart_reconciles_branch_and_pr_without_second_write) ... ok\ntest_exact_command_shapes_are_non_force_single_ref_and_draft_only (pilot.tests.test_github.GitHubPublicationTests.test_exact_command_shapes_are_non_force_single_ref_and_draft_only) ... ok\ntest_base_or_issue_identity_drift_fails_closed (pilot.tests.test_issue_source.IssueSourceTests.test_base_or_issue_identity_drift_fails_closed) ... ok\ntest_snapshot_uses_only_the_exact_profile_for_routing (pilot.tests.test_issue_source.IssueSourceTests.test_snapshot_uses_only_the_exact_profile_for_routing) ... ok\ntest_in_flight_branch_restart_observes_without_a_second_push (pilot.tests.test_live.PilotPhasesTests.test_in_flight_branch_restart_observes_without_a_second_push) ... ok\ntest_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted (pilot.tests.test_live.PilotPhasesTests.test_missing_api_key_stops_before_snapshot_or_invocation_and_secret_is_not_persisted) ... ok\ntest_runtime_roots_reject_a_symlinked_parent_into_control (pilot.tests.test_live.PilotPhasesTests.test_runtime_roots_reject_a_symlinked_parent_into_control) ... ok\ntest_three_process_phases_use_distinct_grants_and_replay_zero_writes (pilot.tests.test_live.PilotPhasesTests.test_three_process_phases_use_distinct_grants_and_replay_zero_writes) ... ok\ntest_observes_then_executes_only_exact_push_and_draft_post (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_observes_then_executes_only_exact_push_and_draft_post) ... ok\ntest_reads_only_exact_repo_issue_and_base_ref_facts (pilot.tests.test_live_github.PinnedGitHubTransportTests.test_reads_only_exact_repo_issue_and_base_ref_facts) ... ok\ntest_interrupted_invocation_is_terminal_and_cannot_start_again (pilot.tests.test_recovery.PilotRecoveryTests.test_interrupted_invocation_is_terminal_and_cannot_start_again) ... ok\ntest_loads_one_literal_grant_bound_to_observed_control_state (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_loads_one_literal_grant_bound_to_observed_control_state) ... ok\ntest_stale_wildcard_or_multiple_runtime_grants_fail_closed (pilot.tests.test_runtime_authority.RuntimeGrantLoaderTests.test_stale_wildcard_or_multiple_runtime_grants_fail_closed) ... ok\ntest_conflicting_replay_and_tampered_record_fail_closed (pilot.tests.test_store.PilotStoreTests.test_conflicting_replay_and_tampered_record_fail_closed) ... ok\ntest_read_only_status_does_not_recover_or_change_database (pilot.tests.test_store.PilotStoreTests.test_read_only_status_does_not_recover_or_change_database) ... ok\ntest_replay_is_exact_and_candidate_survives_close_reopen (pilot.tests.test_store.PilotStoreTests.test_replay_is_exact_and_candidate_survives_close_reopen) ... ok\ntest_bwrap_argv_has_minimal_read_only_source_and_no_network (pilot.tests.test_validation.ValidationTests.test_bwrap_argv_has_minimal_read_only_source_and_no_network) ... ok\ntest_fixed_test_and_semantic_pass_persist_one_exact_validation (pilot.tests.test_validation.ValidationTests.test_fixed_test_and_semantic_pass_persist_one_exact_validation) ... ok\ntest_semantic_gate_proves_exact_versions_labels_csp_and_protected_css (pilot.tests.test_validation.ValidationTests.test_semantic_gate_proves_exact_versions_labels_csp_and_protected_css) ... ok\ntest_semantic_gate_rejects_extra_padding_and_csp_policy_changes (pilot.tests.test_validation.ValidationTests.test_semantic_gate_rejects_extra_padding_and_csp_policy_changes) ... ok\ntest_tree_mutation_is_terminal_even_when_test_exit_is_zero (pilot.tests.test_validation.ValidationTests.test_tree_mutation_is_terminal_even_when_test_exit_is_zero) ... ok\ntest_disallowed_or_special_change_is_rejected_without_commit (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_disallowed_or_special_change_is_rejected_without_commit) ... ok\ntest_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_private_no_local_clone_has_no_remote_and_seals_one_parent_candidate) ... ok\ntest_sealed_workspace_recovers_by_job_and_rejects_tamper (pilot.tests.test_workspace.ExactGitWorkspaceTests.test_sealed_workspace_recovers_by_job_and_rejects_tamper) ... ok\n\n----------------------------------------------------------------------\nRan 44 tests in 1.715s\n\nOK (skipped=1)\n",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "python-unittest",
+      "status": "cancelled",
+      "summary": "cancelled exit=130",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-c",
+        "/dev/null",
+        "-p",
+        "xdist.plugin",
+        "-p",
+        "no:cacheprovider",
+        "--import-mode=prepend",
+        "--rootdir=.",
+        "-o",
+        "python_files=test*.py",
+        "-q",
+        "-n",
+        "12",
+        "--dist=worksteal",
+        "--max-worker-restart=0",
+        "--durations=20",
+        "-ra",
+        "-p",
+        "pytest_cov.plugin",
+        "--cov",
+        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/trust-ci-public-doc-bindings/.coveragerc",
+        "--cov-report=term",
+        "tests"
+      ],
+      "stdout": "",
+      "stderr": "test process cancelled by SIGINT",
+      "duration_hint": null,
+      "details": []
+    },
+    {
+      "name": "verification-interrupted",
+      "status": "cancelled",
+      "summary": "verification cancelled during python",
+      "command": null,
+      "stdout": "",
+      "stderr": "",
+      "duration_hint": null,
+      "details": [
+        {
+          "severity": "info",
+          "path": ".",
+          "message": "signal=2; stage=python"
+        }
+      ]
+    }
+  ],
+  "spec": {
+    "exempt": false,
+    "specs": [
+      {
+        "path": "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/change-spec.yaml",
+        "profile": "gate",
+        "valid": true,
+        "errors": [],
+        "coverage": {
+          "spec_count": 1,
+          "criterion_total": 3,
+          "criterion_mapped": 3,
+          "mapped_ids": [
+            "AC-001",
+            "AC-002",
+            "AC-003"
+          ],
+          "unmapped_ids": [],
+          "evidence_counts": {
+            "test": 0,
+            "receipt": 4,
+            "production_signal": 0,
+            "attestation": 0
+          },
+          "attestation_ac": {
+            "spec_count": 1,
+            "criterion_total": 3,
+            "criterion_mapped": 3,
+            "unmapped_ids": []
+          },
+          "categories": {
+            "acceptance_criteria": {
+              "criterion_total": 3,
+              "criterion_mapped": 3,
+              "mapped_ids": [
+                "AC-001",
+                "AC-002",
+                "AC-003"
+              ],
+              "unmapped_ids": []
+            },
+            "invariants": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "INV-001"
+              ],
+              "unmapped_ids": []
+            },
+            "forbidden_outcomes": {
+              "criterion_total": 1,
+              "criterion_mapped": 1,
+              "mapped_ids": [
+                "FORBID-001"
+              ],
+              "unmapped_ids": []
+            }
+          },
+          "all_criterion_total": 5,
+          "all_criterion_mapped": 5,
+          "all_mapped_ids": [
+            "AC-001",
+            "AC-002",
+            "AC-003",
+            "FORBID-001",
+            "INV-001"
+          ],
+          "all_unmapped_ids": []
+        },
+        "digest": "6392dab83b8916efa3fa31a7c1fed86cbfcb384b0c5fda11e5160d541d6b53d5",
+        "fingerprint": "e48c99bad0ac050ca0a549b3d7954da570916eaec43e755c2112fd649ebaa968"
+      }
+    ],
+    "active_path": "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/change-spec.yaml"
+  },
+  "architecture": {
+    "configured": true,
+    "diagram_status": "pass",
+    "diagram_mismatches": [],
+    "drift_findings": [],
+    "status": "pass",
+    "architecture_contract_version": 1,
+    "adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+    "architecture_fingerprint": "0cfc5f024453482f136a053d2856c38bc1c82d7975b7bbceb5ddc4b9affeb50d",
+    "architecture_base_sha": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "architecture_head_commit": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "architecture_base_kind": "route_model",
+    "architecture_bootstrap_baseline": false,
+    "architecture_route_base_sha": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "baseline_introduced": false,
+    "base_adoption_state": "adopted",
+    "head_adoption_state": "adopted",
+    "base_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "head_adoption_digest": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+    "contract_inventory_digest": "221704d4a5a04484d2c7a16b30c066a44f6d673513ae421c151d0ef07ce851c9",
+    "diff_digest": "edcfb6a7516c67ea02492ede53df852a2a9d8d3be66fbc0061fcfb79e297142f",
+    "drift_status": "pass",
+    "exact_base_sha": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "base_kind": "commit",
+    "fitness_evidence_digest": "70a07dc90d28e0803f46ac59a98194c523d5c6acd98847783fbc8260b717c3b2",
+    "fitness_status": "pass",
+    "generated_artifact_digests": {
+      "context.mmd": "4a8b63305ab5ccc98faf216305b09bc6e08926876b5769d1a5c84dab27dea76d",
+      "container.mmd": "da0ecc12272c5b546b626f48d649c2b5dabefa4aa98a5692cddd5ac90b45f8a5",
+      "deployment.mmd": "f671867835eaa3b391d9c892035ef0d714352e1fb4dce029edea9b2583a88bab",
+      "data-flow.mmd": "defbb77a18efc03d697dcb106b5c7e213c19ce076fce929e23a966ee31468907",
+      "trust-boundary.mmd": "6b0f83efafd7336d682f65115857d5ba16f6ef389210833efa3c028b876631b7"
+    },
+    "head_kind": "worktree",
+    "repository_inventory_digest": "0265eec8d2c9af0f1c8b19caf4c12c81597fb167c9980db18459eec3acef4ace",
+    "risk_escalation": "green",
+    "risk_post": "yellow",
+    "risk_pre": "yellow",
+    "rules_digest": "98df77357e869882c05cd294d58acae22a79c2457d5453f3801eeebf0fc7d621",
+    "schema_digest": "c849231d6d3e1ea35afa4da52f612893bf9c4586934670007b9bfb495afc8769",
+    "system_digest": "2479a8ffa9129713f2418d2cd6b0c1f44647069b02b4fbcc9d73abd47b8364fb",
+    "architecture_evidence_digest": "8b9e0cb70e5563f65b979caccb19ae4fa8a761c78848085689f72dbae4a460da"
+  },
+  "governance": {
+    "architecture_status": "pass",
+    "configured": true,
+    "status": "pass",
+    "governance_contract_version": 1,
+    "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
+    "governance_evidence_digest": "4c0f65558eb906da94b50f76b4184f1979b5ed26badf3968233ae8b7e37e00d4",
+    "governance_architecture_digest": "1ca539d2aa6322610079a7c30d391e5a5be346145b4047a289795bdd18cff41e",
+    "governance_applicable_base_sha": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "governance_applicable_head_sha": "97a7581238022356b2de8d193a9bd8363fc92dc3"
+  },
+  "workflow_artifacts": {
+    "configured": false,
+    "status": "not_configured"
+  },
+  "status": "fail",
+  "terminal_state": "cancelled",
+  "evidence_status": "recorded",
+  "docs_state_scope": {
+    "eligible": false,
+    "profile": "full-pr-suite",
+    "mode": "pr",
+    "reason": "one or more changed paths cannot be verified by the focused documentation/state profile",
+    "reason_code": "unallowlisted-path",
+    "documentation_files": [
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/architecture.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/brief.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/change-spec.yaml",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/README.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/analysis-summary.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/startup-capacity.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/release.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/requirements.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/rollback.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/route.json",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/state.json",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/tasks.md",
+      "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/test-plan.md"
+    ],
+    "state_files": [],
+    "artifact_files": [],
+    "changed_lockstep_tests": [],
+    "focused_tests": [],
+    "rejected_files": [
+      "trust-ci/tests/test_m0_invariants.py"
+    ],
+    "skipped_checks": [],
+    "changed_paths_digest": "b39737483de2e1f0aad835c7d8e022b1dc9ea3e582a06c9c9799b1efcb929c0c",
+    "evidence_kind": "verification:full-pr-suite",
+    "rejection": null
+  },
+  "check_status": "incomplete",
+  "cancellation": {
+    "signal": "SIGINT",
+    "stage": "python"
+  },
+  "scope_preflight_note": "Bounded startup scope invocation deliberately cancelled after 15 seconds; this is not completed verification and authorizes no skipped check. Later edits stale this snapshot."
+}

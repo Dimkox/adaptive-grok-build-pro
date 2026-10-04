@@ -1,0 +1,106 @@
+{
+  "change_id": "20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/trust-ci-public-doc-bindings",
+      "change_id": "20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-04T13:54:58+00:00",
+      "route_id": "e5372ed69c31"
+    },
+    {
+      "branch": "fix/trust-ci-public-doc-bindings",
+      "change_id": "20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+      "detached": false,
+      "dirty_product_paths": [
+        "decisions.md",
+        "mistakes.md",
+        "trust-ci/tests/test_m0_invariants.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-04T14:14:25+00:00",
+      "route_id": "e5372ed69c31"
+    }
+  ],
+  "created_at": "2026-10-04T13:54:58+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T13:54:58+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-04T14:00:08+00:00",
+      "from": "draft",
+      "reason": "Four independent analyses synthesized; narrow compatibility design and trust boundary recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-04T14:00:08+00:00",
+      "from": "scoped",
+      "reason": "User requested repair and preserved two-PR separation; local route has no named gate; external approvals remain separate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-04T14:14:25+00:00",
+      "from": "approved",
+      "reason": "Role-bound repair implemented by selected integration writer; bounded original/public Trust CI suites passed; full verification remains pending",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-04T14:14:25+00:00",
+      "from": "implementing",
+      "reason": "Executable candidate frozen; independent review and exact-head external gate pending; scope-only invocation cancelled and disclosed",
+      "to": "verifying"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "a9fa0635cc2eb1d312cac68fe02a42365a0fe13ba764f2064df95c0ed2f1c10b",
+  "route_id": "e5372ed69c31",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Trust CI public operator documentation bindings",
+  "updated_at": "2026-10-04T14:14:25+00:00"
+}

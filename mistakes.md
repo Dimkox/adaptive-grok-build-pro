@@ -14,6 +14,10 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-10-04 — Keep worker scratch within the project boundary
+
+A worker created its startup snapshot above the project because it treated a trusted home-directory parent as sufficient and missed the user's project-contained scratch requirement. The exact self-created directory was moved intact into `.review-scratch/`; future worker snapshots and test projections use that trusted private project directory.
+
 ## 2026-09-23 — Reviewed the inherited parent commit instead of the route base
 
 **Symptom:** The first code review falsely reported six unrelated product files as this change because it compared `HEAD^..HEAD` while the candidate `HEAD` was exactly the route base.

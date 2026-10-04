@@ -1,0 +1,3 @@
+# Dependencies and owners
+
+Startup capacity snapshot is attached; route e5372ed69c31 selected four independent read-only analyses, one integration_implementer writer and code/test reviewers. Product receipt repair proceeds in its separate existing worktree. Analysis must finish before this writer starts. Run bounded characterization/fixtures, preserve main compatibility, then independent private-scratch review of main and exact PR239 document projections. External governance approval is evaluated only by the deployed App; no local grant substitutes it. Do not repeat full verification while a known external dependency blocks delivery.
