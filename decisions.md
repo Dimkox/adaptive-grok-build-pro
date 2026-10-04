@@ -1053,3 +1053,7 @@ The user selected bounded committed-HEAD observations → independent reviews �
 ## 2026-10-04 — Transfer complete review artifacts without model reserialization
 
 A private bounded probe passed prepared artifact bytes directly from a read-tool result to `apply_patch`, after validating its single exact target, without repeating the body through model generation. Future reviewers should leave complete reports and addition patches in private scratch; the coordinator checks content/hash and closed report targets, waits for every review, then persists them as the only candidate writer. This preserves complete evidence while avoiding the duplicate serialization that delayed this cycle; it is a handoff pattern, not a verification cache or ten-minute guarantee.
+
+## 2026-10-04 — Distinguish virtual managed aliases from physical source inventory
+
+The installer inventory deliberately appends `MANAGED_FILES`, then excludes `ROOT_HOOK_SHIMS` from source reads and renders aliases from one validated template snapshot. Reading both the inventory producer and payload consumer established that physical root wrappers can be removed without changing installer runtime; generic/Bitrix alias byte, mode and execution characterization protects that boundary.

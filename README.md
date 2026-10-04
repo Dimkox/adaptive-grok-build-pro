@@ -278,6 +278,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`.grok/skills/`](.grok/skills/)
 - [`.grok/agents/`](.grok/agents/)
 - [`.grok/hooks/`](.grok/hooks/)
+- [Hook compatibility template](.grok-stack/templates/hook_root_shim.py) — the installer generates nine root aliases in consumer projects; canonical source hooks live in `.grok/hooks/`.
 - [`scripts/grok_route.py`](scripts/grok_route.py)
 - [`scripts/grok_change.py`](scripts/grok_change.py)
 - [`scripts/grok_agent.py`](scripts/grok_agent.py) — local heartbeat, progress, bounded watchdog and acknowledged same-task recovery; [operator runbook](engineering/runbooks/local-agent-watchdog.md)

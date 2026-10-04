@@ -1,0 +1,99 @@
+{
+  "change_id": "20261004-task-5bf111",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "refactor/remove-source-root-hook-shims",
+      "change_id": "20261004-task-5bf111",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "ee3911869419204154e02900e58bf31492ee744c",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-04T21:54:46+00:00",
+      "route_id": "5bf1112b5ccc"
+    },
+    {
+      "branch": "refactor/remove-source-root-hook-shims",
+      "change_id": "20261004-task-5bf111",
+      "detached": false,
+      "dirty_product_paths": [
+        "tests/test_installer.py",
+        "tests/test_structure.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "ee3911869419204154e02900e58bf31492ee744c",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-04T22:07:07+00:00",
+      "route_id": "5bf1112b5ccc"
+    }
+  ],
+  "created_at": "2026-10-04T21:54:46+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T21:54:46+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-04T22:07:07+00:00",
+      "from": "draft",
+      "reason": "Nine-wrapper scope, compatibility criteria and rollback recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-04T22:07:07+00:00",
+      "from": "scoped",
+      "reason": "User approved bounded cleanup; route has no named human gates",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-04T22:07:07+00:00",
+      "from": "approved",
+      "reason": "Sole selected writer adding characterization before deletion",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "690b05ad80a445a1b2c876ddf6b62a7bd240342dd4a75b5e6c53132383fcd7a1",
+  "route_id": "5bf1112b5ccc",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Refactor redundant source-root hook shim files: remove nine identical wrappers from this repository, retain canonical .grok/hooks and generated installer consumer aliases, update characterization tests and architecture bindings. No history rewrite or release artifact mutation.",
+  "updated_at": "2026-10-04T22:07:07+00:00"
+}

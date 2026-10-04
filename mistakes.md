@@ -1795,3 +1795,7 @@ Root cause: the coordinator ran `git diff --check` before staging newly created 
 ## 2026-10-04 — Dispatch fixtures inherited the outer verifier capability
 
 Root cause: two fake local-dispatch controls inherited `GROK_VERIFY_CAPABILITY=repository-sandbox`, so the production verifier correctly skipped PostgreSQL while those tests expected dispatch. Reproducing both failures isolated the fixture defect; only the fixture now clears and restores that flag, with an explicit inherited-sandbox regression. Production capability checks and allowed skips remain unchanged; prior local/review evidence is historical after this repair.
+
+## 2026-10-04 — Inventory membership was mistaken for source-file existence
+
+Root cause: an analysis inferred alias source-file existence from managed inventory membership without reading the inventory producer and alias rendering branch. `_SourceTree.inventory()` inserts virtual managed names and `build_payload()` skips their source reads, so the warning was corrected before runtime edits; inspect both sides of this seam before changing the installer.

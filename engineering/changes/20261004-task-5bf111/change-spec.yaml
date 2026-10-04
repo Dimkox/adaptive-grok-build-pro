@@ -1,0 +1,43 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "The committed source root contains only canonical entries and none of the nine redundant hook wrappers.", "evidence": [{"test": "tests/test_structure.py::StructureTests::test_repository_root_holds_only_canonical_entries"}]},
+    {"id": "AC-002", "statement": "Generic and Bitrix consumer payloads retain all nine root aliases with the bound template bytes and mode, canonical stdin delegation and the missing-canonical JSON fallback.", "evidence": [{"test": "tests/test_installer.py::InstallerTests::test_installed_root_hook_aliases_delegate_and_preserve_fallback"}, {"test": "tests/test_installer.py::InstallerTests::test_hook_aliases_use_the_inventoried_template_snapshot"}]},
+    {"id": "AC-003", "statement": "Only the nine obsolete route-policy repository paths are removed from the architecture model, and its checked-in generated views remain current.", "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}]},
+    {"id": "AC-004", "statement": "Hook and root inventory documentation identify canonical source hooks and installer-generated consumer aliases accurately.", "evidence": [{"receipt": "code_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261004-task-5bf111",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "This change must not rewrite Git history or mutate VERSION, immutable release archives, canonical hooks, hook configuration, the alias template or installer runtime.", "evidence": [{"receipt": "code_review"}]},
+    {"id": "FORBID-002", "statement": "Local observations must not be presented as independent review, final full verification, merge authority, deployment or release publication.", "evidence": [{"receipt": "code_review"}, {"receipt": "test_review"}]}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "Installed alias generation remains independent of physical source-root wrapper files and uses one descriptor-validated template snapshot.", "evidence": [{"test": "tests/test_installer.py::InstallerTests::test_hook_aliases_use_the_inventoried_template_snapshot"}]},
+    {"id": "INV-002", "statement": "The root inventory control continues reading committed HEAD rather than weakening to a filesystem-only comparison.", "evidence": [{"test": "tests/test_structure.py::StructureTests::test_repository_root_holds_only_canonical_entries"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Refactor redundant source-root hook shim files: remove nine identical wrappers from this repository, retain canonical .grok/hooks and generated installer consumer aliases, update characterization tests and architecture bindings. No history rewrite or release artifact mutation.",
+    "success_metric": "Redundant tracked source-root hook wrappers removed while consumer alias contracts and canonical runtime bytes are preserved",
+    "target": "Exactly nine wrappers removed; nine generated aliases retained for generic and Bitrix profiles; targeted observations, independent reviews and one final full PR gate"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 3,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}
