@@ -1688,3 +1688,11 @@ Root cause: repository-custodied binary release archives were treated as source 
 ## 2026-10-04 — Compatibility shims were copied into the public root
 
 Root cause: installer compatibility files were stored as nine duplicate root files instead of one template plus install-time materialization. This made the public root noisy and created extra canonical-root maintenance every time hook compatibility changed.
+
+## 2026-10-04 — Cleanup changed architecture/check-spec inputs without updating their models
+
+Root cause: removing root hook shims and renaming/removing historical evidence paths changed the repository shape, but the architecture model and change-spec verifier still treated the old paths as required inputs. Do not claim full PR readiness for a hygiene cleanup until generated architecture ownership and deleted-path handling are updated or the cleanup is split behind an explicit migration route.
+
+## 2026-10-04 — Full verifier was allowed to run silently past the fast-feedback budget
+
+Root cause: the PR verifier produced no output for about two minutes before interruption, then revealed early failures that could have been found by targeted architecture/change-spec checks. Run fast targeted gates for changed ownership/spec paths first, and reserve full PR verification for a frozen candidate with known-green prechecks.
