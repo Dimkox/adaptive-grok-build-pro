@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "change_id": "20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Preserve Trust CI documentation invariants for historical operator records and their public redacted projection.",
+    "success_metric": "bounded_documentation_binding_tests",
+    "target": "pass both representations and reject malformed or inconsistent bindings"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Original operator documents and the exact PR239 public projection satisfy the same role and cross-document identity relationships.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Absent, duplicated, malformed, UNKNOWN, wrong-role and inconsistent values fail documentation bindings.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Existing protected-main, epoch, API-worker, loopback and no-Actions assertions remain enforced.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Only trust-ci documentation tests change executable behavior; external policy, holdout, keys and branch protection remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A public placeholder or local receipt supplies deployed identity or merge authority.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

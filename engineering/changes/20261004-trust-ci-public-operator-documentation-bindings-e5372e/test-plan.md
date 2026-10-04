@@ -1,0 +1,3 @@
+# Verification plan
+
+Reproduction: unchanged three selected M0 tests pass main97a and fail PR23952e; the unchanged entire module passes14 tests on main. Add synthetic concrete/public positive fixtures and missing/duplicate/mismatch/UNKNOWN/wrong-placeholder/wrong-endpoint negative cases before repair. Run the complete Trust CI unittest suite and lint. Independent reviewers reproduce the exact candidate and PR239 document projection in private0700 scratch, with mutation probes for presentation and retained security invariants. Full PR verification and App-owned exact-head Trust CI remain required before merge; targeted or historical passes authorize no skips.

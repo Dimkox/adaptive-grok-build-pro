@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Bind public operator fields by their documented roles
+
+Read dedicated-host, inbound Funnel webhook and GitHub App identifiers from their named sections and report cells, then validate syntax and cross-document equality. Synthetic concrete fixtures and exact public placeholders keep historical documentation compatible while rejecting missing, duplicate, misplaced or inconsistent declarations. These document relationships provide no live identity or merge authority.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
