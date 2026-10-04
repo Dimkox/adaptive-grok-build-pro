@@ -43,23 +43,27 @@
       {
         "id": "verification",
         "kind": "receipt",
-        "reason": "implementation not started",
+        "reason": "Final report-containing candidate verification pending; earlier failed full attempt is preserved as historical evidence.",
         "receipt_kind": "verification",
         "status": "not_run"
       },
       {
         "id": "code_review",
         "kind": "receipt",
-        "reason": "implementation not started",
+        "reference": "evidence/code-review-final.md",
+        "outcome": "pass",
+        "recorded_at": "2026-10-04T13:31:35Z",
         "receipt_kind": "code_review",
-        "status": "not_run"
+        "status": "recorded"
       },
       {
         "id": "test_review",
         "kind": "receipt",
-        "reason": "implementation not started",
+        "reference": "evidence/test-review-final.md",
+        "outcome": "pass",
+        "recorded_at": "2026-10-04T13:31:35Z",
         "receipt_kind": "test_review",
-        "status": "not_run"
+        "status": "recorded"
       }
     ],
     "schema_version": 1
