@@ -1,0 +1,124 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "ee3911869419204154e02900e58bf31492ee744c",
+  "base_fingerprint": "281d3594f0849c44fd8e7cc0cf87b903051669c4ae55e2cf27dcccecc4058ab1",
+  "complexity": "standard",
+  "created_at": "2026-10-04T19:53:47+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "detected_languages": [
+      "php",
+      "python"
+    ],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "language_scan": {
+      "bytes": 2946156,
+      "directories": 418,
+      "entries": 4463,
+      "files": 4000,
+      "incomplete_reasons": [
+        "files:4000",
+        "source-bytes:65536"
+      ],
+      "non_regular": 0,
+      "skipped_symlinks": 0,
+      "status": "incomplete",
+      "truncated": true,
+      "unknown": true,
+      "unknown_extensions": {
+        ".in": 1,
+        ".json": 815,
+        ".jsonl": 4,
+        ".patch": 1,
+        ".ps1": 1,
+        ".sh": 1,
+        ".sha256": 3,
+        ".sql": 26,
+        ".toml": 3,
+        ".xml": 1,
+        ".yaml": 136
+      },
+      "unreadable": 0
+    },
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi",
+      "undetected-language",
+      "undetected-language:php=8",
+      "undetected-language:python=226",
+      "undetected-source-extension:.in=1",
+      "undetected-source-extension:.json=815",
+      "undetected-source-extension:.jsonl=4",
+      "undetected-source-extension:.patch=1",
+      "undetected-source-extension:.ps1=1",
+      "undetected-source-extension:.sh=1",
+      "undetected-source-extension:.sha256=3",
+      "undetected-source-extension:.sql=26",
+      "undetected-source-extension:.toml=3",
+      "undetected-source-extension:.xml=1",
+      "undetected-source-extension:.yaml=136",
+      "language-scan:incomplete=files:4000",
+      "language-scan:incomplete=source-bytes:65536"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "89578a99758f",
+  "schema_version": 1,
+  "session_id": "verify-fast-fail-20261004",
+  "status": "routed",
+  "task": "feature: optimize local verification with fail-fast required-check refusal and bounded committed-HEAD checks; preserve receipts, full PR scope and external Trust CI; batch fixes and freeze reviewed candidates",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

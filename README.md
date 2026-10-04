@@ -202,17 +202,19 @@ v2.1.1 опубликован 2026-10-03 из PR #238; ZIP и контрольн
    ```bash
    git status --short
    git diff
-   timeout --signal=TERM --kill-after=3s 177s python3 scripts/grok_verify.py --mode pr
+   python3 scripts/grok_verify.py --mode pr
+   python3 scripts/grok_verify.py --mode pr --keep-going --no-record
+   python3 scripts/grok_verify.py --mode fast --no-record --test tests.test_quality_gates --test tests.test_python_test_runner.NamedSmokeTests --budget 180
    python3 scripts/grok_status.py
    ```
 
-   Каждый проверочный запуск ограничен 180 секундами: TERM на 177-й секунде и KILL спустя ещё 3 секунды. Таймаут (обычно код 124, при принудительном завершении 137) означает незавершённую проверку, не PASS. Исторический полный Core-прогон за 14 минут 32 секунды не укладывается в этот предел; сокращение полного обязательного набора до лимита пока не подтверждено. Не заменяйте обязательные проверки выборочным PASS.
+   PR/release по умолчанию останавливают последующие проверки при первом отказе, неизвестном статусе или недопустимом skip. Отчёт сохраняет реальный результат и явно помечает незапущенные проверки; source-stability и финальный QG остаются обязательными. `--keep-going` собирает диагностику, сохраняя архитектурный preflight и правила admission. Именованный fast smoke требует чистый committed HEAD, `--no-record` и явные unittest-имена; бюджет subprocess — 1–180 секунд (по умолчанию 180), после таймаута добавляется ограниченная очистка процесса и проверка идентичности. Он не создаёт и не заменяет receipt. Полный успешный PR gate может занять больше 180 секунд; smoke или таймаут не заменяют его.
 
    Verifier запускает проверки и пишет локальные receipts в .grok-stack/runtime/receipts/<route-id>/. После CPU-снимка и маршрутизации запускайте его до тяжёлой проверки: он выбирает scope по действительному base..HEAD и dirty inventory. Зафиксируйте profile/reason, проверенные пути и skips; skipped не означает passed. Затем независимые route-selected reviewers проверяют этот кандидат; отчёты хранятся в engineering/changes/<id>/evidence/. После сохранения отчётов требуется финальная свежая проверка. Status показывает evidence_gaps, package_incomplete и agent_diagnostics; изменение дерева делает прежние receipts устаревшими.
 
 7. Доставка — отдельная ветка и PR. Только явно делегированные push/PR/merge/publish операции выполняются с точными ресурсами и соответствующими grants. Прямой push в main запрещён. Локальный PASS не разрешает merge: внешний GitHub App должен выдать adaptive-trust-ci/verified@<policy-sha12> на точный актуальный PR HEAD, а человек — требуемые подписанные approvals вне среды агента. Изменение HEAD/base/policy/holdout требует новой проверки и approvals. Установленный consumer stack не разворачивает эту внешнюю службу; её настраивает оператор отдельно.
 
-   При отказе verifier изучите конкретный failed check, верните минимальный ремонт тому же writer и повторите актуальные проверки. При отказе установщика сохраните указанный stage для ручной инспекции, если сообщено `manual cleanup required`; не удаляйте неизвестную цель. При неоднозначном runtime/provider результате сохраните состояние и audit, выполните документированное reconcile, не повторяйте публикацию/inference вслепую. Для реального factory control plane и L5 нужны отдельные операторские конфигурация, зависимости, authority и rollout/recovery runbooks; установка локального стека сама их не активирует и не выдаёт live URL.
+   При отказе verifier изучите конкретный failed check, соберите связанные замечания в один ремонт тому же writer и повторите затронутые короткие controls. После независимого review сохраните полные отчёты, закоммитьте и заморозьте кандидат; финальные локальная проверка и внешний exact-head check могут идти параллельно после явно делегированного UNVERIFIED branch transport. Identical merged tree без новых product changes — no-op, без нового полного прогона. При отказе установщика сохраните указанный stage для ручной инспекции, если сообщено `manual cleanup required`; не удаляйте неизвестную цель. При неоднозначном runtime/provider результате сохраните состояние и audit, выполните документированное reconcile, не повторяйте публикацию/inference вслепую. Для реального factory control plane и L5 нужны отдельные операторские конфигурация, зависимости, authority и rollout/recovery runbooks; установка локального стека сама их не активирует и не выдаёт live URL.
 
 ## Verification scope selection
 

@@ -9,6 +9,7 @@ from importlib import metadata
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import stat
@@ -298,6 +299,22 @@ def _environment(root: Path, data_file: Path) -> dict[str, str]:
         PYTHONPATH=os.pathsep.join((str(root), str(root / 'tests'), str(root / '.grok-stack'), environment.get('PYTHONPATH', ''))),
     )
     return environment
+
+
+def run_named_tests(root: Path, targets: list[str], *, budget: int = 180) -> ProcessResult:
+    """Run explicit Core unittest names as a bounded observation, without coverage."""
+    if type(budget) is not int or not 1 <= budget <= 180:
+        raise RunnerError('named test budget must be an integer from 1 to 180 seconds')
+    if not targets or any(
+        not isinstance(target, str)
+        or not re.fullmatch(r'tests\.test_[A-Za-z0-9_]+(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}', target)
+        or not (root / 'tests' / (target.split('.')[1] + '.py')).is_file()
+        for target in targets
+    ):
+        raise RunnerError('named tests require nonempty existing tests.test_module[.Class[.test_method]] targets')
+    with tempfile.TemporaryDirectory(prefix='grok-named-smoke-') as directory:
+        return execute([sys.executable, '-m', 'unittest', *targets], root,
+                       _environment(root, Path(directory) / '.coverage'), timeout=budget)
 
 
 def _tool_versions(required: list[str]) -> dict[str, str]:

@@ -105,7 +105,7 @@ FULL_PATH_ONLY_CHANGES = [
 
 _TRIVIAL_TEST = (
     'import unittest\n'
-    '\n'
+    '\n\n'
     'class OkTests(unittest.TestCase):\n'
     '    def test_ok(self) -> None:\n'
     '        self.assertTrue(True)\n'
@@ -120,7 +120,7 @@ def _full_suite_marker_source(root: Path) -> str:
     """A suite member that records that full discovery actually reached it."""
     return (
         'import unittest\n'
-        '\n'
+        '\n\n'
         'class FullSuiteMarker(unittest.TestCase):\n'
         '    def test_marker(self) -> None:\n'
         '        from pathlib import Path\n'
@@ -1049,6 +1049,18 @@ class VerifyDocsStateScopeEndToEndTests(unittest.TestCase):
         (root / 'docs' / 'package-status.md').write_text('# status\n', encoding='utf-8')
         (root / 'README.md').write_text('# probe\n\nidentity 1.0.0\n', encoding='utf-8')
         (root / 'PROJECT_STATE.json').write_text('{"version": "1.0.0"}\n', encoding='utf-8')
+        package = root / 'engineering/changes/20261004-scope-fixture'
+        package.mkdir(parents=True)
+        (package / 'change-spec.yaml').write_text(json.dumps({
+            'schema_version': 2, 'change_id': '20261004-scope-fixture',
+            'objective': {'id': 'OBJ-001', 'statement': 'scope probe', 'success_metric': 'selected', 'target': 'all'},
+            'risk': {'tier': 'green', 'domains': []},
+            'acceptance_criteria': [{'id': 'AC-001', 'statement': 'scope probe', 'evidence': [{'receipt': 'verification'}]}],
+            'invariants': [], 'forbidden_outcomes': [],
+            'contracts': {'openapi': [], 'json_schema': [], 'events': []},
+            'observability': [], 'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1},
+            'approvals': {'required_scopes': []},
+        }))
         git('add', '.')
         git('commit', '-qm', 'baseline')
         base = _git_head(root)
@@ -1061,6 +1073,8 @@ class VerifyDocsStateScopeEndToEndTests(unittest.TestCase):
         route['quality_profiles'] = ['base']
         route['delivery_expected'] = False
         set_active_route(root, route)
+        from adaptive_grok.state import set_active_change
+        set_active_change(root, {'change_id': '20261004-scope-fixture', 'path': 'engineering/changes/20261004-scope-fixture'})
         return git, base
 
     def _checks(self, report: dict[str, object]) -> dict[str, str]:
@@ -1101,7 +1115,7 @@ class VerifyDocsStateScopeEndToEndTests(unittest.TestCase):
             git, _ = self._repo(root)
             (root / '.grok-stack' / 'adaptive_grok').mkdir(parents=True)
             (root / '.grok-stack' / 'adaptive_grok' / 'service.py').write_text(
-                'PRODUCT STATEMENT = 2\n', encoding='utf-8'
+                'PRODUCT_STATEMENT = 2\n', encoding='utf-8'
             )
             (root / 'README.md').write_text('# probe\n\nidentity 1.0.1\n', encoding='utf-8')
             git('add', '.')

@@ -30,6 +30,18 @@ BASE_PR_CHECKS = [
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_completed_refusal_does_not_require_future_checks(self) -> None:
+        from adaptive_grok.quality_gates import required_check_refused
+        for mode in ('pr', 'release'):
+            for status, summary, refused in (
+                ('pass', 'ok', False), ('fail', 'actual refusal', True),
+                ('skip', 'bandit not available', False), ('skip', 'unknown reason', True),
+                ('unknown', 'ok', True), ('cancelled', 'interrupted', True),
+            ):
+                with self.subTest(mode=mode, status=status, summary=summary):
+                    self.assertEqual(required_check_refused(check('bandit', status, summary), mode=mode), refused)
+        self.assertFalse(required_check_refused(check('ruff', 'skip', 'not available'), mode='fast'))
+
     def test_exact_consumer_and_micro_skip_reasons_are_admitted(self) -> None:
         allowances = {
             'architecture-inputs': 'architecture authority inputs are absent; not executed',

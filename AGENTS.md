@@ -107,6 +107,9 @@ When sources conflict, stop only for a named human gate or an irreversible/secur
 - Review agents are read-only and must inspect the actual diff and surrounding implementation.
 - Do not let an implementer approve its own work.
 - Do not spawn an agent that the active route did not select; the hook may block it.
+- Give each agent a narrow brief with route, exact repository/HEAD/base, one question, dependencies, CPU allocation and write/read-only boundary. Prefer a clean brief over repeated full-history reads.
+- Collect related failures and review findings into one repair batch for the same write owner; rerun affected bounded controls before the next full gate. Named smoke uses `grok_verify.py --mode fast --no-record --test tests.test_module --budget 180` on clean committed HEAD; its subprocess timeout permits bounded cleanup afterward and creates no verification receipt.
+- Persist all complete review reports, commit, then freeze the candidate. After exact delegated UNVERIFIED branch transport, final local PR verification and external exact-head Trust CI may run in parallel; keep their outcomes separate. A fetched identical merged tree with no new product changes is a no-op and requires no repeated full gate.
 
 ## Tool-denial circuit breaker
 

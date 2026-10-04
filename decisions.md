@@ -1041,3 +1041,7 @@ Tracked ZIP releases made clone size larger and preserved stale public paths ins
 ## 2026-10-04 — Root hook shims are install output, not repository root content
 
 The nine root hook shims duplicated one template and made the public root look like compatibility debris. Keep one canonical shim template under `.grok-stack/templates/` and let the installer materialize root hook files into target projects.
+
+## 2026-10-04 — Stop nonqualifying dispatch, retain final admission
+
+PR/release now share the closed per-result QG policy at dispatch boundaries; actual refusals retain their output, and undispatched checks remain explicit skips while source stability and final QG still run. The first 29 bounded controls passed in 20.390 s, including real Core-import smoke, timeout and unchanged receipt controls; this is targeted evidence, not full verification. Named smoke uses the existing Core environment and subprocess ownership rather than another discovery runner; its 1–180 s process budget adds bounded cleanup and identity-check overhead.

@@ -12,8 +12,8 @@ import os
 import signal
 
 from adaptive_grok.util import find_root
-from adaptive_grok.python_test_runner import RunCancelled, _cancellation
-from adaptive_grok.verification import CheckResult, VerificationCancelled, _record_verification_receipt, verify
+from adaptive_grok.python_test_runner import RunCancelled, RunnerError, _cancellation
+from adaptive_grok.verification import CheckResult, VerificationCancelled, _record_verification_receipt, verify, verify_named_tests
 from adaptive_grok.verification_scope import FORCE_FULL_VARIABLE
 
 parser = argparse.ArgumentParser(description='Run route-selected verification and record a fingerprint-bound receipt.')
@@ -25,18 +25,30 @@ parser.add_argument(
 parser.add_argument('--profile', action='append', dest='profiles')
 parser.add_argument('--no-record', action='store_true')
 parser.add_argument('--json', action='store_true')
+parser.add_argument('--keep-going', action='store_true', help='collect diagnostic failures; safety preflight and admission still apply')
+parser.add_argument('--test', action='append', dest='tests', help='explicit tests.test_module[.Class[.test_method]] observation in fast mode')
+parser.add_argument('--budget', type=int, default=None, help='named smoke budget in seconds, from 1 to 180 (default 180)')
 parser.add_argument(
     '--full-scope',
     action='store_true',
     help='force the full PR suite even when the inventory is documentation/state-only',
 )
 args = parser.parse_args()
+if args.tests is not None and (args.mode != 'fast' or not args.no_record or args.profiles or args.full_scope or args.keep_going):
+    parser.error('named tests require --mode fast --no-record without profiles, full-scope or keep-going')
+if args.budget is not None and args.tests is None:
+    parser.error('--budget requires explicit --test targets')
 if args.full_scope:
     os.environ[FORCE_FULL_VARIABLE] = '1'
 signal_exit = None
 root = find_root()
 try:
-    report = verify(root, args.mode, args.profiles, record=not args.no_record)
+    if args.tests is not None:
+        report = verify_named_tests(root, args.tests, budget=args.budget if args.budget is not None else 180)
+    else:
+        report = verify(root, args.mode, args.profiles, record=not args.no_record, keep_going=args.keep_going)
+except RunnerError as exc:
+    parser.error(str(exc))
 except VerificationCancelled as exc:
     report = exc.report
     signal_exit = exc.code

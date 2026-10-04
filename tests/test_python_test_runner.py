@@ -45,10 +45,10 @@ def fixture(*, workers: object = 2):
             environment.pop(key, None)
         with patch.dict(os.environ, environment, clear=True), patch(
             'adaptive_grok.verification._ruff',
-            return_value=CheckResult('ruff', 'skip', 'fixture'),
+            return_value=CheckResult('ruff', 'skip', 'no python quality paths'),
         ), patch(
             'adaptive_grok.verification._bandit',
-            return_value=CheckResult('bandit', 'skip', 'fixture'),
+            return_value=CheckResult('bandit', 'skip', 'bandit not available'),
         ):
             yield root
 
@@ -84,6 +84,115 @@ def v2_capacity(*, membership: str = '/team/job', mount_root: str = '/',
             f'32 24 0:28 {mount_root} {mountpoint} rw,nosuid shared:7 - cgroup2 cgroup rw\n'
         ),
     }
+
+
+class NamedSmokeTests(unittest.TestCase):
+    def test_existing_cli_requires_explicit_observation_mode_and_no_record(self):
+        script = Path(__file__).resolve().parents[1] / 'scripts/grok_verify.py'
+        for arguments in (
+            ['--test', 'tests.test_named'], ['--mode', 'release', '--no-record', '--test', 'tests.test_named'],
+            ['--mode', 'fast', '--test', 'tests.test_named'], ['--mode', 'fast', '--no-record', '--budget', '1'],
+            ['--mode', 'fast', '--no-record', '--test', '', '--budget', '1'],
+            ['--mode', 'fast', '--no-record', '--test', 'tests.test_named', '--budget', '181'],
+        ):
+            with self.subTest(arguments=arguments), self.committed_tree() as root:
+                proc = subprocess.run([sys.executable, str(script), *arguments], cwd=root,
+                                      text=True, capture_output=True, timeout=10)
+                self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+                self.assertFalse((root / '.grok-stack/runtime/receipts').exists())
+        with self.committed_tree() as root:
+            (root / '.git/info/exclude').write_text('.grok-stack/runtime/\n')
+            receipt = root / '.grok-stack/runtime/receipts/verification.json'
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text('prior evidence')
+            proc = subprocess.run([sys.executable, str(script), '--mode', 'fast', '--no-record', '--json',
+                                   '--test', 'tests.test_named', '--test', 'tests.test_named.Named.test_named', '--budget', '10'],
+                                  cwd=root, text=True, capture_output=True, timeout=15)
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(json.loads(proc.stdout)['evidence_status'], 'not_recorded')
+            self.assertEqual(receipt.read_text(), 'prior evidence')
+            (root / 'dirty.txt').write_text('dirty')
+            refused = subprocess.run([sys.executable, str(script), '--mode', 'fast', '--no-record', '--test', 'tests.test_named'],
+                                     cwd=root, text=True, capture_output=True, timeout=10)
+            self.assertEqual(refused.returncode, 2)
+            self.assertIn('clean committed HEAD', refused.stderr)
+            self.assertEqual(receipt.read_text(), 'prior evidence')
+
+    def test_named_smoke_cancellation_retains_signal_and_identity_without_receipt(self):
+        script = Path(__file__).resolve().parents[1] / 'scripts/grok_verify.py'
+        body = '__import__("os").kill(__import__("os").getppid(), 15); time.sleep(5)'
+        with self.committed_tree(body) as root:
+            proc = subprocess.run([sys.executable, str(script), '--mode', 'fast', '--no-record', '--json',
+                                   '--test', 'tests.test_named', '--budget', '10'],
+                                  cwd=root, text=True, capture_output=True, timeout=15)
+            self.assertEqual(proc.returncode, 143, proc.stdout + proc.stderr)
+            report = json.loads(proc.stdout)
+            self.assertEqual(report['terminal_state'], 'cancelled')
+            self.assertEqual(report['head_before'], report['head_after'])
+            self.assertEqual(report['checks'][0]['status'], 'cancelled')
+            self.assertEqual(report['checks'][1]['status'], 'pass')
+            self.assertFalse((root / '.grok-stack/runtime/receipts').exists())
+
+    @contextlib.contextmanager
+    def committed_tree(self, body='self.assertEqual(core_marker.VALUE, 42)'):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'tests').mkdir()
+            (root / '.grok-stack').mkdir()
+            (root / 'tests/__init__.py').write_text('')
+            (root / '.grok-stack/core_marker.py').write_text('VALUE = 42\n')
+            (root / 'tests/test_named.py').write_text(
+                'import unittest\nimport core_marker\nimport time\nfrom pathlib import Path\n'
+                'class Named(unittest.TestCase):\n    def test_named(self):\n        ' + body + '\n')
+            for args in (['init', '-q'], ['config', 'user.name', 'Test'],
+                         ['config', 'user.email', 'test@example.com'], ['add', '.'], ['commit', '-qm', 'fixture']):
+                subprocess.run(['git', *args], cwd=root, check=True)
+            yield root
+
+    def test_named_smoke_uses_core_imports_and_never_records_receipt(self):
+        from adaptive_grok.verification import verify_named_tests
+        with self.committed_tree() as root:
+            receipt = root / '.grok-stack/runtime/receipts/verification.json'
+            receipt.parent.mkdir(parents=True)
+            receipt.write_text('prior evidence')
+            # Runtime evidence is ignored as in a real repository.
+            (root / '.git/info/exclude').write_text('.grok-stack/runtime/\n')
+            report = verify_named_tests(root, ['tests.test_named.Named.test_named'], budget=10)
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['evidence_status'], 'not_recorded')
+            self.assertEqual(report['head_before'], report['head_after'])
+            self.assertEqual(report['fingerprint_before'], report['tree_fingerprint'])
+            self.assertIn('Ran 1 test', report['checks'][0]['stderr'])
+            self.assertEqual(receipt.read_text(), 'prior evidence')
+
+    def test_named_smoke_timeout_failure_and_source_mutation_are_refused(self):
+        from adaptive_grok.verification import verify_named_tests
+        for body, budget, diagnostic in (
+            ('time.sleep(5)', 1, 'timeout'),
+            ('self.fail("specific assertion")', 10, 'specific assertion'),
+            ('Path("changed.txt").write_text("mutation")', 10, 'repository changed'),
+            ('self.assertEqual(__import__("subprocess").call(["git", "commit", "--allow-empty", "-qm", "new head"]), 0)',
+             10, 'repository changed'),
+        ):
+            with self.subTest(body=body), self.committed_tree(body) as root:
+                started = time.monotonic()
+                report = verify_named_tests(root, ['tests.test_named'], budget=budget)
+                self.assertEqual(report['status'], 'fail')
+                self.assertLess(time.monotonic() - started, budget + 4)
+                self.assertIn(diagnostic, json.dumps(report))
+                self.assertFalse((root / '.grok-stack/runtime/receipts').exists())
+
+    def test_named_smoke_rejects_dirty_tree_empty_invalid_targets_and_budget(self):
+        from adaptive_grok.verification import verify_named_tests
+        with self.committed_tree() as root:
+            for targets, budget in (([], 10), ([''], 10), (['../test_named'], 10),
+                                    (['tests.test_missing'], 10), (['tests.test_named'], 0),
+                                    (['tests.test_named'], 181)):
+                with self.subTest(targets=targets, budget=budget), self.assertRaises(ValueError):
+                    verify_named_tests(root, targets, budget=budget)
+            (root / 'dirty.txt').write_text('dirty')
+            with self.assertRaisesRegex(ValueError, 'clean committed HEAD'):
+                verify_named_tests(root, ['tests.test_named'], budget=10)
 
 
 class PythonTestCapacityTests(unittest.TestCase):

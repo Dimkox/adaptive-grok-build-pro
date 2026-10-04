@@ -1775,3 +1775,7 @@ Root cause: the PR verifier produced no output for about two minutes before inte
 ## 2026-10-04 — A private directory name was mistaken for Git exclusion
 
 Root cause: the coordinator assumed `.review-scratch` was ignored without checking Git's actual exclusion rules. The retained raw report was private by filesystem permissions but untracked, not ignored; before delivery, an exact local exclusion was added and independently checked alongside its hash and permissions. Check actual exclusion before storing raw host-local evidence, rather than relying on a directory name.
+
+## 2026-10-04 — Refusal fixtures relied on earlier failures being ignored
+
+Root cause: synthetic PR fixtures omitted a valid spec or contained Ruff-invalid sample Python, then expected a later check to execute despite that earlier refusal. The new boundaries exposed this in a bounded covering run (12 failures, 233 passes, 42.73 s); diagnostic fixtures now explicitly request keep-going, while successful scope fixtures provide lint-valid source and a real typed binding. Establish valid prerequisites before injecting the refusal a behavioral test is meant to observe.
