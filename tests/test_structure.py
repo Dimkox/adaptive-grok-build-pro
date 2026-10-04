@@ -28,6 +28,28 @@ ROOT_ENTRIES = frozenset(
 
 
 class StructureTests(unittest.TestCase):
+    def test_cancelled_preflight_public_projection_preserves_scope_without_home_paths(self) -> None:
+        path = ROOT / 'engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/scope-preflight-cancelled.json'
+        raw = path.read_text(encoding='utf-8')
+        self.assertFalse(bool(re.search(r'/home/[^/\s"]+/', raw)), 'cancelled historical report contains an operator-home path')
+        report = json.loads(raw)
+        note = report.pop('public_projection')
+        self.assertEqual(set(note), {'record_scope', 'source_commit', 'source_git_blob', 'private_original', 'redacted_field', 'receipt_authority', 'current_verification', 'complete_verification'})
+        self.assertEqual(note['record_scope'], 'historical_cancelled_public_projection')
+        self.assertEqual(note['source_commit'], '6dbbc7dbe81812d919851c2300db6f4917033d43')
+        self.assertEqual(note['source_git_blob'], '6334c167ac00bf35bafa37e441f087d4de685c33')
+        self.assertEqual(note['private_original'], {'sha256': '4350077c2590c484ac063fca91decb6e1b9b503e1bfa8149f3e1c9f3b0e30096', 'bytes': 25603, 'private_content_persisted': True, 'publicly_dereferenceable': False})
+        self.assertEqual(note['redacted_field'], 'checks[13].command[23]')
+        for field in ('receipt_authority', 'current_verification', 'complete_verification'):
+            self.assertIs(note[field], False)
+        self.assertEqual(report['status'], 'fail')
+        self.assertEqual(report['terminal_state'], 'cancelled')
+        self.assertEqual(report['check_status'], 'incomplete')
+        self.assertEqual(report['checks'][13]['command'][23], '--cov-config=<local-project-path>/.coveragerc')
+        # Pin every original scope/identity/result/log value, changing only that argv.
+        canonical = json.dumps(report, ensure_ascii=True, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(), 'e6d8aac7464caec8fa20e8def25db074ec377a5fdf35c2a42cc3b2e9326d2ab3')
+
     def test_historical_source_audit_remains_parseable_after_path_redaction(self) -> None:
         import ast
 

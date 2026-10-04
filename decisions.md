@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Retain the original while publishing a non-authoritative projection
+
+The exact cancelled preflight original is retained in an ignored private copy with verified 25,603-byte size and SHA-256, while the public projection replaces only one operator-project argv prefix. The private copy is not publicly dereferenceable; the historical Git blob remains unchanged, and neither copy supplies current or complete verification. A canonical body digest pins every unaffected identity, scope, result and log value.
+
 ## 2026-10-04 — Separate current continuation from dated delivery records
 
 An additive current_continuation pointer makes PR239 cleanup and its PR240 dependency explicit while preserving historical core/custody identities and unaccepted F/G boundaries. Historical record_scope labels prevent preserved next-action prose from becoming fresh instructions; current checked/merge/external-success identities stay unknown until independently established.

@@ -1,4 +1,19 @@
 {
+  "public_projection": {
+    "record_scope": "historical_cancelled_public_projection",
+    "source_commit": "6dbbc7dbe81812d919851c2300db6f4917033d43",
+    "source_git_blob": "6334c167ac00bf35bafa37e441f087d4de685c33",
+    "private_original": {
+      "sha256": "4350077c2590c484ac063fca91decb6e1b9b503e1bfa8149f3e1c9f3b0e30096",
+      "bytes": 25603,
+      "private_content_persisted": true,
+      "publicly_dereferenceable": false
+    },
+    "redacted_field": "checks[13].command[23]",
+    "receipt_authority": false,
+    "current_verification": false,
+    "complete_verification": false
+  },
   "schema_version": 1,
   "created_at": "2026-10-04T14:09:36+00:00",
   "mode": "pr",
@@ -283,7 +298,7 @@
         "-p",
         "pytest_cov.plugin",
         "--cov",
-        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/trust-ci-public-doc-bindings/.coveragerc",
+        "--cov-config=<local-project-path>/.coveragerc",
         "--cov-report=term",
         "tests"
       ],

@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Raw cancelled preflight output exposed a local operator path
+
+The coordinator published a raw cancelled preflight report without a public projection, exposing an operator-home prefix in a captured coverage argv. Retain the exact original privately before replacing that one historical argv value, and explicitly label the public projection cancelled/incomplete with no receipt or current-verification authority. Preserve scope, base/head, changed paths, results and skips rather than sanitizing their meaning.
+
 ## 2026-10-04 — Choose the protected branch's admitted merge method
 
 The coordinator's --merge API request was rejected by protected main's linear-history rule; the separately admitted --squash operation succeeded. This was enforcement of protection, not a bypass, and no forced ref update was used.
