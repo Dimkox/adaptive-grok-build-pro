@@ -1755,3 +1755,7 @@ Root cause: removing root hook shims and renaming/removing historical evidence p
 ## 2026-10-04 — Full verifier was allowed to run silently past the fast-feedback budget
 
 Root cause: the PR verifier produced no output for about two minutes before interruption, then revealed early failures that could have been found by targeted architecture/change-spec checks. Run fast targeted gates for changed ownership/spec paths first, and reserve full PR verification for a frozen candidate with known-green prechecks.
+
+## 2026-10-04 — A private directory name was mistaken for Git exclusion
+
+Root cause: the coordinator assumed `.review-scratch` was ignored without checking Git's actual exclusion rules. The retained raw report was private by filesystem permissions but untracked, not ignored; before delivery, an exact local exclusion was added and independently checked alongside its hash and permissions. Check actual exclusion before storing raw host-local evidence, rather than relying on a directory name.
