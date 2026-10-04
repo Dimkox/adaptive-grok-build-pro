@@ -57,6 +57,29 @@ This gives you a candidate and evidence. It does not merge, deploy, publish, or 
 - It does not make the agent a production operator by default.
 - It does not turn local receipts into merge authority.
 
+## Fail-closed boundaries and current limits
+
+Fail-closed here means that unclear, unknown or out-of-policy input is rejected instead of guessed through.
+
+Boundaries that currently cut execution:
+
+- The installer plans existing repositories read-only. New-target materialization refuses existing targets, symlinks, special files and platforms without the required no-replace filesystem primitives.
+- Closed schemas reject unknown keys, malformed JSON and unsupported versions.
+- Workflow-source adapters parse bounded artifacts. They do not execute imported shell commands, call networks or ask an LLM to interpret foreign workflow text.
+- PR verification leaves the docs/state fast lane when a changed path is outside the explicit allowlist, when Git status is ambiguous, or when the comparison base cannot be trusted.
+- Merge authority is outside chat and local receipts. It requires a pull request, the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact head SHA, and the required human approvals.
+- Providers, pilot flows, Linux setup and factory publication are default-off unless a separate operator action enables them.
+
+Known weak seams this line is closing:
+
+- A prose claim is not evidence that a live check exercised the risky path.
+- An empty acceptance-criteria set is not coverage.
+- A receipt fingerprint without the bound file is not durable evidence.
+- A timeout or interrupted verifier is incomplete, not a pass.
+- A restarted attempt cannot reuse an old model/config/profile identity without requalification.
+
+The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The current public status is also deliberately narrow: this tree is a `2.1.1` source candidate; no `2.1.1` artifact is published by this README, and the external pilot remains unqualified.
+
 ## Advanced startup baseline
 
 **Step zero, before all other startup work:** [measure resources](AGENTS.md#mandatory-startup-algorithm-measure-then-dispatch)—physical/online logical CPUs, process affinity, effective cpuset and finite cgroup quotas; try a bounded child-only affinity expansion when appropriate, derive verified effective capacity and record the snapshot. Only then inspect backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel, spreading eligible heavy work across that capacity. Isolated writer ownership comes next, followed by verification/delivery gates. Remeasure every startup: the September 26 observation of **14 physical / 28 logical CPUs**, with default affinity exposing 22 and a verified `taskset -c 0-27` child exposing 28, is not a permanent guarantee.

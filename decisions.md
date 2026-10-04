@@ -969,3 +969,7 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-04 — Публичный вход должен идти от ценности к контролям
 
 Внешний читатель воспринимает проект как governance maze, когда README начинает с Trust CI, CPU-gates и внутренней терминологии. Публичная подача теперь двухуровневая: сначала простой first-run path, затем advanced fail-closed controls. Это сохраняет безопасность, но снижает порог входа.
+
+## 2026-10-04 — Fail-closed надо показывать через реальные режущие контуры
+
+В публичной документации fail-closed описывается не лозунгом, а списком мест, где система фактически отказывает: installer no-replace, closed schemas, workflow parser sandbox, verifier allowlist, exact-SHA Trust CI и default-off providers. Там же явно названы прежние слабые швы и цена режима, чтобы внешний читатель видел границу применимости, а не обещание магической безопасности.

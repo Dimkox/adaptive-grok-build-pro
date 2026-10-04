@@ -1668,3 +1668,7 @@ Root cause: `tests/test_structure.py` compares canonical root entries against `g
 ## 2026-10-04 — README explained internal bureaucracy before user value
 
 Root cause: public documentation led with startup capacity, routing, Trust CI and control-plane vocabulary before answering what the tool does and how to try it. External readers therefore saw overengineering before the simple repo-to-PR workflow. Keep the first screen focused on outcome, first run and boundaries; move heavy controls to an advanced section.
+
+## 2026-10-04 — Fail-closed was described more broadly than the measured seams
+
+Root cause: documentation used fail-closed as a global project property while past defects were at seams between prose assertions, empty criteria, receipt bindings, timeouts and restart identity. Describe the exact rejecting mechanisms and the known repaired seams together, so a reader can tell where the policy is enforced and where it is only a goal.
