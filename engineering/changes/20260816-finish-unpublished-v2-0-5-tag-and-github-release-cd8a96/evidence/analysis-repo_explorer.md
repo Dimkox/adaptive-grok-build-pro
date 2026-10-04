@@ -178,7 +178,7 @@ Origin `GET /contents/…ad4090/evidence?ref=7c0ae75` has only 8 files:
 
 Local extras (9) — stay uncommitted:
 
-| Path under `engineering/changes/20260815-user-query-гит-пуш-пакет-релиз-user-query-ad4090/` |
+| Path under `engineering/changes/20260815-task-ad4090/` |
 | --- |
 | `evidence/implementation.md` |
 | `evidence/code-review.md` |

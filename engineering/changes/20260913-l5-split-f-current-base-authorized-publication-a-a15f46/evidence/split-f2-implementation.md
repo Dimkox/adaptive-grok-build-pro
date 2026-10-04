@@ -1,6 +1,6 @@
 # F2 exact extraction on repaired E
 
-Selected sole writer data_implementer; fresh route a15f467e4575; worktree /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2. Actual predecessor and source checkout HEAD: d33e8d8b2aa06a76f32724d08d79a21f3604ce42. Extraction source is archived F517741da6e883c5feacbd2f029d745ffc5e2fec0, not the original frozen monolith. Product/test writes are complete and frozen.
+Selected sole writer data_implementer; fresh route a15f467e4575; worktree <local-path> Actual predecessor and source checkout HEAD: d33e8d8b2aa06a76f32724d08d79a21f3604ce42. Extraction source is archived F517741da6e883c5feacbd2f029d745ffc5e2fec0, not the original frozen monolith. Product/test writes are complete and frozen.
 
 The eleven F product/test/config blobs and executable modes match archived F exactly, including the strengthened PublicationStore schema validator, GLOB literal-prefix fix, request schema, authorization bridge, bootstrap, current21-module inventory and expanded publication tests. Complete current-base changed-path accounting found exactly those11 product paths, with no extra or missing path. README/decisions and the current change package are root-owned paperwork.
 

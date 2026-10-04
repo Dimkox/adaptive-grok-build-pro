@@ -1,6 +1,6 @@
 # Bootstrap architecture analysis: parallel test runner tools
 
-Route `56fd015ff1f0`; worktree `/home/pall/grok-projects/adaptive-grok-build-pro-test-tools`; branch `build/parallel-test-runner-tools`; inspected HEAD `64378d28c7b78cace463d96470c1898294b8f196`. Analysis only: no product diff existed at inspection, no tests/builds/deployed state were accessed. Root is the sole author under the recorded user override; final independent review follows implementation and verification.
+Route `56fd015ff1f0`; worktree `<local-path>`; branch `build/parallel-test-runner-tools`; inspected HEAD `64378d28c7b78cace463d96470c1898294b8f196`. Analysis only: no product diff existed at inspection, no tests/builds/deployed state were accessed. Root is the sole author under the recorded user override; final independent review follows implementation and verification.
 
 The proposed two-file product scope is the smallest coherent prerequisite: add `pytest==9.1.1`, `pytest-xdist==3.8.0`, and `pytest-cov==7.1.0` to `trust-ci/runner.Dockerfile`, and extend the existing pin tuple in `trust-ci/tests/test_ops.py:132-138`. Keep existing `coverage==7.15.4`, Ruff/Bandit/tomli pins, build backend and every other image instruction unchanged. Installing tools makes a subsequently built runner capable of the later test-runner patch; it does not itself select pytest, enable sharding, or change existing verification commands.
 

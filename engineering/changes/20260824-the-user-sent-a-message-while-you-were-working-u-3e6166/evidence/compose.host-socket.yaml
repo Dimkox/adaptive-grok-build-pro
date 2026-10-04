@@ -1,4 +1,4 @@
-# claw-only. Never merge into tracked compose this slice.
+# <ci-host>-only. Never merge into tracked compose this slice.
 services:
   docker-engine:
     profiles: ["isolated-dind"]

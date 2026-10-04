@@ -2,12 +2,12 @@
 
 Verdict: PASS for bounded independent Core source review; no blocking finding identified. This is local review evidence, not merge/release authority. F and G remain required successor obligations outside this acceptance.
 
-Source candidate `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source`; original comparison base `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; route `ffb3d81e031f`.
+Source candidate `<local-path>`; original comparison base `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; route `ffb3d81e031f`.
 Before and after HEAD: `5b3ee0026f8d1a7166e3d1cf16d1511d261c4d0c`; tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`; canonical fingerprint `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`. Candidate `git status --porcelain` empty both times.
 
 reviewed-tree-modified: no
 
-Private scratch `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/code-jIDW5U/source`; its parent and shared parent were observed mode0700, owner pall, non-sticky. `git clone --quiet --no-hardlinks .worktrees/v211-combined-source .grok-stack/runtime/v211-core-reviews-U7hfm2/code-jIDW5U/source` reproduced the clean candidate. Scratch HEAD, Git tree and canonical fingerprint matched before testing; no staged/unstaged/untracked candidate bytes needed copying. Tests and both mutations ran only in scratch, affinity CPUs0,1, no parallel suite or subagents. Controller supplied measured capacity/allocation; no host affinity changed.
+Private scratch `<local-path>`; its parent and shared parent were observed mode0700, owner pall, non-sticky. `git clone --quiet --no-hardlinks .worktrees/v211-combined-source .grok-stack/runtime/v211-core-reviews-U7hfm2/code-jIDW5U/source` reproduced the clean candidate. Scratch HEAD, Git tree and canonical fingerprint matched before testing; no staged/unstaged/untracked candidate bytes needed copying. Tests and both mutations ran only in scratch, affinity CPUs0,1, no parallel suite or subagents. Controller supplied measured capacity/allocation; no host affinity changed.
 
 Read the fresh brief, selected code_reviewer role, active route, adaptive-delivery and verification-evidence instructions, recovery design/scope ledger and topology addendum. Inspected original-base product diffs and surrounding verifier/runner/receipt, router, classifier, architecture/preflight/fitness, governance/Git binding, lifecycle/hooks/CLI and test-only025 reset code. No factory runtime, migration, Trust CI runtime or scope-selector changes appeared in `git diff --name-only 63799f8 HEAD -- factory/src factory/migrations trust-ci/src .grok-stack/adaptive_grok/verification_scope.py`.
 

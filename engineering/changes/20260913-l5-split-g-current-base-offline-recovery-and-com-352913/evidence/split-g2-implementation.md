@@ -1,6 +1,6 @@
 # G2 final assembly sole-writer handoff
 
-Selected sole writer data_implementer; route3529132ae173; genuine F2 predecessor and checkout HEAD5a2ead6e6e1eff5c5df28a8d4bcb91a209975187. Target /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2. Frozen source f31406e970d67f7cd59694da5de88915adb0fa68 remained untouched. G data analysis was originally written against the archived F/G routes; its source hashes and bounded budget ruling apply to the unchanged product components now inherited through F2. This is focused implementation handoff, not full-route or production-readiness certification.
+Selected sole writer data_implementer; route3529132ae173; genuine F2 predecessor and checkout HEAD5a2ead6e6e1eff5c5df28a8d4bcb91a209975187. Target <local-path> Frozen source f31406e970d67f7cd59694da5de88915adb0fa68 remained untouched. G data analysis was originally written against the archived F/G routes; its source hashes and bounded budget ruling apply to the unchanged product components now inherited through F2. This is focused implementation handoff, not full-route or production-readiness certification.
 
 ## Exact final extraction and preservation
 
@@ -39,7 +39,7 @@ The final Qwen test now additionally snapshots and restores native v1 and mocked
 - After that run, the new WAL test's unnecessary temporary process-umask wrapper was removed because _snapshot already creates its destination with explicit0600. The exact affected test then passed against final source: **1 PASS in0.98s**, split-g2-wal-final.out. No product code changed between these runs and no broad suite was repeated.
 - Mandatory current22-module inventory: **4 tests+119 subtests PASS in4.94s**, split-g2-inventory-green28.out.
 - Final genuine-base fitness: **PASS**, split-g2-fitness-final.json, including all unchanged code budgets/separation/import/ownership/secret/tenant/workspace checks. Earlier same-product fitness is retained as split-g2-fitness.json.
-- Ruff on all4 changed Python source/test files PASS, split-g2-ruff.out. Architecture diagram --check PASS, split-g2-diagrams.json. bash -n factory/runtime/install-claw.sh PASS without running the installer. git diff --check PASS.
+- Ruff on all4 changed Python source/test files PASS, split-g2-ruff.out. Architecture diagram --check PASS, split-g2-diagrams.json. bash -n factory/runtime/install-<ci-host>.sh PASS without running the installer. git diff --check PASS.
 
 Focused tests used PYTHONPATH=.:factory/src:delivery/src:.grok-stack, PYTEST_DISABLE_PLUGIN_AUTOLOAD=1, PYTHONDONTWRITEBYTECODE=1 and taskset0-27. Factory and root test packages were collected separately with pytest -c /dev/null -p xdist.plugin -p no:cacheprovider --rootdir=. --import-mode=prepend -q -n28 --dist=loadfile --max-worker-restart=0. Actual fitness used --base5a2ead6e6e1eff5c5df28a8d4bcb91a209975187 --worktree --pre-risk yellow --json.
 

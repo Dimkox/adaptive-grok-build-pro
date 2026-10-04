@@ -53,19 +53,19 @@ test_malformed_sections_persist_controlled_reason_and_evidence (factory.tests.te
 ERROR: test_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_normalizer.CodexLandingNormalizerTests.test_malformed_sections_return_controlled_outcome_with_evidence) (sections=None)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
     outcome, _ = self.normalize(
                  ^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     ).normalize(
       ^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     spec = self._decode_result(request, result)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 384, in _decode_result
+  File "<local-path>", line 384, in _decode_result
     return decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'NoneType' object is not iterable
 
@@ -73,19 +73,19 @@ TypeError: 'NoneType' object is not iterable
 ERROR: test_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_normalizer.CodexLandingNormalizerTests.test_malformed_sections_return_controlled_outcome_with_evidence) (sections=3)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
     outcome, _ = self.normalize(
                  ^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     ).normalize(
       ^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     spec = self._decode_result(request, result)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 384, in _decode_result
+  File "<local-path>", line 384, in _decode_result
     return decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'int' object is not iterable
 
@@ -93,19 +93,19 @@ TypeError: 'int' object is not iterable
 ERROR: test_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_normalizer.CodexLandingNormalizerTests.test_malformed_sections_return_controlled_outcome_with_evidence) (sections=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 427, in test_malformed_sections_return_controlled_outcome_with_evidence
     outcome, _ = self.normalize(
                  ^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     ).normalize(
       ^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 279, in normalize
+  File "<local-path>", line 279, in normalize
     spec = self._decode_result(request, result)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 384, in _decode_result
+  File "<local-path>", line 384, in _decode_result
     return decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'bool' object is not iterable
 
@@ -113,9 +113,9 @@ TypeError: 'bool' object is not iterable
 ERROR: test_malformed_outer_sections_raise_contract_error (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_malformed_outer_sections_raise_contract_error) (sections=None)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 175, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 175, in test_malformed_outer_sections_raise_contract_error
     decode_landing_draft(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'NoneType' object is not iterable
 
@@ -123,9 +123,9 @@ TypeError: 'NoneType' object is not iterable
 ERROR: test_malformed_outer_sections_raise_contract_error (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_malformed_outer_sections_raise_contract_error) (sections=3)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 175, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 175, in test_malformed_outer_sections_raise_contract_error
     decode_landing_draft(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'int' object is not iterable
 
@@ -133,9 +133,9 @@ TypeError: 'int' object is not iterable
 ERROR: test_malformed_outer_sections_raise_contract_error (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_malformed_outer_sections_raise_contract_error) (sections=1.5)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 175, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 175, in test_malformed_outer_sections_raise_contract_error
     decode_landing_draft(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'float' object is not iterable
 
@@ -143,9 +143,9 @@ TypeError: 'float' object is not iterable
 ERROR: test_malformed_outer_sections_raise_contract_error (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_malformed_outer_sections_raise_contract_error) (sections=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 175, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 175, in test_malformed_outer_sections_raise_contract_error
     decode_landing_draft(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'bool' object is not iterable
 
@@ -153,9 +153,9 @@ TypeError: 'bool' object is not iterable
 ERROR: test_malformed_outer_sections_raise_contract_error (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_malformed_outer_sections_raise_contract_error) (sections=False)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 175, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 175, in test_malformed_outer_sections_raise_contract_error
     decode_landing_draft(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'bool' object is not iterable
 
@@ -163,22 +163,22 @@ TypeError: 'bool' object is not iterable
 ERROR: test_mixed_language_and_escaped_items_have_stable_canonical_digest (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_mixed_language_and_escaped_items_have_stable_canonical_digest) (expected=('é', 'a'))
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 163, in test_mixed_language_and_escaped_items_have_stable_canonical_digest
+  File "<local-path>", line 163, in test_mixed_language_and_escaped_items_have_stable_canonical_digest
     spec = decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 481, in decode_landing_draft
+  File "<local-path>", line 481, in decode_landing_draft
     return StaticLandingSpecV1.from_facts(
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 379, in from_facts
+  File "<local-path>", line 379, in from_facts
     sections = tuple(LandingSectionV1.from_dict(item) for item in sections_raw)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 379, in <genexpr>
+  File "<local-path>", line 379, in <genexpr>
     sections = tuple(LandingSectionV1.from_dict(item) for item in sections_raw)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 295, in from_dict
+  File "<local-path>", line 295, in from_dict
     items = _sorted_unique(data["items"], "section_items", lambda item: _plain(item, "item", 512), maximum=12)
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 143, in _sorted_unique
+  File "<local-path>", line 143, in _sorted_unique
     raise LandingContractError(name)
 adaptive_factory.landing_contracts.LandingContractError: section_items
 
@@ -186,22 +186,22 @@ adaptive_factory.landing_contracts.LandingContractError: section_items
 ERROR: test_mixed_language_and_escaped_items_have_stable_canonical_digest (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_mixed_language_and_escaped_items_have_stable_canonical_digest) (expected=('A', '"quoted"', '\\path', '\nitem', '\titem', 'é', 'Ж', '中', 'a'))
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 163, in test_mixed_language_and_escaped_items_have_stable_canonical_digest
+  File "<local-path>", line 163, in test_mixed_language_and_escaped_items_have_stable_canonical_digest
     spec = decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 481, in decode_landing_draft
+  File "<local-path>", line 481, in decode_landing_draft
     return StaticLandingSpecV1.from_facts(
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 379, in from_facts
+  File "<local-path>", line 379, in from_facts
     sections = tuple(LandingSectionV1.from_dict(item) for item in sections_raw)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 379, in <genexpr>
+  File "<local-path>", line 379, in <genexpr>
     sections = tuple(LandingSectionV1.from_dict(item) for item in sections_raw)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 295, in from_dict
+  File "<local-path>", line 295, in from_dict
     items = _sorted_unique(data["items"], "section_items", lambda item: _plain(item, "item", 512), maximum=12)
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_contracts.py", line 143, in _sorted_unique
+  File "<local-path>", line 143, in _sorted_unique
     raise LandingContractError(name)
 adaptive_factory.landing_contracts.LandingContractError: section_items
 
@@ -209,16 +209,16 @@ adaptive_factory.landing_contracts.LandingContractError: section_items
 ERROR: test_http_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_live_executors.HttpLandingDraftNormalizationTests.test_http_malformed_sections_return_controlled_outcome_with_evidence) (sections=None)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
     outcome, request = self.normalize({**document, "sections": sections})
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 222, in normalize
+  File "<local-path>", line 222, in normalize
     outcome = HttpLandingNormalizer(profile, executor, clock=lambda: FIXED_TIME).normalize(
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_http.py", line 247, in normalize
+  File "<local-path>", line 247, in normalize
     spec = decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'NoneType' object is not iterable
 
@@ -226,16 +226,16 @@ TypeError: 'NoneType' object is not iterable
 ERROR: test_http_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_live_executors.HttpLandingDraftNormalizationTests.test_http_malformed_sections_return_controlled_outcome_with_evidence) (sections=3)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
     outcome, request = self.normalize({**document, "sections": sections})
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 222, in normalize
+  File "<local-path>", line 222, in normalize
     outcome = HttpLandingNormalizer(profile, executor, clock=lambda: FIXED_TIME).normalize(
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_http.py", line 247, in normalize
+  File "<local-path>", line 247, in normalize
     spec = decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'int' object is not iterable
 
@@ -243,16 +243,16 @@ TypeError: 'int' object is not iterable
 ERROR: test_http_malformed_sections_return_controlled_outcome_with_evidence (factory.tests.test_landing_live_executors.HttpLandingDraftNormalizationTests.test_http_malformed_sections_return_controlled_outcome_with_evidence) (sections=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
+  File "<local-path>", line 247, in test_http_malformed_sections_return_controlled_outcome_with_evidence
     outcome, request = self.normalize({**document, "sections": sections})
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 222, in normalize
+  File "<local-path>", line 222, in normalize
     outcome = HttpLandingNormalizer(profile, executor, clock=lambda: FIXED_TIME).normalize(
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_http.py", line 247, in normalize
+  File "<local-path>", line 247, in normalize
     spec = decode_landing_draft(
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_normalizer.py", line 472, in decode_landing_draft
+  File "<local-path>", line 472, in decode_landing_draft
     for section in draft["sections"]:
 TypeError: 'bool' object is not iterable
 
@@ -260,7 +260,7 @@ TypeError: 'bool' object is not iterable
 FAIL: test_item_limit_applies_before_deduplication (factory.tests.test_landing_normalizer.DraftItemCanonicalizationTests.test_item_limit_applies_before_deduplication) (items=['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a'])
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 195, in test_item_limit_applies_before_deduplication
+  File "<local-path>", line 195, in test_item_limit_applies_before_deduplication
     with self.subTest(items=items), self.assertRaisesRegex(LandingContractError, "^section_items$"):
 AssertionError: LandingContractError not raised
 
@@ -272,7 +272,7 @@ adaptive_factory.landing_contracts.LandingContractError: invalid_object: landing
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 174, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 174, in test_malformed_outer_sections_raise_contract_error
     with self.subTest(sections=sections), self.assertRaisesRegex(LandingContractError, "^sections$"):
 AssertionError: "^sections$" does not match "invalid_object: landing_section"
 
@@ -284,7 +284,7 @@ adaptive_factory.landing_contracts.LandingContractError: invalid_object: landing
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_normalizer.py", line 174, in test_malformed_outer_sections_raise_contract_error
+  File "<local-path>", line 174, in test_malformed_outer_sections_raise_contract_error
     with self.subTest(sections=sections), self.assertRaisesRegex(LandingContractError, "^sections$"):
 AssertionError: "^sections$" does not match "invalid_object: landing_section"
 
@@ -292,7 +292,7 @@ AssertionError: "^sections$" does not match "invalid_object: landing_section"
 FAIL: test_http_provider_normalizes_mixed_language_unsorted_duplicate_items (factory.tests.test_landing_live_executors.HttpLandingDraftNormalizationTests.test_http_provider_normalizes_mixed_language_unsorted_duplicate_items) (provider='grok')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 233, in test_http_provider_normalizes_mixed_language_unsorted_duplicate_items
+  File "<local-path>", line 233, in test_http_provider_normalizes_mixed_language_unsorted_duplicate_items
     self.assertEqual(("normalized", "normalized"),
 AssertionError: Tuples differ: ('normalized', 'normalized') != ('needs_human', 'http_outcome_unusable')
 
@@ -307,7 +307,7 @@ First differing element 0:
 FAIL: test_http_provider_normalizes_mixed_language_unsorted_duplicate_items (factory.tests.test_landing_live_executors.HttpLandingDraftNormalizationTests.test_http_provider_normalizes_mixed_language_unsorted_duplicate_items) (provider='qwen')
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 233, in test_http_provider_normalizes_mixed_language_unsorted_duplicate_items
+  File "<local-path>", line 233, in test_http_provider_normalizes_mixed_language_unsorted_duplicate_items
     self.assertEqual(("normalized", "normalized"),
 AssertionError: Tuples differ: ('normalized', 'normalized') != ('needs_human', 'http_outcome_unusable')
 
@@ -322,7 +322,7 @@ First differing element 0:
 FAIL: test_malformed_sections_persist_controlled_reason_and_evidence (factory.tests.test_landing_live_executors.LandingLiveGrokQwenCompositionTests.test_malformed_sections_persist_controlled_reason_and_evidence) (sections=None)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
+  File "<local-path>", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
     self.assertEqual(("needs_human", "http_outcome_unusable"),
 AssertionError: Tuples differ: ('needs_human', 'http_outcome_unusable') != ('needs_human', 'internal_failure')
 
@@ -337,7 +337,7 @@ First differing element 1:
 FAIL: test_malformed_sections_persist_controlled_reason_and_evidence (factory.tests.test_landing_live_executors.LandingLiveGrokQwenCompositionTests.test_malformed_sections_persist_controlled_reason_and_evidence) (sections=3)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
+  File "<local-path>", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
     self.assertEqual(("needs_human", "http_outcome_unusable"),
 AssertionError: Tuples differ: ('needs_human', 'http_outcome_unusable') != ('needs_human', 'internal_failure')
 
@@ -352,7 +352,7 @@ First differing element 1:
 FAIL: test_malformed_sections_persist_controlled_reason_and_evidence (factory.tests.test_landing_live_executors.LandingLiveGrokQwenCompositionTests.test_malformed_sections_persist_controlled_reason_and_evidence) (sections=True)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
+  File "<local-path>", line 314, in test_malformed_sections_persist_controlled_reason_and_evidence
     self.assertEqual(("needs_human", "http_outcome_unusable"),
 AssertionError: Tuples differ: ('needs_human', 'http_outcome_unusable') != ('needs_human', 'internal_failure')
 

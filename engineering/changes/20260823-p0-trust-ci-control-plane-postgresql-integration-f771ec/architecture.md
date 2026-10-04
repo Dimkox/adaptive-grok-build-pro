@@ -35,7 +35,7 @@ GitHub PR webhook → API HMAC + allowlist + idempotent enqueue → PostgreSQL j
 
 ## Risks and mitigations
 
-- This host already binds `127.0.0.1:8080` (searxng). Deploy Trust CI on a free loopback port and HTTPS reverse proxy, not by stealing existing services.
+- This host already binds `<loopback-service>` (searxng). Deploy Trust CI on a free loopback port and HTTPS reverse proxy, not by stealing existing services.
 - GitHub App creation requires a browser/manifest conversion; do not invent App credentials.
 - Human approval private keys stay off this agent environment.
 - Public webhook intake needs valid TLS; do not register HTTP-only GitHub webhooks.

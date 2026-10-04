@@ -24,7 +24,7 @@ This slice is a daemon compile plus change-package evidence on top of the previo
 | 3 | VERSION/H1 still 2.0.11; Trust CI 2.1.0 not collapsed | **PASS.** `VERSION` = `2.0.11`. README H1 `# Adaptive Grok Build Pro v2.0.11`. Separate sentence: Trust CI **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.11`. |
 | 4 | No `.github/workflows` | **PASS.** `.github/` does not exist. Not in the diff. Structure test still asserts absence. |
 | 5 | `implementation-images.md` does not format local Ids as deploy pins; RepoDigests==.Id labeled not-a-pin | **PASS.** `.Id` column is `local-image-id, not a registry pin`. RepoDigests JSON is inspect dump; text says Engine 29 `RepoDigests` equalled `.Id`, **local-daemon-descriptor, not a registry pin**, do not copy into examples. |
-| 6 | Leftover `20260817-вычисти*` is untracked, not in the product diff | **PASS.** `git status` shows `?? engineering/changes/20260817-user-query-вычисти-…-33e0c2/`. `git diff HEAD --name-only` is 13 paths; leftover is not among them. |
+| 6 | Leftover `20260817-вычисти*` is untracked, not in the product diff | **PASS.** `git status` shows `?? engineering/changes/20260817-sanitized-query-вычисти-…-33e0c2/`. `git diff HEAD --name-only` is 13 paths; leftover is not among them. |
 | 7 | Would you block this tree? | Residuals only. **No block.** |
 
 Would I block? **No.**
@@ -147,7 +147,7 @@ Architect allowed quoting an Id in the tracked summary **if** labeled `local-ima
 
 ## 6. Leftover `20260817-вычисти*`
 
-Directory exists: `engineering/changes/20260817-user-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/`.  
+Directory exists: `engineering/changes/20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/`.  
 `git status --short` lists it as `??`. It is not in `git diff HEAD`. Architecture now says do not commit it. Residual only: keep it out of any later `git add`.
 
 ---
@@ -173,7 +173,7 @@ Change-package this turn: architecture freeze/smoke rules, tasks checkbox for lo
 - Compose warning `The "resolved" variable is not set` during build: product file, frozen this slice.
 - Cosign absent; no `cosign sign`. Out of slice.
 - `/tmp` env-file instead of gitignored `trust-ci/runtime/build-smoke/`: hook blocked `trust-ci/**` mutation. Evidence is in the change package, which is the allowed place.
-- HANDOFF §3 registry pin, GitHub App, TLS, `compose up`, `branch-protect` remain open tasks. Port `127.0.0.1:8080` is still searxng.
+- HANDOFF §3 registry pin, GitHub App, TLS, `compose up`, `branch-protect` remain open tasks. Port `<loopback-service>` is still searxng.
 - Dirty tree is expected. Do not stage leftover `20260817-вычисти*` or any `/tmp` env.
 
 ---

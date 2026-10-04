@@ -11,7 +11,7 @@ TDD: add characterization tests before docs land; keep them green after each sli
 - [x] Spec `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md`
 - [x] Plan (this file)
 - [x] Operator-safe activation-report template `engineering/runbooks/trust-ci-activation-report.md` (live Check Run ids filled; leftover fields may stay `UNKNOWN`)
-- [x] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with project `name: adaptive-trust-ci` (not `127.0.0.1:8080:8080`); holdout forbids Actions; spec/plan exist and contain no PEM material
+- [x] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with project `name: adaptive-trust-ci` (not `<loopback-service>:8080`); holdout forbids Actions; spec/plan exist and contain no PEM material
 - [x] `python3 -m unittest trust-ci.tests.test_m0_invariants` and `python3 scripts/grok_verify.py --mode pr`
 - [x] Draft PR from this branch; do not mark ready
 
@@ -19,11 +19,11 @@ TDD: add characterization tests before docs land; keep them green after each sli
 
 ## M0.1 — Dedicated-host listener
 
-Requires `migration_or_external_write_approval`. The named host **is `claw`**. `postgres` + `migrate` + `api` remain healthy on `127.0.0.1:18080`. Nested rootless DinD previously failed (`rootlesskit` `fork/exec /proc/self/exe: operation not permitted`); that is historical. The worker now runs via an untracked host-socket overlay (`runner-loader` completed, `docker-engine` stopped unused). Tracked compose still documents isolated DinD. Gitignored worker App ID `4694114` and installation ID `156003193` are set (PEM unread). Public GitHub webhook is still absent (M0.2).
+Requires `migration_or_external_write_approval`. The named host **is `<ci-host>`**. `postgres` + `migrate` + `api` remain healthy on `<loopback-trust-ci>`. Nested rootless DinD previously failed (`rootlesskit` `fork/exec /proc/self/exe: operation not permitted`); that is historical. The worker now runs via an untracked host-socket overlay (`runner-loader` completed, `docker-engine` stopped unused). Tracked compose still documents isolated DinD. Gitignored worker App ID `<redacted-app-id>` and installation ID `<redacted-installation-id>` are set (PEM unread). Public GitHub webhook is still absent (M0.2).
 
 - [x] Operator copies example env/policy/trust-store on that host; pins `name@sha256:` images and holdout digest
-- [x] Worker running on `claw` via untracked host-socket overlay (`runner-loader` exit 0, `docker-engine` stopped unused). Tracked compose still documents isolated DinD.
-- [x] `curl -fsS http://127.0.0.1:18080/health/ready` returned 200 (`status=ready`); TLS proxy not this slice
+- [x] Worker running on `<ci-host>` via untracked host-socket overlay (`runner-loader` exit 0, `docker-engine` stopped unused). Tracked compose still documents isolated DinD.
+- [x] `curl -fsS http://<loopback-trust-ci>/health/ready` returned 200 (`status=ready`); TLS proxy not this slice
 - [x] Confirm API has webhook secret + trust store and **no** App key; worker env IDs set; worker container running
 - [x] Public GitHub webhook still absent; `main` still unprotected
 
@@ -31,9 +31,9 @@ Requires `migration_or_external_write_approval`. The named host **is `claw`**. `
 
 User ordered M0.2 closed after live GitHub App webhook + App-owned Check Run. Residual items stay **not done** and are not merge authority.
 
-- [x] Register GitHub App webhook `POST https://claw.taild9f611.ts.net/webhooks/github` — GitHub `pull_request`/`synchronize` **200** on SHA `9d56734`; Funnel + HMAC.
-- [x] Disposable docs PR; job for exact head SHA; worker Check Run `adaptive-trust-ci/verified@<policy-sha12>` with `external_id=job_id`, App-owned — GitHub webhook SHA `9d56734d9050fb3cb2543565084bcb83ded5c73b` Check Run `97524725228`; later SHA `56f5462e78c7ebc0ab7e69fbffd5c1371ff7af78` Check Run `97527445754` App `4694114`. Earlier **local HMAC**: `97390635614` on `1fc9420`. `conclusion=action_required` (`needs_approval`).
-- [ ] Offline attestation verify — **not done** (`needs_approval`; no human private key on claw)
+- [x] Register GitHub App webhook `POST https://<redacted-tailnet-host>/webhooks/github` — GitHub `pull_request`/`synchronize` **200** on SHA `9d56734`; Funnel + HMAC.
+- [x] Disposable docs PR; job for exact head SHA; worker Check Run `adaptive-trust-ci/verified@<policy-sha12>` with `external_id=job_id`, App-owned — GitHub webhook SHA `9d56734d9050fb3cb2543565084bcb83ded5c73b` Check Run `97524725228`; later SHA `56f5462e78c7ebc0ab7e69fbffd5c1371ff7af78` Check Run `97527445754` App `<redacted-app-id>`. Earlier **local HMAC**: `97390635614` on `1fc9420`. `conclusion=action_required` (`needs_approval`).
+- [ ] Offline attestation verify — **not done** (`needs_approval`; no human private key on <ci-host>)
 - [x] SHA change invalidates old check — proven (`97390635614` on `1fc9420` vs `97406973020` on `ce03c87` vs GitHub webhook runs). Policy/holdout retitle **not done** (outside the PR trust domain).
 - [ ] `trust-ci/**` → `needs_approval` → human Ed25519 requeue of the **same** Check Run — **not done** (no human approval private key)
 - [ ] Source-mutation fail-closed — **not done** (runner-loader exited; no live runner)
@@ -42,7 +42,7 @@ User ordered M0.2 closed after live GitHub App webhook + App-owned Check Run. Re
 
 ## M0.3 — Bind `main`
 
-Only after M0.2 is unambiguous. Live 2026-08-24 proofs (do not re-PUT, do not re-disable, do not re-POST statuses): GET `branches/main/protection` required check `adaptive-trust-ci/verified@6737355947c2` `app_id` **4694114**, `strict` true, `enforce_admins` true, `allow_force_pushes` false, `allow_deletions` false, `required_linear_history` true; leftover workflow `340420982` `disabled_manually`; user POST Checks 403 (must authenticate via a GitHub App); user POST statuses same context `success` id **52802341946** creator Dimkox; App Check Run **97529209576** `action_required` `app.id=4694114` `external_id` `53870ce3-951c-4247-afe9-88969be5dc98`; PR #5 draft `mergeable_state=blocked` head `ac01326a4a3fde1d0630e621da51ef67379da191`. Direct-push/force-push/delete refusals are recorded via those protection flags plus `mergeable_state=blocked`; no live push to `main` was issued.
+Only after M0.2 is unambiguous. Live 2026-08-24 proofs (do not re-PUT, do not re-disable, do not re-POST statuses): GET `branches/main/protection` required check `adaptive-trust-ci/verified@6737355947c2` `app_id` **<redacted-app-id>**, `strict` true, `enforce_admins` true, `allow_force_pushes` false, `allow_deletions` false, `required_linear_history` true; leftover workflow `340420982` `disabled_manually`; user POST Checks 403 (must authenticate via a GitHub App); user POST statuses same context `success` id **52802341946** creator Dimkox; App Check Run **97529209576** `action_required` `app.id=<redacted-app-id>` `external_id` `53870ce3-951c-4247-afe9-88969be5dc98`; PR #5 draft `mergeable_state=blocked` head `ac01326a4a3fde1d0630e621da51ef67379da191`. Direct-push/force-push/delete refusals are recorded via those protection flags plus `mergeable_state=blocked`; no live push to `main` was issued.
 
 - [x] Temporary human admin token: `adaptive-trust-ci branch-protect` with epoch name **and** App ID
 - [x] Prove same text from another actor fails; direct push / force-push / delete / merge-without-check fail

@@ -6,7 +6,7 @@ Selected `docs_researcher`; route `bcc1d645c438`; 2026-09-21. Static analysis on
 
 One combined successor can deliver the eight bounded repairs, but its evidence and handoff must name the actual combined tree. Earlier branch results remain historical observations. The inherited main entrypoints still describe #155 as unpublished and main as `9007895`; copying any candidate's complete handoff would overwrite other work and retain obsolete next actions.
 
-The supplied `pr170-delivery.json` records App check `106268338358`, App `4694114`, `adaptive-trust-ci/verified@06ecf1c875bc`, success at `2026-09-21T09:04:14Z`, attestation `9f3759ea-0bde-40d1-988e-d277b9c35c1e`, signer `0519cf1d47436f2e`, PR170 merge at `09:06:51Z` into `839d3aa26bc90417424d814ee48d8b5cd3be367e`, and #155/#164 closure at `09:06:53Z`. These later facts supersede the active-delivery instruction, not the earlier evidence's historical timestamps or results.
+The supplied `pr170-delivery.json` records App check `106268338358`, App `<redacted-app-id>`, `adaptive-trust-ci/verified@06ecf1c875bc`, success at `2026-09-21T09:04:14Z`, attestation `9f3759ea-0bde-40d1-988e-d277b9c35c1e`, signer `0519cf1d47436f2e`, PR170 merge at `09:06:51Z` into `839d3aa26bc90417424d814ee48d8b5cd3be367e`, and #155/#164 closure at `09:06:53Z`. These later facts supersede the active-delivery instruction, not the earlier evidence's historical timestamps or results.
 
 ## Evidence inventory to preserve
 
@@ -19,7 +19,7 @@ The supplied `pr170-delivery.json` records App check `106268338358`, App `469411
 | Schema references #147/#148 | `f04cb6cddd4a38db3fb022c9df48af0b9a808c6b` | Initial 210 focused checks, shipped-contract differential and full PASS precede declared-ID fallback repair. Keep first failed reports, exact four-method RED/GREEN and renewed code/test PASS. Final repaired-branch full remains unrun. |
 | Migration coverage #166 | `23eb62dc21a090e6bf086cbc2a568d83417b0a2e` | Genuine corrupt-ledger negative control, 24 unit/3 PostgreSQL checks, initial full and code/test/data review; final full exit 0 at 07:10:57 UTC with no local evidence gaps. Draft PR171 exists. |
 
-The three final-pass facts above come from the coordinator's exact-head `verify-final-meta.json` and `local-completion.json` records under `/home/pall/.cache/agbp-run/issues-wave-20260921/{issue156,issue162,issue166}/`. Their original committed full-summary files intentionally describe earlier observations; do not silently rewrite those files into later evidence. Copy a bounded final-result summary into this combined package so continuation does not depend on this host cache.
+The three final-pass facts above come from the coordinator's exact-head `verify-final-meta.json` and `local-completion.json` records under `<local-path>,issue162,issue166}/`. Their original committed full-summary files intentionally describe earlier observations; do not silently rewrite those files into later evidence. Copy a bounded final-result summary into this combined package so continuation does not depend on this host cache.
 
 Import each complete original durable package, including `*-first.md`, source issue snapshots, original requirements, RED/GREEN descriptions, review-repair records, candidate verification histories and rollback limits. Keep timestamps, hashes and old route/base identities intact. Add a separate combined index linking imported evidence to the exact source heads and current combined outcome. Do not transplant machine-local grants/receipts or relabel branch receipts as current.
 

@@ -2,7 +2,7 @@
 
 **Recommendation: PASS for test adequacy of the corrected bounded change; final full verification is still pending.** No blocking test finding. The earlier [test review](test-review-first.md) covered ordinary paths and missed the filename-transport cases found by independent code/security review; it is historical, not evidence for this corrected tree.
 
-Reviewer: route-selected `test_reviewer` (`fingerprint_test_reviewer`), independent of the sole implementation owner. Route `582c39d6afb6`; 2026-09-21. Reviewed HEAD `8278b2dd9b3fff69b5e408087c2e3b49a68e470c`, tree `7abf3f307f88018ac5241c627790027e3f9b1db8`, in `/home/pall/grok-projects/adaptive-grok-build-wave-fingerprint`. Inspected both the repair from `5adc4f853741ced0f1332fcdb2d5e5d95446bed4` and the complete resulting utility/test behavior relative to frozen base `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`.
+Reviewer: route-selected `test_reviewer` (`fingerprint_test_reviewer`), independent of the sole implementation owner. Route `582c39d6afb6`; 2026-09-21. Reviewed HEAD `8278b2dd9b3fff69b5e408087c2e3b49a68e470c`, tree `7abf3f307f88018ac5241c627790027e3f9b1db8`, in `<local-path>`. Inspected both the repair from `5adc4f853741ced0f1332fcdb2d5e5d95446bed4` and the complete resulting utility/test behavior relative to frozen base `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`.
 
 Read refreshed bootstrap/state/route, approved scope/specification, design, test plan, [review repair](review-repair.md), and the preserved failed code/security reports. Reused the already-read contract, role and applicable skills. Reviewed all 17 focused utility tests, both receipt regression cases, the verifier CLI serialization change, and the existing source-mutation regression. Only this report was written. No suite, lint, compiler, Docker workload or synthetic execution was started; this is static review plus direct inspection of coordinator-owned execution records.
 
@@ -23,7 +23,7 @@ The existing `test_verify_does_not_receipt_checks_from_an_older_fingerprint` sti
 
 ## Recorded RED/GREEN evidence
 
-Inspected raw `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/review-red.log` and `review-green.log`, rather than accepting their summary alone. The committed repair record supplies this command:
+Inspected raw `<local-path>` and `review-green.log`, rather than accepting their summary alone. The committed repair record supplies this command:
 
 ```text
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack python3 -m unittest tests.test_util_fingerprint tests.test_change_receipts.ReceiptTests.test_receipt_survives_scratch_churn_but_stales_on_product_edit tests.test_change_receipts.ReceiptTests.test_receipt_roundtrips_non_utf8_changed_file_names

@@ -4,7 +4,7 @@ Authority: `evidence/analysis-architect.md` plus controller ruling in `brief.md`
 
 ## Current behavior
 
-Live claw already has postgres+api+worker. Tracked `trust-ci/compose.yaml` still documents isolated DinD. Untracked overlay mounts host docker.sock on worker/loader only. First App-owned Check Run exists on PR #5 SHA `1fc9420` via loopback HMAC, conclusion `action_required`. Git HEAD does not record that.
+Live <ci-host> already has postgres+api+worker. Tracked `trust-ci/compose.yaml` still documents isolated DinD. Untracked overlay mounts host docker.sock on worker/loader only. First App-owned Check Run exists on PR #5 SHA `1fc9420` via loopback HMAC, conclusion `action_required`. Git HEAD does not record that.
 
 ## Proposed behavior
 
@@ -15,7 +15,7 @@ No product runtime change. Docs and one live kill-switch drill. Tracked compose 
 | Plane | This slice |
 | --- | --- |
 | API | Kill-switch file on `./runtime/control` (`/run/adaptive-trust-ci/STOP`). Probe `/attestations/{id}` 404. |
-| Worker | Untouched. Overlay residual stays claw-only exception. |
+| Worker | Untouched. Overlay residual stays <ci-host>-only exception. |
 | Runner | Untouched (`network=none`, no sock). |
 | Git | Local commit on the milestone branch. No push. |
 

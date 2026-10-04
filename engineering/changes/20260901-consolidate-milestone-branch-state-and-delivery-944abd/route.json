@@ -64,7 +64,7 @@
   "schema_version": 1,
   "session_id": "consolidated-milestone-delivery-20260901",
   "status": "routed",
-  "task": "Implement and deliver one consolidated milestone-state repair: inventory every local and remote branch and every pull request, reconcile M0-M9 implemented/reviewed/merged/delivered status, update PROJECT_STATE.json and README.md to truthful live GitHub and Trust CI state including policy epoch 06ecf1c875bc and App ID 4694114, record the route-proliferation root cause in mistakes.md, preserve the complete README graph, then deliver the state repair through one isolated pull request. Treat existing milestone branches as evidence and do not create separate routes for each milestone. Do not change Trust CI implementation or add GitHub Actions.",
+  "task": "Implement and deliver one consolidated milestone-state repair: inventory every local and remote branch and every pull request, reconcile M0-M9 implemented/reviewed/merged/delivered status, update PROJECT_STATE.json and README.md to truthful live GitHub and Trust CI state including policy epoch 06ecf1c875bc and App ID `<redacted-app-id>`, record the route-proliferation root cause in mistakes.md, preserve the complete README graph, then deliver the state repair through one isolated pull request. Treat existing milestone branches as evidence and do not create separate routes for each milestone. Do not change Trust CI implementation or add GitHub Actions.",
   "task_domains": [
     "infra",
     "integration"

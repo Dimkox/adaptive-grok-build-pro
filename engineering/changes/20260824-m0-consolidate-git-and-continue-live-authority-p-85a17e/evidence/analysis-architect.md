@@ -25,33 +25,33 @@ Prior slice (`3e6166`) already produced Check Run `97390635614` on SHA `1fc94206
 | Branch | `milestone/m0-live-trust-authority` @ `1fc942065a124ce75659bd082519d8ebc37774e8` (matches origin) |
 | Dirty (must consolidate) | `decisions.md`, M0 plan, activation report; leftover unrelated `state.json`; untracked change packages |
 | PR | #5 draft; base `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` |
-| Check Run | `97390635614`, name `adaptive-trust-ci/verified@6737355947c2`, App `4694114` |
+| Check Run | `97390635614`, name `adaptive-trust-ci/verified@6737355947c2`, App `<redacted-app-id>` |
 | Job | `1b63d10b-90c1-498a-97b8-7b5e0ea76aec`, `needs_approval`, conclusion `action_required` |
-| `TRUST_CI_PUBLIC_BASE_URL` (activation report) | `http://127.0.0.1:18080` — **not HTTPS** |
+| `TRUST_CI_PUBLIC_BASE_URL` (activation report) | `http://<loopback-trust-ci>` — **not HTTPS** |
 | Public webhook | absent |
 | `main` protected | false |
-| Overlay | untracked `/home/pall/adaptive-trust-ci-host/compose.host-socket.yaml`; tracked compose still DinD |
+| Overlay | untracked `<local-path>`; tracked compose still DinD |
 | Host `:8080` | SearXNG |
 
-Do not `git add` `trust-ci/env/*.env`, `trust-ci/runtime/**`, overlay under `trust-ci/`, PEM, or leftover unrelated change packages (`20260817-…`, `20260824-user-query-да-user-query-37bf04`, stale `9d97f8` `state.json`).
+Do not `git add` `trust-ci/env/*.env`, `trust-ci/runtime/**`, overlay under `trust-ci/`, PEM, or leftover unrelated change packages (`20260817-…`, `20260824-sanitized-query-да-sanitized-query-37bf04`, stale `9d97f8` `state.json`).
 
 ---
 
 ## 1. Four planes still separate? Overlay residual risk
 
-**Yes. Planes remain. Overlay residual is unchanged and still accepted only as a claw-only exception.**
+**Yes. Planes remain. Overlay residual is unchanged and still accepted only as a <ci-host>-only exception.**
 
 | Plane | Socket | Secrets | Network | Overlay effect |
 | --- | --- | --- | --- | --- |
-| **API** | no | webhook HMAC + trust-store **public** keys | `trust-ci`; published `127.0.0.1:18080` | Overlay does not mount sock or App RSA on `api` |
+| **API** | no | webhook HMAC + trust-store **public** keys | `trust-ci`; published `<loopback-trust-ci>` | Overlay does not mount sock or App RSA on `api` |
 | **Worker** | **yes** (host `/var/run/docker.sock`) | App RSA path, CI Ed25519, App/install IDs | `trust-ci` + host-gateway proxy | Overlay mounts sock + bind-replaces workspace/holdout |
 | **Runner** | **no** | none | `none` | Unchanged argv in `sandbox.py` (`--network none --pull never`, no sock, no token) |
-| **Human keys** | n/a | **not on claw** | n/a | Bootstrap unlinked the approval private after inserting the public key |
+| **Human keys** | n/a | **not on <ci-host>** | n/a | Bootstrap unlinked the approval private after inserting the public key |
 
 Residual (do not “fix” this slice):
 
 - Worker uid `10001` + writable host docker.sock is **host-root equivalent** on the same engine as SearXNG/n8n/Caddy. App PEM and CI signing key sit in that container.
-- Host `socat TCP-LISTEN:1080,bind=172.17.0.1` → glider `127.0.0.1:1080` is operator residue. Do not rebind `proxy-gateway` or use `network_mode: host`.
+- Host `socat TCP-LISTEN:1080,bind=172.17.0.1` → glider `<loopback-proxy>` is operator residue. Do not rebind `proxy-gateway` or use `network_mode: host`.
 - Loader relies on the host image store when ghcr pull is unauthorized.
 - `GitWorkspace._git_env` still strips proxy (checkout residual). P0 checkout already reached `needs_approval`, so do not patch it pre-emptively.
 - Restricted Docker API proxy from the hardening plan is **unbuilt**. Do not invent it.
@@ -79,21 +79,21 @@ The old GitHub Check Run is **not** unpublished. That is correct: it must remain
 1. Last local writes: operator-safe docs already dirty + this change package. `decisions.md` is `protected_paths` **and** `control_plane_paths` **and** Trust CI `governance` glob — structured Edit/Write + exact protected-path grant; no shell `sed`.
 2. `python3 scripts/grok_verify.py --mode pr` after product-tree edits.
 3. Exact `git-push-branch` grant for `milestone/m0-live-trust-authority`. Push. Re-fetch `gh api repos/Dimkox/adaptive-grok-build-pro/pulls/5` for the **new** `head.sha` immediately before POST.
-4. `/tmp` HMAC POST (same contract as prior slice): `POST http://127.0.0.1:18080/webhooks/github`, event `pull_request`, action `synchronize`, PR #5, new SHA, base still `48cb973…`. Print only HTTP status / `job_id` / `created` / `status`. Never print secret or signature.
+4. `/tmp` HMAC POST (same contract as prior slice): `POST http://<loopback-trust-ci>/webhooks/github`, event `pull_request`, action `synchronize`, PR #5, new SHA, base still `48cb973…`. Print only HTTP status / `job_id` / `created` / `status`. Never print secret or signature.
 5. Proof (operator-safe):
 
 ```text
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/1fc942065a124ce75659bd082519d8ebc37774e8/check-runs
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/<NEW-HEAD-SHA>/check-runs
-curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://<loopback-trust-ci>/health/ready
 ```
 
 ### Pass / fail
 
 | Must hold | Must not happen |
 | --- | --- |
-| Old SHA still lists Check Run `97390635614`, App `4694114`, `external_id=1b63d10b-…` | Treating `97390635614` as satisfying the new SHA |
-| New SHA lists a **different** Check Run id, same name `adaptive-trust-ci/verified@6737355947c2`, App `4694114`, `external_id` = **new** `job_id` | PATCH old check to `success`; user-token check-run create; GitHub Actions |
+| Old SHA still lists Check Run `97390635614`, App `<redacted-app-id>`, `external_id=1b63d10b-…` | Treating `97390635614` as satisfying the new SHA |
+| New SHA lists a **different** Check Run id, same name `adaptive-trust-ci/verified@6737355947c2`, App `<redacted-app-id>`, `external_id` = **new** `job_id` | PATCH old check to `success`; user-token check-run create; GitHub Actions |
 | New webhook `created: true` (or honest `created: false` only if that exact new SHA was already posted) | Replay of the **old** SHA (returns same cancelled/old job; not a new proof) |
 | New job likely `needs_approval` / `action_required` because `decisions.md` remains in the diff | Forging human approval to chase `success` |
 
@@ -168,22 +168,22 @@ adaptive-trust-ci approval-create \
   --ttl 900 \
   --output approval.json
 
-adaptive-trust-ci approval-submit --approval approval.json --url http://127.0.0.1:18080
+adaptive-trust-ci approval-submit --approval approval.json --url http://<loopback-trust-ci>
 ```
 
-(`approval-submit --url` may be loopback HTTP; public HTTPS is not required for a human on `claw`. Still do not run it from the agent.)
+(`approval-submit --url` may be loopback HTTP; public HTTPS is not required for a human on `<ci-host>`. Still do not run it from the agent.)
 
-**Blocked until a human who still holds a matching private key acts off-host.** `decisions.md` records that bootstrap generated a pair, inserted **only** the public key into the server trust-store, then **unlinked** the private file on `claw`. The live public key therefore has **no** private on this host. The agent must not regenerate that pair. Installing a new human public `key_id` into deployed `runtime/trust-store.json` is a **host-owned trust-store write** (outside the PR domain) and is **not** this slice.
+**Blocked until a human who still holds a matching private key acts off-host.** `decisions.md` records that bootstrap generated a pair, inserted **only** the public key into the server trust-store, then **unlinked** the private file on `<ci-host>`. The live public key therefore has **no** private on this host. The agent must not regenerate that pair. Installing a new human public `key_id` into deployed `runtime/trust-store.json` is a **host-owned trust-store write** (outside the PR domain) and is **not** this slice.
 
 ---
 
 ## 6. Public webhook — still blocked without HTTPS
 
-Activation report: `TRUST_CI_PUBLIC_BASE_URL=http://127.0.0.1:18080`. Plan: “Public GitHub webhook still absent (no public HTTPS).” Spec: public URL **must** be HTTPS; GitHub will not deliver to loopback.
+Activation report: `TRUST_CI_PUBLIC_BASE_URL=http://<loopback-trust-ci>`. Plan: “Public GitHub webhook still absent (no public HTTPS).” Spec: public URL **must** be HTTPS; GitHub will not deliver to loopback.
 
 Repo grep of product/host docs for `ngrok` / `cloudflare` / `cloudflared` / `tailscale`: **no matches**. Do **not** invent a tunnel or steal n8n/Caddy `:443`. `trust-ci/env/common.env.example` uses `https://ci.example.com` as a **placeholder**, not a live name.
 
-`GET /repos/Dimkox/adaptive-grok-build-pro/hooks` stays empty. Loopback HMAC remains a characterization of `/webhooks/github`, not webhook registration. Do not `gh api` create a hook at `http://127.0.0.1:18080`.
+`GET /repos/Dimkox/adaptive-grok-build-pro/hooks` stays empty. Loopback HMAC remains a characterization of `/webhooks/github`, not webhook registration. Do not `gh api` create a hook at `http://<loopback-trust-ci>`.
 
 ---
 
@@ -211,7 +211,7 @@ Activation report fields `Kill switch drill` and `Backup/restore/restart drill` 
 
 1. Keep tracked `trust-ci/compose.yaml` **unchanged**. Do not start `docker-engine`. Do not rewrite tests/smoke/systemd.
 2. Commit and push only M0-related operator-safe tree: dirty activation report, M0 plan, `decisions.md` (protected-path grant), this change package, optionally the prior `3e6166` evidence as workflow paper. Then HMAC-POST the **new** PR #5 SHA.
-3. Record new Check Run id / `external_id` / SHA in the activation report **without secrets**. Keep `TRUST_CI_PUBLIC_BASE_URL=http://127.0.0.1:18080` and `main protected = false`.
+3. Record new Check Run id / `external_id` / SHA in the activation report **without secrets**. Keep `TRUST_CI_PUBLIC_BASE_URL=http://<loopback-trust-ci>` and `main protected = false`.
 4. Probe `GET /attestations/<job_id>`: expect 404 while `needs_approval`; document CLI + public-key path; do not claim offline verify pass.
 5. If product files change: `python3 scripts/grok_verify.py --mode pr` and route reviews. Overlay-only / gitignored env: skip verify (no-op tree) — but this slice **does** touch the product tree.
 
@@ -245,7 +245,7 @@ Same as prior slice: stop `worker`/`runner-loader`; leave postgres+api; keep ove
 
 - Four planes unchanged; tracked compose still DinD; overlay untracked
 - New head SHA ≠ `1fc9420`; Check Run `97390635614` still only on the old SHA
-- New App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=4694114`, new `external_id`
+- New App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=<redacted-app-id>`, new `external_id`
 - Attestation: 404 documented if `needs_approval`; no fake envelope
 - Policy digest still `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5`
 - Hooks empty; `main` unprotected; no secrets in git/chat/activation report

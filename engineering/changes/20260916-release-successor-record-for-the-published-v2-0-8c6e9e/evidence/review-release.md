@@ -2,7 +2,7 @@ PASS
 
 # Release re-review — v2.0.18 successor record (SR)
 
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-sr18`
+- Repository: `<local-path>`
 - Branch: `feature/v2.0.18-successor-record`, HEAD `7380f4a` "docs(release): close the SR review round" (verified `git log --oneline -1`, worktree clean).
 - **This report supersedes the FAIL release review of `28de12c`**, re-run at commit `7380f4a` against `git diff 28de12c..7380f4a` (single fix commit, 13 files) plus live sources.
 - Reviewer: `release_reviewer` (route `8c6e9e30b239`), read-only; only this file was written. No git mutations, no credential/key/approval-store reads beyond existence probes of runtime grant/receipt paths named below.

@@ -1,6 +1,6 @@
 # Final-source integration map for the seven-PR split
 
-Read-only source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-production`, frozen `f31406e970d67f7cd59694da5de88915adb0fa68`, compared with `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. Route `8632a3272f03` selects integration_architect for this analysis; root owns routing/delivery and general_implementer remains sole code writer. I read the durable `evidence/continuation-delivery-split.md` and final code. No product files, branches, grants or external services were changed. The seven-unit order remains coherent, subject to actual per-slice fitness and verification.
+Read-only source: `<local-path>`, frozen `f31406e970d67f7cd59694da5de88915adb0fa68`, compared with `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. Route `8632a3272f03` selects integration_architect for this analysis; root owns routing/delivery and general_implementer remains sole code writer. I read the durable `evidence/continuation-delivery-split.md` and final code. No product files, branches, grants or external services were changed. The seven-unit order remains coherent, subject to actual per-slice fitness and verification.
 
 ## Corrections to the preliminary plan
 

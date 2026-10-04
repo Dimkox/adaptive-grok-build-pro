@@ -4,7 +4,7 @@
 (and secondary `FORBID-001`, `INV-001`).
 
 - Object reviewed: commit `b2932dc6890852a71aeef2d767204bcd9afa4bf3` in worktree
-  `/home/pall/grok-projects/adaptive-grok-build-pro-rel217` (branch `feature/v2.0.17-release-sync`,
+  `<local-path>` (branch `feature/v2.0.17-release-sync`,
   parent `7bbf42526f207db0007daafa4cc946cc2d81f465` = upstream `main`).
 - Basis: the real diff (`git show b2932dc`, `git diff 7bbf425..HEAD`), a leaf-level JSON comparison of
   `PROJECT_STATE.json` between the two blobs, `git ls-tree`/`git cat-file` object checks, and the
@@ -85,7 +85,7 @@ Decision and evidence that committing it matches this repository's established p
    both units, both installed SHAs and the `/opt/adaptive-l5/releases/5f6f6ce1…/repository` path;
    `engineering/runbooks/l5-provider-failover.md:12` and `factory/runtime/landing-failover.example.json:21`
    carry `/run/adaptive-l5-grok/control.sock`; `PROJECT_STATE.json` already carried
-   `runtime_observations.host = "claw"` and the same `control_repository` at base (`7bbf425:PROJECT_STATE.json:1317`).
+   `runtime_observations.host = "<ci-host>"` and the same `control_repository` at base (`7bbf425:PROJECT_STATE.json:1317`).
    A third precedent dossier `engineering/changes/20260915-documentation-align-readme-roadmap-and-bootstrap-d7264b/evidence/observed-state.json`
    carries `MainPID` and `grok_config_sha256` too.
 3. **AGENTS.md scope check.** The contract excludes "Secrets, PEM/private keys, credentials, PostgreSQL
@@ -100,7 +100,7 @@ Decision and evidence that committing it matches this repository's established p
 
 What is *not* in the file, checked explicitly: no `/etc/adaptive-l5/grok-provider.conf` or
 `grok-host.json` content or name, no unit drop-in, no environment value, no account/tenant identifier,
-no absolute developer path, no hostname field (the string `claw` does not appear in the dossier).
+no absolute developer path, no hostname field (the string `<ci-host>` does not appear in the dossier).
 
 ## 3. Truthfulness of security-meaningful claims (FORBID-001) — PASS, one wording Minor
 
@@ -216,7 +216,7 @@ artifact child remains the sole owner of the two `packages/` files.
     `280cbff1…`/`9086f2bc…`/`2026-09-15T20:03:41Z`; 13 = MERGED `43831155…`/`6130fbb8…`/`21:03:37Z`;
     94 = MERGED `7bbf4252…`/`9437efed…`/`22:58:12Z`. `git log --first-parent
     969c4f65..7bbf425` lists exactly the 12 merge commits the landing archive names, in that order.
-  - Not installed: read-only `systemctl show -p ExecStart --value` on this host (hostname `claw`)
+  - Not installed: read-only `systemctl show -p ExecStart --value` on this host (hostname `<ci-host>`)
     resolves primary → `/opt/adaptive-l5/releases/5f6f6ce1ecb0…/venv/bin/adaptive-landing-server` and
     secondary → `/opt/adaptive-l5/releases/61a05da2bd0c…/venv/bin/adaptive-landing-server`, i.e. exactly
     the recorded installed SHAs; `ls -d /opt/adaptive-l5/releases/*/` shows only `5f6f6ce1…`,

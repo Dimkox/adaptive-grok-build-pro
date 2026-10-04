@@ -1,6 +1,6 @@
 # Aggregate docs_researcher — route ffb3d81e031f
 
-Read requirements first from active evidence/analysis-brief.md. Read-only aggregate HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1; heartbeat source dc4062bcbc1e1da95cfe07077fc9cfbf273e0312. No tests, candidate writes, caches, generated artifacts, external writes or subagents. Scratch /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/docs-researcher-aggregate-HlZrm1 mode0700; capacity.md records startup CPU9/one lightweight worker.
+Read requirements first from active evidence/analysis-brief.md. Read-only aggregate HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1; heartbeat source dc4062bcbc1e1da95cfe07077fc9cfbf273e0312. No tests, candidate writes, caches, generated artifacts, external writes or subagents. Scratch <local-path> mode0700; capacity.md records startup CPU9/one lightweight worker.
 
 Necessary current surfaces: VERSION; .grok-stack/adaptive_grok/__init__.py; README.md; START_HERE.md; PROJECT_STATE.json; CHANGELOG.md; DARK_FACTORY_ROADMAP.md; packages/README.md. Update product identity to2.1.1 source candidate, source map/accepted scope to A-F/H/local heartbeat-watchdog, and actual current route/branch/package. Keep architecture/system.yaml, architecture/rules.yaml and generated-view links current. README workflow-source versions remain independently bound; no unrelated workflow-version bump. Trust CI service identity2.1.0 stays separate (README:68, roadmap:43, PROJECT_STATE service_identity).
 

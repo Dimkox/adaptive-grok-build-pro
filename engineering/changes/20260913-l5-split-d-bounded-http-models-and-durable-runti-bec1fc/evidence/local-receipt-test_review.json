@@ -65,7 +65,7 @@
   "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
   "governance_evidence_digest": "7c2e924b5510cb9ebb082f7ed36e8f1fa0de0367f98dc253bcfd42474da94d14",
   "kind": "test_review",
-  "report": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-evidence/engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/test-review.md",
+  "report": "<local-path>",
   "route_id": "bec1fcdde794",
   "schema_version": 1,
   "spec_digest": "7656fa960e0052e604e4afe620211dccc666a0ac86cc45cac351e7bc2e679386",

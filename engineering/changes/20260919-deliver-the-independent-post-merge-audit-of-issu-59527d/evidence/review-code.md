@@ -244,7 +244,7 @@ probe ids, the gate run.
 CONFIRMATION VERDICT: FAIL
 
 Scope: the four flagged statements plus block H executability, nothing else. `chmod 700` clone of the bytes at
-`/home/pall/grok-projects/nc-clone-parent` (`repo` on `fc9d877`, worktree `wt-d871ea6` on `d871ea6`, 0 dirty lines,
+`<local-path>` (`repo` on `fc9d877`, worktree `wt-d871ea6` on `d871ea6`, 0 dirty lines,
 one process per tree). My extracted `block_h_prefix_items_census.py` / `block_f.py` live in the parent, never in the
 package (`find <pkg> -name '*.py'` → 0).
 
@@ -300,7 +300,7 @@ script, or change that format spec to `:64s` and re-record — and the cells at 
 ## Micro-confirmation on 3512d4b
 MICRO-CONFIRMATION VERDICT: PASS
 
-Environment: `chmod 700` dir `/home/pall/grok-projects/micro104-3512d4b` holding `clone` (branch tip `3512d4b`,
+Environment: `chmod 700` dir `<local-path>` holding `clone` (branch tip `3512d4b`,
 0 dirty lines) and `wt-base` (detached `d871ea6d5d654406281dd65626a3dce61bf933fa`, clean on product paths). Scripts
 were extracted from the harness `.md` at runtime; nothing was written into the package.
 

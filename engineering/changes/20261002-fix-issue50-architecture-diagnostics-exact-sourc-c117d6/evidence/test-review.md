@@ -2,7 +2,7 @@
 
 Status: PASS. No blocking test findings in the scoped changes. Completed 2026-10-02T23:47:21Z.
 
-Candidate: /home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-d-architecture
+Candidate: <local-path>
 Comparison base: 63799f8760d3a55028d83ab5ff0116ececf8f7d1
 HEAD before and after: 0de557769e48879820b883537fe42b1d55b56f5b
 Candidate fingerprint before and after: 294ebeb2b3ea12df661ba019338d1172d58d711581693ddf31ab37497b1cf4b9
@@ -16,9 +16,9 @@ Reviewed actual base..HEAD diff, surrounding architecture loader/preflight, veri
 Startup measured lscpu, nproc --all, nproc, taskset -pc $$, /proc/self/cgroup, cgroup2 mounts, inherited cpu.max/cpuset.cpus.effective, and a child-only taskset -c 0-27 probe. Snapshot saved locally before repository inspection at .review-scratch/test-review-startup-20261002T234441.txt. Physical cores 14; online logical CPUs 28; initial affinity 0,1,8-27 / nproc 22. Actual cgroup /user.slice/user-1000.slice/session-2050.scope; session/user-1000/user.slice quotas max 100000; inherited effective cpuset 0-27, root quota absent. Child widening succeeded with nproc 28 and affinity 0-27. Verified host capacity 28; test commands pinned CPU 9. Two single-worker probe processes briefly overlapped on CPU 9; no extra CPU allocation was consumed.
 
 Scratch parent and private directory both owned by pall, mode 0700, non-sticky:
- /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/d-test-o2sx5B
+ <local-path>
 Scratch snapshot:
- /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/d-test-o2sx5B/candidate
+ <local-path>
 Exact snapshot command: git clone --quiet --no-hardlinks --no-checkout .worktrees/v211-d-architecture .review-scratch/d-test-o2sx5B/candidate
 Then: git -C .review-scratch/d-test-o2sx5B/candidate checkout --quiet --detach 0de557769e48879820b883537fe42b1d55b56f5b
 Initial scratch Git status was empty. Candidate dirty inventory was empty, so detached clone reproduces the complete relevant snapshot. No candidate edits/restores/artifacts; tests, mutations and generated temporary projects ran only from scratch. PYTHONDONTWRITEBYTECODE=1 prevented candidate bytecode during identity reads.

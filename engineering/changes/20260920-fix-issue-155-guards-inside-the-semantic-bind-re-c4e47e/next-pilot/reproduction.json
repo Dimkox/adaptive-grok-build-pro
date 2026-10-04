@@ -25,11 +25,11 @@
       "command": [
         "/usr/bin/python3",
         "-B",
-        "/home/pall/.cache/agbp-run/p155-final-20260921/next-pilot-inventory-probe.py",
-        "/home/pall/.cache/agbp-run/p155-final-20260921/landing-6226aa0"
+        "<local-path>",
+        "<local-path>"
       ],
       "exit_code": 1,
-      "output": "{\"audit_urls\": 16, \"mismatched\": {}, \"missing\": {\"/ru/\": \"ru-RU\", \"/ru/roadmap.html\": \"ru-RU\"}, \"supported_locales\": 7}\nTraceback (most recent call last):\n  File \"/home/pall/.cache/agbp-run/p155-final-20260921/next-pilot-inventory-probe.py\", line 14, in <module>\n    assert not missing and not mismatched, \"browser audit does not cover builder locales\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: browser audit does not cover builder locales\n"
+      "output": "{\"audit_urls\": 16, \"mismatched\": {}, \"missing\": {\"/ru/\": \"ru-RU\", \"/ru/roadmap.html\": \"ru-RU\"}, \"supported_locales\": 7}\nTraceback (most recent call last):\n  File \"<local-path>", line 14, in <module>\n    assert not missing and not mismatched, \"browser audit does not cover builder locales\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: browser audit does not cover builder locales\n"
     }
   ],
   "finding": {

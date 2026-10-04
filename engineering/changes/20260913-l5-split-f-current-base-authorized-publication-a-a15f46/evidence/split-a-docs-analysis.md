@@ -1,6 +1,6 @@
 # Slice A: local documentation and evidence contract research
 
-Read-only source research for route `d20205a1a318`, worktree `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a`. Observed `HEAD` and `route.base_commit` are both `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. Reconstruction source is sibling L5 commit `f31406e`; the seven-unit design is a reconstruction plan, not transferred verification or merge authority. No repository files, refs, grants, secrets or external services were changed by this analysis.
+Read-only source research for route `d20205a1a318`, worktree `<local-path>`. Observed `HEAD` and `route.base_commit` are both `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. Reconstruction source is sibling L5 commit `f31406e`; the seven-unit design is a reconstruction plan, not transferred verification or merge authority. No repository files, refs, grants, secrets or external services were changed by this analysis.
 
 ## Genuine predecessor and comparison semantics
 

@@ -1,6 +1,6 @@
 # Repo explorer: schema path resolution and diagnostic bound (#147, #148)
 
-Read-only source analysis for route `21180522da37` at `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. Source issue snapshot: `/home/pall/.cache/agbp-run/issues-wave-20260921/issues.json`. I reused the prior integration-architect research on these exact files and reran the #147 in-memory comparator reproduction. No shipped schema, model, policy, or test was edited.
+Read-only source analysis for route `21180522da37` at `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. Source issue snapshot: `<local-path>`. I reused the prior integration-architect research on these exact files and reran the #147 in-memory comparator reproduction. No shipped schema, model, policy, or test was edited.
 
 ## Verified failure and source path
 

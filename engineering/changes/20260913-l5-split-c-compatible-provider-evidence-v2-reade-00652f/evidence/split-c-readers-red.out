@@ -3,7 +3,7 @@
 ERROR: test_v2_evidence_roundtrip_uses_independent_version_domain (factory.tests.test_landing_contracts.LandingContractTests.test_v2_evidence_roundtrip_uses_independent_version_domain)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_landing_contracts.py", line 184, in test_v2_evidence_roundtrip_uses_independent_version_domain
+  File "<local-path>", line 184, in test_v2_evidence_roundtrip_uses_independent_version_domain
     record = landing_contracts.LandingProviderEvidenceV2.from_facts(facts)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: module 'adaptive_factory.landing_contracts' has no attribute 'LandingProviderEvidenceV2'. Did you mean: 'LandingProviderEvidenceV1'?
@@ -12,7 +12,7 @@ AttributeError: module 'adaptive_factory.landing_contracts' has no attribute 'La
 FAIL: test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields (factory.tests.test_semantic_bridge.SemanticBridgeTests.test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_semantic_bridge.py", line 175, in test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields
+  File "<local-path>", line 175, in test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields
     self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
 AssertionError: Items in the second set but not the first:
 'landing-provider-evidence.v2.schema.json'
@@ -21,7 +21,7 @@ AssertionError: Items in the second set but not the first:
 FAIL: test_public_schemas_are_closed_bounded_and_have_exact_versions (factory.tests.test_semantic_contracts.SemanticContractTests.test_public_schemas_are_closed_bounded_and_have_exact_versions)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_semantic_contracts.py", line 130, in test_public_schemas_are_closed_bounded_and_have_exact_versions
+  File "<local-path>", line 130, in test_public_schemas_are_closed_bounded_and_have_exact_versions
     self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
 AssertionError: Items in the second set but not the first:
 'landing-provider-evidence.v2.schema.json'
@@ -30,7 +30,7 @@ AssertionError: Items in the second set but not the first:
 FAIL: test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http (factory.tests.test_landing_runtime.CoordinatedLandingArtifactBuilderTests.test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_landing_runtime.py", line 193, in test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http
+  File "<local-path>", line 193, in test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http
     self.assertEqual("artifact_ready", created.job.state, created.job)
 AssertionError: 'artifact_ready' != 'needs_human'
 - artifact_ready

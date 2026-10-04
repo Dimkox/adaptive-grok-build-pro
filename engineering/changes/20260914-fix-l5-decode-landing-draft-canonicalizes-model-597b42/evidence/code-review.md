@@ -6,7 +6,7 @@ Status: **PASS for code correctness and bounded scope**. No remaining code findi
 
 - Reviewer: route-selected `code_reviewer`, independent of the sole implementation owner.
 - Route: `597b421e450b`; change `20260914-fix-l5-decode-landing-draft-canonicalizes-model-597b42`.
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-l5fix`.
+- Repository: `<local-path>`.
 - Base (`origin/main` observed locally): `6d8f6aba04b1e049e99f72fc79e8134acf921b5c`.
 - Current HEAD: `18822bd08149f347c71cb9130c4e05b059ad289e`, plus the reviewed frozen working-tree repairs. The final commit necessarily follows this report; this is not a passing review of the unchanged original HEAD.
 - Scope: full base-to-working-tree diff, the four changed Python files, surrounding contract/callers/service behavior, and change scope/evidence/rollout/rollback documents.

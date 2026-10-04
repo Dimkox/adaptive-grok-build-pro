@@ -1,7 +1,7 @@
 # Analysis — repo_explorer
 
 Change: `20260906-add-default-off-live-grok-and-live-qwen-landing-4a8bbb`
-Product tree: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live` (`feat/factory-live-auto-landing`, ahead of `fd51dcf`).
+Product tree: `<local-path>` (`feat/factory-live-auto-landing`, ahead of `fd51dcf`).
 Question: where to add live Grok (xAI) and live Qwen `CodexLandingExecutor` implementations without violating `FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY`.
 
 ## Boundary (authoritative)

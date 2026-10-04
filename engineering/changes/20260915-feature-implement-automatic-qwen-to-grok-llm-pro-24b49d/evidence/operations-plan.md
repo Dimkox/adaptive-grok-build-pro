@@ -30,7 +30,7 @@ Each new data root has separate `state`, `quarantine`, `scratch`, `artifacts`, `
 
 ## 1. Prepare one immutable merged release
 
-`factory/runtime/install-claw.sh` accepts a clean **independent checkout with a real `.git` directory**. The active linked worktree is not valid installer input. It refuses an existing release directory, so run it once per SHA and reuse its venv for all five units. Preserve failed partial installs rather than deleting/reusing their immutable names.
+`factory/runtime/install-<ci-host>.sh` accepts a clean **independent checkout with a real `.git` directory**. The active linked worktree is not valid installer input. It refuses an existing release directory, so run it once per SHA and reuse its venv for all five units. Preserve failed partial installs rather than deleting/reusing their immutable names.
 
 After the exact source passes its merge gates, use a new independent local clone. The existing installed landing clone is a valid input; no new private-repository fetch is inherently necessary.
 
@@ -38,9 +38,9 @@ After the exact source passes its merge gates, use a new independent local clone
 L5_SHA=REPLACE_WITH_EXACT_MERGED_40_HEX_SHA
 L5_RELEASE=/opt/adaptive-l5/releases/$L5_SHA
 L5_STAGE=/var/tmp/adaptive-l5-install-$L5_SHA
-git clone --no-local --no-hardlinks --no-checkout /home/pall/grok-projects/adaptive-grok-build-pro "$L5_STAGE"
+git clone --no-local --no-hardlinks --no-checkout <local-path> "$L5_STAGE"
 git -C "$L5_STAGE" checkout --detach "$L5_SHA"
-sudo sh "$L5_STAGE/factory/runtime/install-claw.sh" "$L5_STAGE" /opt/adaptive-l5/sources/fde60e040167c10975b00d11f578c4da6763069a "$L5_SHA"
+sudo sh "$L5_STAGE/factory/runtime/install-<ci-host>.sh" "$L5_STAGE" /opt/adaptive-l5/sources/fde60e040167c10975b00d11f578c4da6763069a "$L5_SHA"
 "$L5_RELEASE/venv/bin/adaptive-landing-submit" --help
 ```
 
@@ -120,7 +120,7 @@ Actual outside-host prerequisites are: the exact merged source/Trust CI result; 
 
 ## Source basis and limits
 
-- Installer/template: `factory/runtime/install-claw.sh`, `adaptive-l5.service.in`, `landing-host.example.json`.
+- Installer/template: `factory/runtime/install-<ci-host>.sh`, `adaptive-l5.service.in`, `landing-host.example.json`.
 - Operator backup/restore and bounds: `engineering/runbooks/l5-production-runtime.md`; `factory/src/adaptive_factory/landing_backup.py:180`, `:239`, `:303`.
 - Ownership/config/path rules: `landing_host_config.py:21`, `settings.py:20`, `server.py:58`, `server.py:96`.
 - Pre-change strict schema/startup recovery: `landing_sqlite_store.py:31`, `:95`, `:348`.

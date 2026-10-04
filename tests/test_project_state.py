@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
-CURRENT_APP_ID = 4694114
+CURRENT_APP_ID = "<redacted-app-id>"
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
 OBSERVED_MAIN_SHA = "3f41be92161fef451a2dfa7451eb458ce8f022b3"  # 2026-09-24 observation, PR #189 release-sync merge and artifact source parent
 V2019_ARTIFACT_TREE = "aed3246585fc6435463c3e3a58f1fe6a16070e6a"

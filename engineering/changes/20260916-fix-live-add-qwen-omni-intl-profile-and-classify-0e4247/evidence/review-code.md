@@ -58,7 +58,7 @@ Ruff restricted to the touched files (`landing_live_executors.py landing_http.py
 
 ## 5. Credential hygiene — clean
 
-`git show f0ef968 | grep -nE "sk-[A-Za-z0-9]|/home/pall|/root/|[A-Za-z0-9+/]{60,}"` returned only two lines: `route.json` `base_fingerprint` (a 64-hex git fingerprint) and a Markdown heading — zero credentials, zero absolute user paths. The tests use `self.value = uuid4().hex` (`test_landing_live_executors.py:737`) as the fake key and assert `assertNotIn(self.value, output)`. `evidence/live-omni-probe.py:23-25` reads `DASHSCOPE_API_KEY`/`FACTORY_LANDING_QWEN_API_KEY` from `os.environ` only and exits if absent; `KEY` is never printed. I did not execute that script and did not open any `.env` or credential file.
+`git show f0ef968 | grep -nE "sk-[A-Za-z0-9]|<local-home>|/root/|[A-Za-z0-9+/]{60,}"` returned only two lines: `route.json` `base_fingerprint` (a 64-hex git fingerprint) and a Markdown heading — zero credentials, zero absolute user paths. The tests use `self.value = uuid4().hex` (`test_landing_live_executors.py:737`) as the fake key and assert `assertNotIn(self.value, output)`. `evidence/live-omni-probe.py:23-25` reads `DASHSCOPE_API_KEY`/`FACTORY_LANDING_QWEN_API_KEY` from `os.environ` only and exits if absent; `KEY` is never printed. I did not execute that script and did not open any `.env` or credential file.
 
 ## 6. Test quality — real, with one coverage hole
 

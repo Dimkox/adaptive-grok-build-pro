@@ -462,7 +462,7 @@ make it merge authority.
 This supersedes only the stale host-readiness conclusion at lines 26–33 and the
 last residual-limitation bullet above. Later operator-safe, no-model evidence
 reports that, after a scoped Ubuntu AppArmor/bwrap remediation,
-`codex sandbox -P :workspace -C /home/pall/grok-projects/adaptive-grok-build-pro-pilot -- /bin/true`
+`codex sandbox -P :workspace -C <local-path> -- /bin/true`
 exited `0`; a boundary sample denied an outside write with `EROFS`, denied IPv4
 socket creation with `EPERM`, and left the outside sentinel absent. The original
 `RTM_NEWADDR` failure is therefore no longer an unconditional host blocker. This

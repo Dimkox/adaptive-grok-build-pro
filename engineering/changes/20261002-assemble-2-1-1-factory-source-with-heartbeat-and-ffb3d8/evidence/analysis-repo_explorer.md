@@ -49,5 +49,5 @@ Recommended bounded assembly order: A/B/C, then D integration, E, frozen F repai
 Evidence: exact git rev-parse/status/log/diff-name-only against base, bounded overlap diffs, merge-parent inspection, and import-line rg. No claims of current tests passing. reviewed-tree-modified: no.
 
 Startup 2026-10-03T00:03:01Z: 14 physical/28 logical online CPUs; default22 and affinity0,1,8-27; actual cgroup /user.slice/user-1000.slice/session-2050.scope, ancestor effective cpuset0-27, no finite exposed quota. Child widening probe succeeds28/0-27; assignedCPU0/max1 worker. Private0700 scratch snapshot and identical report:
-/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/aggregate-repo-capacity-bn0HbYUu/snapshot.md
-/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/aggregate-repo-capacity-bn0HbYUu/report.md
+<local-path>
+<local-path>

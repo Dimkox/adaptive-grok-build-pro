@@ -4,7 +4,7 @@
 
 - Route: `81850148d1f6`
 - Change: `20260829-m2-trust-ci-read-only-workspace-compatibility-818501`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Reviewed worktree fingerprint: `58854a896966d3ec160697d61ca4e1dded628eddc028ef994a032d5a135483c7`
 - Supplied pinned-runner evidence: `378/378 PASS`

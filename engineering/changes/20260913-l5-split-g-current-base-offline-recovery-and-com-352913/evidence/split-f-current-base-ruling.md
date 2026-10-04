@@ -1,6 +1,6 @@
 # Independent F current-base transition ruling
 
-Read-only architecture analysis for new route `a15f467e4575` in `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2`. No repository edits, test execution, secret reads or external actions. Root owns the new change-package documentation and the route-selected `data_implementer` remains the sole product writer.
+Read-only architecture analysis for new route `a15f467e4575` in `<local-path>`. No repository edits, test execution, secret reads or external actions. Root owns the new change-package documentation and the route-selected `data_implementer` remains the sole product writer.
 
 ## Ruling
 

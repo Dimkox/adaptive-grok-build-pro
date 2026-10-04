@@ -11,7 +11,7 @@ The repository currently collapses four different facts into the word “complet
 The live protected-branch contract observed from GitHub is:
 
 - required check: `adaptive-trust-ci/verified@06ecf1c875bc`;
-- required GitHub App ID: `4694114`;
+- required GitHub App ID: `<redacted-app-id>`;
 - strict/up-to-date required status checks: enabled.
 
 These facts supersede the stale `6737355947c2` epoch in `PROJECT_STATE.json`, `START_HERE.md`, and `README.md`.
@@ -95,7 +95,7 @@ This order preserves reviewed ancestry, avoids force-pushing shared milestone br
 
 1. The diff is allow-listed to bootstrap/state documentation, `mistakes.md`, and this durable change package; it changes no implementation, Trust CI source/configuration, holdout, hook, routing, schema, migration, package, or GitHub Actions path.
 2. `PROJECT_STATE.json` parses and contains the four independent milestone axes above, exact SHAs/PRs, `observed_at`, `observed_main_sha`, current check name, and App ID. No milestone is marked delivered without both GitHub merged-to-main evidence and current `origin/main` ancestry.
-3. `README.md`, `START_HERE.md`, and `PROJECT_STATE.json` agree on the current milestone handoff and `adaptive-trust-ci/verified@06ecf1c875bc` / App ID `4694114`.
+3. `README.md`, `START_HERE.md`, and `PROJECT_STATE.json` agree on the current milestone handoff and `adaptive-trust-ci/verified@06ecf1c875bc` / App ID `<redacted-app-id>`.
 4. M0/M1 are delivered; M2/M3 are implemented/reviewed/stack-merged but not delivered; M4 is not stack-merged or delivered and its latest local tree is not claimed fully reviewed; M5–M9 remain not started. SEO remains open or delivered according to the live observation made immediately before the state PR commit.
 5. The README complete core graph remains structurally complete. Updating descriptive state must not add an unconnected core node.
 6. A branch/PR inventory is regenerated after the final fetch, and each open PR records base, exact head, check epoch/result, and disposition without treating branch names or local `ready` files as merge authority.

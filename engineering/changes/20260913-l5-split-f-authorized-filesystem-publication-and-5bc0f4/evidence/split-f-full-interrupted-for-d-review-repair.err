@@ -1,16 +1,16 @@
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/scripts/grok_verify.py", line 21, in <module>
+  File "<local-path>", line 21, in <module>
     report = verify(find_root(), args.mode, args.profiles, record=not args.no_record)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/.grok-stack/adaptive_grok/verification.py", line 1003, in verify
+  File "<local-path>", line 1003, in verify
     results.extend(_python(root, mode))
                    ^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/.grok-stack/adaptive_grok/verification.py", line 856, in _python
+  File "<local-path>", line 856, in _python
     _command_check(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/.grok-stack/adaptive_grok/verification.py", line 266, in _command_check
+  File "<local-path>", line 266, in _command_check
     proc = run(command, cwd=root, timeout=timeout)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/.grok-stack/adaptive_grok/util.py", line 87, in run
+  File "<local-path>", line 87, in run
     return subprocess.run(
            ^^^^^^^^^^^^^^^
   File "/usr/lib/python3.12/subprocess.py", line 550, in run

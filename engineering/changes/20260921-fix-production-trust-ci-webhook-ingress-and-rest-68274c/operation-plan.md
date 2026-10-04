@@ -2,7 +2,7 @@
 
 Route `68274cb876e4`. This plan installs four new host files and manages only their three units, one enablement symlink, and the dedicated nft table. The parent coordinator owns exact grants and execution after independent code, test, security, and release review. Preparation executed no installation, daemon reload, enablement, start, stop, GitHub write, or webhook POST.
 
-The reviewed files are in `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/`. [The manifest](evidence/artifact-manifest.json) gives every source, destination, byte count, and SHA-256. The manifest SHA-256 is `b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d`. [Static evidence](evidence/preparation-verification.json) records what actually ran.
+The reviewed files are in `<local-path>`. [The manifest](evidence/artifact-manifest.json) gives every source, destination, byte count, and SHA-256. The manifest SHA-256 is `b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d`. [Static evidence](evidence/preparation-verification.json) records what actually ran.
 
 Coordinator results `operation-result-01.json` and `operation-result-02.json` under that host-local stage record exclusive installation, syntax checks, and `daemon-reload` on September 21 at 08:10 UTC. Result `03` records the previous gate refusing before any start; all three units remain inactive. Resume only at the corrected read-only gate below after all four reviews rebind, the coordinator commits the handoff, and a new exact grant binds that state. Do not rerun the exclusive installation against these existing files or overwrite the original result files. The four resource bytes and original preparation manifest remain unchanged.
 
@@ -25,13 +25,13 @@ Existing `wg-vpn-namespace.service`, veth interfaces, addresses, routes, Tailsca
 
 ## Ordering and network behavior
 
-The guard installs the nft file as one transaction. `create table` fails if that name already exists; it never flushes or takes over a table. The chain has policy `accept`, with three rules limited to destination `10.200.200.1`, TCP port `18080`: wrong interface drops first; wrong source drops second; the verified interface and peer have a counted accept rule. Other traffic has no drop rule in this table. No `IPAddressAllow` claim is made because this systemd build lacks BPF support.
+The guard installs the nft file as one transaction. `create table` fails if that name already exists; it never flushes or takes over a table. The chain has policy `accept`, with three rules limited to destination `<redacted-ip>`, TCP port `18080`: wrong interface drops first; wrong source drops second; the verified interface and peer have a counted accept rule. Other traffic has no drop rule in this table. No `IPAddressAllow` claim is made because this systemd build lacks BPF support.
 
-The socket uses only `10.200.200.1:18080`, `BindToDevice=veth-vpn-h`, and `Accept=no`. `BindsTo` and `After` tie it to the guard and namespace; device binding adds its device dependency. Both proxy and socket depend on the guard, and the proxy follows the socket, so a guard stop transaction stops the proxy and socket before deleting the table. The guard itself binds to the verified veth device and existing namespace unit. An external root-level firewall deletion is outside this dependency guarantee; inspect the table during every acceptance.
+The socket uses only `<redacted-ip>:18080`, `BindToDevice=veth-vpn-h`, and `Accept=no`. `BindsTo` and `After` tie it to the guard and namespace; device binding adds its device dependency. Both proxy and socket depend on the guard, and the proxy follows the socket, so a guard stop transaction stops the proxy and socket before deleting the table. The guard itself binds to the verified veth device and existing namespace unit. An external root-level firewall deletion is outside this dependency guarantee; inspect the table during every acceptance.
 
 The socket deliberately uses `DefaultDependencies=no`: an ordinary network/guard service starts after `basic.target`, whereas a default socket would be ordered before `sockets.target`, creating a boot ordering cycle. The unit restores explicit sysinit and shutdown dependencies and enables under `multi-user.target`. Static systemd validation found no cycle; cold-boot behavior remains untested. Device loss stops the bridge; device return needs explicit bridge reactivation after namespace health, and is not claimed as automatic recovery.
 
-The service runs the installed `systemd-socket-proxyd 127.0.0.1:18080` with a dynamic user, no capabilities, and filesystem/kernel hardening. It remains in the host network namespace; no `PrivateNetwork`, namespace path, or wildcard bind is configured. It forwards bytes for every API path reachable by the allowed peer. Existing Funnel's sole public handler remains `/webhooks/github`; path isolation and backend HMAC/authentication remain separate boundaries.
+The service runs the installed `systemd-socket-proxyd <loopback-trust-ci>` with a dynamic user, no capabilities, and filesystem/kernel hardening. It remains in the host network namespace; no `PrivateNetwork`, namespace path, or wildcard bind is configured. It forwards bytes for every API path reachable by the allowed peer. Existing Funnel's sole public handler remains `/webhooks/github`; path isolation and backend HMAC/authentication remain separate boundaries.
 
 ## 1. Refresh preflight and exact bytes
 
@@ -43,20 +43,20 @@ sudo -n true
 systemctl show wg-vpn-namespace.service --property=Id,LoadState,ActiveState,SubState,Type,RemainAfterExit
 ip -json address show dev veth-vpn-h
 sudo -n ip -n vpn -json address show dev veth-vpn-n
-sudo -n ip -n vpn -json route get 10.200.200.1 from 100.119.249.65
+sudo -n ip -n vpn -json route get <redacted-ip> from <redacted-ip>
 sudo -n ip netns exec vpn tailscale serve status --json
 ss -H -lnt sport = :18080
-curl --noproxy '*' --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out '%{http_code}\n' http://127.0.0.1:18080/health/ready
+curl --noproxy '*' --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out '%{http_code}\n' http://<loopback-trust-ci>/health/ready
 ```
 
-Require the namespace unit `active/exited`, `Type=oneshot`, `RemainAfterExit=yes`; host `veth-vpn-h` UP at `10.200.200.1/30`; actual peer `veth-vpn-n` UP at `10.200.200.2/30` with reciprocal link indexes; only loopback port 18080 listening; readiness 200. Confirm source `100.119.249.65` still belongs to namespace `vpn` and its route uses `veth-vpn-n`. The Funnel JSON must still have exactly its known HTTPS 443 handler `/webhooks/github` → `http://10.200.200.1:18080/webhooks/github` with that host's Funnel enabled. Any topology/configuration difference needs reassessment; do not adjust existing resources to force this candidate to fit.
+Require the namespace unit `active/exited`, `Type=oneshot`, `RemainAfterExit=yes`; host `veth-vpn-h` UP at `<redacted-ip>/30`; actual peer `veth-vpn-n` UP at `<redacted-ip>/30` with reciprocal link indexes; only loopback port 18080 listening; readiness 200. Confirm source `<redacted-ip>` still belongs to namespace `vpn` and its route uses `veth-vpn-n`. The Funnel JSON must still have exactly its known HTTPS 443 handler `/webhooks/github` → `http://<redacted-ip>:18080/webhooks/github` with that host's Funnel enabled. Any topology/configuration difference needs reassessment; do not adjust existing resources to force this candidate to fit.
 
 The following **installation command** repeats name-conflict and firewall checks immediately before exclusive file creation. It verifies the pinned manifest and all four payloads before writing. A collision refuses instead of overwriting. Run it only after the parent has recorded the exact operational grant.
 
 ```bash
 sudo -n python3 -B - <<'PY'
 import hashlib, json, os, pathlib, subprocess
-root = pathlib.Path('/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress')
+root = pathlib.Path('<local-path>)
 manifest_bytes = (root / 'artifact-manifest.json').read_bytes()
 assert hashlib.sha256(manifest_bytes).hexdigest() == 'b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d'
 files = json.loads(manifest_bytes)['installed_files']
@@ -140,7 +140,7 @@ def typed(unit, interface, name, signature):
     value = json.loads(result.stdout)
     require(value.get('type') == signature and 'data' in value, unit + ': missing/wrong typed ' + name)
     return value['data']
-stage = Path('/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress')
+stage = Path('<local-path>)
 manifest_bytes = (stage / 'artifact-manifest.json').read_bytes()
 require(hashlib.sha256(manifest_bytes).hexdigest() == 'b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d', 'artifact manifest changed')
 for name, entry in json.loads(manifest_bytes)['installed_files'].items():
@@ -176,7 +176,7 @@ for path in ('/tmp', '/var/tmp'):
 expected_binds = {socket: {namespace, guard, device}, proxy: {socket, guard}, guard: {namespace, device}}
 common_requirements = {'sysinit.target', 'system.slice'}
 service_ordering = common_requirements | {'-.mount', 'basic.target', 'systemd-journald.socket', 'systemd-tmpfiles-setup.service', 'tmp.mount'}
-expected_start = {proxy: ['/usr/lib/systemd/systemd-socket-proxyd', ['/usr/lib/systemd/systemd-socket-proxyd', '127.0.0.1:18080'], False], guard: ['/usr/sbin/nft', ['/usr/sbin/nft', '--file', '/etc/adaptive-trust-ci-webhook-bridge.nft'], False]}
+expected_start = {proxy: ['/usr/lib/systemd/systemd-socket-proxyd', ['/usr/lib/systemd/systemd-socket-proxyd', '<loopback-trust-ci>'], False], guard: ['/usr/sbin/nft', ['/usr/sbin/nft', '--file', '/etc/adaptive-trust-ci-webhook-bridge.nft'], False]}
 expected_stop = {proxy: None, guard: ['/usr/sbin/nft', ['/usr/sbin/nft', 'delete', 'table', 'inet', 'adaptive_trust_ci_webhook_bridge'], False]}
 command_signature = 'a(sasbttttuii)'
 for unit in units:
@@ -197,7 +197,7 @@ for unit in units:
         values['Listen'] = typed(unit, interface, 'Listen', 'a(ss)')
         values['BindToDevice'] = typed(unit, interface, 'BindToDevice', 's')
         values['Accept'] = typed(unit, interface, 'Accept', 'b')
-        require(values['Listen'] == [['Stream', '10.200.200.1:18080']], unit + ': listener differs')
+        require(values['Listen'] == [['Stream', '<redacted-ip>:18080']], unit + ': listener differs')
         require(values['BindToDevice'] == 'veth-vpn-h' and values['Accept'] is False, unit + ': socket mode/device differs')
     else:
         values['PrivateTmp'] = typed(unit, interface, 'PrivateTmp', 'b')
@@ -231,17 +231,17 @@ Inspect guard `active/exited`, socket `active/listening`, exact table rules and 
 The first block is status-only; no response body, headers, credentials, POST, synthetic event, or payload is stored. Expect peer ready 200, peer/public webhook 405, and every listed private public path 404. Public transport timeout/000 is inconclusive and cannot count as 405/404.
 
 ```bash
-sudo -n ip netns exec vpn curl --noproxy '*' --interface 10.200.200.2 --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out 'peer_ready=%{http_code}\n' http://10.200.200.1:18080/health/ready
-sudo -n ip netns exec vpn curl --noproxy '*' --interface 10.200.200.2 --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out 'peer_webhook=%{http_code}\n' http://10.200.200.1:18080/webhooks/github
-curl --noproxy '*' --silent --show-error --connect-timeout 3 --max-time 8 --output /dev/null --write-out 'public_webhook=%{http_code}\n' https://claw.taild9f611.ts.net/webhooks/github
+sudo -n ip netns exec vpn curl --noproxy '*' --interface <redacted-ip> --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out 'peer_ready=%{http_code}\n' http://<redacted-ip>:18080/health/ready
+sudo -n ip netns exec vpn curl --noproxy '*' --interface <redacted-ip> --silent --show-error --connect-timeout 2 --max-time 5 --output /dev/null --write-out 'peer_webhook=%{http_code}\n' http://<redacted-ip>:18080/webhooks/github
+curl --noproxy '*' --silent --show-error --connect-timeout 3 --max-time 8 --output /dev/null --write-out 'public_webhook=%{http_code}\n' https://<redacted-tailnet-host>/webhooks/github
 for ci_ingress_path in /health/ready /approvals /jobs/nonexistent /attestations/nonexistent /metrics /v1/jobs; do
-    curl --noproxy '*' --silent --show-error --connect-timeout 3 --max-time 8 --output /dev/null --write-out "$ci_ingress_path=%{http_code}\n" "https://claw.taild9f611.ts.net$ci_ingress_path"
+    curl --noproxy '*' --silent --show-error --connect-timeout 3 --max-time 8 --output /dev/null --write-out "$ci_ingress_path=%{http_code}\n" "https://<redacted-tailnet-host>$ci_ingress_path"
 done
 ```
 
-If a failed public GET explicitly reports DNS resolution timeout, preserve its `28/000` result as inconclusive. The coordinator may run one fresh, bounded resolver lookup with `timeout 5s getent ahostsv4 claw.taild9f611.ts.net`, recording its time, exit status, and returned addresses. Only after that lookup succeeds, choose one public IPv4 address from that exact result and repeat the same public webhook and six private-path GETs with `--resolve 'claw.taild9f611.ts.net:443:<returned-public-ip>'` added to the unchanged curl options above. Preserve the original HTTPS hostname in each URL, SNI, certificate verification, no-proxy setting, time limits, and expected 405/404 statuses; do not add redirects or disable TLS checks. Stop on a failed lookup, non-public result, or mismatched HTTP outcome. This isolates DNS from the HTTP path check and does not prove host resolver health; it changes no DNS, Funnel, interface, route, firewall, or service configuration and sends no POST.
+If a failed public GET explicitly reports DNS resolution timeout, preserve its `28/000` result as inconclusive. The coordinator may run one fresh, bounded resolver lookup with `timeout 5s getent ahostsv4 <redacted-tailnet-host>`, recording its time, exit status, and returned addresses. Only after that lookup succeeds, choose one public IPv4 address from that exact result and repeat the same public webhook and six private-path GETs with `--resolve '<redacted-tailnet-host>:443:<returned-public-ip>'` added to the unchanged curl options above. Preserve the original HTTPS hostname in each URL, SNI, certificate verification, no-proxy setting, time limits, and expected 405/404 statuses; do not add redirects or disable TLS checks. Stop on a failed lookup, non-public result, or mismatched HTTP outcome. This isolates DNS from the HTTP path check and does not prove host resolver health; it changes no DNS, Funnel, interface, route, firewall, or service configuration and sends no POST.
 
-Measure each filter rule, not merely a connection failure. The next block reuses the current namespace source `100.119.249.65`; it creates no address, route, namespace, or raw socket. It sends at most three GET attempts to the exact bridge address, each bounded to two seconds. The allowed source must get 200 and increment its counter. The host `lo` route and correct-veth/wrong-source route must each time out with 000 and increment their respective drop counter. A timeout with no matching counter increment leaves that enforcement unproven.
+Measure each filter rule, not merely a connection failure. The next block reuses the current namespace source `<redacted-ip>`; it creates no address, route, namespace, or raw socket. It sends at most three GET attempts to the exact bridge address, each bounded to two seconds. The allowed source must get 200 and increment its counter. The host `lo` route and correct-veth/wrong-source route must each time out with 000 and increment their respective drop counter. A timeout with no matching counter increment leaves that enforcement unproven.
 
 ```bash
 python3 -B - <<'PY'
@@ -250,15 +250,15 @@ def counts():
     body = json.loads(subprocess.check_output(['sudo', '-n', 'nft', '--json', 'list', 'table', 'inet', 'adaptive_trust_ci_webhook_bridge'], text=True))['nftables']
     return {item['rule']['comment']: expr['counter']['packets'] for item in body if 'rule' in item for expr in item['rule']['expr'] if 'counter' in expr}
 addresses = json.loads(subprocess.check_output(['sudo', '-n', 'ip', '-n', 'vpn', '-json', 'address', 'show'], text=True))
-assert any(a.get('local') == '100.119.249.65' for interface in addresses for a in interface['addr_info'])
-route = json.loads(subprocess.check_output(['sudo', '-n', 'ip', '-n', 'vpn', '-json', 'route', 'get', '10.200.200.1', 'from', '100.119.249.65'], text=True))
+assert any(a.get('local') == '<redacted-ip>' for interface in addresses for a in interface['addr_info'])
+route = json.loads(subprocess.check_output(['sudo', '-n', 'ip', '-n', 'vpn', '-json', 'route', 'get', '<redacted-ip>', 'from', '<redacted-ip>'], text=True))
 assert len(route) == 1 and route[0]['dev'] == 'veth-vpn-n'
 curl = ['curl', '--noproxy', '*', '--silent', '--show-error', '--connect-timeout', '2', '--max-time', '2', '--output', '/dev/null', '--write-out', '%{http_code}']
 peer = ['sudo', '-n', 'ip', 'netns', 'exec', 'vpn']
-cases = [('bridge_allowed_peer', peer, ['--interface', '10.200.200.2'], 0, '200'), ('bridge_wrong_interface', [], [], 28, '000'), ('bridge_wrong_source', peer, ['--interface', '100.119.249.65'], 28, '000')]
+cases = [('bridge_allowed_peer', peer, ['--interface', '<redacted-ip>'], 0, '200'), ('bridge_wrong_interface', [], [], 28, '000'), ('bridge_wrong_source', peer, ['--interface', '<redacted-ip>'], 28, '000')]
 for label, prefix, source, exit_code, status in cases:
     before = counts()
-    result = subprocess.run(prefix + curl + source + ['http://10.200.200.1:18080/health/ready'], capture_output=True, text=True, timeout=5)
+    result = subprocess.run(prefix + curl + source + ['http://<redacted-ip>:18080/health/ready'], capture_output=True, text=True, timeout=5)
     after = counts()
     delta = after[label] - before[label]
     print(json.dumps({'control': label, 'exit_code': result.returncode, 'http_status': result.stdout, 'counter_before': before[label], 'counter_after': after[label], 'delta': delta}))
@@ -266,7 +266,7 @@ for label, prefix, source, exit_code, status in cases:
 PY
 ```
 
-Then record `ss -H -lnt sport = :18080`, the three units' status, the socket `Listen`/`BindToDevice` properties, the narrow nft table, and loopback readiness 200. Only loopback `127.0.0.1:18080` and the device-bound `10.200.200.1:18080` may listen on that port. Any private-path exposure or unexpected listener requires immediate bridge rollback. Do not use a host-local request to the veth as the allowed-source oracle: its route is `lo`.
+Then record `ss -H -lnt sport = :18080`, the three units' status, the socket `Listen`/`BindToDevice` properties, the narrow nft table, and loopback readiness 200. Only loopback `<loopback-trust-ci>` and the device-bound `<redacted-ip>:18080` may listen on that port. Any private-path exposure or unexpected listener requires immediate bridge rollback. Do not use a host-local request to the veth as the allowed-source oracle: its route is `lo`.
 
 ## 4. Stop/disable and same-byte reactivation
 
@@ -311,4 +311,4 @@ Recheck original loopback readiness and failed bridge/public ingress. Preserve h
 
 ## Separate real GitHub intake
 
-Connectivity acceptance permits the parent to consider a separately granted PR #170 `ready_for_review` action after the full verifier/installer CPU slot has finished. Refresh the PR head first; the previously observed head is `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`, not a permission to operate on a changed head. Observe a real delivery's ID/time/status, correlate actual API POST intake and job/check identifiers using authorized operator-safe readbacks, and inspect the exact-head `adaptive-trust-ci/verified@06ecf1c875bc` Check Run from App ID `4694114`. Record an unavailable delivery/job readback as unobserved, never inferred from a 405 or unrelated check. This plan neither replays a webhook nor accesses credentials, a queue database, or human approval material. Merge eligibility and issue closure remain with their exact external check and approval requirements.
+Connectivity acceptance permits the parent to consider a separately granted PR #170 `ready_for_review` action after the full verifier/installer CPU slot has finished. Refresh the PR head first; the previously observed head is `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`, not a permission to operate on a changed head. Observe a real delivery's ID/time/status, correlate actual API POST intake and job/check identifiers using authorized operator-safe readbacks, and inspect the exact-head `adaptive-trust-ci/verified@06ecf1c875bc` Check Run from App ID `<redacted-app-id>`. Record an unavailable delivery/job readback as unobserved, never inferred from a 405 or unrelated check. This plan neither replays a webhook nor accesses credentials, a queue database, or human approval material. Merge eligibility and issue closure remain with their exact external check and approval requirements.

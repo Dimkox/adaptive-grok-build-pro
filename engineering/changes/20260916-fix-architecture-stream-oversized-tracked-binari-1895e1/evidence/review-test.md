@@ -2,7 +2,7 @@ PASS
 
 Independent TEST REVIEW — route `1895e17ff333`, kind `test_review`
 Subject: commit `d13bf59` on `fix/architecture-stream-large-binaries` (base `cfc4a57`) in
-`/home/pall/grok-projects/adaptive-grok-build-pro-largeblob`.
+`<local-path>`.
 Reviewer ran read-only inspection plus in-process monkeypatch probes; no tracked file was modified.
 `git status --porcelain` was empty while the tests ran and afterwards lists only this report and the
 sibling `review-code.md` as untracked.

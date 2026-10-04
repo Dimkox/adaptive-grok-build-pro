@@ -1,6 +1,6 @@
 # Aggregate integration analysis — ffb3d81e031f
 
-Read-only analysis, not independent review or verification. Requirements read first after capacity capture: aggregate evidence/analysis-brief.md. Scratch/report: /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/combined-integration-pE8IG2/report.md. reviewed-tree-modified: no.
+Read-only analysis, not independent review or verification. Requirements read first after capacity capture: aggregate evidence/analysis-brief.md. Scratch/report: <local-path> reviewed-tree-modified: no.
 
 Source identities observed: aggregate 63799f8760d3a55028d83ab5ff0116ececf8f7d1; A 0d22521f14eb4e45aa6869aee2258e6e61379722 and B cb83a0e49fc5ba5e55144137f3d59e5aed9ac62b/C 9b257246d56e4c65d268a1dd9efadd707f4298fd from assignment; D 4293a77939c9c637de486bd6066167c80b9284b2; E d46ab620b7b29a1d675ac41b2f2902c9053b16e8; F e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69; H 3b192c9cfbec7e433024a04587c3bfd03fc5e147; HB dc4062bcbc1e1da95cfe07077fc9cfbf273e0312; G 3423e7d5d6f8bef96e54cbeb698c49462cb01583 previously observed. F/H writers remain active; identities are observations, not frozen delivery heads. Aggregate tracked tree remained unchanged, with only its change package untracked.
 

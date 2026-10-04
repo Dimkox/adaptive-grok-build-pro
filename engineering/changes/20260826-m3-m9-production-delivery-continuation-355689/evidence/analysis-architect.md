@@ -2,7 +2,7 @@
 
 Route: `35568941ae59`
 Role: route-selected `architect` (read-only except this report)
-Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m3`
+Repository: `<local-path>`
 Observed branch/HEAD: `milestone/m3-controlled-knowledge-debt` at `bc5ef65052f7f0b3727faaac6c4ada11871d8a23`
 Exact M2 parent: `635c9ddf2d63c1ea823074106976a8f3de6299a9` (one commit behind HEAD)
 Pre-report tree fingerprint: `94700384a42bc1f6f24a8de4d0fb48e0281f95813e267960b82a36c3caa0e052`

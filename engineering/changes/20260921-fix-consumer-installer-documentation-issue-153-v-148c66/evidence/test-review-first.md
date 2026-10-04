@@ -19,7 +19,7 @@ Return this to the sole write owner. Supply and inventory the consumer template 
 
 ## Verification evidence inspected
 
-No tests, lint, compiler or Docker were started by this reviewer. The retained logs in `/home/pall/.cache/agbp-run/issues-wave-20260921/installer/` were read and their hashes independently recomputed:
+No tests, lint, compiler or Docker were started by this reviewer. The retained logs in `<local-path>` were read and their hashes independently recomputed:
 
 - `installer-red.log`: `fe988a18c67ba24758d5f75392425fb3b840e3a003681eebfa24b87b1da3989f`; 32 tests, 14.191 seconds, three failures and two errors. The output directly shows nine unresolved README links in each profile, the old README not conflicting as kept-local, and absent-template errors. The shell wrapper's numeric unittest exit was not retained; it is not represented as captured evidence.
 - `installer-green.log`: `3160794321e1c585e0af5ce831746ba57a3515b1366e15f8a5832503ce4b202a`; 32 tests, 14.757 seconds, `OK`. The implementer records exit zero.

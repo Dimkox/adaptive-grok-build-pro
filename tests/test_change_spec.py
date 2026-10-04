@@ -37,7 +37,7 @@ CLI = _load("cli_mod", _cli_rel())
 
 VALID_SPEC = {
     "schema_version": 2,
-    "change_id": "20260823-user-query-m1-typed-intent-test",
+    "change_id": "20260823-sanitized-query-m1-typed-intent-test",
     "objective": {
         "id": "OBJ-001",
         "statement": "Local typed specs validate and map evidence without invented route facts",

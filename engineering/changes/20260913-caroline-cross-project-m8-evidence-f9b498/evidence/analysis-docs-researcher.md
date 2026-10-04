@@ -1,6 +1,6 @@
 # docs_researcher: independent source facts
 
-Route `f9b49845f0f6`; observed 2026-09-13 via read-only gh API/CLI and git on claw. Factory worktree HEAD `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`, origin `https://github.com/Dimkox/adaptive-grok-build-pro.git`. Current route selects docs_researcher for analysis, general_implementer as sole writer, and code_reviewer after verification. This report is evidence only, not merge or M8 activation authority.
+Route `f9b49845f0f6`; observed 2026-09-13 via read-only gh API/CLI and git on <ci-host>. Factory worktree HEAD `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`, origin `https://github.com/Dimkox/adaptive-grok-build-pro.git`. Current route selects docs_researcher for analysis, general_implementer as sole writer, and code_reviewer after verification. This report is evidence only, not merge or M8 activation authority.
 
 ## Independently observed GitHub identity
 
@@ -19,13 +19,13 @@ Issue #10 reports actual-method/stream control-flow reproduction with inert SDK 
 
 PR body claims five focused Python regressions, seven production-predicate C# cases using PowerShell Add-Type, compileall and git diff --check. It explicitly says full WPF build and live SDK/UI integration were unavailable because .NET SDK was absent and requests Windows validation before merge. Independently inspected exact-head test files via GitHub Contents API: Python source contains five test_ methods (lines 96,163,236,352,412); PowerShell contains seven cases (lines 11–17) and compiles only SplashReadiness.cs after widening its visibility in memory. I did not rerun these tests in this analysis. Therefore distinguish source-confirmed test presence and PR-reported passing results from independently rerun or full-system validation.
 
-## Factory route lineage found on claw
+## Factory route lineage found on <ci-host>
 
-- Original Caroline read-only audit route `f7f29515a2a8`, package `20260911-read-only-audit-review-of-kostiakhait-caroline-c-f7f295`, under `/home/pall/grok-projects/caroline-factory-audit-20260911/engineering/changes/`.
+- Original Caroline read-only audit route `f7f29515a2a8`, package `20260911-read-only-audit-review-of-kostiakhait-caroline-c-f7f295`, under `<local-path>`.
 - Follow-up route `af819a589031`, package `20260913-read-only-security-review-and-audit-of-current-k-af819a`, same worktree. Both read-only routes select docs_researcher and have no write agent.
 - Caroline fix route `ff76bf0a4d4d`, package `20260913-fix-caroline-issues-10-12-ff76bf`, same worktree; selected write agent general_implementer, code/test review required.
 - These historical Factory route base commits are `be752872f3e5a9d6fe179872d9c8bdaec4338238`; they are FACTORY commit identities, not Caroline audited source identities.
-- SEO audit precedent route `c9179d70b949`, package `/home/pall/grok-projects/seo-landing-factory-audit-20260913/engineering/changes/20260913-read-only-security-functionality-and-resilience-c9179d/route.json`, pins external `aleksandr-alhoff/seo-landing` source `1aa908f96a09e2e93fd1839ac51b02d362e7a8ef`. It authorizes read-only isolated audit and confirmed issue creation, with no target-code/Factory-product edits, deployment or merge. Factory base `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`.
+- SEO audit precedent route `c9179d70b949`, package `<local-path>`, pins external `aleksandr-alhoff/seo-landing` source `1aa908f96a09e2e93fd1839ac51b02d362e7a8ef`. It authorizes read-only isolated audit and confirmed issue creation, with no target-code/Factory-product edits, deployment or merge. Factory base `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`.
 
 ## Classification recommendation
 

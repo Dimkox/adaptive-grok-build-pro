@@ -3,7 +3,7 @@
 ## Identity, scope, and verdict
 
 - Route: `81850148d1f6`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - Reviewed HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Frozen implementation/evidence fingerprint independently matched before this report was written: `2c217ae3d8401e188657ac916cf3dfc931f4f1c9b90413cc4445ef908a1bcac2`
 - Scope: complete actual diff from HEAD, surrounding implementation/tests, all historical code reports, remediation-4 package/docs, the prior security/test findings that overlap the output boundary, and current focused evidence.

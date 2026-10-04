@@ -20,7 +20,7 @@ The retained correction RED log demonstrates the intended defect: both new unrel
 
 ## Evidence and identity
 
-No tests, lint, compiler or Docker were started by this reviewer; the coordinator retained the CPU slot for another full gate. The following raw correction logs were read from `/home/pall/.cache/agbp-run/issues-wave-20260921/installer/`, and their SHA-256 values were independently recomputed:
+No tests, lint, compiler or Docker were started by this reviewer; the coordinator retained the CPU slot for another full gate. The following raw correction logs were read from `<local-path>`, and their SHA-256 values were independently recomputed:
 
 | Log | Observed unittest output | SHA-256 |
 | --- | --- | --- |

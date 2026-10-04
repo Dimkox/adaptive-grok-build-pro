@@ -2,7 +2,7 @@
 
 Verdict: **PASS** for this exact delivery unit. No blocking test-adequacy finding. This is local review evidence only; merge still requires the external exact-SHA GitHub App check and any required separately signed scopes.
 
-- Source checkout: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a`.
+- Source checkout: `<local-path>`.
 - HEAD: `450d62d41ab5f94b72217a1e18f9f60231d6af6f`.
 - Actual PR and route base: `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102` (main).
 - Route: `d20205a1a318`; change: `20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205`.

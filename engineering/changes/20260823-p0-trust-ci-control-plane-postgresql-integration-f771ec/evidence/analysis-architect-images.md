@@ -132,7 +132,7 @@ docker image inspect adaptive-trust-ci-runner:2.1.0 \
 
 Use `{{json .RepoDigests}}`, not `{{index .RepoDigests 0}}`. Indexing a present local descriptor looks like a pin. Operator docs that inspect `"$TRUST_CI_*_IMAGE"` are the **deploy** recipe (registry pin already in host env). This smoke must say in evidence: **local tag inspect; RepoDigests on Engine 29 may be a local descriptor; not a pin.**
 
-Do not `docker compose up`. `compose.yaml` binds `127.0.0.1:8080:8080`; this host already listens there (searxng). Build does not bind the port.
+Do not `docker compose up`. `compose.yaml` binds `<loopback-service>:8080`; this host already listens there (searxng). Build does not bind the port.
 
 `FROM ${PYTHON_BASE_IMAGE}` requires a **real** python digest. Postgres/dind `:?` vars only need to be non-empty for this build. Measure python. Measuring postgres/dind is optional noise unless the write owner wants them recorded as public-base evidence.
 

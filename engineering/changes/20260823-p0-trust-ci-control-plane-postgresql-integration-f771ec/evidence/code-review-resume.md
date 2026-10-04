@@ -175,7 +175,7 @@ Out of scope and still open (do not treat this dirty tree as activation complete
 1. `engineering/runbooks/trust-ci-rollout.md` bootstrap copy list still omits `.env.example`, `migration.env.example`, and `backup.env.example`. QUICKSTART and `trust-ci/README.md` include them. `compose.yaml` `migrate` requires `env/migration.env`. Copy-paste of the runbook-only bootstrap is incomplete; the two-file merge itself is correct.
 2. `test_readme_stack_graph_is_complete` does not assert absence of `-->`. The working mermaid has zero arrows; a later `-->` plus 120 `---` lines would still pass the count.
 3. `test_toolchain.py` does not lock grok `built`/`fallback` `1.0.5`. README and `toolchain.json` do.
-4. Untracked leftover `engineering/changes/20260817-user-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/` is still on disk. **Do not add it to the commit set.**
+4. Untracked leftover `engineering/changes/20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/` is still on disk. **Do not add it to the commit set.**
 5. `docker image inspect "$TRUST_CI_*_IMAGE" … RepoDigests` is empty until a registry push. Docs do not invent a digest to paper over that. Build-without-push remains a later operational step.
 6. `trust-ci/README.md` `chmod 600` no longer covers `runtime/*` (now `env/*.env .env`). Public trust-store JSON is not a secret; filled env files are. Acceptable.
 7. Activation (App, deploy, branch protection) is not in this diff. Do not merge `#2` on this evidence.

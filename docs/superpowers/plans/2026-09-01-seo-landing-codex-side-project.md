@@ -45,7 +45,7 @@ Expected: exit `1`.
 - [ ] Run RED upstream validation:
 
 ```bash
-python3 /home/pall/.codex/skills/.system/skill-creator/scripts/quick_validate.py /tmp/seo-landing-architecture.drnnpb/repo
+python3 <local-path> /tmp/seo-landing-architecture.drnnpb/repo
 ```
 
 Expected: exit `1`, `Description cannot contain angle brackets (< or >)`.
@@ -107,7 +107,7 @@ Expected: all skill, provenance, security, and showcase contracts pass.
 - [ ] Validate skill and repository:
 
 ```bash
-python3 /home/pall/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/seo-landing
+python3 <local-path> .agents/skills/seo-landing
 python3 scripts/grok_verify.py --mode pr
 ```
 

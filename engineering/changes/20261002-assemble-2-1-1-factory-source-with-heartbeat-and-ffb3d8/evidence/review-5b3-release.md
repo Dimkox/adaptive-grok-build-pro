@@ -4,9 +4,9 @@ Verdict: PASS for local Core acceptance; no Core blocker found. This is not 2.1.
 
 Route ffb3d81e031f; selected release_reviewer. Read shared brief, agent, adaptive-delivery/release-readiness/verification-evidence/route skills; inspected original-base product diff, approved design/scope ledger/topology/requirements/release/rollback, Russian README and watchdog. No agents spawned.
 
-Source `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source`: agreed base `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; HEAD before/after `5b3ee0026f8d1a7166e3d1cf16d1511d261c4d0c`; Git tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`; canonical fingerprint before/after `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`; both statuses clean.
+Source `<local-path>`: agreed base `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; HEAD before/after `5b3ee0026f8d1a7166e3d1cf16d1511d261c4d0c`; Git tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`; canonical fingerprint before/after `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`; both statuses clean.
 
-Scratch `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/release-5b3-QQAayX/repo`; `stat -c '%a %A %U %n'` proved both parent directories0700/non-sticky/pall. `git clone --no-hardlinks --no-checkout <source> <scratch>`; `git checkout --detach <HEAD>` reproduced exact clean snapshot/fingerprint, also matched after scratch restoration. Startup snapshot `/home/pall/.cache/v211-release-review-orSP8w/cpu-snapshot.md`:14physical/28online, initial22affinity, inherited0-27cpuset, no exposed finite quota, successful child0-27probe. Probes CPU6,7/max2; no PG/Docker/full/external/secret reads.
+Scratch `<local-path>`; `stat -c '%a %A %U %n'` proved both parent directories0700/non-sticky/pall. `git clone --no-hardlinks --no-checkout <source> <scratch>`; `git checkout --detach <HEAD>` reproduced exact clean snapshot/fingerprint, also matched after scratch restoration. Startup snapshot `<local-path>`:14physical/28online, initial22affinity, inherited0-27cpuset, no exposed finite quota, successful child0-27probe. Probes CPU6,7/max2; no PG/Docker/full/external/secret reads.
 
 reviewed-tree-modified: no
 

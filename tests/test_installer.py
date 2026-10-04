@@ -155,7 +155,7 @@ class InstallerTests(unittest.TestCase):
                                   "exact head SHA", "not merge authority",
                                   "explicit consent", "human approval private key"):
                     self.assertIn(safeguard, text)
-                for factory_identity in ("4694114", "06ecf1c875bc", "claw", "trust-ci/"):
+                for factory_identity in ("<redacted-app-id>", "06ecf1c875bc", "<ci-host>", "trust-ci/"):
                     self.assertNotIn(factory_identity, text)
                 self.assertIn("Never fabricate", text)
                 self.assertEqual(agents.read_bytes(), MODULE.managed_agents_text(ROOT).encode())

@@ -1,6 +1,6 @@
 # Independent final assembly source-inventory analysis
 
-Route `2a890b6485a5`; actual G3 `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3`, HEAD `36e96367121595617ac432682b59730acc7c1df3`; actual direct predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. This is bounded read-only architecture/source inventory analysis while full verification is running. It is not code/test/data review, a test result, a completion receipt or merge authority. No repository file was edited.
+Route `2a890b6485a5`; actual G3 `<local-path>`, HEAD `36e96367121595617ac432682b59730acc7c1df3`; actual direct predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. This is bounded read-only architecture/source inventory analysis while full verification is running. It is not code/test/data review, a test result, a completion receipt or merge authority. No repository file was edited.
 
 ## Independent Git comparison
 

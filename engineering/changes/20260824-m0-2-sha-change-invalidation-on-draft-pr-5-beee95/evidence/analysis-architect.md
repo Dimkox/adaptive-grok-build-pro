@@ -8,7 +8,7 @@ Sources used: `85a17e` analysis-architect.md §2, this package `analysis-repo_ex
 
 ## Ruling (one paragraph)
 
-**Pick (a) for the infinite-SHA problem.** Commit this change package (plus leftover `85a17e` reviews) on `milestone/m0-live-trust-authority` **without** rewriting the activation-report identity cells. Mint `git-push-branch` **after** that last local write, push, re-fetch PR #5 `head.sha`, then HMAC-POST `pull_request`/`synchronize` to `http://127.0.0.1:18080/webhooks/github`. Prove Check Run `97390635614` remains only on `1fc9420` and a **new** App-owned Check Run appears on the GitHub head. Record new HTTP/`job_id`/`created`/`status` and Check Run ids **only** in this change-package evidence; **do not** commit or push that evidence this slice. Product docs keep pointing at the proven SHA `1fc942065a124ce75659bd082519d8ebc37774e8` / Check Run `97390635614`. Tracked `trust-ci/compose.yaml` stays unchanged; overlay stays untracked. Loopback HMAC is not GitHub webhook registration. New job will likely `needs_approval` because `decisions.md` is still in the PR diff. Do not claim M0.2 exit.
+**Pick (a) for the infinite-SHA problem.** Commit this change package (plus leftover `85a17e` reviews) on `milestone/m0-live-trust-authority` **without** rewriting the activation-report identity cells. Mint `git-push-branch` **after** that last local write, push, re-fetch PR #5 `head.sha`, then HMAC-POST `pull_request`/`synchronize` to `http://<loopback-trust-ci>/webhooks/github`. Prove Check Run `97390635614` remains only on `1fc9420` and a **new** App-owned Check Run appears on the GitHub head. Record new HTTP/`job_id`/`created`/`status` and Check Run ids **only** in this change-package evidence; **do not** commit or push that evidence this slice. Product docs keep pointing at the proven SHA `1fc942065a124ce75659bd082519d8ebc37774e8` / Check Run `97390635614`. Tracked `trust-ci/compose.yaml` stays unchanged; overlay stays untracked. Loopback HMAC is not GitHub webhook registration. New job will likely `needs_approval` because `decisions.md` is still in the PR diff. Do not claim M0.2 exit.
 
 ## Conflicts resolved
 
@@ -31,14 +31,14 @@ Sources used: `85a17e` analysis-architect.md §2, this package `analysis-repo_ex
 | Tracked file | `trust-ci/compose.yaml` is in git; **not** in `ca1e88aa` vs `1fc9420`; working tree **clean** for that path |
 | Sock in tracked compose | **absent**. `trust-ci/tests/test_ops.py` `assertNotIn('/var/run/docker.sock', compose)`; `trust-ci/scripts/smoke.sh` greps the same |
 | Tracked worker Docker | `DOCKER_HOST: tcp://docker-engine:2375` (isolated DinD) |
-| Overlay | `/home/pall/adaptive-trust-ci-host/compose.host-socket.yaml` mode `0600`, **outside** this git tree, not `git add`-able from CWD |
+| Overlay | `<local-path>` mode `0600`, **outside** this git tree, not `git add`-able from CWD |
 | Overlay effect | `docker-engine` profiled off; `worker` + `runner-loader` mount host `/var/run/docker.sock`; `DOCKER_HOST=unix:///var/run/docker.sock` |
 | Evidence copy | `engineering/changes/20260824-the-user-sent-a-message-while-you-were-working-u-3e6166/evidence/compose.host-socket.yaml` is documentation only |
-| Live project | `adaptive-trust-ci`; api/postgres healthy; worker running; `GET http://127.0.0.1:18080/health/ready` **200**; policy digest `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5` |
+| Live project | `adaptive-trust-ci`; api/postgres healthy; worker running; `GET http://<loopback-trust-ci>/health/ready` **200**; policy digest `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5` |
 
 **Implementer must not:** edit `trust-ci/compose.yaml`; copy the overlay into `trust-ci/`; start `docker-engine`; weaken the sock forbid; compose-up (already up); `compose down -v`. Re-mint compose grants **only** if worker/api must be restarted. Prefer no restart.
 
-Four planes unchanged from `85a17e` §1 (api no sock; worker host sock; runner `--network none`; human private keys not on claw). Overlay residual stays accepted as a claw-only exception, not promoted.
+Four planes unchanged from `85a17e` §1 (api no sock; worker host sock; runner `--network none`; human private keys not on <ci-host>). Overlay residual stays accepted as a <ci-host>-only exception, not promoted.
 
 ---
 
@@ -56,7 +56,7 @@ git rev-parse origin/milestone/m0-live-trust-authority
 
 | Field | Value |
 | --- | --- |
-| URL | `POST http://127.0.0.1:18080/webhooks/github` |
+| URL | `POST http://<loopback-trust-ci>/webhooks/github` |
 | Headers | `Content-Type: application/json`, `X-GitHub-Event: pull_request`, `X-Hub-Signature-256: sha256=<64 lowercase hex>` |
 | Secret | gitignored `trust-ci/env/api.env` key `TRUST_CI_WEBHOOK_SECRET` (API-only). Never print, `cat`, `echo`, `set -x`, or paste |
 | `action` | `synchronize` |
@@ -85,15 +85,15 @@ Worker `ensure_check_run` lists check-runs **on that SHA** and reuses only `exte
 ### Proof (operator-safe; after HMAC)
 
 ```text
-curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://<loopback-trust-ci>/health/ready
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/1fc942065a124ce75659bd082519d8ebc37774e8/check-runs
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/<GITHUB-HEAD-AFTER-PUSH>/check-runs
 ```
 
 | Must hold | Must not happen |
 | --- | --- |
-| Old SHA still lists Check Run `97390635614`, App `4694114`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec` | Treating `97390635614` as satisfying the new SHA |
-| New SHA lists a **different** Check Run id, name `adaptive-trust-ci/verified@6737355947c2`, App `4694114`, `external_id` = **new** `job_id` | PATCH old check to `success`; user-token check-run create; GitHub Actions |
+| Old SHA still lists Check Run `97390635614`, App `<redacted-app-id>`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec` | Treating `97390635614` as satisfying the new SHA |
+| New SHA lists a **different** Check Run id, name `adaptive-trust-ci/verified@6737355947c2`, App `<redacted-app-id>`, `external_id` = **new** `job_id` | PATCH old check to `success`; user-token check-run create; GitHub Actions |
 | Webhook `created: true` | Replay of `1fc9420` |
 | New job likely `needs_approval` / Check Run `action_required` | Forging human approval to chase `success` |
 
@@ -198,7 +198,7 @@ Checkout/`_git_env` proxy residual is unchanged. Do not patch unless the **new**
 
 - Tracked `trust-ci/compose.yaml` unchanged; overlay untracked and still the live worker path
 - GitHub PR #5 head ≠ `1fc9420`; Check Run `97390635614` still only on `1fc9420`
-- New App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=4694114`, new `external_id`
+- New App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=<redacted-app-id>`, new `external_id`
 - Product activation report still lists `1fc9420` / `97390635614`; new ids only in unpushed change-package evidence
 - Hooks empty; `main` unprotected; no secrets in git/chat
 - New job `needs_approval` is expected, not a reason to mint human keys

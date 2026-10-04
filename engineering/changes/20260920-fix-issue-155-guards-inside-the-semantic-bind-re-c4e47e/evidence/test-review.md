@@ -1,6 +1,6 @@
 # Test review — issue #155 repair-child rejection reasons (mutation battery)
 
-Method: tar copy of the worktree (no `.git`, with `engineering/`) to `/home/pall/.cache/mut155/base`; baseline red set in any copy is exactly `test_structure::test_repository_root_holds_only_canonical_entries` (git-history arm). Arms: `PYTHONPATH=factory/src:. python3 -m unittest -q factory.tests.test_migrations` → baseline `Ran 22 tests in 0.040s OK`; `… tests.test_architecture_fitness tests.test_structure` → baseline `Ran 144 … errors=1` (the known arm). No containers started.
+Method: tar copy of the worktree (no `.git`, with `engineering/`) to `<local-path>`; baseline red set in any copy is exactly `test_structure::test_repository_root_holds_only_canonical_entries` (git-history arm). Arms: `PYTHONPATH=factory/src:. python3 -m unittest -q factory.tests.test_migrations` → baseline `Ran 22 tests in 0.040s OK`; `… tests.test_architecture_fitness tests.test_structure` → baseline `Ran 144 … errors=1` (the known arm). No containers started.
 
 VERDICT: pass
 

@@ -1,7 +1,7 @@
 # Exact candidate import
 
 Route `bcc1d645c438`; sole selected writer `integration_implementer`; 2026-09-21.
-Worktree `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`, branch `fix/reviewed-issues-batch-20260921`.
+Worktree `<local-path>`, branch `fix/reviewed-issues-batch-20260921`.
 Import started at HEAD `1146cee355ab9dd9d1db9bbb357a11bd4e4cc8b5` against delivered main `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 
 ## Result and source identity

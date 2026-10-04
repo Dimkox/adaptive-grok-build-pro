@@ -10,7 +10,7 @@ User «да ле е» (далее) after the named next slice: push local `ca1e8
 
 ## Outcome
 
-Draft PR #5 head is a descendant of `ca1e88a`. GitHub shows Check Run `97390635614` only on `1fc9420`. The new head has a **different** Check Run id, name `adaptive-trust-ci/verified@6737355947c2`, App `4694114`, `external_id` = new `job_id`. Not M0.2 complete.
+Draft PR #5 head is a descendant of `ca1e88a`. GitHub shows Check Run `97390635614` only on `1fc9420`. The new head has a **different** Check Run id, name `adaptive-trust-ci/verified@6737355947c2`, App `<redacted-app-id>`, `external_id` = new `job_id`. Not M0.2 complete.
 
 ## Scope
 

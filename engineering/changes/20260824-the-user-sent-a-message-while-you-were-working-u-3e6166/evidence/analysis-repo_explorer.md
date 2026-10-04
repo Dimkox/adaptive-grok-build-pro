@@ -4,7 +4,7 @@ Route `3e61666b8de2`. Read-only map. No product edits.
 
 ## Intent
 
-If `docker-engine` (privileged rootless DinD in `trust-ci/compose.yaml`) is dropped, `runner-loader` and `worker` must talk to the **host** Docker daemon (typically `unix:///var/run/docker.sock`) and worker outbound GitHub HTTP(S) must use `host.docker.internal:1080` instead of container-loopback `127.0.0.1:1080`.
+If `docker-engine` (privileged rootless DinD in `trust-ci/compose.yaml`) is dropped, `runner-loader` and `worker` must talk to the **host** Docker daemon (typically `unix:///var/run/docker.sock`) and worker outbound GitHub HTTP(S) must use `host.docker.internal:1080` instead of container-loopback `<loopback-proxy>`.
 
 `host.docker.internal` is **not** referenced anywhere in this tree today.
 
@@ -25,7 +25,7 @@ If `docker-engine` (privileged rootless DinD in `trust-ci/compose.yaml`) is drop
 | `trust-ci/env/worker.env.example` | Comments: “Paths as seen by the dedicated **DinD daemon**.” `TRUST_CI_WORKSPACE_HOST_ROOT=/var/lib/adaptive-trust-ci/workspaces` (must match daemon-visible paths). |
 | `QUICKSTART.md` | systemd starts `docker-engine` + `runner-loader`; short `up` of `postgres migrate api worker` for API-only. |
 | `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md` | Explicit `up -d docker-engine runner-loader worker`; records DinD unhealthy. |
-| `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md` | Privileged DinD as residual accepted risk on `claw`. |
+| `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md` | Privileged DinD as residual accepted risk on `<ci-host>`. |
 | `engineering/runbooks/trust-ci-activation-report.md` | Same DinD failure evidence. |
 | `decisions.md` | DinD `rootlesskit` `operation not permitted`. |
 | `trust-ci/src/adaptive_trust_ci/sandbox.py` | `_runtime_environment()` **allows** `DOCKER_HOST` (and `DOCKER_CONFIG`, `CONTAINER_HOST`) through to `docker` CLI. No hard-coded `tcp://docker-engine:2375`. Changing host via compose env is enough for the Python worker **if** the daemon sees the same bind paths. |
@@ -44,7 +44,7 @@ From `trust-ci/compose.yaml`:
 3. Loader command (worker image): `docker pull "$TRUST_CI_RUNNER_IMAGE"` then `docker image inspect ... RepoDigests[0]` must **equal** the pin. `DOCKER_HOST=tcp://docker-engine:2375` so the pull lands **in DinD**, not on the host daemon.
 4. `worker` waits for `runner-loader` `service_completed_successfully`.
 
-If DinD never becomes healthy (current `claw` state: `rootlesskit: fork/exec /proc/self/exe: operation not permitted`), loader and worker stay `Created`.
+If DinD never becomes healthy (current `<ci-host>` state: `rootlesskit: fork/exec /proc/self/exe: operation not permitted`), loader and worker stay `Created`.
 
 A host-socket design must: drop `depends_on` on DinD; set `DOCKER_HOST` to unix socket or `unix:///var/run/docker.sock`; pull the runner image into the **host** engine; keep workspace/holdout paths as the **host** sees them (`TRUST_CI_WORKSPACE_HOST_ROOT` / `TRUST_CI_HOLDOUT_HOST_PATH`). Loader still needs a docker CLI against that socket (worker image already has it).
 
@@ -76,9 +76,9 @@ trust-ci/runtime/*
 ```
 
 - **Committed:** `trust-ci/env/worker.env.example` — DB URL, signing key path, App ID placeholders, workspace/holdout host paths. **No `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`.**
-- **Gitignored live file:** `trust-ci/env/worker.env` (present on disk). Grep of the tree showed `HTTP_PROXY=http://127.0.0.1:1080` there. Spec/plan say operator sets proxy in **host-owned** worker env; never commit proxy secrets.
+- **Gitignored live file:** `trust-ci/env/worker.env` (present on disk). Grep of the tree showed `HTTP_PROXY=http://<loopback-proxy>` there. Spec/plan say operator sets proxy in **host-owned** worker env; never commit proxy secrets.
 - Compose `worker.env_file` loads `./env/worker.env`. Proxy is **not** a compose `environment:` key.
-- Inside the worker container, `127.0.0.1:1080` is **not** host `proxy-gateway`. Prior architect notes already flagged this. Switching to `http://host.docker.internal:1080` belongs in **gitignored** `worker.env` plus compose `extra_hosts: host.docker.internal:host-gateway` (Linux). Example file should document the pattern without committing live values.
+- Inside the worker container, `<loopback-proxy>` is **not** host `proxy-gateway`. Prior architect notes already flagged this. Switching to `http://host.docker.internal:1080` belongs in **gitignored** `worker.env` plus compose `extra_hosts: host.docker.internal:host-gateway` (Linux). Example file should document the pattern without committing live values.
 - `NO_PROXY` should include `postgres` (and not need `docker-engine` if DinD is gone).
 
 ---
@@ -123,10 +123,10 @@ Current isolation claims (`trust-ci/README.md`, `test_ops` name): worker is priv
 
 Host-socket skip **collapses** the second Docker trust domain:
 
-- Worker (uid 10001, cap-drop ALL, read-only) mounting `/var/run/docker.sock` still gets a **full host Docker API** if the socket is writable: start privileged containers, mount `/`, talk to **n8n/Caddy/SearXNG/app DBs** on the same engine (`claw` already shares that engine — spec already called privileged DinD residual risk).
+- Worker (uid 10001, cap-drop ALL, read-only) mounting `/var/run/docker.sock` still gets a **full host Docker API** if the socket is writable: start privileged containers, mount `/`, talk to **n8n/Caddy/SearXNG/app DBs** on the same engine (`<ci-host>` already shares that engine — spec already called privileged DinD residual risk).
 - Runner isolation (`--network none` etc. in `sandbox.py`) is **argv policy**, not a second daemon. A bug or token leak in worker can `docker run --privileged -v /:/host` on production stacks. Isolated DinD at least confined overlay + named volume `trust-ci-docker-data`.
 - `TRUST_CI_WORKSPACE_HOST_ROOT` must be **host** paths. Named volume `trust-ci-workspaces` is visible to DinD as `/var/lib/adaptive-trust-ci/workspaces`. Host dockerd will **not** see that volume path unless it is a bind to the real host directory. Wrong paths → empty workspaces or mounting the wrong tree.
-- Loader `docker pull` hits host registry/cache and **host** `HTTP_PROXY` if the daemon uses it; worker urllib still needs container-reachable proxy (`host.docker.internal:1080`). Proxy-gateway bind is `127.0.0.1:1080` only; `host-gateway` reaches host loopback **if** Docker extra_hosts works as on recent Engine.
+- Loader `docker pull` hits host registry/cache and **host** `HTTP_PROXY` if the daemon uses it; worker urllib still needs container-reachable proxy (`host.docker.internal:1080`). Proxy-gateway bind is `<loopback-proxy>` only; `host-gateway` reaches host loopback **if** Docker extra_hosts works as on recent Engine.
 - Hardening plan’s **restricted Docker API proxy** remains unimplemented. Host socket without that proxy is a **security regression** vs intended (and vs tests), even if it unblocks M0.1 on this kernel (`rootlesskit` denied).
 - PreToolUse (`evaluate_pre_tool` / `_mentions_control_plane`): any shell command whose text contains substring `trust-ci` **and** a mutation signal is denied. `trust-ci/**` is both `control_plane_paths` and `protected_paths`. Product compose edits need structured Edit/Write or `scripts/grok_protected_write.py` with an exact protected-path grant — not `sed`/redirect. `scripts/grok_protected_write.py` only applies a manifest via `apply_manifest`; it does not special-case compose.
 

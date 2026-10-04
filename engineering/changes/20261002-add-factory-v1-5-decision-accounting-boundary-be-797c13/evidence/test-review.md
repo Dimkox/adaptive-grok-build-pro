@@ -2,7 +2,7 @@
 
 Route `797c13b3a4cf`; reviewed HEAD `f34735a4af5c785cc048ebc5b29af817e977a350`; stacked base `c78dfb301d4b957d338f9fbc61d1a9e6a7bf1fe5`.
 
-Candidate before/after: HEAD `f34735a4af5c785cc048ebc5b29af817e977a350`, tree `f7510d2ac3c076effc028e63ede976ac37068f67`, fingerprint `36a42e0ba964e33f6c1c453a517b220227ed9cf535afc9b636025547922f60b0`, empty dirty inventory. Private scratch `/home/pall/grok-projects/pr2c-test-review.eKQg24`, mode `0700`; mutations occurred only there and were restored.
+Candidate before/after: HEAD `f34735a4af5c785cc048ebc5b29af817e977a350`, tree `f7510d2ac3c076effc028e63ede976ac37068f67`, fingerprint `36a42e0ba964e33f6c1c453a517b220227ed9cf535afc9b636025547922f60b0`, empty dirty inventory. Private scratch `<local-path>`, mode `0700`; mutations occurred only there and were restored.
 
 reviewed-tree-modified: no
 
@@ -10,7 +10,7 @@ reviewed-tree-modified: no
 
 `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src taskset -c 0-27 python3 -m unittest factory.tests.test_decision_contracts tests.test_factory_v15_decisions -v` — exit 0, 26 tests, no skips; both wrappers expose the same class and discover 13 cases each.
 
-Scratch harness `/home/pall/grok-projects/pr2c-test-review.eKQg24/review_probes.py` (SHA-256 `aee1c1a704fe1979f717d924aab1e8d371e04bfb02364a53b91ecfbc08af2285`) applied one exact in-memory production replacement at a time and reran both surfaces.
+Scratch harness `<local-path>` (SHA-256 `aee1c1a704fe1979f717d924aab1e8d371e04bfb02364a53b91ecfbc08af2285`) applied one exact in-memory production replacement at a time and reran both surfaces.
 
 ## Mutation probes
 

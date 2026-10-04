@@ -174,7 +174,7 @@ This wave matches the change package: push existing tag + `gh release create`. N
 
 `verification.json` dirty paths (quoted UTF-8 leftovers + this package):
 
-- `engineering/changes/20260815-user-query-…-ad4090/evidence/*` merge/review leftovers, `implementation.md`, `requirements.md`, `state.json`
+- `engineering/changes/20260815-sanitized-query-…-ad4090/evidence/*` merge/review leftovers, `implementation.md`, `requirements.md`, `state.json`
 - `engineering/changes/20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96/**` (this package; not in `7c0ae75`)
 
 `.gitignore` covers `dist/`, `err.log`, `.grok-stack/runtime/*`, `__pycache__/`. Those are scratch / receipts, not published artifacts.

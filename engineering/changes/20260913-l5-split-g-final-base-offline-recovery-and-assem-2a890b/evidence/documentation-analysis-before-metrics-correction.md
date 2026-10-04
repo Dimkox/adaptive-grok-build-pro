@@ -1,6 +1,6 @@
 # Final G3 documentation analysis
 
-Read-only role-selected documentation reconciliation of source `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3`, branch `feat/l5-split-g-final-runtime`, exact HEAD `36e96367121595617ac432682b59730acc7c1df3`, route `2a890b6485a5`, genuine predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. The source checkout remained clean and unchanged. This report is written only in the matching same-repository evidence checkout. The full verifier was running during this analysis; this is not a substitute for that result or the selected independent code/test/data reviews.
+Read-only role-selected documentation reconciliation of source `<local-path>`, branch `feat/l5-split-g-final-runtime`, exact HEAD `36e96367121595617ac432682b59730acc7c1df3`, route `2a890b6485a5`, genuine predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. The source checkout remained clean and unchanged. This report is written only in the matching same-repository evidence checkout. The full verifier was running during this analysis; this is not a substitute for that result or the selected independent code/test/data reviews.
 
 ## One material documentation discrepancy
 

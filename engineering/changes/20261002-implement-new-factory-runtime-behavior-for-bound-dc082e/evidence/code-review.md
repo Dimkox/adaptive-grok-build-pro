@@ -3,7 +3,7 @@
 - Candidate: `ba973268b23935cf3300329bd911cf8acf23611d`
 - Base: `12a7fd63146c96cff655f1d9cf21184c465037ca`
 - Candidate fingerprint before/after: `1ff56f29eb0897609e9c2bb95e210e2e6aae5e7237395193fa0264cc6afb4e73` / same
-- Scratch: `/home/pall/.codex-review-scratch/pr3a-code-rereview-7X1UyN/repo` (private mode `0700`, detached exact HEAD)
+- Scratch: `<local-path>` (private mode `0700`, detached exact HEAD)
 - Findings: no Critical, Important, or Minor findings.
 - `reviewed-tree-modified: no`
 

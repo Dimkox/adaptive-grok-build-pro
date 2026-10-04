@@ -1,6 +1,6 @@
 # Independent release review — active bridge continuation
 
-Route: `68274cb876e4`. Reviewer: selected `release_reviewer`, independent of `integration_implementer`. Date: 2026-09-21. Repository: `/home/pall/grok-projects/adaptive-grok-build-ci-ingress`; inspected HEAD: `de966c932fff54c25df3f16dd3ade903975b9787`, with the narrow revised operation plan below pending its new commit/grant binding.
+Route: `68274cb876e4`. Reviewer: selected `release_reviewer`, independent of `integration_implementer`. Date: 2026-09-21. Repository: `<local-path>`; inspected HEAD: `de966c932fff54c25df3f16dd3ade903975b9787`, with the narrow revised operation plan below pending its new commit/grant binding.
 
 **Continuation recommendation: conditional GO. No blocking release defect found in the narrow revision.** The fresh typed gate and guarded start succeeded; peer/public HTTP reachability and all six private public-path controls have measured results. Resume with the corrected counter probes, then permit persistence and the guard-stop/disable/reactivation exercise only after initial acceptance and fresh exact grant binding. Do not reinstall, rerun initial start, or overwrite earlier results. Effective negative-control counters, persistence/recovery, real GitHub intake, and final delivery remain unproven; AC-003 is not complete.
 
@@ -19,11 +19,11 @@ Independently recomputed these SHA-256 values by reading the files; each matched
 | `adaptive-trust-ci-webhook-bridge-guard.service` | `60596d1771aed4ee0a9431ead99e7636f98a38aaa1f3ce0a0ab68477e6d3f1a1` |
 | `adaptive-trust-ci-webhook-bridge.nft` | `c68534932c19799421c4bd5c0a8fad57deeb3804fcbbd76e918f738f77aa989a` |
 
-The staged files reside under `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/`. I rechecked their hashes, the revised plan, and both manifest copies. The recorded `systemd-analyze verify` and `nft --check` exited zero without diagnostics. I inspected recorded results only; I did not rerun checks or perform host probes, network requests, tests, Docker operations, installation, or activation. The inspected revision is confined to the operation plan/evidence documents. The operations-only product-verifier exemption in `AGENTS.md` applies to this scope; it does not waive operational evidence.
+The staged files reside under `<local-path>`. I rechecked their hashes, the revised plan, and both manifest copies. The recorded `systemd-analyze verify` and `nft --check` exited zero without diagnostics. I inspected recorded results only; I did not rerun checks or perform host probes, network requests, tests, Docker operations, installation, or activation. The inspected revision is confined to the operation plan/evidence documents. The operations-only product-verifier exemption in `AGENTS.md` applies to this scope; it does not waive operational evidence.
 
 ## Executed boundary and preserved refusal
 
-Directly inspected these host-local results under `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/`:
+Directly inspected these host-local results under `<local-path>`:
 
 | Result | Observed outcome | SHA-256 |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ The narrow re-review also inspected and hashed these later files from the same h
 | `acceptance-initial-http.json` | Peer ready 200, peer webhook 405, ordinary public webhook 405; next private-path probe failed with explicit DNS-resolution timeout/000 | `1efeeafd0abd54eb7a20af838fa20cef6f45b5c45d630e22be84c36a64e51443` |
 | `acceptance-initial-counters.json` | Counter-read `TypeError` before any measured probe result; exit 1 remains a failed check | `86c20e84bc28ae2fea5305e173e7d2b7c5ab25af569f647d634fbd081cd6e377` |
 | `acceptance-private-http-retry.json` | Another DNS-resolution timeout/000; not a 404 result | `6439a92d104bb2129f2f07106ac219c794de8c136fd7d7ba96fb40bae524ba1b` |
-| `dns-observation.json` | Fresh lookup exited 0 in 0.090143 seconds and returned public IPv4 addresses, including `176.58.88.108` | `42dbeb18cb22e3f47bf8df95dd98c9838eac8bff0346941667bd8c44a1e1d6ab` |
+| `dns-observation.json` | Fresh lookup exited 0 in 0.090143 seconds and returned public IPv4 addresses, including `<redacted-ip>` | `42dbeb18cb22e3f47bf8df95dd98c9838eac8bff0346941667bd8c44a1e1d6ab` |
 | `acceptance-public-http-resolved.json` | Using that recorded address: webhook 405 and all six private paths 404, exit 0 throughout, recorded TLS hostname verification retained | `7fdee9213045b51573968d213295db6e9d09443ca595ef583a7e03ecfd382a8a` |
 
 These establish the recorded reachability and HTTP path outcomes, including private-path checks with DNS isolated. They do not establish normal resolver reliability, source-filter counter enforcement, persistence, stop ordering, reactivation, or real webhook POST intake. No new runtime probe was executed by this reviewer.
@@ -61,7 +61,7 @@ Inherited drop-ins remain forbidden: all three loaded identities must have exact
 
 The only service `Wants` exception is the measured implicit `tmp.mount` edge from `PrivateTmp=true`; the socket still requires no `Wants`, and all three units require no `Upholds`. This exception is conditional on the target remaining `not-found`, inactive, non-transient, with no fragment/drop-ins or activation dependencies, and both temporary paths resolving to the root mount. It therefore does not authorize creating, mounting, changing, or starting an existing mount definition. An actual `tmp.mount` definition or any other activation edge refuses continuation. The revised dependency sets and typed reads correct the earlier gate assumptions while preserving the operational resource boundary. The same complete gate repeats after stop/disable and before reactivation.
 
-The guard's nft transaction uses `create table`, so an existing table causes refusal rather than takeover. Every drop rule is limited to IPv4 destination `10.200.200.1`, TCP port `18080`; the exact veth and peer are required. The listener binds that address and `veth-vpn-h`. Guard dependencies and ordering precede both listener owners, and reverse stop ordering is designed to stop proxy and socket before guard table deletion. The proposed guard-stop exercise tests that lifecycle explicitly. Static ordering analysis remains a prediction until the operation records its result.
+The guard's nft transaction uses `create table`, so an existing table causes refusal rather than takeover. Every drop rule is limited to IPv4 destination `<redacted-ip>`, TCP port `18080`; the exact veth and peer are required. The listener binds that address and `veth-vpn-h`. Guard dependencies and ordering precede both listener owners, and reverse stop ordering is designed to stop proxy and socket before guard table deletion. The proposed guard-stop exercise tests that lifecycle explicitly. Static ordering analysis remains a prediction until the operation records its result.
 
 The existing `wg-vpn-namespace.service` and reciprocal veth pair are prerequisites. The plan requires the namespace already healthy, with its observed oneshot/active/exited state and unchanged addresses, before activation or recovery. An existing namespace failure is a stop condition; the operation does not repair/restart it. Existing API/Tailscale configuration, containers, deployed trust policy, holdout, images, databases, and trust material are outside the mutation boundary.
 
@@ -89,4 +89,4 @@ The coordinator must retain live operation results and final fingerprint-bound l
 
 A 405 GET establishes reachability only. A separately granted, current-head PR `ready_for_review` action may supply a real supported GitHub event after connectivity acceptance and release of the CPU reservation. Correlate real delivery/API/job/check identifiers where authorized readbacks expose them; otherwise mark that evidence unobserved. Never infer intake, queue membership, job success, or merge eligibility from a 405.
 
-Merge authority remains the external App-owned exact-head policy-epoch Check Run, currently `adaptive-trust-ci/verified@06ecf1c875bc` from App ID `4694114`, together with any required external signed scopes. Neither this report nor a delegated local grant replaces it. Refresh exact head/base/policy requirements before PR delivery or issue closure.
+Merge authority remains the external App-owned exact-head policy-epoch Check Run, currently `adaptive-trust-ci/verified@06ecf1c875bc` from App ID `<redacted-app-id>`, together with any required external signed scopes. Neither this report nor a delegated local grant replaces it. Refresh exact head/base/policy requirements before PR delivery or issue closure.

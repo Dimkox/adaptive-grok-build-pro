@@ -6,7 +6,7 @@ Source base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; candidate HEAD before/a
 
 reviewed-tree-modified: no
 
-Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/data-5b3-rou5Sn/snapshot`. `mktemp -d` created owner-only 0700 scratch below trusted owner-only 0700 parent. `git clone --quiet --no-hardlinks .worktrees/v211-combined-source <scratch>/snapshot` reproduced clean exact HEAD; canonical fingerprint matched before any scratch mutation. No candidate tests, generated artifacts, PostgreSQL, Docker, credentials, external actions, or subagents.
+Private scratch: `<local-path>`. `mktemp -d` created owner-only 0700 scratch below trusted owner-only 0700 parent. `git clone --quiet --no-hardlinks .worktrees/v211-combined-source <scratch>/snapshot` reproduced clean exact HEAD; canonical fingerprint matched before any scratch mutation. No candidate tests, generated artifacts, PostgreSQL, Docker, credentials, external actions, or subagents.
 
 Loaded complete fresh brief, selected data_reviewer instructions, adaptive-delivery/data-change/verification-evidence skills and package route ffb3d81e031f. Read approved recovery design and actual original-base product diff, reset leaf, both callers, surrounding disposable-target guard and migration tests. Historical e8a4 reports were not acceptance evidence.
 

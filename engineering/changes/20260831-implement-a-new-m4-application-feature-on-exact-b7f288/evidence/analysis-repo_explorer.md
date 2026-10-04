@@ -4,7 +4,7 @@
 
 - Worktree branch `milestone/m4-durable-control-plane-accepted-m3` is at `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` (`Merge pull request #11`), whose M3 parent is `1e73ff9` and accepted M2 parent is `022411b`.
 - The package objective names that SHA, but copied `route.json` still binds `base_commit` and `base_fingerprint` to `1c06299894279a88b881defa3f19b004fa742223`. This is a material exact-base/fingerprint inconsistency. Regenerate/transition route and package binding through workflow before implementation or receipts; do not hand-edit the route.
-- The prior M4 package was read only at `/home/pall/grok-projects/adaptive-grok-build-pro/engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471`. Its detailed design remains useful; its statements that M2/M3 are absent and approvals remain open are historical/stale on this checkout.
+- The prior M4 package was read only at `<local-path>`. Its detailed design remains useful; its statements that M2/M3 are absent and approvals remain open are historical/stale on this checkout.
 
 ## Exact M4 insertion map
 

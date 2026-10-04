@@ -23,7 +23,7 @@ Inspected the full product diff from the frozen base, the repair delta from `5ad
 
 ## Evidence and limits
 
-Directly inspected the raw repair logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/`: `review-red.log` records 19 tests in 6.771 seconds with 3 assertion failures and 8 errors; `review-green.log` records all 19 passing in 7.928 seconds. Inspected the corresponding test bodies and [review-repair.md](review-repair.md). The CLI JSON test uses a synthetic verification report and does not claim to execute the full gate.
+Directly inspected the raw repair logs under `<local-path>`: `review-red.log` records 19 tests in 6.771 seconds with 3 assertion failures and 8 errors; `review-green.log` records all 19 passing in 7.928 seconds. Inspected the corresponding test bodies and [review-repair.md](review-repair.md). The CLI JSON test uses a synthetic verification report and does not claim to execute the full gate.
 
 No new probe, project test suite, lint/compiler task, Docker workload, remote fetch, external write, secret read, or product modification was performed during this renewed review. The earlier 92-test and full-gate results describe the pre-repair tree and are not reused as current verification. The coordinator must run the mandatory final full gate and bind fresh receipts after evidence changes. This source-review pass does not replace the exact-PR-head external Trust CI check or required human scopes.
 

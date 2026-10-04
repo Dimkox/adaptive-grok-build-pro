@@ -1,6 +1,6 @@
 # Repository exploration — M0–M9 delivery state
 
-Inspected 2026-08-28 UTC in `/home/pall/grok-projects/adaptive-grok-build-pro-m3` for route `35568941ae59`. This is repository evidence only: it cannot establish the live state of GitHub, Trust CI, hosts, secrets, or deployment.
+Inspected 2026-08-28 UTC in `<local-path>` for route `35568941ae59`. This is repository evidence only: it cannot establish the live state of GitHub, Trust CI, hosts, secrets, or deployment.
 
 ## Branch and worktree facts
 

@@ -3,7 +3,7 @@
   "phase": "adjacent",
   "head": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
   "head_after": "cd0a7d7571bc6f4fbe2a8f2ad21dfe8731c33200",
-  "cwd": "/home/pall/grok-projects/adaptive-grok-build-reviewed-batch",
+  "cwd": "<local-path>",
   "argv": [
     "python3",
     "-m",

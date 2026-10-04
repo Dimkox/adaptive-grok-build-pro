@@ -65,7 +65,7 @@
   "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
   "governance_evidence_digest": "2b06c75592d279a866e47b04cbc3896bf7d81826720a6fa90d4de1697705eddc",
   "kind": "test_review",
-  "report": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-evidence/engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/test-review.md",
+  "report": "<local-path>",
   "route_id": "00652f60f78c",
   "schema_version": 1,
   "spec_digest": "a466ca0693bdb03911111f5fdd3fcb98ff765aa06d319390ca95c5cb7ef299c3",

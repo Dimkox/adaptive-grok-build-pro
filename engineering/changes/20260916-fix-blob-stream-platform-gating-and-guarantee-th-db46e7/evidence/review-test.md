@@ -10,9 +10,9 @@ Host: Python 3.12.3, git 2.43.0. All experiments in `/tmp/109-base` and `/tmp/10
 Sandbox construction (exactly reproducible):
 ```
 rm -rf /tmp/109-base /tmp/109-fix && mkdir -p /tmp/109-base /tmp/109-fix
-git -C /home/pall/grok-projects/adaptive-grok-build-109 archive 05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3 | tar -x -C /tmp/109-base
-git -C /home/pall/grok-projects/adaptive-grok-build-109 archive 8b4d82a6e215936360d34e176b1d2bb84b1896c6 | tar -x -C /tmp/109-fix
-cp /home/pall/grok-projects/adaptive-grok-build-109/tests/test_architecture_fitness.py /tmp/109-base/tests/test_architecture_fitness.py
+git -C <local-path> archive 05b69c7fbb1de7d7bc43f54863dd6cc95fdaa5f3 | tar -x -C /tmp/109-base
+git -C <local-path> archive 8b4d82a6e215936360d34e176b1d2bb84b1896c6 | tar -x -C /tmp/109-fix
+cp <local-path> /tmp/109-base/tests/test_architecture_fitness.py
 # verified: md5(/tmp/109-base/.../architecture_diff.py)=73d37ed6f7e87ff1b681442338059ce4 == `git show 05b69c7:...architecture_diff.py | md5sum`
 # verified: md5(/tmp/109-fix/.../architecture_diff.py)=72d71ae8a4e1231f0091ca31cc025c85 == `git show 8b4d82a:...architecture_diff.py | md5sum`
 ```
@@ -82,7 +82,7 @@ No network: git usage inside the arms is local only (`init -q -b main`, `config 
 
 ## Commands and evidence (full re-run recipe)
 
-1. Sandbox setup: block at top. 2. Red matrix: `cd /tmp/109-base && python3 -m unittest tests.test_architecture_fitness -k <arm> -v` (three arms; outputs quoted in §1). 3. Green: `cd /tmp/109-fix && python3 -m unittest tests.test_architecture_fitness` → `Ran 109 tests in 70.157s / OK`; leak probe: `python3 /tmp/leak_probe.py /tmp/109-fix` (script snapshot: fds via `/proc/self/fd`, children via `ps --ppid`, orphans via `pgrep -x sleep`). 4. Determinism: 5× `-k <arm>` loop (§3). 5. Mutations: string replacements against `/tmp/109-fix/.grok-stack/adaptive_grok/architecture_diff.py` as described in §4, module md5-restored to `72d71ae8a4e1231f0091ca31cc025c85` after each. 6. Issue trail: `gh issue view 109 …` (body contains the false os.name sentence) + `gh api repos/…/issues/109/comments` (public correction present, pre-merge). Worktree untouched: only `git show/diff/log/archive` were issued against `/home/pall/grok-projects/adaptive-grok-build-109`; `scripts/grok_verify.py` not executed (a gate was observed running: pid 3578581).
+1. Sandbox setup: block at top. 2. Red matrix: `cd /tmp/109-base && python3 -m unittest tests.test_architecture_fitness -k <arm> -v` (three arms; outputs quoted in §1). 3. Green: `cd /tmp/109-fix && python3 -m unittest tests.test_architecture_fitness` → `Ran 109 tests in 70.157s / OK`; leak probe: `python3 /tmp/leak_probe.py /tmp/109-fix` (script snapshot: fds via `/proc/self/fd`, children via `ps --ppid`, orphans via `pgrep -x sleep`). 4. Determinism: 5× `-k <arm>` loop (§3). 5. Mutations: string replacements against `/tmp/109-fix/.grok-stack/adaptive_grok/architecture_diff.py` as described in §4, module md5-restored to `72d71ae8a4e1231f0091ca31cc025c85` after each. 6. Issue trail: `gh issue view 109 …` (body contains the false os.name sentence) + `gh api repos/…/issues/109/comments` (public correction present, pre-merge). Worktree untouched: only `git show/diff/log/archive` were issued against `<local-path>`; `scripts/grok_verify.py` not executed (a gate was observed running: pid 3578581).
 
 ## Limits
 

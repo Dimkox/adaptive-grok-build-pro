@@ -17,7 +17,7 @@ Implementation tasks are intentionally absent. They require a later user-approve
 - [x] Write and self-review `docs/superpowers/plans/2026-08-28-m4-durable-factory-control-plane.md`.
 - [ ] Stack M3 on exact M2-A `635c9ddf2d63c1ea823074106976a8f3de6299a9`: Tasks 1–7 and their independent task reviews are complete through `73a45d1`; one final verifier/review wave and the first stacked PR remain open.
 - [ ] Stack M4 on reviewed M3, execute its TDD tasks including one real PostgreSQL exit run, run one final verifier/review wave, and open the second stacked PR.
-- [ ] After M4 API review, scope a separate `/home/pall/baby-bot` admin adapter/deployment change; require human Telegram token rotation and URL-log redaction before activation.
+- [ ] After M4 API review, scope a separate `<local-path>` admin adapter/deployment change; require human Telegram token rotation and URL-log redaction before activation.
 
 M5–M9 remain roadmap/design only and are not implementation tasks in the current M3 or next M4 PR.
 

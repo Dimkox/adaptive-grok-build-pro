@@ -8,7 +8,7 @@ User text (verbatim): «давай перечитывай гит своди вс
 
 ## 1. Outcome the user asked for in this turn
 
-Make **git tell one story** that matches live `claw` + GitHub, then **continue the next M0.2 proof that does not need public HTTPS or a human approval private key**.
+Make **git tell one story** that matches live `<ci-host>` + GitHub, then **continue the next M0.2 proof that does not need public HTTPS or a human approval private key**.
 
 Today the stories disagree:
 
@@ -29,22 +29,22 @@ This is **not** “сводим всё в релиз, коммитим, пуши
 **P0 — git matches live M0.1 / M0.2-partial**
 
 1. **Given** dirty M0 docs vs HEAD `1fc9420`, **when** the implementer stages an **explicit path list** (never `git add -A`) and commits on `milestone/m0-live-trust-authority`, **then** HEAD contains:
-   - `decisions.md` host-socket overlay + Check Run `97390635614` / App `4694114` / `action_required`
+   - `decisions.md` host-socket overlay + Check Run `97390635614` / App `<redacted-app-id>` / `action_required`
    - `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md` M0.1 worker-running via overlay; M0.2 Check Run marked **partial / local HMAC / not complete**; webhook still unchecked
    - `engineering/runbooks/trust-ci-activation-report.md` PR **5**, SHA `1fc942065a124ce75659bd082519d8ebc37774e8`, Check Run id `97390635614`, `external_id` `1b63d10b-90c1-498a-97b8-7b5e0ea76aec`
    - change packages `…-3e6166/` (overlay implementation evidence) and `…-85a17e/` (this slice)
-2. **Given** leftover paperwork, **then** these stay **unstaged**: `engineering/changes/20260823-user-query-сводим-всё-в-релиз-…-9d97f8/state.json`, `…-37bf04/`, `…-33e0c2/`.
+2. **Given** leftover paperwork, **then** these stay **unstaged**: `engineering/changes/20260823-sanitized-query-сводим-всё-в-релиз-…-9d97f8/state.json`, `…-37bf04/`, `…-33e0c2/`.
 3. **Given** the commit, **then** `python3 -m unittest trust-ci.tests.test_m0_invariants` and `python3 scripts/grok_verify.py --mode pr` pass. Characterization: report Check Run id is not `UNKNOWN`; plan still says local HMAC is not a registered webhook; spec/plan/report contain no `BEGIN RSA PRIVATE KEY` / PEM material.
 4. **Given** inspect of git / chat / report, **then** no PEM, JWT, webhook secret, installation token, or human approval private key appears.
 
 **P1 — continue: kill-switch drill (same slice, before the commit)**
 
-5. **Given** API ready on `127.0.0.1:18080` and compose project `adaptive-trust-ci` still up, **when** `adaptive-trust-ci kill-switch on`, **then** new webhook/approvals/claims are blocked (`503` / metrics `adaptive_trust_ci_kill_switch 1`). **When** `kill-switch off`, **then** `/health/ready` is 200 and kill-switch metric is 0. Do not leave `STOP` in place. Do not `compose down -v`.
+5. **Given** API ready on `<loopback-trust-ci>` and compose project `adaptive-trust-ci` still up, **when** `adaptive-trust-ci kill-switch on`, **then** new webhook/approvals/claims are blocked (`503` / metrics `adaptive_trust_ci_kill_switch 1`). **When** `kill-switch off`, **then** `/health/ready` is 200 and kill-switch metric is 0. Do not leave `STOP` in place. Do not `compose down -v`.
 6. Activation report field `Kill switch drill` becomes a dated pass (no secrets), not `UNKNOWN`.
 
 **P2 — cheap honest probe (same activation-report edit)**
 
-7. `GET http://127.0.0.1:18080/attestations/1b63d10b-90c1-498a-97b8-7b5e0ea76aec` (Bearer read token in env, never printed). Expected **404** because the job is `needs_approval` and did not sign. Record `Attestation verified offline` as `N/A (job needs_approval; GET 404)` — not a forged pass.
+7. `GET http://<loopback-trust-ci>/attestations/1b63d10b-90c1-498a-97b8-7b5e0ea76aec` (Bearer read token in env, never printed). Expected **404** because the job is `needs_approval` and did not sign. Record `Attestation verified offline` as `N/A (job needs_approval; GET 404)` — not a forged pass.
 
 Non-criteria: `GET .../hooks` stays empty; `GET .../branches/main/protection` stays 404; PR #5 stays draft; remote SHA may remain `1fc9420`.
 
@@ -82,7 +82,7 @@ Plan M0.2 checklist vs this host:
 | M0.2 item | This slice | Why |
 | --- | --- | --- |
 | Register `POST https://<ci>/webhooks/github` | **No** | No public HTTPS. Loopback HMAC is not a registered webhook. |
-| Disposable PR + App-owned Check Run `external_id=job_id` | **Already partial** | PR #5 SHA `1fc9420`, Check Run `97390635614`, App `4694114`, job `1b63d10b-…`, via **local HMAC**. Not M0.2 complete. Do not re-POST unless SHA changes. |
+| Disposable PR + App-owned Check Run `external_id=job_id` | **Already partial** | PR #5 SHA `1fc9420`, Check Run `97390635614`, App `<redacted-app-id>`, job `1b63d10b-…`, via **local HMAC**. Not M0.2 complete. Do not re-POST unless SHA changes. |
 | Offline attestation verify | **Probe only** | `needs_approval` jobs do not store an envelope. GET 404 is the honest result. `attestation-verify` uses the **CI public** key only if a file exists; do not read the worker signing private key. |
 | SHA change invalidates old check; policy/holdout retitle | **No** | New SHA must exist on GitHub (push). Policy/holdout bytes are deployed trust boundary — do not edit them here. |
 | `trust-ci/**` → `needs_approval` → human Ed25519 requeue of the **same** Check Run | **Half done** | `needs_approval` / `action_required` is already proven. Requeue **cannot** proceed: agents must not generate, read, or simulate the human approval private key. |
@@ -107,11 +107,11 @@ Dirty **in**:
 
 Dirty **out** (leftover paperwork, skip-no-op if they were the only delta):
 
-- `engineering/changes/20260823-user-query-сводим-всё-в-релиз-коммитим-пушим-мер-9d97f8/state.json` (`reviewing` → `released` for v2.0.12 — wrong branch)
+- `engineering/changes/20260823-task-9d97f8/state.json` (`reviewing` → `released` for v2.0.12 — wrong branch)
 - untracked `…-37bf04/` (PR #4 merge)
 - untracked `…-33e0c2/` (2.0.10 cleanup)
 
-Do not commit gitignored `trust-ci/env/*.env`, `trust-ci/runtime/*`, host overlay `/home/pall/adaptive-trust-ci-host/compose.host-socket.yaml`, or PEM files. The evidence **copy** of the overlay under `3e6166/evidence/` is documentation, not the live compose file.
+Do not commit gitignored `trust-ci/env/*.env`, `trust-ci/runtime/*`, host overlay `<local-path>`, or PEM files. The evidence **copy** of the overlay under `3e6166/evidence/` is documentation, not the live compose file.
 
 `build/stage_m02.py` stages the wrong change (`421a1d`). Do not run it. Explicit `git add -- <paths>`.
 
@@ -153,7 +153,7 @@ Local commit does not require `git-push-branch`. Pushing would move PR #5 off th
 
 Protected-path: further `decisions.md` or `trust-ci/tests/test_m0_invariants.py` edits need an exact `protected-path-write` grant on this route/change/HEAD/fingerprint. First mutation consumes it (`mistakes.md` 2026-08-23). Batch or re-mint.
 
-Kill-switch / `docker compose` on project `adaptive-trust-ci`: mint a **new** `external-write` grant for **this** `change_id` `20260824-m0-consolidate-git-and-continue-live-authority-p-85a17e` and route `85a17ed2e935` only if the implementer actually runs compose/kill-switch. User «продолжай» plus standing compose-up on `claw` is enough to mint that **narrow** grant; it is **not** enough to mint `git-push-branch`. Resource must be exact (compose project or kill-switch CLI), not `*`.
+Kill-switch / `docker compose` on project `adaptive-trust-ci`: mint a **new** `external-write` grant for **this** `change_id` `20260824-m0-consolidate-git-and-continue-live-authority-p-85a17e` and route `85a17ed2e935` only if the implementer actually runs compose/kill-switch. User «продолжай» plus standing compose-up on `<ci-host>` is enough to mint that **narrow** grant; it is **not** enough to mint `git-push-branch`. Resource must be exact (compose project or kill-switch CLI), not `*`.
 
 ## 8. Non-goals
 

@@ -174,7 +174,7 @@ Ship set (path-limited):
 | `decisions.md`, `mistakes.md` | ba1615 live logs (if still uncommitted) |
 | `engineering/decisions.md`, `engineering/mistakes.md` | stubs |
 | `AGENTS.md` | root-name bullets (if still uncommitted) |
-| `engineering/changes/20260816-user-query-я-все-еще-не-вижу-файлов-из-промпта-д-ba1615/` | predecessor package |
+| `engineering/changes/20260816-task-ba1615/` | predecessor package |
 | `engineering/changes/20260816-the-user-sent-a-message-while-you-were-working-u-a13da8/` | this package |
 
 Do **not** stage leftover dirt from `ad4090`, `39b13f`, `d55ce4`, or other unrelated packages. Including `04ae05` / `0f3d94` packages is optional and not required to accept the push.

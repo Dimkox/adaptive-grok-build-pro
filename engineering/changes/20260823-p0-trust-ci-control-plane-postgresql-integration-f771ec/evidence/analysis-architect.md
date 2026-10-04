@@ -201,7 +201,7 @@ Order on the host:
 3. Generate CI attestation key on the CI server or secret manager; mount private PEM worker-only; publish the public key for offline verify.
 4. Install the reviewed holdout **outside** any checkout (`TRUST_CI_HOLDOUT_SOURCE_PATH` absolute). `adaptive-trust-ci holdout-digest --path …` must match policy `holdout.digest`.
 5. `docker compose up -d postgres migrate api worker` using digest-pinned image env vars. `runner-loader` must resolve `TRUST_CI_RUNNER_IMAGE` to the same digest before the worker starts.
-6. `curl -fsS http://127.0.0.1:8080/health/ready` then terminate TLS at a reverse proxy. Expose `/webhooks/github` and `/approvals`. Keep `/jobs/*`, `/attestations/*`, `/metrics` bearer-protected.
+6. `curl -fsS http://<loopback-service>/health/ready` then terminate TLS at a reverse proxy. Expose `/webhooks/github` and `/approvals`. Keep `/jobs/*`, `/attestations/*`, `/metrics` bearer-protected.
 7. Confirm backup target and `adaptive-trust-ci-backup.timer` (or equivalent) exist. Store dumps separately from every private key class. Run a restore drill against a disposable DSN with `--confirm-disposable` before calling recovery proven.
 
 `TRUST_CI_PUBLIC_BASE_URL` must be HTTPS outside localhost.

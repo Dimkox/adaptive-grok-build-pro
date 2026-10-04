@@ -6,7 +6,7 @@ Date: 2026-08-26
 
 This is local test evidence only. It does not describe or authorize a deployed Trust CI database, worker, holdout, policy, App check, approval, merge, or production operation.
 
-- The ignored repository-root `.env` is mode `0600`. An authorized local setup copied `POSTGRES_USER` and `POSTGRES_PASSWORD` from `/home/pall/app-stack/.env` and added `TRUST_CI_TEST_DATABASE_URL`; no value is recorded here or committed.
+- The ignored repository-root `.env` is mode `0600`. An authorized local setup copied `POSTGRES_USER` and `POSTGRES_PASSWORD` from `<local-path>` and added `TRUST_CI_TEST_DATABASE_URL`; no value is recorded here or committed.
 - The dedicated database is `adaptive_grok_build_pro_test` in the already-running local `app-stack` container `postgres-db`. No application database was used for the tests.
 - The four migration-referenced roles are `trust_ci_api`, `trust_ci_worker`, `trust_ci_migrator`, and `trust_ci_backup`. They were created as `NOLOGIN` roles and granted access only to the dedicated test database and its schema.
 

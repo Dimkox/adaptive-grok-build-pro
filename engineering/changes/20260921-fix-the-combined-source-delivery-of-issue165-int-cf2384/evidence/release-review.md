@@ -3,7 +3,7 @@
 Status: **PASS for the bounded local/source release review.** Final frozen-tree verification, all current review receipts and external delivery remain required. This report does not authorize merge, installation, migration execution, deployment, tagging or publication.
 
 - Role: `release_reviewer`; route `cf23849faca6`.
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-factory-tooling`.
+- Repository: `<local-path>`.
 - Reviewed branch: `fix/factory-tooling-batch-20260921`.
 - Reviewed HEAD: `c8ed34d0731e12e65f75f568d8fb3e9f0f64b2d5`.
 - Reviewed Git tree: `5f481c6555b22df363f14d5d2d96d6d03a2c624c`.
@@ -54,7 +54,7 @@ One nonblocking documentation clarification is required during the already plann
 
 Before claiming local completion, freeze the reports and handoff, run the complete final verifier, record all five selected current review receipts, and confirm zero evidence gaps. A product change requires renewed affected review and verification. Historical result adoption or this report alone cannot satisfy those steps.
 
-Before merge, use the delegated exact branch/PR/merge operations and require `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App **4694114** on the actual final up-to-date head/base, with any required external signed approval scopes. Recheck the deployed policy epoch if it changes. The PR #173 check establishes only the delivered prerequisite; it grants no authority to this successor. Deployed policy, holdout, signing material, trust stores and branch protection remain outside this PR.
+Before merge, use the delegated exact branch/PR/merge operations and require `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App **<redacted-app-id>** on the actual final up-to-date head/base, with any required external signed approval scopes. Recheck the deployed policy epoch if it changes. The PR #173 check establishes only the delivered prerequisite; it grants no authority to this successor. Deployed policy, holdout, signing material, trust stores and branch protection remain outside this PR.
 
 After actual successor delivery, closure is limited to **#165, #163 and #118**. **#62 remains open** for bounded failing-command output in App Check Runs; #158 and trusted-validator seven-kind compatibility remain separate. Retained **PR #135 closes only after its successor merges**. PRs #171/#172 are already recorded as closed after PR #173 delivery. No tag, GitHub Release, provider call, live service change or migration execution is implied.
 

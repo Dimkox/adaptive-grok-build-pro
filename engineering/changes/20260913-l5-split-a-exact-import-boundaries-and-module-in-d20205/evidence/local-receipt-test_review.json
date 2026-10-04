@@ -64,7 +64,7 @@
   "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
   "governance_evidence_digest": "040eaef3efb5bafde9ab840f8a92afd3accca90a83e01e009718a19654c51078",
   "kind": "test_review",
-  "report": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-evidence/engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/test-review.md",
+  "report": "<local-path>",
   "route_id": "d20205a1a318",
   "schema_version": 1,
   "spec_digest": "d90a628e31260d5e5b08d1f7cf860a5374554a044b12d8c19f50df1eb26e43a1",

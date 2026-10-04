@@ -1,6 +1,6 @@
 # Slice A bounded architecture ruling
 
-Route `d20205a1a318`; working tree `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a`; genuine base `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`; frozen source `f31406e970d67f7cd59694da5de88915adb0fa68`. Read-only analysis of repository content; this report is outside the repository. No product edits, test execution, secrets or external actions. Root owns durable documentation; `integration_implementer` remains sole product/test writer.
+Route `d20205a1a318`; working tree `<local-path>`; genuine base `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`; frozen source `f31406e970d67f7cd59694da5de88915adb0fa68`. Read-only analysis of repository content; this report is outside the repository. No product edits, test execution, secrets or external actions. Root owns durable documentation; `integration_implementer` remains sole product/test writer.
 
 ## Ruling: extraction is coherent within five product/test paths
 

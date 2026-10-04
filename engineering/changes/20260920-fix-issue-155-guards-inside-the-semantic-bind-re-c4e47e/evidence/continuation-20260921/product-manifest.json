@@ -2405,207 +2405,207 @@
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/architecture.md": {
+    "engineering/changes/20260815-task-661035/architecture.md": {
       "sha256": "3b2aa876432eb7335ea0031e47f0981da81d405a5c1f2a5f134f9e12e4e77d95",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/brief.md": {
+    "engineering/changes/20260815-task-661035/brief.md": {
       "sha256": "9d3c69859170f953ab8f91e29a6e66cdbf4ad51fe0de0ede717e673219aa5772",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/README.md": {
+    "engineering/changes/20260815-task-661035/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/analysis-architect.md": {
+    "engineering/changes/20260815-task-661035/evidence/analysis-architect.md": {
       "sha256": "a3e9a4d2fdcf53235f1247532fefa6b3b4408c381d3f949a0ba4fd6ea9c6e3f2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260815-task-661035/evidence/analysis-repo_explorer.md": {
       "sha256": "1600dee70f316248660501e432b63451e07caa5c08323a3179e58d87dbed5cca",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260815-task-661035/evidence/analysis-task_analyst.md": {
       "sha256": "4edc3f2048fba00f413dbd70e6da85e72117ed9b70aa67adf002fb37bfc1ce18",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/code-review.md": {
+    "engineering/changes/20260815-task-661035/evidence/code-review.md": {
       "sha256": "944aea41886c2156cbfc429da126e39d943e97cc1c91dadeb4bf397fa9fc9645",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/evidence/test-review.md": {
+    "engineering/changes/20260815-task-661035/evidence/test-review.md": {
       "sha256": "71119c92bcbe9203270412274019cb014f49a229e63ccb3684678edc3c59793b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/release.md": {
+    "engineering/changes/20260815-task-661035/release.md": {
       "sha256": "da5dd13a893bebf483e56f5d2d1c6d5db07c591eb7dc55fcbf45e9789998fd51",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/requirements.md": {
+    "engineering/changes/20260815-task-661035/requirements.md": {
       "sha256": "e8e3463cbc3ad7b31f1e84c5ab1aa0cd9502b552e368c1887999f86171f3edee",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/rollback.md": {
+    "engineering/changes/20260815-task-661035/rollback.md": {
       "sha256": "b3e9747fe4d93754f730621c882f2ce5708a70b5b85269898b03e20cdb42603b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/route.json": {
+    "engineering/changes/20260815-task-661035/route.json": {
       "sha256": "5444b2ba8140716714762221408dfb9f71da390f564348e7a7c6d45b2acceb49",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/state.json": {
+    "engineering/changes/20260815-task-661035/state.json": {
       "sha256": "a2d784a348efc0cf2cd6e842d69b5f8f7aa79ad893866e40b7b050f2d4ce23c5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/tasks.md": {
+    "engineering/changes/20260815-task-661035/tasks.md": {
       "sha256": "5ef401f79b84bfd609a276f49b5b26b2011766acc7762003664ef299992311b0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0430-\u0447\u0435-\u0431\u044b-\u0438-\u043d\u0435-\u0434\u0435\u0441\u044f\u0442\u044c-\u0430\u0433\u0435\u043d\u0442\u043e\u0432-\u0432-\u043f\u0430\u0440\u0430\u043b\u043b\u0435-661035/test-plan.md": {
+    "engineering/changes/20260815-task-661035/test-plan.md": {
       "sha256": "97bd3ceff6e910859e538398231ebe1f7c32e857f79c238ca44d2820ed404fd5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/architecture.md": {
+    "engineering/changes/20260815-task-ad4090/architecture.md": {
       "sha256": "f731b53652ad363c2353fa321b7762bdc3cd0eacd1dfe6c4f7e7adf1ff24766e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/brief.md": {
+    "engineering/changes/20260815-task-ad4090/brief.md": {
       "sha256": "0f51ec3794f35ed6615ad2645d05a10c7feb855b9c39504f3db1f41a4539394b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/README.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-architect-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-architect-merge.md": {
       "sha256": "83e06e3e6c575e981ade3b8811a6026e45012dac036e674067c9720b5a7bd089",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-architect.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-architect.md": {
       "sha256": "6becab567c43cb703a82f24840467ba617119a0dc94739816bab954416593f50",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-docs_researcher-continue.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-docs_researcher-continue.md": {
       "sha256": "85208797158fe5f5bc5146325d7fe05dbaa22df5438b2c1959ae45439b49bc42",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-docs_researcher-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-docs_researcher-merge.md": {
       "sha256": "58d941caa34e8eb7cfa75896f5b6378315c939b67b8559d9946fa55145211a76",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-docs_researcher.md": {
       "sha256": "920a12604575c0451253d0ce2e28b5add14ea4bab927a8412085302d51b0cfc5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-repo_explorer-continue.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-repo_explorer-continue.md": {
       "sha256": "1a2ece0e45620bfd41da1abb018b92076a77f4a0ed158de02b387455a8ae18d3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-repo_explorer-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-repo_explorer-merge.md": {
       "sha256": "e1c78b023840804b132b8eea33c9acba9d3e1ee06c256034ab20a9bb20c73a97",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-repo_explorer.md": {
       "sha256": "64a7a1b1a769eeebd86ea2c208078d3988845eac5a9f905556f534a7a7c2f964",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-task_analyst-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-task_analyst-merge.md": {
       "sha256": "f262e890ef731aeadfdd63ea89f0de2491d3344877057810dfbff0833bf52b69",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/analysis-task_analyst.md": {
       "sha256": "769a4187fc7664813c95e34f17a5acca2d05b1fd12cabdd608597f5bed487368",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/code-review-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/code-review-merge.md": {
       "sha256": "2ab61092b21c4bdec6997f12884141787882d80a6f07be9ff66dc68f0c715630",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/code-review.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/code-review.md": {
       "sha256": "9714af762c0a34b136dd78a0a0d86c223e3d1cb0f7a3c35fa4ef004d64b0abf6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/human-approval.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/human-approval.md": {
       "sha256": "6761b9af6cdf0117a8189ddacd0ececd71e47ee9f962a079b494782885fdd057",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/implementation.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/implementation.md": {
       "sha256": "ae3863bdb0a7d3f1b9b8d9598f794dce61a0a24e7122fa3579c8191bff43d923",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/test-review-merge.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/test-review-merge.md": {
       "sha256": "18cc79f22711647a98866d5eb84c672398e6fa38d0e57156d8d84fa45c4e2c50",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/evidence/test-review.md": {
+    "engineering/changes/20260815-task-ad4090/evidence/test-review.md": {
       "sha256": "bbb1d1a372fd4f6e13635c41833b4e694cba54af759e79c623a57c558d2abbfc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/release.md": {
+    "engineering/changes/20260815-task-ad4090/release.md": {
       "sha256": "9a7081132ff544872dc5d605a61a2b56a6ade62c950325fca8a230321673f355",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/requirements.md": {
+    "engineering/changes/20260815-task-ad4090/requirements.md": {
       "sha256": "1b90b67d27ed8259bb6baabaeccbfab5a67c2ca4cdb1bfce83d1e30b8907f2a0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/rollback.md": {
+    "engineering/changes/20260815-task-ad4090/rollback.md": {
       "sha256": "93a3556e39f6add0eabc5c520cfb206c71c5e7acf4a90e2cb3101930e95faaa1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/route.json": {
+    "engineering/changes/20260815-task-ad4090/route.json": {
       "sha256": "c409e81c731f7bbc4f49e10895e30e025a536157319b18706a97689934bbeeb3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/state.json": {
+    "engineering/changes/20260815-task-ad4090/state.json": {
       "sha256": "c291e517ca53f6d04206336b145a491b923c68c2804b489ab4091606cd3ada51",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/tasks.md": {
+    "engineering/changes/20260815-task-ad4090/tasks.md": {
       "sha256": "d4d6223d0fa17fe4a6d16d99d7d6b5467e4801f8f3ded48221ee6962512beab1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260815-user-query-\u0433\u0438\u0442-\u043f\u0443\u0448-\u043f\u0430\u043a\u0435\u0442-\u0440\u0435\u043b\u0438\u0437-user-query-ad4090/test-plan.md": {
+    "engineering/changes/20260815-task-ad4090/test-plan.md": {
       "sha256": "675b19a2256c12c944756b58d445f5b11bc90dad585154d54d1cf82606c5df11",
       "kind": "file",
       "mode": 33204
@@ -3690,412 +3690,412 @@
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/architecture.md": {
+    "engineering/changes/20260816-task-37141f/architecture.md": {
       "sha256": "ff4f0997fbeb791468616ca2605fd0bee0a9b587bb54c9f30ca563e319737d15",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/brief.md": {
+    "engineering/changes/20260816-task-37141f/brief.md": {
       "sha256": "d9b267478d60386e88743b56b05d578d34cd767c26eb75c97ca0ff8d7ecb777b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/evidence/README.md": {
+    "engineering/changes/20260816-task-37141f/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260816-task-37141f/evidence/analysis-repo_explorer.md": {
       "sha256": "950f2052f8decf10e70db30e6e8c372f04761c96091f1d7e75d1fc175a624110",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/evidence/code-review.md": {
+    "engineering/changes/20260816-task-37141f/evidence/code-review.md": {
       "sha256": "acddb2a31e0e4ded098562ee42607786599a8940eb68f3ad78c756fc40e482b6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/evidence/implementation.md": {
+    "engineering/changes/20260816-task-37141f/evidence/implementation.md": {
       "sha256": "6265f3f4c7732a2564de66f852a8948264c9fec6f1a7e3d523ffaa51add34276",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/release.md": {
+    "engineering/changes/20260816-task-37141f/release.md": {
       "sha256": "081129a2fb057167a10198215be49330d408625c7af73356f8ad387a91090efa",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/requirements.md": {
+    "engineering/changes/20260816-task-37141f/requirements.md": {
       "sha256": "fdcf0f439f9eab0218cb66ae4c49c41414309a7ee9652fa89fc14c6ea2aa1958",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/rollback.md": {
+    "engineering/changes/20260816-task-37141f/rollback.md": {
       "sha256": "e64dd3fb70fd32676bcff518d7429645ba9807cb8ae1e16936e6195357795ab5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/route.json": {
+    "engineering/changes/20260816-task-37141f/route.json": {
       "sha256": "4beb311ee7fcc1326a8c76f8a017464bca413a1a535648e7f12d86df0e34f908",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/state.json": {
+    "engineering/changes/20260816-task-37141f/state.json": {
       "sha256": "a4a09ced05dc0a34a2ba039b6c94613e58857bb4307fec32632edecf889ba693",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/tasks.md": {
+    "engineering/changes/20260816-task-37141f/tasks.md": {
       "sha256": "6bb8d0c004ba4e6c4f2d0e0667df8c86bd01e6e32388b74de2ea9da886aacef9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0435\u0440\u0435\u0441\u043e\u0431\u0438\u0440\u0430\u0439-\u0441\u0435\u0431\u044f-\u043f\u043e\u0434-\u0441\u043b\u0435\u0434\u0443\u0449\u0435\u0439-\u0432\u0435\u0440\u0441\u0438\u0435\u0439-37141f/test-plan.md": {
+    "engineering/changes/20260816-task-37141f/test-plan.md": {
       "sha256": "3f3ff1978f56802a0f599f72c6767f895cc8ef3ce88bce3e90e428e5271e742d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/architecture.md": {
+    "engineering/changes/20260816-task-ff295d/architecture.md": {
       "sha256": "ecb804bee4c7f1bf1da123656684932e412442aab514f856b6fd4e7f9c5b1258",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/brief.md": {
+    "engineering/changes/20260816-task-ff295d/brief.md": {
       "sha256": "ff917ac8b440705539328a093e5d0e493abd4f37ef814af1acff636991df2313",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/evidence/README.md": {
+    "engineering/changes/20260816-task-ff295d/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/evidence/analysis-architect.md": {
+    "engineering/changes/20260816-task-ff295d/evidence/analysis-architect.md": {
       "sha256": "d84b2fca7340ecb39e7ab5a2aabd3f7971da46ea26ed2bbad844d6a6790c6221",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260816-task-ff295d/evidence/analysis-docs_researcher.md": {
       "sha256": "c5ca34b80009378dcd51c93c6b33f7b3a33f0f3c1c9751fe602ade987cbdfc94",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260816-task-ff295d/evidence/analysis-repo_explorer.md": {
       "sha256": "bfddb93a4e1b38c42708c6321afed043325e2527f4c62ed75f29fb703735027c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260816-task-ff295d/evidence/analysis-task_analyst.md": {
       "sha256": "6625069175ef4186e7ad59f5abed6e5237d705975d536df05a50937e3b4c7fb6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/release.md": {
+    "engineering/changes/20260816-task-ff295d/release.md": {
       "sha256": "d1f36bd5886b72300b08d50cb1d37540839a48d82b045d9c1a59447051767080",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/requirements.md": {
+    "engineering/changes/20260816-task-ff295d/requirements.md": {
       "sha256": "fb42f4d1d432e74cdf18b992e29873e0927ee6600609b87ac4f027b2ac5fb545",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/rollback.md": {
+    "engineering/changes/20260816-task-ff295d/rollback.md": {
       "sha256": "fa36c8ad37af56b55ea7f51212fa05d0b56a8dabb56a94d6b6e28de8a04050c4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/route.json": {
+    "engineering/changes/20260816-task-ff295d/route.json": {
       "sha256": "db24c19a8a3e8a8afe34589a937bb2a8265aac11a2659083cbca1b374a271512",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/state.json": {
+    "engineering/changes/20260816-task-ff295d/state.json": {
       "sha256": "43b3a9d299fd1c3d12608bbb2a1476e5c82cdf0ce85e3ad2c9af1586129faf23",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/tasks.md": {
+    "engineering/changes/20260816-task-ff295d/tasks.md": {
       "sha256": "c5887e9eb32d61042732ac525843d20f4b0751b2acdca77b31f022896a499232",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u043f\u0438\u0437\u0434\u0435\u0446-\u0442\u044b-\u043a\u043e\u043d\u0447\u0435\u043d\u044b\u0439-\u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0439-\u0432\u0441\u0435-\u0438\u0437\u043c\u0435\u043d-ff295d/test-plan.md": {
+    "engineering/changes/20260816-task-ff295d/test-plan.md": {
       "sha256": "7671badc1a3f86f1c5b7190aa8a511dc1b9b08333f643e4b63c114d55b170974",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/architecture.md": {
+    "engineering/changes/20260816-task-06a59f/architecture.md": {
       "sha256": "c2b7f6c01d0035d91b1f98977afbf1de384e608b781992fcb65389e83bb3fee5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/brief.md": {
+    "engineering/changes/20260816-task-06a59f/brief.md": {
       "sha256": "2fda91ffd5e239fc57511336f1a9cd60888dba0a26e76215f8408d8d3643cfcc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/evidence/README.md": {
+    "engineering/changes/20260816-task-06a59f/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/evidence/human-approval.md": {
+    "engineering/changes/20260816-task-06a59f/evidence/human-approval.md": {
       "sha256": "40e643bba3a85b33c1f8749e670a6f78d8f36a9874294da0a1db2338eee0634d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/release.md": {
+    "engineering/changes/20260816-task-06a59f/release.md": {
       "sha256": "31007e1c12eb1f2beb5947bbf7a0dae67fbc6a41dafda964c6b78e19e6f5244c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/requirements.md": {
+    "engineering/changes/20260816-task-06a59f/requirements.md": {
       "sha256": "a2d9dfad5411e121281441f12a45b567fe5139a1d7bd2a5e94e711f5da1cfa8c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/rollback.md": {
+    "engineering/changes/20260816-task-06a59f/rollback.md": {
       "sha256": "81bb5bf3b05f9bf48ba343c53fbdd38099829e65b2f10d629b9a3c1eee92a430",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/route.json": {
+    "engineering/changes/20260816-task-06a59f/route.json": {
       "sha256": "8c7936e01d16ecbf96584bb8d0a69586bced84358d732d2160dfed7c67dcf090",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/state.json": {
+    "engineering/changes/20260816-task-06a59f/state.json": {
       "sha256": "fce1cc516d4527de1590765346be2b4bb231fe86427490108380368735e9b450",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/tasks.md": {
+    "engineering/changes/20260816-task-06a59f/tasks.md": {
       "sha256": "91407a97a23543a15ed6fc8273312fbcb9c943df2cff5636e6c0f1100964fcc5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0440\u0435\u043b\u0438\u0437-\u0441\u0434\u0435\u043b\u0430\u0439-user-query-06a59f/test-plan.md": {
+    "engineering/changes/20260816-task-06a59f/test-plan.md": {
       "sha256": "73d110b38b9e32567b17fcb6ced3e83d1282ba6357154ed951b7d001a9e8f811",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/architecture.md": {
+    "engineering/changes/20260816-task-d55ce4/architecture.md": {
       "sha256": "77f09d5a512f47441c7ba2d667f328a3eeedd309299b446e8099addb83a80fb8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/brief.md": {
+    "engineering/changes/20260816-task-d55ce4/brief.md": {
       "sha256": "02e954b567a29afad508b321de500bee2c47c7987d98f8f9bbcfcdcf33c46451",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/README.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/analysis-architect.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/analysis-architect.md": {
       "sha256": "3f27faf7f14d23d0aa9f10242005e898c5b3fba43203faaa87b45e238ae36bb4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/analysis-docs_researcher.md": {
       "sha256": "e2d15f8694ce7c397c4e7be2ad9ca5acf73d39fd7b23fc4a6f83e17035055137",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/analysis-repo_explorer.md": {
       "sha256": "833c21bddbdc740e34d9f02a8273df3cc1e3322d86dbf9736709810ae7e83093",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/code-review.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/code-review.md": {
       "sha256": "0bc6a78c31a43c75ef67aba29579008093986f4b5126837e2a32c469a9233f29",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/implementation.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/implementation.md": {
       "sha256": "6c5ff5482bcb1e87c6d06f45b044d58466d9a4a466ea0676bb8054b3d9b82c76",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/evidence/test-review.md": {
+    "engineering/changes/20260816-task-d55ce4/evidence/test-review.md": {
       "sha256": "baeae195a12320cd7677b68a46f256fbc173eac092b55fe78e985f651c7b1f94",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/release.md": {
+    "engineering/changes/20260816-task-d55ce4/release.md": {
       "sha256": "b87724817796f67906d1862658330e61d872afdd3258fe35525565dd92bb7602",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/requirements.md": {
+    "engineering/changes/20260816-task-d55ce4/requirements.md": {
       "sha256": "f318b9b4888a5c72d6906581c3c979eddf1d56d481751a471f3abb9ba3b744c6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/rollback.md": {
+    "engineering/changes/20260816-task-d55ce4/rollback.md": {
       "sha256": "7e020b52ead3024c47371aaf049a8958aaada01c7e88a93f73d421fe55f1cdf9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/route.json": {
+    "engineering/changes/20260816-task-d55ce4/route.json": {
       "sha256": "edd27445b8edf95cbd2bba25e091e119228d5732b597ed47899e90af56b29f29",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/state.json": {
+    "engineering/changes/20260816-task-d55ce4/state.json": {
       "sha256": "dedec85103eb84be29b93e55b6cfdc594884fee9466a295fb1f9c816599bee1c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/tasks.md": {
+    "engineering/changes/20260816-task-d55ce4/tasks.md": {
       "sha256": "e385f81c2a43c36c0b8068645fbf31fae5bfa75de5f7ecc06b2003387a234a6b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0441\u043a\u0430\u0436\u0438-\u043c\u043d\u0435-\u0435\u0431\u0430\u043d\u0430\u044f-\u043f\u0438\u0434\u0440\u0438\u043b\u0430-\u0433\u0434\u0435-\u0442\u044b-\u043f\u0440\u043e\u0435\u0431-d55ce4/test-plan.md": {
+    "engineering/changes/20260816-task-d55ce4/test-plan.md": {
       "sha256": "737a8d97e4711effb5e1fbbac98e4875fda9d075db11489dfcd06296e127b495",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/architecture.md": {
+    "engineering/changes/20260816-task-8fe260/architecture.md": {
       "sha256": "c84e0fa29bc8e0cce1ac358a557f27b0138c2fbf12445a4784754b93d8ae59e3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/brief.md": {
+    "engineering/changes/20260816-task-8fe260/brief.md": {
       "sha256": "1468ade4679c765d051014c317673ee0a27bb636290b4f3d30aa92b18695882f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/evidence/README.md": {
+    "engineering/changes/20260816-task-8fe260/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/evidence/human-approval.md": {
+    "engineering/changes/20260816-task-8fe260/evidence/human-approval.md": {
       "sha256": "91ee65de12af1548258479a0f43ebb9e9bb94f959d7c6d69b633bd1cee167e0b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/release.md": {
+    "engineering/changes/20260816-task-8fe260/release.md": {
       "sha256": "58be82c3beff86c34df702bd0ba2216987bc3dafbc2549ef10d268cce425667b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/requirements.md": {
+    "engineering/changes/20260816-task-8fe260/requirements.md": {
       "sha256": "cac3ffdd35b571235feaf719704db9437647371c16af6913992899c0766fd5da",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/rollback.md": {
+    "engineering/changes/20260816-task-8fe260/rollback.md": {
       "sha256": "946e104e77b16265dfd477856b2f227a922bebb8b487b7052d61d7ea0f01caf0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/route.json": {
+    "engineering/changes/20260816-task-8fe260/route.json": {
       "sha256": "6b7ee9c9dcba1c325473adbf5050722280642378026b963727ecd1a632db7504",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/state.json": {
+    "engineering/changes/20260816-task-8fe260/state.json": {
       "sha256": "4878dbc22172cddd49a4568709f21a2182c733e3b1c7cc2a169fbe28d212e90e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/tasks.md": {
+    "engineering/changes/20260816-task-8fe260/tasks.md": {
       "sha256": "63b683147e20f83101653970efa3713b384ee7464260f9c3d518e8d59ddbbcb7",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u0442\u0430\u043a-\u043f\u0443\u0448-\u0438-\u043d\u043e\u0432\u0430\u044f-\u0432\u0435\u0440\u0441\u0438\u044f-\u0440\u0435\u043b\u0438\u0437\u0430-\u0441\u0443\u043a\u0430-\u0434\u0430-8fe260/test-plan.md": {
+    "engineering/changes/20260816-task-8fe260/test-plan.md": {
       "sha256": "e47a92227830dba3bb8cff9e82091d5e08066e13febc4238b6aedd28ee387ecf",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/architecture.md": {
+    "engineering/changes/20260816-task-ba1615/architecture.md": {
       "sha256": "d86f7168a2249b1201e5ea5abc90d49ae9d37219b61849e96c73b86adb20a146",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/brief.md": {
+    "engineering/changes/20260816-task-ba1615/brief.md": {
       "sha256": "f01b3f063c4719f85deb71fbd9deef1d103d3e3ba53b4a9c19a72a2a8216596c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/README.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/analysis-architect.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/analysis-architect.md": {
       "sha256": "00f2c7cd087d0d7e8bdb436e798edc15cade9f62e519449f99417bb0ea18ca5c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/analysis-docs_researcher.md": {
       "sha256": "bae9a25aec1d708f9bc48c1f90ef8708750e13503b0660e0143b9a42bf27b138",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/analysis-repo_explorer.md": {
       "sha256": "3546e9071181bed00f695c1ad8a0ee37bf0434f803fbfe181ba6c8395b9b811c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/analysis-task_analyst.md": {
       "sha256": "6a6a8b092fb58ddd98e31482166762690d20df1d375650886c268957353859b9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/code-review.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/code-review.md": {
       "sha256": "35de8fc709443a539d52376b1b2360ea2477dc8166cb80b2fed5242870328999",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/implementation.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/implementation.md": {
       "sha256": "d09fede96435450277f528ab8b9d09e9f5d95aa818be698c90c1475fea8e502b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/evidence/test-review.md": {
+    "engineering/changes/20260816-task-ba1615/evidence/test-review.md": {
       "sha256": "578b78563b72532b77ba4eac8367f074456c80ab5b1fbe9d083246ab32fb00ed",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/release.md": {
+    "engineering/changes/20260816-task-ba1615/release.md": {
       "sha256": "f67ba0839bb61744bf851e1e9c504bfeb3ee5d455fc0de079ae81bf8c1ad4347",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/requirements.md": {
+    "engineering/changes/20260816-task-ba1615/requirements.md": {
       "sha256": "b15e560888f122bf68d81adf339670cd03fdeb049a87b20126afeb756ec79bc7",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/rollback.md": {
+    "engineering/changes/20260816-task-ba1615/rollback.md": {
       "sha256": "52ed8a7dbe5a6b917433f37436b651d662e77678e9fd168c2a8d8312c6470520",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/route.json": {
+    "engineering/changes/20260816-task-ba1615/route.json": {
       "sha256": "4d014ba8e2d6bbce191f4cec603e6f8d167e0e46fb75711b02dcc1efacff7d4f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/state.json": {
+    "engineering/changes/20260816-task-ba1615/state.json": {
       "sha256": "b417fdbc10fa4e6b2547cf3ca9d978d11370a67787d059b4e252a3bd2780f70d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/tasks.md": {
+    "engineering/changes/20260816-task-ba1615/tasks.md": {
       "sha256": "2f133e5ce00cddd5ed45040191a7030be0cc6a2b7e60fef85e3380c1f3f26eb2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260816-user-query-\u044f-\u0432\u0441\u0435-\u0435\u0449\u0435-\u043d\u0435-\u0432\u0438\u0436\u0443-\u0444\u0430\u0439\u043b\u043e\u0432-\u0438\u0437-\u043f\u0440\u043e\u043c\u043f\u0442\u0430-\u0434-ba1615/test-plan.md": {
+    "engineering/changes/20260816-task-ba1615/test-plan.md": {
       "sha256": "1f0a7259315624f78988a9dd4ae0ed70387eb9edde615f193b8e3c87c96c13e8",
       "kind": "file",
       "mode": 33204
@@ -4325,257 +4325,257 @@
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/architecture.md": {
+    "engineering/changes/20260823-task-5a2a54/architecture.md": {
       "sha256": "f7910ff07286671977bd81ca6a54cb1dc40dd2ec9eb78aea2aa986951c7f9747",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/brief.md": {
+    "engineering/changes/20260823-task-5a2a54/brief.md": {
       "sha256": "79be9592eeab1f767b0bc5ad3ad9843d298099f45cd0e5ea504901c403f9f7f5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/change-spec.yaml": {
+    "engineering/changes/20260823-task-5a2a54/change-spec.yaml": {
       "sha256": "46722bb30f14d64a3aa3996d274001371231d49137cd80aad75a09fc607f1d70",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/README.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/analysis-architect.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/analysis-architect.md": {
       "sha256": "96845de074fd192f98fc5266e0c9ebef24e5d420748cb096619dc709ffc4ae99",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/analysis-docs_researcher.md": {
       "sha256": "8b1444923f7dfbe7a4b035c686dac00782c6d76f427001a0af6405e2d7e0d3c3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/analysis-repo_explorer.md": {
       "sha256": "2a9ce6532e8205db584de69498c2e19c1e743cc3af96f9ce405a5c9cbba14cc2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/analysis-task_analyst.md": {
       "sha256": "c5b7f6385648c48c795e4f133d8dfc7e25d5270215300afa866f96058a34e893",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/code-review.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/code-review.md": {
       "sha256": "2d6033ef8668e3974b2a31bbb8c6d212c2eb67976f733f07fb81d6bb0e6d12c6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/evidence/test-review.md": {
+    "engineering/changes/20260823-task-5a2a54/evidence/test-review.md": {
       "sha256": "03d85dc84b27285778f2767401f2666a1e33e80d5e0ff0c2d924ebfc23059955",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/release.md": {
+    "engineering/changes/20260823-task-5a2a54/release.md": {
       "sha256": "3257a9b8b8435dd7dfbdf7de0312996f997273229e4826bfb51f42cb21704e8b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/requirements.md": {
+    "engineering/changes/20260823-task-5a2a54/requirements.md": {
       "sha256": "c5eca5325e58d765e8caaada8a87ef298fec5b30ce0b8581b307887098db62d4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/rollback.md": {
+    "engineering/changes/20260823-task-5a2a54/rollback.md": {
       "sha256": "75c10652a4edb674e209cd724930a096f08d0ddd5bac322bf566db74d073ccf4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/route.json": {
+    "engineering/changes/20260823-task-5a2a54/route.json": {
       "sha256": "f4e86c3e771527da6bb734c652f433290cdf43455e101a8f7eee4acfecb22659",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/state.json": {
+    "engineering/changes/20260823-task-5a2a54/state.json": {
       "sha256": "6d183201e0e0d6e1a65899ffba48eb6299728b2bc031ff011848e4d19c19a4c5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/tasks.md": {
+    "engineering/changes/20260823-task-5a2a54/tasks.md": {
       "sha256": "455ebf2d08b9a485b59edbc1e41184e3ec276d71360aba1f61a3827e78ce95a6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u043f\u043e\u0433\u043d\u0430\u043b-\u0432\u0441\u0451-\u0438\u0441\u043f\u043e\u043b\u043d\u044f\u0442\u044c-\u044f-\u0441\u043f\u0430\u0442\u044c-\u0433\u0434\u0435-\u043f\u043e\u0442\u0440-5a2a54/test-plan.md": {
+    "engineering/changes/20260823-task-5a2a54/test-plan.md": {
       "sha256": "94fa6cc1a1045616147b3ba4787629583a96e4a11f36dddaba64afa2063d8b86",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/architecture.md": {
+    "engineering/changes/20260823-task-9d97f8/architecture.md": {
       "sha256": "deb8b24e2b7ab9f5e6149aefd70d4ebf9a61a0e44829667bacd10288e562e429",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/brief.md": {
+    "engineering/changes/20260823-task-9d97f8/brief.md": {
       "sha256": "5c000ecbd6d1aeb5eac45f2971416a27ec61763725d9e6d672a476701f46df3e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/README.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/analysis-architect-release.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/analysis-architect-release.md": {
       "sha256": "5330efa234ae463cb4c709243474298d57fa33f3b792d7496f46e44ec4adba8b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/analysis-docs_researcher-release.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/analysis-docs_researcher-release.md": {
       "sha256": "a90dbdb1073763ade2e50ceafb5498ae8800810ad8d9deadfbe3146bdc78d358",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/analysis-repo_explorer-release.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/analysis-repo_explorer-release.md": {
       "sha256": "293dfff939f82243570c1be037457c3ff53fd3160854f6e7176dfc4dfe2473a8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/release-review.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/release-review.md": {
       "sha256": "7edb5b138ca1333990f60ad6a2ce82c7e0782bbb6dba928dcafa71ce34b08011",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/evidence/security-review.md": {
+    "engineering/changes/20260823-task-9d97f8/evidence/security-review.md": {
       "sha256": "1e6ac020b7cea94e48a19ee7dea5e8f91e9b21d0c116da64167c0cfe0b90fffc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/release.md": {
+    "engineering/changes/20260823-task-9d97f8/release.md": {
       "sha256": "d137ecb58742a1f97d73291895733bce302d6eafbb646f06aad4d4a1c50225d5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/requirements.md": {
+    "engineering/changes/20260823-task-9d97f8/requirements.md": {
       "sha256": "a742f7c49745c03efc90d1f1c6f11a51cdd66c06b1a3bfd3576686f2e6573cf6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/rollback.md": {
+    "engineering/changes/20260823-task-9d97f8/rollback.md": {
       "sha256": "90fee21ab5d95e6a3374c4886738fc824b9f96da840c06bffb942069867ea2de",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/route.json": {
+    "engineering/changes/20260823-task-9d97f8/route.json": {
       "sha256": "aee67f4319fe6ddd204da834c445067b6557e98972eef5de6c39ea94e28a8565",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/state.json": {
+    "engineering/changes/20260823-task-9d97f8/state.json": {
       "sha256": "d220b36516b97d4888b3b6afbdf93b462baa1b5c6bc66d9a5b285f697feca790",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/tasks.md": {
+    "engineering/changes/20260823-task-9d97f8/tasks.md": {
       "sha256": "ef8d2262bebdf8a7b0deffcc43a19ae7c716cc23731a8732b6b39841cecf4ee1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260823-user-query-\u0441\u0432\u043e\u0434\u0438\u043c-\u0432\u0441\u0451-\u0432-\u0440\u0435\u043b\u0438\u0437-\u043a\u043e\u043c\u043c\u0438\u0442\u0438\u043c-\u043f\u0443\u0448\u0438\u043c-\u043c\u0435\u0440-9d97f8/test-plan.md": {
+    "engineering/changes/20260823-task-9d97f8/test-plan.md": {
       "sha256": "f158f7ff35c5ad3e6c8bef7a07d6db5d6bd64c3deae6079facda186026566381",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/architecture.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/architecture.md": {
       "sha256": "d8a1f8abd35f28b6eb323ebcdfd4d138f0e0d08571d971770438597f798ebc04",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/brief.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/brief.md": {
       "sha256": "73692795c8fd719431839410e846d9df89d45694070acb84d702b48642ab25b0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/change-spec.yaml": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/change-spec.yaml": {
       "sha256": "befca86e7c459a72224d8c28771feba58bf3eaec5c23a0a734184950befdcbce",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/README.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-architect.md": {
       "sha256": "669570f86d4f4cd442fab0b2fbc7176aeda3d88c9f1417f7c1c279c10651d584",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-code_reviewer.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-code_reviewer.md": {
       "sha256": "df6b411b81ca13cf051b67be41acc89a7b1ee12966f0e036d1c2196cf9bdc7c1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-docs_researcher.md": {
       "sha256": "f60ca058acf2ec1184a3f65cbcbfcde8917e396f2051f2992cd48dd57ba398e8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-repo_explorer.md": {
       "sha256": "2108b704ab9c605350cc05dca2d457f927e42f029da64d8656af831d9edc6050",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-task_analyst.md": {
       "sha256": "1856924f95be08f42f957a9302597930e8690da55966e5414904efc598f032f2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/analysis-test_reviewer.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/analysis-test_reviewer.md": {
       "sha256": "3d3b3c05768fa6854672991889bf8460622909d8a6c24e271b493e81e6466f1e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/drill-report.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/drill-report.md": {
       "sha256": "11592f00bbd3c7d5635015c1e89bc818e11a4cf488006ebabacb9486810e39ff",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/evidence/implementation.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/evidence/implementation.md": {
       "sha256": "dbca0c198e3efe94ca236f53ef27e4a97910338cb3573ab04aaca79d658a478a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/release.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/release.md": {
       "sha256": "aa7a7e358d72f72f903b9b3fec69f7e899cd36f5e662d021032b4d2dd1802bc1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/requirements.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/requirements.md": {
       "sha256": "3f7564666090828f65fa12c5faab54d93c1352ba58f8ac139da3269cc517c3a7",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/rollback.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/rollback.md": {
       "sha256": "5a13b2e36b9b9fab3d82139ea514fe0c3f6f71e50558cee36f0c2061c1782a4a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/route.json": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/route.json": {
       "sha256": "79b1bc7432e98d945a69a70d70f5e68a86705c2e267c7770dda32553178e1aa5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/state.json": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/state.json": {
       "sha256": "6b293b6b69fdd50767a13ee59358826e6c762cbf26233703c96ab8e66f44e368",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/tasks.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/tasks.md": {
       "sha256": "bd578acad1c4fc0584f56c73eb86fab82d8d3fb8f7b615a067fa98006be1521d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-claw-d5291e/test-plan.md": {
+    "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/test-plan.md": {
       "sha256": "aeaabffa21567862af16254c887555e1470a81e954036aac41f80b1443d7c3fe",
       "kind": "file",
       "mode": 33204
@@ -4865,707 +4865,707 @@
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/architecture.md": {
+    "engineering/changes/20260824-task-421a1d/architecture.md": {
       "sha256": "a54c9abfd71156856ceeab79d7fdcd5218a56765084301105d5eddc4133bcbe3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/brief.md": {
+    "engineering/changes/20260824-task-421a1d/brief.md": {
       "sha256": "4fbd1677a3dfe6f6f3ea55a87556d3dc98a51a9e843bf7ab28058e156eaa73a6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/change-spec.yaml": {
+    "engineering/changes/20260824-task-421a1d/change-spec.yaml": {
       "sha256": "8215aa04d21fd678e86d49ee7ee5a1f804c07b17256be221807c54239666907e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/README.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/analysis-architect.md": {
       "sha256": "7ae62c7c64e7cfdea3905cdcdf6ed4f2e91154b9ace6d849827d14d14f7a3884",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/analysis-docs_researcher.md": {
       "sha256": "6524562797afd731dc4c82a2c7fa6b14b754a938258f69cb8f308fd9027b77db",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/analysis-repo_explorer.md": {
       "sha256": "0f9b6103b77597c479548407b8acf4ece6f07365b6e981250db46a900c808516",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/analysis-task_analyst.md": {
       "sha256": "0bca6ea37420796a1b7da33039f1f6481e6fd0ab9e78f63b2028b69237cdba33",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/code-review.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/code-review.md": {
       "sha256": "072ce9ad1d6667f065051d2450df3d3f613b0dbd15f4face61cf887c9652ddc8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/evidence/test-review.md": {
+    "engineering/changes/20260824-task-421a1d/evidence/test-review.md": {
       "sha256": "8c3cf7b95169aca22165b45567c3f6556c64fbae314bc498f23e323bd06ba68d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/release.md": {
+    "engineering/changes/20260824-task-421a1d/release.md": {
       "sha256": "ec3bf14ac1193dcc0471c1206bf77e0ca925873bd60f509393dfdff93a07ff28",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/requirements.md": {
+    "engineering/changes/20260824-task-421a1d/requirements.md": {
       "sha256": "23e62cd9c43efa1d476dc4de3155f7391ab21a4c6cae6425e634b1200bb6a2ba",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/rollback.md": {
+    "engineering/changes/20260824-task-421a1d/rollback.md": {
       "sha256": "3667cbb046aa13c1d11898f961530e690068507fec2f35603083eeb99288ba9e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/route.json": {
+    "engineering/changes/20260824-task-421a1d/route.json": {
       "sha256": "5650542c0d96281067bf2fc28dd5c09bfdd52e33877111298c60ef659326dc32",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/state.json": {
+    "engineering/changes/20260824-task-421a1d/state.json": {
       "sha256": "6590f8f9de1d66db3d7eb7ada4b13e78068d830234404cef8d4b7a3e066a49f9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/tasks.md": {
+    "engineering/changes/20260824-task-421a1d/tasks.md": {
       "sha256": "e91956147210757ac013e0b90e5d4d8ebc577211e468cc095c633b57816cd692",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-app-id-4694114-installation-id-156003-421a1d/test-plan.md": {
+    "engineering/changes/20260824-task-421a1d/test-plan.md": {
       "sha256": "d32de6d5f7c258c29872246430ee036a2b13fc2314118ca939cb5f7cd375352e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/architecture.md": {
+    "engineering/changes/20260824-task-372269/architecture.md": {
       "sha256": "bae16a02eac10929f41d078adb7b0055532ed0a3011a3f42e97bfa23d4feca55",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/brief.md": {
+    "engineering/changes/20260824-task-372269/brief.md": {
       "sha256": "b0408ee61fecd7403e8474135ef0e7e4077b13280db0b5f0b8ce7f664f883c58",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/change-spec.yaml": {
+    "engineering/changes/20260824-task-372269/change-spec.yaml": {
       "sha256": "94307116ef7f3851b1f820e14ec67a9b19bd8a042837000f3a438ddc0455d1d7",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/README.md": {
+    "engineering/changes/20260824-task-372269/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-372269/evidence/analysis-architect.md": {
       "sha256": "54ef562afc89df705b15eaa7f39bb195c67dbccd364fa4463c71af6d4f1616d5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-372269/evidence/analysis-docs_researcher.md": {
       "sha256": "89825152f3928de985787ba7043b97076633b6344e829333bef7d1baf43d9d88",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/analysis-integration_architect.md": {
+    "engineering/changes/20260824-task-372269/evidence/analysis-integration_architect.md": {
       "sha256": "33d05e410ae8face6b5dbc17ae970fe341d48f49ab1a9824a8b595f7379d7e68",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-372269/evidence/analysis-repo_explorer.md": {
       "sha256": "170861b4c032417d486740aefb9f5d01388477947b1ebfe54c4c6c62a464aca8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/code-review.md": {
+    "engineering/changes/20260824-task-372269/evidence/code-review.md": {
       "sha256": "49ad7daff0d2fe8f0cc05672ef5347bc5a3933045c27509380f62521daee7ae5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/release-review.md": {
+    "engineering/changes/20260824-task-372269/evidence/release-review.md": {
       "sha256": "833ba0063c28947ac2371169f81ed5782486706444b31750711b165a215aa9ab",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/security-review.md": {
+    "engineering/changes/20260824-task-372269/evidence/security-review.md": {
       "sha256": "595ec4a2ef0c14276b9cc5648fe967b9edbd766d499a1213b619975c2000c932",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/evidence/test-review.md": {
+    "engineering/changes/20260824-task-372269/evidence/test-review.md": {
       "sha256": "b96a4d165c2692307870d97f8939424794233eaf55f15509b7569d73ffd384a5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/release.md": {
+    "engineering/changes/20260824-task-372269/release.md": {
       "sha256": "4385256a58a24ba177084dd4fd654e38d717302f79385f5f573a78f60a60bdc1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/requirements.md": {
+    "engineering/changes/20260824-task-372269/requirements.md": {
       "sha256": "d77371de43abda397d0189f0517da6afa174fc9948462d377fb8fb4cbe5adffa",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/rollback.md": {
+    "engineering/changes/20260824-task-372269/rollback.md": {
       "sha256": "fb72217d723742ffdc3a2ce8ef3fb42d0987f9a60976b1c95a2e227d15764adc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/route.json": {
+    "engineering/changes/20260824-task-372269/route.json": {
       "sha256": "15d88e0ff24168198610f3fe30302a019899f43489fd2bd8ad28d3c300a085d5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/state.json": {
+    "engineering/changes/20260824-task-372269/state.json": {
       "sha256": "00a33fbaceef21aa1d7d59818daec41dce9e345f798f249db895c540d093f0b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/tasks.md": {
+    "engineering/changes/20260824-task-372269/tasks.md": {
       "sha256": "aa5169d9278011aba25fd79a1ac3ecb6bfd8fc61cefc3edbcaa54aadb16c2b6c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-read-agents-md-decisions-md-mistakes-372269/test-plan.md": {
+    "engineering/changes/20260824-task-372269/test-plan.md": {
       "sha256": "386eb24f8ff092e40184728f987718eb54b2b8be9bd957585516f8fdef216b13",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/architecture.md": {
+    "engineering/changes/20260824-task-54313e/architecture.md": {
       "sha256": "f68cec25aaa35042c39030c2d490ae8d62e7fd026f91109ab8bd4e77ff7a122e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/brief.md": {
+    "engineering/changes/20260824-task-54313e/brief.md": {
       "sha256": "d610f1008ee3df212b5bba828d2b08edde9cb43ac1c9dfe63508c05ea5dd5824",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/change-spec.yaml": {
+    "engineering/changes/20260824-task-54313e/change-spec.yaml": {
       "sha256": "2ad7f30813dbfe923dfa5fa41ee4967583d2e7fef006ccb5b17358c38af93dca",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/README.md": {
+    "engineering/changes/20260824-task-54313e/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/actor-mismatch-proof.md": {
+    "engineering/changes/20260824-task-54313e/evidence/actor-mismatch-proof.md": {
       "sha256": "baa28d0d61ed6d5b1f017c465f18ae83f5abd8a422477893f1b12d4633d7f101",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-54313e/evidence/analysis-architect.md": {
       "sha256": "830f1bfe5613ad7796752947ac8f7993b11dc7b63cbfe15570f8dcc4986eb590",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-54313e/evidence/analysis-docs_researcher.md": {
       "sha256": "e7d9dfa422969e21c5fc1b0ecee8059ec39742c54c40466432abfde682518d72",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-54313e/evidence/analysis-repo_explorer.md": {
       "sha256": "ee16efb1bb3f16272c4018b7ee379b24923656c8610cc556716c99d016c6abbb",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-task-54313e/evidence/analysis-task_analyst.md": {
       "sha256": "2b17e200f304f28937ca69e5053a4efaac018635e06b9ef5d7a7921929dfab3d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/branch-protection-payload.json": {
+    "engineering/changes/20260824-task-54313e/evidence/branch-protection-payload.json": {
       "sha256": "fc91c72b812549afe5f8da5b370147dd4585143d833dc0398d12e9ebf2d1c01a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/code-review.md": {
+    "engineering/changes/20260824-task-54313e/evidence/code-review.md": {
       "sha256": "a239a135f50d865630a82dcc5d22a564f9666dc05e8a0cd18b914658d02a24b0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/evidence/test-review.md": {
+    "engineering/changes/20260824-task-54313e/evidence/test-review.md": {
       "sha256": "4f40686507ede37adf6a77c474ee202e1766cd1b5c02ca6545c54c54012143c9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/release.md": {
+    "engineering/changes/20260824-task-54313e/release.md": {
       "sha256": "3745a30600caa4bf173e4986edce773f7be95750d64b9b59b57e5779a1ecff4a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/requirements.md": {
+    "engineering/changes/20260824-task-54313e/requirements.md": {
       "sha256": "e026ad062f58070cab4e24d2f7626878e81ae8e9a9a263f2a65625af7d5a60c7",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/rollback.md": {
+    "engineering/changes/20260824-task-54313e/rollback.md": {
       "sha256": "8627b676b23979417f00746f381e86043f693997ed7c570733d062dab8813504",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/route.json": {
+    "engineering/changes/20260824-task-54313e/route.json": {
       "sha256": "c55a6a8844d47ef92c35fa6e61531721bce25ac2b226e5f37cdd5047c489def0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/state.json": {
+    "engineering/changes/20260824-task-54313e/state.json": {
       "sha256": "133d6c10aec4fda649d57e84a5587a0355bcd279441933e794c96388aadf5201",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/tasks.md": {
+    "engineering/changes/20260824-task-54313e/tasks.md": {
       "sha256": "fffe30ce66ce56c51fb461d8ecedc259443a421d0b9ae394c414fd8c7c63e7f3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0434\u0430\u0432\u0430\u0439-\u0434\u0430\u043b\u0435\u0435-user-query-54313e/test-plan.md": {
+    "engineering/changes/20260824-task-54313e/test-plan.md": {
       "sha256": "8a0fe3d84bc1a760e8142c4c75fc8b9f801f3de7024c3a446dc0fe74598748cc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/architecture.md": {
+    "engineering/changes/20260824-task-d80430/architecture.md": {
       "sha256": "35ea54e67b8975d8f3e88803c22695fa13ab7e19609d41add56bc92b30685d66",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/brief.md": {
+    "engineering/changes/20260824-task-d80430/brief.md": {
       "sha256": "d7651b1b79d2971e0557dd02ac43e4f925efff155f24016e6644845f2bba6931",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/change-spec.yaml": {
+    "engineering/changes/20260824-task-d80430/change-spec.yaml": {
       "sha256": "ed02f8c6d61cdfb971e7c18dd4dd21cd183b45e7409758a773a3ff154e3faf67",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/evidence/README.md": {
+    "engineering/changes/20260824-task-d80430/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/evidence/implementation.md": {
+    "engineering/changes/20260824-task-d80430/evidence/implementation.md": {
       "sha256": "133c6eafacd7b67df4a4ea57425b93ae8cc5ee808695097cfe218a3475d99dde",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/release.md": {
+    "engineering/changes/20260824-task-d80430/release.md": {
       "sha256": "3b96d3013bf29e07b8a926fa26668542914c6b36b63f97dd7df058bb57823f42",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/requirements.md": {
+    "engineering/changes/20260824-task-d80430/requirements.md": {
       "sha256": "650e627a3c50847c0dc000fe04016cd5242432bf1b60f31248c85665405c8da1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/rollback.md": {
+    "engineering/changes/20260824-task-d80430/rollback.md": {
       "sha256": "df0ceca286396877e453975cf2a1ca620cf18a0b72f741301be903307e7e3808",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/route.json": {
+    "engineering/changes/20260824-task-d80430/route.json": {
       "sha256": "95bfc6d3abec7ef8c38becc5184cf6ed22bccee1b62db24cf024f2c3168e91c5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/state.json": {
+    "engineering/changes/20260824-task-d80430/state.json": {
       "sha256": "f1a2ba94b31216d4a923aad3155d21a703c9d368307644067c6f04bc22f47791",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/tasks.md": {
+    "engineering/changes/20260824-task-d80430/tasks.md": {
       "sha256": "606038482e0a51e88d24b9eb900738d59a76e3f108c6b1246f5cfe45bc1c4cec",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0439-\u0435\u0431\u0430\u043d\u0430-\u0431\u043b\u044f\u0442\u044c-user-query-d80430/test-plan.md": {
+    "engineering/changes/20260824-task-d80430/test-plan.md": {
       "sha256": "5917043a83c1ee855c500111b69211f8bdcf4764c391ae45e4d92eaba23cc4c4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/architecture.md": {
+    "engineering/changes/20260824-task-a19847/architecture.md": {
       "sha256": "6ac43db46b35f8ab2b801bc0acfb3aa8a7982e49850939542cc6ee15a2137b4f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/brief.md": {
+    "engineering/changes/20260824-task-a19847/brief.md": {
       "sha256": "b226f98a2860df08649f379b46a8415e8b671f632b402dc6bd3560e4eab1ab74",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/change-spec.yaml": {
+    "engineering/changes/20260824-task-a19847/change-spec.yaml": {
       "sha256": "36e8a0cfaa49e16c31ad330b5ba85a0f6bf0908055f0d64154df6940b93f2b6a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/evidence/README.md": {
+    "engineering/changes/20260824-task-a19847/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/release.md": {
+    "engineering/changes/20260824-task-a19847/release.md": {
       "sha256": "1606b87997fa431fd779a505a945b6113b06f68496869720b962fdf20927e248",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/requirements.md": {
+    "engineering/changes/20260824-task-a19847/requirements.md": {
       "sha256": "fcb3ca154693e2776f5cb8295f5bad0d5ce454c3cecd2dcc2cf3970246e839a2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/rollback.md": {
+    "engineering/changes/20260824-task-a19847/rollback.md": {
       "sha256": "373c53f05a3c7a7b85e0a85593628060f736cbf5bbd57798c823126b9d1990cb",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/route.json": {
+    "engineering/changes/20260824-task-a19847/route.json": {
       "sha256": "26f446748f33635553288a9cc7e02a51ac1801c6ab6e97c1357f580c570d2baa",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/state.json": {
+    "engineering/changes/20260824-task-a19847/state.json": {
       "sha256": "ac1a1ba3fcb4dd5cdd091709bc620d244e6402bdf4284eb8afbd081fc910fba2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/tasks.md": {
+    "engineering/changes/20260824-task-a19847/tasks.md": {
       "sha256": "517bb4c5031398a395c412b3f8980a7b89ff954f9379ffdec5649518886132eb",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0437\u0430\u043a\u0440\u044b\u0432\u0430\u0442\u044c-\u0434\u0430\u0432\u0430\u0439-user-query-a19847/test-plan.md": {
+    "engineering/changes/20260824-task-a19847/test-plan.md": {
       "sha256": "447431cc8c16e04d6ed4415b3d12aeb425d094da898183e8bd888c96d7dc3221",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/architecture.md": {
+    "engineering/changes/20260824-task-c8e5e5/architecture.md": {
       "sha256": "e9cf51d1d3916523b1f3fb6e7b63964c0a9b4713245efd069b717d0279e8c9be",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/brief.md": {
+    "engineering/changes/20260824-task-c8e5e5/brief.md": {
       "sha256": "1727ce2b164756d02ad4dde4fa1282df857059eb2831b4e011b2c78dcdb3c15b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/change-spec.yaml": {
+    "engineering/changes/20260824-task-c8e5e5/change-spec.yaml": {
       "sha256": "07117d67810535d7a98b4b20ffa25aa7dee512cced1812a7f11680bbeea488b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/evidence/README.md": {
+    "engineering/changes/20260824-task-c8e5e5/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-c8e5e5/evidence/analysis-architect.md": {
       "sha256": "d78f0c382b2662b90c53a399aba2710678ae44a2992224dd2db677249788eac0",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-c8e5e5/evidence/analysis-docs_researcher.md": {
       "sha256": "afa977ae1611f4e1f0de4df5714770244121b79e0650f94169230d89664a1298",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-c8e5e5/evidence/analysis-repo_explorer.md": {
       "sha256": "d49e4b09a0a3112a5caa8e10fffea065407eaf90a9a5c37f26dec442d1b34f1f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-task-c8e5e5/evidence/analysis-task_analyst.md": {
       "sha256": "0ec586b075507bde65a804155570534657f398d2f4e6da5334000d4c1c6e75f8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/release.md": {
+    "engineering/changes/20260824-task-c8e5e5/release.md": {
       "sha256": "4472b729ac1539afa216d37eb333918eb700d856d7a916ab13758771ed92ceae",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/requirements.md": {
+    "engineering/changes/20260824-task-c8e5e5/requirements.md": {
       "sha256": "86580001ba444f516eeabd9c625215609930ce0ba77fbd34999c22004ea854fd",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/rollback.md": {
+    "engineering/changes/20260824-task-c8e5e5/rollback.md": {
       "sha256": "f7654a114143a4e7a035b5d410e7792f0c92db6f22eb97cd77a38a145f1f1fb8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/route.json": {
+    "engineering/changes/20260824-task-c8e5e5/route.json": {
       "sha256": "dd0d234f6e3c82a7af0dc9b0a2e333012ddb7927fef3c920355fdbaaacba6d2a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/state.json": {
+    "engineering/changes/20260824-task-c8e5e5/state.json": {
       "sha256": "da98c1dc9531f3913faf081095c8202a1281b3d9a418b335d7e36ebd7e13b62c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/tasks.md": {
+    "engineering/changes/20260824-task-c8e5e5/tasks.md": {
       "sha256": "f1bdf490c4058d65aff4826118d92fb1b8baddf433c19d7c12e176daea494936",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043a\u0430\u043a\u043e\u0439-\u043d\u0430\u0445\u0443\u0439-\u043d\u043e\u0443\u0442-\u0442\u044b-\u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0448\u044c-\u043d\u0430-xeon-c8e5e5/test-plan.md": {
+    "engineering/changes/20260824-task-c8e5e5/test-plan.md": {
       "sha256": "926713883a97d8f800bcc1be300ad5db071bd08a1a495fe16f794a25afde2f32",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/architecture.md": {
+    "engineering/changes/20260824-task-47da9e/architecture.md": {
       "sha256": "c600ee6c5717dc003724a1dd047a0ee16f7aaf3e86785f39f431e9d3c9a7a251",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/brief.md": {
+    "engineering/changes/20260824-task-47da9e/brief.md": {
       "sha256": "2a20fcbb158ad9fa6dbb0a9da6124e6dc7054b2d593c3c51423393611e8f64c9",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/change-spec.yaml": {
+    "engineering/changes/20260824-task-47da9e/change-spec.yaml": {
       "sha256": "5d9d909d63523d6fd450748d4939a85516994891a2b4791a4a1a63120cba980d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/README.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/analysis-architect.md": {
       "sha256": "08bc701f516a5d66e380fc5f6aacb6231184f4dbacdb6e0d8588a1ca6ebbab67",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/analysis-docs_researcher.md": {
       "sha256": "cfdc0abad3cc6e1318d91ad036a3b0a4927ebc601498b32387e87c8d77d8773d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/analysis-repo_explorer.md": {
       "sha256": "d9f9f992a8a2314edc6ebc2259bd04e46cdc3a6636f3f1a44187d46e07f19dc4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/analysis-task_analyst.md": {
       "sha256": "1c63687c3e755af68ded1bdee1fcd6241ea7066b416db79c88fa87d83a3344a3",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/code-review.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/code-review.md": {
       "sha256": "96154e7dfb2ab2adef367ed0eb5b7d30fa943a962dfdc8232a1e9cdbbb78e184",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/evidence/test-review.md": {
+    "engineering/changes/20260824-task-47da9e/evidence/test-review.md": {
       "sha256": "a4fe8d335230b8dc4aceb504a291691e7b5a6e9c73c50be435c411ec78860d0c",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/release.md": {
+    "engineering/changes/20260824-task-47da9e/release.md": {
       "sha256": "221d1102e750d82fadb4869880aa6df74231983402aeba3a9ed6e8d81ff924cb",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/requirements.md": {
+    "engineering/changes/20260824-task-47da9e/requirements.md": {
       "sha256": "b6961cc74896ace8e64dd02c0935865b3eb527245530e2192f51bd0855fac41a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/rollback.md": {
+    "engineering/changes/20260824-task-47da9e/rollback.md": {
       "sha256": "b7595a138dbc6b03fc024fff3b402db481c0074521b8782c1637515a53cd4099",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/route.json": {
+    "engineering/changes/20260824-task-47da9e/route.json": {
       "sha256": "841203bb617652d7cb42ccf0bc68b3a73d7bbaa4d54ccd67c7ec3a1499c010bc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/state.json": {
+    "engineering/changes/20260824-task-47da9e/state.json": {
       "sha256": "b72aaf2feace0bf9fd474ad1a51dd89273c31c05c5ea5905dd45543ee8dd7fd5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/tasks.md": {
+    "engineering/changes/20260824-task-47da9e/tasks.md": {
       "sha256": "f962775acf9f41c6d54ffa6275e7dd71ed02d10f10cffd599517ff961960191b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043d\u0430-\u0447\u0435\u043c-\u0437\u0430\u0441\u0442\u0440\u044f\u043b-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439-user-query-47da9e/test-plan.md": {
+    "engineering/changes/20260824-task-47da9e/test-plan.md": {
       "sha256": "ce0d9a379ab6bcc542c7aea60aa2bd7c8d2dbd2067ee8fbda651c5d2201b16d6",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/architecture.md": {
+    "engineering/changes/20260824-task-6346a3/architecture.md": {
       "sha256": "356cc2eb84a2820865db0820bedaf22a16b18dd7b56a5ec65cc69346c72bcf31",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/brief.md": {
+    "engineering/changes/20260824-task-6346a3/brief.md": {
       "sha256": "6b086a68a35ebbae50c37884fa91cf8a7875590eeae9969aa7dabd5c21612753",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/change-spec.yaml": {
+    "engineering/changes/20260824-task-6346a3/change-spec.yaml": {
       "sha256": "95d8cfda8bf6426132daab2324f4b5bb4e630cf048cfd372b2aeb9e120db3286",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/README.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/analysis-architect.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/analysis-architect.md": {
       "sha256": "6ab2aaf969275d4aba61d7e1f68f62eb70bf0259263f8135bb5f876cc8b28068",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/analysis-docs_researcher.md": {
       "sha256": "e9af872b84e70419b9e986d7fc66b23888b9f1ed7e95b5f1b01df86217c7c741",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/analysis-repo_explorer.md": {
       "sha256": "18bf954584623a1f25864c857f72ee9ef12edfcb223ef4ecbe19c83190829410",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/analysis-task_analyst.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/analysis-task_analyst.md": {
       "sha256": "045d3acd9fa78bfa20e75e0544ab5838d2a0f6cc66670ca3185f6df1f0a44598",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/code-review.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/code-review.md": {
       "sha256": "d6547c2e0e15ed4a95f90a085133120f6d8a0909c31a0422542cddf5b4e12345",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/evidence/test-review.md": {
+    "engineering/changes/20260824-task-6346a3/evidence/test-review.md": {
       "sha256": "b65d32a9c2e2a9281bd35cee6ecbb98f4388079f8b3b6707b245b2310dae2199",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/release.md": {
+    "engineering/changes/20260824-task-6346a3/release.md": {
       "sha256": "167bec5b888ee69f810035667fa11ecc4da35d606d29ce9bd9e2bcd7cd115573",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/requirements.md": {
+    "engineering/changes/20260824-task-6346a3/requirements.md": {
       "sha256": "e925657fff7076b0127bbd4a78b63261bbc0c5ae15c9ad836361f8d28b108fed",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/rollback.md": {
+    "engineering/changes/20260824-task-6346a3/rollback.md": {
       "sha256": "9c29cc6c7325b98e32138c6b245549cfccd55b92c57636a4afe006ce2f34e939",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/route.json": {
+    "engineering/changes/20260824-task-6346a3/route.json": {
       "sha256": "3c5708de55e41fb56d6389d283dfa3e345b2599d38865ada401b613e1db67f58",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/state.json": {
+    "engineering/changes/20260824-task-6346a3/state.json": {
       "sha256": "f269ca99130b5bccee04beedf2a373e087dc18d6368bb4617e87dde5f292204e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/tasks.md": {
+    "engineering/changes/20260824-task-6346a3/tasks.md": {
       "sha256": "cb691d3952866654d1818551139f61350ce772a8768610d0b1e85b2e74d4f02d",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0435\u043c-\u0430\u0432\u0442\u043e\u043c\u0430\u0442\u043e\u043c-\u0432\u0441\u0435-\u0440\u043e\u0430\u0434\u043c\u0430\u043f-\u0443\u0442\u0432\u0435-6346a3/test-plan.md": {
+    "engineering/changes/20260824-task-6346a3/test-plan.md": {
       "sha256": "5ef9a96e75215789735d71657c3e53e4457175c1f083f4708f528f7873a7ebec",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/architecture.md": {
+    "engineering/changes/20260824-task-214c96/architecture.md": {
       "sha256": "35c65d17dd1fd35b7bf564500b12675a54a9de04bc8fd8a2fdaf9b1a770a9b8a",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/brief.md": {
+    "engineering/changes/20260824-task-214c96/brief.md": {
       "sha256": "c2695bb08398c3d0537bbf4deb1d9a1ee57f8d777f12430f397826411a55aa98",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/change-spec.yaml": {
+    "engineering/changes/20260824-task-214c96/change-spec.yaml": {
       "sha256": "898f6df1d62cb835d978f7f22fbf37d1542f78ca5778cb7cf43a267b6656db2b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/evidence/README.md": {
+    "engineering/changes/20260824-task-214c96/evidence/README.md": {
       "sha256": "5207796a32a4575b0d362e0c85fd821d911221602f8b364d0d9fd36139b9d2b8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260824-task-214c96/evidence/analysis-repo_explorer.md": {
       "sha256": "96dfcae01ad52be7030f4c8707f7d795ea26985412b2e8141e637fce1dd7b2cb",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/evidence/code-review.md": {
+    "engineering/changes/20260824-task-214c96/evidence/code-review.md": {
       "sha256": "a2f771c10a1e9f1e0325a394c9e728292924524b42cd1dbbe16dca06fd942152",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/evidence/test-review.md": {
+    "engineering/changes/20260824-task-214c96/evidence/test-review.md": {
       "sha256": "f87414c2c60c15211c39a7fbbcb3231bf6f63884134c01b2c8dcd770841e0f36",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/release.md": {
+    "engineering/changes/20260824-task-214c96/release.md": {
       "sha256": "60affa8d0fc5ca344fe12877bae03dad8ad391c1cb020268414aac12fa05581f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/requirements.md": {
+    "engineering/changes/20260824-task-214c96/requirements.md": {
       "sha256": "4c7d9f2da64ba18f58c13b85da1a7196ce31503740d0986bfc64c4c1f27fa8de",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/rollback.md": {
+    "engineering/changes/20260824-task-214c96/rollback.md": {
       "sha256": "9fd1caa9b16d4883d64d4f463d1922e4ae3916ec66974e64c176083dc00fee23",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/route.json": {
+    "engineering/changes/20260824-task-214c96/route.json": {
       "sha256": "a9578dcd1e26aa05d065b5330d4761fd9c682cdf1d86da745a03fc11131b0e56",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/state.json": {
+    "engineering/changes/20260824-task-214c96/state.json": {
       "sha256": "3dfeaf79d52c2732bad77726665caafd518c7d76baa4cc39ad7558322115541b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/tasks.md": {
+    "engineering/changes/20260824-task-214c96/tasks.md": {
       "sha256": "c0bbfef397223a65eee2a3a53ffdab13914e66c07cb2722d7c84fa78bc1325bd",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260824-user-query-\u0440\u0435\u0430\u043b\u0438\u0437\u0443\u0435\u043c-\u0441\u043d\u0430\u0447\u0430\u043b\u0430-fix-path-aware-shel-214c96/test-plan.md": {
+    "engineering/changes/20260824-task-214c96/test-plan.md": {
       "sha256": "63b258bdc71ec151972849b3b8e7cccbb44c57fd86d99618f756d95ec929f9a4",
       "kind": "file",
       "mode": 33204
@@ -13155,192 +13155,192 @@
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/architecture.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/architecture.md": {
       "sha256": "d0c93a69c1e1dcb6381d612de60e018f9b171788c819692531d00bcabe0e7324",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/brief.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/brief.md": {
       "sha256": "4f07338bfe41eaad1f4b0df7a7b6e9d8417e5da351fc97343f6a8a1cbee12763",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/change-spec.yaml": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/change-spec.yaml": {
       "sha256": "71dda5f009df7baeb553713df6569609dca10a23de76ed672ff6d5ced6276c5e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/README.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/README.md": {
       "sha256": "8dab29759e35f7821e0cc6b7eb7c8e962339342c6f08f4b54a42179b1c00e059",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py.txt": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py.txt": {
       "sha256": "8b54e6e23187d91a09f29270d828ef00478a1a146632e5a265ad5f938fcbcb28",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/acceptance-results.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/acceptance-results.json": {
       "sha256": "f75ac0eeed682cfe41967eaf0c1e80f76f5d415faa4d249479727b87e4880920",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/analysis-architect.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/analysis-architect.md": {
       "sha256": "9ba42f01ab0d11278355d755a40c3b3a846c71b0082bd05bc6d71a08216399be",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/analysis-data_architect.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/analysis-data_architect.md": {
       "sha256": "96f9330059f72249f97c331b3bf40b3f14be95ccced711f841c10026be15a1cd",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/analysis-docs_researcher.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/analysis-docs_researcher.md": {
       "sha256": "73e1409617714ba4b2db5d6777e840b1be9327f0a12841dcf79058b28c4c6666",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/analysis-integration_architect.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/analysis-integration_architect.md": {
       "sha256": "9ee168de213da8ab8aab9743e3d84c6578400942f2bf2eee9b8aa09fa09ee811",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/analysis-repo_explorer.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/analysis-repo_explorer.md": {
       "sha256": "0cb3d0ba2c35e656400115c8a299ba472f74c0040e291193d7268f9f38101c4b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/backup-and-migration-results.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/backup-and-migration-results.json": {
       "sha256": "7c2d543578765f47a4235e427ffca1c4fb0b95afb8d9e54004c58d1928a108a5",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/diagnosis-integration.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/diagnosis-integration.md": {
       "sha256": "f7aae4300b159e8b817c836b8f407a4bc2f40a4078436ed608e1163f012bc0c4",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json": {
       "sha256": "4522a5544b8176b5c0fbaf3a79c5a0a0824cb9917257f5a331a848b6af458a1f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/focused-verification.txt": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/focused-verification.txt": {
       "sha256": "1fff5e0da1f021c9384b272cc96a3f47dd057489b7f70d9b85f0bb00bfa23bbf",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/human-gates.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/human-gates.md": {
       "sha256": "625d18db8dd3b40d0a12295a949d2791a0a632701e382cc9a0a6f1f2b2634e63",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/installed-package-verification.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/installed-package-verification.json": {
       "sha256": "62c47fad71447591d0d64c26ce646f84c79671b598312ea32f8de23b349e3274",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/operations-plan.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/operations-plan.md": {
       "sha256": "7248902063f94d775c74cef7bd6eabed3e90a5d84b74833641e6b66393aeb06e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/pr151-spec-repair.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/pr151-spec-repair.json": {
       "sha256": "226ca4576714f7b042471749a09bfe285ff491cfc63bb55e59daac0a228825f2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/preflight.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/preflight.md": {
       "sha256": "1eac53af4492219ee992a09df31bb58f3e10448eac0ab3f021d2d67e9ed4806f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py.txt": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py.txt": {
       "sha256": "a1fff81289f5bdab033b7943f03cfb8b1bd81ede96fe11c353050825dec91c4e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-data.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-data.md": {
       "sha256": "d22abc2e9505e61aa084f604e1a776e04d7548bc47d99ad7558ce874179fbbb8",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-release.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-release.md": {
       "sha256": "ff92ce1aeb32f17de73e8172ce217042bb69c4cbbe29ed007c4fe568fcb8aed2",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-data.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-data.md": {
       "sha256": "f1e9f0887a7315c2873134288611275af14c8c9044edb956b87912d9a2d4d8e1",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-release.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-release.md": {
       "sha256": "9f327b912a84eb0bd04b3aed6619b1b03e730fb3c3a4590e29e5ad5378790b07",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-security.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-rollback-security.md": {
       "sha256": "53bbecbec7bd32d0cb22c88859c85407d85da1492e02d489f35bba536a51d932",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/review-security.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/review-security.md": {
       "sha256": "44354b5f90a20a0549d93f5852929526d7ebe5510b6498c52b16435024abc0cc",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py.txt": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py.txt": {
       "sha256": "266478891d1de0ed2ebff04e9aa072b9f0641a073f8ed6b0b51cd07d30c87504",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/rollback-result.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/rollback-result.json": {
       "sha256": "764056ced9a3ff1dc5d0bc87bb3fc31665d11db023bec7b3ea6ee98900d91097",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py.txt": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py.txt": {
       "sha256": "c76de57452fb27999dd7fdac82bfd8beb37210367560b8a7129cc6897d5ebb0e",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/verification.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/verification.md": {
       "sha256": "715c5a2cbaf3ac6b15e72ee663da91f7f9223f48625255412e8c50a609c52489",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/release.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/release.md": {
       "sha256": "c562d7bf05f201ff5117e925f09f559e4bac9a4a5b3fdf53e81f3b70d7227141",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/requirements.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/requirements.md": {
       "sha256": "53ece3b0e5e48ad5cb0a90134eccd492bcd0970a36830c37154aa8ff16b33e59",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/rollback.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/rollback.md": {
       "sha256": "b3521863d8b6244ca07ba01fdb1925b315a53e9aca76b98f7890dced4f294d7f",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/route.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/route.json": {
       "sha256": "7205f117daad1931aaffd0458add2c4f8ae19f6738c870654fce37c86f7019fa",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/state.json": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/state.json": {
       "sha256": "4e174d527a57ee422f7d6e47bd5f30beca20966132693b355febf0d9731c4a53",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/tasks.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/tasks.md": {
       "sha256": "b353597a37e1f5e70a6dc632dafbfac59617d40724705a12ea617b933e51f29b",
       "kind": "file",
       "mode": 33204
     },
-    "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/test-plan.md": {
+    "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/test-plan.md": {
       "sha256": "6052375463184b155a396524536fb930a30c6ae5f5ad06abc67c59f66ea08238",
       "kind": "file",
       "mode": 33204
@@ -14320,7 +14320,7 @@
       "kind": "file",
       "mode": 33204
     },
-    "factory/runtime/install-claw.sh": {
+    "factory/runtime/install-<ci-host>.sh": {
       "sha256": "65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91",
       "kind": "file",
       "mode": 33204

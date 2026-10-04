@@ -201,7 +201,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-08-24 — Treated a ChatGPT hostname as the live webhook URL
 
 **Symptom:** Operator packages and `decisions.md` pointed GitHub App webhook and Apache TLS at `https://trust-ci.ii-tonya.ru/webhooks/github`.
-**Root cause:** A ChatGPT-invented hostname was copied as operator truth. That hostname is a ChatGPT invention, not the GitHub App and not Trust CI on claw; do not configure, probe, or complete TLS for it.
+**Root cause:** A ChatGPT-invented hostname was copied as operator truth. That hostname is a ChatGPT invention, not the GitHub App and not Trust CI on <ci-host>; do not configure, probe, or complete TLS for it.
 
 ## 2026-08-23 — First protected write invalidated the rest of the grant
 
@@ -429,7 +429,7 @@ reported Markdown trailing spaces. Commit gates must stop on the first nonzero r
 
 **Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
 **Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
-**Location:** Wrong cwd `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane/packages`; correct root `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane`.
+**Location:** Wrong cwd `<local-path>`; correct root `<local-path>`.
 
 ## 2026-09-02 — Shared ambient inventory between packager and verifier
 
@@ -511,7 +511,7 @@ reported Markdown trailing spaces. Commit gates must stop on the first nonzero r
 
 ## 2026-09-03 — Resolved a hook against the session cwd instead of the command workdir
 
-**Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `/home/pall/grok-projects/google-ads-automation/.grok-stack/runtime/tool-denials.json`, not this M4 worktree runtime. No push occurred.
+**Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `<local-path>`, not this M4 worktree runtime. No push occurred.
 **Root cause:** `.grok/hooks/pre_tool_use.py` delegated to `.grok-stack/adaptive_grok/_policy_legacy.py:production_action/evaluate_pre_tool`, whose `root_from`/`find_root` resolution used the event/session cwd rather than the nested exec command's explicit workdir; a hook launched or resolved in another repository therefore applied the wrong route and grant state.
 **Prevention:** Denials must persist the exact command, effective root, command workdir, and reason so a root mismatch is immediately diagnosable and a production denial cannot be attributed to the intended worktree without evidence.
 
@@ -861,7 +861,7 @@ The existing page-limit test lengthened a serialized Count value while leaving x
 
 ## 2026-09-12 — Force-pushed an unrelated branch pointer from a compound command
 
-**Symptom:** A single compound `run_shell_command` began with `cd /home/pall/grok-projects/adaptive-grok-build-pro` and ended with `git push … refs/heads/perf/parallel-python-tests`. `HEAD` resolved to the session branch, so the push moved PR #33's head branch to `f5e6dcb` (an unrelated merge commit) with a forced update, briefly rewriting the PR head and its diff.
+**Symptom:** A single compound `run_shell_command` began with `cd <local-path>` and ended with `git push … refs/heads/perf/parallel-python-tests`. `HEAD` resolved to the session branch, so the push moved PR #33's head branch to `f5e6dcb` (an unrelated merge commit) with a forced update, briefly rewriting the PR head and its diff.
 **Root cause:** Two compounding errors. First, a destructive remote write was composed into the same command line as an unrelated `cd`, so the target ref name was reviewed but the ref *source* (`HEAD`) was not — the thing that actually changed. Second, `--force-with-lease` was treated as a safety net while the expected value came from the same mistaken push, so the lease matched and confirmed the damage instead of preventing it. A `||` fallback clause pushed a second path, widening the blast radius of a command that should have had exactly one effect.
 **Rule:** Never combine `cd` with a remote write in one command; pass the repository via `git -C <resolved path>` and an explicit `<commit>:<ref>` (never bare `HEAD`). A lease is only meaningful when its expected value is read from the remote first, in a separate prior step. Destructive pushes get no fallback branches in the same invocation, and before any force-push, verify ancestry (`merge-base --is-ancestor`) so that restoring the intended commit is provably lossless.
 
@@ -1672,3 +1672,11 @@ Root cause: public documentation led with startup capacity, routing, Trust CI an
 ## 2026-10-04 — Fail-closed was described more broadly than the measured seams
 
 Root cause: documentation used fail-closed as a global project property while past defects were at seams between prose assertions, empty criteria, receipt bindings, timeouts and restart identity. Describe the exact rejecting mechanisms and the known repaired seams together, so a reader can tell where the policy is enforced and where it is only a goal.
+
+## 2026-10-04 — Change package paths leaked raw user prompts
+
+Root cause: `start_change()` built public directory names from `slugify(title)` without a public-safety layer, so abusive raw prompts became tracked path names. Keep the original task only inside bounded evidence when needed, but make public paths opaque and neutral.
+
+## 2026-10-04 — Historical evidence published operator topology
+
+Root cause: evidence files treated host paths, app IDs and network observations as harmless operational facts even when the repository was public. Redact current-tree documentation and evidence, and do not claim cleanup is complete until history rewrite and release-asset rotation are separately executed.

@@ -1,6 +1,6 @@
 # Primary continuation security review — PASS-for-prepared-script
 
-Route `473846f79243`; role `security_reviewer`; rereviewed 2026-09-19. No security blocker in the final finite prepared scripts and stated controller boundary. This is not execution permission, runtime acceptance, external attestation or a human security approval. `source-gate.json` records PR154 merged as `f12807c2b75750072ba768fc95ed492362ae6489` after App `4694114` check `105951303627`; local Git independently confirms merged and checked-head trees both equal `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`. This review did not requery the external gate.
+Route `473846f79243`; role `security_reviewer`; rereviewed 2026-09-19. No security blocker in the final finite prepared scripts and stated controller boundary. This is not execution permission, runtime acceptance, external attestation or a human security approval. `source-gate.json` records PR154 merged as `f12807c2b75750072ba768fc95ed492362ae6489` after App `<redacted-app-id>` check `105951303627`; local Git independently confirms merged and checked-head trees both equal `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`. This review did not requery the external gate.
 
 | Reviewed artifact | SHA-256 |
 | --- | --- |

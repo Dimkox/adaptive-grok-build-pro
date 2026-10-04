@@ -3,7 +3,7 @@ FAIL
 # Code review — fix/installer-keep-list @ 9d83ba4 (issue #110 keep list)
 
 ## Scope reviewed
-`git diff 379c64197aac82a0b70c1c2a98b249b381410305..9d83ba4` in `/home/pall/grok-projects/adaptive-grok-build-keep` (HEAD 9d83ba4, worktree clean). Changed files verified via `--name-status`: `scripts/install_into.py` (+106), `tests/test_installer.py` (+87), `QUICKSTART.md` (+2), and the change package `engineering/changes/20260916-fix-installer-to-honor-a-target-declared-keep-li-6283c9/` (11 files). No contract, rules, README, architecture, or PROJECT_STATE changes — scope matches the brief. Read full HEAD bytes of the installer, tests, and typed spec; behavior confirmed by execution probes and four source mutations in 0700 scratch clones under `/tmp/keep-review.f26iT7` (deleted after review; nothing in the reviewed worktree was written except this report).
+`git diff 379c64197aac82a0b70c1c2a98b249b381410305..9d83ba4` in `<local-path>` (HEAD 9d83ba4, worktree clean). Changed files verified via `--name-status`: `scripts/install_into.py` (+106), `tests/test_installer.py` (+87), `QUICKSTART.md` (+2), and the change package `engineering/changes/20260916-fix-installer-to-honor-a-target-declared-keep-li-6283c9/` (11 files). No contract, rules, README, architecture, or PROJECT_STATE changes — scope matches the brief. Read full HEAD bytes of the installer, tests, and typed spec; behavior confirmed by execution probes and four source mutations in 0700 scratch clones under `/tmp/keep-review.f26iT7` (deleted after review; nothing in the reviewed worktree was written except this report).
 
 ## Commands
 - `python3 -m unittest tests.test_installer -v` → **24 OK** (17 pre-existing + 7 keep arms)

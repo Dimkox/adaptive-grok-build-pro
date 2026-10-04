@@ -23,4 +23,4 @@ Evidence anchors in the inspected repair tree:
 - `factory/src/adaptive_factory/landing_http.py:78-106,322-394`: fixed reason allowlist, validated response retention, separate factual observation usage.
 - `factory/src/adaptive_factory/landing_failover_contracts.py:25-89`, `landing_backend_api.py:44-54`, `landing_service.py:341-358,387-394`: sealed receipt bindings and authenticated reads without provider execution.
 - `factory/tests/test_landing_failover_backend.py:145-253`: restart/read with forbidden executor, exact unchanged legacy receipt, closed v1 response, and no sensitive exception text (source assertions inspected, not run here).
-- Prior operation: `engineering/runbooks/l5-runtime-upgrade-2026-09-19.md` and `engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/{acceptance-results.json,diagnosis-integration.md,accept-runtime.py}`.
+- Prior operation: `engineering/runbooks/l5-runtime-upgrade-2026-09-19.md` and `engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/{acceptance-results.json,diagnosis-integration.md,accept-runtime.py}`.

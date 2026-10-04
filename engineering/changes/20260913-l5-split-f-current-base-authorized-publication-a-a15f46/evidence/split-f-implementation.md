@@ -1,6 +1,6 @@
 # F sole-writer handoff
 
-Selected writer data_implementer; route5bc0f4cdffc5; worktree /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f; genuine predecessor E356c7f991ee6835506255e823c06124068fc4e0e. Frozen source f31406e970d67f7cd59694da5de88915adb0fa68 was read only. Product/test writes are complete and frozen for parent-owned commit, full verification and the five selected independent reviews.
+Selected writer data_implementer; route5bc0f4cdffc5; worktree <local-path>; genuine predecessor E356c7f991ee6835506255e823c06124068fc4e0e. Frozen source f31406e970d67f7cd59694da5de88915adb0fa68 was read only. Product/test writes are complete and frozen for parent-owned commit, full verification and the five selected independent reviews.
 
 ## Exact extraction
 

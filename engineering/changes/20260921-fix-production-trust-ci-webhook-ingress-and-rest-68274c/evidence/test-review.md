@@ -7,10 +7,10 @@ Route: `68274cb876e4`. Initial review at `2026-09-21T07:52:58Z`; final plan re-r
 
 ## Exact review binding
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-ci-ingress`; final continuation-review HEAD `de966c932fff54c25df3f16dd3ade903975b9787` (initial review HEAD was `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`).
+- Worktree: `<local-path>`; final continuation-review HEAD `de966c932fff54c25df3f16dd3ade903975b9787` (initial review HEAD was `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`).
 - [Operation plan](../operation-plan.md) SHA-256: `3108b0077dc1643363ea21ddf70ee86d06d49b39ca80ab08a1f25812abc13e28`.
 - [Artifact manifest](artifact-manifest.json) SHA-256: `b4b45a7c453812942cbc33a2b88239613be7079435a445c9b208ab00f54f714d`. The host-local manifest is byte-identical to this reviewed copy.
-- Independently read and hashed all four actual staged files under `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/`; each byte count and digest matches the manifest:
+- Independently read and hashed all four actual staged files under `<local-path>`; each byte count and digest matches the manifest:
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
@@ -31,7 +31,7 @@ The final gate runs after daemon reload and before either guard or socket start.
 
 ## Measured gate repair and stopped-installation continuation
 
-I inspected the preserved host-local results under `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/`: result `01` reports exclusive installation of the four files, exit 0, and `activated: false`; result `02` reports the static/reload block exit 0; result `03` reports exit 1 and `missing effective property` after all three exact loaded/inactive identities passed. The corresponding historical block `03` still contains the earlier text parser. No earlier result is overwritten or promoted into an activation success.
+I inspected the preserved host-local results under `<local-path>`: result `01` reports exclusive installation of the four files, exit 0, and `activated: false`; result `02` reports the static/reload block exit 0; result `03` reports exit 1 and `missing effective property` after all three exact loaded/inactive identities passed. The corresponding historical block `03` still contains the earlier text parser. No earlier result is overwritten or promoted into an activation success.
 
 The corrected command removes the representation assumptions that caused that safe refusal:
 
@@ -54,7 +54,7 @@ I inspected the following retained HTTP records under the same host-local stage:
 | --- | --- | --- |
 | `acceptance-initial-http.json` | Peer readiness 200, peer webhook 405, public webhook 405; each curl exit 0. The first public ready-path probe exited 28/000 with `Resolving timed out after 3001 milliseconds`. | Positive connectivity only; the private-path attempt is inconclusive. |
 | `acceptance-private-http-retry.json` | A second public ready-path attempt exited 28/000 with the same explicit resolver timeout. | Preserved failure; no private-path result. |
-| `acceptance-public-http-resolved.json` | At `08:35:13Z`–`08:35:16Z`, public webhook 405 and all six private paths 404 through `176.58.88.108`; every curl exit is 0, elapsed times are 0.580–0.659 seconds, and the record identifies a fresh resolver observation and TLS hostname verification. | HTTP path reachability/isolation after DNS resolution is isolated; host resolver health remains unproven. |
+| `acceptance-public-http-resolved.json` | At `08:35:13Z`–`08:35:16Z`, public webhook 405 and all six private paths 404 through `<redacted-ip>`; every curl exit is 0, elapsed times are 0.580–0.659 seconds, and the record identifies a fresh resolver observation and TLS hostname verification. | HTTP path reachability/isolation after DNS resolution is isolated; host resolver health remains unproven. |
 
 The new fallback is correctly bounded to one successful five-second resolver lookup and the same seven public GETs. The chosen address must be public and come from that fresh result. `--resolve` leaves the HTTPS URL hostname, SNI, and certificate verification intact; no redirects, insecure TLS switch, wider path, changed service configuration, or POST is authorized. The original no-proxy setting, connection/total deadlines, and 405/404 expectations remain. Lookup failure, a non-public result, or any unexpected HTTP outcome refuses. The successful isolated probes do not rewrite either DNS timeout as a pass or prove normal resolver reliability.
 
@@ -63,9 +63,9 @@ The new fallback is correctly bounded to one successful five-second resolver loo
 | Boundary | Review result and required runtime evidence |
 | --- | --- |
 | Root-cause baseline | The retained evidence distinguishes healthy loopback 200, absent bridge listener/VPN refusal, and public 502. The intervening curl 28/HTTP 000 remains inconclusive; the later 502 does not explain that transient timeout. No failed baseline is rewritten as success. |
-| Positive connectivity | VPN source `10.200.200.2` must obtain ready 200 and webhook GET 405 through the bridge; public webhook GET must separately obtain 405. This exercises both proxy startup and Funnel reachability. Host-local traffic to the veth address is correctly excluded as a positive oracle. |
+| Positive connectivity | VPN source `<redacted-ip>` must obtain ready 200 and webhook GET 405 through the bridge; public webhook GET must separately obtain 405. This exercises both proxy startup and Funnel reachability. Host-local traffic to the veth address is correctly excluded as a positive oracle. |
 | Private public routes | The plan checks `/health/ready`, `/approvals`, `/jobs/nonexistent`, `/attestations/nonexistent`, `/metrics`, and `/v1/jobs` for public 404 while confirming the exact path-only Funnel mapping. The actual ready/approval/authenticated endpoints distinguish accidental backend exposure. `/v1/jobs` is only an additional missing-route control and cannot prove isolation by itself. |
-| Interface/source enforcement | The allowed-peer request requires curl 0, HTTP 200, and an allowed-rule counter increase. Host/local-interface and correct-veth/wrong-source controls each require curl 28, HTTP 000, and an increase in their own named drop counter. Source `100.119.249.65` ownership and routing are checked without changing addresses or routes. An unrelated timeout or `BindToDevice` refusal cannot satisfy the counter requirement. |
+| Interface/source enforcement | The allowed-peer request requires curl 0, HTTP 200, and an allowed-rule counter increase. Host/local-interface and correct-veth/wrong-source controls each require curl 28, HTTP 000, and an increase in their own named drop counter. Source `<redacted-ip>` ownership and routing are checked without changing addresses or routes. An unrelated timeout or `BindToDevice` refusal cannot satisfy the counter requirement. |
 | Scope/preservation | Exact address/device, narrow table rules, all three unit states, and unchanged loopback readiness are inspected after activation. Unexpected listeners or exposed private paths require rollback. No synthetic webhook is needed to test the bridge. |
 | Stop and recovery | Stopping the guard, before disabling the socket, meaningfully exercises dependency propagation to both listening owners. Acceptance requires all three inactive, table absent, loopback-only listener, backend 200, VPN refusal, and the expected public failure; a remaining listener fails the exercise. Same-byte reactivation repeats the positive, private-path, and counter controls. Cold boot/device recreation are explicitly outside the exercised claim. |
 | Real intake | `ready_for_review` is a supported source event, but GET 405 only proves connectivity. The plan separately requires a refreshed PR head, real delivery ID/time/status, correlated API POST and job/check identities, and the exact-head App-owned policy-epoch check. Missing readback stays unobserved. |

@@ -33,7 +33,7 @@ Do not add GitHub Actions. `.github/` is absent. Product tests lock that.
 
 | File | Role |
 | --- | --- |
-| `trust-ci/compose.yaml` | Production topology. **No `build:`**. Requires digest-pinned images. Services: `postgres`, `migrate`, `api`, `docker-engine` (privileged rootless DinD), `runner-loader`, `worker`. API bound to `127.0.0.1:8080`. Two networks: `trust-ci` and `executor`. |
+| `trust-ci/compose.yaml` | Production topology. **No `build:`**. Requires digest-pinned images. Services: `postgres`, `migrate`, `api`, `docker-engine` (privileged rootless DinD), `runner-loader`, `worker`. API bound to `<loopback-service>`. Two networks: `trust-ci` and `executor`. |
 | `trust-ci/compose.build.yaml` | Build override for `migrate`/`api`/`worker`/`runner-image` (`profiles: ["build"]`). Requires `TRUST_CI_PYTHON_BASE_IMAGE`. Only `runner-image` sets a local tag (`adaptive-trust-ci-runner:2.1.0`). |
 | `trust-ci/compose.test.yaml` | Disposable Postgres + test image. Service name is **`postgres-integration`**, not `tests`. |
 | `trust-ci/.env.example` | Compose interpolation: base/Postgres/DinD/API/worker/runner image refs and `TRUST_CI_HOLDOUT_SOURCE_PATH`. |
@@ -370,7 +370,7 @@ cp config/trust-store.example.json runtime/trust-store.json
 # replace placeholders, install holdout, generate keys, pin image digests
 docker compose up -d postgres migrate api worker
 docker compose ps
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://<loopback-service>/health/ready
 ```
 
 `/health/ready` fails closed until Postgres is up **and** the trust store has at least one active human public key.

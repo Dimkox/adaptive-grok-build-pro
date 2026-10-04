@@ -21,7 +21,7 @@ Start01:46:23UTC. Result: tests exit0, process284.9822497s; pytest1141 passed,20
 Exact run HEAD: c50e083cc7980c3bb049af0f9382721a0f957417. Before AND after fingerprint: 8ca38e08a747cb75bd106ad188afdca512358a218c8118567ff3f347c22f85ec; equality verified. No candidate change during execution. Workflow journals/reports were appended only afterward and therefore require controller's fresh final fingerprint-bound full verifier; this Core result is not a full PR receipt.
 
 Complete, untruncated process/coverage data retained under private0700,pall directory:
-/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source/.grok-stack/runtime/fix-wave-results-TSScRw3c
+<local-path>
 - core-report.json: lossless complete tests/coverage process dataclasses, metadata, versions and source identity.
 - core-tests.stdout.txt/core-tests.stderr.txt and core-coverage.stdout.txt/core-coverage.stderr.txt.
 - red-focused.stdout.txt, green-focused.stdout.txt and red-checks.json.

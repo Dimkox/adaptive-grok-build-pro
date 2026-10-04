@@ -1,7 +1,7 @@
 # Combined candidate integration analysis
 
 Route `bcc1d645c438`; selected role `integration_architect`; static analysis only, 2026-09-21.
-Worktree `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`; base `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
+Worktree `<local-path>`; base `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 Scope authority: this package's `candidates.json`, route and change specification. Implementation remains with the sole `integration_implementer`; approvals and publication remain with the coordinator.
 
 ## Result
@@ -39,7 +39,7 @@ The repository's independent `trust-ci/src/adaptive_trust_ci/runner.py` still ha
 
 Static searches found neither new receipt value in the six source packages' `change-spec.yaml` files, the accepted ingress package's spec, or the current combined spec. Those specs use existing supported receipt references and test mappings. Keep all route-required data/security/release reviews and their actual receipts; the typed-spec compatibility boundary does not waive them. A later spec that relies on either new value needs the separately reviewed trusted-validator/holdout compatibility delivery. Deployed validator contents were not inspected or inferred here.
 
-Runtime routes, local grants, review reports and old successful checks remain evidence only. Publication must require the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc`, App ID `4694114`, on the exact combined PR head/current base, with any separately required external signed scopes. No local action can originate human security approval or transfer an old check to this batch.
+Runtime routes, local grants, review reports and old successful checks remain evidence only. Publication must require the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc`, App ID `<redacted-app-id>`, on the exact combined PR head/current base, with any separately required external signed scopes. No local action can originate human security approval or transfer an old check to this batch.
 
 ## Integration and publication order
 

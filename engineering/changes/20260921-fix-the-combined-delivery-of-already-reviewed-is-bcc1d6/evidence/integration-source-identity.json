@@ -3,7 +3,7 @@
   "route_id": "bcc1d645c438",
   "observed_at": "2026-09-21T09:26:22.290092+00:00",
   "implementation_owner": "integration_implementer",
-  "worktree": "/home/pall/grok-projects/adaptive-grok-build-reviewed-batch",
+  "worktree": "<local-path>",
   "branch": "fix/reviewed-issues-batch-20260921",
   "head_before_coordinator_commit": "1146cee355ab9dd9d1db9bbb357a11bd4e4cc8b5",
   "base_commit": "839d3aa26bc90417424d814ee48d8b5cd3be367e",

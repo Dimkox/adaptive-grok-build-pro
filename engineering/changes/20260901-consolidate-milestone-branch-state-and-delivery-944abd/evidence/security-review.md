@@ -63,7 +63,7 @@ A fresh read-only branch-protection observation remains unchanged and fail-close
 ```json
 {
   "strict": true,
-  "checks": [{"context": "adaptive-trust-ci/verified@06ecf1c875bc", "app_id": 4694114}],
+  "checks": [{"context": "adaptive-trust-ci/verified@06ecf1c875bc", "app_id": <redacted-app-id>}],
   "enforce_admins": true,
   "reviews": true,
   "dismiss_stale_reviews": true,

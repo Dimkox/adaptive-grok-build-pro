@@ -1,7 +1,7 @@
 # RED baseline — Codex SEO landing side project
 
 Observed: 2026-09-01
-Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-seo-landing-codex`
+Worktree: `<local-path>`
 Upstream: `https://github.com/aleksandr-alhoff/seo-landing`
 Commit: `1aa908f96a09e2e93fd1839ac51b02d362e7a8ef`
 
@@ -24,7 +24,7 @@ This fails because the required Codex package is not yet present.
 ## Upstream Codex validation
 
 ```bash
-python3 /home/pall/.codex/skills/.system/skill-creator/scripts/quick_validate.py /tmp/seo-landing-architecture.drnnpb/repo
+python3 <local-path> /tmp/seo-landing-architecture.drnnpb/repo
 ```
 
 Observed output:

@@ -14,7 +14,7 @@ The route-selected integration_implementer changed only `.grok-stack/adaptive_gr
 - `git diff --check`: pass.
 - `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack python3 -m unittest tests.test_change_receipts tests.test_verification_doctor`: 92 tests passed in 222.691 s. This includes the existing regression that refuses to receipt verification after a genuine product mutation.
 
-Raw logs remain host-local under `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/`: `red-clean.log`, `green.log`, and `integration.log`. The earlier `red.log` includes cascading fixture errors because failed subtests skipped cleanup; cleanup was moved into `finally` before the clean RED run. Coordinator owns the corresponding concise shared-memory entry.
+Raw logs remain host-local under `<local-path>`: `red-clean.log`, `green.log`, and `integration.log`. The earlier `red.log` includes cascading fixture errors because failed subtests skipped cleanup; cleanup was moved into `finally` before the clean RED run. Coordinator owns the corresponding concise shared-memory entry.
 
 The coordinator owns full PR verification and independent code/test/security review, then final fingerprint-bound receipts. This repair does not claim to solve all pre-existing Git enumeration failures: unsuccessful path queries still cannot contribute paths they did not return, but cannot authorize the new scratch exemption.
 

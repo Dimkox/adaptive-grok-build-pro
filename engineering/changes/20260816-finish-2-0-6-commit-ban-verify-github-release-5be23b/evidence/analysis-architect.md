@@ -126,7 +126,7 @@ Never stage:
 
 | Path | Why |
 | --- | --- |
-| `engineering/changes/20260815-user-query-гит-пуш-пакет-релиз-user-query-ad4090/` | leftover ad4090 dirt |
+| `engineering/changes/20260815-task-ad4090/` | leftover ad4090 dirt |
 | `engineering/changes/20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96/` | leftover 2.0.5 last-mile paperwork |
 | `engineering/changes/20260816-publish-v2-0-6-github-release-864726/` | void — would tag `549f29d` |
 | `engineering/changes/20260816-ban-github-actions-publish-2-0-6-without-them-39b13f/` | hollow sibling |

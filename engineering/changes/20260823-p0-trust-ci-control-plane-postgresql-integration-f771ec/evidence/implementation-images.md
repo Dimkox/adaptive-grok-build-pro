@@ -52,7 +52,7 @@ Holdout unittest: architect’s `PYTHONPATH=trust-ci/src` + dotted `trust-ci.tes
 
 Compose printed `The "resolved" variable is not set. Defaulting to a blank string.` (`compose.yaml` runner-loader uses shell `$resolved`). Build still succeeded. Not fixed this slice (product file).
 
-Port `127.0.0.1:8080` remained bound (searxng). Build did not bind it.
+Port `<loopback-service>` remained bound (searxng). Build did not bind it.
 
 ## Measured python base (public Hub digest, untracked env only)
 
@@ -124,7 +124,7 @@ Literal shell `cat > /tmp/adaptive-trust-ci-build.env` and `mkdir /tmp/adaptive-
 
 1. Registry URL + exact `docker-push` grant — only source of a real registry pin; then HANDOFF §3 deployed policy/env.
 2. GitHub App create/install (worker-only RSA, API-only webhook secret). Do not invent IDs. Do not read leftover PEM.
-3. TLS intake on a **free** loopback port + reverse proxy. Do not steal `127.0.0.1:8080`.
+3. TLS intake on a **free** loopback port + reverse proxy. Do not steal `<loopback-service>`.
 4. `docker compose up` / deploy (needs filled runtime env, not this smoke).
 5. `branch-protect` only after an App-owned check exists on an exact SHA.
 

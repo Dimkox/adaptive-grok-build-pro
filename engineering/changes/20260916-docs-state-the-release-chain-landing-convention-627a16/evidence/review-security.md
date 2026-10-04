@@ -3,7 +3,7 @@ FAIL
 # Independent security review — route `627a16845fc4`, receipt kind `security_review`
 
 Subject: commit `6abc3a1` on `docs/release-chain-convention-and-inspected-causes`
-Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-docsfix` · Base: `83925c12`
+Worktree: `<local-path>` · Base: `83925c12`
 Reviewed: 2026-09-16, read-only, against `engineering/changes/20260916-docs-state-the-release-chain-landing-convention-627a16/change-spec.yaml` clauses INV-001, INV-002, FORBID-001, FORBID-002.
 
 Verdict rationale: no leakage, no production/release action, INV-001 holds and the

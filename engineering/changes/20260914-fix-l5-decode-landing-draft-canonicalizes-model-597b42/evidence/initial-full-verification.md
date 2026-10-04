@@ -30,7 +30,7 @@ The only failure was the unchanged existing PDF page-limit fixture. Its byte sub
 FAIL: test_oversized_page_count_reports_page_limit (factory.tests.test_landing_pdf_worker.PdfWorkerWithPinnedParser.test_oversized_page_count_reports_page_limit)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_pdf_worker.py", line 120, in test_oversized_page_count_reports_page_limit
+  File "<local-path>", line 120, in test_oversized_page_count_reports_page_limit
     self.assertEqual(ctx.exception.code, "pdf_page_limit")
 AssertionError: 'pdf_invalid' != 'pdf_page_limit'
 - pdf_invalid
@@ -42,12 +42,12 @@ Ran 711 tests in 356.762s
 
 FAILED (failures=1, skipped=2)
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/run_disposable_exit.py", line 216, in <module>
+  File "<local-path>", line 216, in <module>
     raise SystemExit(main())
                      ^^^^^^
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/run_disposable_exit.py", line 191, in main
+  File "<local-path>", line 191, in main
     _run(
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/run_disposable_exit.py", line 70, in _run
+  File "<local-path>", line 70, in _run
     subprocess.run(command, check=True, env=environment, timeout=timeout)
   File "/usr/lib/python3.12/subprocess.py", line 571, in run
     raise CalledProcessError(retcode, process.args,

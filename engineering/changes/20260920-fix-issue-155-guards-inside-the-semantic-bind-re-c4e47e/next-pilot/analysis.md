@@ -1,6 +1,6 @@
 Read-only pilot continuation analysis — 2026-09-21, observations through 05:21 UTC
 
-Control checkout: `/home/pall/grok-projects/adaptive-grok-build-repair`, observed HEAD `d6595584649827baff78c2be46f978473d4b0465`, active route `c4e47ea3ced7`. This analysis did not change the checkout, route, target, or private runtime, execute a provider/test suite, inspect credentials, or execute on a remote host. Git refs were refreshed with read-only `git ls-remote` and GitHub GETs rather than a fetch that writes shared Git metadata while verification runs.
+Control checkout: `<local-path>`, observed HEAD `d6595584649827baff78c2be46f978473d4b0465`, active route `c4e47ea3ced7`. This analysis did not change the checkout, route, target, or private runtime, execute a provider/test suite, inspect credentials, or execute on a remote host. Git refs were refreshed with read-only `git ls-remote` and GitHub GETs rather than a fetch that writes shared Git metadata while verification runs.
 
 The smallest useful next task is to prepare a reviewed successor pilot for **Russian-page coverage in the landing browser audit**, with exactly two target files. The old version-bump issue is obsolete against today's site. Prepare a concrete replacement issue and fixed policy locally; obtaining maintainer agreement to that scope and publishing an issue are separate steps. Do not rerun or reopen PR #3.
 

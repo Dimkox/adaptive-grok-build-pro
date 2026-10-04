@@ -3,7 +3,7 @@
 Route: `cd8a9662bc68`. Change: `20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96`.
 Question: what existing runbooks, ADRs, `AGENTS.md`, and prior change packages actually say about who may run `git push` / `git tag` / `gh release`, and how v2.0.4 was published.
 
-Read: `AGENTS.md`; `engineering/runbooks/publish-v2.0.4.md`; `engineering/runbooks/publish-v2.0.5.md`; `engineering/decisions.md`; `engineering/adr/` (empty); `engineering/contracts/{openapi,asyncapi,schemas}/` (no product APIs); `engineering/changes/20260815-publish-v2-0-4-github-release-e584b3/*`; `engineering/changes/20260815-user-query-гит-пуш-пакет-релиз-user-query-ad4090/{release.md,requirements.md,architecture.md,brief.md,state.json,route.json,evidence/human-approval.md,evidence/implementation.md,evidence/analysis-*.md,evidence/code-review*.md}`; `engineering/changes/20260815-commercial-full-cycle-framework-through-deploy-99b743/{architecture.md,release.md,brief.md,evidence/human-approval.md}`; `README.md` scripts/hooks; `QUICKSTART.md`; `CHANGELOG.md` 2.0.5 and 2.0.4; `dist/RELEASE-NOTES.md`; `dist/HANDOFF.md`; `.grok/skills/adaptive-delivery/SKILL.md`; `.grok/skills/release-readiness/SKILL.md`; this change package (still a stub).
+Read: `AGENTS.md`; `engineering/runbooks/publish-v2.0.4.md`; `engineering/runbooks/publish-v2.0.5.md`; `engineering/decisions.md`; `engineering/adr/` (empty); `engineering/contracts/{openapi,asyncapi,schemas}/` (no product APIs); `engineering/changes/20260815-publish-v2-0-4-github-release-e584b3/*`; `engineering/changes/20260815-task-ad4090/{release.md,requirements.md,architecture.md,brief.md,state.json,route.json,evidence/human-approval.md,evidence/implementation.md,evidence/analysis-*.md,evidence/code-review*.md}`; `engineering/changes/20260815-commercial-full-cycle-framework-through-deploy-99b743/{architecture.md,release.md,brief.md,evidence/human-approval.md}`; `README.md` scripts/hooks; `QUICKSTART.md`; `CHANGELOG.md` 2.0.5 and 2.0.4; `dist/RELEASE-NOTES.md`; `dist/HANDOFF.md`; `.grok/skills/adaptive-delivery/SKILL.md`; `.grok/skills/release-readiness/SKILL.md`; this change package (still a stub).
 
 No APIs invented. No `.env` read. This agent did not push, tag, or release.
 
@@ -120,7 +120,7 @@ Even a fresh 15-minute token only lets the hook *pass* `git push` / `gh release 
 Change `20260815-publish-v2-0-4-github-release-e584b3` (`route.json` `e584b3b09be8`):
 
 - Intent `release`, `write_agent: null`, gates `scope_and_design_approval` + `production_action_approval`.
-- User task: «ты охуел? .env перечитай и гит пулл сука с релизом я разрешаю».
+- User task: «ты охуел? .env перечитай и гит пулл [sanitized] с релизом я разрешаю».
 - Brief / requirements / tasks / architecture / release.md are unused templates. The only durable facts are `evidence/human-approval.md` and `state.json`.
 
 `e584b3/evidence/human-approval.md:3-9`:
@@ -259,7 +259,7 @@ ad4090 already recorded **`scope_and_design_approval` and `production_action_app
 
 Later «смерджи все» was treated as colloquial “land it,” still that same outcome, **not** a git-merge and **not** a live machine token (`ad4090/evidence/analysis-docs_researcher-merge.md:10-27`; `analysis-architect-merge.md:26,102`; `analysis-task_analyst-merge.md:82`).
 
-Current user text (this route `cd8a9662bc68`): «хули не запушено в гит сука, почему там 2.0.4 и не смерджено нихрена, **делай**». Active route: `intent=feature`, `human_gates: []`, `write_agent=general_implementer`. This change package is still a stub (`brief.md` / `release.md` / `requirements.md` empty).
+Current user text (this route `cd8a9662bc68`): «хули не запушено в гит [sanitized], почему там 2.0.4 и не смерджено нихрена, **делай**». Active route: `intent=feature`, `human_gates: []`, `write_agent=general_implementer`. This change package is still a stub (`brief.md` / `release.md` / `requirements.md` empty).
 
 `делай` is a follow-up token. It **does not** revive a ready route or a leftover from another session (`engineering/decisions.md:27`; `CHANGELOG.md:25`). That is why this is a **new** route `cd8a96`, not reuse of `ad4090c51ca6` (status `ready`, different session). Empty `human_gates` is a rematch/classification artifact, not permission for an agent to publish (`analysis-architect-merge.md:28` said the same about the earlier «смерджи все» rematch).
 

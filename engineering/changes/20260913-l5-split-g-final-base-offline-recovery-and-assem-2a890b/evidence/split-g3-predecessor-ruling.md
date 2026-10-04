@@ -1,6 +1,6 @@
 # G3 actual-predecessor ruling
 
-Read-only architecture analysis. Archived G2 source `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2`, HEAD `7e7b7453d12b59d690f51a4519a1ee5aceb63985`, route `3529132ae173`; actual direct parent `5a2ead6e6e1eff5c5df28a8d4bcb91a209975187` (old F2). No source edits, tests, approvals, grants or external operations performed. The final repaired F commit is not yet available and must be bound by root after its sole writer finishes.
+Read-only architecture analysis. Archived G2 source `<local-path>`, HEAD `7e7b7453d12b59d690f51a4519a1ee5aceb63985`, route `3529132ae173`; actual direct parent `5a2ead6e6e1eff5c5df28a8d4bcb91a209975187` (old F2). No source edits, tests, approvals, grants or external operations performed. The final repaired F commit is not yet available and must be bound by root after its sole writer finishes.
 
 ## Ruling
 
@@ -18,7 +18,7 @@ The actual old-F-to-G2 product delta equals the keys in committed `engineering/c
 | `architecture/system.yaml` | `7c14e36980642e4694d94d5ed4173960c94964f5457270ec6cbda7d0f09f00ef` |
 | `factory/pyproject.toml` | `fd4c7c90af68f5644f82453b494edbbc8ba06f31eee606c183069deefa57d82f` |
 | `factory/runtime/adaptive-l5.service.in` | `5e287944a6e8c58b46a0b119f3064b655df0bc5f4e152712f5a7312455979ebd` |
-| `factory/runtime/install-claw.sh` | `65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91` |
+| `factory/runtime/install-<ci-host>.sh` | `65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91` |
 | `factory/runtime/landing-host.example.json` | `5e7c334ba90c21a578cab19f292c6037d5709f0424554dca67f5bfe0360ea604` |
 | `factory/src/adaptive_factory/landing_backup.py` | `d3c0a22fc0a84705ff8505b8b2e06d6730a899d24ed90ca553fa405be51f5b99` |
 | `factory/tests/test_landing_backup.py` | `84183519c4aefa9e4518744d81c30b9dca045c50812956721a3999f55036cbd3` |

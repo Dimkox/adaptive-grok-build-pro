@@ -28,4 +28,4 @@ Deviation from expectation: there is NO `__init__.py` in this commit — the `__
 - Pre-existing, not from this commit: `review_status`/`source_gate_status` unpinned before and after (0 refs in both revisions); the 4 assertions in (a)–(c) all sit inside one mega-test, so a failure reports a single name.
 
 ## Files
-Read-only everywhere; writes only /tmp/mut/* copies and this file. Worktree /home/pall/grok-projects/adaptive-grok-build-pro-release-successor verified clean (git status --porcelain empty at start, no edits made).
+Read-only everywhere; writes only /tmp/mut/* copies and this file. Worktree <local-path> verified clean (git status --porcelain empty at start, no edits made).

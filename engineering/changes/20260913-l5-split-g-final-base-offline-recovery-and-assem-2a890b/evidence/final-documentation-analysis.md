@@ -1,6 +1,6 @@
 # Final G3 documentation analysis
 
-Read-only documentation correction follow-up against `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3`, branch `feat/l5-split-g-final-runtime`, exact HEAD `e6a813e4c16543f262ced2d9ea353caaad9452d1`, route `2a890b6485a5`, genuine predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. Source status was clean. This report is written only in the counterpart evidence checkout. The restarted full verifier is independent of this analysis; no complete-verification or independent code/test/data-review result is asserted here.
+Read-only documentation correction follow-up against `<local-path>`, branch `feat/l5-split-g-final-runtime`, exact HEAD `e6a813e4c16543f262ced2d9ea353caaad9452d1`, route `2a890b6485a5`, genuine predecessor `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`. Source status was clean. This report is written only in the counterpart evidence checkout. The restarted full verifier is independent of this analysis; no complete-verification or independent code/test/data-review result is asserted here.
 
 **Documentation result: no remaining material finding in the requested scope. DOC-01 is resolved.** The corrected `factory/README.md` dedicated-host clause now says it composes authenticated landing routes and health endpoints, and explicitly states that `/metrics` returns 404. This matches the unchanged landing-only API branch and existing host regression. No product change was needed for the correction.
 

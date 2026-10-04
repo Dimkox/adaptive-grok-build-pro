@@ -1407,7 +1407,7 @@ module.main()
             scratch = root / 'build'
             scratch.mkdir()
             (scratch / 'adaptive-trust-ci-pin.env').write_text('SECRET=1\n', encoding='utf-8')
-            leftover = root / 'engineering/changes/20260817-user-query-leave-old'
+            leftover = root / 'engineering/changes/20260817-sanitized-query-leave-old'
             leftover.mkdir(parents=True)
             (leftover / 'brief.md').write_text('nope\n', encoding='utf-8')
             rels = [path.relative_to(root).as_posix() for path in included_files(root)]

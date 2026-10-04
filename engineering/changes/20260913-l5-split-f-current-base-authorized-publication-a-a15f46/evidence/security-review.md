@@ -4,7 +4,7 @@ Verdict: **PASS**. SEC-F-01 is closed on the exact source below. No remaining bl
 
 ## Exact identity and verification
 
-- Source, reviewed without edits: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2`.
+- Source, reviewed without edits: `<local-path>`.
 - HEAD: `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`.
 - Route: `a15f467e4575`; genuine base: `d33e8d8b2aa06a76f32724d08d79a21f3604ce42`.
 - Recomputed tree fingerprint: `aa60705bc8c9bbae34517a480ed842254c8b67db86b8b0a6cd3a119b6740cff5`.

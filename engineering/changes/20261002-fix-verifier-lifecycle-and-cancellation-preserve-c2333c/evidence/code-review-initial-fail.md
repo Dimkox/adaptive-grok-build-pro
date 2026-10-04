@@ -2,9 +2,9 @@
 
 Route-selected role: code_reviewer; route c2333ca04e25. Review scope is reconstructed issue 226, five product files and the complete active change package. No additional agents were dispatched.
 
-Source candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-a-verifier`. Base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`. HEAD before/after: `30297838c1a08a0ebe3944af07dfb69968202587`. Fingerprint before/after: `dd55524155ae434f96e778543ca8b789caa66ac3ab6d64b121bdff379f642e16`; status clean before/after.
+Source candidate: `<local-path>`. Base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`. HEAD before/after: `30297838c1a08a0ebe3944af07dfb69968202587`. Fingerprint before/after: `dd55524155ae434f96e778543ca8b789caa66ac3ab6d64b121bdff379f642e16`; status clean before/after.
 
-Scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/code-review-Ls59aR/repo`, cloned using `git clone --no-hardlinks --no-checkout <candidate> <scratch>` and detached checkout of exact HEAD. Parent and review directory are owner UID 1000, mode 0700, non-sticky. Unmutated scratch fingerprint matches source; all mutations were reverted with explicit patches, scratch product status clean afterward. Report/probe files reside only outside its product checkout in the reviewer directory.
+Scratch: `<local-path>`, cloned using `git clone --no-hardlinks --no-checkout <candidate> <scratch>` and detached checkout of exact HEAD. Parent and review directory are owner UID 1000, mode 0700, non-sticky. Unmutated scratch fingerprint matches source; all mutations were reverted with explicit patches, scratch product status clean afterward. Report/probe files reside only outside its product checkout in the reviewer directory.
 
 reviewed-tree-modified: no
 
@@ -12,7 +12,7 @@ reviewed-tree-modified: no
 
 **Medium: output scratch cleanup still discards completed results and cancellation.** `.grok-stack/adaptive_grok/python_test_runner.py:202` opens both output files as ordinary context managers. The `return result` at line 252 and `cancelled.check(result)` at line 251 execute before their exits. An OSError closing either output file replaces the completed ProcessResult or RunCancelled. The caller receives no result/output, and `_command_check` (verification.py:439-447) catches only RunCancelled; the outer verifier catches cancellation exceptions, not this OSError. This violates AC-001 scratch-cleanup preservation and AC-002 cancellation metadata preservation.
 
-Executable fault probe on unmutated product: `taskset -c 4 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/code-review-Ls59aR/probe_cleanup.py`. The probe wraps the real TemporaryFile, really closes it, and raises OSError from the wrapper's finally; the real child prints a specific failure and exits 7. Second case introduces SIGTERM during the real owned-group cleanup before the same failing output close. Observed:
+Executable fault probe on unmutated product: `taskset -c 4 python3 <local-path>`. The probe wraps the real TemporaryFile, really closes it, and raises OSError from the wrapper's finally; the real child prints a specific failure and exits 7. Second case introduces SIGTERM during the real owned-group cleanup before the same failing output close. Observed:
 
 ```text
 LOST_RESULT OSError injected output scratch close failure has_result=False

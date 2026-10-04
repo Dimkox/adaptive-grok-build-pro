@@ -7,7 +7,7 @@ base `6f3b6ed2853b7a6f78804888cffca578d4dc9448`. No credential was read, no test
 model was run, and no network or external write was attempted.
 
 The target identity was verified from the locally available Git object at
-`/home/pall/grok-projects/ai-dark-factory-landing`, without fetching:
+`<local-path>`, without fetching:
 
 | Property | Closed value |
 | --- | --- |

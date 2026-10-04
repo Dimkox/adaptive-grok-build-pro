@@ -2,7 +2,7 @@
 
 VERDICT: fail (one blocking evidence defect, F-1; the test code itself is sound — no re-implementation needed)
 
-Reviewed tree: worktree `/home/pall/grok-projects/adaptive-grok-build-pro-l5-coverage`, HEAD `5f6f6ce`,
+Reviewed tree: worktree `<local-path>`, HEAD `5f6f6ce`,
 uncommitted working tree. Host: Python 3.12.3, `httpx` 0.28.1 present; `fastapi`, `uvicorn`, `psycopg`,
 `pypdf` absent; `coverage` 7.15.4. All measurements re-run by this review; coverage data written only to
 `/tmp/review-testreview-9001/` via `COVERAGE_FILE` (`git status --porcelain` identical before and after).
@@ -156,7 +156,7 @@ real tree after every experiment.
   *failure*, so the parent `setUp` did not pre-empt the child, exactly what §4's own caveat said it could
   not show for M3/M4.
 - **F-3 CLOSED.** `foreign()` fires on a real installed third-party package: `import certifi` in the helper →
-  `AssertionError: [('certifi', ['/home/pall/.local/lib/python3.12/site-packages/certifi/__init__.py', …]),
+  `AssertionError: [('certifi', ['<local-path>, …]),
   ('certifi.core', […])]`; `import PIL` → `AssertionError: [('PIL', [.../site-packages/PIL/__init__.py, …]),
   ('PIL._version', […])]` — the same shape §4/M2 records (Pillow really is installed here, so M2 needed no
   stub). Name-blocklist additions bite too: `import starlette` and `import psycopg2` →

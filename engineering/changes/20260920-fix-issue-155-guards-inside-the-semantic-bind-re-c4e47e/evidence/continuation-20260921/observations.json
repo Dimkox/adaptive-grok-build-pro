@@ -7,7 +7,7 @@
     "strict": true,
     "checks": [
       {
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "context": "adaptive-trust-ci/verified@06ecf1c875bc"
       }
     ]

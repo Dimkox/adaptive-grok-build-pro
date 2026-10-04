@@ -4,7 +4,7 @@ Verdict: **FAIL**. A supported-schema validation gap permits silent replacement 
 
 - Reviewer: selected independent read-only `data_reviewer`; sole implementer is `data_implementer`.
 - Route: `a15f467e4575`; change: `20260913-l5-split-f-current-base-authorized-publication-a-a15f46`.
-- Source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2`.
+- Source: `<local-path>`.
 - Exact HEAD: `5a2ead6e6e1eff5c5df28a8d4bcb91a209975187`.
 - Genuine route base: `d33e8d8b2aa06a76f32724d08d79a21f3604ce42`.
 - Tree fingerprint: `939cd5d8b4cf7af62b8a275faef0e791a8645cea3e7e4a1e065aa2a06a2698f5`.

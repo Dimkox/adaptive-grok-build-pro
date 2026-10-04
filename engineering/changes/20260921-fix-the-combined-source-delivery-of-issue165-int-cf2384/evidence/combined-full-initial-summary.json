@@ -159,7 +159,7 @@
         "-p",
         "pytest_cov.plugin",
         "--cov",
-        "--cov-config=/home/pall/grok-projects/adaptive-grok-build-factory-tooling/.coveragerc",
+        "--cov-config=<local-path>",
         "--cov-report=term",
         "tests"
       ]
@@ -173,7 +173,7 @@
         "-m",
         "coverage",
         "report",
-        "--rcfile=/home/pall/grok-projects/adaptive-grok-build-factory-tooling/.coveragerc"
+        "--rcfile=<local-path>"
       ]
     },
     {

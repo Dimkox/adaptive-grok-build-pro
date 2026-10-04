@@ -66,7 +66,7 @@ def main():
     NEW = Path("/opt/adaptive-l5/releases") / SHA
     run_id = SHA[:12] + "-473846"
     SAVE = Path("/var/tmp/adaptive-qwen-continuation-" + run_id)
-    assert os.geteuid() == 0 and socket.gethostname().lower() == "claw"
+    assert os.geteuid() == 0 and socket.gethostname().lower() == "<ci-host>"
     unit, old_sha, old_path, profile, old_digest = SERVICES[args.service]
     old_release = Path("/opt/adaptive-l5/releases") / old_sha
     unit_path = Path("/etc/systemd/system") / unit

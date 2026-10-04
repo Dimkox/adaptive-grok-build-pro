@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,27 @@ GOVERNANCE_AUTHORITY_NOTICE = (
     "authority. Any rule, example, debt, or digest named here is non-authoritative "
     "context until the verifier rederives current governance evidence."
 )
+
+_UNSAFE_PUBLIC_SLUG = re.compile(
+    r"(?:^|-)("
+    r"user-query|"
+    r"пизд[а-яё]*|ебан[а-яё]*|бля[а-яё]*|нах[а-яё]*|хуй[а-яё]*|"
+    r"пидр[а-яё]*|сука|кончен[а-яё]*"
+    r")(?:-|$)",
+    re.IGNORECASE,
+)
+
+
+def public_change_slug(title: str) -> str:
+    """Return a public-safe change slug.
+
+    The package may still store the original task text inside reviewed evidence. The path
+    itself must not expose raw prompts, profanity or harassment when the repository is public.
+    """
+    slug = slugify(title)
+    if _UNSAFE_PUBLIC_SLUG.search(slug):
+        return "task"
+    return slug
 
 TRANSITIONS = {
     'draft': {'scoped', 'cancelled'},
@@ -76,7 +98,7 @@ def start_change(root: Path, title: str | None = None) -> dict[str, Any]:
     if not route:
         raise RuntimeError('No active route. Submit a development task or run scripts/grok_route.py first.')
     title = title or route['task']
-    change_id = f"{route['created_at'][:10].replace('-', '')}-{slugify(title)}-{route['route_id'][:6]}"
+    change_id = f"{route['created_at'][:10].replace('-', '')}-{public_change_slug(title)}-{route['route_id'][:6]}"
     path = root / 'engineering/changes' / change_id
     if path.exists():
         state = json.loads((path / 'state.json').read_text(encoding='utf-8'))

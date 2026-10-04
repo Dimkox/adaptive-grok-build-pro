@@ -14,7 +14,7 @@ The accepted M2+M3 stack is `origin/milestone/m2-executable-architecture@67714a1
 The live main protection is authoritative and currently requires strict/up-to-date status:
 
 - `adaptive-trust-ci/verified@06ecf1c875bc`;
-- GitHub App ID `4694114`;
+- GitHub App ID `<redacted-app-id>`;
 - exact pull-request head SHA, with a new run and new external approvals after any head or base change.
 
 ## Evidence that controls the ruling
@@ -82,7 +82,7 @@ If #19 can be merged before the state PR is committed/pushed, doing so preserves
 
 Merge #19 only at an exact green head and with the exact delegated PR merge operation. After merge, fetch `origin/main` and record the resulting merge commit. #18 is only staging integration and does not substitute for this delivery.
 
-External gates: GitGuardian success; `adaptive-trust-ci/verified@06ecf1c875bc` success from App `4694114`; strict current base; any policy-requested exact-SHA approvals; exact local merge grant.
+External gates: GitGuardian success; `adaptive-trust-ci/verified@06ecf1c875bc` success from App `<redacted-app-id>`; strict current base; any policy-requested exact-SHA approvals; exact local merge grant.
 
 ### Phase 2 — deliver the accepted M2+M3 aggregate once
 

@@ -1,6 +1,6 @@
 # Architect analysis — Caroline project confirmation
 
-Route: `f9b49845f0f6`. Author: selected `architect` only. Scope: documentation design and integration constraints; not implementation review or independent merge authority. Inspected isolated worktree `/home/pall/grok-projects/caroline-m8-confirmation-20260913`; no project-completion checkout touched.
+Route: `f9b49845f0f6`. Author: selected `architect` only. Scope: documentation design and integration constraints; not implementation review or independent merge authority. Inspected isolated worktree `<local-path>`; no project-completion checkout touched.
 
 ## Sources inspected
 

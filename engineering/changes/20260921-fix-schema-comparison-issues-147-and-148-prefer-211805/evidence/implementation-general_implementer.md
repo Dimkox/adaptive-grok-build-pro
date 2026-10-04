@@ -13,7 +13,7 @@ The shared `_result` helper already sorts and deduplicates final findings; issue
 
 ## Focused verification
 
-Raw logs reside at `/home/pall/.cache/agbp-run/issues-wave-20260921/schema/`.
+Raw logs reside at `<local-path>`.
 
 Initial RED, before product edits: `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack python3 -m unittest` with these exact test selectors; exit 1, seven tests, twelve failing subtests in `red.log`:
 

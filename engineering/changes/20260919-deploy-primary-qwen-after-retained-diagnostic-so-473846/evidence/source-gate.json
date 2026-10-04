@@ -23,7 +23,7 @@
     "started_at": "2026-09-19T19:09:17Z",
     "completed_at": "2026-09-19T19:30:18Z"
   },
-  "github_app_id": 4694114,
+  "github_app_id": <redacted-app-id>,
   "summary": "holdout-bundle-integrity: pass (exit 0)\nexternal-holdout: pass (exit 0)\nroot-unittest: pass (exit 0)\ntrust-ci-unittest: pass (exit 0)\ncompileall: pass (exit 0)\nrepository-verification: pass (exit 0)\nattestation=2a36d29d-24d2-4c68-98c6-7d2ee6957671; signer=0519cf1d47436f2e",
   "source_clone": "/var/tmp/adaptive-qwen-source-473846",
   "installed": false

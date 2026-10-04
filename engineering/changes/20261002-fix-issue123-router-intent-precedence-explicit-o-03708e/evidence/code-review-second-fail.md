@@ -5,13 +5,13 @@ Status: **FAIL — three bounded contextual false positives require repair.** Th
 ## Source and isolation
 
 - Role: route-selected `code_reviewer`, route `03708e8ba495`.
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router`.
+- Candidate: `<local-path>`.
 - Actual agreed base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
 - HEAD before/after: `5f96f392a8f3b10068d5a4a033f90fd910e9083b`.
 - Git tree: `c265b4c9abf542fc86932c242ade5a0e93ded663`.
 - Fingerprint before/after: `afd34d601fa83a247aaac2344f7ce3aad563491d6dd2e8115779a72cf9186c87`.
 - Candidate porcelain inventory was empty before/after; final identity observation: `2026-10-02T23:49:35Z`.
-- Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr`; snapshot at its `snapshot/` child.
+- Private scratch: `<local-path>`; snapshot at its `snapshot/` child.
 - Scratch parent and unique directory were verified as owner pall/UID1000, mode0700, non-sticky. Exact clean source was reproduced by `git clone --no-hardlinks --no-checkout` and detached checkout of the reviewed HEAD; snapshot fingerprint matched before and after.
 - All execution and mutants stayed in scratch. Mutants replaced one asserted source fragment in memory in fresh Python processes; scratch product files remained unchanged. No candidate source edits, receipts, subagents, full-suite executions or external operations were performed.
 
@@ -56,7 +56,7 @@ The earlier code report is retained byte-identically: both candidate copy and or
 Fresh adjacent command, from scratch snapshot:
 
 ```bash
-taskset -c 16 env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
+taskset -c 16 env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
 ```
 
 Observed: exit0, **81 tests in 41.877s, OK**.
@@ -64,7 +64,7 @@ Observed: exit0, **81 tests in 41.877s, OK**.
 Independent command:
 
 ```bash
-taskset -c 16 env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr/review_probe.py independent
+taskset -c 16 env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 <local-path> independent
 ```
 
 Observed: exit0, two methods, zero failures/errors. One method checks 14 literal cases, including all six earlier code-review counterexamples, additional artifact-history qualifiers, coordinated negation, descriptive plans and independent sentence/semicolon resets. Release positives assert complete ownership, risk, skills, reviewers, evidence and gates. The other checks incident-plus-publication containment/operational controls and preservation of raw SQL/auth/production safety inside excluded quotes.
@@ -72,7 +72,7 @@ Observed: exit0, two methods, zero failures/errors. One method checks 14 literal
 Exact new-finding command:
 
 ```bash
-taskset -c 16 env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 - <<'PY'
+taskset -c 16 env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 - <<'PY'
 import sys, tempfile
 from pathlib import Path
 sys.path.insert(0,'.grok-stack')
@@ -99,7 +99,7 @@ Exact corrected mutation loop, from scratch snapshot:
 
 ```bash
 for review_mutant in release-precedence-lost object-history-veto-restored object-negation-veto-restored relative-past-veto-restored plan-context-lost plural-noun-guard-lost historical-prefix-guard-lost quote-filter-lost; do
-  taskset -c 16 env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-recheck-6ELZzr/review_probe.py "$review_mutant"
+  taskset -c 16 env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 python3 <local-path> "$review_mutant"
   printf 'PROBE_EXIT=%s\n' "$?"
 done
 ```

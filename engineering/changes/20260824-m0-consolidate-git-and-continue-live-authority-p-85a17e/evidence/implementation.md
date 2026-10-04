@@ -14,13 +14,13 @@ Change `20260824-m0-consolidate-git-and-continue-live-authority-p-85a17e`. Route
 ## Commands (no secrets)
 
 - Attestation: `docker compose --project-name adaptive-trust-ci exec -T api python` GET `/attestations/1b63d10b-90c1-498a-97b8-7b5e0ea76aec` **HTTP 404**
-- Kill-switch: host STOP at `trust-ci/runtime/control` (API uid cannot write STOP). On → `GET http://127.0.0.1:18080/health/ready` **503**. Off → **200**. CLI `kill-switch status` **off**. No `compose down -v`.
+- Kill-switch: host STOP at `trust-ci/runtime/control` (API uid cannot write STOP). On → `GET http://<loopback-trust-ci>/health/ready` **503**. Off → **200**. CLI `kill-switch status` **off**. No `compose down -v`.
 - `python3 -m unittest trust-ci.tests.test_m0_invariants`
 - `python3 scripts/grok_verify.py --mode pr`
 
 ## Residual risk
 
-- Worker overlay still mounts host docker.sock (claw-only exception). Public HTTPS webhook absent. SHA-change not done (no push). Policy/holdout retitle and human Ed25519 requeue blocked. Leftover change packages stay unstaged.
+- Worker overlay still mounts host docker.sock (<ci-host>-only exception). Public HTTPS webhook absent. SHA-change not done (no push). Policy/holdout retitle and human Ed25519 requeue blocked. Leftover change packages stay unstaged.
 
 ## Rollback
 

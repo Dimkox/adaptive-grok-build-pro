@@ -1,6 +1,6 @@
 # Fixture precursor docs_researcher — route 2d02ba9e25dc
 
-Read active evidence/analysis-brief.md first. Candidate HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1. Private scratch /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/docs-researcher-fixture-xV5hzo verified0700; capacity.md records fresh topology/cgroup discovery, CPU8/one lightweight worker. Candidates stayed read-only; no tests, DB, caches, external writes, subagents or secrets. Static acceptance recommendations only.
+Read active evidence/analysis-brief.md first. Candidate HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1. Private scratch <local-path> verified0700; capacity.md records fresh topology/cgroup discovery, CPU8/one lightweight worker. Candidates stayed read-only; no tests, DB, caches, external writes, subagents or secrets. Static acceptance recommendations only.
 
 Freeze criteria before writer: extract exactly the disposable reset seam, preserve explicit ordered legacy001-025 inventory, RESTART IDENTITY, counter initialization and each caller's synthetic authority observation. Keep TRUNCATE non-CASCADE, connection/transaction ownership and existing guards/timeouts unchanged. Characterize rollback on a reset failure so later resets/seeding cannot leave partially committed fixture state. The helper must not discover arbitrary tables, accept an unchecked SQL fragment, open another datastore or alter migrator/production privileges. Future026 inventory is a separately reviewed helper extension, not precursor migration/product scope.
 

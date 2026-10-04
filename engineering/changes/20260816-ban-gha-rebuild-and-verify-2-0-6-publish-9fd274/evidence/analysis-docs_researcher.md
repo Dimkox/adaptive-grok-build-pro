@@ -43,7 +43,7 @@ This package `architecture.md`:
 
 Sibling stub `39b13f/brief.md` records the raw user line:
 
-> НИКОГДА НЕ ИСПОЛЬЗУЕМ ЕБАНЫЕ GITHUB ACTOIONS!!!!!!!
+> НИКОГДА НЕ ИСПОЛЬЗУЕМ [sanitized]ЫЕ GITHUB ACTOIONS!!!!!!!
 
 Source-of-truth order (`AGENTS.md`): user-approved scope beats ADRs and existing implementation. There is no named human gate on this route. The ban is the scope.
 

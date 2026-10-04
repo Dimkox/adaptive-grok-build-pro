@@ -1,6 +1,6 @@
 # Architect — fixture precursor 2d02ba9e25dc
 
-Candidate HEAD/base63799f8760d3a55028d83ab5ff0116ececf8f7d1; only change-package untracked at inspection. Read-only F reference e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69. Private report/startup snapshot /home/pall/grok-projects/adaptive-grok-build-pro/.architect-reset-gSdGwguh/ (0700), CPU1 one worker. reviewed-tree-modified: no. This is design analysis, not verification or review approval.
+Candidate HEAD/base63799f8760d3a55028d83ab5ff0116ececf8f7d1; only change-package untracked at inspection. Read-only F reference e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69. Private report/startup snapshot <local-path> (0700), CPU1 one worker. reviewed-tree-modified: no. This is design analysis, not verification or review approval.
 
 ## Freeze smallest helper
 

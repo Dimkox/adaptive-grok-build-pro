@@ -3,7 +3,7 @@
 **PASS for the bounded source-delivery review.** No blocking compatibility, recovery, scope, or evidence-provenance defect was found in the inspected integration. Final documentation freeze, current local receipts, the other selected reviews, and the successor's external gate are still required. This report grants no merge, release-publication, deployment, or issue-closure authority.
 
 - Reviewer: selected independent `release_reviewer`, route `bcc1d645c438`, 2026-09-21.
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`.
+- Worktree: `<local-path>`.
 - Base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 - Inspected HEAD: `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`.
 - Inspected Git tree: `a23e37ad27a292f7bf541a50b84246ab47f96706`.
@@ -50,4 +50,4 @@ The accepted ingress record preserves its then-`in_progress` PR #170 snapshot (`
 
 ## Delivery conditions retained
 
-Finish the documentation freeze and all five selected reviews, then obtain current fingerprint-bound local evidence for the actual final tree. Deliver one isolated successor under exact delegated operations and require the configured App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from App `4694114` on its exact current head/base, plus separately required signed scopes (`change/release.md:3`). Keep draft PRs #171/#172 open until that successor is actually delivered, then link any verified issue and superseded-PR closures to it. Preserve the separate #162 trusted-validator successor. There is no tag, GitHub Release publication, production migration, or deployment decision in this review.
+Finish the documentation freeze and all five selected reviews, then obtain current fingerprint-bound local evidence for the actual final tree. Deliver one isolated successor under exact delegated operations and require the configured App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from App `<redacted-app-id>` on its exact current head/base, plus separately required signed scopes (`change/release.md:3`). Keep draft PRs #171/#172 open until that successor is actually delivered, then link any verified issue and superseded-PR closures to it. Preserve the separate #162 trusted-validator successor. There is no tag, GitHub Release publication, production migration, or deployment decision in this review.

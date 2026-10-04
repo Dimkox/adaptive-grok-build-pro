@@ -94,7 +94,7 @@ def main():
     args = parser.parse_args()
     phase = args.phase
     assert re.fullmatch(r'[0-9a-f]{40}', args.target_sha), 'exact target SHA required'
-    assert os.geteuid() == 0 and socket.gethostname().lower() == 'claw'
+    assert os.geteuid() == 0 and socket.gethostname().lower() == '<ci-host>'
     NEW = Path('/opt/adaptive-l5/releases') / args.target_sha
     run_id = args.target_sha[:12] + '-473846'
     SAVE = Path('/var/tmp/adaptive-qwen-continuation-' + run_id) / 'qwen'
@@ -116,7 +116,7 @@ def main():
         expected_jobs[args.terminal_state] = expected_jobs.get(args.terminal_state, 0) + 1
     FAILED = {'schema': 2, 'jobs': expected_jobs}
     assert not any(expected_jobs.get(state, 0) for state in ('accepted', 'normalizing', 'generating', 'evaluating')), 'ambiguous work remains stopped'
-    assert os.geteuid() == 0 and socket.gethostname().lower() == 'claw'
+    assert os.geteuid() == 0 and socket.gethostname().lower() == '<ci-host>'
     account = pwd.getpwnam('adaptive-l5')
     original = (SAVE / 'old-config.json').read_bytes()
     assert hashlib.sha256(original).hexdigest() == 'f80b12107136d473ce06ffc12ea0817e960d137380fb12f60017bfc54e2a5ad6'

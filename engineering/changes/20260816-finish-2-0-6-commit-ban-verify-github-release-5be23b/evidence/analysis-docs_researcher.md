@@ -164,7 +164,7 @@ User-approved scope is source of truth #1 (`AGENTS.md`). This route has **no** n
 | Utterance | Where recorded | Meaning on file |
 | --- | --- | --- |
 | «делай всё полностью вместе с релизом» | `864726/brief.md:3`; `864726/evidence/human-approval.md:5`; `864726/route.json` task | Names the **release**. Demands the full last mile, not another assemble. |
-| «НИКОГДА НЕ ИСПОЛЬЗУЕМ ЕБАНЫЕ GITHUB ACTOIONS» | `39b13f/brief.md:12`; `9fd274/evidence/human-approval.md:3` | Bans **GitHub Actions**, not GitHub Release. |
+| «НИКОГДА НЕ ИСПОЛЬЗУЕМ [sanitized]ЫЕ GITHUB ACTOIONS» | `39b13f/brief.md:12`; `9fd274/evidence/human-approval.md:3` | Bans **GitHub Actions**, not GitHub Release. |
 | «и по новым правилам сам себя пересобери и проверь на версии 2.0.6» | `9fd274/evidence/human-approval.md:5` | Rebuild + local verify under the ban; stay on 2.0.6. |
 | «go ahed» / «go ahead» | Active route `task`; this `brief.md:3`; this `evidence/human-approval.md:5` | Proceed: commit the banned tree as 2.0.6, verify, publish Latest. |
 

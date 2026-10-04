@@ -16,7 +16,7 @@ Read-only. No APIs invented. No `.env`. No push / merge / deploy.
 - `CHANGELOG.md` §2.0.3 and §2.0.8
 - `tests/test_structure.py` (`test_required_files_exist`, `test_agents_md_starts_with_self_learning`, `test_engineering_self_learning_stubs_are_pointers`, `test_readme_is_free_mit_commercial_product`)
 - This change package (`brief.md`, `requirements.md`, `architecture.md`, `test-plan.md`, `tasks.md`, `release.md`)
-- Prior packages: `20260814-rename-remaining-codex-branding-to-grok-and-docu-b8b188` (origin of the graph), `20260816-user-query-я-все-еще-не-вижу-файлов-из-промпта-д-ba1615` (root logs), `20260816-user-query-гони-user-query-04ae05` (unfinished push)
+- Prior packages: `20260814-rename-remaining-codex-branding-to-grok-and-docu-b8b188` (origin of the graph), `20260816-task-ba1615` (root logs), `20260816-sanitized-query-гони-sanitized-query-04ae05` (unfinished push)
 - Sibling `evidence/analysis-repo_explorer.md`
 - `.grok/skills/adaptive-delivery/SKILL.md`, `.grok/skills/feature-workflow/SKILL.md`
 - `scripts/install_into.py` (copy/merge surface only; no new installer API)

@@ -1,6 +1,6 @@
 # Bounded fixture decomposition
 
-Read this assignment first. Repository /home/pall/grok-projects/adaptive-grok-build-pro; candidate .worktrees/v211-fixture-reset, route2d02ba9e25dc, baseline63799f8760d3a55028d83ab5ff0116ececf8f7d1. Ownerexplicitlyordereddecomposition,notbudgetraise. Fexample .worktrees/v211-f-evidence e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69 readonly; none of F feature/migration bytes belong here.
+Read this assignment first. Repository <local-path>; candidate .worktrees/v211-fixture-reset, route2d02ba9e25dc, baseline63799f8760d3a55028d83ab5ff0116ececf8f7d1. Ownerexplicitlyordereddecomposition,notbudgetraise. Fexample .worktrees/v211-f-evidence e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69 readonly; none of F feature/migration bytes belong here.
 
 Need smallest precursor seam for explicit synthetic PostgreSQL reset currently duplicated in factory/tests/test_execution_persistence_postgres.py and factory/tests/postgres_restart_probe.py; assess whether test_postgres_integration.py needs samehelper now or later by exactbudgets. Knownwhole-artifact charges277395/196AST,66536/69AST,411151/296ASTrespectively. Mainhasmigrations001-025; futureF026genuineFKdeps require six M7table resets. Helper mustpreserve legacy025 semantics and let futureFextend exactreset inventory withoutretouchingmonoliths. Preserveexactdisposabletargetguards/DBversion/timeouts/tableorder/boundedrollback and nocascade. No production source/service/dependency/newmigration/secret/liveDB/rulebudgetchanges. No discovery exclusions/monkeypatch/metricprefixevasion.
 

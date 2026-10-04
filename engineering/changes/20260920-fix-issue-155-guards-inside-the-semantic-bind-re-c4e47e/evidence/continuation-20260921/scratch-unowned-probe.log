@@ -3,7 +3,7 @@ F
 FAIL: test_seed_architecture_models_current_boundaries_and_real_contracts (tests.test_architecture_model.ArchitectureModelTests.test_seed_architecture_models_current_boundaries_and_real_contracts)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/.cache/agbp-run/p155-arch-control-ybbd7v9n/checkout/tests/test_architecture_model.py", line 1319, in test_seed_architecture_models_current_boundaries_and_real_contracts
+  File "<local-path>", line 1319, in test_seed_architecture_models_current_boundaries_and_real_contracts
     self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
 AssertionError: Tuples differ: (ArchitectureFinding(code='undeclared_sour[130 chars]r'),) != ()
 

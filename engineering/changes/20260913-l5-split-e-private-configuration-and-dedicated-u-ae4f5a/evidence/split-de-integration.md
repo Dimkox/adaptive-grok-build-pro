@@ -1,6 +1,6 @@
 # D/E integration preparation against frozen f31406e
 
-Source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-production`, `f31406e970d67f7cd59694da5de88915adb0fa68`; current B inventory also inspected in `adaptive-grok-build-pro-l5-split-b`. No D worktree existed at inspection, so this checks the planned construction, not an implemented/tested D tree. No repository files or services were changed. Correct deploy inventory is **22 DEPLOY_MEMBERS**; preserve frozen source bytes and do not repeat the earlier 24-member description.
+Source: `<local-path>`, `f31406e970d67f7cd59694da5de88915adb0fa68`; current B inventory also inspected in `adaptive-grok-build-pro-l5-split-b`. No D worktree existed at inspection, so this checks the planned construction, not an implemented/tested D tree. No repository files or services were changed. Correct deploy inventory is **22 DEPLOY_MEMBERS**; preserve frozen source bytes and do not repeat the earlier 24-member description.
 
 ## Construction and remaining future imports
 

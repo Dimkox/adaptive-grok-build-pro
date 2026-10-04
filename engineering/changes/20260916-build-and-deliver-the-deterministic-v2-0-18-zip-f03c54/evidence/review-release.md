@@ -16,7 +16,7 @@ python3 -m unittest tests.test_structure tests.test_project_state tests.test_man
 python3 -m unittest tests.test_structure tests.test_project_state tests.test_manifest_package tests.test_change_spec -> Ran 119 tests ... OK
 for m in ...; do python3 -m unittest tests.$m; done   -> 19 / 14 / 56 / 30
 python3 - <<zipfile/json>>   (INV-001 subtree equality fc8d9e6 vs HEAD; AC-003 null dump; zip integrity 2985 members, testzip None)
-Independent dual rebuild: umask 077; two `git clone --no-hardlinks` of /home/pall/grok-projects/adaptive-grok-build-pro
+Independent dual rebuild: umask 077; two `git clone --no-hardlinks` of <local-path>
   into /tmp/rr-a18-stage/{1,2} (0700), each `git checkout --detach fc8d9e6…`, each asserted HEAD==fc8d9e6 and
   `git status --porcelain` empty, each `python3 scripts/package_stack.py --output <clone>/…v2.0.18.zip`
 Tamper proof of the delivered-form assertion (extracted verbatim into a /tmp root; repo untouched):
@@ -83,7 +83,7 @@ Per-revision comparison `git show fc8d9e6:<p>` vs `git show HEAD:<p>`: `VERSION`
 
 `observed_main_sha` == `local_candidate.source_base` == `current_unreleased_change.source_base` == `artifact_child.source_parent` == `fc8d9e6f11bb188ee514784d3b6f614a6da72803` == the PR #107 merge == `refs/heads/main`. `runtime_observations.evidence` → `…/f03c54/evidence/runtime-observation-post-107.json`, which exists and whose `source_base` is the same 40-hex; `observed_at`, `runtime_observations.observed_at` and the dossier `observed_at` are all `2026-09-16T12:17:52Z`.
 
-`test_current_epoch_and_app_are_consistent_in_handoff_documents` (`tests/test_project_state.py:671-688`) requires `CURRENT_CHECK`, `str(CURRENT_APP_ID)` and the **full** `observed_main_sha` inside the README "Current state" section and the START_HERE "Current project state" section: `README.md:7,11` and `START_HERE.md:7,9` carry `fc8d9e6f11bb188ee514784d3b6f614a6da72803` plus `adaptive-trust-ci/verified@06ecf1c875bc` / `4694114`; the module is green, so this is test-enforced, not claimed. `DARK_FACTORY_ROADMAP.md:36` `observed source SHA: fc8d9e6… (2026-09-16; PR #107)` matches, and `work_inventory.open_pull_requests` is `[]`, which `gh pr list --state open` confirms.
+`test_current_epoch_and_app_are_consistent_in_handoff_documents` (`tests/test_project_state.py:671-688`) requires `CURRENT_CHECK`, `str(CURRENT_APP_ID)` and the **full** `observed_main_sha` inside the README "Current state" section and the START_HERE "Current project state" section: `README.md:7,11` and `START_HERE.md:7,9` carry `fc8d9e6f11bb188ee514784d3b6f614a6da72803` plus `adaptive-trust-ci/verified@06ecf1c875bc` / `<redacted-app-id>`; the module is green, so this is test-enforced, not claimed. `DARK_FACTORY_ROADMAP.md:36` `observed source SHA: fc8d9e6… (2026-09-16; PR #107)` matches, and `work_inventory.open_pull_requests` is `[]`, which `gh pr list --state open` confirms.
 
 `trust_ci.last_success` re-derived this session, every field agreeing:
 
@@ -91,7 +91,7 @@ Per-revision comparison `git show fc8d9e6:<p>` vs `git show HEAD:<p>`: `VERSION`
 $ gh api repos/…/commits/f8c5021c5dabea201cfd273efd55abe3b5893639/check-runs
 104782126773  adaptive-trust-ci/verified@06ecf1c875bc  completed  success
 $ gh api repos/…/check-runs/104782126773
-{"app":4694114,"conclusion":"success","name":"adaptive-trust-ci/verified@06ecf1c875bc","completed":"2026-09-16T12:11:23Z"}
+{"app":<redacted-app-id>,"conclusion":"success","name":"adaptive-trust-ci/verified@06ecf1c875bc","completed":"2026-09-16T12:11:23Z"}
 summary: holdout-bundle-integrity: pass · external-holdout: pass · root-unittest: pass
          trust-ci-unittest: pass · compileall: pass · repository-verification: pass
          attestation=46e81300-c8a9-42b2-b899-74dafe1d4e73; signer=0519cf1d47436f2e

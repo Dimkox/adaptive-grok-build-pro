@@ -14,4 +14,4 @@ Pre-merge signals are JSON/spec parse success, exact epoch/App agreement, known 
 
 ## Go/no-go criteria
 
-Go only if focused checks and route-selected reviews pass on the final fingerprint, the PR is up to date with protected `main`, and the App-owned exact-head check is `adaptive-trust-ci/verified@06ecf1c875bc` from App `4694114` with any required signed scope. Any changed observation, stale review, missing unique-work entry, graph mutation, forbidden path, or external gate gap is no-go.
+Go only if focused checks and route-selected reviews pass on the final fingerprint, the PR is up to date with protected `main`, and the App-owned exact-head check is `adaptive-trust-ci/verified@06ecf1c875bc` from App `<redacted-app-id>` with any required signed scope. Any changed observation, stale review, missing unique-work entry, graph mutation, forbidden path, or external gate gap is no-go.

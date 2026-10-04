@@ -1,8 +1,8 @@
 # Integration architect backlog analysis
 
 Date: 2026-09-21. Route `d54d3afd1c92`; analysis only, no product changes.
-Repository: `/home/pall/grok-projects/adaptive-grok-build-issues-wave`.
-Inspected HEAD: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48` (frozen PR #170 candidate), based on fetched main `90078959ff816068af374ad42f4bb80fdbaec866`. Coordinator confirmed remote refs were fetched. Source issue snapshot: `/home/pall/.cache/agbp-run/issues-wave-20260921/factory_contracts.json`.
+Repository: `<local-path>`.
+Inspected HEAD: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48` (frozen PR #170 candidate), based on fetched main `90078959ff816068af374ad42f4bb80fdbaec866`. Coordinator confirmed remote refs were fetched. Source issue snapshot: `<local-path>`.
 
 Read bootstrap, state, AGENTS, route, and adaptive-delivery/task-triage/api-event-change skills. Exactly this assigned analysis role; no extra agents, commits, provider/production calls, full verifier, Docker, or external writes. The six issues have no dedicated open implementation PR in the supplied open-PR snapshot; #163 builds on the sibling repair implementation in PR #170. Git diff shows no main-to-HEAD changes to either architecture module or the artifact inventory implementation/tests, so those findings apply to main too.
 

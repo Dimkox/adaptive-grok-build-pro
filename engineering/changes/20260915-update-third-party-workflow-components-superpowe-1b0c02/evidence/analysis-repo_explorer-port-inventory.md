@@ -2,7 +2,7 @@
 
 Analyst: repo_explorer role (read-only Explore agent). Transcribed verbatim by the single write owner after agent completion (the agent had no write tool).
 
-Provenance: source `/home/pall/grok-projects/adaptive-grok-build-pro-workflow-adapters` (`feature/workflow-artifact-adapters` @ `dccaeec`, merge-base with `origin/main` = `1c06299`); target `/home/pall/grok-projects/adaptive-grok-build-pro-third-party-sync` (`feature/third-party-components-sync` = `origin/main` @ `7b14736`, VERSION 2.0.16). Main is +1600 files/400k insertions past the merge-base; the branch is +236 files/43k.
+Provenance: source `<local-path>` (`feature/workflow-artifact-adapters` @ `dccaeec`, merge-base with `origin/main` = `1c06299`); target `<local-path>` (`feature/third-party-components-sync` = `origin/main` @ `7b14736`, VERSION 2.0.16). Main is +1600 files/400k insertions past the merge-base; the branch is +236 files/43k.
 
 Disclosure: one redundant probe created `/tmp/x` (1778 bytes, git-apply verbose noise, no repository content). Neither product tree was touched by the analysis.
 

@@ -8,7 +8,7 @@ Inspected: 2026-08-23. Read-only. No `.env` contents, no `*.pem` contents, no im
 
 This answers: what is the actual next implementable product/ops slice on this tree after the docs resume.
 
-Do **not** commit `engineering/changes/20260817-user-query-вычисти-*`. Do **not** `git push origin main`. Do **not** write measured image IDs into tracked `*.example` files.
+Do **not** commit `engineering/changes/20260817-sanitized-query-вычисти-*`. Do **not** `git push origin main`. Do **not** write measured image IDs into tracked `*.example` files.
 
 ---
 
@@ -27,7 +27,7 @@ Docs/K16/toolchain resume is already in the working tree (uncommitted). `tasks.m
 
 Dirty product files (keep; do not revert): `README.md`, `QUICKSTART.md`, `trust-ci/README.md`, `decisions.md`, `mistakes.md`, `tests/test_structure.py`, `tests/test_toolchain.py`, `.grok-stack/config/toolchain.json`, `engineering/runbooks/trust-ci-rollout.md`, plus this change package `state.json` / `tasks.md`.
 
-Untracked leftover: `engineering/changes/20260817-user-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/` — **do not commit**.
+Untracked leftover: `engineering/changes/20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2/` — **do not commit**.
 
 No filled `trust-ci/.env` or `trust-ci/env/*.env` exists. No `trust-ci/runtime/policy.json` or `trust-store.json`. A gitignored file `trust-ci/runtime/github-app-private-key.pem` exists (mode `0600`, 1675 bytes). **Do not read, copy, or commit it.**
 
@@ -37,10 +37,10 @@ No filled `trust-ci/.env` or `trust-ci/env/*.env` exists. No `trust-ci/runtime/p
 
 Paths:
 
-- `/home/pall/grok-projects/adaptive-grok-build-pro/trust-ci/compose.yaml`
-- `/home/pall/grok-projects/adaptive-grok-build-pro/trust-ci/compose.build.yaml`
-- `/home/pall/grok-projects/adaptive-grok-build-pro/trust-ci/compose.test.yaml`
-- interpolation template: `/home/pall/grok-projects/adaptive-grok-build-pro/trust-ci/.env.example`
+- `<local-path>`
+- `<local-path>`
+- `<local-path>`
+- interpolation template: `<local-path>`
 
 `tests/test_ops.py::test_production_compose_uses_prebuilt_images_and_isolated_dind` locks: production compose has **no** `build:` and requires `TRUST_CI_{POSTGRES,API,WORKER,DIND}_IMAGE:?`.
 
@@ -154,7 +154,7 @@ Checks signed manifest, matching deployed policy bytes, and `TRUST_CI_{API,WORKE
 
 `trust-ci/systemd/adaptive-trust-ci-compose.service` `ExecStartPre=` this script; `ExecStart=` `docker compose up -d --wait` of `postgres migrate api docker-engine runner-loader worker`. No `--build`. Cannot start until a signed supply-chain directory exists.
 
-### 2.3 Makefile (`/home/pall/grok-projects/adaptive-grok-build-pro/Makefile`)
+### 2.3 Makefile (`<local-path>`)
 
 Image/holdout-related targets:
 
@@ -242,17 +242,17 @@ Keep `REPLACE_WITH_KEY_ID_FROM_KEYGEN`, `REPLACE_WITH_HUMAN_IDENTITY`, `REPLACE_
 
 ## 5. Port 8080 occupancy (services were not stopped)
 
-`ss` shows `LISTEN 127.0.0.1:8080`.
+`ss` shows `LISTEN <loopback-service>`.
 
-`docker ps`: container `searxng-instance` (`searxng/searxng:2026.6.11-4dd0bf486`) publishes `127.0.0.1:8080->8080/tcp`.
+`docker ps`: container `searxng-instance` (`searxng/searxng:2026.6.11-4dd0bf486`) publishes `<loopback-service>->8080/tcp`.
 
-`GET http://127.0.0.1:8080/health/live` and `/health/ready` return **HTTP 404** SearXNG HTML (`searxng/2026.6.11+4dd0bf486`), not Trust CI.
+`GET http://<loopback-service>/health/live` and `/health/ready` return **HTTP 404** SearXNG HTML (`searxng/2026.6.11+4dd0bf486`), not Trust CI.
 
 `trust-ci/compose.yaml` hardcodes:
 
 ```yaml
 ports:
-  - "127.0.0.1:8080:8080"
+  - "<loopback-service>:8080"
 ```
 
 No env override. A live `docker compose up` of `api` **would collide** with SearXNG. Do not stop SearXNG. `engineering/changes/…/architecture.md` already rules: deploy on a free loopback port + HTTPS reverse proxy, not by stealing 8080.
@@ -285,7 +285,7 @@ API-only vs worker-only split: `compose.yaml` mounts `github-app-private-key.pem
 
 ## 7. What must NOT be committed
 
-- `engineering/changes/20260817-user-query-вычисти-*`
+- `engineering/changes/20260817-sanitized-query-вычисти-*`
 - `trust-ci/.env`, `trust-ci/env/*.env` (non-example)
 - `trust-ci/runtime/**` except `.gitkeep` (includes `github-app-private-key.pem`, future `policy.json`, signing keys)
 - Any `*.pem`, `*.key`, webhook secrets, App ID/install filled as if they were examples
@@ -302,7 +302,7 @@ Measured pins belong in **untracked** deploy files and in this change-package ev
 
 ## Recommended next slice
 
-The next coherent slice is **handoff step 3 only: local image build-without-push + measure + untracked pin**, not GitHub App, not `compose up`, not branch-protect, not commit of PR #2. On this host, docker/compose/buildx/syft/trivy and local `python:3.12-slim-bookworm` / `postgres:17.6-bookworm` / `docker:29-dind-rootless` plus `adaptive-trust-ci-{api,worker,runner,test}:2.1.0` already exist; cosign does not, so `supply-chain-release.sh` / `verify-supply-chain.sh` / systemd start are out of scope. The write owner should export local tags (not `REPLACE_WITH_*`) plus `TRUST_CI_PYTHON_BASE_IMAGE` and an absolute holdout path, run `docker compose -f trust-ci/compose.yaml -f trust-ci/compose.build.yaml --profile build build api worker runner-image` (rebuild if they want current `trust-ci/` sources in the image; existing images predate the dirty README), inspect `$TRUST_CI_{API,WORKER,RUNNER}_IMAGE` for `.Id` and `RepoDigests[0]`, run `make trust-ci-holdout-digest` against a reviewed external directory (not as a git pin of a new digest), and copy those **measured** values only into gitignored `trust-ci/.env` and `trust-ci/runtime/policy.json`. Leave every `REPLACE_WITH_*` in tracked examples. Do not `docker compose up` (SearXNG owns `127.0.0.1:8080`; `runner-loader` needs a registry or DinD load). Do not stop SearXNG. Record the measured IDs in change-package evidence as local-only.
+The next coherent slice is **handoff step 3 only: local image build-without-push + measure + untracked pin**, not GitHub App, not `compose up`, not branch-protect, not commit of PR #2. On this host, docker/compose/buildx/syft/trivy and local `python:3.12-slim-bookworm` / `postgres:17.6-bookworm` / `docker:29-dind-rootless` plus `adaptive-trust-ci-{api,worker,runner,test}:2.1.0` already exist; cosign does not, so `supply-chain-release.sh` / `verify-supply-chain.sh` / systemd start are out of scope. The write owner should export local tags (not `REPLACE_WITH_*`) plus `TRUST_CI_PYTHON_BASE_IMAGE` and an absolute holdout path, run `docker compose -f trust-ci/compose.yaml -f trust-ci/compose.build.yaml --profile build build api worker runner-image` (rebuild if they want current `trust-ci/` sources in the image; existing images predate the dirty README), inspect `$TRUST_CI_{API,WORKER,RUNNER}_IMAGE` for `.Id` and `RepoDigests[0]`, run `make trust-ci-holdout-digest` against a reviewed external directory (not as a git pin of a new digest), and copy those **measured** values only into gitignored `trust-ci/.env` and `trust-ci/runtime/policy.json`. Leave every `REPLACE_WITH_*` in tracked examples. Do not `docker compose up` (SearXNG owns `<loopback-service>`; `runner-loader` needs a registry or DinD load). Do not stop SearXNG. Record the measured IDs in change-package evidence as local-only.
 
 **Files the write owner (`general_implementer`) may touch**
 
@@ -312,5 +312,5 @@ The next coherent slice is **handoff step 3 only: local image build-without-push
 - **Do not** edit `trust-ci/compose.yaml` port in this slice (that is deploy / 8080 collision, step 5)
 - **Do not** add Makefile push/release targets or install cosign unless a later supply-chain slice is explicitly ordered
 - **Do not** create/install the GitHub App, register a webhook, or run `branch-protect`
-- **Do not** commit the leftover `20260817-user-query-вычисти-*` package or any `trust-ci/runtime/*.pem`
+- **Do not** commit the leftover `20260817-sanitized-query-вычисти-*` package or any `trust-ci/runtime/*.pem`
 - Product docs already dirty from the docs resume may stay as-is; step 9 is the commit of that tree after external evidence exists

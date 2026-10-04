@@ -14,7 +14,7 @@
 
 The current-main handoff is materially stale. `main` has M0 delivered and an early M1 schema/CLI slice from PR #4, but the complete M1 source plus M2 source were implemented and reviewed on the stacked PR #10, then merged only into `milestone/m1-typed-intent-evidence`. M3 was implemented and reviewed on PR #11 and merged only into `milestone/m2-executable-architecture`. M4 is implemented and had passing local reviews at product head `f82134d...`; PR #17 is still open, its remote head `8e65041...` failed both the current Trust CI check and GitGuardian, and the local branch contains two additional unpushed verifier commits through `cf0219b...`. None of the M1-completion, M2, M3, or M4 stacked source is delivered to `main`.
 
-The live merge authority has moved from epoch `6737355947c2` to `06ecf1c875bc`. The Trust CI readiness endpoint reports full policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`; protected `main` requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`. PR #19 proves a successful exact-head Check Run owned by App `adaptive-trust-ci` (`app.id=4694114`).
+The live merge authority has moved from epoch `6737355947c2` to `06ecf1c875bc`. The Trust CI readiness endpoint reports full policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`; protected `main` requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `<redacted-app-id>`. PR #19 proves a successful exact-head Check Run owned by App `adaptive-trust-ci` (`app.id=<redacted-app-id>`).
 
 The repair must not call M1-M4 “complete on main,” and must not call stacked PR #10/#11 merges product delivery. Keep four independent status dimensions: implementation, independent review, merge into a named branch, and delivery to `main`.
 
@@ -44,7 +44,7 @@ Live `GET /health/ready` returned:
 Live GitHub protection for `main`:
 
 - required check: `adaptive-trust-ci/verified@06ecf1c875bc`;
-- required-check App ID: `4694114`;
+- required-check App ID: `<redacted-app-id>`;
 - strict/up-to-date checks: true;
 - pull request required; approving review count is zero; stale reviews dismissed;
 - administrators enforced;
@@ -55,9 +55,9 @@ Exact Check Run ownership proof:
 
 | PR/head | Check | Conclusion | App |
 | --- | --- | --- | --- |
-| #19 `ecc85d903d03...` | `adaptive-trust-ci/verified@06ecf1c875bc` | success | `adaptive-trust-ci`, ID `4694114` |
-| #18 `514f6e35e7ae...` | `adaptive-trust-ci/verified@06ecf1c875bc` | success | `adaptive-trust-ci`, ID `4694114` |
-| #17 `8e6504168462...` | `adaptive-trust-ci/verified@06ecf1c875bc` | failure | `adaptive-trust-ci`, ID `4694114` |
+| #19 `ecc85d903d03...` | `adaptive-trust-ci/verified@06ecf1c875bc` | success | `adaptive-trust-ci`, ID `<redacted-app-id>` |
+| #18 `514f6e35e7ae...` | `adaptive-trust-ci/verified@06ecf1c875bc` | success | `adaptive-trust-ci`, ID `<redacted-app-id>` |
+| #17 `8e6504168462...` | `adaptive-trust-ci/verified@06ecf1c875bc` | failure | `adaptive-trust-ci`, ID `<redacted-app-id>` |
 
 ## Milestone truth table
 
@@ -205,7 +205,7 @@ Current-state bullets 13-14 are stale.
 
 Replace the old epoch sentence with:
 
-> Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. As observed on 2026-09-01, protected `main` requires the App-owned check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; the deployed full policy digest is `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
+> Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. As observed on 2026-09-01, protected `main` requires the App-owned check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `<redacted-app-id>`; the deployed full policy digest is `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
 
 Replace the “active M1 / draft PR #8 / implementation has not started” bullet with a compact status table or this paragraph:
 
@@ -219,7 +219,7 @@ Stale areas: current-state bullets 9-14, bootstrap step 3, and the entire “Cur
 
 Minimal replacement:
 
-- update the required epoch to `06ecf1c875bc`, App `4694114`;
+- update the required epoch to `06ecf1c875bc`, App `<redacted-app-id>`;
 - replace “M1 implementation has not started” with the M0-M4 delivery distinction above;
 - replace “continue M1 from PR #8 / Task 1” with “inspect PR #10, #11, #17 and their exact bases/heads; integrate from current protected `main`; do not treat a stack merge as main delivery; do not start M5”;
 - retain the no-chat, no-secret, no-GitHub-Actions, and exact-SHA instructions unchanged.
@@ -232,7 +232,7 @@ The dated entries describing epoch `6737355947c2`, PR #5 as unmerged, or earlier
 
 > ## 2026-09-01 — Separate stack acceptance from main delivery
 >
-> A milestone is delivered only when its source reaches protected `main`; a PR merged into another milestone branch records stack acceptance, not product delivery. Current epoch `06ecf1c875bc` is bound to App `4694114`; keep M1-M4 implementation/review/merge-target/main-delivery as separate fields and consolidate their delivery before starting M5.
+> A milestone is delivered only when its source reaches protected `main`; a PR merged into another milestone branch records stack acceptance, not product delivery. Current epoch `06ecf1c875bc` is bound to App `<redacted-app-id>`; keep M1-M4 implementation/review/merge-target/main-delivery as separate fields and consolidate their delivery before starting M5.
 
 ### `mistakes.md`
 
@@ -251,11 +251,11 @@ The baseline is explicitly historical, but its current-state gap table and start
 
 Minimal changes:
 
-1. Keep the original baseline SHA as historical provenance, but add a dated “live state overlay” immediately after it with observed `main` `1c062998...`, required epoch `06ecf1c875bc`, App `4694114`, and the M0-M9 truth table.
+1. Keep the original baseline SHA as historical provenance, but add a dated “live state overlay” immediately after it with observed `main` `1c062998...`, required epoch `06ecf1c875bc`, App `<redacted-app-id>`, and the M0-M9 truth table.
 2. Replace §3.3’s “must be verified” wording with the live proof already established: App-owned exact-head checks and app-bound branch protection are operational. Preserve separately any genuinely unproven operational items.
 3. Update §4 rows:
    - exact-SHA external Trust CI -> operational on protected main;
-   - GitHub App -> installed/proven, App `4694114`;
+   - GitHub App -> installed/proven, App `<redacted-app-id>`;
    - typed business specification -> partial on main, complete reviewed stack source not delivered;
    - executable architecture -> implemented/reviewed/stack-merged, not delivered;
    - controlled learning and debt ledger -> implemented/reviewed/stack-merged, not delivered;
@@ -324,7 +324,7 @@ python3 -m unittest discover -s tests -v
 python3 scripts/grok_verify.py --mode pr
 ```
 
-Any commit after verification or review invalidates fingerprint-bound local receipts. External merge eligibility requires a fresh `adaptive-trust-ci/verified@06ecf1c875bc` Check Run from App `4694114` on the exact final PR head.
+Any commit after verification or review invalidates fingerprint-bound local receipts. External merge eligibility requires a fresh `adaptive-trust-ci/verified@06ecf1c875bc` Check Run from App `<redacted-app-id>` on the exact final PR head.
 
 ## Commands used for this audit
 
@@ -335,8 +335,8 @@ git for-each-ref / git worktree list / git log / git show / git ls-tree
 git merge-base --is-ancestor / git rev-list --left-right --count
 gh repo view / gh pr list / gh pr view / gh api .../branches/main/protection
 gh api .../commits/<sha>/check-runs / gh api .../releases/latest
-curl http://127.0.0.1:18080/health/live
-curl http://127.0.0.1:18080/health/ready
+curl http://<loopback-trust-ci>/health/live
+curl http://<loopback-trust-ci>/health/ready
 ```
 
 No claim above relies on chat history or an unverified branch name alone.

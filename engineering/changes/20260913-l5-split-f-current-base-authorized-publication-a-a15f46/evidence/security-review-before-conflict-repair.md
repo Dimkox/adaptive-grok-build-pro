@@ -4,7 +4,7 @@ Verdict: **FAIL**. SEC-F-01 is a blocking supported-schema/data-integrity defect
 
 ## Reviewed identity and evidence
 
-- Read-only source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2`.
+- Read-only source: `<local-path>`.
 - HEAD: `5a2ead6e6e1eff5c5df28a8d4bcb91a209975187`.
 - Route: `a15f467e4575`; genuine base: `d33e8d8b2aa06a76f32724d08d79a21f3604ce42`.
 - Recomputed tree fingerprint: `939cd5d8b4cf7af62b8a275faef0e791a8645cea3e7e4a1e065aa2a06a2698f5`.

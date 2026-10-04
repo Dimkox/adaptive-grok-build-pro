@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
-  "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3",
+  "checkout": "<local-path>",
   "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
   "actual_initial_base": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
   "base_entries": 2136,

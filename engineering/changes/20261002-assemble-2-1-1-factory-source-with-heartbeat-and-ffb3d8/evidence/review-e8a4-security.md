@@ -5,13 +5,13 @@ Source readiness only: A-E/H/HB plus schema-025 test fixture. F/G remain pending
 ## Identity and isolation
 
 Original comparison base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
-Source: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source`.
+Source: `<local-path>`.
 HEAD before/after: `e8a4cd02cdc8ae047c3d8e2b88146856fc5c17c0`.
 Git tree before/after: `3cbdd03fb6403b6597bcd4acea4029e743f04de9`.
 Canonical `adaptive_grok.util.tree_fingerprint` before/after: `2f947056c276408529f450c8026b2d3b41393d441b7cbba6789cf3efb1fc5225`.
 Source status was empty before/after. Exact clean tracked HEAD independently cloned with `git clone --no-hardlinks --no-checkout`, then detached checkout of the exact HEAD.
 
-Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/security-otOoFU/snapshot`. Parent/role0700, pall, non-sticky. Scratch fingerprint matched source before/after, Git status empty. Synthetic copies used private TMPDIR; bytecode disabled; CPU14,15/max2; no DB/full suite/agents. Startup14 physical/28 logical, original affinity22, effective cpuset0-27, no finite readable ancestor quota, child widening succeeded28. Private snapshot preceded task inspection; copied to role `capacity.md` after brief supplied location.
+Private scratch: `<local-path>`. Parent/role0700, pall, non-sticky. Scratch fingerprint matched source before/after, Git status empty. Synthetic copies used private TMPDIR; bytecode disabled; CPU14,15/max2; no DB/full suite/agents. Startup14 physical/28 logical, original affinity22, effective cpuset0-27, no finite readable ancestor quota, child widening succeeded28. Private snapshot preceded task inspection; copied to role `capacity.md` after brief supplied location.
 
 reviewed-tree-modified: no
 
@@ -31,7 +31,7 @@ Required fix: match rederived active change_id/session/route fallback, retaining
 
 ## Executed checks and outcomes
 
-Commands below ran in the exact private clone. Prefix `P` means `taskset -c 14,15 env PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/security-otOoFU`.
+Commands below ran in the exact private clone. Prefix `P` means `taskset -c 14,15 env PYTHONDONTWRITEBYTECODE=1 TMPDIR=<local-path>`.
 
 `P python3 -m unittest tests.test_agent_lifecycle tests.test_architecture_model_preflight tests.test_governance.GovernanceInputBoundaryTests tests.test_governance.GovernanceLifecycleTests.test_repository_human_claim_cannot_confer_active_rule_authority tests.test_architecture_fitness.ArchitectureFitnessTests.test_change_separation_admits_bound_trust_ci_metadata tests.test_architecture_fitness.ArchitectureFitnessTests.test_change_separation_metadata_does_not_hide_implementation tests.test_verifier_recovery.VerifierRecoveryTests tests.test_verifier_recovery.DurableReceiptRecoveryTests tests.test_verifier_recovery.OwnedRunnerRecoveryTests.test_output_close_failure_fails_gate_with_completed_exit_visible tests.test_hooks.HookTests.test_sensitive_external_and_protected_writes_cannot_borrow_session_grants`
 
@@ -41,7 +41,7 @@ Observed:74 tests,65.774s,OK. Claims: stored generation/task mismatch/ACK and wr
 
 Observed:5 tests,12.945s,OK. Claims: installed helper byte/import identity, bounded nofollow reads, output-close signal/failure retention, sensitive root conflicts refused.
 
-`P python3 /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/security-otOoFU/boundary_probes.py`
+`P python3 <local-path>`
 
 Observed: baseline push/protected write deny; malformed lifecycle no generation deny; with generation both allow; changed-current-task old heartbeat ACCEPTED task-229. S1/S2 reproduced. No mutants (security role; mandatory only code/test).
 

@@ -1,7 +1,7 @@
 # Deferred issue: discover OpenClaw workspace paths before reading
 
 Status: reported by user, deferred; not reproduced in the target repository.
-Target: `/home/pall/grok-projects/google-ads-automation`.
+Target: `<local-path>`.
 
 ## Observed evidence
 

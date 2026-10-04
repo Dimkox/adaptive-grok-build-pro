@@ -1,6 +1,6 @@
 # Architect ruling — route ffb3d81e031f
 
-Read-only analysis, not independent review or verification. Source base and aggregate HEAD: 63799f8760d3a55028d83ab5ff0116ececf8f7d1. Inspected clean source HEADs: A 0d22521f14eb4e45aa6869aee2258e6e61379722; D 4293a77939c9c637de486bd6066167c80b9284b2; F e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69; H 3b192c9cfbec7e433024a04587c3bfd03fc5e147. Final `git status --porcelain=v1` empty for all four. Private report and startup snapshot: /home/pall/grok-projects/adaptive-grok-build-pro/.architect-private-KMfrP8JG/ (0700). CPU8, one lightweight worker; startup.md records actual topology/cgroup/ancestor quota/probe. reviewed-tree-modified: no.
+Read-only analysis, not independent review or verification. Source base and aggregate HEAD: 63799f8760d3a55028d83ab5ff0116ececf8f7d1. Inspected clean source HEADs: A 0d22521f14eb4e45aa6869aee2258e6e61379722; D 4293a77939c9c637de486bd6066167c80b9284b2; F e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69; H 3b192c9cfbec7e433024a04587c3bfd03fc5e147. Final `git status --porcelain=v1` empty for all four. Private report and startup snapshot: <local-path> (0700). CPU8, one lightweight worker; startup.md records actual topology/cgroup/ancestor quota/probe. reviewed-tree-modified: no.
 
 ## F budget ruling
 

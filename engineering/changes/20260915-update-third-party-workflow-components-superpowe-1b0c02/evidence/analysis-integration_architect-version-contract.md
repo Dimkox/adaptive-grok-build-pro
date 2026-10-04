@@ -6,9 +6,9 @@ write owner `integration_implementer`. Read-only analysis; no product file was c
 
 Investigated trees:
 
-- main line of this task: `/home/pall/grok-projects/adaptive-grok-build-pro-third-party-sync`
+- main line of this task: `<local-path>`
   (branch `feature/third-party-components-sync`, HEAD `7b14736`, only untracked path is this change package)
-- source epic worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-workflow-adapters`
+- source epic worktree: `<local-path>`
   (branch `feature/workflow-artifact-adapters`, HEAD `dccaeec`, adapters present as **untracked** files)
 
 ## 0. Headline facts that decide the contract shape
@@ -454,7 +454,7 @@ watched, not-yet-actionable item.
 Verified on this host, 2026-09-15, read-only:
 
 ```
-$ head -3 /home/pall/grok-projects/mee/_bmad/_config/manifest.yaml
+$ head -3 <local-path>
 installation:
   version: 6.10.0
   installDate: 2026-07-26T02:24:32.691Z      # modules core 6.10.0, bmm 6.10.0; ides: [codex]
@@ -464,9 +464,9 @@ $ npm ls -g --depth=0           -> claude-code, playwright/mcp, supabase/mcp, co
                                    corepack, figma-developer-mcp, npm@11.19.0, supergateway  (no bmad)
 $ command -v specify            -> not found
 $ uv tool list                  -> codex-pair-long v0.1.0   (no specify-cli)
-$ ls /home/pall/.grok/installed-plugins/  -> registry.lock only   (no superpowers)
+$ ls <local-path>  -> registry.lock only   (no superpowers)
 $ grok --version                -> grok 1.0.22 (8f40483ca2a5) [alpha]
-$ ls -d /home/pall/grok-projects/mee/.specify  -> none
+$ ls -d <local-path>  -> none
 ```
 
 So: **BMAD is not installed via npm global**; it is a per-project install inside `mee` (v6.10.0).
@@ -477,7 +477,7 @@ workflow, not an installed plugin payload.
 What an actual host update entails (upstream-documented commands, for the operator — nothing here belongs
 in the PR diff):
 
-- BMAD 6.10.0 → 6.12.0, inside `/home/pall/grok-projects/mee` (6.12 install route changed; the old
+- BMAD 6.10.0 → 6.12.0, inside `<local-path>` (6.12 install route changed; the old
   `npx bmad-method install` path is no longer the documented one):
   `npx skills add bmad-code-org/BMAD-METHOD` (or `/plugin marketplace add bmad-code-org/bmad-plugins` for
   Claude Code / `codex plugin marketplace add bmad-code-org/bmad-plugins` for Codex, installing
@@ -493,7 +493,7 @@ in the PR diff):
   `/plugin marketplace add obra/superpowers-marketplace` then
   `/plugin install superpowers@superpowers-marketplace`). Updating is harness-specific — upstream:
   *"Superpowers updates are somewhat coding-agent dependent, but are often automatic."* Verify with
-  `ls /home/pall/.grok/installed-plugins/`.
+  `ls <local-path>`.
 - spec-kit 1.0.7, tag-pinned install command from the v1.0.7 release body itself:
   `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.0.7` then
   `specify init <project>`; re-check with `uv tool list`.

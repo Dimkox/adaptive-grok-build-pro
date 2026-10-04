@@ -2,7 +2,7 @@
 
 Verdict: **FAIL — one blocking security-routing regression (S1).** No passing security receipt should be recorded for this candidate.
 
-Reviewer: independent route-selected `security_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through exact HEAD `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` in `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`. Read the active route, repository contract/bootstrap, combined brief/specification/candidate manifest, actual 19-path product/test diff and surrounding implementations. The product/test working files still matched the reviewed HEAD at the final source check. This report is the reviewer's sole repository write.
+Reviewer: independent route-selected `security_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through exact HEAD `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` in `<local-path>`. Read the active route, repository contract/bootstrap, combined brief/specification/candidate manifest, actual 19-path product/test diff and surrounding implementations. The product/test working files still matched the reviewed HEAD at the final source check. This report is the reviewer's sole repository write.
 
 ## Blocking finding
 

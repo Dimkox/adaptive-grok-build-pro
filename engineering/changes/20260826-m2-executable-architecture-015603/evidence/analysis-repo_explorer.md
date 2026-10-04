@@ -2,9 +2,9 @@
 
 ## Scope and baseline
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`; HEAD `25bfbe5` (`docs: record holdout verification race`), based on route base `069fe82`.
+- Worktree: `<local-path>`; HEAD `25bfbe5` (`docs: record holdout verification race`), based on route base `069fe82`.
 - Active route `0156034c05bd` is architecture/high-risk with API, data, event, and security domains. It selects `data_implementer` as the sole writer, six analysis agents, and code/test/security/data/release reviews. The active M2 package is still a placeholder package; its `change-spec.yaml` is generated v2 JSON with no criteria and `UNKNOWN` objective metric/target, so Task 6-style package completion is still required for M2.
-- The required M2 source is `DARK_FACTORY_ROADMAP.md:354-443`. The approved overall design is `/home/pall/grok-projects/adaptive-grok-build-pro-agent-factory/docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md`; its relevant contract is that M2/M3 publish stable versioned intent-plane contracts consumed later by M4, while M4+ must not invent replacements.
+- The required M2 source is `DARK_FACTORY_ROADMAP.md:354-443`. The approved overall design is `<local-path>`; its relevant contract is that M2/M3 publish stable versioned intent-plane contracts consumed later by M4, while M4+ must not invent replacements.
 
 ## Current architecture-related tree
 

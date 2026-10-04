@@ -1,6 +1,6 @@
 # L5 delivery slice B implementation
 
-Route: 0fd5ffd2100f. Worktree: /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-b.
+Route: 0fd5ffd2100f. Worktree: <local-path>
 Branch: feat/l5-split-b-source-epoch.
 Genuine predecessor and observed pre-commit HEAD: fb582c91cd80c042d26b7467679d27a295a2396b.
 Immutable reconstruction source: f31406e970d67f7cd59694da5de88915adb0fa68.

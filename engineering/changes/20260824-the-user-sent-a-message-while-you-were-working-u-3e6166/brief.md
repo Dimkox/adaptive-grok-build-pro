@@ -1,4 +1,4 @@
-# M0 host-socket overlay: first App-owned Check Run on claw
+# M0 host-socket overlay: first App-owned Check Run on <ci-host>
 
 Change ID: `20260824-the-user-sent-a-message-while-you-were-working-u-3e6166`
 Route: `3e61666b8de2`
@@ -10,11 +10,11 @@ Write owner: `general_implementer`
 
 ## Problem
 
-Nested rootless DinD (`docker-engine`) restarts on `claw` with `rootlesskit: fork/exec /proc/self/exe: operation not permitted`. Worker never reaches running. Container `HTTP_PROXY=http://127.0.0.1:1080` does not reach host glider. GitHub cannot POST to `127.0.0.1:18080`. User order «короче делай сам»: pick the simplest path and produce a live App-owned Check Run.
+Nested rootless DinD (`docker-engine`) restarts on `<ci-host>` with `rootlesskit: fork/exec /proc/self/exe: operation not permitted`. Worker never reaches running. Container `HTTP_PROXY=http://<loopback-proxy>` does not reach host glider. GitHub cannot POST to `<loopback-trust-ci>`. User order «короче делай сам»: pick the simplest path and produce a live App-owned Check Run.
 
 ## Outcome
 
-Worker running against the host Docker socket. One HMAC-signed loopback `POST /webhooks/github` for draft PR #5. GitHub shows Check Run `adaptive-trust-ci/verified@6737355947c2` owned by App `4694114` on the exact head SHA (`external_id` = durable `job_id`). Publication/ownership is success; `conclusion=success` is not required.
+Worker running against the host Docker socket. One HMAC-signed loopback `POST /webhooks/github` for draft PR #5. GitHub shows Check Run `adaptive-trust-ci/verified@6737355947c2` owned by App `<redacted-app-id>` on the exact head SHA (`external_id` = durable `job_id`). Publication/ownership is success; `conclusion=success` is not required.
 
 ## Scope
 

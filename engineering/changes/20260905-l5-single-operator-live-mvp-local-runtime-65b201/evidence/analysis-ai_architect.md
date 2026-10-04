@@ -27,7 +27,7 @@ The installed vendor CLI reports `codex-cli 0.153.4`. The resolved regular binar
 is:
 
 ```text
-/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex
+<local-path>
 sha256 56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da
 ```
 

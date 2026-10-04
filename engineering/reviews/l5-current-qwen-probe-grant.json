@@ -10,7 +10,7 @@
   "resources": [
     "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
   ],
-  "reason": "User requested launch of Qwen now; authorize one fixed synthetic gardening-brief probe on the current final assembly using the explicitly authorized /home/pall/.qwen/.env file, with only bounded result facts retained",
+  "reason": "User requested launch of Qwen now; authorize one fixed synthetic gardening-brief probe on the current final assembly using the explicitly authorized <local-path> file, with only bounded result facts retained",
   "repository": "Dimkox/adaptive-grok-build-pro",
   "route_id": "2a890b6485a5",
   "change_id": "20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",

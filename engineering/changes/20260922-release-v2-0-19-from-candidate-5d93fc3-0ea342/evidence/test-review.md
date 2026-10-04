@@ -11,7 +11,7 @@ This PASS covers the release-sync test change at committed HEAD `e95ada33501461c
 - `POST_V2018_PR_HEADS` contains exact heads for all 15 expected PRs, and `test_post_publication_landing_and_archived_candidate_are_recorded` asserts each row's head against that map before its format checks.
 - The previously surviving mutant is now killed. In scratch `/tmp/agbp-test-review.lHnKoW/repo`, PR #111's delivered-history head was changed from `176c3c6331241929c5e9091c93833c04d0d010d2` to forty zeroes. The focused test exited 1 at line 469 with the expected exact-value mismatch.
 - GitHub's read-only PR metadata confirms PR #111 head `176c3c6331241929c5e9091c93833c04d0d010d2`, squash merge `d8b396cafc0c5953f2b419a29ce7eac292138d27`, and merge time `2026-09-16T15:58:23Z`.
-- GitHub check run `104861527743` is completed/success for that exact head, named `adaptive-trust-ci/verified@06ecf1c875bc`, owned by App ID `4694114`.
+- GitHub check run `104861527743` is completed/success for that exact head, named `adaptive-trust-ci/verified@06ecf1c875bc`, owned by App ID `<redacted-app-id>`.
 - The two in-tree representations of the 15 predecessor rows currently agree for PR number, head, merge commit, merge time, and check-run ID. The observed-main/source boundary also agrees with PR #185's merge SHA `130ce4a42d9f9bbd1b56772d40b19ae530283205`.
 - Exact-SHA boundaries remain fail-closed: v2.0.19 artifact and publication identities remain pending/null, and this local review does not replace the future App-owned check on the exact release-sync PR head or the later artifact-child head.
 
@@ -31,7 +31,7 @@ gh pr view 111 --repo Dimkox/adaptive-grok-build-pro --json number,headRefOid,me
 MERGED; head/merge/time exactly match PROJECT_STATE.json
 
 gh api repos/Dimkox/adaptive-grok-build-pro/check-runs/104861527743 --jq '{id,name,head_sha,status,conclusion,app_id:.app.id,completed_at}'
-completed/success; exact PR #111 head; expected policy check name; App ID 4694114
+completed/success; exact PR #111 head; expected policy check name; App ID `<redacted-app-id>`
 ```
 
 Mutation probe setup reproduced the reviewed candidate in a mode-0700 private scratch directory with the same HEAD and pre-mutation fingerprint. Exact mutation command:

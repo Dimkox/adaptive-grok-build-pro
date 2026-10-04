@@ -7,7 +7,7 @@
 - `gh release view v2.0.16` → `targetCommitish 969c4f65…` (= `merge_commit`), `publishedAt 2026-09-13T22:04:08Z` (= `published_at`/`local_candidate.published_at`), asset digests `sha256:71f63a10…c746d7` + `14e3753a…b254fb8`. ✔
 - `git ls-remote --tags` → `v2.0.16` object `8486ddb648f97e79a5f3a81d9b539378d2d4b301` → `969c4f65…` = `tag_object`/`merge_commit`. ✔
 - Local `sha256sum`: zip `71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7`, sidecar `14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8`; sidecar text binds the same zip digest. Matches state, README and l5 ledger. ✔
-- PR number 79, signer `0519cf1d47436f2e`, app 4694114, attestation `90cb34aa-6eb5-49ca-a0ec-104e11c5e722`, GitGuardian `SUCCESS` (no check_run_id claimed → nothing falsifiable). `observed_main_sha` = the tag target. ✔
+- PR number 79, signer `0519cf1d47436f2e`, app <redacted-app-id>, attestation `90cb34aa-6eb5-49ca-a0ec-104e11c5e722`, GitGuardian `SUCCESS` (no check_run_id claimed → nothing falsifiable). `observed_main_sha` = the tag target. ✔
 
 ## 2. Tests
 `python3 -m unittest tests.test_project_state tests.test_manifest_package tests.test_structure -q` →

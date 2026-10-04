@@ -1,6 +1,6 @@
 # Aggregate data_architect read-only evidence
 
-Route ffb3d81e031f. Requirements read first: aggregate evidence/analysis-brief.md. Aggregate HEAD before/after inspection 63799f8760d3a55028d83ab5ff0116ececf8f7d1. F HEAD before/after e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69; clean tracked working tree. Private scratch: /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/aggregate-data-oJ0ICG (0700), capacity.md records CPU10/one worker. No candidate writes, tests, DB commands, external operations, agents, or secrets.
+Route ffb3d81e031f. Requirements read first: aggregate evidence/analysis-brief.md. Aggregate HEAD before/after inspection 63799f8760d3a55028d83ab5ff0116ececf8f7d1. F HEAD before/after e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69; clean tracked working tree. Private scratch: <local-path> (0700), capacity.md records CPU10/one worker. No candidate writes, tests, DB commands, external operations, agents, or secrets.
 
 ## Migration and fixture findings
 

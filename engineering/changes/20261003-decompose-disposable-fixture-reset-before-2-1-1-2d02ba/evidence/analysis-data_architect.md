@@ -1,6 +1,6 @@
 # Precursor data analysis — route2d02ba9e25dc
 
-Source identity: precursor HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1, clean tracked tree; F reference e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69. Requirements read first from precursor evidence/analysis-brief.md. Private scratch /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/fixture-reset-data-dLThAo (0700); capacity.md records freshCPU9/one-process discovery. Candidates remain read-only.
+Source identity: precursor HEAD63799f8760d3a55028d83ab5ff0116ececf8f7d1, clean tracked tree; F reference e3509dcf40e9b67e1ee6b51fbbaa208d5ba26a69. Requirements read first from precursor evidence/analysis-brief.md. Private scratch <local-path> (0700); capacity.md records freshCPU9/one-process discovery. Candidates remain read-only.
 
 Static AST extraction proves three callsites contain an identical ordered43-table TRUNCATE with RESTART IDENTITY: ExecutionPersistencePostgresTests.setUp(:325), postgres_restart_probe._reset_database(:351), PostgresFactoryTests.setUp(:268). Explicit025inventory:
 

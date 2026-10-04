@@ -1,6 +1,6 @@
 # G3 final-predecessor assembly handoff
 
-Selected sole writer data_implementer; route2a890b6485a5; actual corrected F predecessor/checkout HEAD c3f60f09b819c1a246f7af2dcd6664cf3be52dd6. Worktree /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3. Product/test extraction source is committed archived G2,7e7b7453d12b59d690f51a4519a1ee5aceb63985. Product writes are complete and frozen.
+Selected sole writer data_implementer; route2a890b6485a5; actual corrected F predecessor/checkout HEAD c3f60f09b819c1a246f7af2dcd6664cf3be52dd6. Worktree <local-path> Product/test extraction source is committed archived G2,7e7b7453d12b59d690f51a4519a1ee5aceb63985. Product writes are complete and frozen.
 
 Exactly ten G2 product/test/config blobs and recorded modes were copied, with no new G behavior or tests authored. Each SHA256/blob/mode matches committed G2 and its original manifest, including the installer mode100644. Complete current-base product-delta accounting found exactly those ten paths. All other pre-existing product bytes under factory/delivery/tests/architecture remain inherited unchanged from corrected F. The two F conflict-policy repair files have explicit matching corrected-base hashes in the new manifest.
 
@@ -11,7 +11,7 @@ The assembled branch therefore preserves F's complete supported-v1 DDL validatio
 - Actual integrated Factory run,28workers: **80 tests+160 subtests PASS in11.12s**, split-g3-factory-focused28.out. Collected G backup, full Qwen/live executors, C runtime, D direct server/lifecycle and current F publication schema/authority/restart tests together. It reports28 existing AnyIO deprecation warnings.
 - Actual22-module owner/boundary inventory: **4 tests+119 subtests PASS in4.77s**, split-g3-inventory-green28.out.
 - Genuine corrected-F-base fitness: **PASS**, split-g3-fitness.json, including unchanged code budgets/separation/background/import/ownership/secret/tenant/workspace checks. Unrelated contract/migration checks remain not_applicable.
-- Ruff on all4 changed Python source/test files: PASS, split-g3-ruff.out. bash -n factory/runtime/install-claw.sh: PASS, syntax only. git diff --check: PASS.
+- Ruff on all4 changed Python source/test files: PASS, split-g3-ruff.out. bash -n factory/runtime/install-<ci-host>.sh: PASS, syntax only. git diff --check: PASS.
 
 Focused processes used PYTHONPATH=.:factory/src:delivery/src:.grok-stack, PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 and PYTHONDONTWRITEBYTECODE=1. Factory and root packages were collected separately using taskset0-27 and pytest -c /dev/null -p xdist.plugin -p no:cacheprovider --rootdir=. --import-mode=prepend -q -n28 --dist=loadfile --max-worker-restart=0. Fitness used --base c3f60f09b819c1a246f7af2dcd6664cf3be52dd6 --worktree --pre-risk yellow --json.
 

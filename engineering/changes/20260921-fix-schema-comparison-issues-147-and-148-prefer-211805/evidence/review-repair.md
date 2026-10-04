@@ -8,7 +8,7 @@ Exact focused command: `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack pytho
 
 RED exit 1: four failing subtests, wall 0.176s. GREEN exit 0: four methods in 0.013s, wall 0.202s. The CPU slot was released; broader suites/full verification were not rerun for this correction. Initial full PASS at6867f6dc is historical. Renewed independent reviews and the final mandatory full gate must cover corrected bytes.
 
-Raw cache logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/schema/`:
+Raw cache logs under `<local-path>`:
 
 - `review-fix-red.log`: `2397c9275ec803ec959101bbb865fb6ba2a456420a264475c70d5853523d716f`
 - `review-fix-green.log`: `03e2ce7efb78ca7222db4c9a68781f9953dd3bd674b491cc52a8a4986d74e6f4`

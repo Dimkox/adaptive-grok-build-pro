@@ -27,7 +27,7 @@ Regression-first baseline: 32 tests, 14.191s, `FAILED (failures=3, errors=2)`. B
 
 Final green command redirected stdout/stderr directly to its log without a trailing command: **exit 0**, 32 tests, 14.757s, `OK`. `git diff --check` returned **0**. Read-only `git cat-file -e v2.0.18:<path>` returned **0** for all five upstream README destinations: `factory/README.md`, `DARK_FACTORY_ROADMAP.md`, `factory/runtime`, `engineering/runbooks/l5-production-runtime.md`, and `engineering/runbooks/m4-v2.0.13-local-control-plane.md`. This checks the immutable local Git objects, not remote HTTP availability.
 
-Raw logs remain outside the repository at `/home/pall/.cache/agbp-run/issues-wave-20260921/installer/`:
+Raw logs remain outside the repository at `<local-path>`:
 
 | Log | SHA-256 |
 | --- | --- |

@@ -82,7 +82,7 @@ ee41b510f9514ad3c5d79f32e6a12c4c10fec18cbdecdfd913891bc50bb090b1  change-spec.ya
 8cb615e190ac99fd81ee741ac823e245dbb6e7019fb866b5231c787853e9ab28  evidence/implementation-general_implementer.md
 ```
 
-The final two paths are relative to this change package. Raw log paths below are relative to `/home/pall/.cache/agbp-run/issues-wave-20260921/schema/`:
+The final two paths are relative to this change package. Raw log paths below are relative to `<local-path>`:
 
 ```text
 b5a96c5d6813ecba4ae7bbc1e953c28b6b79a2ebd01ab3868dd4b24e95e6ad4d  green-model.log

@@ -3,7 +3,7 @@
 ## Identity and verdict
 
 - Route: `81850148d1f6`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - Reviewed HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Reviewed worktree fingerprint before this report: `58854a896966d3ec160697d61ca4e1dded628eddc028ef994a032d5a135483c7`
 - Scope: the tracked worktree diff from HEAD plus the untracked active change package.

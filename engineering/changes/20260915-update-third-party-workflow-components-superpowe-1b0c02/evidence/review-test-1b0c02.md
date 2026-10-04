@@ -3,7 +3,7 @@
 PASS (with low findings)
 
 - Head reviewed: `3d19067` (single squashed commit on `b6fe340`), worktree
-  `/home/pall/grok-projects/adaptive-grok-build-pro-third-party-sync`, clean tree.
+  `<local-path>`, clean tree.
 - Reviewer: same independent test-analysis subagent as the first round (read-only), 2026-09-15.
 - Supersedes the previous report on `c4b5e3f`. Scope unchanged: `tests/test_workflow_artifacts.py`
   (esp. `CurrentUpstreamFormatTests`), `tests/test_workflow_artifacts_adversarial.py`,

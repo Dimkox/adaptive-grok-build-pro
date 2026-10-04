@@ -405,7 +405,7 @@
       "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json",
       "factory/pyproject.toml",
       "factory/runtime/adaptive-l5.service.in",
-      "factory/runtime/install-claw.sh",
+      "factory/runtime/install-<ci-host>.sh",
       "factory/runtime/landing-host.example.json",
       "factory/src/adaptive_factory/api.py",
       "factory/src/adaptive_factory/landing_artifact.py",

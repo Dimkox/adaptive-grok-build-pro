@@ -2,7 +2,7 @@
 
 ## Source identity
 
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v21-release-candidate`
+- Candidate: `<local-path>`
 - Comparison predecessor: `56103168643662012e0fcc6edaeda2e40d240996`
 - Reviewed HEAD: `1736c6fedf6b0f69db5801df9910ce28bcc80489`
 - Tree fingerprint before/after: `a3100727ddfa9dfb221a2a18d1cc35280ff4f853dcbedea4369b11219c0114c0` / same

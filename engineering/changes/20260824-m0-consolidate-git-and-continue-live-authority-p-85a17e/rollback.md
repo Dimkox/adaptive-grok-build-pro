@@ -18,4 +18,4 @@ No catalog mutation intended. Kill-switch is a file, not SQL.
 
 ## Verification after rollback
 
-`GET http://127.0.0.1:18080/health/ready` returns 200. Metric `adaptive_trust_ci_kill_switch 0` if scraped. `main` still unprotected.
+`GET http://<loopback-trust-ci>/health/ready` returns 200. Metric `adaptive_trust_ci_kill_switch 0` if scraped. `main` still unprotected.

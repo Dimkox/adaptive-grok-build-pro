@@ -19,8 +19,8 @@ Command:
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=.:.grok-stack python3 -m unittest tests.test_util_fingerprint tests.test_change_receipts.ReceiptTests.test_receipt_survives_scratch_churn_but_stales_on_product_edit tests.test_change_receipts.ReceiptTests.test_receipt_roundtrips_non_utf8_changed_file_names
 ```
 
-- Before product repair: 19 tests in 6.771 s; 3 literal-backslash assertion failures and 8 decoding/encoding errors. Raw log: `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/review-red.log`.
-- After repair: all 19 tests passed in 7.928 s. Raw log: `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/review-green.log`.
+- Before product repair: 19 tests in 6.771 s; 3 literal-backslash assertion failures and 8 decoding/encoding errors. Raw log: `<local-path>`.
+- After repair: all 19 tests passed in 7.928 s. Raw log: `<local-path>`.
 - `git diff --check`: pass.
 
 Coverage includes all three reviewer-probed literal-backslash spellings with create/edit/remove, non-UTF-8 untracked scratch and clean tracked names, content changes to distinct byte-valued names, carriage-return filenames, symlink-target bytes, ordinary Unicode plus filename-byte JSON roundtrips through both `dump_json` and verifier `--json`, and actual receipt roundtrip/staleness. CLI serialization is exercised with a synthetic verification report; the test does not pretend to run a full verification gate.

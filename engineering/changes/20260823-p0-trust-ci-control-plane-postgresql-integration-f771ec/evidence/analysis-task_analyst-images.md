@@ -164,7 +164,7 @@ HANDOFF standing consent is **order**, not a live grant. None of the following i
 | CI attestation `keygen` on this host | Creates worker-only PEMs; not GitHub App, but expands scope | Optional later; never the human approval key. |
 | Copy holdout to `/opt` or `/srv` and pin that digest in deployed policy | External holdout is a deploy artifact | Human/ops on the CI host. |
 | Create/install GitHub App | Browser/manifest; App ID, installation ID, worker-only RSA, API-only webhook secret | Human. No `grok_approve` action creates an App. Agent must not invent IDs or read the existing `runtime/*.pem`. |
-| TLS reverse proxy + public webhook URL | No in-tree proxy; GitHub will not use HTTP intake | Human. Architecture residual: do **not** steal `127.0.0.1:8080` (searxng). |
+| TLS reverse proxy + public webhook URL | No in-tree proxy; GitHub will not use HTTP intake | Human. Architecture residual: do **not** steal `<loopback-service>` (searxng). |
 | `docker compose up -d postgres migrate api worker` / systemd enable | Deploy / production mutation | Named deploy/external grant + free loopback port. `smoke.sh` needs a live API. |
 | Register webhook; prove App-owned check on PR `#2` | GitHub mutation + App key | `external-write` + worker credentials the agent must not mint. |
 | Human Ed25519 approval proof | Private key stays off this environment | Human runs `adaptive-trust-ci approval-create` off-box. |

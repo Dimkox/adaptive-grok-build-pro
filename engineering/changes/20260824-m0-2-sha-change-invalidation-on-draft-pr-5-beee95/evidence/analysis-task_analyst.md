@@ -21,7 +21,7 @@ Live facts this analysis used (no secrets):
 | --- | --- |
 | Local `HEAD` / `milestone/m0-live-trust-authority` | `ca1e88aad3dafcfeb81583f443f67c49c1faeab6` — **ahead 1** of origin |
 | `origin/milestone/m0-live-trust-authority` / PR #5 head | `1fc942065a124ce75659bd082519d8ebc37774e8` |
-| Check Run `97390635614` `head_sha` | **still** `1fc9420…` — name `adaptive-trust-ci/verified@6737355947c2`, App `4694114`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`, `conclusion=action_required` |
+| Check Run `97390635614` `head_sha` | **still** `1fc9420…` — name `adaptive-trust-ci/verified@6737355947c2`, App `<redacted-app-id>`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`, `conclusion=action_required` |
 | Compose `adaptive-trust-ci` | api+postgres healthy; worker running via untracked host-socket overlay; `/health/ready` 200; policy digest `6737355947c2…` |
 | Public webhook | absent |
 | `main` protected | false |
@@ -70,11 +70,11 @@ Loopback HMAC POST is **not** an external GitHub write and **not** webhook regis
 **P0 — old SHA keeps `97390635614`; new SHA gets a different App-owned check**
 
 1. **Given** origin / PR #5 head `1fc942065a124ce75659bd082519d8ebc37774e8` with Check Run `97390635614`, **when** implementer pushes the SHA that remains PR head after the last **pushed** product-doc update of this slice, **then** `gh api repos/Dimkox/adaptive-grok-build-pro/pulls/5` `head.sha` ≠ `1fc9420…` and equals `origin/milestone/m0-live-trust-authority`.
-2. **Given** that new head, **when** loopback HMAC `POST http://127.0.0.1:18080/webhooks/github` event `pull_request` action `synchronize` for PR **5**, new `head.sha`, base still `48cb9737fac7f26fb70b425957a3ed64d4c1eb55`, **then** HTTP 200 and JSON `created: true` with a **new** `job_id` (not `1b63d10b-90c1-498a-97b8-7b5e0ea76aec`).
-3. **Given** GitHub Check Runs on `1fc942065a124ce75659bd082519d8ebc37774e8`, **then** Check Run **`97390635614` still listed**, name `adaptive-trust-ci/verified@6737355947c2`, `app.id=4694114`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`. Do not PATCH it. Do not treat it as satisfying the new SHA.
+2. **Given** that new head, **when** loopback HMAC `POST http://<loopback-trust-ci>/webhooks/github` event `pull_request` action `synchronize` for PR **5**, new `head.sha`, base still `48cb9737fac7f26fb70b425957a3ed64d4c1eb55`, **then** HTTP 200 and JSON `created: true` with a **new** `job_id` (not `1b63d10b-90c1-498a-97b8-7b5e0ea76aec`).
+3. **Given** GitHub Check Runs on `1fc942065a124ce75659bd082519d8ebc37774e8`, **then** Check Run **`97390635614` still listed**, name `adaptive-trust-ci/verified@6737355947c2`, `app.id=<redacted-app-id>`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`. Do not PATCH it. Do not treat it as satisfying the new SHA.
 4. **Given** GitHub Check Runs on the **new** PR head SHA, **then** a **different** Check Run **id** (≠ `97390635614`) with:
    - name **exactly** `adaptive-trust-ci/verified@6737355947c2`
-   - `app.id=4694114` (slug `adaptive-trust-ci`)
+   - `app.id=<redacted-app-id>` (slug `adaptive-trust-ci`)
    - `external_id` = **new** `job_id` (≠ `1b63d10b-…`)
    - `head_sha` = the HMAC’d PR head
 5. **Given** inspect of git / chat / report, **then** no PEM, JWT, webhook secret, installation token, or human approval private key appears.
@@ -133,7 +133,7 @@ Untracked / dirty that **belong** on this milestone branch:
 
 They do **not** contain the not-yet-known new Check Run id, so they do not cause SHA chase. Leaving them dirty recreates the 85a17e split (git vs evidence) and would force a post-HMAC “unify” commit that **would** chase if pushed.
 
-**Do not** `git add` leftover `9d97f8/state.json`, `37bf04/`, `33e0c2/`, gitignored env/runtime/PEM, overlay under `/home/pall/adaptive-trust-ci-host/`, or HMAC helper scripts. Never `git add -A`. `build/stage_m02.py` stages the wrong change.
+**Do not** `git add` leftover `9d97f8/state.json`, `37bf04/`, `33e0c2/`, gitignored env/runtime/PEM, overlay under `<local-path>`, or HMAC helper scripts. Never `git add -A`. `build/stage_m02.py` stages the wrong change.
 
 Previous assistant named “push local `ca1e88a`”. After this paperwork commit, the pushed SHA is a **descendant** of `ca1e88a`, not `ca1e88a` itself. HMAC **that descendant**. The invalidation proof does not require the GitHub head to be literally `ca1e88a`; it requires a new head ≠ `1fc9420`.
 
@@ -220,9 +220,9 @@ Compose/kill-switch grants: **do not mint** unless worker/api is down. Overlay r
    ```text
    gh api repos/Dimkox/adaptive-grok-build-pro/commits/1fc942065a124ce75659bd082519d8ebc37774e8/check-runs
    gh api repos/Dimkox/adaptive-grok-build-pro/commits/<NEW-HEAD-SHA>/check-runs
-   curl -fsS http://127.0.0.1:18080/health/ready
+   curl -fsS http://<loopback-trust-ci>/health/ready
    ```
-   Filter locally: name `adaptive-trust-ci/verified@6737355947c2`, `app.id==4694114`. Old SHA still has id `97390635614` / `external_id=1b63d10b-…`. New SHA has a **different** id, same name `@6737355947c2`, App `4694114`, `external_id` = new `job_id`.
+   Filter locally: name `adaptive-trust-ci/verified@6737355947c2`, `app.id==<redacted-app-id>`. Old SHA still has id `97390635614` / `external_id=1b63d10b-…`. New SHA has a **different** id, same name `@6737355947c2`, App `<redacted-app-id>`, `external_id` = new `job_id`.
 8. Write `evidence/sha-invalidation.md` (operator-safe ids only). Do **not** push. Optional unpushed activation-report history; do not check M0.2 complete.
 9. Route `code_reviewer` + `test_reviewer` on the final local tree. Bind receipts after the last file write (`mistakes.md` 2026-08-14).
 
@@ -234,13 +234,13 @@ Compose/kill-switch grants: **do not mint** unless worker/api is down. Overlay r
 | Push rejected / accidental `main` | Stop. Do not force-push. |
 | `/health/ready` not 200 or kill-switch on | Restore off. Do not HMAC into 503. Do not `compose down -v`. |
 | HMAC `created: false` on the **new** SHA | Stop. Inspect job; do not replay `1fc9420`. |
-| New Check Run `app.id` ≠ `4694114` | Fail the slice. Do not PATCH from a user token. |
+| New Check Run `app.id` ≠ `<redacted-app-id>` | Fail the slice. Do not PATCH from a user token. |
 | Temptation to push activation-report with new ids | Stop. That is the SHA chase. |
 | Temptation to requeue `needs_approval` | Stop. Human key off-host. |
 | Temptation to register a GitHub webhook or protect `main` | Stop. Out of scope. |
 
 **Rollback:** A published Check Run cannot be unpublished. `main` is unprotected, so a new SHA cannot lock the repository. Leave postgres+api+worker. Do not PATCH checks to success. Optional HMAC `closed` cancels **active** PR #5 jobs (not required). Local unpushed commits: `git restore` / reset only if never pushed; **do not** rewrite the pushed SHA.
 
-**Success metric:** PR #5 head ≠ `1fc9420`; Check Run `97390635614` still only on `1fc9420`; new App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=4694114`, new `external_id=job_id`; no second push; M0.2 still incomplete.
+**Success metric:** PR #5 head ≠ `1fc9420`; Check Run `97390635614` still only on `1fc9420`; new App-owned Check Run on the new SHA, name `@6737355947c2`, `app.id=<redacted-app-id>`, new `external_id=job_id`; no second push; M0.2 still incomplete.
 
 **Next slice (not this one):** unify-git of the new Check Run ids into activation report/plan (then a **later** named push if SHA invalidation of *that* unify is wanted); backup/restore/restart on a **disposable** URL; public HTTPS webhook still blocked; human Ed25519 requeue still human; M0.3 still gated.

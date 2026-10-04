@@ -5,7 +5,7 @@
 | Priority | Scenario | Evidence |
 | --- | --- | --- |
 | P0 | Schema version 2 exposes five independent axes for exactly M0-M9, records exact accepted merge-parent pairs, and rejects forged milestone commits or ancestry without requiring unreachable Git objects. | self-contained milestone-parent and adversarial mutation tests in `tests/test_project_state.py` |
-| P0 | Current state, README, and bootstrap agree on epoch `06ecf1c875bc` and App `4694114`. | `tests/test_project_state.py::ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents` |
+| P0 | Current state, README, and bootstrap agree on epoch `06ecf1c875bc` and App `<redacted-app-id>`. | `tests/test_project_state.py::ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents` |
 | P0 | Continuation inventory exactly retains open PRs #12/#13/#15/#17, delivered PR #19, PR #14, and unique branches, rejecting forged PR #17 facts. | inventory and adversarial mutation tests in `tests/test_project_state.py` |
 | P1 | README graph endpoints equal the canonical 16-row role table and form K16 with 120 unique edges; `GitHubApp` to `FakeApp` must fail. | graph and adversarial mutation tests in `tests/test_project_state.py` plus `tests/test_structure.py` |
 | P1 | Change package has no placeholders and the final range contains no Trust CI implementation, roadmap checkbox, GitHub Actions changes, or whitespace defects. | focused search, `git diff --check`, and exact candidate-range diff check |

@@ -5,7 +5,7 @@ ERROR: test_dedicated_host_imports (__main__.DedicatedHostSeamTests.test_dedicat
 Traceback (most recent call last):
   File "/tmp/agbp-sweep/split-e-red.py", line 16, in test_dedicated_host_imports
     from adaptive_factory import landing_host
-ImportError: cannot import name 'landing_host' from 'adaptive_factory' (/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-e/factory/src/adaptive_factory/__init__.py)
+ImportError: cannot import name 'landing_host' from 'adaptive_factory' (<local-path>)
 
 ======================================================================
 ERROR: test_landing_only_composition_omits_task_routes (__main__.DedicatedHostSeamTests.test_landing_only_composition_omits_task_routes)

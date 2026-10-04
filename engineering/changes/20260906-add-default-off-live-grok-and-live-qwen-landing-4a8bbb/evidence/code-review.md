@@ -1,7 +1,7 @@
 # Code review — 20260906-add-default-off-live-grok-and-live-qwen-landing-4a8bbb
 
 **Reviewer:** code_reviewer (route 4a8bbb / local active-route may differ)
-**Checkout:** `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live`
+**Checkout:** `<local-path>`
 **Branch:** `feat/factory-live-auto-landing`
 **Base:** `origin/main` `fd51dcfed6b33f4a8707c0db602328146df17cc9`
 **Status: PASS**

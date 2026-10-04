@@ -4,7 +4,7 @@ Verdict: **PASS**. No blocking data-integrity finding in this final source slice
 
 - Reviewer: route-selected independent read-only `data_reviewer`; sole implementation owner: `data_implementer`.
 - Route: `2a890b6485a5`; change: `20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b`.
-- Source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3`.
+- Source: `<local-path>`.
 - Exact HEAD: `e6a813e4c16543f262ced2d9ea353caaad9452d1`.
 - Genuine corrected-F base: `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`.
 - Current fingerprint: `d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b`.

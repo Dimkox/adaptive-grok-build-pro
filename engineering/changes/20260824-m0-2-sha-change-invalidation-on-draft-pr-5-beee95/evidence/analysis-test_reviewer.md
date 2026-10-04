@@ -33,8 +33,8 @@ Implication for this slice: reuse is **per job_id / external_id on one SHA**. A 
 Automated tests use FakeTransport / FakeGitHub / MemoryStore (Postgres uniqueness only). They **cannot** prove:
 
 1. GitHub App Check Run **id** `97390635614` remains listed on real SHA `1fc942065a124ce75659bd082519d8ebc37774e8` after PR #5 head moves.
-2. A **different** App-owned Check Run id (`app.id=4694114`, name `adaptive-trust-ci/verified@6737355947c2`) appears on the **new** PR head SHA with `external_id` = **new** `job_id`.
-3. Loopback HMAC `synchronize` to `127.0.0.1:18080` vs a **registered public** `POST https://<ci>/webhooks/github` (still **not done**).
+2. A **different** App-owned Check Run id (`app.id=<redacted-app-id>`, name `adaptive-trust-ci/verified@6737355947c2`) appears on the **new** PR head SHA with `external_id` = **new** `job_id`.
+3. Loopback HMAC `synchronize` to `<loopback-trust-ci>` vs a **registered public** `POST https://<ci>/webhooks/github` (still **not done**).
 4. Worker-only GitHub App RSA actually POSTs Checks API (tests inject tokens; no PEM in-repo).
 5. Branch-protection / merge gate on `main` (out of scope; M0.3).
 
@@ -55,7 +55,7 @@ After any edit to spec / plan / `engineering/runbooks/trust-ci-activation-report
 Also keep green (docs-sensitive):
 
 - `test_m0_spec_and_plan_exist`: spec still has `adaptive-trust-ci/verified@` and base SHA `48cb9737fac7f26fb70b425957a3ed64d4c1eb55`; no `BEGIN RSA PRIVATE KEY`.
-- `test_m0_docs_name_claw_not_laptop`: `claw` in spec+plan; no `laptop` in spec.
+- `test_m0_docs_name_claw_not_laptop`: `<ci-host>` in spec+plan; no `laptop` in spec.
 - `test_activation_report_operator_safe` PEM markers absent from spec, plan, report.
 
 Do **not** assert “main is unprotected” (plan: would fight M0.3). Do **not** put PEM, JWT, webhook secret, or installation tokens in those files (tests scan PEM markers only; still do not leak HMAC material).

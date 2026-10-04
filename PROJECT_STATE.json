@@ -55,7 +55,7 @@
       "check_run_id": 107833930893,
       "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
       "signer": "0519cf1d47436f2e",
-      "github_app_id": 4694114
+      "github_app_id": "<redacted-app-id>"
     },
     "gitguardian": {
       "conclusion": "SUCCESS",
@@ -89,7 +89,7 @@
         "check_run_id": 104809218211,
         "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -120,7 +120,7 @@
         "check_run_id": 104621989321,
         "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -151,7 +151,7 @@
         "check_run_id": 103797448701,
         "attestation_id": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -181,7 +181,7 @@
         "check_run_id": 101365945968,
         "attestation_id": "4a13e71c-25e7-4272-80fa-8153590edc84",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SKIPPED",
@@ -1187,7 +1187,7 @@
         "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
         "base": "90078959ff816068af374ad42f4bb80fdbaec866",
         "check_run_id": 106268338358,
-        "app_id": 4694114,
+        "app_id": "<redacted-app-id>",
         "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
         "check_conclusion": "success",
         "completed_at": "2026-09-21T09:04:14Z",
@@ -1208,7 +1208,7 @@
       "head": "23984e55560c6d559a46445061f10331ca05bcf9",
       "base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
       "check_run_id": 106308434581,
-      "app_id": 4694114,
+      "app_id": "<redacted-app-id>",
       "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "check_conclusion": "success",
       "completed_at": "2026-09-21T11:25:49Z",
@@ -2142,7 +2142,7 @@
   "trust_ci": {
     "required_check": "adaptive-trust-ci/verified@06ecf1c875bc",
     "policy_digest": "06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2",
-    "github_app_id": 4694114,
+    "github_app_id": "<redacted-app-id>",
     "protected_branch": "main",
     "strict_up_to_date": true,
     "service_identity": "2.1.0",
@@ -2246,7 +2246,7 @@
   },
   "runtime_observations": {
     "observed_at": "2026-09-16T13:56:33Z",
-    "host": "claw",
+    "host": "<ci-host>",
     "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
@@ -2378,8 +2378,8 @@
       "observed_at": "2026-09-19T12:56:21.093490+00:00",
       "status": "partial_qwen_rolled_back",
       "target_source": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
-      "change_package": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
-      "evidence": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
+      "change_package": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28",
+      "evidence": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
       "runbook": "engineering/runbooks/l5-runtime-upgrade-2026-09-19.md",
       "services": {
         "primary": {
@@ -2443,7 +2443,7 @@
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",
-    "branch": "ops/claw-runtime-upgrade-20260919",
+    "branch": "ops/<ci-host>-runtime-upgrade-20260919",
     "pull_request": 151,
     "change_package": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
     "status": "delivered",
@@ -2582,7 +2582,7 @@
     "evidence": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md",
     "external_check": {
       "id": 106268338358,
-      "app_id": 4694114,
+      "app_id": "<redacted-app-id>",
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "job_id": "30b1f243-8dde-41cb-90ac-671af377fc8e",

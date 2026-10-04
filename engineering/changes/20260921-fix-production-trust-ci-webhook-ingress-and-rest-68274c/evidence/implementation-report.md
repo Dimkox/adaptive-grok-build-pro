@@ -1,14 +1,14 @@
 # Integration implementer preparation report
 
-Route `68274cb876e4`, sole write owner `integration_implementer`. Prepared host-local resource files only: three systemd units and one nft file at `/home/pall/.cache/agbp-run/issues-wave-20260921/ci-ingress/artifacts/`. [The exact manifest](artifact-manifest.json) and [operation plan](../operation-plan.md) bind the four selected independent reviews. Original preparation installed or activated nothing. The coordinator has since installed these same bytes and reloaded unit definitions; the pre-start gate refused, so the bridge remains inactive and no delivery claim is made.
+Route `68274cb876e4`, sole write owner `integration_implementer`. Prepared host-local resource files only: three systemd units and one nft file at `<local-path>`. [The exact manifest](artifact-manifest.json) and [operation plan](../operation-plan.md) bind the four selected independent reviews. Original preparation installed or activated nothing. The coordinator has since installed these same bytes and reloaded unit definitions; the pre-start gate refused, so the bridge remains inactive and no delivery claim is made.
 
 ## Results actually observed
 
 - `git fetch --all --prune` succeeded; branch remains `fix/trust-ci-webhook-bridge`. No commit, route transition, push, or GitHub mutation was made.
-- Read-only namespace/veth checks confirm `wg-vpn-namespace.service` active/exited, oneshot with `RemainAfterExit=yes`; host `10.200.200.1/30` on `veth-vpn-h`; peer `10.200.200.2/30` on reciprocal `veth-vpn-n`.
-- Existing namespace source `100.119.249.65` routes to `10.200.200.1` through `veth-vpn-n`. Host all/veth `rp_filter=2` is loose; the active wrong-source test can use an ordinary source-bound curl and must measure the nft drop counter. No packet from that source was sent during preparation.
-- Existing Funnel status has exactly the public `/webhooks/github` handler to `http://10.200.200.1:18080/webhooks/github`. Its settings were read, never modified.
-- Only `127.0.0.1:18080` listens; loopback ready GET is 200; VPN bridge GET receives immediate connection refusal (curl 7, HTTP 000); public webhook GET was 502.
+- Read-only namespace/veth checks confirm `wg-vpn-namespace.service` active/exited, oneshot with `RemainAfterExit=yes`; host `<redacted-ip>/30` on `veth-vpn-h`; peer `<redacted-ip>/30` on reciprocal `veth-vpn-n`.
+- Existing namespace source `<redacted-ip>` routes to `<redacted-ip>` through `veth-vpn-n`. Host all/veth `rp_filter=2` is loose; the active wrong-source test can use an ordinary source-bound curl and must measure the nft drop counter. No packet from that source was sent during preparation.
+- Existing Funnel status has exactly the public `/webhooks/github` handler to `http://<redacted-ip>:18080/webhooks/github`. Its settings were read, never modified.
+- Only `<loopback-trust-ci>` listens; loopback ready GET is 200; VPN bridge GET receives immediate connection refusal (curl 7, HTTP 000); public webhook GET was 502.
 - A later read-only baseline helper attempt timed out on public HTTPS (curl 28, HTTP 000) and did not complete. An unchanged-timeout timing diagnostic then observed 502, DNS 0.089520 s, TCP 0.179004 s, TLS 0.603679 s, first byte 0.771688 s, total 0.771730 s. The transient cause is unestablished; it is retained as a limitation, not converted into success or attributed to the proposed bridge.
 - No conflicting bridge unit, enablement, exact-unit drop-in directory, destination file, or dedicated table was found. This pre-install scan did not establish absence of inherited effective drop-ins; the security-review correction below supplies a mandatory post-reload gate. There are no existing nft input base chains. Other firewall rules/tables remain untouched.
 - `systemd-analyze verify` on all three staged units returned 0 with no diagnostics. `sudo -n nft --check --file <staged .nft>` returned 0 with no diagnostics. Neither check changed host resources.

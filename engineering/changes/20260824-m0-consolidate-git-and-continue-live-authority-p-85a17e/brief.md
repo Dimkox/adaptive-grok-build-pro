@@ -12,11 +12,11 @@ Write owner: `general_implementer`
 
 User: «давай перечитывай гит своди все воедино и продолжай».
 
-HEAD `1fc9420` still says DinD blocked / worker not running. Dirty working tree, live `claw`, and GitHub already disagree: worker is up via an untracked host-socket overlay; draft PR #5 has App-owned Check Run `97390635614` (`action_required`) via loopback HMAC. M0.2 is not complete (no public HTTPS webhook).
+HEAD `1fc9420` still says DinD blocked / worker not running. Dirty working tree, live `<ci-host>`, and GitHub already disagree: worker is up via an untracked host-socket overlay; draft PR #5 has App-owned Check Run `97390635614` (`action_required`) via loopback HMAC. M0.2 is not complete (no public HTTPS webhook).
 
 ## Outcome
 
-Git on `milestone/m0-live-trust-authority` tells one operator-safe story that matches live claw + GitHub. One host-local M0.2 drill (kill-switch on/off) is proven and recorded. Attestation GET for the `needs_approval` job is recorded as 404, not a forged pass. Remote and `main` stay unchanged.
+Git on `milestone/m0-live-trust-authority` tells one operator-safe story that matches live <ci-host> + GitHub. One host-local M0.2 drill (kill-switch on/off) is proven and recorded. Attestation GET for the `needs_approval` job is recorded as 404, not a forged pass. Remote and `main` stay unchanged.
 
 ## Scope
 

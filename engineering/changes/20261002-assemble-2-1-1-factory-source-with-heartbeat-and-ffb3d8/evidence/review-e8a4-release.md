@@ -6,14 +6,14 @@ Selected release_reviewer; route ffb3d81e031f;2026-10-03. Skills: adaptive-deliv
 
 ## Exact identity and isolation
 
-Candidate: /home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source.
+Candidate: <local-path>
 Comparison base: 63799f8760d3a55028d83ab5ff0116ececf8f7d1.
 HEAD before/after: e8a4cd02cdc8ae047c3d8e2b88146856fc5c17c0.
 Git tree before/after: 3cbdd03fb6403b6597bcd4acea4029e743f04de9.
 Canonical adaptive_grok.util.tree_fingerprint before/after: 2f947056c276408529f450c8026b2d3b41393d441b7cbba6789cf3efb1fc5225.
 Source porcelain inventory before/after empty. No staged, unstaged or untracked candidate files were omitted.
 
-Scratch: /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/release_reviewer.mXCj51/source. Parent/role directory0700,pall,non-sticky. Independent git clone --no-hardlinks --no-checkout, checkout --detach exact HEAD; audit confirms clean snapshot/fingerprint. python3 -B/taskset20,21; scratch porcelain empty after checks.
+Scratch: <local-path> Parent/role directory0700,pall,non-sticky. Independent git clone --no-hardlinks --no-checkout, checkout --detach exact HEAD; audit confirms clean snapshot/fingerprint. python3 -B/taskset20,21; scratch porcelain empty after checks.
 
 reviewed-tree-modified: no
 
@@ -27,7 +27,7 @@ README architecture/system.yaml,rules.yaml/generated links resolve. Model/rules/
 
 Source rollback is PR revert with defaults off. Retained original design supplies later F forward recovery: no deletion/edit of applied026 or durable evidence; disable callers and repair through later migration. Current Core contains no026, production migration, factory runtime or role/timeout change. Frozen fixture reset helper preserves caller-owned targets/transactions and installer binding; lifecycle runbook describes generation fences, useful progress, ACK deadlines, writer reservation and explicit native-controller interruption/resume. It expressly disclaims automatic native healing, hang causality proof and OS isolation.
 
-Merge requires up-to-date exact-head App4694114 adaptive-trust-ci/verified@06ecf1c875bc and external signed scopes. Local evidence/grants cannot substitute. Pre-verification transport is UNVERIFIED. PR/check/merge/tag identities, published2.1.1,pilot,deployment/activation are not claimed: explicit milestone limits, not source blockers.
+Merge requires up-to-date exact-head App<redacted-app-id> adaptive-trust-ci/verified@06ecf1c875bc and external signed scopes. Local evidence/grants cannot substitute. Pre-verification transport is UNVERIFIED. PR/check/merge/tag identities, published2.1.1,pilot,deployment/activation are not claimed: explicit milestone limits, not source blockers.
 
 ## Executed reviewer probes
 

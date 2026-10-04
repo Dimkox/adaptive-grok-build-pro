@@ -4,7 +4,7 @@ Verdict: **PASS** for this source extraction. No blocking security finding. One 
 
 ## Exact reviewed identity
 
-- Read-only source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d`.
+- Read-only source: `<local-path>`.
 - HEAD: `bb93885034e52b80653efd96602fec182f7db10a`.
 - Route: `bec1fcdde794`; genuine route base: `a75b3cd639a1483533069e8634759cdfc6612310`.
 - Tree fingerprint recomputed at review end: `1a7e327a57a74acdb38f883a7496e52eb97732c42c42026a22f2a102e7018999`.
