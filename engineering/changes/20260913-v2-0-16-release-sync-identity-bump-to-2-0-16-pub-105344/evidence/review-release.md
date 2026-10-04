@@ -3,7 +3,7 @@
 **Verdict: PASS** — R is mergeable as the 2.0.16 release-sync commit. Two minor doc findings, neither blocking.
 
 ## 1. Main self-consistency at 55364a4 — PASS
-Worktree `/home/pall/grok-projects/adaptive-grok-build-pro-release-sync` HEAD = `55364a4`, clean.
+Worktree `<local-path>` HEAD = `55364a4`, clean.
 ```
 $ python3 -m unittest tests.test_structure tests.test_project_state tests.test_manifest_package -q
 ----------------------------------------------------------------------
@@ -53,7 +53,7 @@ range `1a8c891..55364a4` = 1 commit. "Revert this single commit, nothing externa
 Hand-written markdown, **not** `--generate-notes`. `name`: `Adaptive Grok Build Pro v2.0.16 — <subtitle>`;
 `isDraft=false`, `isPrerelease=false`, marked Latest; 2 assets = zip + `.zip.sha256` (label empty).
 Sections: `## Delivered` bullets → `## Exact delivery evidence` (PR URL, `Checked head`, `Protected squash merge`,
-identical tree, App `4694114` + `adaptive-trust-ci/verified@<sha12>` run/attestation/signer, ZIP + sidecar SHA-256)
+identical tree, App `<redacted-app-id>` + `adaptive-trust-ci/verified@<sha12>` run/attestation/signer, ZIP + sidecar SHA-256)
 → `## Explicit limits and next step` → rollback line. Length: v2.0.14 body = 533 chars, v2.0.15 = 3665.
 Prefer v2.0.14 brevity + v2.0.15 evidence block. Tag message style: `Adaptive Grok Build Pro v2.0.16; protected PR#NN; <subtitle>`.
 Must carry the v2.0.15 caveat verbatim in spirit: the zip/tag preserve the pre-publication snapshot, so README/

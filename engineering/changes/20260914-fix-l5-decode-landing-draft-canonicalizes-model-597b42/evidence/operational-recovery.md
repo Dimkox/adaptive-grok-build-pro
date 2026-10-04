@@ -14,7 +14,7 @@ Preparation only; no installation, credential access, database access, service m
 2. Run, as root, the installer **from M**:
 
    ```sh
-   sh <CONTROL_CLONE_AT_M>/factory/runtime/install-claw.sh \
+   sh <CONTROL_CLONE_AT_M>/factory/runtime/install-<ci-host>.sh \
      <CONTROL_CLONE_AT_M> \
      /opt/adaptive-l5/sources/fde60e040167c10975b00d11f578c4da6763069a \
      <M>
@@ -59,4 +59,4 @@ Required named operations/resources: prepare exact staging clone; installer and 
 
 `grok_approve.py` materializes existing user consent only: production/external-write scope with supported `external-write` action and exact named resources for host operations; it has no `deploy` or `systemctl` action enum. Do not use its release bundle for this runtime repair or issue any grant before explicit consent. Bind grants to the final route/change/HEAD/tree and TTL; pre-merge grants cannot be reused after identity changes.
 
-Sources: `factory/runtime/install-claw.sh`, `adaptive-l5.service.in`, `landing-host.example.json`; `factory/src/adaptive_factory/{landing_host_config,landing_host,landing_live_executors,landing_service,landing_renderer,landing_sqlite_store,landing_backup,api}.py`; `factory/README.md`; `engineering/runbooks/l5-production-runtime.md`; `scripts/grok_approve.py`; safe unit metadata observed during this preparation.
+Sources: `factory/runtime/install-<ci-host>.sh`, `adaptive-l5.service.in`, `landing-host.example.json`; `factory/src/adaptive_factory/{landing_host_config,landing_host,landing_live_executors,landing_service,landing_renderer,landing_sqlite_store,landing_backup,api}.py`; `factory/README.md`; `engineering/runbooks/l5-production-runtime.md`; `scripts/grok_approve.py`; safe unit metadata observed during this preparation.

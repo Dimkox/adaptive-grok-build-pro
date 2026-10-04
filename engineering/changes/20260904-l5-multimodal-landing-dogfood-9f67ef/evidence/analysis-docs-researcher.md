@@ -60,7 +60,7 @@ evidence. Search Console and origin logs were neither available nor accessed.
 
 ## Accessible local-source findings
 
-- `/home/pall/Desktop` contained no accessible files in the bounded search.
+- `<local-path>` contained no accessible files in the bounded search.
 - A targeted safe-text search of Codex session/state references found the
   user's statement and the target URL, but no source directory, artifact hash,
   deployment manifest, or live-to-local provenance record. Secrets, auth data,

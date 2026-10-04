@@ -5,13 +5,13 @@ Status: **FAIL — changes required.** Two P1 defects drop release controls for 
 ## Source and isolation
 
 - Route: `03708e8ba495`; role: `code_reviewer`.
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router`.
+- Candidate: `<local-path>`.
 - Reviewed HEAD: `e1c7a01d3fe057c90e80e547c42aadddbae99d11`.
 - Agreed PR base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
 - Git tree: `3cfcf87a4e6c614ed0d2118a4f186cd3a8cbb0ac`.
 - Candidate fingerprint before and after: `2c2e80182a216afc38fae7f9fd7844b5c7ace88bcb9aea41d525c80323f4fc41`.
 - Candidate status was clean before and after. Final observation: `2026-10-02T23:12:00Z`.
-- Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-pZDnFl`.
+- Private scratch: `<local-path>`.
 - Scratch parent and reviewer directory were verified as owner `pall`, UID `1000`, mode `0700`, non-sticky.
 - Snapshot reproduced with `git clone --no-hardlinks --no-checkout` followed by detached checkout of the exact reviewed HEAD. Its clean fingerprint matched the candidate.
 - All tests and mutations ran in scratch. No candidate files, index, HEAD, caches or artifacts were changed.
@@ -96,7 +96,7 @@ Observed: **76 tests passed**, `27.905s`.
 Context reproductions:
 
 ```bash
-taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-pZDnFl/context_repros.py
+taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 <local-path>
 ```
 
 The script called `build_route` for the six prompts above against an empty temporary repository, using `base_commit_override=None` and `base_fingerprint_override='0' * 64`. It printed intent, risk, write owner, skills, reviews, evidence and gates. All six discrepancies were observed on the restored exact source.
@@ -122,11 +122,11 @@ Each mutant was applied only to scratch, tested independently, then restored usi
 Exact commands:
 
 ```bash
-taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-pZDnFl/run_probe.py tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words
+taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 <local-path> tests.test_repo_router.OperationalIntentTests.test_affirmative_operation_survives_pr_review_and_fix_words
 
-taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-pZDnFl/run_probe.py tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only
+taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 <local-path> tests.test_repo_router.OperationalIntentTests.test_quoted_and_historical_operations_are_context_only
 
-taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-code-pZDnFl/run_probe.py tests.test_repo_router.OperationalIntentTests.test_negated_operations_do_not_mask_code_or_review_tasks
+taskset -c 16 env GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 python3 <local-path> tests.test_repo_router.OperationalIntentTests.test_negated_operations_do_not_mask_code_or_review_tasks
 ```
 
 All exited `1` from assertion failures. No mutant survived or was inconclusive. These results establish the named probes only; no blanket mutation threshold is claimed.

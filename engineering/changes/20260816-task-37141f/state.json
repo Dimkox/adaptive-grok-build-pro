@@ -1,0 +1,59 @@
+{
+  "change_id": "20260816-task-37141f",
+  "created_at": "2026-08-16T21:44:57+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T21:44:57+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T21:46:37+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T21:46:37+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; user ordered 2.0.8 rebuild and push if green",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T21:52:04+00:00",
+      "from": "approved",
+      "reason": "identity 2.0.8 rebuild started",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T21:54:00+00:00",
+      "from": "implementing",
+      "reason": "identity 2.0.8 files, zip, and pin tests green; awaiting path-limited commit then controller verify/review",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T21:55:53+00:00",
+      "from": "implementing",
+      "reason": "2.0.8 committed locally; starting verification",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T22:04:08+00:00",
+      "from": "verifying",
+      "reason": "independent code review PASS on 22762a7",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T22:04:08+00:00",
+      "from": "reviewing",
+      "reason": "2.0.8 verified and reviewed; authorized to push if receipts bind",
+      "to": "ready"
+    }
+  ],
+  "route_id": "37141fbe6302",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "[sanitized-sanitized-query]\nпересобирай себя под следущей версией, проверяй сам себя по своим же инструкциям и гит пуш, если все ок\n[/sanitized-sanitized-query]",
+  "updated_at": "2026-08-16T22:04:08+00:00"
+}

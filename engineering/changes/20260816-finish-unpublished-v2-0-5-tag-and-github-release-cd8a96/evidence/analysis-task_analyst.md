@@ -1,8 +1,8 @@
 # Analysis — task_analyst
 
-Change: `20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96`  
-Active route: `cd8a9662bc68` · intent=`feature` · write=`general_implementer` · gates=`[]` · evidence=`verification` + `code_review` + `test_review`  
-Durable prior package: `20260815-user-query-гит-пуш-пакет-релиз-user-query-ad4090` · status=`ready` · never `released`  
+Change: `20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96`
+Active route: `cd8a9662bc68` · intent=`feature` · write=`general_implementer` · gates=`[]` · evidence=`verification` + `code_review` + `test_review`
+Durable prior package: `20260815-task-ad4090` · status=`ready` · never `released`
 User (angry): GitHub still shows 2.0.4; they think nothing was pushed/merged; they said «делай».
 
 Read-only. No `.env` read. No push / tag / `gh release` / merge from this agent.

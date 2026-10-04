@@ -25,7 +25,7 @@ No shipped schema, architecture model/rule, compatibility policy, dependency or 
 
 ## Evidence and exact reviewed bytes
 
-Read [review-repair.md](review-repair.md) and the actual cache logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/schema/`. The exact four-method regression command recorded there failed in four expected subtests before correction and passed all four methods after correction (`Ran 4 tests in 0.013s`, `OK`). Fresh hash reads matched the recorded logs:
+Read [review-repair.md](review-repair.md) and the actual cache logs under `<local-path>`. The exact four-method regression command recorded there failed in four expected subtests before correction and passed all four methods after correction (`Ran 4 tests in 0.013s`, `OK`). Fresh hash reads matched the recorded logs:
 
 ```text
 2397c9275ec803ec959101bbb865fb6ba2a456420a264475c70d5853523d716f  review-fix-red.log

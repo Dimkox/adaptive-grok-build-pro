@@ -2,7 +2,7 @@
 
 ## Scope and exact baselines
 
-Read-only analysis for route `eb3f80383d44`. The control repository was inspected at `33206fa06ae4b5bfb390cb68bbf233800d2902ab` (tree `6e24f82570bcb78ae90b92ee3e67d7fa7fbb4b28`, equal to `origin/main`). The local landing source `/home/pall/grok-projects/ai-dark-factory-landing` is clean at the requested `699010380f4f90a0193a9c22090c35e6aded7d2c`, tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`.
+Read-only analysis for route `eb3f80383d44`. The control repository was inspected at `33206fa06ae4b5bfb390cb68bbf233800d2902ab` (tree `6e24f82570bcb78ae90b92ee3e67d7fa7fbb4b28`, equal to `origin/main`). The local landing source `<local-path>` is clean at the requested `699010380f4f90a0193a9c22090c35e6aded7d2c`, tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`.
 
 The current landing revision is one direct, additively relevant commit after the control plane's stale pin:
 

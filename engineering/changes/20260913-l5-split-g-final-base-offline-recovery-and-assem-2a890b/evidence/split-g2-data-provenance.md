@@ -2,7 +2,7 @@
 
 The bounded analysis in `/tmp/agbp-sweep/split-g-data-analysis.md` is reusable for the fresh G2 delivery route. This is a provenance confirmation by the selected read-only `data_architect`, not a replacement implementation review or verification receipt.
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2`.
+- Worktree: `<local-path>`.
 - Fresh active route: `3529132ae173`.
 - Fresh change: `20260913-l5-split-g-current-base-offline-recovery-and-com-352913`.
 - Genuine predecessor and inspected HEAD: `5a2ead6e6e1eff5c5df28a8d4bcb91a209975187`.

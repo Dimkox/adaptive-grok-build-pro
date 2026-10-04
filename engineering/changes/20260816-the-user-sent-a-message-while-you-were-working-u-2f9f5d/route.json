@@ -58,7 +58,7 @@
   "schema_version": 1,
   "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
   "status": "routed",
-  "task": "The user sent a message while you were working:\n<user_query>\nложная тревога, это кодекс под виндой хуйню творил, продолжай деплой окружения для разработки\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "task": "The user sent a message while you were working:\n<user_query>\nложная тревога, это кодекс под виндой [sanitized]ню творил, продолжай деплой окружения для разработки\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
   "task_domains": [],
   "workflow_skills": [
     "adaptive-delivery",

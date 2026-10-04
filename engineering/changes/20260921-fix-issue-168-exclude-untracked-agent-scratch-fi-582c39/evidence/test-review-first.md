@@ -2,7 +2,7 @@
 
 **Recommendation: PASS for the bounded product change and its test adequacy. No blocking findings.** This is a local test review, not a fresh final verification receipt or merge authority.
 
-Reviewer: route-selected `test_reviewer` (`fingerprint_test_reviewer`), independent of `fingerprint_integration_implementer`; 2026-09-21. Route `582c39d6afb6`. Reviewed HEAD `5adc4f853741ced0f1332fcdb2d5e5d95446bed4` against frozen PR170 base `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`, in `/home/pall/grok-projects/adaptive-grok-build-wave-fingerprint`.
+Reviewer: route-selected `test_reviewer` (`fingerprint_test_reviewer`), independent of `fingerprint_integration_implementer`; 2026-09-21. Route `582c39d6afb6`. Reviewed HEAD `5adc4f853741ced0f1332fcdb2d5e5d95446bed4` against frozen PR170 base `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`, in `<local-path>`.
 
 Read the bootstrap/state, contract, active route, selected role, applicable skills, change specification, design, test plan, implementation report and analysis. Inspected the actual utility/test diff plus receipt validation, verification source stability and fixture support. Fetched remote refs. No product file was changed and no test, lint, compiler or Docker workload was started by this reviewer; coordinator-owned recorded executions were inspected directly under the serialized-test constraint.
 
@@ -20,7 +20,7 @@ Existing untracked runtime/cache exclusions have an explicit stability control. 
 
 ## Execution evidence inspected
 
-Raw records are under `/home/pall/.cache/agbp-run/issues-wave-20260921/fingerprint/`:
+Raw records are under `<local-path>`:
 
 - `red-clean.log`: 10 tests in 4.408 seconds, 40 assertion failures, zero error headings. Failures cover untracked scratch/receipt churn, tracked legacy-noise omissions, rename provenance, failed inventory and unborn missing staged content. The failure shapes agree with the inspected baseline; this reviewer did not rerun the baseline.
 - `green.log`: 12 tests in 6.163 seconds, `OK`. The implementation record identifies the exact focused command and explains the two subsequently added characterization cases for recreated staged deletion and failed diff inspection.

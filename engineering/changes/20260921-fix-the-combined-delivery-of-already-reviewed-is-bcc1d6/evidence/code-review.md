@@ -7,7 +7,7 @@
 - Reviewed base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 - Reviewed head: `af7fb4ad3436e9c98cb7f07e570b7ff7e649207e`.
 - Reviewed Git tree: `f54cada5dd368c0afb8314f6ad381d2708c07aa8`.
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`.
+- Worktree: `<local-path>`.
 - Date: September 21, 2026.
 - Historical failed assessment: `code-review-first.md`, covering `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`; it remains preserved.
 

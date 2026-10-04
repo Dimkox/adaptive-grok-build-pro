@@ -2,7 +2,7 @@
 
 Verdict: **PASS** for the reviewed data/test delta. No blocking findings.
 
-Selected role `data_reviewer`, route `bcc1d645c438`, reviewed on 2026-09-21 in `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`. Exact base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`. Exact reviewed head: `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`. This independent review inspected actual source and Git objects; it does not reuse the earlier candidate review as approval of the combined tree.
+Selected role `data_reviewer`, route `bcc1d645c438`, reviewed on 2026-09-21 in `<local-path>`. Exact base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`. Exact reviewed head: `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`. This independent review inspected actual source and Git objects; it does not reuse the earlier candidate review as approval of the combined tree.
 
 Applied `adaptive-delivery`, `data-change`, and `verification-evidence` within the coordinator's read-only review assignment. Read the contract, bootstrap/current handoff, active route, typed scope, candidate manifest, integration plans, data analysis and retained execution evidence. The coordinator had already fetched refs and owns verification, receipts and delivery. No tests, repository imports, SQL, Docker, compilation, lint, probes, subagents, receipts, commits, external writes or private/deployed-state reads were performed. This report is the only reviewer edit.
 

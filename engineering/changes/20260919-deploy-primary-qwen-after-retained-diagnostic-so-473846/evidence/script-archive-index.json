@@ -3,26 +3,26 @@
   "representation": "inert exact-byte evidence archives",
   "entries": [
     {
-      "original_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py",
-      "archive_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py.txt",
+      "original_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py",
+      "archive_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/accept-runtime.py.txt",
       "sha256": "8b54e6e23187d91a09f29270d828ef00478a1a146632e5a265ad5f938fcbcb28",
       "purpose": "Historical executed operation; do not replay"
     },
     {
-      "original_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py",
-      "archive_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py.txt",
+      "original_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py",
+      "archive_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/read-restored-qwen.py.txt",
       "sha256": "a1fff81289f5bdab033b7943f03cfb8b1bd81ede96fe11c353050825dec91c4e",
       "purpose": "Historical executed operation; do not replay"
     },
     {
-      "original_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py",
-      "archive_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py.txt",
+      "original_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py",
+      "archive_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/rollback-qwen.py.txt",
       "sha256": "266478891d1de0ed2ebff04e9aa072b9f0641a073f8ed6b0b51cd07d30c87504",
       "purpose": "Historical executed operation; do not replay"
     },
     {
-      "original_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py",
-      "archive_path": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py.txt",
+      "original_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py",
+      "archive_path": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/upgrade-operations.py.txt",
       "sha256": "c76de57452fb27999dd7fdac82bfd8beb37210367560b8a7129cc6897d5ebb0e",
       "purpose": "Historical executed operation; do not replay"
     },

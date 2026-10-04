@@ -1,6 +1,6 @@
 # Independent test review — FAIL
 
-Reviewer: selected `test_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through head `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` in `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`. This reviewer did not implement the change. Review is local preflight evidence, not external merge authority.
+Reviewer: selected `test_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through head `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c` in `<local-path>`. This reviewer did not implement the change. Review is local preflight evidence, not external merge authority.
 
 One blocking finding remains: the router regression matrix misses legitimate security terminology that loses its domain and required controls. The recorded combined suite passed, but does not establish compatibility for that input class. Return the repair and regression tests to the sole write owner, then repeat affected verification and independent review.
 
@@ -43,7 +43,7 @@ The combined interactions are covered meaningfully in several places: router dia
 
 ## RED/control evidence inspected
 
-Read retained reports and the available raw logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/`; these are historical defect/control evidence, not current final-head receipts.
+Read retained reports and the available raw logs under `<local-path>`; these are historical defect/control evidence, not current final-head receipts.
 
 - `issue156/focused-red.log` records 58 tests with 26 failing subcases and two reader errors: false domains, missing keyword diagnostics and rejection of the new closed-shape field are visible. These controls substantiate the original defect but omit T1.
 - `issue162/red-test-change-spec.log` records one parity failure and two validation errors naming the missing `bitrix_review`/`data_review` values. The unknown-kind test is a separate refusal control.

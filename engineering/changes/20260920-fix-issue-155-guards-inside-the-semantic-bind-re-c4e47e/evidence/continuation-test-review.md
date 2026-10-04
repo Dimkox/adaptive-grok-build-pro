@@ -32,7 +32,7 @@ step; this PASS does not claim those later gates have already completed.
   This matched the archived product manifest and every attempt's before/after
   digest. Documentation exclusions are explicit; this is not a whole-tree receipt.
 - Copied only tracked factory source/tests into external scratch
-  `/home/pall/.cache/agbp-run/p155-test-review-9wbrapn6`, then ran
+  `<local-path>`, then ran
   `/usr/bin/python3 -B -m unittest -v factory.tests.test_migrations factory.tests.test_contracts`.
   **33 tests passed**, 0.058 s, exit 0. Output and metadata are `focused-tests.log`
   and `result.json` in that scratch directory. No database or full verifier was rerun.
@@ -148,14 +148,14 @@ Verified all nine entries in
 the original raw hashes and byte lengths of both lossless base64 wrappers.
 The archived RED fails specifically at the NULL cause assertion, then GREEN and
 all 24 migration tests pass. Independently repeated this control in external
-scratch `/home/pall/.cache/agbp-run/p155-test-delta-4xa9pvd8`: the new test with
+scratch `<local-path>`: the new test with
 the old store fails at that same assertion (one test, exit 1); restoring only
 the corrected store produces **33 migration/contract tests PASS**, 0.061 s,
 exit 0. `red.log`, `green.log`, and `results.json` retain the exact commands and
 log hashes there.
 
 Inspected the corrected full verifier result at
-`/home/pall/.cache/agbp-run/p155-final-20260921/verify-initial.json`, created
+`<local-path>`, created
 2026-09-21 05:22:11 UTC: **PASS**, fingerprint
 `b77fcdb933fc0b74524929a3c25e49de3f3df09c121d2a3a7029ea957785fa4c`.
 It reports 785 root tests and 1,098 subtests passed, 80% coverage, 56 selected

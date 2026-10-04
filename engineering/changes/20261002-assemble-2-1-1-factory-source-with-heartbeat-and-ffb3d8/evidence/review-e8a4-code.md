@@ -5,15 +5,15 @@ No blocking correctness finding identified in the reviewed original-base product
 ## Identity and isolation
 
 Original comparison base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
-Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source`.
+Candidate: `<local-path>`.
 Before/after HEAD: `e8a4cd02cdc8ae047c3d8e2b88146856fc5c17c0`.
 Before/after canonical `adaptive_grok.util.tree_fingerprint`: `2f947056c276408529f450c8026b2d3b41393d441b7cbba6789cf3efb1fc5225`.
 Candidate status empty before/after. Exact tracked clean snapshot reproduced by independent `git clone --quiet --no-hardlinks`; scratch canonical fingerprint matched before mutation and after restoration.
-Scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/code-bP2icp/clone`. Its mktemp-created parent and enclosing review parent are owner-pall mode0700. Mutations used apply_patch only in scratch; no source worktree edits/restores/generated artifacts.
+Scratch: `<local-path>`. Its mktemp-created parent and enclosing review parent are owner-pall mode0700. Mutations used apply_patch only in scratch; no source worktree edits/restores/generated artifacts.
 
 reviewed-tree-modified: no
 
-Startup snapshot was recorded before brief/route inspection at `/home/pall/v211-core-code-review-cgQyoK/capacity.md` (private mktemp0700 directory; location predates reading the brief's preferred parent). Observed 14 physical cores,28 online logical CPUs, process22 allowed CPUs, effective cpuset0-27; session/user ancestors cpu.max=max100000, no finite ancestor quota. Child-only widening to0-27 succeeded with28 CPUs and same cgroup. Review commands used CPU10,11, serial test process; no subagents or PG/full suite. No remote fetch performed: review binds the supplied frozen original-base commit, and assignment prohibits external writes.
+Startup snapshot was recorded before brief/route inspection at `<local-path>` (private mktemp0700 directory; location predates reading the brief's preferred parent). Observed 14 physical cores,28 online logical CPUs, process22 allowed CPUs, effective cpuset0-27; session/user ancestors cpu.max=max100000, no finite ancestor quota. Child-only widening to0-27 succeeded with28 CPUs and same cgroup. Review commands used CPU10,11, serial test process; no subagents or PG/full suite. No remote fetch performed: review binds the supplied frozen original-base commit, and assignment prohibits external writes.
 
 ## Review assessment
 

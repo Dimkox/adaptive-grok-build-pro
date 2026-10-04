@@ -13,7 +13,7 @@ class DenialCircuitBreakerTest(unittest.TestCase):
                 'session_id': 'circuit-test',
                 'tool_name': 'Bash',
                 'tool_input': {
-                    'command': "curl -X POST -d '{}' http://127.0.0.1:18080/webhooks/github?access_token=ledger-secret",
+                    'command': "curl -X POST -d '{}' http://<redacted-network>/webhooks/github?access_token=ledger-secret",
                 },
             }
             run_hook(root, 'pre_tool_use.py', payload)

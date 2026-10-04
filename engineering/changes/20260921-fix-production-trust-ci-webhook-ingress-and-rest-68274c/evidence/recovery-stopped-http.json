@@ -1,7 +1,7 @@
 {
   "at": "2026-09-21T08:41:33.888024+00:00",
   "dns_exit_code": 0,
-  "dns_stdout": "176.58.88.82    STREAM claw.taild9f611.ts.net\n176.58.88.82    DGRAM  \n176.58.88.82    RAW    \n176.58.88.108   STREAM \n176.58.88.108   DGRAM  \n176.58.88.108   RAW    \n176.58.92.199   STREAM \n176.58.92.199   DGRAM  \n176.58.92.199   RAW    \n",
+  "dns_stdout": "<redacted-ip>    STREAM <redacted-tailnet-host>\n<redacted-ip>    DGRAM  \n<redacted-ip>    RAW    \n<redacted-ip>   STREAM \n<redacted-ip>   DGRAM  \n<redacted-ip>   RAW    \n<redacted-ip>   STREAM \n<redacted-ip>   DGRAM  \n<redacted-ip>   RAW    \n",
   "probes": [
     {
       "probe": "loopback_ready",
@@ -15,7 +15,7 @@
       "exit_code": 7,
       "http_status": "000",
       "elapsed_s": 0.026614,
-      "stderr": "curl: (7) Failed to connect to 10.200.200.1 port 18080 after 0 ms: Couldn't connect to server\n"
+      "stderr": "curl: (7) Failed to connect to <redacted-ip> port 18080 after 0 ms: Couldn't connect to server\n"
     },
     {
       "probe": "public_webhook_stopped",

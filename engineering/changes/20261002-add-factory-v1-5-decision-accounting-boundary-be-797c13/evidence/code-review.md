@@ -6,7 +6,7 @@ No blocking correctness findings. The cumulative guard bounds complete totals an
 
 ## Identity and isolation
 
-Candidate before/after: HEAD `f34735a4af5c785cc048ebc5b29af817e977a350`, tree `f7510d2ac3c076effc028e63ede976ac37068f67`, fingerprint `36a42e0ba964e33f6c1c453a517b220227ed9cf535afc9b636025547922f60b0`, empty dirty inventory. Scratch `/home/pall/pr2c-code-review.5WhJnj/repo`, parent mode `0700`; exact detached clone, all mutations in scratch, restored clean.
+Candidate before/after: HEAD `f34735a4af5c785cc048ebc5b29af817e977a350`, tree `f7510d2ac3c076effc028e63ede976ac37068f67`, fingerprint `36a42e0ba964e33f6c1c453a517b220227ed9cf535afc9b636025547922f60b0`, empty dirty inventory. Scratch `<local-path>`, parent mode `0700`; exact detached clone, all mutations in scratch, restored clean.
 
 reviewed-tree-modified: no
 

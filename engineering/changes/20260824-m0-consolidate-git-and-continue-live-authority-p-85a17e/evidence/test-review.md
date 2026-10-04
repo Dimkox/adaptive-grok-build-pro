@@ -48,7 +48,7 @@ Acceptable for a characterization slice if operators keep the pipe table. Do not
 
 ## Live network / kill-switch
 
-- `test_m0_invariants.py` only reads repo files. The `http://127.0.0.1:8080/health/ready` string is compose **text**, not an HTTP client.
+- `test_m0_invariants.py` only reads repo files. The `http://<loopback-service>/health/ready` string is compose **text**, not an HTTP client.
 - No `requests`/`urllib`/`socket` I/O in this module. **No live-network tests added.**
 - Kill-switch drill is **documented** (report field `2026-08-24 pass`; plan M0.2; `implementation.md` host STOP → ready 503/200). It is **not** unit-tested against the live API. **Acceptable** per test-plan P0 “live drill; report field” and this review’s instruction.
 

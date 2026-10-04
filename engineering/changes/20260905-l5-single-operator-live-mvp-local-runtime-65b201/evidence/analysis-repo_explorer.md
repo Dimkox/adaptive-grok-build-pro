@@ -68,7 +68,7 @@ Media adapters should be explicit and fail closed:
 - audio/voice returns unsupported before reading the blob or invoking Codex.
 
 The local `codex 0.153.4` binary observed during inspection is
-`/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex`,
+`<local-path>`,
 SHA-256 `56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da`.
 This is environment evidence, not a checked-in default. A later activation must
 prove an actually no-tool/sterile execution capability; `--sandbox read-only`

@@ -118,4 +118,4 @@ Current branch relations:
 4. Treat `origin/*` and GitHub PR recorded heads as authoritative. Do not use the stale local M1/M2/M3 heads or the two unpublished M4 commits in delivery claims.
 5. Do not claim PR #17 fixed until its branch is updated and fresh exact-head checks pass. Local commits `7520b33` and `cf0219b` have no GitHub/Trust-CI authority.
 6. Keep PR #19 separate from milestone state: it is green and clean but remains undelivered until merged.
-7. The current live check epoch evidenced on new PRs is `adaptive-trust-ci/verified@06ecf1c875bc`; App ID remains `4694114`. Historical successful M0/M1 checks used epoch `6737355947c2` and must not be presented as the current required context.
+7. The current live check epoch evidenced on new PRs is `adaptive-trust-ci/verified@06ecf1c875bc`; App ID remains `<redacted-app-id>`. Historical successful M0/M1 checks used epoch `6737355947c2` and must not be presented as the current required context.

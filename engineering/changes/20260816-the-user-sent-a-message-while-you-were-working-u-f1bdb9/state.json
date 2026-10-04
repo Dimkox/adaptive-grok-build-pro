@@ -30,6 +30,6 @@
   "route_id": "f1bdb94f5af3",
   "schema_version": 1,
   "status": "implementing",
-  "title": "The user sent a message while you were working:\n<user_query>\nИ забей в память что ридми перед каждым пушем и деплоем надо сука обновлять до актуальной версии, чтбы каждому было понтно что где и к чему в этом проекте, полносвязный пеерлинкованный граф должен быть всегда при пуше, запиши в память\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "title": "The user sent a message while you were working:\n<user_query>\nИ забей в память что ридми перед каждым пушем и деплоем надо [sanitized] обновлять до актуальной версии, чтбы каждому было понтно что где и к чему в этом проекте, полносвязный пеерлинкованный граф должен быть всегда при пуше, запиши в память\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
   "updated_at": "2026-08-16T23:10:06+00:00"
 }

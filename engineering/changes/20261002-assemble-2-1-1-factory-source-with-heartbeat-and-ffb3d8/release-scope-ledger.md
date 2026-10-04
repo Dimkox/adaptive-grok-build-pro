@@ -6,7 +6,7 @@ Current conditional delivery order: qualifying frozen test-only025 fixture plus 
 
 # task_analyst: approved scope and acceptance dependencies
 
-Route ffb3d81e031f; read-only analysis, 2026-10-03. Scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-task-analysis-2ThReK` (observed mode0700, owner pall). Startup measurement recorded in capacity.md before repository inspection. Assigned one lightweight worker; no tests, probes, cache generation, candidate mutations, subagents or external writes. reviewed-tree-modified: no
+Route ffb3d81e031f; read-only analysis, 2026-10-03. Scratch: `<local-path>` (observed mode0700, owner pall). Startup measurement recorded in capacity.md before repository inspection. Assigned one lightweight worker; no tests, probes, cache generation, candidate mutations, subagents or external writes. reviewed-tree-modified: no
 
 ## Source identity
 

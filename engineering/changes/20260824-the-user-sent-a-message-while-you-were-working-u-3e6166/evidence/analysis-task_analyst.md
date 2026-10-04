@@ -1,12 +1,12 @@
-# task_analyst — M0.2-partial live Check Run on claw (route 3e61666b8de2)
+# task_analyst — M0.2-partial live Check Run on <ci-host> (route 3e61666b8de2)
 
-**Verdict:** this turn is a **bounded operational proof**, not M0.2 complete and not M0.3. The primary observable result is an **App-owned** Check Run named `adaptive-trust-ci/verified@6737355947c2` on the exact pull-request head SHA, published by GitHub App ID `4694114`. Write owner: `general_implementer`. This agent does not implement, push, merge, read PEM, or deploy.
+**Verdict:** this turn is a **bounded operational proof**, not M0.2 complete and not M0.3. The primary observable result is an **App-owned** Check Run named `adaptive-trust-ci/verified@6737355947c2` on the exact pull-request head SHA, published by GitHub App ID `<redacted-app-id>`. Write owner: `general_implementer`. This agent does not implement, push, merge, read PEM, or deploy.
 
 **Bounded ruling (source-of-truth order):** user standing order «короче делай сам», auto-approved compose-up / feature-branch push, and the named simplest slice outrank spec language that waits for public HTTPS webhook registration. The slice **does not** claim M0.2 exit, does not protect `main`, and does not treat a local HMAC POST as a substitute for a GitHub-registered webhook. It is a loopback characterization of the already-tested `/webhooks/github` contract so the worker can publish a real Check Run while GitHub still cannot POST to `127.0.0.1`.
 
 ## Primary outcome
 
-On host `claw`, compose project `adaptive-trust-ci` has a **running worker** that can mint an installation token and call the GitHub Checks API. After one HMAC-signed `POST http://127.0.0.1:18080/webhooks/github` for PR **#5** (or a disposable docs PR), GitHub shows Check Run `adaptive-trust-ci/verified@6737355947c2` on the **exact** head SHA, `app.id = 4694114`, `external_id = <durable job_id>`.
+On host `<ci-host>`, compose project `adaptive-trust-ci` has a **running worker** that can mint an installation token and call the GitHub Checks API. After one HMAC-signed `POST http://<loopback-trust-ci>/webhooks/github` for PR **#5** (or a disposable docs PR), GitHub shows Check Run `adaptive-trust-ci/verified@6737355947c2` on the **exact** head SHA, `app.id = <redacted-app-id>`, `external_id = <durable job_id>`.
 
 Success for this slice is **publication and ownership**, not `conclusion=success`, not `main` protection, and not a GitHub-delivered webhook.
 
@@ -15,8 +15,8 @@ Success for this slice is **publication and ownership**, not `conclusion=success
 | Blocker now | Slice response |
 | --- | --- |
 | Nested rootless DinD: `rootlesskit: fork/exec /proc/self/exe: operation not permitted`; `runner-loader`/`worker` stay `Created` | Point loader+worker at the **host** Docker socket so the worker process can start |
-| `worker.env` `HTTP_PROXY=http://127.0.0.1:1080` is container loopback, not host glider | `HTTP_PROXY`/`HTTPS_PROXY=http://host.docker.internal:1080` plus compose `extra_hosts: host.docker.internal:host-gateway` |
-| GitHub cannot POST to `127.0.0.1:18080`; no public HTTPS | Operator HMAC POST to the loopback API (same headers the unit tests already use) |
+| `worker.env` `HTTP_PROXY=http://<loopback-proxy>` is container loopback, not host glider | `HTTP_PROXY`/`HTTPS_PROXY=http://host.docker.internal:1080` plus compose `extra_hosts: host.docker.internal:host-gateway` |
+| GitHub cannot POST to `<loopback-trust-ci>`; no public HTTPS | Operator HMAC POST to the loopback API (same headers the unit tests already use) |
 | Spec M0.2 wants a registered HTTPS webhook first | Out of this slice; local POST is only enqueue |
 
 `JobRunner.process` calls `ensure_check_run` **before** checkout, holdout commands, or approval-scope evaluation. If the worker can reach `api.github.com` through the proxy, the Check Run appears even if git fetch, host-path mounts, or `needs_approval` fail later.
@@ -24,9 +24,9 @@ Success for this slice is **publication and ownership**, not `conclusion=success
 ## Current behavior (facts)
 
 - Branch `milestone/m0-live-trust-authority`, draft PR **#5**, latest pushed SHA `1fc942065a124ce75659bd082519d8ebc37774e8` (confirm before POST; a new push invalidates the payload).
-- API healthy: `GET http://127.0.0.1:18080/health/ready` → 200. Host `:8080` is SearXNG. Do not bind Trust CI there.
+- API healthy: `GET http://<loopback-trust-ci>/health/ready` → 200. Host `:8080` is SearXNG. Do not bind Trust CI there.
 - Worker/DinD not running. Policy digest `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5`; epoch name `adaptive-trust-ci/verified@6737355947c2`.
-- App ID `4694114`, Installation ID `156003193` already in gitignored `trust-ci/env/worker.env`. PEM filename exists and is gitignored; **never open it**.
+- App ID `<redacted-app-id>`, Installation ID `<redacted-installation-id>` already in gitignored `trust-ci/env/worker.env`. PEM filename exists and is gitignored; **never open it**.
 - `main` unprotected. Repo webhook list empty. Leftover Actions workflow `340420982` untouched.
 - Tracked compose: isolated privileged DinD, `DOCKER_HOST: tcp://docker-engine:2375`, tests **forbid** `/var/run/docker.sock` (`trust-ci/tests/test_ops.py`, `trust-ci/scripts/smoke.sh`).
 - Worker image `USER 10001:10001`, `cap_drop: ALL`, read-only. Docker CLI is in the image; the user is **not** in a docker group.
@@ -44,7 +44,7 @@ Success for this slice is **publication and ownership**, not `conclusion=success
 7. If tracked product files change: failing/characterization tests first, then `python3 scripts/grok_verify.py --mode pr` and route reviews. If only gitignored env + an untracked compose overlay: skip verify (no-op product tree).
 8. Exact local grant for compose-up (and `git-push-branch` only if this branch must move). User auto-approves those two operational actions.
 
-Architect may choose **untracked compose overlay** (`docker compose -f compose.yaml -f <gitignored-or-/tmp overlay>`) over editing `trust-ci/compose.yaml`. Overlay is the smaller product risk: tracked tests/smoke/systemd keep the DinD invariant; live claw topology is an operator exception. Editing tracked compose **requires** rewriting `test_ops.py`, the `test_database_roles.py` `docker-engine` split, `test_supply_chain.py` systemd string, `smoke.sh`, and `trust-ci/systemd/adaptive-trust-ci-compose.service` in the same change.
+Architect may choose **untracked compose overlay** (`docker compose -f compose.yaml -f <gitignored-or-/tmp overlay>`) over editing `trust-ci/compose.yaml`. Overlay is the smaller product risk: tracked tests/smoke/systemd keep the DinD invariant; live <ci-host> topology is an operator exception. Editing tracked compose **requires** rewriting `test_ops.py`, the `test_database_roles.py` `docker-engine` split, `test_supply_chain.py` systemd string, `smoke.sh`, and `trust-ci/systemd/adaptive-trust-ci-compose.service` in the same change.
 
 ## Out of scope / forbidden (explicit non-goals)
 
@@ -65,11 +65,11 @@ Architect may choose **untracked compose overlay** (`docker compose -f compose.y
 
 **P0 — Check Run publication (must all pass)**
 
-1. **Given** API is ready on `127.0.0.1:18080` and postgres is the existing `adaptive-trust-ci` volume, **when** loader+worker start against the host Docker socket with host-gateway proxy, **then** `docker compose --project-name adaptive-trust-ci ps` shows `api` healthy, `worker` **running** (not `Created`), and `docker-engine` is either healthy **or not required for this topology**. Host `:8080` remains SearXNG. Host `:1080` remains proxy-gateway.
+1. **Given** API is ready on `<loopback-trust-ci>` and postgres is the existing `adaptive-trust-ci` volume, **when** loader+worker start against the host Docker socket with host-gateway proxy, **then** `docker compose --project-name adaptive-trust-ci ps` shows `api` healthy, `worker` **running** (not `Created`), and `docker-engine` is either healthy **or not required for this topology**. Host `:8080` remains SearXNG. Host `:1080` remains proxy-gateway.
 2. **Given** gitignored `TRUST_CI_WEBHOOK_SECRET` and a `pull_request` JSON body whose `repository.full_name`, `number`, `head.sha`, `head.ref`, `base.sha`, `base.ref` match the live PR, **when** `POST /webhooks/github` is sent with `X-GitHub-Event: pull_request` and `X-Hub-Signature-256: sha256=<hex>` over the raw bytes, **then** the API returns HTTP 200, `accepted: true`, and a `job_id` (first delivery `created: true`; replay of the same repo/PR/SHA/policy returns `created: false` and the same `job_id`).
 3. **Given** that job is claimed, **when** the worker mints an installation token through `http://host.docker.internal:1080`, **then** GitHub lists a Check Run on the exact head SHA with:
    - `name` = `adaptive-trust-ci/verified@6737355947c2`
-   - `app.id` = `4694114` (slug `adaptive-trust-ci`)
+   - `app.id` = `<redacted-app-id>` (slug `adaptive-trust-ci`)
    - `external_id` = the durable `job_id`
    - `head_sha` = the POST body SHA
 4. **Given** any inspect of env or logs, **then** PEM, webhook secret, read token, signing key, JWT, and installation token are absent from the activation report, chat, and git.
@@ -100,11 +100,11 @@ Treat these as **expected closed-loop failures**, not improvisation:
 | Webhook 503 | Kill switch file present or API not ready | Do not remove `STOP` unless this session created it. Confirm `/health/ready`. |
 | `accepted: false`, `ignored-event` | Wrong `X-GitHub-Event` or unsupported action | Use `pull_request` + `opened`/`synchronize`/`reopened`/`ready_for_review`. Drafts **must** enqueue. |
 | 200 + `created: true` + worker `Created`/exited | Job queued, no publisher | Do not claim a Check Run. Fix worker/socket/proxy; do not re-POST forever (idempotent). |
-| Worker logs `GitHub request failed` / proxy connection refused | `127.0.0.1:1080` still in container, missing `extra_hosts`, or glider down | Fix proxy path. Do not disable TLS verification. |
+| Worker logs `GitHub request failed` / proxy connection refused | `<loopback-proxy>` still in container, missing `extra_hosts`, or glider down | Fix proxy path. Do not disable TLS verification. |
 | Worker `cannot read GitHub App private key` | Mount/path/permission; **do not open the PEM** | Fix bind mode (`:ro`) and path only. |
 | `permission denied` on docker.sock | uid 10001 not in host docker GID | `group_add` host `docker` GID; do not chmod `666` the socket; do not `user: "0:0"`. |
 | `docker run` mount errors / empty workspace | `TRUST_CI_WORKSPACE_HOST_ROOT` still DinD path | Bind-mount a host dir and set both roots to that absolute path. Same for holdout host path = `TRUST_CI_HOLDOUT_SOURCE_PATH`. |
-| Check Run exists but `app.id` ≠ `4694114` | Another actor used the same text | **Fail the slice.** Do not complete or mimic it. |
+| Check Run exists but `app.id` ≠ `<redacted-app-id>` | Another actor used the same text | **Fail the slice.** Do not complete or mimic it. |
 | Job `needs_approval` | Protected globs in the PR | Record scopes. Do not sign approvals. P0 still passes. |
 | Job `dead` after retries | Infrastructure errors exhausted; `publish_dead_job` should still leave an App-owned `failure` check | That failure check **satisfies P0** if name/app/SHA/`external_id` match. |
 | Second POST, same SHA | `created: false`, same `job_id` | Expected idempotency. |
@@ -127,12 +127,12 @@ Loading: after 200, poll job status and GitHub check-runs with a bound (lease 30
 Proof commands (operator-safe):
 
 ```text
-curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://<loopback-trust-ci>/health/ready
 docker compose --project-name adaptive-trust-ci ps
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/<exact-sha>/check-runs
 ```
 
-Filter check-runs locally for `name==adaptive-trust-ci/verified@6737355947c2` and `app.id==4694114`. Record `id`, `external_id`, `status`, `conclusion`, `head_sha`.
+Filter check-runs locally for `name==adaptive-trust-ci/verified@6737355947c2` and `app.id==<redacted-app-id>`. Record `id`, `external_id`, `status`, `conclusion`, `head_sha`.
 
 Job/metrics (Bearer read token, never printed):
 
@@ -144,7 +144,7 @@ Logs: `docker compose --project-name adaptive-trust-ci logs --tail 200 worker ap
 
 Do not `docker exec` into the worker to `cat` `/run/secrets/github-app-private-key.pem`.
 
-Activation report fields to fill after P0: disposable PR number (or `#5`), head SHA, Check Run id, `external_id`. Keep `main protected = false`. Keep `TRUST_CI_PUBLIC_BASE_URL=http://127.0.0.1:18080`.
+Activation report fields to fill after P0: disposable PR number (or `#5`), head SHA, Check Run id, `external_id`. Keep `main protected = false`. Keep `TRUST_CI_PUBLIC_BASE_URL=http://<loopback-trust-ci>`.
 
 ## API / event / data compatibility
 
@@ -195,7 +195,7 @@ If product files change, `trust-ci/**` is both `protected_paths` and `control_pl
 ## Risks
 
 - Host Docker socket + App PEM on a shared engine is host-root equivalent if the worker is compromised. Mitigation: overlay-only, runner argv unchanged, no socket in api/runner, rollback stops worker first.
-- `host.docker.internal:host-gateway` reaching `127.0.0.1:1080` depends on Docker Engine extra_hosts behavior. If it fails, stop; do not rebind proxy-gateway or use `network_mode: host` without a new ruling.
+- `host.docker.internal:host-gateway` reaching `<loopback-proxy>` depends on Docker Engine extra_hosts behavior. If it fails, stop; do not rebind proxy-gateway or use `network_mode: host` without a new ruling.
 - PR #5 likely trips `needs_approval`. That is not a P0 failure.
 - PreToolUse denies opaque `trust-ci` shell mutations. Plan grants and structured edits before implementer starts.
 

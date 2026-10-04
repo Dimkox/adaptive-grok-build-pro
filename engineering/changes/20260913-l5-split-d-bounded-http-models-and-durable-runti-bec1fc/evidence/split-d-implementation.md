@@ -1,6 +1,6 @@
 # D sole-writer implementation handoff
 
-Selected writer: data_implementer; route bec1fcdde794. Worktree /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d. Genuine product predecessor C is a75b3cd639a1483533069e8634759cdfc6612310; immutable source reference f31406e970d67f7cd59694da5de88915adb0fa68. Parent owns any concurrent paperwork-only ancestry correction, Git commits, full verification, independent reviews and receipts. This report records focused verification, not full route completion.
+Selected writer: data_implementer; route bec1fcdde794. Worktree <local-path> Genuine product predecessor C is a75b3cd639a1483533069e8634759cdfc6612310; immutable source reference f31406e970d67f7cd59694da5de88915adb0fa68. Parent owns any concurrent paperwork-only ancestry correction, Git commits, full verification, independent reviews and receipts. This report records focused verification, not full route completion.
 
 ## Implemented selection
 
@@ -38,7 +38,7 @@ AC-002 should name factory/tests/test_landing_server.py as evidence. C's retaine
 - Final Factory focused run, 28 workers across eight relevant files: **105 passed, 78 subtests passed in 5.73s**, split-d-focused-green-final28.out. Earlier pre-helper strengthening run:104+78 passed, split-d-focused-green28.out.
 - Root architecture/model/boundary tests, 28 workers: **172 passed, 609 subtests passed in73.01s**, split-d-architecture-green28.out. This ran before only the last SQLite helper cleanup/test addition; architecture source/model/inventory did not change afterward.
 - Final actual-route-base fitness: **PASS**, including all code budgets/change separation/module/network/secret/tenant/workspace checks; split-d-fitness-final.json. Contract compatibility and migration safety are not_applicable for D's unchanged public/data schemas, not newly granted permissions.
-- Changed Python Ruff: all20 files PASS, split-d-ruff-final.out. Initial invocation via the test interpreter failed because Ruff is installed as /home/pall/.local/bin/ruff rather than in /tmp/agbp-venv; that non-evidence output remains split-d-ruff.out. No package was installed to recover it.
+- Changed Python Ruff: all20 files PASS, split-d-ruff-final.out. Initial invocation via the test interpreter failed because Ruff is installed as <local-path> rather than in /tmp/agbp-venv; that non-evidence output remains split-d-ruff.out. No package was installed to recover it.
 - Architecture diagram --check passes without generated changes, split-d-diagrams.json. git diff --check passes after source completion.
 
 Final focused command (cwd D, with PYTHONPATH=.:factory/src:delivery/src:.grok-stack, PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 and PYTHONDONTWRITEBYTECODE=1):

@@ -13,7 +13,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.change import start_change, transition
+from adaptive_grok.change import public_change_slug, start_change, transition
 from adaptive_grok import architecture_diff as ARCHITECTURE_DIFF
 from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
 from adaptive_grok.architecture_diagrams import render_diagrams
@@ -67,6 +67,19 @@ class ChangeTests(unittest.TestCase):
                 self.assertNotIn('{{GOVERNANCE_AUTHORITY_NOTICE}}', text)
             self.assertIn('bitrix', (change / 'route.json').read_text(encoding='utf-8'))
             self.assertEqual(get_active_route(root)['change_id'], state['change_id'])
+
+    def test_public_change_slug_is_neutral_for_every_title(self) -> None:
+        for title in ('', 'user' + '-query raw prompt text', 'Добавить Bitrix webhook', 'Customer private request'):
+            self.assertEqual(public_change_slug(title), 'task')
+
+    def test_change_path_does_not_depend_on_title_and_start_is_idempotent(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            first = start_change(root, 'First private title')
+            second = start_change(root, 'Another private title')
+            self.assertEqual(first['change_id'], second['change_id'])
+            self.assertEqual(list((root / 'engineering/changes').iterdir()), [root / str(get_active_change(root)['path'])])
 
     def test_valid_transitions(self) -> None:
         with project_copy() as root:

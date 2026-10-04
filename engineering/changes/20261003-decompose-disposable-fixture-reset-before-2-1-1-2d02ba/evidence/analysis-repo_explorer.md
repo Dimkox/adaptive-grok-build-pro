@@ -26,5 +26,5 @@ Unexecuted claims: SQL equivalence, FK behavior, real rollback, disposed target 
 Evidence commands: exact git HEAD/status, bounded sed of three reset blocks and installer inventory, rg for reset callsites/imports/runner PYTHONPATH, exact base..F diff restricted to two callers, existing rule limits.
 
 Startup2026-10-03T00:18:36Z:14physical/28logical CPUs0-27; default22/affinity0,1,8-27; actualcgroup/user.slice/user-1000.slice/session-2050.scope, root/user.slice cpuset0-27 and no finite ancestor quota. Child widening succeeded28/0-27; assignedCPU0/max1 worker. Private0700 snapshot/report:
- /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/fixture-repo-capacity-NOSjLDaY/snapshot.md
- /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/fixture-repo-capacity-NOSjLDaY/report.md
+ <local-path>
+ <local-path>

@@ -3,7 +3,7 @@
 Status: **FAIL — changes required**
 
 - Reviewer role: independent route-selected `code_reviewer`; product tree read only.
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-l5fix`
+- Repository: `<local-path>`
 - Route: `597b421e450b`
 - Change: `20260914-fix-l5-decode-landing-draft-canonicalizes-model-597b42`
 - Reviewed base: `6d8f6aba04b1e049e99f72fc79e8134acf921b5c`

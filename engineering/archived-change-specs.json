@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "source_base": "6dbbc7dbe81812d919851c2300db6f4917033d43",
+  "entries": [
+    {
+      "kind": "legacy_archive",
+      "original_blob": "d6dfa41d1bcbe37a3cbfd88a9e3599f246435c59",
+      "target": "engineering/changes/20260823-task-5a2a54/historical-spec.yaml",
+      "sha256": "afe27bfd87308b67974371da4be7d1edf6301ebae61dfaa3915071a56f2af7a8"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "a6ceedf2135df406d71f87767c947265ee08831e",
+      "target": "engineering/changes/20260824-m0-2-backup-restore-restart-drill-on-ci-host-d5291e/historical-spec.yaml",
+      "sha256": "efdee953eae7e15020b099fc90ef29c4e7d7f556ab73b6b01a0d287af7522a09"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "9d3ec529753ac4527c85df92866f511160b85ec5",
+      "target": "engineering/changes/20260824-task-214c96/historical-spec.yaml",
+      "sha256": "21041c41817aee76f7e194c37d0db44c0e03b943e0453e25e9650bbaa8c7578c"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "e84ba9aa0f17813971e4dce9c960aa081e14abbf",
+      "target": "engineering/changes/20260824-task-372269/historical-spec.yaml",
+      "sha256": "ef4c11bbd0aa3903b743a3371866d6b59f044df6491935ae75698d0b39d6a638"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "2676d07143f922ec4a159025cc07dbacd6185c68",
+      "target": "engineering/changes/20260824-task-421a1d/historical-spec.yaml",
+      "sha256": "dded1df15695f5263ddfa1d169cc7bd9b7234d5c5ccbc53e3f7f7840a5e1a356"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "c1403ad694193972b6d9e6927ee2d6cab6191d21",
+      "target": "engineering/changes/20260824-task-47da9e/historical-spec.yaml",
+      "sha256": "fa7f9eebfd496110a67e867dd7f310b7fad4c34c5170bcb5b5deedeadc2a7337"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "169ff1786e4f3d2e4ff8157332c0a485686a85d6",
+      "target": "engineering/changes/20260824-task-54313e/historical-spec.yaml",
+      "sha256": "f0638cc6fe94433a660d248e822f6f6d565be8bda6e34f167a5d5e98486eb53d"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "4a5a383ebc3f3068d900c767b15e0a4d35ff9499",
+      "target": "engineering/changes/20260824-task-6346a3/historical-spec.yaml",
+      "sha256": "55acafd8aeaa7931b719949726bd59fca386254bff3836343b395543b0892f28"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "40951344276c48a7aa88c404909da0c0c7f06c19",
+      "target": "engineering/changes/20260824-task-a19847/historical-spec.yaml",
+      "sha256": "533fa2707f11076164c59be9dbf7a1fdc48ac7450b29387355ccc29ccc222776"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "c09c867804026f2ed575b9ee61897ea965f7ee9b",
+      "target": "engineering/changes/20260824-task-c8e5e5/historical-spec.yaml",
+      "sha256": "b5106cce78a201546a97fe579f06488e01326ec7fce13c0115927d6473f5d95e"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "db9a02f5939dd83a6572033960499a5ff026ff0d",
+      "target": "engineering/changes/20260824-task-d80430/historical-spec.yaml",
+      "sha256": "6c55f0d5b996de2c19edcc51e228af0bde86fe3b0e7f9118959814c234bcac7a"
+    },
+    {
+      "kind": "legacy_archive",
+      "original_blob": "30604bbc25cdaa8effb0bb65b24c9d0be8406315",
+      "target": "engineering/changes/20260824-the-user-sent-a-message-while-you-were-working-u-3e6166/historical-spec.yaml",
+      "sha256": "9720b6aaeabb26f275af4276efc0e640bdf736e269a61df54a8448709f7969c9"
+    },
+    {
+      "kind": "v2_relocation",
+      "original_blob": "1666c0b347316e443d17df3855a4d1072ff78a89",
+      "target": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/change-spec.yaml",
+      "sha256": "614f748e08523b125e78eefb211003ca4684279d577bbb7bfc151fb07c4a88d2"
+    }
+  ]
+}

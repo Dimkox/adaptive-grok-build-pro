@@ -4,7 +4,7 @@ PASS
 
 Reviewer: route-selected `security_reviewer` (read-only). Reviewed the actual diff
 `git diff d146ca455d615683765b443b747f55aa4dbad436..ee2cb850e05e4ccaa4bb7912340aa6401fbc67c5`
-(24 files, +728/−157) in worktree `/home/pall/grok-projects/adaptive-grok-build-r18` on
+(24 files, +728/−157) in worktree `<local-path>` on
 `feature/v2.0.18-release-sync`, tree clean before and after review. Trust was placed in Git
 objects, file bytes and the GitHub API, not in the author's prose.
 
@@ -29,7 +29,7 @@ mints, alters or overstates trust authority.
   `published_release`, `prior_published_releases`, `milestones`, every pre-existing
   `delivered_change_history` key and `delivered_non_milestone_work`.
 - `git show d146ca4:PROJECT_STATE.json` (fetched to /tmp, base copy).
-- Secret-shape scan of all added diff lines: `/home/|/root/|BEGIN (RSA|OPENSSH|EC|PRIVATE)|private[_ ]key|api[_-]?key|token|secret|passw|\.env|credential|ssh-rsa|AAAA[0-9A-Za-z/+]{20}|AKIA[0-9A-Z]{16}|ghp_|github_pat_|xox|Bearer` and separately `MainPID|698333|3597736|claw|/opt/|adaptive-l5|ActiveState|UnitFileState|localhost|127\.0\.0`.
+- Secret-shape scan of all added diff lines: `/home/|/root/|BEGIN (RSA|OPENSSH|EC|PRIVATE)|private[_ ]key|api[_-]?key|token|secret|passw|\.env|credential|ssh-rsa|AAAA[0-9A-Za-z/+]{20}|AKIA[0-9A-Z]{16}|ghp_|github_pat_|xox|Bearer` and separately `MainPID|698333|3597736|<ci-host>|/opt/|adaptive-l5|ActiveState|UnitFileState|localhost|127\.0\.0`.
 - Landing-row re-derivation: `gh pr view 101/102/105/106 --json headRefOid,mergeCommit,mergedAt,state`
   and `gh api repos/Dimkox/adaptive-grok-build-pro/commits/<head>/check-runs` filtered to
   `adaptive-trust-ci/verified@06ecf1c875bc` (id, app id, status, conclusion).
@@ -125,8 +125,8 @@ stale carry, and the new `carried_reason` sentence explains the advance);
 added `limits[5]` (#105 profile source-only statement); removed `source_trail.artifact_state`
 (a deletion of historical prose, harmless since the same facts remain in `published_release`).
 Judged against FORBID-002: **zero** new credential/key/host-identity values; no
-hostname in the dossier and zero added diff lines containing "claw" (the pre-existing
-`runtime_observations.host: "claw"` line was not modified); the machine-local runtime
+hostname in the dossier and zero added diff lines containing "<ci-host>" (the pre-existing
+`runtime_observations.host: "<ci-host>"` line was not modified); the machine-local runtime
 state present is the **carried-identical** PID/unit-state convention — reported honestly
 as the letter-vs-practice tension in Finding 1, not as an invented new leak.
 
@@ -159,7 +159,7 @@ and `:648-686` (`post_v2_0_17_landing.pull_requests`):
 
 Each check run exists on the recorded head SHA with name exactly
 `adaptive-trust-ci/verified@06ecf1c875bc`, `status=completed`,
-`conclusion=success`, and **App ID 4694114** — the App required by `AGENTS.md`. The four
+`conclusion=success`, and **App ID `<redacted-app-id>`** — the App required by `AGENTS.md`. The four
 merge commits are single-parent (squash) commits forming the linear local main chain to
 the base; `d146ca45` is an ancestor of `ee2cb850`. CHANGELOG/ROADMAP short-SHA citations
 (`83925c1`, `98b7769`, `ad4d636`, `d146ca4`, `b40fd1a4`, `3f93e7bd`, `30fea4e3`,

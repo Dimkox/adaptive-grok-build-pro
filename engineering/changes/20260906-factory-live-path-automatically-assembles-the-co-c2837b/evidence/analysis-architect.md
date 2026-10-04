@@ -230,7 +230,7 @@ Implementer works from a **new branch off `origin/main` `fd51dcf`**, not this wo
 - `resources/001_*.sql`–`018_*.sql`, `store.py`, factory Postgres
 - `pilot/**` (separate `80d6215` blocker)
 - `trust-ci/**`, `.github/**`, packages/ZIP/VERSION
-- Real landing clone under `/home/pall/grok-projects/ai-dark-factory-landing`
+- Real landing clone under `<local-path>`
 
 **Docs (only after behavior exists)**
 

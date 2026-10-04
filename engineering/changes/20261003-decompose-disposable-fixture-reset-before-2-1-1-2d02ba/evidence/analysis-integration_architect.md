@@ -14,4 +14,4 @@ Minimal precursor inventory: helper, two caller modules, installer, installer bi
 
 Executed: startup lscpu/nproc/taskset/cgroup ancestor reads and child-only affinity probe; bounded git rev-parse/status/diff and rg/sed reads. No tests, DB, import execution, caches, candidate writes, subagents, or external writes. Helper import-mode tests, exact SQL characterization, installed-copy import, real PostgreSQL rollback/FK checks and post-restack compatibility remain unexecuted. Adjacent capacity.md records 14 physical/28 logical, effective cpuset0-27/no finite quota, successful child widening; allocated CPU10 one lightweight worker.
 
-Report path: /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/fixture-integration-aLnDZE/report.md
+Report path: <local-path>

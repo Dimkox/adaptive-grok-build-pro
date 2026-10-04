@@ -99,7 +99,7 @@ Written mode `600` to `/tmp/adaptive-trust-ci-pin.env` (preferred) and gitignore
 ## Out of slice (unchanged)
 
 - Cosign still missing; no sign.
-- `127.0.0.1:8080` not bound by this slice.
+- `<loopback-service>` not bound by this slice.
 - `trust-ci/.env`, `trust-ci/runtime/policy.json`, `policy.example.json`, `.env.example` untouched.
 - GitHub App, webhook, branch-protect, merge, `git push`: not this slice.
 

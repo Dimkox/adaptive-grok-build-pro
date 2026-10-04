@@ -1,6 +1,6 @@
 # Seven-PR L5 split acceptance analysis
 
-Read-only source analysis for route `8632a3272f03`, source tree `/home/pall/grok-projects/adaptive-grok-build-pro-l5-production`. Frozen delivery reference: `f31406e970d67f7cd59694da5de88915adb0fa68`. At inspection both local `origin/main` and its merge base with the reference were `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`; this is a local observation, not a fresh remote identity. No product files, branches, remote resources or protected configuration were changed; this report is the only output file.
+Read-only source analysis for route `8632a3272f03`, source tree `<local-path>`. Frozen delivery reference: `f31406e970d67f7cd59694da5de88915adb0fa68`. At inspection both local `origin/main` and its merge base with the reference were `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`; this is a local observation, not a fresh remote identity. No product files, branches, remote resources or protected configuration were changed; this report is the only output file.
 
 ## Acceptance target and reference limits
 

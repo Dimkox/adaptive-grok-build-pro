@@ -197,7 +197,7 @@ python3 -m unittest tests.test_project_state tests.test_structure tests.test_man
 git show 78082a2:tests/test_project_state.py  assertion forms for the pending slot: identical set,
                               HEAD adds artifact_child.identity=="A" and truthy requirement
                               (assertEqual 108→119, assertIsNone 8→8, assertFalse 6→6) — inverted, not removed
-hostname                      claw
+hostname                      <ci-host>
 systemctl show -p MainPID -p Id -p ActiveState -p UnitFileState adaptive-l5{,-grok}.service
                               MainPID=698333 active enabled / MainPID=3597736 active enabled
                               → matches dossier observation_provenance.unchanged_since_previous exactly

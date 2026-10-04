@@ -6,13 +6,13 @@ Evidence kind: `test_review`; role `test_reviewer`; route `03708e8ba495`. This r
 
 ## Source identity, isolation and startup capacity
 
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router`.
+- Candidate: `<local-path>`.
 - Agreed PR base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
 - HEAD before/after: `5f96f392a8f3b10068d5a4a033f90fd910e9083b`.
 - Git tree before/after: `c265b4c9abf542fc86932c242ade5a0e93ded663`.
 - Repository `tree_fingerprint` before/after: `afd34d601fa83a247aaac2344f7ce3aad563491d6dd2e8115779a72cf9186c87`.
 - Source staged, unstaged and untracked inventories were clean before and after; porcelain status emitted no records.
-- Private scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV`; exact reproduction under `repo/`.
+- Private scratch: `<local-path>`; exact reproduction under `repo/`.
 - Parent `.review-scratch` and unique scratch were verified as real uid-1000-owned, non-sticky mode-0700 directories. `git clone --no-hardlinks --no-checkout <candidate> <scratch>/repo`, then exact detached HEAD checkout, reproduced source HEAD/tree/clean status/fingerprint. Scratch product HEAD/tree/status/fingerprint also remained unchanged after probes.
 - Only scratch was writable. Tests used scratch `TMPDIR`, `PYTHONDONTWRITEBYTECODE=1`, `GIT_OPTIONAL_LOCKS=0`, one worker and CPU 17. Each mutant compiled one asserted source-fragment replacement into a fresh in-memory module from the exact scratch source. No candidate or scratch product file was edited.
 - Final source identity check: `2026-10-02T23:48:59Z`.
@@ -67,12 +67,12 @@ This is the RU counterpart of the existing English exclusion, within the adverti
 
 ## Commands and observed results
 
-All test commands ran from `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV/repo`.
+All test commands ran from `<local-path>`.
 
 Exact adjacent compatibility command:
 
 ```bash
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
 ```
 
 Observed: exit 0; `Ran 81 tests in 63.733s`; `OK`. This is the focused router/hooks/reasoning suite, not the full PR verifier.
@@ -80,7 +80,7 @@ Observed: exit 0; `Ran 81 tests in 63.733s`; `OK`. This is the focused router/ho
 Exact fresh independent regression command:
 
 ```bash
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV/review_probe.py independent
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> independent
 ```
 
 Observed: exit 1; nine methods, five failed subcases, zero errors. Seven methods pass: original F1, F2, F3 and F4; supported polite/request forms and independent boundaries; quote/negation/history guard alternatives; raw domain/risk safety and incident operation controls. The two remaining methods fail exactly the five F5/F6 cases above.
@@ -90,7 +90,7 @@ Exact mutation loop:
 ```bash
 for mutant in global-target-history-veto global-object-negation-veto singular-descriptive-nouns history-prefix-disabled plan-scope-disabled coordinated-negation-reset quoted-operation-admitted incident-release-gate-lost incident-release-skill-lost raw-domain-scanner-sanitized; do
   printf 'MUTANT %s\n' "$mutant"
-  env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-recheck-uE2SQgnV/review_probe.py mutation "$mutant"
+  env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> mutation "$mutant"
   printf 'EXIT %s\n' "$?"
 done
 ```

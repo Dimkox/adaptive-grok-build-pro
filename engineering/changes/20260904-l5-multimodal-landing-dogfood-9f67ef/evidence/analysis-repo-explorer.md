@@ -37,7 +37,7 @@ Likely overlap seams for the single write owner are the API registration in `fac
 
 ## Domain-source result and delivery boundary
 
-A case-sensitive exact search for `therealaidarkfactory.online` across `/home/pall/grok-projects`, excluding Git metadata, runtime state, environment/key/credential-shaped files, found only this active change package (`route.json`, `change-spec.yaml`, `brief.md`). A bounded directory-name search across `/home/pall` found no matching site/public-html tree. There is therefore no accessible current-site source or manifest to diff, preserve, attest, or roll back. The coordinator separately confirmed the public host is Namecheap; no host/account content was accessed.
+A case-sensitive exact search for `therealaidarkfactory.online` across `<local-path>`, excluding Git metadata, runtime state, environment/key/credential-shaped files, found only this active change package (`route.json`, `change-spec.yaml`, `brief.md`). A bounded directory-name search across `<local-home>` found no matching site/public-html tree. There is therefore no accessible current-site source or manifest to diff, preserve, attest, or roll back. The coordinator separately confirmed the public host is Namecheap; no host/account content was accessed.
 
 Consequences:
 

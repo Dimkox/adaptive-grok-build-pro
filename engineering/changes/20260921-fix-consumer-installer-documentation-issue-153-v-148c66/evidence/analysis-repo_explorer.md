@@ -1,6 +1,6 @@
 # Repo explorer: consumer installer docs (#153, #161)
 
-Read-only source analysis for route `148c66d20768` at `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. I used the source issue snapshot in `/home/pall/.cache/agbp-run/issues-wave-20260921/issues.json` and the previous consumer backlog map. No product source, install target, or external service was changed.
+Read-only source analysis for route `148c66d20768` at `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. I used the source issue snapshot in `<local-path>` and the previous consumer backlog map. No product source, install target, or external service was changed.
 
 ## Reproduction and cause
 

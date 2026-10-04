@@ -2,7 +2,7 @@
 
 ## Scope and identity
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Worktree: `<local-path>`
 - Branch: `milestone/m2-executable-architecture`
 - HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - The product tracked tree was not modified. The active change package is currently untracked and is the only observed workspace addition.

@@ -15,7 +15,7 @@ Reviewer role: route-selected `test_reviewer`, independent of the implementation
 
 ## Evidence independently checked
 
-Raw evidence directory: `/home/pall/.cache/agbp-run/issues-wave-20260921/issue156/`.
+Raw evidence directory: `<local-path>`.
 
 I recomputed SHA-256 for all four reviewed source/test files and all five logs named by `implementation-snapshot.json`; every value matches that snapshot. I read the failure entries and result trailers rather than relying only on the implementation summary:
 

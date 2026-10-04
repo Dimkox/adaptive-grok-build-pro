@@ -1,3 +1,5 @@
+"""Historical split-C audit source; execution is not current verification or merge authority."""
+
 from pathlib import Path
 import hashlib
 import json
@@ -58,7 +60,7 @@ manifest = {'route_id': '00652f60f78c', 'base_sha': base, 'frozen_source_sha': f
             'head_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
             'paths': rows, 'unchanged': list(unchanged), 'root_owned_documentation_exclusion': ['factory/README.md']}
 Path('/tmp/agbp-sweep/split-c-source-sha256.json').write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
-r = subprocess.run(['/home/pall/.local/bin/ruff', 'check', *[p for p in sorted(expected) if p.endswith('.py')]], capture_output=True, text=True)
+r = subprocess.run(['ruff', 'check', *[p for p in sorted(expected) if p.endswith('.py')]], capture_output=True, text=True)
 Path('/tmp/agbp-sweep/split-c-ruff.out').write_text(r.stdout + r.stderr)
 print('exact_paths', len(expected), 'ruff_exit', r.returncode, r.stdout + r.stderr)
 r = subprocess.run(['git', 'diff', '--check'], capture_output=True, text=True)

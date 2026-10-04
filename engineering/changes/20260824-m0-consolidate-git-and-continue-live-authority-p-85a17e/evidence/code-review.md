@@ -20,9 +20,9 @@ No push, merge, deploy, or `.env`/PEM reads.
 | --- | --- |
 | Tracked `trust-ci/compose.yaml` not edited | **Pass** — not in the commit. Overlay lives only as evidence YAML. |
 | No PEM/JWT/webhook secret/private keys in the diff | **Pass** — no `BEGIN * PRIVATE KEY` blocks, no JWT/PEM bodies. Overlay lists **bind paths** (`./runtime/github-app-private-key.pem`, signing key path), not key material. App/installation numeric IDs and Check Run/job UUIDs are operator-safe. |
-| Overlay is documentation only | **Pass** — header: “claw-only. Never merge into tracked compose this slice.” Residual risk in 3e6166 `implementation.md` states host-socket is host-root equivalent vs DinD. Product default compose is untouched. |
+| Overlay is documentation only | **Pass** — header: “<ci-host>-only. Never merge into tracked compose this slice.” Residual risk in 3e6166 `implementation.md` states host-socket is host-root equivalent vs DinD. Product default compose is untouched. |
 | Plan does not claim M0.2 complete or public webhook | **Pass** — webhook box unchecked “**not done** (no public HTTPS)”; Check Run box “**partial** … via **local HMAC** … Not M0.2 complete.” M0.3 still gated on unambiguous M0.2. |
-| Spec live-gap is freeze snapshot | **Pass** — titled “freeze snapshot probed 2026-08-24”; “not the current claw state”; freeze table retained; live facts pointed at the activation report. |
+| Spec live-gap is freeze snapshot | **Pass** — titled “freeze snapshot probed 2026-08-24”; “not the current <ci-host> state”; freeze table retained; live facts pointed at the activation report. |
 | Characterization test not dangerously flaky/overfit | **Pass with notes** — asserts report exists, PEM markers absent, Check Run id cell not `UNKNOWN`, plan contains `local HMAC` and (`no public HTTPS` or `not done`). Does not assert live HTTP, docker.sock, or Check Run conclusion. |
 | Four planes / host-socket not product default | **Pass**. |
 | No GitHub Actions, branch-protect, forged check | **Pass** — no `.github/workflows/**`; plan/report keep `main` unprotected; Check Run recorded as `action_required`/`needs_approval`, not forged success. Commit does not push. |

@@ -3,7 +3,7 @@
 - Candidate: `ba973268b23935cf3300329bd911cf8acf23611d`
 - Base: `12a7fd63146c96cff655f1d9cf21184c465037ca`
 - Candidate tree before/after: `a8c39bb8bbbca305e9fb8402871af2543589b5d9` / same
-- Scratch: `/home/pall/pr3a-test-rereview-20261002T041420Z-QFNJPd/candidate` (private parent mode `0700`, exact clean snapshot)
+- Scratch: `<local-path>` (private parent mode `0700`, exact clean snapshot)
 - Findings: no blocking findings.
 - `reviewed-tree-modified: no`
 

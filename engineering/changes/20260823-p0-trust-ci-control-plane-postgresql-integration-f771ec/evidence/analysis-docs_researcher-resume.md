@@ -248,7 +248,7 @@ Oneshots `migrate` and `runner-loader` share API/worker images — footnotes in 
 **Keep it, then append:**
 
 ```markdown
-| TrustAPI | `trust-ci/` API image; FastAPI `127.0.0.1:8080`; no Docker, Git, or GitHub App key |
+| TrustAPI | `trust-ci/` API image; FastAPI `<loopback-service>`; no Docker, Git, or GitHub App key |
 | TrustWorker | `trust-ci/` worker; claims jobs, holdout, sandbox, attestation, Checks API |
 | Postgres | Durable PostgreSQL 17 (`TRUST_CI_POSTGRES_IMAGE`, volume `trust-ci-postgres`) |
 | Runner | Isolated no-network runner (`TRUST_CI_RUNNER_IMAGE`) |
@@ -485,7 +485,7 @@ Start/health in Bootstrap is already:
 ```bash
 docker compose up -d postgres migrate api worker
 docker compose ps
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://<loopback-service>/health/ready
 ```
 
 That matches the patched runbook (cwd `trust-ci/`). QUICKSTART uses `docker compose -f compose.yaml up -d postgres migrate api worker`. Do not add `docker-engine` / `runner-loader` to the short start unless documenting the systemd unit (QUICKSTART already notes that jobs that need a runner require those extra services).

@@ -299,7 +299,7 @@
         "details": [
           {
             "code": "change-spec-invalid",
-            "message": "/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-fixture-reset/engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml: objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes",
+            "message": "<local-path> objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes",
             "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
             "severity": "error"
           }
@@ -650,7 +650,7 @@
             "unmapped_ids": []
           },
           "errors": [
-            "/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-fixture-reset/engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml: objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes"
+            "<local-path> objective.success_metric cannot be UNKNOWN at gate; objective.target cannot be UNKNOWN at gate; gate requires at least one acceptance criterion; red-risk requires forbidden_outcomes; red-risk requires approvals.required_scopes"
           ],
           "path": "engineering/changes/20261003-decompose-disposable-fixture-reset-before-2-1-1-2d02ba/change-spec.yaml",
           "profile": "gate",

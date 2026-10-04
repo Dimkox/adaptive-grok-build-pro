@@ -1,6 +1,6 @@
 # Docs research — live Grok/Qwen landing + Python/system pins
 
-Product tree: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live` (origin/main).
+Product tree: `<local-path>` (origin/main).
 Change: `engineering/changes/20260906-add-default-off-live-grok-and-live-qwen-landing-4a8bbb`.
 Route: `4a8bbb4fa8a6`. No `.env` or credentials were read. Secret values are not invented; `.env.example` uses documented placeholders only.
 
@@ -65,7 +65,7 @@ Observed identities for the intended first run (regular, non-symlink files, SHA-
 
 | Tool | Path | SHA-256 |
 | --- | --- | --- |
-| Codex 0.153.4 | `/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex` | `56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da` |
+| Codex 0.153.4 | `<local-path>` | `56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da` |
 | Python | `/usr/bin/python3.12` | `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223` |
 | Git | `/usr/bin/git` | `2a8c18fbf43da9f692d75474c72bea9dfd796c260b0f3dfe456376abc3bbd668` |
 | GitHub CLI | `/snap/gh/751/gh` | `527dc63b37f57451641228fd55079140073b78e333d7bcaca33587a9e5bc97f3` |

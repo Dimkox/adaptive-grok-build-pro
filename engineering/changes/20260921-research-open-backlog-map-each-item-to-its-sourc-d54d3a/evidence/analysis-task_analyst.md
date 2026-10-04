@@ -2,7 +2,7 @@
 
 Observed: 2026-09-21T06:25:38.001752+00:00. Fetched `origin/main` is `90078959ff816068af374ad42f4bb80fdbaec866`. Source: live GitHub PR, review/issue-closure, and exact-head check-run APIs; cached inventory was used only to seed the set. No external writes or full verification were performed.
 
-The authoritative result is `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App `4694114` on the exact PR head and current base. A successful historical run on a stale base is not current merge authority. GitGuardian is informational.
+The authoritative result is `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App `<redacted-app-id>` on the exact PR head and current base. A successful historical run on a stale base is not current merge authority. GitGuardian is informational.
 
 All 17 open PRs have zero GitHub review submissions, zero review threads, and zero PR conversation comments at observation time; this does not audit local review files. #170 is a draft on current main with no required check reported yet. The other 16 PRs have old base `2f66ba6ef82d0f6a0bb3a4389e7f03b393c99217`; 14 have green App checks for their heads, two failed, and five are conflicting.
 

@@ -1,6 +1,6 @@
 # L5 delivery slice C implementation
 
-Route: 00652f60f78c. Worktree: /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c.
+Route: 00652f60f78c. Worktree: <local-path>
 Branch: feat/l5-split-c-evidence-v2.
 Genuine source predecessor at route creation: c46f14f6a39ca8dc778f8a179ab4f61cdfe13599.
 Current pre-commit HEAD after ancestor documentation corrections: 63351be5ed814353cd1e8da4089edef2ca9a013f.

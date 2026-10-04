@@ -17,7 +17,7 @@ Narrow question: bounded next slice after user selected **"1" = docker-push for 
 
 Selection `"1"` names the *kind* of next slice (`production` + `docker-push`). It is **not** a registry URL, not a resource, and not enough to call `grok_approve.py`. `.env.example` `registry.example.com` is a documented fake. Do not invent `ghcr.io/Dimkox/…` from `origin`. Local `RepoDigests` that equal `.Id` and lack a registry host are still **not** pins.
 
-When (and only when) the user names a real `PLACEHOLDER_REGISTRY` that contains a hostname, the write owner may mint a fingerprint-bound grant with **three exact repo resources**, tag the already-built `:2.1.0` images, `docker push` those three names, inspect JSON `RepoDigests`, keep only host-bearing `name@sha256:<64 hex>`, and write those strings into **untracked `/tmp` env only**. Fail-closed on login 401/403 or hostless digests. Do **not** run `supply-chain-release.sh` (cosign missing). Do **not** `compose up` (127.0.0.1:8080 still searxng). Do **not** pin `trust-ci/runtime/policy.json` until the user names deploy (option 3).
+When (and only when) the user names a real `PLACEHOLDER_REGISTRY` that contains a hostname, the write owner may mint a fingerprint-bound grant with **three exact repo resources**, tag the already-built `:2.1.0` images, `docker push` those three names, inspect JSON `RepoDigests`, keep only host-bearing `name@sha256:<64 hex>`, and write those strings into **untracked `/tmp` env only**. Fail-closed on login 401/403 or hostless digests. Do **not** run `supply-chain-release.sh` (cosign missing). Do **not** `compose up` (<loopback-service> still searxng). Do **not** pin `trust-ci/runtime/policy.json` until the user names deploy (option 3).
 
 ---
 
@@ -27,7 +27,7 @@ When (and only when) the user names a real `PLACEHOLDER_REGISTRY` that contains 
 | --- | --- |
 | Docker | 29.7.2 · Compose v5.5.0 |
 | `cosign` | **missing** (`command -v` empty) |
-| `127.0.0.1:8080` | **LISTEN** (searxng). Do not bind it. |
+| `<loopback-service>` | **LISTEN** (searxng). Do not bind it. |
 | Product / Trust CI identity | `2.0.11` / **2.1.0** |
 | `/tmp/adaptive-trust-ci-build.env` | present (unread) |
 | Local tags still the 20:36Z smoke | yes (see table) |

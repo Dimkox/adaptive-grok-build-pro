@@ -21,12 +21,12 @@ The targeted RED failed only for `response=None` at `assertIsNone(raised.excepti
 
 | Check | Exit | Seconds | Full output |
 | --- | --- | --- | --- |
-| red | 1 | 0.315 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/red.log` |
-| ruff-before | 0 | 0.033 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-before.log` |
-| green | 0 | 0.365 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/green.log` |
-| migrations | 0 | 0.365 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/migrations.log` |
-| ruff-after | 0 | 0.065 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-after.log` |
-| diff-check | 0 | 0.017 | `/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/diff-check.log` |
+| red | 1 | 0.315 | `<local-path>` |
+| ruff-before | 0 | 0.033 | `<local-path>` |
+| green | 0 | 0.365 | `<local-path>` |
+| migrations | 0 | 0.365 | `<local-path>` |
+| ruff-after | 0 | 0.065 | `<local-path>` |
+| diff-check | 0 | 0.017 | `<local-path>` |
 
 Commands are recorded verbatim in `results.json`; the reviewed two-file diff is `change.patch`. All artifacts are outside the checkout.
 

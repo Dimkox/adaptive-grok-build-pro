@@ -24,6 +24,6 @@
   "route_id": "79f406e449de",
   "schema_version": 1,
   "status": "approved",
-  "title": "The user sent a message while you were working:\n<user_query>\nполный сука ридми сделай со всеми ссылками, графом и тд в продукте, чтобы любой человек или llm agent с ходу подхватил, всё прочитал и имел полнй контекст текущего состояния, хулеты тупишь\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "title": "The user sent a message while you were working:\n<user_query>\nполный [sanitized] ридми сделай со всеми ссылками, графом и тд в продукте, чтобы любой человек или llm agent с ходу подхватил, всё прочитал и имел полнй контекст текущего состояния, хулеты тупишь\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
   "updated_at": "2026-08-16T23:08:21+00:00"
 }

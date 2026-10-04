@@ -1,7 +1,7 @@
 # Architecture analysis — issue #165
 
 Route: `2dfd5804553e`. Change: `20260921-fix-issue-165-diagnose-unfinished-change-package-2dfd58`.
-Repository: `/home/pall/grok-projects/adaptive-grok-build-issue-165`.
+Repository: `<local-path>`.
 Inspected HEAD: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`; branch: `fix/issue-165-interruption-status`.
 This is source analysis, not implementation, test, review-receipt, or merge evidence. No tests, compilation, Docker operations, commits, or product edits were performed by this lane.
 

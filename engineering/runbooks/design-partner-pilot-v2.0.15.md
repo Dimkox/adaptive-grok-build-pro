@@ -18,7 +18,7 @@ This runbook describes a capability; it grants no permission to invoke Codex, pu
 1. Run only an exact reviewed control-repository HEAD. Prepare one operator-owned `0700` runtime parent outside the control and landing repositories; the three configured child roots must be absent or private `0700` directories, mutually disjoint, and have no symlinked path component. Use `umask 077`.
 2. Provide a clean local landing source at the exact base. The pilot creates deterministic private writer and evaluator clones with `--no-local --no-hardlinks`, removes remotes, and revalidates exact HEAD/tree, clean state, object independence and unchanged source whenever another CLI process reopens the job.
 3. Pin regular, non-symlink executable files by SHA-256. The host identities observed for the intended first run are:
-   - Codex `/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex`, SHA-256 `56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da`;
+   - Codex `<local-path>`, SHA-256 `56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da`;
    - Python `/usr/bin/python3.12`, SHA-256 `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223`;
    - Git `/usr/bin/git`, SHA-256 `2a8c18fbf43da9f692d75474c72bea9dfd796c260b0f3dfe456376abc3bbd668`;
    - GitHub CLI `/snap/gh/751/gh`, SHA-256 `527dc63b37f57451641228fd55079140073b78e333d7bcaca33587a9e5bc97f3`;
@@ -37,7 +37,7 @@ This runbook describes a capability; it grants no permission to invoke Codex, pu
   "validation_root": "/absolute/private-runtime/validation",
   "source_repository": "/absolute/exact-landing-source",
   "provider_mode": "app_server_chatgpt",
-  "codex_executable": "/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex",
+  "codex_executable": "<local-path>",
   "codex_sha256": "56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da",
   "codex_version": "0.153.4",
   "model_id": "gpt-6-astra",

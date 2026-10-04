@@ -64,7 +64,7 @@
   "governance_digest": "dfb2631cf1d47deaea71dec2d576adb72182f55401f12517333d2fff13355463",
   "governance_evidence_digest": "cba12f87b948da5325a255c4e4606bbb838952a0edc9e13568f16a386260e252",
   "kind": "test_review",
-  "report": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-evidence/engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/test-review.md",
+  "report": "<local-path>",
   "route_id": "0fd5ffd2100f",
   "schema_version": 1,
   "spec_digest": "142c544096e43473155d8f9049b37f70a4fd996ad460b628caa90471d24c097f",

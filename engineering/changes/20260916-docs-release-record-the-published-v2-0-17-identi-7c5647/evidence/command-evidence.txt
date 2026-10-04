@@ -1,4 +1,4 @@
-# raw command evidence (regenerated 2026-09-16T02:26:42Z) in worktree /home/pall/grok-projects/adaptive-grok-build-pro-sr217
+# raw command evidence (regenerated 2026-09-16T02:26:42Z) in worktree <local-path>
 
 ## git ls-remote peeled tag
 5c6687ed97e1c365597bf27047016eb07411f28b	refs/tags/v2.0.17

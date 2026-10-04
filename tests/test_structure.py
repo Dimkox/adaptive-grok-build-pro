@@ -16,19 +16,61 @@ ROOT_ENTRIES = frozenset(
     {
         ".agents", ".coveragerc", ".gitattributes", ".gitignore", ".grok-stack", ".grok", ".specify", ".superpowers",
         "AGENTS.md", "CHANGELOG.md", "DARK_FACTORY_ROADMAP.md", "GROK_BUILD_HANDOFF.md",
-        "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md", "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
+        "FACTORY_TZ_v1.5_ADDENDUM_BB-01.md", "FACTORY_TZ_v1.5_ADDENDUM_QG-01.md",
+        "FACTORY_UNIFIED_UPGRADE_TZ_v1.5_FINAL.md",
         "LICENSE", "Makefile", "PROJECT_STATE.json", "QUICKSTART.md", "README.md",
         "START_HERE.md", "VERSION", "architecture", "bandit.yaml", "decisions.md",
         "delivery", "docs", "engineering", "examples", "factory", "governance",
-        "mistakes.md", "packages", "pilot", "post_tool_use.py", "pre_compact.py",
-        "pre_tool_use.py", "ruff.toml", "schemas", "scripts", "session_end.py",
-        "session_start.py", "side-projects", "stop_gate.py", "subagent_start.py",
-        "subagent_stop.py", "tests", "trust-ci", "user_prompt_submit.py",
+        "mistakes.md", "packages", "pilot", "ruff.toml", "schemas", "scripts",
+        "side-projects", "tests", "trust-ci",
+        "session_start.py", "user_prompt_submit.py", "pre_tool_use.py",
+        "post_tool_use.py", "pre_compact.py", "subagent_start.py",
+        "subagent_stop.py", "stop_gate.py", "session_end.py",
     }
 )
 
 
 class StructureTests(unittest.TestCase):
+    def test_cancelled_preflight_public_projection_preserves_scope_without_home_paths(self) -> None:
+        path = ROOT / 'engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e/evidence/scope-preflight-cancelled.json'
+        raw = path.read_text(encoding='utf-8')
+        self.assertFalse(bool(re.search(r'/home/[^/\s"]+/', raw)), 'cancelled historical report contains an operator-home path')
+        report = json.loads(raw)
+        note = report.pop('public_projection')
+        self.assertEqual(set(note), {'record_scope', 'source_commit', 'source_git_blob', 'private_original', 'redacted_field', 'receipt_authority', 'current_verification', 'complete_verification'})
+        self.assertEqual(note['record_scope'], 'historical_cancelled_public_projection')
+        self.assertEqual(note['source_commit'], '6dbbc7dbe81812d919851c2300db6f4917033d43')
+        self.assertEqual(note['source_git_blob'], '6334c167ac00bf35bafa37e441f087d4de685c33')
+        self.assertEqual(note['private_original'], {'sha256': '4350077c2590c484ac063fca91decb6e1b9b503e1bfa8149f3e1c9f3b0e30096', 'bytes': 25603, 'private_content_persisted': True, 'publicly_dereferenceable': False})
+        self.assertEqual(note['redacted_field'], 'checks[13].command[23]')
+        for field in ('receipt_authority', 'current_verification', 'complete_verification'):
+            self.assertIs(note[field], False)
+        self.assertEqual(report['status'], 'fail')
+        self.assertEqual(report['terminal_state'], 'cancelled')
+        self.assertEqual(report['check_status'], 'incomplete')
+        self.assertEqual(report['checks'][13]['command'][23], '--cov-config=<local-project-path>/.coveragerc')
+        # Pin every original scope/identity/result/log value, changing only that argv.
+        canonical = json.dumps(report, ensure_ascii=True, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(), 'e6d8aac7464caec8fa20e8def25db074ec377a5fdf35c2a42cc3b2e9326d2ab3')
+
+    def test_historical_source_audit_remains_parseable_after_path_redaction(self) -> None:
+        import ast
+
+        path = ROOT / 'engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-source-audit.py'
+        tree = ast.parse(path.read_text(encoding='utf-8'), filename=path.name)
+        commands = [
+            node.args[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'run' and node.args and isinstance(node.args[0], ast.List)
+        ]
+        self.assertTrue(any(
+            len(command.elts) >= 2 and isinstance(command.elts[0], ast.Constant)
+            and command.elts[0].value == 'ruff' and isinstance(command.elts[1], ast.Constant)
+            and command.elts[1].value == 'check'
+            for command in commands
+        ))
+
     def test_repository_root_holds_only_canonical_entries(self):
         tracked = subprocess.run(
             ("git", "ls-tree", "--name-only", "HEAD"),
@@ -379,12 +421,12 @@ class StructureTests(unittest.TestCase):
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
         self.assertEqual(version, "2.1.1")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
-        self.assertIn("Identity: **2.1.1 source candidate**", readme)
+        self.assertIn("Identity: **2.1.1 published release**", readme)
         self.assertTrue(
-            changelog.startswith("# Changelog\n\n## 2.1.1 — 2026-10-03 (source candidate, unpublished)\n")
+            changelog.startswith("# Changelog\n\n## 2.1.1 — 2026-10-03 (published)\n")
         )
         self.assertIn(
-            "product version: 2.1.1 source candidate (latest published release: v2.0.19; U5/U6 default-off and not live-qualified)",
+            "product version: 2.1.1 published (latest published release: v2.1.1; U5/U6 default-off and not live-qualified)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))

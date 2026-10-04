@@ -1,7 +1,7 @@
 {
   "head": "6b13806d454cada0c63520129baf09056db46408",
   "started_at": "2026-09-21T04:37:13.312279+00:00",
-  "root": "/home/pall/grok-projects/adaptive-grok-build-repair",
+  "root": "<local-path>",
   "results": [
     {
       "command": [
@@ -16,7 +16,7 @@
       ],
       "exit": 0,
       "seconds": 604.509,
-      "log": "/home/pall/.cache/agbp-run/p155-root-unittest-lqk7chp4/unittest.log"
+      "log": "<local-path>"
     },
     {
       "command": [
@@ -26,7 +26,7 @@
       ],
       "exit": 0,
       "seconds": 1.719,
-      "log": "/home/pall/.cache/agbp-run/p155-root-unittest-lqk7chp4/coverage.log"
+      "log": "<local-path>"
     }
   ],
   "completed_at": "2026-09-21T04:47:19.542411+00:00",

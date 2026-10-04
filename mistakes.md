@@ -1,5 +1,76 @@
 # Mistakes
 
+## 2026-10-04 — Pre-commit HEAD inventory masked newly tracked launchers
+
+The root inventory test reads `git ls-tree HEAD`, so the pre-commit binding run checked the old commit where restored launchers were still absent rather than the pending candidate that introduced them. The exact nine compatibility entries were therefore not added to its closed expected set until committed full verification exposed the mismatch. Tests whose input is HEAD must be rerun after commit; passing a dirty-tree test run alone does not establish the committed candidate's inventory.
+
+## 2026-10-04 — Synthetic scope fixtures did not own their package namespace
+
+Temporary tests directories lacked `__init__.py`, so inherited Core PYTHONPATH let nested unittest resolve the real candidate's regular tests package instead of the five synthetic modules. Standalone runs without that inherited path hid the leak, and a status-only assertion could become green again after repairing the unrelated real root inventory. Explicit package identity and a five-test execution-count assertion expose the error without changing production environment or selector behavior.
+
+## 2026-10-04 — Stat-fault cleanup confused inode ownership with unchanged data
+
+If the first post-link stat failed, inode-only cleanup could delete foreign in-place bytes; if the second stat failed, the earlier ctime snapshot could instead strand our unchanged report after our own temporary hardlink unlink. The missing invariant was matching staged content during a stable bounded read, not adopting fallback metadata or freezing pre-unlink ctime. Combined first-stat rewrite and second-stat clock-boundary regressions now cover both failure paths, including valid same-length foreign JSON.
+
+## 2026-10-04 — Compatibility and abort ownership were incompletely checked
+
+QG-01's consumer allowances did not match three exact producer skip contracts, and installer alias rendering reread the template rather than using its validated inventory entry. Fresh-install tests synthesized missing aliases from that template, masking the retained legacy configuration's broken commands in an updated source checkout; handoff prose also kept superseded PR239 as current. Report cleanup tracked ownership only through the temporary filename, not the published digest across envelope publication, so cancellation and later faults stranded newly owned files; regressions now distinguish those files from reused or replaced evidence.
+
+## 2026-10-04 — Raw cancelled preflight output exposed a local operator path
+
+The coordinator published a raw cancelled preflight report without a public projection, exposing an operator-home prefix in a captured coverage argv. Retain the exact original privately before replacing that one historical argv value, and explicitly label the public projection cancelled/incomplete with no receipt or current-verification authority. Preserve scope, base/head, changed paths, results and skips rather than sanitizing their meaning.
+
+## 2026-10-04 — Choose the protected branch's admitted merge method
+
+The coordinator's --merge API request was rejected by protected main's linear-history rule; the separately admitted --squash operation succeeded. This was enforcement of protection, not a bypass, and no forced ref update was used.
+
+## 2026-10-04 — An old in-progress check did not prove queue latency
+
+The coordinator inferred queue delay from an old GitHub in-progress check without sufficient runtime evidence: the durable superseded-head cancellation path can leave that old presentation unchanged, and retry started_at is not execution duration. Exact companion head 63cd1e0e6be67d01815a85375f306b09beba8499 reported 22m08s for the new App check, but the cause remains undetermined. Keep status observations separate from timing/root-cause conclusions; no database or private-key lookup was performed.
+## 2026-10-04 — Receipt spill classification escaped failure retirement
+
+Moving JSON size classification ahead of the publication guard let circular or unserializable verification details throw while an older pass remained valid. Classification now runs inside that guard with retirement enabled before serialization starts, restoring the original fail-closed behavior. Regressions cover both ValueError and TypeError without changing report caps, bindings or readers.
+
+## 2026-10-04 — Full verifier output exceeded the receipt envelope
+
+Duplicated mandatory path/scope metadata alone exceeded the unchanged 262,144-byte receipt limit even though all selected checks passed; the first log-only repair therefore could not handle the real 1,442-path/488-rejection inventory. A failing metadata-only regression now drives bounded complete-report runtime publication and integrity-checked receipt hydration, rather than deleting authoritative fields. Publication failures retire prior receipts, and missing, tampered, unsafe or over-cap reports remain non-qualifying.
+
+## 2026-10-04 — An idle writer was messaged without being resumed
+
+The coordinator sent actionable repair work with non-resuming `send_message` to a completed writer, so implementation remained idle. Use `followup_task` for actionable idle-agent work and confirm its running status.
+
+## 2026-10-04 — A closing import cycle was counted as a new module
+
+Queue adapter resolution checked the eight-module depth cap before recognizing an already resolving module, so a cycle closing at depth eight was incorrectly classified as an attempted ninth module. Check cycle membership first; keep cyclic adapters unsupported and genuinely new ninth modules rejected by the unchanged cap.
+
+## 2026-10-04 — Runner presence was confused with execution
+
+The focused admission predicate checked only record presence, while full discovery excluded `skip` but still counted `cancelled` and unknown statuses. Both predicates now admit only executed `pass`/`fail` results, tested across absent, skipped, cancelled, unknown, passing and failing states for both PR and release modes. A failed executed run provides admission evidence but still fails the verifier's aggregate result.
+
+## 2026-10-04 — Read-only Git commands changed verifier binding metadata
+
+Concurrent Git commands that appear read-only may refresh the index and change `.git/worktrees` metadata while the architecture verifier checks its bound repository. Use `GIT_OPTIONAL_LOCKS=0` for read-only Git operations and serialize all Git mutation outside verifier execution. Keep binding checks strict rather than accepting a changed repository identity.
+
+## 2026-10-04 — Sanitization broke Python syntax and omitted a discovery result
+
+A host-path replacement removed a closing quote from the historical split-C audit, so static fitness could not parse the changed source. QG01 also counted skipped full-runner names as discovery evidence even when no focused result existed. Parse every changed Python file after text sanitization and require an actual full discovery result or an admitted focused result.
+
+## 2026-10-04 — Discovery runner names were mistaken for complete admission evidence
+
+QG01 accepted a focused runner without eligible scope or replacement records and required coverage only for the unittest runner, leaving pytest evidence incomplete. The archive checksum regression also changed YAML into an invalid document, so parsing could reject the mutant even with checksum validation removed. Require scoped disclosed replacement evidence for focused discovery, coverage records for both full runners, and valid-document byte mutations for digest regressions.
+
+## 2026-10-04 — Substring sanitization corrupted ordinary Russian words
+
+The cleanup matched offensive substrings inside the benign words “ослаблять”, “ослабляет” and “дубля”, corrupting requirement text and breaking immutable owner-document hashes. Restore those words and keep the deliberate host redaction separately pinned as a public projection; do not re-label edited bytes as the original owner document.
+
+## 2026-10-04 — Approval failure did not stop a dependent external write
+
+The coordinator mistakenly requested `git-push-branch` under the `external-write` approval scope; grant creation failed, but the shell lacked failure stopping, so the user-authorized isolated branch push of `1e4017b9446efc12d52c34d65fd52ba1fafd2183` and PR edit proceeded without a successfully materialized local grant. Correct grants were created only for future actions; they do not retroactively establish a grant for those completed operations. Run approval-dependent writes in separate checked tool calls, or use failure-stopping shell execution, and proceed only after confirming that the exact required grant exists.
+
+## 2026-10-04 — Archive cleanup omitted provenance and fresh release observation
+
+Renaming historical packages without a spec migration record made strict Git-range selection treat missing origins and legacy destinations as current gate evidence. The handoff also retained a pre-publication 2.1.1 candidate after the release was published because it was copied without checking remote release identities. Bind migrations to the trusted exact base and retained bytes, and preserve dated candidate observations separately from current remote publication.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
@@ -205,7 +276,7 @@ A worker created its startup snapshot above the project because it treated a tru
 ## 2026-08-24 — Treated a ChatGPT hostname as the live webhook URL
 
 **Symptom:** Operator packages and `decisions.md` pointed GitHub App webhook and Apache TLS at `https://trust-ci.ii-tonya.ru/webhooks/github`.
-**Root cause:** A ChatGPT-invented hostname was copied as operator truth. That hostname is a ChatGPT invention, not the GitHub App and not Trust CI on claw; do not configure, probe, or complete TLS for it.
+**Root cause:** A ChatGPT-invented hostname was copied as operator truth. That hostname is a ChatGPT invention, not the GitHub App and not Trust CI on <ci-host>; do not configure, probe, or complete TLS for it.
 
 ## 2026-08-23 — First protected write invalidated the rest of the grant
 
@@ -433,7 +504,7 @@ reported Markdown trailing spaces. Commit gates must stop on the first nonzero r
 
 **Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
 **Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
-**Location:** Wrong cwd `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane/packages`; correct root `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane`.
+**Location:** Wrong cwd `<local-path>`; correct root `<local-path>`.
 
 ## 2026-09-02 — Shared ambient inventory between packager and verifier
 
@@ -515,7 +586,7 @@ reported Markdown trailing spaces. Commit gates must stop on the first nonzero r
 
 ## 2026-09-03 — Resolved a hook against the session cwd instead of the command workdir
 
-**Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `/home/pall/grok-projects/google-ads-automation/.grok-stack/runtime/tool-denials.json`, not this M4 worktree runtime. No push occurred.
+**Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `<local-path>`, not this M4 worktree runtime. No push occurred.
 **Root cause:** `.grok/hooks/pre_tool_use.py` delegated to `.grok-stack/adaptive_grok/_policy_legacy.py:production_action/evaluate_pre_tool`, whose `root_from`/`find_root` resolution used the event/session cwd rather than the nested exec command's explicit workdir; a hook launched or resolved in another repository therefore applied the wrong route and grant state.
 **Prevention:** Denials must persist the exact command, effective root, command workdir, and reason so a root mismatch is immediately diagnosable and a production denial cannot be attributed to the intended worktree without evidence.
 
@@ -865,7 +936,7 @@ The existing page-limit test lengthened a serialized Count value while leaving x
 
 ## 2026-09-12 — Force-pushed an unrelated branch pointer from a compound command
 
-**Symptom:** A single compound `run_shell_command` began with `cd /home/pall/grok-projects/adaptive-grok-build-pro` and ended with `git push … refs/heads/perf/parallel-python-tests`. `HEAD` resolved to the session branch, so the push moved PR #33's head branch to `f5e6dcb` (an unrelated merge commit) with a forced update, briefly rewriting the PR head and its diff.
+**Symptom:** A single compound `run_shell_command` began with `cd <local-path>` and ended with `git push … refs/heads/perf/parallel-python-tests`. `HEAD` resolved to the session branch, so the push moved PR #33's head branch to `f5e6dcb` (an unrelated merge commit) with a forced update, briefly rewriting the PR head and its diff.
 **Root cause:** Two compounding errors. First, a destructive remote write was composed into the same command line as an unrelated `cd`, so the target ref name was reviewed but the ref *source* (`HEAD`) was not — the thing that actually changed. Second, `--force-with-lease` was treated as a safety net while the expected value came from the same mistaken push, so the lease matched and confirmed the damage instead of preventing it. A `||` fallback clause pushed a second path, widening the blast radius of a command that should have had exactly one effect.
 **Rule:** Never combine `cd` with a remote write in one command; pass the repository via `git -C <resolved path>` and an explicit `<commit>:<ref>` (never bare `HEAD`). A lease is only meaningful when its expected value is read from the remote first, in a separate prior step. Destructive pushes get no fallback branches in the same invocation, and before any force-push, verify ancestry (`merge-base --is-ancestor`) so that restoring the intended commit is provably lossless.
 
@@ -1664,3 +1735,43 @@ Root cause: the Trust CI image takes the no-pytest fallback and the new sharder 
 ## 2026-10-03 — Focused-profile tests still expected the old module invocation
 
 Root cause: the implementation switched the focused runner to path-based unittest targets, but the contract test still asserted module names and the minimal project-copy fixture omitted the tracked `.superpowers` root entry required by `test_structure.py`. Keep test fixtures aligned with the exact runner command and canonical tracked root inventory before pushing another Trust CI attempt.
+
+## 2026-10-04 — Full PR verifier was run before the new root file was committed
+
+Root cause: `tests/test_structure.py` compares canonical root entries against `git ls-tree HEAD`, so a new root ТЗ file remains invisible until it is committed. Run targeted tests before commit, but run full PR verification only after the candidate tree is frozen and committed.
+
+## 2026-10-04 — README explained internal bureaucracy before user value
+
+Root cause: public documentation led with startup capacity, routing, Trust CI and control-plane vocabulary before answering what the tool does and how to try it. External readers therefore saw overengineering before the simple repo-to-PR workflow. Keep the first screen focused on outcome, first run and boundaries; move heavy controls to an advanced section.
+
+## 2026-10-04 — Fail-closed was described more broadly than the measured seams
+
+Root cause: documentation used fail-closed as a global project property while past defects were at seams between prose assertions, empty criteria, receipt bindings, timeouts and restart identity. Describe the exact rejecting mechanisms and the known repaired seams together, so a reader can tell where the policy is enforced and where it is only a goal.
+
+## 2026-10-04 — Change package paths leaked raw user prompts
+
+Root cause: `start_change()` built public directory names from `slugify(title)` without a public-safety layer, so abusive raw prompts became tracked path names. Keep the original task only inside bounded evidence when needed, but make public paths opaque and neutral.
+
+## 2026-10-04 — Historical evidence published operator topology
+
+Root cause: evidence files treated host paths, app IDs and network observations as harmless operational facts even when the repository was public. Redact current-tree documentation and evidence, and do not claim cleanup is complete until history rewrite and release-asset rotation are separately executed.
+
+## 2026-10-04 — Release ZIPs kept stale public evidence alive
+
+Root cause: repository-custodied binary release archives were treated as source evidence, so old path names and logs stayed visible even after current-tree text cleanup. Release artifacts must live outside git and be referenced by hash and URL, then history rewrite can remove old blobs in one coordinated pass.
+
+## 2026-10-04 — Compatibility shims were copied into the public root
+
+Root cause: installer compatibility files were stored as nine duplicate root files instead of one template plus install-time materialization. This made the public root noisy and created extra canonical-root maintenance every time hook compatibility changed.
+
+## 2026-10-04 — Cleanup changed architecture/check-spec inputs without updating their models
+
+Root cause: removing root hook shims and renaming/removing historical evidence paths changed the repository shape, but the architecture model and change-spec verifier still treated the old paths as required inputs. Do not claim full PR readiness for a hygiene cleanup until generated architecture ownership and deleted-path handling are updated or the cleanup is split behind an explicit migration route.
+
+## 2026-10-04 — Full verifier was allowed to run silently past the fast-feedback budget
+
+Root cause: the PR verifier produced no output for about two minutes before interruption, then revealed early failures that could have been found by targeted architecture/change-spec checks. Run fast targeted gates for changed ownership/spec paths first, and reserve full PR verification for a frozen candidate with known-green prechecks.
+
+## 2026-10-04 — A private directory name was mistaken for Git exclusion
+
+Root cause: the coordinator assumed `.review-scratch` was ignored without checking Git's actual exclusion rules. The retained raw report was private by filesystem permissions but untracked, not ignored; before delivery, an exact local exclusion was added and independently checked alongside its hash and permissions. Check actual exclusion before storing raw host-local evidence, rather than relying on a directory name.

@@ -28,8 +28,8 @@ Placeholder `change-spec.yaml` (`{{OBJECTIVE_STATEMENT}}`) is workflow scaffoldi
 | Head SHA | `ce03c87b3d9b8767105c01270869e33b50af56df` |
 | Base | `main` @ `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` |
 | `main` protection | HTTP 404 `Branch not protected` |
-| Old Check Run `97390635614` | still `head_sha=1fc942065a124ce75659bd082519d8ebc37774e8`, App `4694114`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`, conclusion `action_required` |
-| New Check Run `97406973020` | `head_sha=ce03c87…`, App `4694114`, name `adaptive-trust-ci/verified@6737355947c2`, `external_id=54e2c6f4-ed18-45dd-abfb-2074fb8ee96a`, conclusion `action_required` |
+| Old Check Run `97390635614` | still `head_sha=1fc942065a124ce75659bd082519d8ebc37774e8`, App `<redacted-app-id>`, `external_id=1b63d10b-90c1-498a-97b8-7b5e0ea76aec`, conclusion `action_required` |
+| New Check Run `97406973020` | `head_sha=ce03c87…`, App `<redacted-app-id>`, name `adaptive-trust-ci/verified@6737355947c2`, `external_id=54e2c6f4-ed18-45dd-abfb-2074fb8ee96a`, conclusion `action_required` |
 | Old run on new SHA | **absent** from `ce03c87` check-runs list |
 | Forged success | **no** — Trust CI conclusions remain `action_required` |
 

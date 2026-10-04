@@ -76,7 +76,7 @@ AGENTS.md ("Independent merge trust", "PR-only delivery"): the only merge gate i
 on the exact head SHA; local `grok_verify`/reviews are preflight and "never replace the external check"; "A local
 receipt is stale after any repository change." Pin measured three ways — `gh api …/branches/main/protection/required_status_checks`
 → `{"checks":[{"context":"adaptive-trust-ci/verified@06ecf1c875bc"}],"strict":true}`; `tests/test_project_state.py:14
-CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"`, `:15 CURRENT_APP_ID = 4694114`; construction at
+CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"`, `:15 CURRENT_APP_ID = <redacted-app-id>`; construction at
 `trust-ci/src/adaptive_trust_ci/policy.py:275-277` `f'{self.status_context}@{self.digest[:12]}'`. The deployed service
 runs **the repository's own commands, hence its own copy of this comparator**, from the head checkout:
 `trust-ci/config/policy.example.json:60-79 root-unittest` (`unittest discover -s tests`) and `:101-112

@@ -45,10 +45,10 @@ Standing (authority):
 
 Predecessor change packages (user-approved scope for this last mile):
 
-- `20260816-user-query-гони-user-query-04ae05` (user «гони»)
+- `20260816-sanitized-query-гони-sanitized-query-04ae05` (user «гони»)
 - `20260816-the-user-sent-a-message-while-you-were-working-u-a13da8` (K10 README + unfinished «гони» push)
 - `20260816-the-user-sent-a-message-while-you-were-working-u-2a31f5` (CLI-only; push `7152b75`; no Release)
-- `20260816-user-query-пересобирай-себя-под-следущей-версией-37141f` (2.0.8 identity; GitHub Release out of scope)
+- `20260816-task-37141f` (2.0.8 identity; GitHub Release out of scope)
 - This package: `brief.md`, `architecture.md`, `requirements.md`, `release.md`, `tasks.md`, `evidence/human-approval.md`
 
 ---
@@ -118,7 +118,7 @@ Policy (`decisions.md` 2026-08-14) gates the real argv prefixes `git push`, `gh 
 
 ### 2.1 What «гони» already granted
 
-`20260816-user-query-гони-user-query-04ae05`:
+`20260816-sanitized-query-гони-sanitized-query-04ae05`:
 
 - `brief.md`: “User «гони» is the production go for **push**.” Out of scope: VERSION bump, zip rebuild, tag, GitHub Release, GitHub Actions.
 - `release.md`: “Push only. No tag. No GitHub Release. VERSION stays 2.0.8.”
@@ -153,7 +153,7 @@ That predecessor stayed `approved` and did not land the push (Bitvise GUI false 
 
 Active-route task (verbatim user follow-up):
 
-> ложная тревога, это кодекс под виндой хуйню творил, продолжай деплой окружения для разработки
+> ложная тревога, это кодекс под виндой [sanitized]ню творил, продолжай деплой окружения для разработки
 
 “Продолжай” is continue the unfinished last mile. “Деплой окружения для разработки” is the outstanding `git push origin main` of that unpublished tree so `origin/main` matches local development HEAD. It is **not** “cut a new GitHub Release.”
 

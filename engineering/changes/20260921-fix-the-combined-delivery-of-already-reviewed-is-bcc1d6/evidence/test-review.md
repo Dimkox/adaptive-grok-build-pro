@@ -1,6 +1,6 @@
 # Independent test re-review — PASS
 
-Reviewer: selected `test_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through frozen head `af7fb4ad3436e9c98cb7f07e570b7ff7e649207e` in `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`. The reviewer did not implement the change. This is local preflight evidence, not external merge authority.
+Reviewer: selected `test_reviewer`, route `bcc1d645c438`, 2026-09-21. Reviewed base `839d3aa26bc90417424d814ee48d8b5cd3be367e` through frozen head `af7fb4ad3436e9c98cb7f07e570b7ff7e649207e` in `<local-path>`. The reviewer did not implement the change. This is local preflight evidence, not external merge authority.
 
 **PASS.** Prior P1 finding T1 is resolved by a bounded security-alias repair and meaningful regression assertions. No remaining blocking test-adequacy finding was identified in the integrated eight-issue source. The original FAIL remains unchanged in [test-review-first.md](test-review-first.md), SHA-256 `c67a2a84d8a84e401be8c218c387875e705ca15dfed206c3e09d9b545e1a77aa`; it is not relabeled as a passing review.
 

@@ -14,7 +14,7 @@ The repository has an approved provider-neutral design and an exact M2-A impleme
 
 ## Outcome
 
-Deliver two reviewable stacked implementation PRs: M3 controlled knowledge/debt on exact M2, followed by M4 durable intake/scheduling/fencing/capacity/recovery consuming frozen M1/M2/M3 digests. The M4 API also freezes an authenticated Unix-socket submit/status/list/cancel/health contract for a later admin-only `/home/pall/baby-bot` integration.
+Deliver two reviewable stacked implementation PRs: M3 controlled knowledge/debt on exact M2, followed by M4 durable intake/scheduling/fencing/capacity/recovery consuming frozen M1/M2/M3 digests. The M4 API also freezes an authenticated Unix-socket submit/status/list/cancel/health contract for a later admin-only `<local-path>` integration.
 
 ## Scope
 
@@ -38,7 +38,7 @@ Deliver two reviewable stacked implementation PRs: M3 controlled knowledge/debt 
 - Provider execution, systemd units, installation/activation, or deployment.
 - Push, PR, merge, release, connector call, production mutation, or any external write.
 - Provider adapters, isolated workspaces, note execution broker, systemd installation/activation, and external-write behavior (M5+).
-- Editing, restarting, or deploying `/home/pall/baby-bot`; that is a separate integration slice after M4 API review.
+- Editing, restarting, or deploying `<local-path>`; that is a separate integration slice after M4 API review.
 - M7-M9 behavior.
 
 ## Constraints

@@ -2,9 +2,9 @@
 
 No blocking test-adequacy finding for Core A–E/H/HB and the immutable test-only 025 fixture. Inspected original agreed base `63799f8760d3a55028d83ab5ff0116ececf8f7d1`..HEAD `5b3ee0026f8d1a7166e3d1cf16d1511d261c4d0c`, changed tests and surrounding lifecycle/hook implementation; historical e8a4 reports were not reused.
 
-Candidate `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source`; Git tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`; canonical fingerprint before and after `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`. Both source status inventories were clean and HEAD unchanged. Candidate imports used PYTHONDONTWRITEBYTECODE=1.
+Candidate `<local-path>`; Git tree `2c4675bf5ecd073a9c2c6ecdd5737f32c7d911f5`; canonical fingerprint before and after `2ff95b7c0b279b06b929b7d2079db4b937626783309f206736017bbb91b5efa9`. Both source status inventories were clean and HEAD unchanged. Candidate imports used PYTHONDONTWRITEBYTECODE=1.
 
-Private scratch `/home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/test-fresh-JjpalZ/repo`, cloned with `git clone --quiet --no-hardlinks` from candidate. Parent and reviewer directory both mode 0700, non-sticky. Exact clean snapshot fingerprint matched before probes and after restoring scratch mutations. All test/mutation artifacts stayed private. CPU affinity 2,3; no agents, database or Docker work.
+Private scratch `<local-path>`, cloned with `git clone --quiet --no-hardlinks` from candidate. Parent and reviewer directory both mode 0700, non-sticky. Exact clean snapshot fingerprint matched before probes and after restoring scratch mutations. All test/mutation artifacts stayed private. CPU affinity 2,3; no agents, database or Docker work.
 
 reviewed-tree-modified: no
 

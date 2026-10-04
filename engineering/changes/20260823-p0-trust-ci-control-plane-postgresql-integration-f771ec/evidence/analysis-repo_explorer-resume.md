@@ -11,7 +11,7 @@ Crash clock: `.grok-stack/runtime/last-session-end.json` `ended_at=2026-08-23T19
 
 **There are no half-written product files.** The blocked README / `trust-ci/README.md` / `decisions.md` edits never landed. Working-tree dirty files are complete uncommitted batches from *before* the grant went stale, plus this evidence directory.
 
-Do **not** commit `engineering/changes/20260817-user-query-вычисти-*`. Do **not** `git push origin main`.
+Do **not** commit `engineering/changes/20260817-sanitized-query-вычисти-*`. Do **not** `git push origin main`.
 
 ---
 
@@ -26,7 +26,7 @@ Do **not** commit `engineering/changes/20260817-user-query-вычисти-*`. Do
  M engineering/runbooks/trust-ci-rollout.md (19:30:17Z)
 ?? engineering/changes/.../evidence/analysis-repo_explorer-readme.md  (19:21:49Z)
 ?? engineering/changes/.../evidence/implementation-readme.md         (19:30:56Z)
-?? engineering/changes/20260817-user-query-вычисти-*                 (unrelated leftover)
+?? engineering/changes/20260817-sanitized-query-вычисти-*                 (unrelated leftover)
 ```
 
 `git diff --cached` empty. `Makefile` clean vs HEAD. `README.md` / `trust-ci/README.md` / `decisions.md` / `GROK_BUILD_HANDOFF.md` / `VERSION` clean vs HEAD (mtime still 17:37 / 18:01). No `.swp` / `*~` / `README.md.*` leftovers.
@@ -184,7 +184,7 @@ Do not rewrite that. Append one ≤3-sentence 2026-08-23 ruling: the listed core
 - `Makefile` (already correct in HEAD)
 - `VERSION` / `CHANGELOG.md` / `__init__.py` / zip (identity stays 2.0.11)
 - filled `trust-ci/env/*.env`, `trust-ci/runtime/**`, keys
-- `engineering/changes/20260817-user-query-вычисти-*`
+- `engineering/changes/20260817-sanitized-query-вычисти-*`
 - `.github/`
 
 ---
@@ -269,6 +269,6 @@ Handoff “Current code state / Fresh local verification” still claims 4 skipp
 3. `PYTHONPATH=.grok-stack python3 -m unittest tests.test_structure.StructureTests.test_readme_stack_graph_is_complete tests.test_toolchain.ToolchainTests.test_real_toolchain_json_required_and_optional_sets`
 4. `python3 scripts/grok_verify.py --mode pr` and route reviews (`code_reviewer` + `test_reviewer` on this route).
 5. Do not start handoff steps 3–9 from this docs pass. Those are operational and need an exact delegated grant per named action/resource.
-6. Leave `20260817-user-query-вычисти-*` untracked.
+6. Leave `20260817-sanitized-query-вычисти-*` untracked.
 
 Route `56da62035c35` analysis complete. Write owner is `general_implementer`.

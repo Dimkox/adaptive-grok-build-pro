@@ -2,7 +2,7 @@
 
 Change: `20260816-publish-v2-0-7-github-release-2929c0`  
 Route: `2929c09b96b5` · intent=`release` · risk=`high` · write=`null` · reviews=`security_reviewer`+`release_reviewer` · gates=`scope_and_design_approval`,`production_action_approval` · evidence=`verification`,`security_review`,`release_review`  
-User: «делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ». Session ruling: controller does identity 2.0.7 (VERSION, `__version__`, CHANGELOG, README H1, packages/README, zip via `package_stack`, runbook) then last-mile tag / push / `gh release create --title`. No GHA. No retag 2.0.6. No `pyproject.toml`. User prompt is both gates.
+User: «делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ». Session ruling: controller does identity 2.0.7 (VERSION, `__version__`, CHANGELOG, README H1, packages/README, zip via `package_stack`, runbook) then last-mile tag / push / `gh release create --title`. No GHA. No retag 2.0.6. No `pyproject.toml`. User prompt is both gates.
 
 Read-only design. No application-code edits from this agent. No `.env`. No push / tag / merge / `gh release`.
 

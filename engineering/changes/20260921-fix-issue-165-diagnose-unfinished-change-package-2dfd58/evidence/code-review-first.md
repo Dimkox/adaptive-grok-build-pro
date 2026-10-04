@@ -2,7 +2,7 @@
 
 Status: **FAIL — one P2 correctness finding requires repair.**
 
-Route `2dfd5804553e`; role `code_reviewer`; worktree `/home/pall/grok-projects/adaptive-grok-build-issue-165`; branch `fix/issue-165-interruption-status`. Reviewed HEAD `21046dff16a1b927d5a781ae0ec61708ebed89bc` against ancestor `839d3aa26bc90417424d814ee48d8b5cd3be367e`. Reviewed the actual product diff, surrounding lifecycle/spec/state/receipt/Git implementations, adopted architecture and integration analyses, all six acceptance criteria, focused tests, and recorded verification evidence. This report is independent local review evidence, not a receipt or merge authority.
+Route `2dfd5804553e`; role `code_reviewer`; worktree `<local-path>`; branch `fix/issue-165-interruption-status`. Reviewed HEAD `21046dff16a1b927d5a781ae0ec61708ebed89bc` against ancestor `839d3aa26bc90417424d814ee48d8b5cd3be367e`. Reviewed the actual product diff, surrounding lifecycle/spec/state/receipt/Git implementations, adopted architecture and integration analyses, all six acceptance criteria, focused tests, and recorded verification evidence. This report is independent local review evidence, not a receipt or merge authority.
 
 ## Finding CR-165-01 — P2: a legal non-UTF-8 filename breaks durable checkpoint creation
 

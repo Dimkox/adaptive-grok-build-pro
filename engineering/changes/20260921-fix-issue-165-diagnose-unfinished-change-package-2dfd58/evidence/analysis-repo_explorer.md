@@ -1,6 +1,6 @@
 # Issue 165 repository exploration
 
-Route: `2dfd5804553e`. Role: `repo_explorer`, read-only analysis except this report. Observed worktree: `/home/pall/grok-projects/adaptive-grok-build-issue-165`; branch: `fix/issue-165-interruption-status`; HEAD: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. This is exploration evidence, not verification or review approval.
+Route: `2dfd5804553e`. Role: `repo_explorer`, read-only analysis except this report. Observed worktree: `<local-path>`; branch: `fix/issue-165-interruption-status`; HEAD: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`. This is exploration evidence, not verification or review approval.
 
 ## Observed current behavior
 

@@ -3,7 +3,7 @@
 ## Identity, scope, and verdict
 
 - Route: `81850148d1f6`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - Reviewed HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Frozen implementation/evidence fingerprint independently matched before this report was written: `55d50a669c5540c10b29f463cb6566737ad74dfcb121cdf77cf22382faf58a14`
 - Scope: full actual diff from HEAD, surrounding implementation/tests, historical review chain, remediation-5 durable package, and regression review of parent creation, output/checksum publication, source reads, exact Git trust, portability, error handling, and descriptor cleanup.

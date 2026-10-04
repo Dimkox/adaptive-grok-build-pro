@@ -1,4 +1,4 @@
-# Architect ruling — simplest M0 worker + App-owned Check Run on `claw`
+# Architect ruling — simplest M0 worker + App-owned Check Run on `<ci-host>`
 
 Route `3e61666b8de2`. Change `engineering/changes/20260824-the-user-sent-a-message-while-you-were-working-u-3e6166`. Write owner: `general_implementer`. This agent does not compose-up, POST the webhook, push, merge, read PEM/`.env`, or deploy.
 
@@ -6,17 +6,17 @@ User standing order «короче делай сам» plus the named slice (hos
 
 ## Ruling (one paragraph)
 
-**Do not edit product `trust-ci/compose.yaml`.** Keep `docker-engine` in the tracked file unused on `claw`. Materialize an **untracked host overlay** that mounts `/var/run/docker.sock` on `worker` and `runner-loader` only, sets `DOCKER_HOST=unix:///var/run/docker.sock`, adds `extra_hosts: host.docker.internal:host-gateway`, and overrides proxy/workspace/holdout env so they are host-daemon-visible. Stop the crash-looping DinD container. Start only `runner-loader` then `worker` with `--no-deps`. HMAC-POST PR #5 to `http://127.0.0.1:18080/webhooks/github`. Expect Check Run `adaptive-trust-ci/verified@6737355947c2` owned by App `4694114` with `external_id=job_id`. Do not register a GitHub webhook, protect `main`, merge, or read the PEM.
+**Do not edit product `trust-ci/compose.yaml`.** Keep `docker-engine` in the tracked file unused on `<ci-host>`. Materialize an **untracked host overlay** that mounts `/var/run/docker.sock` on `worker` and `runner-loader` only, sets `DOCKER_HOST=unix:///var/run/docker.sock`, adds `extra_hosts: host.docker.internal:host-gateway`, and overrides proxy/workspace/holdout env so they are host-daemon-visible. Stop the crash-looping DinD container. Start only `runner-loader` then `worker` with `--no-deps`. HMAC-POST PR #5 to `http://<loopback-trust-ci>/webhooks/github`. Expect Check Run `adaptive-trust-ci/verified@6737355947c2` owned by App `<redacted-app-id>` with `external_id=job_id`. Do not register a GitHub webhook, protect `main`, merge, or read the PEM.
 
 ## Conflicts resolved
 
 | Source | Claim | Ruling |
 | --- | --- | --- |
 | User this turn | Host socket, extra_hosts, proxy env, local HMAC, local POST is enough for first Check Run | **Wins.** |
-| docs_researcher | Spec/docs still describe privileged DinD and a public HTTPS webhook; no document authorizes host socket or loopback POST | True of **docs**. Operator exception on `claw` this slice. Do not rewrite the product topology or claim M0.2 exit. |
+| docs_researcher | Spec/docs still describe privileged DinD and a public HTTPS webhook; no document authorizes host socket or loopback POST | True of **docs**. Operator exception on `<ci-host>` this slice. Do not rewrite the product topology or claim M0.2 exit. |
 | repo_explorer | Removing `docker-engine` from tracked compose breaks `test_ops`, `test_database_roles` split, `test_supply_chain`, `smoke.sh`, systemd | **Avoided** by leaving tracked compose unchanged. Those tests are **not** updated. |
 | task_analyst | Untracked overlay; P0 is publication/ownership not `conclusion=success` | **Aligned.** |
-| M0 spec residual | Privileged DinD is the accepted risk | Nested rootlesskit is **dead** on this Engine (`fork/exec /proc/self/exe: operation not permitted`). Host-socket co-location is the substitute residual the user already accepted by naming `claw` as CI host sharing SearXNG/n8n. |
+| M0 spec residual | Privileged DinD is the accepted risk | Nested rootlesskit is **dead** on this Engine (`fork/exec /proc/self/exe: operation not permitted`). Host-socket co-location is the substitute residual the user already accepted by naming `<ci-host>` as CI host sharing SearXNG/n8n. |
 | Hardening plan Task 5 | Restricted Docker API proxy should be the only socket mount | **Not shipped.** Do not invent it this slice (that would be later-milestone work). |
 | Prior architect `421a1d` | Do not fix container-loopback proxy; no Check Run this slice | Superseded for proxy + Check Run. App IDs and PEM-unread still stand. |
 
@@ -25,7 +25,7 @@ User standing order «короче делай сам» plus the named slice (hos
 ### Why overlay is safer
 
 1. Tracked tests **forbid** `/var/run/docker.sock` in `trust-ci/compose.yaml` (`test_ops.py` `test_production_compose_uses_prebuilt_images_and_isolated_dind`; `trust-ci/scripts/smoke.sh` exits 1 if rendered compose contains that path).
-2. Nested DinD failure is **claw + Docker Engine 29 + rootlesskit** specific, not a portable product contract.
+2. Nested DinD failure is **<ci-host> + Docker Engine 29 + rootlesskit** specific, not a portable product contract.
 3. Product-tree compose edit is a `trust-ci/**` control-plane write: `grok_protected_write.py` + hook-blocked `git add`, plus test/systemd/smoke rewrites. That is a topology inversion, not the simplest Check Run.
 4. Overlay + `--no-deps` needs **no** test updates. `test_m0_invariants.py` does not encode DinD.
 5. Rollback is stop worker + drop overlay; tracked DinD definition remains.
@@ -45,7 +45,7 @@ If `docker-engine` were removed from `trust-ci/compose.yaml`, the same change **
 
 ### `docker-engine` stays in compose.yaml, unused
 
-Tracked service remains the product DinD definition. On `claw`:
+Tracked service remains the product DinD definition. On `<ci-host>`:
 
 1. `docker compose --project-name adaptive-trust-ci stop docker-engine`
 2. `docker compose --project-name adaptive-trust-ci rm -f docker-engine` (container only; **never** `-v`)
@@ -55,7 +55,7 @@ Do not `down`. Do not delete `adaptive-trust-ci_trust-ci-postgres` or `adaptive-
 
 ## 1. Overlay file (exact)
 
-**Location:** outside the git tree, never named `compose.override.yaml` inside `trust-ci/` (auto-load would break `smoke.sh` if someone later omits `-f`). Suggested path: `/home/pall/adaptive-trust-ci-host/compose.host-socket.yaml` mode `0600`. Implementer may also copy the YAML into this change package only if they want it reviewed; it is **not** required in git for P0.
+**Location:** outside the git tree, never named `compose.override.yaml` inside `trust-ci/` (auto-load would break `smoke.sh` if someone later omits `-f`). Suggested path: `<local-path>` mode `0600`. Implementer may also copy the YAML into this change package only if they want it reviewed; it is **not** required in git for P0.
 
 Do not put the overlay under `trust-ci/`. Do not `git add` it.
 
@@ -66,12 +66,12 @@ export DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
 export TRUST_CI_WORKSPACE_HOST_ROOT=/var/lib/adaptive-trust-ci/workspaces
 ```
 
-If creating `/var/lib/adaptive-trust-ci/workspaces` needs root and is blocked, use `/home/pall/adaptive-trust-ci-host/workspaces` instead and export that same value. `chown 10001:10001` the directory. Worker uid is `10001`.
+If creating `/var/lib/adaptive-trust-ci/workspaces` needs root and is blocked, use `<local-path>` instead and export that same value. `chown 10001:10001` the directory. Worker uid is `10001`.
 
 Overlay content (substitute nothing except interpolation already shown):
 
 ```yaml
-# claw-only. Never merge into tracked trust-ci/compose.yaml this slice.
+# <ci-host>-only. Never merge into tracked trust-ci/compose.yaml this slice.
 services:
   docker-engine:
     profiles: ["isolated-dind"]
@@ -116,14 +116,14 @@ services:
 
 Notes:
 
-- `environment:` **overrides** `env_file` for the same keys. Live gitignored `worker.env` can keep `HTTP_PROXY=http://127.0.0.1:1080`; the overlay wins. **Do not rewrite worker.env** unless overlay interpolation is insufficient.
+- `environment:` **overrides** `env_file` for the same keys. Live gitignored `worker.env` can keep `HTTP_PROXY=http://<loopback-proxy>`; the overlay wins. **Do not rewrite worker.env** unless overlay interpolation is insufficient.
 - Socket is **rw**. `:ro` cannot `docker run`/`pull`.
 - Do **not** `user: "0:0"`. Do **not** `chmod 666` the host socket. `group_add` only.
 - `runner-loader` pull talks to **host** dockerd; registry proxy is the **host Engine’s** proxy, not the container `HTTP_PROXY`. Loader extra_hosts is harmless.
 - `NO_PROXY` must **not** include `github.com` / `api.github.com` / `ghcr.io`.
 - Named volume `trust-ci-workspaces` is **not** visible to host dockerd at `/var/lib/adaptive-trust-ci/workspaces`. That is why the overlay bind-replaces it (`!override`). Wrong path → empty runner workspace.
 
-`!override` requires Compose v2.24+. Docker Engine 29 on `claw` qualifies. If a tag parse error occurs, stop and use `--no-deps` plus a rewritten overlay without `depends_on` keys rather than editing tracked compose.
+`!override` requires Compose v2.24+. Docker Engine 29 on `<ci-host>` qualifies. If a tag parse error occurs, stop and use `--no-deps` plus a rewritten overlay without `depends_on` keys rather than editing tracked compose.
 
 ## 2. Runner isolation still holds with host docker
 
@@ -134,7 +134,7 @@ Isolation is **argv policy in the worker**, not a second daemon.
 | API | no | webhook HMAC + trust-store **public** keys only | `trust-ci` |
 | Worker | **yes** (this overlay) | App RSA path, CI Ed25519, App/install IDs | `trust-ci` + `executor` (executor unused) |
 | Runner container | **no** | none | `none` |
-| Human approval private key | n/a | **not on claw** | n/a |
+| Human approval private key | n/a | **not on <ci-host>** | n/a |
 
 `ContainerExecutor.build_argv` (`trust-ci/src/adaptive_trust_ci/sandbox.py`) mounts only:
 
@@ -162,8 +162,8 @@ Optional product patch **only after P0 Check Run exists** and checkout is the re
 
 **Secret file:** gitignored `trust-ci/env/api.env`, key `TRUST_CI_WEBHOOK_SECRET`. API-only. Never copy into `worker.env`. Never print, `cat`, `echo`, `set -x`, or paste into chat/activation-report.
 
-**URL:** `POST http://127.0.0.1:18080/webhooks/github`  
-**Headers:** `Content-Type: application/json`, `X-GitHub-Event: pull_request`, `X-Hub-Signature-256: sha256=<64 lowercase hex>`  
+**URL:** `POST http://<loopback-trust-ci>/webhooks/github`
+**Headers:** `Content-Type: application/json`, `X-GitHub-Event: pull_request`, `X-Hub-Signature-256: sha256=<64 lowercase hex>`
 HMAC-SHA256 over the **raw body bytes** with the secret as UTF-8. FastAPI does not require `X-GitHub-Delivery`.
 
 **PR #5 (confirm SHA immediately before POST; a new push invalidates the body):**
@@ -197,12 +197,12 @@ This is **not** GitHub webhook registration. `GET /repos/Dimkox/adaptive-grok-bu
 | --- | --- |
 | Name | `adaptive-trust-ci/verified@6737355947c2` |
 | Policy digest | `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5` |
-| Owner | GitHub App slug `adaptive-trust-ci`, App ID `4694114`, installation `156003193` |
+| Owner | GitHub App slug `adaptive-trust-ci`, App ID `<redacted-app-id>`, installation `<redacted-installation-id>` |
 | `external_id` | durable PostgreSQL `job_id` from the webhook JSON |
 | `head_sha` | exact POST SHA |
 | Publisher | worker `GitHubClient.ensure_check_run` via installation token (`checks:write`, `contents:read`, `pull_requests:read`) |
 
-`details_url` will be `http://127.0.0.1:18080/jobs/<job_id>` because `TRUST_CI_PUBLIC_BASE_URL` is loopback HTTP. Ugly, allowed, do not change it this slice.
+`details_url` will be `http://<loopback-trust-ci>/jobs/<job_id>` because `TRUST_CI_PUBLIC_BASE_URL` is loopback HTTP. Ugly, allowed, do not change it this slice.
 
 **Honest terminals after P0 (any one is success for this slice):**
 
@@ -210,21 +210,21 @@ This is **not** GitHub webhook registration. `GET /repos/Dimkox/adaptive-grok-bu
 - `action_required` / `needs_approval` — **expected** for PR #5 because the diff includes `decisions.md` (governance glob). Do **not** forge a human Ed25519 approval
 - `success` + attestation — only if the diff is outside approval globs **and** holdout/commands pass; **not required**
 
-If `app.id ≠ 4694114`, fail the slice. Do not PATCH the check to `success` from a user token.
+If `app.id ≠ <redacted-app-id>`, fail the slice. Do not PATCH the check to `success` from a user token.
 
 Proof (operator-safe):
 
 ```text
-curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://<loopback-trust-ci>/health/ready
 docker compose --project-name adaptive-trust-ci ps
 gh api repos/Dimkox/adaptive-grok-build-pro/commits/<exact-sha>/check-runs
 ```
 
-Filter locally for `name==adaptive-trust-ci/verified@6737355947c2` and `app.id==4694114`. Record id, `external_id`, status, conclusion, head SHA into the activation report. No secrets.
+Filter locally for `name==adaptive-trust-ci/verified@6737355947c2` and `app.id==<redacted-app-id>`. Record id, `external_id`, status, conclusion, head SHA into the activation report. No secrets.
 
 ## 6. Residual risk (host socket co-location)
 
-User already accepted `claw` as the CI host sharing Docker Engine with SearXNG/n8n/Caddy/app DBs. Privileged nested DinD was the *documented* residual; it does not run.
+User already accepted `<ci-host>` as the CI host sharing Docker Engine with SearXNG/n8n/Caddy/app DBs. Privileged nested DinD was the *documented* residual; it does not run.
 
 Host socket is a **security regression vs isolated DinD**: worker uid 10001 with a writable docker.sock is host-root equivalent (privileged containers, bind `/`, other compose projects). App PEM and CI signing key sit in the same container.
 
@@ -238,10 +238,10 @@ Mitigations this slice:
 - Restricted Docker API proxy remains unbuilt (out of scope)
 - Rollback stops worker first
 
-Also residual: `host.docker.internal:host-gateway` targets the bridge gateway (often `172.17.0.1`), while glider publishes **only** `127.0.0.1:1080`. If token mint fails with connection refused:
+Also residual: `host.docker.internal:host-gateway` targets the bridge gateway (often `172.17.0.1`), while glider publishes **only** `<loopback-proxy>`. If token mint fails with connection refused:
 
 1. Do **not** rebind `proxy-gateway`, edit `glider.conf`, or `network_mode: host`.
-2. Host-only fallback: a throwaway `socat`/`iptables` redirect **docker-bridge:1080 → 127.0.0.1:1080`** (does not change glider’s listen address). Record it as operator residue.
+2. Host-only fallback: a throwaway `socat`/`iptables` redirect **docker-bridge:1080 → <loopback-proxy>`** (does not change glider’s listen address). Record it as operator residue.
 3. If still blocked, stop and report; do not disable TLS verify.
 
 `GitWorkspace._git_env` proxy-stripping is residual for **checkout**, not for Check Run creation.
@@ -282,16 +282,16 @@ Verify after rollback: `/health/ready` 200; no Trust CI container still mounts `
 | **Host overlay (PICK)** | none required | none | no | yes |
 | Edit `trust-ci/compose.yaml` | compose + tests + smoke + systemd + examples | must rewrite DinD assertions | yes (`trust-ci/**`) | yes, slower, wrong scope |
 
-Optional after P0: fill `engineering/runbooks/trust-ci-activation-report.md` PR number / head SHA / Check Run id / `external_id`. Keep `main protected = false` and `TRUST_CI_PUBLIC_BASE_URL=http://127.0.0.1:18080`. That **is** a product-tree edit → `python3 scripts/grok_verify.py --mode pr` and route reviews. If only overlay + gitignored env + `/tmp` scripts: skip verify (no-op tree).
+Optional after P0: fill `engineering/runbooks/trust-ci-activation-report.md` PR number / head SHA / Check Run id / `external_id`. Keep `main protected = false` and `TRUST_CI_PUBLIC_BASE_URL=http://<loopback-trust-ci>`. That **is** a product-tree edit → `python3 scripts/grok_verify.py --mode pr` and route reviews. If only overlay + gitignored env + `/tmp` scripts: skip verify (no-op tree).
 
 `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md` / `decisions.md` updates are optional operator notes, not required for P0. `decisions.md` is protected + control-plane if touched.
 
 ## Four planes (must remain)
 
 1. **API** — HMAC secret, trust-store public keys, enqueue. No App RSA, no installation token, no Check Run publish, no docker.sock.
-2. **Worker** — App ID `4694114`, installation `156003193`, PEM path, CI signing key, host docker.sock, proxy. Never webhook secret or human private keys.
+2. **Worker** — App ID `<redacted-app-id>`, installation `<redacted-installation-id>`, PEM path, CI signing key, host docker.sock, proxy. Never webhook secret or human private keys.
 3. **Runner** — no token, no key, no socket, `network=none`.
-4. **Human keys** — created off-host; none on `claw`.
+4. **Human keys** — created off-host; none on `<ci-host>`.
 
 ## Grants (implementer mints after fingerprint is stable)
 
@@ -313,7 +313,7 @@ Exact up (cwd = compose directory):
 ```bash
 docker compose --project-name adaptive-trust-ci \
   -f compose.yaml \
-  -f /home/pall/adaptive-trust-ci-host/compose.host-socket.yaml \
+  -f <local-path> \
   up -d --no-deps runner-loader worker
 ```
 
@@ -334,10 +334,10 @@ Wait for loader exit 0, then worker `running`. Do not name `postgres`/`migrate`/
 
 ## Acceptance (P0)
 
-- `api` + `postgres` still healthy on `127.0.0.1:18080`; host `:8080` still SearXNG; host `:1080` still proxy-gateway
+- `api` + `postgres` still healthy on `<loopback-trust-ci>`; host `:8080` still SearXNG; host `:1080` still proxy-gateway
 - `worker` running; `docker-engine` not required and not restart-looping
 - Overlay not in tracked `trust-ci/compose.yaml`; `test_ops` still forbids host sock in that file
 - HMAC POST 200 with `job_id`
-- GitHub Check Run `adaptive-trust-ci/verified@6737355947c2`, `app.id=4694114`, `external_id=job_id`, exact head SHA
+- GitHub Check Run `adaptive-trust-ci/verified@6737355947c2`, `app.id=<redacted-app-id>`, `external_id=job_id`, exact head SHA
 - No secrets in git, chat, or activation report
 - `main` still unprotected; repo hooks still empty

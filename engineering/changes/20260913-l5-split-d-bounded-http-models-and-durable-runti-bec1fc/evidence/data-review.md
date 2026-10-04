@@ -4,7 +4,7 @@ Verdict: **PASS**. No blocking data-integrity finding in this source slice.
 
 - Reviewer: selected read-only `data_reviewer`, independent of `data_implementer`.
 - Route: `bec1fcdde794`; change: `20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc`.
-- Source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d`.
+- Source: `<local-path>`.
 - Exact HEAD: `bb93885034e52b80653efd96602fec182f7db10a`.
 - Actual route base inspected: `a75b3cd639a1483533069e8634759cdfc6612310`.
 - Current tree fingerprint: `1a7e327a57a74acdb38f883a7496e52eb97732c42c42026a22f2a102e7018999`.

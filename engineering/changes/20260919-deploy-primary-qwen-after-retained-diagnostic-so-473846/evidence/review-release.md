@@ -2,7 +2,7 @@
 
 **PASS — recorded primary upgrade and bounded runtime acceptance complete; PR151 delivery remains pending.** Route `473846f79243`; reviewer `release_reviewer`; 2026-09-19. The final result review below supersedes earlier preparation-time pending statements. The retained preparation findings remain local evidence, not external attestation or an operational grant.
 
-Preparation checkout HEAD `b7e76bf95838e279bb4ecbd0c297b3b2237ba6d3`, tree `e2822ce1b34146d4af345adc7bf8e832ac31419a`. Independently verified local Git tree equality for checked PR154 head `a4023258047a03e1176daa3a35695c9d9b49f8be` and merged target `f12807c2b75750072ba768fc95ed492362ae6489`: `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`. Controller API evidence in `source-gate.json` records App `4694114` check `105951303627`, `adaptive-trust-ci/verified@06ecf1c875bc`, success at `19:30:18Z`, attestation `2a36d29d-24d2-4c68-98c6-7d2ee6957671`, and protected squash merge at `19:35:28Z`; this reviewer did not requery the API.
+Preparation checkout HEAD `b7e76bf95838e279bb4ecbd0c297b3b2237ba6d3`, tree `e2822ce1b34146d4af345adc7bf8e832ac31419a`. Independently verified local Git tree equality for checked PR154 head `a4023258047a03e1176daa3a35695c9d9b49f8be` and merged target `f12807c2b75750072ba768fc95ed492362ae6489`: `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`. Controller API evidence in `source-gate.json` records App `<redacted-app-id>` check `105951303627`, `adaptive-trust-ci/verified@06ecf1c875bc`, success at `19:30:18Z`, attestation `2a36d29d-24d2-4c68-98c6-7d2ee6957671`, and protected squash merge at `19:35:28Z`; this reviewer did not requery the API.
 
 | Reviewed file | SHA-256 |
 | --- | --- |
@@ -15,7 +15,7 @@ Preparation checkout HEAD `b7e76bf95838e279bb4ecbd0c297b3b2237ba6d3`, tree `e282
 | `evidence/source-gate.json` | `4f1ee942e35b456b86823a019426ef67f9e0908107f3126a46336d6494f95ad6` |
 | `evidence/dependency-baseline.json` | `e13b9342abe2d267b1ea81572fea6db77f6c10c8fbc99dc2d4e26cc6f7f492aa` |
 | `evidence/install-constraints.txt` | `fd7432722331609a59db1af4fe2b07d0efa76433c608a577af12ac1bc6ea904b` |
-| `factory/runtime/install-claw.sh` | `65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91` |
+| `factory/runtime/install-<ci-host>.sh` | `65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91` |
 
 - **Evidence scope:** inspected actual scripts/deltas, installer, receipt and server binding code, all five current analyses, operations/constraints plan, and prior `080b28` installation, acceptance and recovery records. Independently parsed all four final scripts without importing/executing them and matched every script hash to the supplied 13-check preflight. The 13 checks are supplied evidence, not tests rerun here. No full/source suite, production command, provider/API call, credential access or external write occurred.
 - **Source and dependencies:** merged source changes `landing_http.py` and its tests; installer, dependency declarations, receipt contracts, SQLite migration and backup/restore files are unchanged from `26a0d3`. The existing installer requires clean independent clones, exact source identities and an absent immutable release directory. Independently compared `install-constraints.txt` with the recorded baseline: exact third-party name/version equality, both local application distributions excluded, and no old file URLs. Installed source/resource comparison plus pip consistency remain pre-cutover gates.

@@ -3,7 +3,7 @@
 Route: `b7f288f1e81e`
 Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
 Actual worktree HEAD: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` (merge of M3 PR #11)
-Sources: `DARK_FACTORY_ROADMAP.md` M4; `docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md`; `docs/superpowers/plans/2026-08-28-m4-durable-factory-control-plane.md`; prior M4 analysis in `/home/pall/grok-projects/adaptive-grok-build-pro/engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/`.
+Sources: `DARK_FACTORY_ROADMAP.md` M4; `docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md`; `docs/superpowers/plans/2026-08-28-m4-durable-factory-control-plane.md`; prior M4 analysis in `<local-path>`.
 
 ## Scope ruling and immediate gate
 

@@ -5,10 +5,71 @@
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
   "product_version": "2.1.1",
-  "latest_published_release": "v2.0.19",
+  "latest_published_release": "v2.1.1",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
+  "current_continuation": {
+    "pull_request": 241,
+    "superseded_pull_requests": [239],
+    "historical_pull_requests": [
+      {"pull_request": 239, "record_scope": "historical", "status": "superseded", "successor_pull_request": 241}
+    ],
+    "historical_external_observations": [
+      {
+        "record_scope": "historical",
+        "evidence_kind": "App-owned Check Run observation",
+        "head_sha": "69f5e29f57c3bbc7169ae43d8e9ad9e3dcf98321",
+        "check_run_id": 111478461651,
+        "completed_at": "2026-10-04T16:47:22Z",
+        "conclusion": "SUCCESS",
+        "reported_pass_checks": ["holdout-bundle-integrity", "external-holdout", "root-unittest", "trust-ci-unittest", "compileall", "repository-verification"],
+        "current_verification": false
+      }
+    ],
+    "route_id": "6af9e6eed1d8",
+    "branch": "feat/qg01-gate-artifact-admission",
+    "change_package": "engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6",
+    "source_base": "6dbbc7dbe81812d919851c2300db6f4917033d43",
+    "dependency": {
+      "pull_request": 240,
+      "route_id": "e5372ed69c31",
+      "branch": "fix/trust-ci-public-doc-bindings",
+      "change_package": "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+      "status": "merged",
+      "checked_head": "63cd1e0e6be67d01815a85375f306b09beba8499",
+      "merge_commit": "6dbbc7dbe81812d919851c2300db6f4917033d43",
+      "merged_at": "2026-10-04T14:54:42Z",
+      "external_success": {
+        "evidence_kind": "App-owned Check Run observation",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "check_run_id": 111457382604,
+        "head_sha": "63cd1e0e6be67d01815a85375f306b09beba8499",
+        "github_app_id": "<redacted-app-id>",
+        "app_owner_matches_main_protection_observed": true,
+        "started_at": "2026-10-04T14:29:08Z",
+        "completed_at": "2026-10-04T14:51:16Z",
+        "conclusion": "SUCCESS",
+        "reported_pass_checks": [
+          "holdout-bundle-integrity",
+          "external-holdout",
+          "root-unittest",
+          "trust-ci-unittest",
+          "compileall",
+          "repository-verification"
+        ],
+        "attestation_id_in_check_summary": "3d7912e4-8a28-414e-bc06-5b9321fcd7ba",
+        "signer_in_check_summary": "0519cf1d47436f2e",
+        "cryptographic_envelope_verified": false,
+        "record_scope": "Observed PR240 delivery only; not PR239 verification, merge authority or a separately verified cryptographic envelope."
+      }
+    },
+    "remote_state_refresh_required": true,
+    "checked_head": null,
+    "merge_commit": null,
+    "external_success": null,
+    "next_action": "Refresh actual PR241 state; its seven confirmed repairs are already in this tree, PR239 is superseded, and PR240 is merged at the observed exact main base. If PR241 is merged, record delivered state and treat unchanged source as a no-op: do not reopen or reverify it. If still open, complete frozen independent review, persist the complete reports, run one final full verifier on the report-containing head, and require fresh exact-head external Trust CI and approvals before merge. Historical checks and next_action fields are not current authority; preserve published v2.1.1 without rebuilding or retagging it."
+  },
   "delivered_milestones_on_main": [
     "M0",
     "M1",
@@ -34,39 +95,80 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.19",
-    "published_at": "2026-09-24T21:30:52Z",
-    "pull_request": 203,
-    "checked_head": "7b1686ec5b0ca4917fd6865794da714e0c581756",
-    "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
-    "merged_at": "2026-09-24T21:29:33Z",
-    "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
-    "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
+    "tag": "v2.1.1",
+    "published_at": "2026-10-03T09:11:19Z",
+    "pull_request": 238,
+    "checked_head": "4c5be3ab2370792e71bfa43a031d7f074cfb78f5",
+    "merge_commit": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "merged_at": null,
+    "tag_object": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "tag_kind": "lightweight",
+    "tree": "9aecfc9fa6ba17f94acd1a9fac069acee218b393",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
-      "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
-      "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
-      "binding": "immutable_release_tag"
+      "path": "packages/adaptive-grok-build-pro-v2.1.1.zip",
+      "sha256": "f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.1.zip.sha256",
+      "sidecar_sha256": "07ddeb5f9fa7c9d8135c347defc84a271c102947724744ec8288370bd5c60269",
+      "binding": "immutable_release_tag",
+      "storage": "github_release_asset",
+      "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/adaptive-grok-build-pro-v2.1.1.zip",
+      "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.1.1/adaptive-grok-build-pro-v2.1.1.zip.sha256"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "check_run_id": 111167969839,
+      "github_app_id": "<redacted-app-id>",
       "conclusion": "SUCCESS",
-      "check_run_id": 107833930893,
-      "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
-      "signer": "0519cf1d47436f2e",
-      "github_app_id": 4694114
+      "completed_at": "2026-10-03T09:07:03Z",
+      "attestation_id": null,
+      "signer": null
     },
     "gitguardian": {
       "conclusion": "SUCCESS",
-      "check_run_id": 107833930933,
-      "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      "check_run_id": 111167989942,
+      "note": "Informational exact PR-head check, not merge authority."
     },
     "merge_tag_target_check_runs": [],
     "operational_activation": false,
-    "notes": "The artifact is bound to immutable v2.0.19 tag target cb9af4073ba6c3d515145164d771c75ebdfa3224. Trust CI and GitGuardian succeeded on artifact-child PR #203 head 7b1686ec5b0ca4917fd6865794da714e0c581756; this record claims zero check runs on the distinct merge/tag target. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "notes": "Observed from GitHub on 2026-10-04. Trust CI succeeded on PR238 head; release assets bind the distinct immutable merged tag target. Publication establishes no F/G successor acceptance, pilot qualification, deployment or activation. Unknown merge time and attestation identity are not inferred."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.19",
+      "published_at": "2026-09-24T21:30:52Z",
+      "pull_request": 203,
+      "checked_head": "7b1686ec5b0ca4917fd6865794da714e0c581756",
+      "merge_commit": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+      "merged_at": "2026-09-24T21:29:33Z",
+      "tag_object": "4e5d1505433f7a2d5faa71db31c0b4d964f77897",
+      "tree": "881cb6f0ad65ecd131904adf701829e8146b60e3",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.19.zip",
+        "sha256": "4176a872acdca873e840855d0b2c9e379cf8f796c9de69e5560b3e2bf85634b9",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.19.zip.sha256",
+        "sidecar_sha256": "77057e0be72b38dd6f6946e31d151f8d80c96b5b7470b92798f7422147791cf8",
+        "binding": "immutable_release_tag",
+        "storage": "github_release_asset",
+        "url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip",
+        "sidecar_url": "https://github.com/Dimkox/adaptive-grok-build-pro/releases/download/v2.0.19/adaptive-grok-build-pro-v2.0.19.zip.sha256"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 107833930893,
+        "attestation_id": "57c8f312-45cd-4f3c-953d-953090f6d914",
+        "signer": "0519cf1d47436f2e",
+        "github_app_id": "<redacted-app-id>"
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS",
+        "check_run_id": 107833930933,
+        "note": "GitGuardian passed on the artifact-child head; it is informational, not merge authority. Branch protection binds only the App-owned check."
+      },
+      "merge_tag_target_check_runs": [],
+      "operational_activation": false,
+      "notes": "The artifact is bound to immutable v2.0.19 tag target cb9af4073ba6c3d515145164d771c75ebdfa3224. Trust CI and GitGuardian succeeded on artifact-child PR #203 head 7b1686ec5b0ca4917fd6865794da714e0c581756; this record claims zero check runs on the distinct merge/tag target. Repository publication establishes no operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    },
     {
       "tag": "v2.0.18",
       "published_at": "2026-09-16T13:52:24Z",
@@ -89,7 +191,7 @@
         "check_run_id": 104809218211,
         "attestation_id": "8172a5bc-1377-428a-aaa9-b8da462f9952",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -120,7 +222,7 @@
         "check_run_id": 104621989321,
         "attestation_id": "b9510589-d40c-4976-aafd-cad6fc141972",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -151,7 +253,7 @@
         "check_run_id": 103797448701,
         "attestation_id": "90cb34aa-6eb5-49ca-a0ec-104e11c5e722",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SUCCESS",
@@ -181,7 +283,7 @@
         "check_run_id": 101365945968,
         "attestation_id": "4a13e71c-25e7-4272-80fa-8153590edc84",
         "signer": "0519cf1d47436f2e",
-        "github_app_id": 4694114
+        "github_app_id": "<redacted-app-id>"
       },
       "gitguardian": {
         "conclusion": "SKIPPED",
@@ -243,14 +345,14 @@
       "route_id": "a0ff84051275",
       "branch": "release/v2.1.0-artifact",
       "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
-      "identity": "v2.1.0 artifact-child candidate built twice from exact source",
+      "identity": "v2.1.0 artifact-child candidate built twice from exact source; git custody removed",
       "status": "artifact_candidate",
-      "stage": "artifact_child_candidate_pending_pr_tag_release",
+      "stage": "artifact_child_candidate_removed_from_git_pending_external_release_asset",
       "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
       "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
       "target_version": "2.1.0",
       "scope": [
-        "Repository custody for the twice-reproducible v2.1.0 ZIP and checksum sidecar",
+        "External release-asset custody for twice-reproducible v2.1.0 ZIP and checksum sidecar",
         "PROJECT_STATE and release documentation bind exact source, tree and artifact hashes without delivery claims",
         "Binding tests enforce immutable v2.0.19 publication identity and v2.1.0 candidate boundaries"
       ],
@@ -453,13 +555,15 @@
       "change_package": "engineering/changes/20261002-implement-repository-custody-for-already-built-d-a0ff84",
       "source_base": "e5856acfd4bc7a186f40a740b54ec86459462db5",
       "source_tree": "0dfa04f3ec3ea9c7a04c723e9d127603fc72999b",
-      "artifact_status": "built_reproducibly_repository_custody_pending_delivery",
+      "artifact_status": "built_reproducibly_local_custody_removed_from_git_pending_delivery",
       "artifact": {
         "path": "packages/adaptive-grok-build-pro-v2.1.0.zip",
         "sha256": "cdd7fe8ed0c2b2c689594f47dfd54a2c6a3660ae21146259acf009ca67e3d85e",
         "sidecar_path": "packages/adaptive-grok-build-pro-v2.1.0.zip.sha256",
         "sidecar_sha256": "62a6fd808edc1dd5e4205b86516861b983c7198436021d89affedc9a5d4b0e5d",
-        "reproducible_build_count": 2
+        "reproducible_build_count": 2,
+        "storage": "external_or_release_asset_required",
+        "repository_file_removed": true
       },
       "pull_request": null,
       "checked_head": null,
@@ -478,7 +582,7 @@
       "published": false,
       "external_effect": false,
       "operational_activation": false,
-      "notes": "Repository-custodied v2.1.0 artifact candidate built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
+      "notes": "Historical v2.1.0 artifact candidate was built twice byte-identically from exact source e5856acfd4bc7a186f40a740b54ec86459462db5. ZIP bytes are no longer tracked in git; publishable archives must live in GitHub Releases or external artifact storage. No pull request, check, merge, tag, publication, deployment or production activation is claimed. U5/U6 remain default-off and not live-qualified."
     },
     "active_delivery": {
       "route_id": "a0ff84051275",
@@ -620,6 +724,7 @@
     }
   },
   "current_unreleased_change": {
+    "record_scope": "historical",
     "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
     "route_id": "ffb3d81e031f",
     "branch": "feat/v211-combined-source",
@@ -1187,7 +1292,7 @@
         "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
         "base": "90078959ff816068af374ad42f4bb80fdbaec866",
         "check_run_id": 106268338358,
-        "app_id": 4694114,
+        "app_id": "<redacted-app-id>",
         "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
         "check_conclusion": "success",
         "completed_at": "2026-09-21T09:04:14Z",
@@ -1208,7 +1313,7 @@
       "head": "23984e55560c6d559a46445061f10331ca05bcf9",
       "base": "839d3aa26bc90417424d814ee48d8b5cd3be367e",
       "check_run_id": 106308434581,
-      "app_id": 4694114,
+      "app_id": "<redacted-app-id>",
       "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "check_conclusion": "success",
       "completed_at": "2026-09-21T11:25:49Z",
@@ -1435,6 +1540,7 @@
     }
   },
   "local_candidate": {
+    "record_scope": "Historical pre-publication core source observation; preserved values do not describe current publication. Current immutable publication is recorded separately in published_release.",
     "version": "2.1.1",
     "status": "source_candidate",
     "route_id": "ffb3d81e031f",
@@ -1514,6 +1620,7 @@
     }
   ],
   "active_delivery": {
+    "record_scope": "historical",
     "route_id": "ffb3d81e031f",
     "branch": "feat/v211-combined-source",
     "change_package": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
@@ -2142,7 +2249,7 @@
   "trust_ci": {
     "required_check": "adaptive-trust-ci/verified@06ecf1c875bc",
     "policy_digest": "06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2",
-    "github_app_id": 4694114,
+    "github_app_id": "<redacted-app-id>",
     "protected_branch": "main",
     "strict_up_to_date": true,
     "service_identity": "2.1.0",
@@ -2169,6 +2276,7 @@
     }
   },
   "fresh_clone": {
+    "continuation_record": "current_continuation",
     "active_route_may_be_absent": true,
     "must_fetch_remote_refs": true,
     "continue_active_work_from_project_state": true,
@@ -2246,7 +2354,7 @@
   },
   "runtime_observations": {
     "observed_at": "2026-09-16T13:56:33Z",
-    "host": "claw",
+    "host": "<ci-host>",
     "evidence": "engineering/changes/20260916-release-successor-record-for-the-published-v2-0-8c6e9e/evidence/runtime-observation-post-108.json",
     "runbook": "engineering/runbooks/l5-runtime-observation-2026-09-15.md",
     "source_defaults": {
@@ -2378,8 +2486,8 @@
       "observed_at": "2026-09-19T12:56:21.093490+00:00",
       "status": "partial_qwen_rolled_back",
       "target_source": "26a0d3db8fa9f3e8ad69caafd02a5ef4e9613960",
-      "change_package": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28",
-      "evidence": "engineering/changes/20260919-deploy-existing-claw-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
+      "change_package": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28",
+      "evidence": "engineering/changes/20260919-deploy-existing-ci-host-runtime-units-adaptive-l5-s-080b28/evidence/final-runtime.json",
       "runbook": "engineering/runbooks/l5-runtime-upgrade-2026-09-19.md",
       "services": {
         "primary": {
@@ -2443,7 +2551,7 @@
   },
   "active_operation_delivery": {
     "route_id": "473846f79243",
-    "branch": "ops/claw-runtime-upgrade-20260919",
+    "branch": "ops/<ci-host>-runtime-upgrade-20260919",
     "pull_request": 151,
     "change_package": "engineering/changes/20260919-deploy-primary-qwen-after-retained-diagnostic-so-473846",
     "status": "delivered",
@@ -2454,6 +2562,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
+    "record_scope": "historical",
     "observed_at": "2026-09-21T12:05:39.938899+00:00",
     "route_id": "cf23849faca6",
     "branch": "fix/factory-tooling-batch-20260921",
@@ -2582,7 +2691,7 @@
     "evidence": "engineering/changes/20260921-fix-production-trust-ci-webhook-ingress-and-rest-68274c/evidence/operational-acceptance.md",
     "external_check": {
       "id": 106268338358,
-      "app_id": 4694114,
+      "app_id": "<redacted-app-id>",
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "head": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "job_id": "30b1f243-8dde-41cb-90ac-671af377fc8e",

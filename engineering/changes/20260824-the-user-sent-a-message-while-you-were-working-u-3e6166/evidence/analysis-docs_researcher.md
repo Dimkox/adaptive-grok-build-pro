@@ -34,7 +34,7 @@ Spec requires **HTTPS** for the public URL and GitHub webhook:
 
 M0.1 recorded **loopback HTTP**, not a public webhook:
 
-- Activation report `engineering/runbooks/trust-ci-activation-report.md:11`: `TRUST_CI_PUBLIC_BASE_URL` = `http://127.0.0.1:18080`.
+- Activation report `engineering/runbooks/trust-ci-activation-report.md:11`: `TRUST_CI_PUBLIC_BASE_URL` = `http://<loopback-trust-ci>`.
 - `engineering/runbooks/trust-ci-activation-report.md:5`: “Webhook stays blocked (no public HTTPS).”
 - Plan `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md:22`: “Webhook is M0.2 (blocked: no public HTTPS).”
 - `decisions.md:7`: “GitHub webhook registration stays blocked until a public HTTPS URL exists.”
@@ -61,8 +61,8 @@ Live Check Run id / `external_id` remain `UNKNOWN` (`activation-report:20-21`). 
 `engineering/runbooks/trust-ci-activation-report.md:13-15`:
 
 - GitHub App slug: `adaptive-trust-ci`
-- App ID: `4694114`
-- Installation ID: `156003193`
+- App ID: `<redacted-app-id>`
+- Installation ID: `<redacted-installation-id>`
 
 Repeated in `decisions.md:7` and `plan:22` (gitignored worker env; PEM unread).
 
@@ -95,13 +95,13 @@ What *is* written:
 
 Absence of a simulated-POST prohibition is not authorization of that API.
 
-## 7. Host is `claw`; laptop leftovers in listed product docs
+## 7. Host is `<ci-host>`; laptop leftovers in listed product docs
 
 M0 spec/plan/activation report: **zero** `laptop` matches (grep). Host language:
 
-- `spec:42,60-62,111`: host is `claw`; agent workspace on claw untrusted; “Misnaming hostname `claw` (it is the named CI host, not a portable workstation)”.
-- `plan:22`: named host **is `claw`**.
-- Activation report line 10: Dedicated CI host = `claw`.
+- `spec:42,60-62,111`: host is `<ci-host>`; agent workspace on <ci-host> untrusted; “Misnaming hostname `<ci-host>` (it is the named CI host, not a portable workstation)”.
+- `plan:22`: named host **is `<ci-host>`**.
+- Activation report line 10: Dedicated CI host = `<ci-host>`.
 - `decisions.md:130-132`: “Never call it a laptop”.
 
 `QUICKSTART.md:39`: “Consumer laptops do not stand up PostgreSQL” — consumer install path, not CI host naming.
@@ -127,7 +127,7 @@ DinD image pin is **not** in the activation report table.
 
 ## M0 status snapshot (docs only)
 
-- API health on `127.0.0.1:18080` recorded ready (`plan:26`).
+- API health on `<loopback-trust-ci>` recorded ready (`plan:26`).
 - Worker/DinD not running (`plan:25`, activation report line 5).
 - `main` unprotected; leftover Actions workflow `340420982` still UNKNOWN / must disable by M0.3 (`spec:28,96`, `plan:47`, activation report line 29).
 - Bootstrap exception still in `decisions.md:13-16,22-24` until live check exists (`DARK_FACTORY_ROADMAP.md:247`).
@@ -137,5 +137,5 @@ DinD image pin is **not** in the activation report table.
 
 1. Fixing DinD (`rootlesskit` `operation not permitted`) is the recorded M0.1 gap; docs do not switch to host `/var/run/docker.sock`.
 2. First Check Run still needs public HTTPS webhook, not loopback HMAC POST.
-3. Use recorded App ID `4694114`, installation `156003193`, check name `adaptive-trust-ci/verified@6737355947c2`, image/holdout pins above.
-4. Keep host name `claw`; do not reintroduce laptop language in spec/plan/activation report.
+3. Use recorded App ID `<redacted-app-id>`, installation `<redacted-installation-id>`, check name `adaptive-trust-ci/verified@6737355947c2`, image/holdout pins above.
+4. Keep host name `<ci-host>`; do not reintroduce laptop language in spec/plan/activation report.

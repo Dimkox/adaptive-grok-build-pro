@@ -464,8 +464,8 @@
       "source_tree_entry": "100644 blob ebf78186e934cad9f565fa8eddd3083063ec3ebe\tfactory/runtime/adaptive-l5.service.in"
     },
     {
-      "path": "factory/runtime/install-claw.sh",
-      "source_tree_entry": "100644 blob d8bcd8325addccde05edbad49d6b0f688b10e621\tfactory/runtime/install-claw.sh"
+      "path": "factory/runtime/install-<ci-host>.sh",
+      "source_tree_entry": "100644 blob d8bcd8325addccde05edbad49d6b0f688b10e621\tfactory/runtime/install-<ci-host>.sh"
     },
     {
       "path": "factory/runtime/landing-host.example.json",

@@ -212,7 +212,7 @@ S8 добавляет только заменяемый способ поста�
 
 ### F14. macOS как отдельный capability profile — S5
 
-Linux `claw` остаётся координатором. Профиль задаёт OS/architecture, Xcode build, SDK, project/workspace, scheme, deployment target, test plan, resource limits и доступные типы тестов. Значения извлекаются из проекта и capability probe, не выбираются через плавающий `latest`. Нужны полный Xcode, `xcodebuild` и XCTest для предусмотренного Apple pipeline; Linux-проверка переносимого кода не называется нативной macOS-приёмкой.
+Linux `<ci-host>` остаётся координатором. Профиль задаёт OS/architecture, Xcode build, SDK, project/workspace, scheme, deployment target, test plan, resource limits и доступные типы тестов. Значения извлекаются из проекта и capability probe, не выбираются через плавающий `latest`. Нужны полный Xcode, `xcodebuild` и XCTest для предусмотренного Apple pipeline; Linux-проверка переносимого кода не называется нативной macOS-приёмкой.
 
 Поддержку `arm64`, `x86_64`, GUI и Metal объявлять раздельно. Успех на одной архитектуре не подтверждает другую; сборка универсального бинарника не доказывает запуск обеих частей. Профиль default-off. Покупка, аренда, установка и credentials требуют отдельного действия владельца.
 

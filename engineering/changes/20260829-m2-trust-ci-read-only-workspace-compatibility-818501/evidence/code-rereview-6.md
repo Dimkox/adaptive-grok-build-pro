@@ -3,7 +3,7 @@
 ## Identity, scope, and verdict
 
 - Route: `81850148d1f6`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Current pre-report fingerprint independently matched: `c00220a1717f8e515d894b850c2afab4dd24f8896489a8783e2609cc36138779`
 - Starting review: `evidence/code-rereview-5.md`, PASS with Critical 0 / Important 0 and documentation-only M8/M9.

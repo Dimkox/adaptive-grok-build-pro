@@ -1,12 +1,12 @@
 # Seven-PR L5 split: baseline and route audit
 
-Read-only audit in `/home/pall/grok-projects/adaptive-grok-build-pro-l5-production`. Source freeze: `f31406e970d67f7cd59694da5de88915adb0fa68`; source Git tree: `b1cfbfd92be13b43480adab9874ed78e67f5e948`. Locally known `origin/main`: `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. No network calls, source/config changes, route changes or Git mutations were performed by this analysis. Only this report was written.
+Read-only audit in `<local-path>`. Source freeze: `f31406e970d67f7cd59694da5de88915adb0fa68`; source Git tree: `b1cfbfd92be13b43480adab9874ed78e67f5e948`. Locally known `origin/main`: `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. No network calls, source/config changes, route changes or Git mutations were performed by this analysis. Only this report was written.
 
 ## Baseline facts
 
 - The source worktree was clean at the frozen commit. Its branch is `feat/l5-production-completion`.
 - The locally known remote-main commit is an ancestor of the source; merge-base equals `4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102`. `git rev-list --left-right --count BASE...SOURCE` returned `0 13`. Source history includes merge `2a0de0f` incorporating the later main line into the original `a730ee9`-based L5 work.
-- Local `refs/heads/main` is stale at `be752872f3e5a9d6fe179872d9c8bdaec4338238` in `/home/pall/grok-projects/agbp-main`. Do not use that branch as the split baseline. The parent is independently refreshing origin/main.
+- Local `refs/heads/main` is stale at `be752872f3e5a9d6fe179872d9c8bdaec4338238` in `<local-path>`. Do not use that branch as the split baseline. The parent is independently refreshing origin/main.
 - There are 165 added/modified paths from locally known main to the source: 124 additions and 41 modifications; no deletions or mode changes. They divide into 59 implementation/configuration/contract/test paths, nine shared documentation/handoff paths (including factory/README.md), and 97 paths in the original L5 change package.
 - No delta exists under `trust-ci/`, `.github/`, `AGENTS.md`, `VERSION`, `factory/contracts/openapi/`, or the provider-evidence v1 schema. The old route's trust/implementation separation failure includes work before current main; copying the actual main-to-source delta does not carry those trust-ci changes.
 
@@ -203,7 +203,7 @@ D M 100644 1cd19ad0fefa2fc69dcaf34fb759a07a5e41f238 100644 0dd5f8234c0005f5ff874
 P A 100644 ee40c1860df65aad00effcb12ed06aab169a415a 000000 0000000000000000000000000000000000000000 factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json
 P M 100644 1470d1925f164425878923d8958792e765bc26f8 100644 f240635ec4f651bd739b43a3c47265d6955f3097 factory/pyproject.toml
 P A 100644 ebf78186e934cad9f565fa8eddd3083063ec3ebe 000000 0000000000000000000000000000000000000000 factory/runtime/adaptive-l5.service.in
-P A 100644 d8bcd8325addccde05edbad49d6b0f688b10e621 000000 0000000000000000000000000000000000000000 factory/runtime/install-claw.sh
+P A 100644 d8bcd8325addccde05edbad49d6b0f688b10e621 000000 0000000000000000000000000000000000000000 factory/runtime/install-<ci-host>.sh
 P A 100644 46076857760ff2e5145a951e6209a99883bec777 000000 0000000000000000000000000000000000000000 factory/runtime/landing-host.example.json
 P M 100644 21358680db1ba20160973b9a8b12b93625855380 100644 7621b6b75b26cc0de62e35ae74f571bce6b2bace factory/src/adaptive_factory/api.py
 P M 100644 e7aad41d1f2f4aee8fa4163e6f6fbfddacb11b77 100644 7187c3e519841ec0a395666c1b3b8718348a1c71 factory/src/adaptive_factory/landing_artifact.py

@@ -56,8 +56,8 @@ Standing (authority):
 
 Predecessor packages that already recorded the same snapshot:
 
-- `20260816-user-query-пересобирай-себя-под-следущей-версией-37141f` (2.0.8 identity; Latest stays v2.0.7; no tag)
-- `20260816-user-query-я-все-еще-не-вижу-файлов-из-промпта-д-ba1615` (root logs vs CHANGELOG `engineering/` ship record)
+- `20260816-task-37141f` (2.0.8 identity; Latest stays v2.0.7; no tag)
+- `20260816-task-ba1615` (root logs vs CHANGELOG `engineering/` ship record)
 - `20260816-the-user-sent-a-message-while-you-were-working-u-a13da8` (K10 graph; CHANGELOG 2.0.8 left stale)
 - `20260816-the-user-sent-a-message-while-you-were-working-u-2f9f5d` (Latest still v2.0.7 @ `02376cc`; no v2.0.8 tag)
 

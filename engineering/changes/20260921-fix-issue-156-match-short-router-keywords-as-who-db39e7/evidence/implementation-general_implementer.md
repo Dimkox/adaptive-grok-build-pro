@@ -12,7 +12,7 @@ New route records carry optional `matched_keywords`, accepted by the closed runt
 
 ## Verification
 
-Raw logs: `/home/pall/.cache/agbp-run/issues-wave-20260921/issue156/`.
+Raw logs: `<local-path>`.
 
 | Command | Outcome | Log |
 | --- | --- | --- |

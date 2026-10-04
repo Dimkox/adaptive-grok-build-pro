@@ -24,7 +24,7 @@ Three waves therefore converge on `tests/test_architecture_fitness.py`. Discipli
 ## Cost already paid by merging #133
 
 Branch protection is `strict: true` with the single required context
-`adaptive-trust-ci/verified@06ecf1c875bc` (app 4694114). Twelve open PRs held SUCCESS on heads based on
+`adaptive-trust-ci/verified@06ecf1c875bc` (app <redacted-app-id>). Twelve open PRs held SUCCESS on heads based on
 `2f66ba6`; after `#133` merged as `d871ea6` they must update to the new base and be re-checked on the new head SHA.
 That is inherent to a shared `main` and to any merge, including a decision to wait — the queue does not shrink by
 holding a green pull request. Recorded so no one reads it as an avoidable mistake of the merge itself.

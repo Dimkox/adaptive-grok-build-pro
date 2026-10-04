@@ -4,7 +4,7 @@
 
 - Route: `81850148d1f6`
 - Change: `20260829-m2-trust-ci-read-only-workspace-compatibility-818501`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Frozen pre-review implementation/evidence fingerprint: `55d50a669c5540c10b29f463cb6566737ad74dfcb121cdf77cf22382faf58a14`
 - Current supplied focused evidence: `39/39 PASS`; the prior remediation-3 pinned result is stale and is not used as current-tree proof.

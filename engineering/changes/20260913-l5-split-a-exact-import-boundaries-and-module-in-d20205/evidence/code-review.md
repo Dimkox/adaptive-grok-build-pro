@@ -5,7 +5,7 @@ Status: **PASS for this delivery slice; no blocking findings.**
 - Reviewer: route-selected code_reviewer, read-only source access.
 - Route: d20205a1a318.
 - Change: 20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205.
-- Source checkout: /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a.
+- Source checkout: <local-path>
 - Exact reviewed HEAD: 450d62d41ab5f94b72217a1e18f9f60231d6af6f.
 - Genuine route base / PR target main: 4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102.
 - Verified current tree fingerprint: 5fd67748cbd9bc382997b4b132d67a88f8f0874a5d6fda73ef63e4ddf48d0e77.

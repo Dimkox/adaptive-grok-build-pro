@@ -13,18 +13,16 @@ from pathlib import Path
 
 NAME = Path(__file__).name
 ROOT = Path(__file__).resolve().parent
-CANONICAL = ROOT / '.grok' / 'hooks' / NAME
-
-
-def main() -> None:
-    if CANONICAL.is_file():
-        hook_dir = str(CANONICAL.parent)
+def main(name: str = NAME, root: Path = ROOT) -> None:
+    canonical = root / '.grok' / 'hooks' / name
+    if canonical.is_file():
+        hook_dir = str(canonical.parent)
         if hook_dir not in sys.path:
             sys.path.insert(0, hook_dir)
-        sys.argv[0] = str(CANONICAL)
-        runpy.run_path(str(CANONICAL), run_name='__main__')
+        sys.argv[0] = str(canonical)
+        runpy.run_path(str(canonical), run_name='__main__')
         return
-    if NAME == 'pre_tool_use.py':
+    if name == 'pre_tool_use.py':
         sys.stdout.write('{"decision":"allow"}\n')
     else:
         sys.stdout.write('{}\n')

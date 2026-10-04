@@ -110,8 +110,8 @@ Read-only GitHub queries independently confirmed:
 - default branch `main` at `8ab4e57038dec2e07f01aaa0b207813a387358f4`;
 - current open PRs exactly #12, #13, #15, and #17, with recorded bases/heads matching `PROJECT_STATE.json`;
 - PR #19 merged into main as the recorded `8ab4e570...` commit;
-- protected main strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`;
-- PR #17 head `8e650416...` has failed Trust CI and GitGuardian Check Runs, and the Trust CI Check Run is owned by App ID `4694114`;
+- protected main strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `<redacted-app-id>`;
+- PR #17 head `8e650416...` has failed Trust CI and GitGuardian Check Runs, and the Trust CI Check Run is owned by App ID `<redacted-app-id>`;
 - the four milestone implementation commits named for M0-M4 are present as Git objects.
 
 The current local branch count is 25 and remote non-PR branch count is 26, matching the complete named inventories in the analysis evidence. The analysis reports are timestamped observations at the earlier pre-PR-19-merge main and should remain historical evidence; `PROJECT_STATE.json`, README, and `START_HERE.md` correctly carry the later final observation.

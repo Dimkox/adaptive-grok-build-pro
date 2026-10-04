@@ -1,7 +1,7 @@
 # Integration architecture analysis
 
 Route: `f778c6ffc84c`
-Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-trust-ci-repo-profiles`
+Repository: `<local-path>`
 Scope: read-only analysis of repository-scoped immutable policy-profile selection.
 
 ## Current integration contract

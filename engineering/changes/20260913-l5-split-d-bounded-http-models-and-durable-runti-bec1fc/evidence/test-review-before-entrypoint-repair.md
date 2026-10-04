@@ -2,7 +2,7 @@
 
 Verdict: **FAIL — a concrete direct-entrypoint path-alias regression is missing and the reviewed implementation accepts overlapping data roots.** Do not record a passing test-review receipt for this identity. The passing full verifier remains valid evidence of the checks it ran, but does not remove this finding.
 
-Reviewed source `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d`, HEAD `d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76`, route `bec1fcdde794`, fingerprint `ccc95dcd73e25b8a2ab1dbb21f6acaa23f43e03201a4af941b4fac1ff19ec379`. Actual PR base is final C `9ce156e0128b4f18b3fccfeca9a8edc7175da090`; original route base `a75b3cd639a1483533069e8634759cdfc6612310` is a genuine ancestor. At inspection the source checkout was clean and all 24 paths in `split-d-source-sha256.json` matched actual bytes. The manifest's pre-commit checkout metadata is historical; the HEAD above is the reviewed final source identity. Later owner repairs are outside this report.
+Reviewed source `<local-path>`, HEAD `d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76`, route `bec1fcdde794`, fingerprint `ccc95dcd73e25b8a2ab1dbb21f6acaa23f43e03201a4af941b4fac1ff19ec379`. Actual PR base is final C `9ce156e0128b4f18b3fccfeca9a8edc7175da090`; original route base `a75b3cd639a1483533069e8634759cdfc6612310` is a genuine ancestor. At inspection the source checkout was clean and all 24 paths in `split-d-source-sha256.json` matched actual bytes. The manifest's pre-commit checkout metadata is historical; the HEAD above is the reviewed final source identity. Later owner repairs are outside this report.
 
 ## Blocking finding
 

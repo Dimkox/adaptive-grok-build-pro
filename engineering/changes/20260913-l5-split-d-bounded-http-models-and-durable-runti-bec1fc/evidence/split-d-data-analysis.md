@@ -1,6 +1,6 @@
 # D data architecture analysis
 
-Read-only selected role: `data_architect`; route `bec1fcdde794`; target `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d`. Genuine predecessor C is `a75b3cd639a1483533069e8634759cdfc6612310`; frozen reference is `f31406e970d67f7cd59694da5de88915adb0fa68`. I read the route, adaptive-delivery/data-change skills, both integration reports, and actual store, composition, existing server, intake and retained-reader code. This report is design analysis before D extraction, not a passing implementation review. No SQL, provider call, secret read, production operation or repository edit was performed. Only this report was written.
+Read-only selected role: `data_architect`; route `bec1fcdde794`; target `<local-path>`. Genuine predecessor C is `a75b3cd639a1483533069e8634759cdfc6612310`; frozen reference is `f31406e970d67f7cd59694da5de88915adb0fa68`. I read the route, adaptive-delivery/data-change skills, both integration reports, and actual store, composition, existing server, intake and retained-reader code. This report is design analysis before D extraction, not a passing implementation review. No SQL, provider call, secret read, production operation or repository edit was performed. Only this report was written.
 
 ## Extraction decision and unchanged data contract
 

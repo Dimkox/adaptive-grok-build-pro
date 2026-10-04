@@ -9,8 +9,8 @@ Evidence kinds: `verification`, `code_review`, `test_review`
 Human gates on this route: **none**
 Skills loaded: `/adaptive-delivery`, `feature-workflow` (analysis only)
 
-Product root: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live`
-Workflow root: `/home/pall/grok-projects/adaptive-grok-build-pro`
+Product root: `<local-path>`
+Workflow root: `<local-path>`
 This report is the only write from this agent.
 
 Narrow question: convert “добавь туда живой грок и живой квен, четко пропиши требования системы на уровне питона и тд под текущую конфигурацию” into a bounded, testable outcome this route **can** ship on the l5-live tree. Smallest coherent vertical. Explicit non-goals (real xAI/DashScope calls, `.env` reads, landing-repo push, `live_url`, server auto-enable). What remains human-blocked.

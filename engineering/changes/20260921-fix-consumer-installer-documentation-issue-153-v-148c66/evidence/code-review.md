@@ -6,7 +6,7 @@ Selected reviewer: `code_reviewer`, route `148c66d20768`, 2026-09-21. The separa
 
 ## Reviewed identity and scope
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-wave-installer`.
+- Worktree: `<local-path>`.
 - Reviewed HEAD: `8ef4625d5401556c7d2230c9f18cd0e0bc2c8852`.
 - Full product comparison base: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48`.
 - Correction comparison: `03fbaa91895bffe616d6a61884a7564e6057839a` to the reviewed HEAD.
@@ -37,7 +37,7 @@ Selected reviewer: `code_reviewer`, route `148c66d20768`, 2026-09-21. The separa
 
 ## Verification evidence and limits
 
-Independently read and hashed the saved correction logs under `/home/pall/.cache/agbp-run/issues-wave-20260921/installer/`:
+Independently read and hashed the saved correction logs under `<local-path>`:
 
 - `installer-review-red.log`, SHA-256 `c7e8f21742d0d511c3ba294257d481d2a6343f98c59b8470deda4e53874199f6`: two methods, one failure and two errors in 1.011 seconds. The artifact regression rejects the old raw `.md` filenames; both new positive controls expose the old fixture's absent template. The writer records exit 1.
 - `installer-review-green.log`, SHA-256 `98dbad5c8e2d8279cc79d9af3b50c1d768ef7742eddb1126de2a8ccf6642a8ed`: complete focused installer suite, 33 tests in 15.931 seconds, `OK`; the writer records exit 0. The four current product hashes match the writer's recorded tested bytes.

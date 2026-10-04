@@ -3,7 +3,7 @@
 **PASS for the renewed bounded source-delivery review.** The documented two-file router correction restores the reviewed security vocabulary and has a new full verification result. No blocking release-compatibility, recovery, scope, or evidence-provenance defect was found in the corrected integration. Final documentation freeze, current local receipts, the other renewed selected reviews, and the successor's external gate are still required. This report grants no merge, release-publication, deployment, or issue-closure authority.
 
 - Reviewer: selected independent `release_reviewer`, route `bcc1d645c438`, 2026-09-21.
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`.
+- Worktree: `<local-path>`.
 - Base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 - Inspected HEAD: `af7fb4ad3436e9c98cb7f07e570b7ff7e649207e`.
 - Inspected Git tree: `f54cada5dd368c0afb8314f6ad381d2708c07aa8`.
@@ -51,4 +51,4 @@ The accepted ingress record preserves its then-`in_progress` PR #170 snapshot (`
 
 ## Delivery conditions retained
 
-Finish the documentation freeze and all five renewed selected reviews, then obtain current fingerprint-bound local evidence for the actual final tree. Deliver one isolated successor under exact delegated operations and require the configured App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from App `4694114` on its exact current head/base, plus separately required signed scopes (`change/release.md:3`). Keep draft PRs #171/#172 open until that successor is actually delivered (`PROJECT_STATE.json:1987`), then link any verified issue and superseded-PR closures to it. Preserve the separate #162 trusted-validator successor. There is no tag, GitHub Release publication, production migration, or deployment decision in this review.
+Finish the documentation freeze and all five renewed selected reviews, then obtain current fingerprint-bound local evidence for the actual final tree. Deliver one isolated successor under exact delegated operations and require the configured App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from App `<redacted-app-id>` on its exact current head/base, plus separately required signed scopes (`change/release.md:3`). Keep draft PRs #171/#172 open until that successor is actually delivered (`PROJECT_STATE.json:1987`), then link any verified issue and superseded-PR closures to it. Preserve the separate #162 trusted-validator successor. There is no tag, GitHub Release publication, production migration, or deployment decision in this review.

@@ -7,7 +7,7 @@
         156
       ],
       "head": "08a16f8c5278109c03762082be1d11775ead04b8",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-156",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         ".grok-stack/adaptive_grok/router.py",
@@ -31,7 +31,7 @@
         162
       ],
       "head": "832e642ab868929bfd1a4a4c3a462ce6e7ea9072",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-162",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         "schemas/change-spec.schema.json",
@@ -55,7 +55,7 @@
         161
       ],
       "head": "ac7c4ff14981ae462de804bd250520a1013cfd68",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-installer",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         ".grok-stack/templates/consumer-AGENTS.md.tmpl",
@@ -81,7 +81,7 @@
         168
       ],
       "head": "3ff6ed291243373871957b62929d40a264522e00",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-fingerprint",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         ".grok-stack/adaptive_grok/util.py",
@@ -108,7 +108,7 @@
         148
       ],
       "head": "f04cb6cddd4a38db3fb022c9df48af0b9a808c6b",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-wave-schema",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         ".grok-stack/adaptive_grok/architecture.py",
@@ -134,7 +134,7 @@
         166
       ],
       "head": "23eb62dc21a090e6bf086cbc2a568d83417b0a2e",
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-166",
+      "worktree": "<local-path>",
       "source_diff_base": "1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48",
       "product_paths": [
         "factory/tests/test_execution_persistence_postgres.py"

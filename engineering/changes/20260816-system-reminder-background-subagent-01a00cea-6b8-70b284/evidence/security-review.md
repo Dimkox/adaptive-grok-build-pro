@@ -73,8 +73,8 @@ Identity surfaces on the dirty tree:
 
 | Package | Dirty paths (must stay uncommitted) |
 | --- | --- |
-| `20260816-user-query-…-06a59f` | 5 evidence files (analysis + `security-review.md` + `release-review.md`) written **after** `v2.0.9` already shipped |
-| `20260816-user-query-…-8fe260` | analysis + reviews + `state.json` — leftover 2.0.8-era security review of `83673bb` |
+| `20260816-sanitized-query-…-06a59f` | 5 evidence files (analysis + `security-review.md` + `release-review.md`) written **after** `v2.0.9` already shipped |
+| `20260816-sanitized-query-…-8fe260` | analysis + reviews + `state.json` — leftover 2.0.8-era security review of `83673bb` |
 | `…-e4afbb` | 3 analysis files |
 | `…-e61f9d` | analysis + `implementation.md` + reviews + `state.json`. That `implementation.md` says it is **intentionally uncommitted** |
 | `…-f1bdb9` | 3 analysis files |

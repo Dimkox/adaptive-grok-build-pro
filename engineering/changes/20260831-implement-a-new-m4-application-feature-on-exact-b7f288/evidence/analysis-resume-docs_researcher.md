@@ -3,7 +3,7 @@
 ## Scope and binding
 
 - Route: `b7f288f1e81e`; change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`.
-- Inspected worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane`.
+- Inspected worktree: `<local-path>`.
 - Inspected HEAD: `9727bc30c82bb44a86db0ef5b62e507b5527207a` (`rebuild tracked 2.0.13 package`), following `3b1f9a54a964d91f34cee2628374b17e7a42edeb` (`fix release git ownership trust`).
 - This is a read-only provenance/documentation review. No application files, operational state, external systems, or existing evidence were modified.
 

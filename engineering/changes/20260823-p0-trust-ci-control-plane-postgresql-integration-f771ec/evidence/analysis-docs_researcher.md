@@ -309,7 +309,7 @@ Runbook/README start sequence: copy env templates, replace placeholders, install
 ```bash
 docker compose up -d postgres migrate api worker
 docker compose ps
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://<loopback-service>/health/ready
 ```
 
 README: terminate TLS in a reverse proxy; expose `/webhooks/github` and `/approvals`; expose `/jobs/*` and `/attestations/*` only according to privacy model. Command output tails stored in PostgreSQL but omitted from the public job endpoint.

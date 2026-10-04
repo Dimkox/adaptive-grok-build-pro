@@ -4,26 +4,26 @@ Read-only. Sources: git-tracked docs/ADRs/runbooks/CLI help strings. No `.env`, 
 
 Compared:
 
-- **HEAD** `1fc942065a124ce75659bd082519d8ebc37774e8` — message: `ops: record Trust CI App 4694114 / install 156003193; DinD blocked`
+- **HEAD** `1fc942065a124ce75659bd082519d8ebc37774e8` — message: `ops: record Trust CI App `<redacted-app-id>` / install <redacted-installation-id>; DinD blocked`
 - **Dirty working tree** — `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md`, `engineering/runbooks/trust-ci-activation-report.md`, `decisions.md` already describe overlay worker + Check Run `97390635614` on PR #5
 - **Branch history** — `9f84dfd` froze spec/plan/invariants; later `d38e43d`, `60eaa48`, `1fc9420`
 
-Live facts already recorded in WT (not invented here): worker via untracked host-socket overlay on `claw`; Check Run `97390635614` App `4694114` on SHA `1fc9420`; `conclusion=action_required`; public webhook absent; `main` unprotected.
+Live facts already recorded in WT (not invented here): worker via untracked host-socket overlay on `<ci-host>`; Check Run `97390635614` App `<redacted-app-id>` on SHA `1fc9420`; `conclusion=action_required`; public webhook absent; `main` unprotected.
 
 ---
 
-## 1. Git-tracked docs stale vs live (claw)
+## 1. Git-tracked docs stale vs live (<ci-host>)
 
 | Path | HEAD / committed claim | Live / WT fact | Verdict |
 | --- | --- | --- | --- |
 | `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md` **HEAD** | M0.1: DinD unhealthy; worker not running | Worker running via overlay | **HEAD stale**; WT plan already patched for M0.1 |
 | Same plan **M0.0 checkboxes** (HEAD and WT) | Spec/plan/activation-report/invariants/verify/draft PR all `[ ]` | Those artifacts exist on branch from `9f84dfd`; PR #5 exists | **Docs drift (false negatives)** — see §4 |
 | Same plan **M0.2** HEAD | Check Run / webhook / attestation all unchecked, no PR ids | Partial Check Run via **local HMAC**, not GitHub-registered webhook | HEAD omits partial proof; WT notes partial |
-| `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md` | “Live gap”: no Trust CI containers; `M0 is source-complete and live-absent` | API+postgres+worker live on `127.0.0.1:18080`; first Check Run exists | **Spec freeze snapshot is historical**, not current claw |
+| `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md` | “Live gap”: no Trust CI containers; `M0 is source-complete and live-absent` | API+postgres+worker live on `<loopback-trust-ci>`; first Check Run exists | **Spec freeze snapshot is historical**, not current <ci-host> |
 | `engineering/runbooks/trust-ci-activation-report.md` HEAD | Template `UNKNOWN` | WT fills host, App/install IDs, policy digest, PR #5, Check Run id, image digests; attestation/kill/backup/`main` still `UNKNOWN` | WT is closer; HEAD is empty template |
-| `README.md` current-state | “The App-owned check is not live in this release; merge of PR #2 is a bootstrap exception” | App-owned Check Run exists on **this branch’s** SHA but `main` still unprotected; check is `needs_approval`, not merge-success | **Partially stale for claw**; still true that **product `main` / 2.0.12** has no live gate. Cold reader of the **milestone branch** will think nothing ran. |
+| `README.md` current-state | “The App-owned check is not live in this release; merge of PR #2 is a bootstrap exception” | App-owned Check Run exists on **this branch’s** SHA but `main` still unprotected; check is `needs_approval`, not merge-success | **Partially stale for <ci-host>**; still true that **product `main` / 2.0.12** has no live gate. Cold reader of the **milestone branch** will think nothing ran. |
 | `decisions.md` HEAD | “M0.1-complete worker IDs… DinD stayed unhealthy… worker never reached running” | Newer WT entry: overlay produced Check Run `97390635614` | HEAD decisions contradict later WT; both bootstrap-exception entries (2026-08-23 M1 start, PR #2) **not superseded** (M0.3) |
-| `trust-ci/README.md` | Generic deploy: `docker compose up -d postgres migrate api worker`; isolated worker; HTTPS webhook then protect | Tracked compose still documents DinD; claw uses **untracked overlay**; no public HTTPS | README is the **intended** topology, not claw’s overlay. Do not rewrite as if overlay were the product contract. |
+| `trust-ci/README.md` | Generic deploy: `docker compose up -d postgres migrate api worker`; isolated worker; HTTPS webhook then protect | Tracked compose still documents DinD; <ci-host> uses **untracked overlay**; no public HTTPS | README is the **intended** topology, not <ci-host>’s overlay. Do not rewrite as if overlay were the product contract. |
 | `engineering/runbooks/trust-ci-rollout.md` | Rollout assumes HTTPS webhook then disposable PR then protect | Proof used loopback HMAC; webhook still missing | Procedure names are correct; **M0.2 is not complete** |
 
 Do **not** treat overlay as documented API. Tracked compose + `trust-ci/README.md` still name isolated DinD / `docker-engine` + `runner-loader`.
@@ -103,16 +103,16 @@ On `milestone/m0-live-trust-authority` commit `9f84dfd` (`docs: freeze M0 live T
 
 Yet M0.0 still lists those items as `[ ]` in **both HEAD and dirty plan**. That is checklist lag after the freeze commit, not missing files.
 
-The M0.0 **STOP** (“no compose.yaml up…”) is historically true for the freeze slice and **false as a current operator instruction** — compose already ran on claw.
+The M0.0 **STOP** (“no compose.yaml up…”) is historically true for the freeze slice and **false as a current operator instruction** — compose already ran on <ci-host>.
 
 ---
 
-## 5. What «своди все воедино» should update so a cold reader of the branch matches claw
+## 5. What «своди все воедино» should update so a cold reader of the branch matches <ci-host>
 
 Update **tracked narrative**, not Trust CI policy/images:
 
 1. **Check off M0.0** in `docs/superpowers/plans/2026-08-24-m0-live-trust-authority.md` for artifacts already on the branch; keep STOP as a historical note, not current law.
-2. **Commit the WT M0.1/M0.2 plan + activation report + overlay decision** so origin matches claw (HEAD still says DinD blocked).
+2. **Commit the WT M0.1/M0.2 plan + activation report + overlay decision** so origin matches <ci-host> (HEAD still says DinD blocked).
 3. **Annotate the spec “Live gap” table** as probed-at-freeze; add a “live now” pointer to the activation report so the spec does not claim `live-absent` as present tense.
 4. **`README.md` current-state**: distinguish product `main` 2.0.12 (bootstrap exception, no protection) vs **this milestone branch** (App-owned Check Run observed, webhook/HTTPS/`main` still open). Do not claim M0 exit criteria.
 5. **`decisions.md`**: keep 2026-08-23 bootstrap exceptions until M0.3; do not delete them. The later overlay/Check Run entries must land so they are not only WT. M0.3 still owns “supersede bootstrap-exception language”.

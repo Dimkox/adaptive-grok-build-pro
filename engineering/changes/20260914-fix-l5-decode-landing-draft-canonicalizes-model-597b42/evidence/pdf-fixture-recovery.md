@@ -27,7 +27,7 @@ test_worker_executes_and_reports_parser_unavailable (factory.tests.test_landing_
 FAIL: test_oversized_page_count_reports_page_limit (factory.tests.test_landing_pdf_worker.PdfWorkerWithPinnedParser.test_oversized_page_count_reports_page_limit)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_pdf_worker.py", line 120, in test_oversized_page_count_reports_page_limit
+  File "<local-path>", line 120, in test_oversized_page_count_reports_page_limit
     self.assertEqual(ctx.exception.code, "pdf_page_limit")
 AssertionError: 'pdf_invalid' != 'pdf_page_limit'
 - pdf_invalid

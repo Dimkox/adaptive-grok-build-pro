@@ -24,7 +24,7 @@ No application-code edits. `.env` was not read. No push, merge, tag, retag, zip 
 | No secrets in zip | **PASS.** Packager still drops `.env` / keys / runtime; tests lock that; tree secret-scan patterns are clean; shipped-zip test requires in-zip `VERSION=2.0.7` and no GHA members. |
 | Leftover 2.0.6 zip untouched | **PASS.** Sidecar still `55406ff22f81ae05fc70eb9a5710b5c055c76a18f2ddbe60687c03b3e0b95c4d`. `v2.0.6` tag object still `8e7c5b67…`. `v2.0.5` still `7f85f7be…` / digest `b80e6310…`. |
 
-**Authz** is the named gates from «делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ», scoped to identity 2.0.7 + later last mile. This review covers the ship commit only. **Secrets / PII / tenant isolation** are not in play. **Irreversible** actions (tag, push, `gh release create`, retag, force-push, GHA restore) did not happen.
+**Authz** is the named gates from «делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ», scoped to identity 2.0.7 + later last mile. This review covers the ship commit only. **Secrets / PII / tenant isolation** are not in play. **Irreversible** actions (tag, push, `gh release create`, retag, force-push, GHA restore) did not happen.
 
 ---
 
@@ -139,7 +139,7 @@ This reviewer did not re-hash zip bytes (no shell). Sidecar + frozen digest + di
 
 ### Authz
 
-Named gates `scope_and_design_approval` and `production_action_approval` are recorded in `evidence/human-approval.md` from «делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ», scoped to: VERSION 2.0.7, package, tag, push `origin/main`, push tag, GitHub Release. Do not retag 2.0.6. No GitHub Actions. Do not print secrets.
+Named gates `scope_and_design_approval` and `production_action_approval` are recorded in `evidence/human-approval.md` from «делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ», scoped to: VERSION 2.0.7, package, tag, push `origin/main`, push tag, GitHub Release. Do not retag 2.0.6. No GitHub Actions. Do not print secrets.
 
 `git commit` is not a `PRODUCTION_INVOCATIONS` prefix. The identity ship is in scope of the user ruling and the null `write_agent` (controller owns it).
 

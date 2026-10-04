@@ -6,13 +6,13 @@ Evidence kind: `test_review`. Role: route-selected `test_reviewer`, route `03708
 
 ## Source identity and isolation
 
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-b-router`.
+- Candidate: `<local-path>`.
 - Actual agreed PR base: `63799f8760d3a55028d83ab5ff0116ececf8f7d1`.
 - HEAD before and after: `e1c7a01d3fe057c90e80e547c42aadddbae99d11`.
 - Git tree before and after: `3cfcf87a4e6c614ed0d2118a4f186cd3a8cbb0ac`.
 - Repository `tree_fingerprint` before and after: `2c2e80182a216afc38fae7f9fd7844b5c7ace88bcb9aea41d525c80323f4fc41`.
 - Before/after porcelain status emitted no records: no staged, unstaged or untracked candidate changes.
-- Scratch: `/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK`; reproduction at its `repo/` child.
+- Scratch: `<local-path>`; reproduction at its `repo/` child.
 - Scratch parent and unique directory were verified as real, uid-1000-owned, non-sticky mode-0700 directories. Reproduction used `git clone --no-hardlinks --no-checkout <candidate> <scratch>/repo` and detached checkout of the exact HEAD. Scratch HEAD, Git tree, clean inventory and repository fingerprint matched candidate before probes and still matched after probes.
 - All tests and mutations ran from scratch. `TMPDIR` pointed into reviewer scratch, `PYTHONDONTWRITEBYTECODE=1` prevented import caches, and Git reads disabled optional locks. Mutations replaced one source fragment in a fresh in-memory module loaded from the exact scratch copy; no candidate or scratch product files were edited.
 - Snapshot evidence: `capacity.md`, `identity.md`; executable probe and exact mutant definitions: `review_probe.py`, all in the reviewer directory above.
@@ -93,12 +93,12 @@ Required coverage: add an isolated historical-marker negative that does not also
 
 All test commands below ran with working directory:
 
-`/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/repo`
+`<local-path>`
 
 Exact baseline command:
 
 ```bash
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 -m unittest tests.test_repo_router tests.test_hooks tests.test_reasoning_policy
 ```
 
 Observed: exit 0, `Ran 76 tests in 44.451s`, `OK`. This executes the current operational matrix and adjacent ordinary-router, hook and reasoning-policy contracts independently in scratch.
@@ -106,7 +106,7 @@ Observed: exit 0, `Ran 76 tests in 44.451s`, `OK`. This executes the current ope
 Exact independent regression command:
 
 ```bash
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/review_probe.py independent
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> independent
 ```
 
 Observed: exit 1, `Ran 9 tests`, `FAILED (failures=10)`, zero errors. Ten failing subcases are precisely F1-F3. Supported polite/request EN/RU forms, independent sentence/semicolon/newline boundaries, coordinated negation, additional quote/history exclusions, incident containment+publish controls, and raw security/domain preservation all passed their independent methods. These passing subsets do not cancel the failure verdict.
@@ -116,7 +116,7 @@ Exact checked-in matrix mutation loop:
 ```bash
 for mutant in quoted-operation-admitted coordinated-negation-reset history-guard-removed incident-release-gate-lost incident-release-skill-lost; do
   printf 'MUTANT %s\n' "$mutant"
-  env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/review_probe.py mutation "$mutant"
+  env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> mutation "$mutant"
   printf 'EXIT %s\n' "$?"
 done
 ```
@@ -124,9 +124,9 @@ done
 Exact independent historical/safety mutant commands:
 
 ```bash
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/review_probe.py history-probe
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/review_probe.py history-probe history-guard-removed
-env TMPDIR=/home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 /home/pall/grok-projects/adaptive-grok-build-pro/.review-scratch/v211-b-test-8XPIgShK/review_probe.py safety-probe raw-domain-scanner-sanitized
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> history-probe
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> history-probe history-guard-removed
+env TMPDIR=<local-path> GROK_TEST_WORKERS=1 PYTHONDONTWRITEBYTECODE=1 GIT_OPTIONAL_LOCKS=0 taskset -c 17 python3 <local-path> safety-probe raw-domain-scanner-sanitized
 ```
 
 Observed: clean historical probe exit 0 / one method passed; historical mutant exit 1 / three subcase failures; raw-domain mutant exit 1 / one failure, missing both `data` and `security` task domains. The raw-domain test passed on the clean candidate in the independent suite.

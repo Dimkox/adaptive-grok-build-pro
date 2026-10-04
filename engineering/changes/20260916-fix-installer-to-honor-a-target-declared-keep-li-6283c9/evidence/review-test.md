@@ -3,7 +3,7 @@ FAIL
 # Test review — installer keep list (#110)
 
 - Reviewer: route `test_reviewer` (read-only). Subject: `tests/test_installer.py` (7 keep arms) + `test-plan.md` vs `scripts/install_into.py`.
-- Baseline: `/home/pall/grok-projects/adaptive-grok-build-keep` @ `9d83ba4a0fd4aa3f7f879acc7e2f4a2883e99017`, branch `fix/installer-keep-list`, `git status --porcelain` empty.
+- Baseline: `<local-path>` @ `9d83ba4a0fd4aa3f7f879acc7e2f4a2883e99017`, branch `fix/installer-keep-list`, `git status --porcelain` empty.
 - All mutation/probe work ran in a private clone `/tmp/keepreview/clone` (`drwx------` 0700, independent repo, `git clone --no-hardlinks`); `install_into.py` was restored byte-identical after every mutation (`restored: True`, clone `status --porcelain` empty). The reviewed repo received no writes except this file.
 
 ## 1. Hermeticity + env — PASS

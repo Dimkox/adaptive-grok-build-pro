@@ -2,9 +2,9 @@
 
 Selected data_reviewer, route ffb3d81e031f. Scope: original-base Core database/test-fixture boundary and AC-004/AC-008/INV-001; no final release, F026/M7 successor acceptance or merge authority. No blocking data findings.
 
-Source: /home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v211-combined-source. Base 63799f8760d3a55028d83ab5ff0116ececf8f7d1; before/after HEAD e8a4cd02cdc8ae047c3d8e2b88146856fc5c17c0; Git tree 3cbdd03fb6403b6597bcd4acea4029e743f04de9. Before/after canonical adaptive_grok.util.tree_fingerprint: 2f947056c276408529f450c8026b2d3b41393d441b7cbba6789cf3efb1fc5225. Both source status reads empty. reviewed-tree-modified: no
+Source: <local-path> Base 63799f8760d3a55028d83ab5ff0116ececf8f7d1; before/after HEAD e8a4cd02cdc8ae047c3d8e2b88146856fc5c17c0; Git tree 3cbdd03fb6403b6597bcd4acea4029e743f04de9. Before/after canonical adaptive_grok.util.tree_fingerprint: 2f947056c276408529f450c8026b2d3b41393d441b7cbba6789cf3efb1fc5225. Both source status reads empty. reviewed-tree-modified: no
 
-Private independent exact clean clone: /home/pall/grok-projects/adaptive-grok-build-pro/.grok-stack/runtime/v211-core-reviews-U7hfm2/data-review/scratch; parent and role directory verified owner pall, mode0700, non-sticky. Clone uses --local --no-hardlinks; scratch canonical fingerprint matches source above after checks. Only CPU22,23, at most2workers; no DB/full runs, agents, candidate writes or external actions. Startup measurement retained capacity.md (initial snapshot saved before task inspection in /tmp/core-data-review.VeJgQW/capacity.md, then copied privately).
+Private independent exact clean clone: <local-path>; parent and role directory verified owner pall, mode0700, non-sticky. Clone uses --local --no-hardlinks; scratch canonical fingerprint matches source above after checks. Only CPU22,23, at most2workers; no DB/full runs, agents, candidate writes or external actions. Startup measurement retained capacity.md (initial snapshot saved before task inspection in /tmp/core-data-review.VeJgQW/capacity.md, then copied privately).
 
 ## Findings and static assessment
 

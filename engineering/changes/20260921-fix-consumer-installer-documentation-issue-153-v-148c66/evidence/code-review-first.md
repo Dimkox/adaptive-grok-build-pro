@@ -6,7 +6,7 @@ Reviewed by the selected `code_reviewer` for route `148c66d20768` on 2026-09-21.
 
 ## Reviewed identity
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-wave-installer`.
+- Worktree: `<local-path>`.
 - Product head: `03fbaa91895bffe616d6a61884a7564e6057839a`.
 - Review base: `1f7aedb8ab32e442fb7a9ee1287222fe5f47fe48` (frozen PR170 head).
 - Saved full-gate fingerprint: `ae7f447d3e6b95329865b1913631660aa69d88997d32c3c1297f2dafd149e63a`.
@@ -41,7 +41,7 @@ These files are intentional rendering inputs, distinct from the rendered consume
 
 ## Saved verification inspected and limits
 
-Read the raw evidence under `/home/pall/.cache/agbp-run/issues-wave-20260921/installer/`; independently checked its hashes rather than relying only on the writer report.
+Read the raw evidence under `<local-path>`; independently checked its hashes rather than relying only on the writer report.
 
 - `installer-red.log`: 32 tests, `FAILED (failures=3, errors=2)`, including the nine original installed README link failures. SHA-256 `fe988a18c67ba24758d5f75392425fb3b840e3a003681eebfa24b87b1da3989f`. The original wrapper did not preserve a numeric unittest exit; the failure is explicit in the log.
 - `installer-green.log`: 32 tests, 14.757 seconds, `OK`. SHA-256 `3160794321e1c585e0af5ce831746ba57a3515b1366e15f8a5832503ce4b202a`.

@@ -2,11 +2,11 @@
 
 ## Source identity
 
-- Candidate: `/home/pall/grok-projects/adaptive-grok-build-pro/.worktrees/v21-release-candidate`
+- Candidate: `<local-path>`
 - Base: `23fdc2ef136a65ee2ff45397ff9952cdae934e21`
 - Reviewed HEAD: `5645e1b515579c1cfc791cf285d91bab0ddb8475`
 - Candidate fingerprint before/after: `5d36d75d1d661b295e7163d86bb378a5e3f873707b479b318669883329348f36` / same
-- Scratch: `/home/pall/adaptive-review-test-CiGagq/repo`; parent mode `0700`, owner `pall`
+- Scratch: `<local-path>`; parent mode `0700`, owner `pall`
 - Scratch included HEAD and all untracked paths; fingerprint before/after restoration matched the candidate.
 - reviewed-tree-modified: no
 

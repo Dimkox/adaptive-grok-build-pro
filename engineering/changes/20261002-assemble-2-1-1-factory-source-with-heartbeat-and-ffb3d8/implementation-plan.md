@@ -12,7 +12,7 @@ Controller runs full PR verifier on stable exact candidate, creates review packa
 
 ## Task 3: PR-only acceptance and successor handoff
 
-Materialize exact delegated isolated operations before any external write. Authoritative exact-head/up-to-date-base App check4694114 adaptive-trust-ci/verified@06ecf1c875bc plus required external signed scopes precede merge. Local approval/grants/reviews do not establish merge authority. Record accepted exact merge identity; restack only to actual accepted base. Goal remains full2.1.1source+artifact publication and downloaded ZIP/checksum verification, not this source candidate alone.
+Materialize exact delegated isolated operations before any external write. Authoritative exact-head/up-to-date-base App check<redacted-app-id> adaptive-trust-ci/verified@06ecf1c875bc plus required external signed scopes precede merge. Local approval/grants/reviews do not establish merge authority. Record accepted exact merge identity; restack only to actual accepted base. Goal remains full2.1.1source+artifact publication and downloaded ZIP/checksum verification, not this source candidate alone.
 
 ## Security repair after historical e8a4 review
 

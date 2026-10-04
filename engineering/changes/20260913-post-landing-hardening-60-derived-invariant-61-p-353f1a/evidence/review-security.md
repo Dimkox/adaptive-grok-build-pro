@@ -6,7 +6,7 @@
 1. **No secrets / private paths.** Grepped the patch itself for `sk-[A-Za-z0-9]{16,}`, `LTAI`, `ghp_`,
    `github_pat_`, `-----BEGIN`, `eyJ`, `AKIA`, `xoxb`, `Bearer`, `password|secret|token|api_key|private_key`, IPv4,
    e-mail domains, `http(s)://`, `/home/`, `/root/`, `/etc/` → **0 hits**. All 90 long opaque tokens are 40-hex git
-   ids (already-public epoch shas/trees) + 1 64-hex digest + `/BaseFont/Helvetica`; no `.env`; zero `/home/pall`,
+   ids (already-public epoch shas/trees) + 1 64-hex digest + `/BaseFont/Helvetica`; no `.env`; zero `<local-home>`,
    so the `engineering/**` home-path precedent is never invoked — nothing to grade.
 2. **Epoch coverage is complete.** All three `return`s in `deploy_members_for_source` are wrapped and the only other
    exit is `raise …("source_identity")`. `_PRIOR_DEPLOY_MEMBERS` is a *subtractive* filter over `DEPLOY_MEMBERS`, so

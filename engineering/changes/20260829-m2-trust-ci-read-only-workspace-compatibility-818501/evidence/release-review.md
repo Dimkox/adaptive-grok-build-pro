@@ -5,7 +5,7 @@
 - Date: 2026-08-29.
 - Route: `81850148d1f6`.
 - Change: `20260829-m2-trust-ci-read-only-workspace-compatibility-818501`.
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`.
+- Repository: `<local-path>`.
 - Git HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`.
 - Reviewed pre-report worktree fingerprint: `7f403a5e5d9557d2576792aceefc538b15f59b69a5897867ac0e0f3595b6f954` (independently reproduced before this report was added).
 - Reviewed fix delta: the complete tracked worktree diff against the supplied HEAD, 11 files, 1,450 insertions and 37 deletions, plus the active untracked change package and its review/evidence chain.

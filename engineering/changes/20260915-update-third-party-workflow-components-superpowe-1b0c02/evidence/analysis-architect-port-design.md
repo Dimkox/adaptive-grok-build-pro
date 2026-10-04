@@ -1,8 +1,8 @@
 # Architect analysis — porting the workflow-artifact-adapters epic onto `main` @ `7b14736`
 
-Tree analyzed: `/home/pall/grok-projects/adaptive-grok-build-pro-third-party-sync` (VERSION `2.0.16`, HEAD
+Tree analyzed: `<local-path>` (VERSION `2.0.16`, HEAD
 `7b14736 docs: remove decorative README graph and clarify package guidance (#90)`).
-Source of the epic: `/home/pall/grok-projects/adaptive-grok-build-pro-workflow-adapters` @ `dccaeec` (M3-era base)
+Source of the epic: `<local-path>` @ `dccaeec` (M3-era base)
 + uncommitted working tree. Route authority:
 `.grok-stack/runtime/active-route.json` → route `1b0c02b8a134`, `write_agent: integration_implementer`,
 `required_evidence: [verification, code_review, test_review, security_review]`, `base_commit: 7b147366a1f9…`,
@@ -205,7 +205,7 @@ mistake at `decisions.md`-sibling `mistakes.md:916-922`).
 
 ### 2.3 What is actually undelivered (smaller than briefed)
 
-Source: `/home/pall/grok-projects/adaptive-grok-build-pro` @ `ed76d88` (branch
+Source: `<local-path>` @ `ed76d88` (branch
 `fix/path-aware-shell-policy-circuit-breaker`, **not** a descendant of `7b14736`), uncommitted hunks
 `decisions.md @@ -157 +157,17 @@` and `mistakes.md @@ -69,3 +69,23 @@`. Presence-checked on main by literal grep:
 
@@ -405,7 +405,7 @@ Keep every pinned slot honest, and record the new fact in an **unpinned additive
    convention (`287b27a`, `02ac8c3` touched roadmap + PROJECT_STATE + README + START_HERE + test constants in one
    commit).
 6. `README.md`/`START_HERE.md` `## Current state` / `## Current project state` may gain a sentence, but must keep
-   `adaptive-trust-ci/verified@06ecf1c875bc`, `4694114`, `61a05da2bd0c9fb09db5307f53ebc99e4e94040d`, and must not
+   `adaptive-trust-ci/verified@06ecf1c875bc`, `<redacted-app-id>`, `61a05da2bd0c9fb09db5307f53ebc99e4e94040d`, and must not
    contain `adaptive-trust-ci/verified@6737355947c2` (`:631-634`); START_HERE must keep `PR #19` + `delivered`
    without `open PRs … #19` (`:637-639`).
 7. Prose landmines for any new sentence in README/START_HERE/QUICKSTART/roadmap/PROJECT_STATE (all

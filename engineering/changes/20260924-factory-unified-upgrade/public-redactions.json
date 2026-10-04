@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "public_redaction_only",
+  "source_base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+  "source_blob": "34ef8fdb4aaca86584e638b4aa630b411b6103fd",
+  "original_document_sha256": "dfe7142400d7a8372e5909574bf9a37bdf6bf0cc6b6ed4febfbe9e467eb60f80",
+  "public_document": "FACTORY_UNIFIED_UPGRADE_TZ.md",
+  "public_document_sha256": "763de48fc8648b8bf07ce2ddb3ce91c1c1083d56c0495be9b22c50f19f4367d8",
+  "reason": "Replace one host identifier with a neutral public placeholder; original owner manifest remains unchanged.",
+  "authority_effect": "none",
+  "qualification_effect": "none"
+}

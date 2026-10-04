@@ -20,6 +20,6 @@ The change package's current `change-spec.yaml` cites only `test_review` and `co
 - `git diff --check 1f7aedb8... 31c6b4e1...`: passed.
 - In-memory seven-kind local/runner/holdout probe: local accepted seven; Trust CI source and holdout example accepted five and rejected the two new kinds.
 - In-memory validation of this issue's committed spec with the checked-in holdout example: accepted.
-- Inspected the coordinator's raw PR verifier JSON at `/home/pall/.cache/agbp-run/issues-wave-20260921/issue162/verify-initial.json`: route `8ab045fd89e1`, product fingerprint `f5297089ba227ff33e2aac517d82be65270e66e618f206684a340f9b9f1e360c`, status `pass`, 16 checks and no failed checks. I did not rerun the full verifier.
+- Inspected the coordinator's raw PR verifier JSON at `<local-path>`: route `8ab045fd89e1`, product fingerprint `f5297089ba227ff33e2aac517d82be65270e66e618f206684a340f9b9f1e360c`, status `pass`, 16 checks and no failed checks. I did not rerun the full verifier.
 
 Scope of PASS: the requested local typed-schema parity and regressions at the reviewed product commit. The external Trust CI check on a future PR head remains separate merge authority.

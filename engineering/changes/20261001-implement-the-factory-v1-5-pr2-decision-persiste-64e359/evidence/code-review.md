@@ -6,7 +6,7 @@
 - Reviewed HEAD: `ae03a765845924c90e1c5e898cab2d1204d61942`
 - Reviewed tree: `07a3b3c46d1ffa7845bcdfe293ae1a144da42ec0`
 - Fingerprint before/after: `192e1153e038f1dc2928bdd658ad353042616114190123c472f40afcc46bc62e`
-- Scratch: `/home/pall/.codex-review-scratch/pr2-rereview.olxK0M/repo`; policy scratch: `/home/pall/.codex-review-scratch/pr2-policy.wdJ1vt/repo`; trusted parent mode `0700`.
+- Scratch: `<local-path>`; policy scratch: `<local-path>`; trusted parent mode `0700`.
 - Candidate clean before/after; `reviewed-tree-modified: no`.
 
 ## Verdict

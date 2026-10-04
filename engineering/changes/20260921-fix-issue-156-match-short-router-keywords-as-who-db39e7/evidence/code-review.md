@@ -17,7 +17,7 @@ Reviewer: route-selected `code_reviewer`, independent of the implementation owne
 
 The coordinator's saved `verify-initial-meta.json` identifies the exact reviewed HEAD and command `GROK_TEST_WORKERS=8 python3 scripts/grok_verify.py --mode pr --json`, exit 0, completed 2026-09-21T07:00:02Z. Its `verify-initial.json` records route `db39e73f3dee`, fingerprint `770d2ea5f192edfcb85db4917526b28827722fe5c89abc28c681ddb66c561340`, passing source stability, Python suite/coverage, lint, security scan and disposable PostgreSQL exit checks. Workflow artifacts were explicitly skipped as unconfigured, rather than reported as executed.
 
-Also inspected `focused-green.log` (58 tests, OK), `adjacent-green.log` (39 tests, OK), and `ai-weight-compatibility.json` under `/home/pall/.cache/agbp-run/issues-wave-20260921/issue156/`. These are observed existing results, not tests executed by this reviewer. No tests, lint, compilation or Docker were launched during this review, respecting the shared verification slot.
+Also inspected `focused-green.log` (58 tests, OK), `adjacent-green.log` (39 tests, OK), and `ai-weight-compatibility.json` under `<local-path>`. These are observed existing results, not tests executed by this reviewer. No tests, lint, compilation or Docker were launched during this review, respecting the shared verification slot.
 
 Read-only inspection commands actually executed included:
 

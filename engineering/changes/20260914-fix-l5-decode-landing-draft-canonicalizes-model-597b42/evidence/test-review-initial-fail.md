@@ -19,7 +19,7 @@
 
 ## Executed verification
 
-From `/home/pall/grok-projects/adaptive-grok-build-pro-l5fix`:
+From `<local-path>`:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src:factory/tests python3 -m unittest test_landing_normalizer test_landing_contracts test_landing_provider -v

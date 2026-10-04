@@ -18,15 +18,17 @@ from .architecture import (
     preflight_architecture, validate_repository_drift,
 )
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
-from .architecture_diff import select_architecture_comparison_base
+from .architecture_diff import _git, _git_blob, select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
+from .quality_gates import evaluate_quality_gate
 from .receipts import (
     active_architecture_binding,
     active_governance_binding,
     validate_evidence,
     write_receipt,
 )
-from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
+from .spec import _parse_canonical_json, canonical_spec_digest, criterion_coverage, load_spec, parse_yaml_subset, spec_fingerprint, validate_spec
+from .package_status import read_package_file
 from .state import get_active_change, get_active_route
 from .python_test_runner import RunCancelled, RunnerError, _cancellation, execute, run_core_tests, selected_workers
 from .util import (
@@ -1371,6 +1373,88 @@ def _docs_micro_exempt(route: dict[str, object] | None, files: list[str]) -> boo
     )
 
 
+def _historical_spec_migrations(root: Path, selected: set[str], active_rel: str | None, route: dict[str, object] | None, mode: str) -> list[dict[str, object]]:
+    """Bind archival retirement/strict relocation to actual comparison-base blobs."""
+    manifest_rel = 'engineering/archived-change-specs.json'
+    if not (root / manifest_rel).exists():
+        return []
+    manifest = _parse_canonical_json(read_package_file(root, manifest_rel), Path(manifest_rel))
+    if set(manifest) != {'schema_version', 'source_base', 'entries'} or manifest['schema_version'] != 1 or not isinstance(manifest['entries'], list):
+        raise ValueError('invalid historical spec migration manifest')
+    ranges = _git_range_selection(root, route, mode)
+    if ranges.findings or not ranges.bases:
+        raise ValueError('historical spec migration requires trusted comparison ranges')
+    bases = {item.comparison_base_sha for item in ranges.bases}
+    source_base = manifest['source_base']
+    if not isinstance(source_base, str) or not _EXACT_SHA.fullmatch(source_base):
+        raise ValueError('historical source base must be an exact commit')
+    origins: dict[str, str] = {}
+    for base in bases:
+        raw = _git(root, ['ls-tree', '-r', '-z', base, '--', 'engineering/changes'])
+        if raw is None:
+            raise ValueError('historical base inventory unavailable')
+        for record in raw.split(b'\0'):
+            if not record:
+                continue
+            metadata, path_bytes = record.split(b'\t', 1)
+            file_mode, kind, blob = metadata.decode('ascii').split()
+            rel = os.fsdecode(path_bytes)
+            if rel.endswith('/change-spec.yaml') and file_mode in {'100644', '100755'} and kind == 'blob':
+                blob_id = blob
+                if rel in origins and origins[rel] != blob_id:
+                    raise ValueError('historical origin differs between comparison bases')
+                origins[rel] = blob_id
+    records: list[dict[str, object]] = []
+    seen_blobs: set[str] = set()
+    seen_targets: set[str] = set()
+    for entry in manifest['entries']:
+        if not isinstance(entry, dict) or set(entry) != {'kind', 'original_blob', 'target', 'sha256'}:
+            raise ValueError('invalid historical migration entry')
+        kind, blob, target, digest = (entry[key] for key in ('kind', 'original_blob', 'target', 'sha256'))
+        if kind not in {'legacy_archive', 'v2_relocation'} or not isinstance(blob, str) or not _EXACT_SHA.fullmatch(blob):
+            raise ValueError('invalid historical migration identity')
+        suffix = '/historical-spec.yaml' if kind == 'legacy_archive' else '/change-spec.yaml'
+        if not isinstance(target, str) or not is_valid_inventory_path(target) or not target.startswith('engineering/changes/') or not target.endswith(suffix):
+            raise ValueError('invalid historical migration target')
+        if blob in seen_blobs or target in seen_targets or not isinstance(digest, str) or not re.fullmatch(r'[0-9a-f]{64}', digest):
+            raise ValueError('duplicate migration or invalid digest')
+        seen_blobs.add(blob)
+        seen_targets.add(target)
+        payload = read_package_file(root, target)
+        if hashlib.sha256(payload).hexdigest() != digest:
+            raise ValueError(f'historical migration target digest mismatch: {target}')
+        archive = load_spec(root / target, allow_legacy=kind == 'legacy_archive')
+        expected_version = 1 if kind == 'legacy_archive' else 2
+        if type(archive.get('schema_version')) is not int or archive['schema_version'] != expected_version:
+            raise ValueError(f'historical migration target version mismatch: {target}')
+        sources = [rel for rel, original_blob in origins.items() if original_blob == blob]
+        aliases = {str(Path(target).parent / 'change-spec.yaml')} if kind == 'legacy_archive' else set()
+        affected = selected.intersection({*sources, *aliases})
+        if not affected:
+            continue
+        if bases != {source_base} or len(sources) != 1:
+            raise ValueError('migration origin is not unique in the trusted source base')
+        origin = sources[0]
+        original_bytes = _git_blob(root, source_base, origin, required=True)
+        if original_bytes is None:
+            raise ValueError('historical origin unavailable')
+        try:
+            original = _parse_canonical_json(original_bytes, Path(origin))
+        except ValueError:
+            original = parse_yaml_subset(original_bytes.decode('utf-8', 'strict'))
+        if not isinstance(original, dict) or type(original.get('schema_version')) is not int or original['schema_version'] != expected_version:
+            raise ValueError('only version-matched historical migrations are permitted')
+        if original.get('change_id') != Path(origin).parent.name or archive.get('change_id') != Path(target).parent.name:
+            raise ValueError('historical migration change identity mismatch')
+        if active_rel in affected or target == active_rel or any((root / rel).exists() for rel in affected if rel != target):
+            raise ValueError('active or surviving current spec cannot be retired')
+        if kind == 'v2_relocation':
+            selected.add(target)  # The existing strict v2 gate validates this spec below.
+        selected.difference_update(affected - {target})
+        records.append({**entry, 'original_path_sha256': hashlib.sha256(origin.encode('utf-8')).hexdigest(), 'selected_path_sha256': [hashlib.sha256(rel.encode('utf-8')).hexdigest() for rel in sorted(affected)], 'source_base': source_base, 'evidence_kind': 'historical_archival' if kind == 'legacy_archive' else 'strict_v2_relocation'})
+    return records
+
+
 def _change_specs(root: Path, files: list[str], route: dict[str, object] | None, mode: str) -> tuple[CheckResult, dict[str, object]]:
     gate = mode in {'pr', 'release'}
     exempt = _docs_micro_exempt(route, files)
@@ -1385,6 +1469,11 @@ def _change_specs(root: Path, files: list[str], route: dict[str, object] | None,
         selected.add(active_rel)
     findings: list[dict[str, str]] = []
     records: list[dict[str, object]] = []
+    migrations: list[dict[str, object]] = []
+    try:
+        migrations = _historical_spec_migrations(root, selected, active_rel, route, mode)
+    except (OSError, ValueError) as exc:
+        findings.append({'severity': 'error', 'code': 'historical-spec-migration-invalid', 'path': 'engineering/archived-change-specs.json', 'message': str(exc)})
     if gate and route and route.get('delivery_expected') and not active_rel and not exempt:
         findings.append({'severity': 'error', 'code': 'active-spec-missing', 'path': '', 'message': 'PR/release validation requires an active typed spec.'})
     for rel in sorted(selected):
@@ -1421,7 +1510,7 @@ def _change_specs(root: Path, files: list[str], route: dict[str, object] | None,
         for error in errors:
             findings.append({'severity': 'error', 'code': 'change-spec-invalid', 'path': rel, 'message': error})
         records.append(record)
-    metadata: dict[str, object] = {'exempt': exempt, 'specs': records}
+    metadata: dict[str, object] = {'exempt': exempt, 'specs': records, 'historical_migrations': migrations}
     if active_rel:
         metadata['active_path'] = active_rel
     return CheckResult('change-spec', 'fail' if findings else ('skip' if exempt and not selected else 'pass'), f'{len(records)} specs checked; exempt={exempt}', details=findings), metadata
@@ -2109,8 +2198,6 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
                 results.append(CheckResult('factory-postgres-exit', 'skip', 'architecture input preflight failed; not started'))
     else:
         results.extend(_python(root, mode, docs_scope))
-    report['check_status'] = 'pass' if all(item.status in {'pass', 'skip'} for item in results) else 'fail'
-
     state.stage = 'source-stability'
     try:
         final_fingerprint = tree_fingerprint(root)
@@ -2127,6 +2214,15 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
                 if source_stable
                 else "repository changed during verification checks"
             ),
+        )
+    )
+    quality_gate = evaluate_quality_gate(mode=mode, checks=results, docs_scope=docs_scope)
+    results.append(
+        CheckResult(
+            "quality-gate",
+            quality_gate.status,
+            quality_gate.summary,
+            details=quality_gate.details,
         )
     )
 
@@ -2148,6 +2244,7 @@ def _verification_run(root: Path, mode: str, profiles: list[str] | None, record:
         'governance': governance_metadata,
         'workflow_artifacts': workflow_metadata,
         'status': 'pass' if not failures else 'fail',
+        'check_status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
         'terminal_state': 'completed',
         'evidence_status': 'not_recorded',

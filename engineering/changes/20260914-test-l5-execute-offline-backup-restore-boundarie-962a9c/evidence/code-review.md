@@ -1,6 +1,6 @@
 # Code review — test(l5): execute offline backup/restore boundaries without web-stack fixture coupling
 
-Reviewed tree: worktree `/home/pall/grok-projects/adaptive-grok-build-pro-l5-coverage`, branch
+Reviewed tree: worktree `<local-path>`, branch
 `feat/l5-runtime-execution-tests`, base `5f6f6ce`. Uncommitted working tree + untracked
 `factory/tests/landing_host_fixture.py` and this change package. Reviewer: code_reviewer (read-only).
 

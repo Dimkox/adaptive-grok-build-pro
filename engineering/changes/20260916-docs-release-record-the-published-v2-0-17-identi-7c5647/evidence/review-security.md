@@ -42,7 +42,7 @@ None.
   approval material, and did not read the 10.9 MB artifact bytes beyond their SHA-256. Machine-local values were therefore judged by
   comparison against the previously tracked dossier, not by inspecting the host.
 - Deployed Trust CI policy, the holdout bundle, the App signing key and branch protection live outside the pull-request trust domain
-  and are not verifiable from this tree. `check_run_id`, `attestation_id`, `signer` and `github_app_id: 4694114` were checked for
+  and are not verifiable from this tree. `check_run_id`, `attestation_id`, `signer` and `github_app_id: <redacted-app-id>` were checked for
   agreement with the evidence file's check-run summary, not re-derived cryptographically.
 - The claim "built twice byte-identically" and the installed-unit PIDs inside the new dossier are carried forward verbatim from the
   already-published post-98 dossier; I did not re-observe the runtime host and make no independent claim about it.

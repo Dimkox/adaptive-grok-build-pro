@@ -2,7 +2,7 @@
 
 Status: **PASS — CR-165-01 is addressed; no remaining blocking findings were identified.**
 
-Route `2dfd5804553e`; role `code_reviewer`; worktree `/home/pall/grok-projects/adaptive-grok-build-issue-165`; branch `fix/issue-165-interruption-status`. Reviewed HEAD `a946f3e3ac92dfd60ece94437b20406e2edd3959` against actual PR base `839d3aa26bc90417424d814ee48d8b5cd3be367e`. This is independent local code review, not a receipt or external merge approval.
+Route `2dfd5804553e`; role `code_reviewer`; worktree `<local-path>`; branch `fix/issue-165-interruption-status`. Reviewed HEAD `a946f3e3ac92dfd60ece94437b20406e2edd3959` against actual PR base `839d3aa26bc90417424d814ee48d8b5cd3be367e`. This is independent local code review, not a receipt or external merge approval.
 
 I inspected the complete issue diff and surrounding package/lifecycle/state/spec/receipt/Git code in the first review, then reread the repaired observer, new regression fixtures, canonical read/write boundaries, and current package/review/Stop integration for this renewal. The adopted design and six acceptance criteria remain the scope. A read-only Git comparison confirmed that all product, test, lifecycle CLI, and package-status contract files listed below are byte-identical between full-tested `bca409d10d01663ee90dbd083089f41edad0b2bd` and the reviewed HEAD. The later commit changes handoff/evidence/package paperwork; it does not make the earlier whole-tree receipt current.
 

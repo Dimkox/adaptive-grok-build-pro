@@ -6,7 +6,7 @@ import subprocess
 import time
 from datetime import datetime, timezone
 
-root = Path("/home/pall/grok-projects/adaptive-grok-build-repair")
+root = Path("<local-path>")
 out = Path(__file__).resolve().parent
 change = "engineering/changes/20260920-fix-issue-155-guards-inside-the-semantic-bind-re-c4e47e/"
 documents = {"START_HERE.md", "PROJECT_STATE.json", "README.md", "decisions.md", "mistakes.md"}

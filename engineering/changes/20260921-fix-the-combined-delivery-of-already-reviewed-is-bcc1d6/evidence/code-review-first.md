@@ -6,7 +6,7 @@
 - Route: `bcc1d645c438`.
 - Reviewed base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 - Reviewed head: `4a8e8925478e390d7bf12f2bf4faab8fc0e0c70c`.
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-reviewed-batch`.
+- Worktree: `<local-path>`.
 - Scope: the actual base-to-head diff, `brief.md`, `change-spec.yaml`, `candidates.json`, all 19 imported product/test paths, and relevant callers. Source review performed on September 21, 2026.
 
 ## Findings

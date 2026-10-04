@@ -2,7 +2,7 @@
 
 ## Baseline
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-m1`; HEAD remains `0a4dd0a` (`docs: plan M1 typed intent and evidence`), with route base `069fe82`.
+- Worktree: `<local-path>`; HEAD remains `0a4dd0a` (`docs: plan M1 typed intent and evidence`), with route base `069fe82`.
 - Active route is `a4f88266a848`, high risk/security, write owner `general_implementer`, and required reviews `code_reviewer`, `test_reviewer`, `security_reviewer`, and `release_reviewer`.
 - The worktree has unrelated modified `decisions.md`/`mistakes.md`; no application implementation changes are present. The active package contains the standard Markdown files plus a placeholder `change-spec.yaml`; its current `risk.tier`, `objective.statement`, and `rollback.strategy` are still template placeholders.
 - The six-task source of truth is `docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md`, constrained by `docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md`.

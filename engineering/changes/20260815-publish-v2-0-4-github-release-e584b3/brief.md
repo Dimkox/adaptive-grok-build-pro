@@ -9,7 +9,7 @@ Domains: generic
 ## Problem
 
 <user_query>
-ты охуел? .env перечитай и гит пулл сука с релизом я разрешаю
+ты охуел? .env перечитай и гит пулл [sanitized] с релизом я разрешаю
 </user_query>
 
 ## Outcome

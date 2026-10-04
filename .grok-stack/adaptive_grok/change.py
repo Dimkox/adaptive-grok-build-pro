@@ -8,13 +8,17 @@ from typing import Any
 from .package_status import collect_worktree, read_package_file
 from .state import get_active_route, set_active_change, update_route
 from .spec import dump_canonical_spec, generate_spec
-from .util import atomic_write_text, dump_json, now_utc, slugify
+from .util import atomic_write_text, dump_json, now_utc
 
 GOVERNANCE_AUTHORITY_NOTICE = (
     "Canonical governance JSON under `governance/` remains separately reviewed "
     "authority. Any rule, example, debt, or digest named here is non-authoritative "
     "context until the verifier rederives current governance evidence."
 )
+
+def public_change_slug(title: str) -> str:
+    """Keep public paths independent of task text; date and route identify the change."""
+    return "task"
 
 TRANSITIONS = {
     'draft': {'scoped', 'cancelled'},
@@ -76,7 +80,7 @@ def start_change(root: Path, title: str | None = None) -> dict[str, Any]:
     if not route:
         raise RuntimeError('No active route. Submit a development task or run scripts/grok_route.py first.')
     title = title or route['task']
-    change_id = f"{route['created_at'][:10].replace('-', '')}-{slugify(title)}-{route['route_id'][:6]}"
+    change_id = f"{route['created_at'][:10].replace('-', '')}-{public_change_slug(title)}-{route['route_id'][:6]}"
     path = root / 'engineering/changes' / change_id
     if path.exists():
         state = json.loads((path / 'state.json').read_text(encoding='utf-8'))

@@ -3,7 +3,7 @@ PASS
 Security review — artifact child of the v2.0.17 release
 Route `31155d4d2a6a`, receipt kind `security_review`.
 Subject: commit `5b178d3411306143735f6985a1817646e194ea2a` in worktree
-`/home/pall/grok-projects/adaptive-grok-build-pro-artifact-217`
+`<local-path>`
 (branch `feature/v2.0.17-artifact-child`), base `78082a290f8b90cade88685351fbb2ba263689b9`
 (= upstream `main`, the merged v2.0.17 release-sync "R" commit).
 Primary contracts: `change-spec.yaml` FORBID-001 (no early publication) and FORBID-002
@@ -72,7 +72,7 @@ build executed **from inside the clone**:
 
 ```
 $ umask 077; S=$(mktemp -d /tmp/sec-audit-217.XXXXXX); chmod 700 "$S"
-$ git clone --no-hardlinks --no-checkout /home/pall/grok-projects/...-artifact-217 "$S/src"
+$ git clone --no-hardlinks --no-checkout <local-path> "$S/src"
 Cloning into '/tmp/sec-audit-217.9Mn9ws/src'... done.
 $ git -C "$S/src" checkout --detach 78082a290f8b90cade88685351fbb2ba263689b9
 HEAD is now at 78082a2 docs(release): v2.0.17 candidate identity sync (R) after the v2.0.16 publication (#98)
@@ -279,7 +279,7 @@ shapes produced no `@domain` address and no key material. Every novel token reso
 | `2283e6a09d3eb2a0aeabce8a872e06746b941176` | `git rev-parse 78082a2^{tree}` — the base tree, independently reproduced by the clone in §1.3. |
 | `770f1db5…4616` / `54db9f64…f3c0` | Recomputed ZIP and sidecar SHA-256 (§1.1). |
 | `969c4f65f54ef9230f3f94587e228098d1c2ecb9` | v2.0.16 tag target; already public — `git ls-remote` shows `refs/tags/v2.0.16^{} -> 969c4f65…`. |
-| `06ecf1c875bc`, `4694114`, `104591923631` | Policy-epoch check-name fragment / App ID / check-run id, pre-existing constants on main (`tests/test_project_state.py` context lines, unchanged). |
+| `06ecf1c875bc`, `<redacted-app-id>`, `104591923631` | Policy-epoch check-name fragment / App ID / check-run id, pre-existing constants on main (`tests/test_project_state.py` context lines, unchanged). |
 | `31155d4d2a6a` | Local route id; `router.py:438` derives it as `sha256(f'{session_id}|{prompt}|{base_fingerprint}').hexdigest()[:12]`. Workflow metadata, not a credential. |
 | `e267fd61a28e1cc91b62795ddcaa8a3583086d0a619d1b819d2d9838a4310ed1` | `route.json:base_fingerprint`, produced by `tree_fingerprint(root)` in `.grok-stack/adaptive_grok/router.py:428-432` and asserted by `tests/test_structure.py:76-77`. It is **not** a Git object (`git cat-file -t …` → "fatal: Not a valid object name"); it is the local workflow tree fingerprint for this route. No secret. |
 | `698333`, `3597736` | systemd `MainPID` readings, re-confirmed live in §4 and unchanged from the previous dossier. |

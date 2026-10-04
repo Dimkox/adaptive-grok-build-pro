@@ -3,7 +3,7 @@
 ## Identity and verdict
 
 - Route: `81850148d1f6`
-- Repository: `/home/pall/grok-projects/adaptive-grok-build-pro-m2`
+- Repository: `<local-path>`
 - Reviewed HEAD: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 - Reviewed worktree fingerprint before this report: `804a90cecef93cc96ddaddf6cedf64a7b0d8edc866d5cee52953b0837d757696`
 - Prior review preserved at `evidence/code-review.md`.

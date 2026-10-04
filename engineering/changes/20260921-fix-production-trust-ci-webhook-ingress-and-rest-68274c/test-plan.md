@@ -1,6 +1,6 @@
 # Ingress verification plan
 
-Before activation, validate exact artifact syntax and hashes, sudo availability, peer10.200.200.2, veth10.200.200.1/30, loopback readiness200, missing bridge listener, existing Funnel path-only mapping and no conflicting unit/table names. Current RED is public502 and missing bridge while backend200/405. Dry nft syntax check and systemd-analyze verify must not change host state.
+Before activation, validate exact artifact syntax and hashes, sudo availability, peer<redacted-network>, veth<redacted-network>/30, loopback readiness200, missing bridge listener, existing Funnel path-only mapping and no conflicting unit/table names. Current RED is public502 and missing bridge while backend200/405. Dry nft syntax check and systemd-analyze verify must not change host state.
 
 Activate the guard before the listener. Verify interface/source rules and counters, exact bind and hardened proxy state. Probe from the VPN namespace, since host-local routing to the veth address uses lo: bridge readiness200, bridge/public webhook GET405. Public /health/ready and /v1/jobs must remain404. A denied host/interface probe plus an explicit wrong-source negative control must establish effective enforcement; prefer bounded packet probes without adding addresses/namespaces. Preserve HMAC/body framing by using byte-forwarding existing proxyd, not an HTTP rewrite.
 

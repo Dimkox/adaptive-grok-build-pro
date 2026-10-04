@@ -5,7 +5,7 @@ Route: `2dfd5804553e`. Role: `docs_researcher`. Scope: repository contracts, lif
 ## Sources and observation boundary
 
 - Read `START_HERE.md`, `PROJECT_STATE.json`, `AGENTS.md`, the active route, the active change package, and the route's adaptive-delivery, bugfix-workflow and api-event-change skills. `git fetch --all --prune` completed with exit 0.
-- Issue #165 and related #125/#117 bodies were read from the parent-supplied snapshot `/home/pall/.cache/agbp-run/issues-wave-20260921/issues.json`; #165's recorded update is `2026-09-20T03:21:36Z`. These describe historical observations, not a fresh reproduction.
+- Issue #165 and related #125/#117 bodies were read from the parent-supplied snapshot `<local-path>`; #165's recorded update is `2026-09-20T03:21:36Z`. These describe historical observations, not a fresh reproduction.
 - Read the parent-supplied execution packet `engineering/changes/20260921-research-open-backlog-map-each-item-to-its-sourc-d54d3a/evidence/design-interruption-handoff-165.md` in the sibling research worktree. It explicitly narrows #165 to local, bounded diagnostics and disallows treating every draft or arbitrary TODO prose as a failure.
 - Inspected retained refs `pr/141` at `92648fa6bf0db9bb9a9ae2b23a6765e4470bd06c` and `pr/134` at `25d7a2b958a1435bf794112e253bc3a6ab64dd73`, including their briefs/contracts and relevant diffs. No current external check conclusion or merge eligibility was inferred from these refs.
 

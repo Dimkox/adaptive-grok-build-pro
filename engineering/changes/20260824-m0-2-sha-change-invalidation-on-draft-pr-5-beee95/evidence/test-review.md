@@ -16,7 +16,7 @@ Re-ran `python3 -m unittest trust-ci.tests.test_m0_invariants` → **8 tests OK*
 | Disposable head still `1fc9420` | report + plan partial M0.2 line | not asserted as equality; cell is numeric, not `UNKNOWN` |
 | `adaptive-trust-ci/verified@` + base `48cb9737…` | spec | `test_m0_spec_and_plan_exist` |
 | `local HMAC` and `not done` / no public HTTPS | plan | `test_activation_report_operator_safe` |
-| `claw`, no `laptop` in spec | spec+plan | `test_m0_docs_name_claw_not_laptop` |
+| `<ci-host>`, no `laptop` in spec | spec+plan | `test_m0_docs_name_claw_not_laptop` |
 | No PEM markers | spec, plan, report | same |
 
 Committed docs still match those assertions. Live SHA `ce03c87` is **not** written into the activation report (correct).

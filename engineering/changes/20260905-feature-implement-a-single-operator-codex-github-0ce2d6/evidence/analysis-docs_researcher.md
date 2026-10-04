@@ -19,7 +19,7 @@ authoritative local smoke for the installed CLI returned exit `1` before
 
 ```text
 $ codex sandbox -P :workspace \
-    -C /home/pall/grok-projects/adaptive-grok-build-pro-pilot -- /bin/true
+    -C <local-path> -- /bin/true
 bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted
 sandbox_exit=1
 ```
@@ -99,7 +99,7 @@ Installed Codex identity:
 
 ```text
 codex-cli 0.153.4
-/home/pall/.codex/packages/standalone/releases/0.153.4-x86_64-unknown-linux-musl/bin/codex
+<local-path>
 sha256 56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da
 ```
 
@@ -140,12 +140,12 @@ installed Codex CLI itself now crosses the previously failing setup boundary:
 
 ```text
 $ codex sandbox -P :workspace \
-    -C /home/pall/grok-projects/adaptive-grok-build-pro-pilot -- /bin/true
+    -C <local-path> -- /bin/true
 codex_sandbox_noop_exit=0
 ```
 
 One no-model containment probe then attempted `os.open(..., O_CREAT|O_EXCL)` on
-the exact outside sentinel `/home/pall/.codex-sandbox-smoke-0ce2d62a` and an
+the exact outside sentinel `<local-path>` and an
 IPv4 UDP socket directed at the documentation-only address `192.0.2.1:9`. No
 datagram payload was sent: the kernel denied `socket(AF_INET, SOCK_DGRAM)`
 itself. Captured output was:

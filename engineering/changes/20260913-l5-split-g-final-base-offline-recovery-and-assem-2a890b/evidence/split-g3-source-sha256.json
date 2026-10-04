@@ -34,7 +34,7 @@
       "selection": "exact_committed_G2_blob",
       "original_selection": "whole_frozen"
     },
-    "factory/runtime/install-claw.sh": {
+    "factory/runtime/install-<ci-host>.sh": {
       "sha256": "65074f3807800bed2b34e6c3accf3dddae65b1d9f319d8c3d2a336ce36e93e91",
       "git_blob": "d8bcd8325addccde05edbad49d6b0f688b10e621",
       "git_mode": "100644",

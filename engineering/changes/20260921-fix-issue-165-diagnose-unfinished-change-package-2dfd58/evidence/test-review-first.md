@@ -2,7 +2,7 @@
 
 Result: **FAIL — one reproduced blocking defect in checkpoint persistence.** This is an independent `test_reviewer` report for route `2dfd5804553e`, not a receipt or merge approval.
 
-Reviewed worktree: `/home/pall/grok-projects/adaptive-grok-build-issue-165`; branch `fix/issue-165-interruption-status`; exact HEAD `21046dff16a1b927d5a781ae0ec61708ebed89bc`. Actual implementation diff was read against `839d3aa26bc90417424d814ee48d8b5cd3be367e`, together with surrounding lifecycle, serializer, parser, receipt and hook code, the adopted design, all six acceptance criteria, and all 25 focused tests. Product files were unchanged between the initial full run at `738ea719d91cf439d3332ce621418dc994e7365b` and this reviewed HEAD; the intervening changes contain evidence packaging and shared-memory documentation.
+Reviewed worktree: `<local-path>`; branch `fix/issue-165-interruption-status`; exact HEAD `21046dff16a1b927d5a781ae0ec61708ebed89bc`. Actual implementation diff was read against `839d3aa26bc90417424d814ee48d8b5cd3be367e`, together with surrounding lifecycle, serializer, parser, receipt and hook code, the adopted design, all six acceptance criteria, and all 25 focused tests. Product files were unchanged between the initial full run at `738ea719d91cf439d3332ce621418dc994e7365b` and this reviewed HEAD; the intervening changes contain evidence packaging and shared-memory documentation.
 
 ## Blocking finding T165-1: filesystem bytes cannot survive the new checkpoint lifecycle
 

@@ -1,0 +1,71 @@
+{
+  "change_id": "20260815-task-ad4090",
+  "created_at": "2026-08-15T02:20:47+00:00",
+  "history": [
+    {
+      "at": "2026-08-15T02:20:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-15T02:23:45+00:00",
+      "from": "draft",
+      "reason": "v2.0.5 publish scope written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-15T02:23:45+00:00",
+      "from": "scoped",
+      "reason": "user said да to git push package release",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-15T02:23:45+00:00",
+      "from": "approved",
+      "reason": "publishing already-implemented 2.0.5 tree",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T02:24:05+00:00",
+      "from": "implementing",
+      "reason": "pre-publish verify",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T02:40:00+00:00",
+      "from": "verifying",
+      "reason": "continue: notes rewrite + package + commit remaining 2.0.5 tree",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "implementing",
+      "reason": "prep committed; reviews written",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "verifying",
+      "reason": "code_review and test_review reports PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "reviewing",
+      "reason": "last state write before official verify and receipts",
+      "to": "ready"
+    },
+    {
+      "at": "2026-08-16T16:20:01+00:00",
+      "from": "ready",
+      "reason": "v2.0.5 tag pushed and GitHub Release published",
+      "to": "released"
+    }
+  ],
+  "route_id": "ad4090c51ca6",
+  "schema_version": 1,
+  "status": "released",
+  "title": "[sanitized-sanitized-query]\nгит пуш пакет релиз\n[/sanitized-sanitized-query]",
+  "updated_at": "2026-08-16T16:20:01+00:00"
+}

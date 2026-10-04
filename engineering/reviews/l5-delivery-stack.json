@@ -5,7 +5,7 @@
   "units": [
     {
       "id": "A",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-a-boundaries",
       "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
       "route_id": "d20205a1a318",
@@ -21,13 +21,13 @@
       "external_gate": {
         "id": 103739437925,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T14:36:58Z",
         "completed_at": "2026-09-13T14:55:25Z",
-        "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
+        "details_url": "http://<loopback-trust-ci>/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
       },
       "tree_fingerprint": "5fd67748cbd9bc382997b4b132d67a88f8f0874a5d6fda73ef63e4ddf48d0e77",
       "pr_base_head": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
@@ -55,13 +55,13 @@
         {
           "id": 103739437925,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T14:36:58Z",
           "completed_at": "2026-09-13T14:55:25Z",
-          "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
+          "details_url": "http://<loopback-trust-ci>/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
         }
       ],
       "landing": {
@@ -72,7 +72,7 @@
     },
     {
       "id": "B",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-b",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-b-source-epoch",
       "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
       "route_id": "0fd5ffd2100f",
@@ -88,13 +88,13 @@
       "external_gate": {
         "id": 103741784270,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T14:55:26Z",
         "completed_at": "2026-09-13T15:13:55Z",
-        "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
+        "details_url": "http://<loopback-trust-ci>/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
       },
       "tree_fingerprint": "455a0faf93a69d81645eb5d47e1bb64d8f8cb74dfc20415d2fc2db888de4288b",
       "pr_base_head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
@@ -122,13 +122,13 @@
         {
           "id": 103741784270,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T14:55:26Z",
           "completed_at": "2026-09-13T15:13:55Z",
-          "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
+          "details_url": "http://<loopback-trust-ci>/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
         }
       ],
       "landing": {
@@ -140,7 +140,7 @@
     },
     {
       "id": "C",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-c-evidence-v2",
       "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
       "route_id": "00652f60f78c",
@@ -156,13 +156,13 @@
       "external_gate": {
         "id": 103744221871,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T15:13:56Z",
         "completed_at": "2026-09-13T15:32:41Z",
-        "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
+        "details_url": "http://<loopback-trust-ci>/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
       },
       "tree_fingerprint": "b08cf1e0ea54ad38e3a8d25895603670b460a01e3b65428365ff51751d8bffd3",
       "pr_base_head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
@@ -190,13 +190,13 @@
         {
           "id": 103744221871,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T15:13:56Z",
           "completed_at": "2026-09-13T15:32:41Z",
-          "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
+          "details_url": "http://<loopback-trust-ci>/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
         }
       ],
       "landing": {
@@ -208,7 +208,7 @@
     },
     {
       "id": "D",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-d-http-runtime",
       "head": "bb93885034e52b80653efd96602fec182f7db10a",
       "route_id": "bec1fcdde794",
@@ -227,13 +227,13 @@
       "external_gate": {
         "id": 103746737270,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "bb93885034e52b80653efd96602fec182f7db10a",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T15:32:42Z",
         "completed_at": "2026-09-13T15:51:11Z",
-        "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
+        "details_url": "http://<loopback-trust-ci>/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
       },
       "tree_fingerprint": "1a7e327a57a74acdb38f883a7496e52eb97732c42c42026a22f2a102e7018999",
       "pr_base_head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
@@ -261,13 +261,13 @@
         {
           "id": 103746737270,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "bb93885034e52b80653efd96602fec182f7db10a",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T15:32:42Z",
           "completed_at": "2026-09-13T15:51:11Z",
-          "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
+          "details_url": "http://<loopback-trust-ci>/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
         }
       ],
       "landing": {
@@ -279,7 +279,7 @@
     },
     {
       "id": "E",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-e",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-e-unix-host",
       "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
       "route_id": "ae4f5afb69ca",
@@ -295,13 +295,13 @@
       "external_gate": {
         "id": 103749191245,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T15:51:13Z",
         "completed_at": "2026-09-13T16:09:30Z",
-        "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
+        "details_url": "http://<loopback-trust-ci>/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
       },
       "pr_base_head": "bb93885034e52b80653efd96602fec182f7db10a",
       "tree_fingerprint": "51779c0ff12044c794cd706c892e6881c194c9fb13af84c6f147f5e921dbe885",
@@ -329,13 +329,13 @@
         {
           "id": 103749191245,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T15:51:13Z",
           "completed_at": "2026-09-13T16:09:30Z",
-          "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
+          "details_url": "http://<loopback-trust-ci>/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
         }
       ],
       "landing": {
@@ -347,7 +347,7 @@
     },
     {
       "id": "F",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-f-publication-current-base",
       "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
       "base": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
@@ -366,13 +366,13 @@
       "external_gate": {
         "id": 103751615594,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T16:09:30Z",
         "completed_at": "2026-09-13T16:27:56Z",
-        "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
+        "details_url": "http://<loopback-trust-ci>/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
       },
       "pr_base_head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
       "tree_fingerprint": "aa60705bc8c9bbae34517a480ed842254c8b67db86b8b0a6cd3a119b6740cff5",
@@ -400,13 +400,13 @@
         {
           "id": 103751615594,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T16:09:30Z",
           "completed_at": "2026-09-13T16:27:56Z",
-          "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
+          "details_url": "http://<loopback-trust-ci>/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
         }
       ],
       "landing": {
@@ -418,7 +418,7 @@
     },
     {
       "id": "G",
-      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3",
+      "source_checkout": "<local-path>",
       "branch": "feat/l5-split-g-final-runtime",
       "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
       "base": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
@@ -436,13 +436,13 @@
       "external_gate": {
         "id": 103754091998,
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-        "app_id": 4694114,
+        "app_id": <redacted-app-id>,
         "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
         "status": "completed",
         "conclusion": "success",
         "started_at": "2026-09-13T16:27:57Z",
         "completed_at": "2026-09-13T16:46:55Z",
-        "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
+        "details_url": "http://<loopback-trust-ci>/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
       },
       "assembly_audit": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-final-tree-audit.json",
       "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
@@ -471,13 +471,13 @@
         {
           "id": 103754091998,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
+          "app_id": <redacted-app-id>,
           "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
           "status": "completed",
           "conclusion": "success",
           "started_at": "2026-09-13T16:27:57Z",
           "completed_at": "2026-09-13T16:46:55Z",
-          "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
+          "details_url": "http://<loopback-trust-ci>/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
         }
       ],
       "landing": {
@@ -500,21 +500,21 @@
   "archival_attempts": [
     {
       "unit": "F",
-      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f",
+      "checkout": "<local-path>",
       "head": "517741da6e883c5feacbd2f029d745ffc5e2fec0",
       "route_id": "5bc0f4cdffc5",
       "reason": "Old-E range includes inherited D server repair, causing unsupported background-job provenance; exact F product projection re-extracted on genuine corrected E."
     },
     {
       "unit": "G",
-      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g",
+      "checkout": "<local-path>",
       "head": "517741da6e883c5feacbd2f029d745ffc5e2fec0",
       "route_id": "0e93bc421bdb",
       "reason": "Draft route only; no G product implementation began before predecessor F re-extraction."
     },
     {
       "unit": "G",
-      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2",
+      "checkout": "<local-path>",
       "head": "7e7b7453d12b59d690f51a4519a1ee5aceb63985",
       "route_id": "3529132ae173",
       "reason": "G2 full interrupted exit130 to preserve corrected F conflict-policy predecessor; exact ten G product blobs re-extracted on genuine corrected F."

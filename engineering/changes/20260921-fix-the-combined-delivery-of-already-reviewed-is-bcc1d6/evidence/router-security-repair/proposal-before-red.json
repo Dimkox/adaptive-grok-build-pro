@@ -3,7 +3,7 @@
   "baseline_router_blob": "80f30711cfb2c3788c3850184c00d2148e8da4dd",
   "baseline_test_blob": "159bd2cb1bc927fa5036abb8f22eaea23a5c03d0",
   "baseline_test_sha256": "d745b72665a1973e4ab916972eb4c40c827c68cb98dc2db20503e78358f7db8d",
-  "test_patch": "/home/pall/.cache/agbp-run/issues-wave-20260921/reviewed-batch/review-repair/router-security-tests.patch",
+  "test_patch": "<local-path>",
   "test_patch_sha256": "adef4213bdd01d9ecd21843a8d8ef61f8de3828cbc08784527f0fc80217130e1",
   "test_methods": 3,
   "positive_route_cases": 42,

@@ -220,7 +220,7 @@ No test reintroduces `.github/workflows/` or a required scanner.
 - **Pairwise still whole-README.** Count is mermaid-only (the K10 fix kept). Same residual as prior test review.
 - **`test_optional_missing_does_not_fail_doctor` names php only.** `failures == []` still covers new optional tools.
 - **`grok_verify --mode pr` does not discover `trust-ci/tests`.** Pre-existing. Operators keep the handoff unittest on `trust-ci/tests` for control-plane code. Not this docs slice.
-- Leftover untracked `engineering/changes/20260817-user-query-вычисти-*` is in the verify `changed_files` list. Not a test gap; do not commit it as this work.
+- Leftover untracked `engineering/changes/20260817-sanitized-query-вычисти-*` is in the verify `changed_files` list. Not a test gap; do not commit it as this work.
 
 None of these would let the named resume regressions return unnoticed: K10/45 mermaid, required scanners, VERSION bump, doctor fail on missing cosign, or a root `docker-compose.yml` tripping `trivy-config`.
 

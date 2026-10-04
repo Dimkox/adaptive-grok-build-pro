@@ -10,7 +10,7 @@ Adaptive-delivery loaded from `.grok/skills/adaptive-delivery/SKILL.md`. This ag
 ## Sources
 
 - This change package (`brief.md`, `architecture.md`, `requirements.md`, `release.md`, `rollback.md`, `tasks.md`, `test-plan.md`, `state.json`, `route.json`, `evidence/human-approval.md`)
-- `.grok-stack/runtime/active-route.json` (`task`: `<user_query>делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ</user_query>`)
+- `.grok-stack/runtime/active-route.json` (`task`: `<user_query>делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ</user_query>`)
 - `.grok/skills/adaptive-delivery/SKILL.md` §7; `.grok/skills/release-readiness/SKILL.md`
 - `AGENTS.md` source-of-truth order and prohibited routine actions
 - `engineering/decisions.md` 2026-08-16 Never GitHub Actions; 2026-08-14 production-invocation prefixes; 2026-08-15 `делай` reuse
@@ -279,13 +279,13 @@ This route `write_agent` is **null** (`route.json:67`; `architecture.md:3`): con
 
 ## 5. Does «делай новый релиз и ПУБЛИКУЙ» authorize 2.0.7 + `gh release`?
 
-Route `task` and `evidence/human-approval.md` quote the same user text: «делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ».
+Route `task` and `evidence/human-approval.md` quote the same user text: «делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ».
 
 `human-approval.md:3-7`:
 
 > **scope_and_design_approval** and **production_action_approval** granted 2026-08-16.
 >
-> User: «делай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ»
+> User: «делай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ»
 >
 > Authorized: VERSION 2.0.7, package, tag, push origin main, push tag, GitHub Release. Do not retag 2.0.6. No GitHub Actions. Do not print secrets.
 

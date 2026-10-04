@@ -45,7 +45,7 @@ Working tree at HEAD `5915b56` already contains:
 | `QUICKSTART.md` operator sections + correct compose | |
 | `engineering/runbooks/trust-ci-rollout.md` two-file merge + inspect `$TRUST_CI_*_IMAGE` | |
 
-Do **not** re-edit the landed files unless a focused test fails. Do **not** commit `engineering/changes/20260817-user-query-вычисти-*`.
+Do **not** re-edit the landed files unless a focused test fails. Do **not** commit `engineering/changes/20260817-sanitized-query-вычисти-*`.
 
 Protected-path writes still required for:
 

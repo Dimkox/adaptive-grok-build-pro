@@ -20,7 +20,7 @@ Reviewer role: independently dispatched `code_reviewer`, route `af166ec812f3`. R
 - `git diff --stat 1f7aedb8 HEAD`, full test-module diff, and `git status --short` — confirmed scope and reviewed HEAD.
 - `git diff --check 1f7aedb8 HEAD` — exit 0.
 - Read-only Python AST/hash/scope probe — exit 0: source parses; source SHA-256 is `4ae68ffb74f4f9ec1398f3c5d96513bb6b35be1337dad6614a2af70160409236`; all three focused evidence-file hashes match `focused-postgres.json`; Git confirms only the test module differs under `factory/src` and `factory/tests`.
-- Inspected coordinator verifier JSON at `/home/pall/.cache/agbp-run/issues-wave-20260921/issue166/verify-initial.json`: status pass, timestamp `2026-09-21T06:51:14+00:00`, fingerprint `32a5f001feb1e320c0308ccad89a16d06b9d9c7ddeeef328c23b47e6e825e6cc`, source-stability pass. PostgreSQL exit gate records 782 tests, 2 skips, and successful restart/reconciliation checks.
+- Inspected coordinator verifier JSON at `<local-path>`: status pass, timestamp `2026-09-21T06:51:14+00:00`, fingerprint `32a5f001feb1e320c0308ccad89a16d06b9d9c7ddeeef328c23b47e6e825e6cc`, source-stability pass. PostgreSQL exit gate records 782 tests, 2 skips, and successful restart/reconciliation checks.
 - Inspected and hash-validated `focused-postgres-run2.log`: all three new current-prefix tests passed, zero skipped, 10.807 seconds, with bound-container cleanup recorded. These are implementation/coordinator executions; this reviewer did not rerun Docker or the full gate.
 
 ## Limits and handoff

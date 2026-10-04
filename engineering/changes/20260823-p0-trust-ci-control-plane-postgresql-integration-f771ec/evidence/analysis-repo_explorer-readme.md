@@ -7,7 +7,7 @@ Inspected: 2026-08-23. Read-only. No `.env`, keys, push, merge, or deploy.
 
 This report answers: what must change so the root README and QUICKSTART match the current tree (every application and database with install instructions, a rebuilt complete stack graph, updated dependency pins) without breaking tests.
 
-Do **not** commit `engineering/changes/20260817-user-query-вычисти-*`. That package is leftover 2.0.10 cleanup paperwork and is not this work.
+Do **not** commit `engineering/changes/20260817-sanitized-query-вычисти-*`. That package is leftover 2.0.10 cleanup paperwork and is not this work.
 
 ---
 
@@ -147,7 +147,7 @@ Long-running / oneshot services:
 | --- | --- | --- |
 | `postgres` | `TRUST_CI_POSTGRES_IMAGE` (must be `name@sha256:`) | Durable PostgreSQL. Volume `trust-ci-postgres`. Init: `trust-ci/postgres/init/001_roles.sh`. |
 | `migrate` | `TRUST_CI_API_IMAGE` | Oneshot `adaptive-trust-ci migrate`. Same API image. |
-| `api` | `TRUST_CI_API_IMAGE` | FastAPI, `127.0.0.1:8080`. No Docker, no Git, no App key. |
+| `api` | `TRUST_CI_API_IMAGE` | FastAPI, `<loopback-service>`. No Docker, no Git, no App key. |
 | `docker-engine` | `TRUST_CI_DIND_IMAGE` | Privileged rootless DinD, TCP 2375 on `executor` network. |
 | `runner-loader` | `TRUST_CI_WORKER_IMAGE` | Oneshot: pull/verify runner digest into DinD. |
 | `worker` | `TRUST_CI_WORKER_IMAGE` | Claims jobs, checkout, holdout, sandbox, attestation, Checks API. |
@@ -350,7 +350,7 @@ Do **not** copy README/runbook inspect of `adaptive-trust-ci-api:2.1.0` — `com
 ```bash
 docker compose -f compose.yaml up -d postgres migrate api worker
 # systemd unit also starts docker-engine + runner-loader
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://<loopback-service>/health/ready
 ```
 
 `/health/ready` stays 503 until Postgres is up **and** the trust store has an active human public key.
@@ -517,9 +517,9 @@ So: a docs-only README/QUICKSTART PR may **not** need a human Ed25519 governance
 
 ---
 
-## 6. Do not commit `engineering/changes/20260817-user-query-вычисти-*`
+## 6. Do not commit `engineering/changes/20260817-sanitized-query-вычисти-*`
 
-That package (`20260817-user-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2`) is a 2.0.10 working-tree cleanup ruling: restore dirty `state.json`, delete untracked leftover evidence, **do not create a new commit**. It is unrelated to Trust CI docs/graph work. Committing it would mix abandoned cleanup paperwork into the control-plane PR. Leave it untracked or ignore it.
+That package (`20260817-sanitized-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2`) is a 2.0.10 working-tree cleanup ruling: restore dirty `state.json`, delete untracked leftover evidence, **do not create a new commit**. It is unrelated to Trust CI docs/graph work. Committing it would mix abandoned cleanup paperwork into the control-plane PR. Leave it untracked or ignore it.
 
 Also: do not push `main`. Ship docs through `feat/trust-ci-control-plane` and the existing draft PR.
 
@@ -635,7 +635,7 @@ Do not add a root Dockerfile/compose just for docs (`test_this_repo_shaped_tree_
 | `CHANGELOG.md` / `VERSION` / `__init__.py` | **only** if identity bump (not required for this docs pass) |
 | `trust-ci/README.md` + `engineering/runbooks/trust-ci-rollout.md` | recommended so QUICKSTART does not fork stale compose commands; both are protected (`trust-ci/**`, runbook is not `publish-v*` so the runbook may **not** be in control_plane — check: `engineering/runbooks/trust-ci-rollout.md` is **not** in protected_paths). Runbook is writable without grant; `trust-ci/README.md` needs grant. |
 
-Do **not** touch: `.env`, `trust-ci/env/*.env`, `trust-ci/runtime/**`, keys, `engineering/changes/20260817-user-query-вычисти-*`, `.github/`.
+Do **not** touch: `.env`, `trust-ci/env/*.env`, `trust-ci/runtime/**`, keys, `engineering/changes/20260817-sanitized-query-вычисти-*`, `.github/`.
 
 ### Residual risks
 

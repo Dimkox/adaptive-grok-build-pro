@@ -58,7 +58,7 @@
   "schema_version": 1,
   "session_id": "01a00b4c-c5a4-7a92-86c9-c2e96e4a6783",
   "status": "routed",
-  "task": "<user_query>\nделай новый релиз и ПУБЛИКУЙ НАХУЙ ЗАЕБАЛ\n</user_query>",
+  "task": "<user_query>\nделай новый релиз и ПУБЛИКУЙ [sanitized] ЗАЕБАЛ\n</user_query>",
   "task_domains": [],
   "workflow_skills": [
     "adaptive-delivery",

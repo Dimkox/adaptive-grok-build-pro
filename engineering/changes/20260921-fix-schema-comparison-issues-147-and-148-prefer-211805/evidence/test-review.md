@@ -51,7 +51,7 @@ fb67f0cccd61136cf7f7bcd3ed79c05fbadc8114fe9769a2726957970c0dcca7  .grok-stack/ad
 244f8054eba623504544750438ef5fbf5286e31735f892c2bbfa8d17718e3cb6  tests/test_architecture_fitness.py
 ```
 
-Evidence paths in the first two rows are relative to this evidence directory. Log paths are relative to `/home/pall/.cache/agbp-run/issues-wave-20260921/schema/`:
+Evidence paths in the first two rows are relative to this evidence directory. Log paths are relative to `<local-path>`:
 
 ```text
 58a0a9fd3355ef7f0f40e7e1c4b12fc52334365bce925f1ba3e3c4e1f097b67e  review-repair.md

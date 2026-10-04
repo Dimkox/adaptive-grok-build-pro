@@ -21,7 +21,7 @@ records their resolution and the current delta's identity and verification.
 
 ## Initially inspected identity
 
-- Worktree: `/home/pall/grok-projects/adaptive-grok-build-repair`.
+- Worktree: `<local-path>`.
 - Base: `90078959ff816068af374ad42f4bb80fdbaec866`.
 - Inspected HEAD: `4a47c76b3fb37fbac430fd209771a695832610d2`.
 - Product-content manifest: `e33e5e4846200ca06c3f01b3be48f4e90e9e99e2ad3ac080d7dddd3e8922a9a4`.
@@ -252,7 +252,7 @@ the unwanted `ContractError('invalid_object: repair_child_task_binding')` cause;
 log passes that same regression, and the migration-module log records 24 passing tests.
 
 Inspected corrected full verification at
-`/home/pall/.cache/agbp-run/p155-final-20260921/verify-initial.json`, SHA-256
+`<local-path>`, SHA-256
 `33843fead2d7eba556bd9c06ecf1767fe4ef20a4103b6e5f904ff8b9b9198df2`, created
 `2026-09-21T05:22:11+00:00`. It reports PASS at HEAD `d659558...`, full-tree fingerprint
 `b77fcdb933fc0b74524929a3c25e49de3f3df09c121d2a3a7029ea957785fa4c`, and passing source

@@ -1,5 +1,7 @@
 # Quickstart — Adaptive Grok Build Pro
 
+Use this page for the simple path. It gives you a local candidate and evidence. It does not merge, deploy, publish, or grant production authority.
+
 0. Check tools (minimum or newer; doctor offers a fallback install if something is missing):
    ```bash
    python3 scripts/grok_doctor.py --offer-install
@@ -78,6 +80,25 @@ python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-cha
    grok
    ```
    Prompt example: `Добавь обработчик события OnAfterUserAdd в local-модуль`
+
+   If hooks did not create a route, create one explicitly:
+
+   ```bash
+   python3 scripts/grok_route.py "Добавить обработчик события OnAfterUserAdd в local-модуль" --session first-task --json
+   python3 scripts/grok_change.py start --title "Первая задача"
+   python3 scripts/grok_status.py
+   ```
+
+5. Verify before delivery:
+
+   ```bash
+   git status --short
+   git diff
+   python3 scripts/grok_verify.py --mode pr
+   python3 scripts/grok_status.py
+   ```
+
+   Treat local evidence as preflight only. Delivery still uses a branch and pull request. Trust CI and signed approvals are advanced merge controls, not the first-run path.
 
 5. Optional explicit skill: `/adaptive-delivery`
 
@@ -210,7 +231,7 @@ Copy only the public key and printed `key_id` into server-side `runtime/trust-st
 
 ```bash
 docker compose -f compose.yaml up -d postgres migrate api worker
-curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://<loopback-trust-ci>/health/ready
 ```
 
 `/health/ready` stays **503** until PostgreSQL is up **and** the trust store has an active human public key. The systemd unit `trust-ci/systemd/adaptive-trust-ci-compose.service` also starts `docker-engine` + `runner-loader` after `verify-supply-chain.sh`. Manual `up` of `postgres migrate api worker` is enough to exercise API readiness; jobs that need a runner require the systemd set (or `docker-engine` and `runner-loader` as well).

@@ -15,7 +15,7 @@ passed verification, review, external CI, or deployment.
 - Integration manifest: `../candidates.json` and
   `issue163-prefix-integration-proposal.md` in this evidence directory.
 - Issue163: `d80c5c8d8e5afe938d195401715daf5e69192a81`, inspected in
-  `/home/pall/grok-projects/adaptive-grok-build-issue-163`; its worktree was clean.
+  `<local-path>`; its worktree was clean.
 - Prepared PR173 head: `23984e55560c6d559a46445061f10331ca05bcf9`.
 - Shared source base: `839d3aa26bc90417424d814ee48d8b5cd3be367e`.
 - Original issue166 prerequisite: `23eb62dc21a090e6bf086cbc2a568d83417b0a2e`.

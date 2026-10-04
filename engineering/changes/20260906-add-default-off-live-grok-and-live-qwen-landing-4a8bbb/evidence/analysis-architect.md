@@ -2,7 +2,7 @@
 
 Route: `4a8bbb4fa8a6`
 Change: `20260906-add-default-off-live-grok-and-live-qwen-landing-4a8bbb`
-Product tree: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live`
+Product tree: `<local-path>`
 Authority SHA: `origin/main` `fd51dcfed6b33f4a8707c0db602328146df17cc9`
 Role: read-only design. This report is the only write from this agent.
 

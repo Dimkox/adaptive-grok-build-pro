@@ -170,7 +170,7 @@ Parent asks. Write owner **does not run**.
 | `docker push` / `buildx --push` / compose `--push` | Production mutation; ungated `buildx --push` is worse |
 | `supply-chain-release.sh --confirm-push` | Cosign absent; always `--push`; needs `COSIGN_PRIVATE_KEY` |
 | Fill `REPLACE_WITH_*` in tracked examples | Fake or premature pin in git |
-| Compose `up`, systemd, `/health/ready` | Deploy; `127.0.0.1:8080` still searxng |
+| Compose `up`, systemd, `/health/ready` | Deploy; `<loopback-service>` still searxng |
 | GitHub App create/install; read leftover PEM | §4; do not invent IDs |
 | `branch-protect` | Only after an App-owned check on an exact SHA |
 | Commit / `git push` / merge / tag / GitHub Release | Not this slice; dirty docs tree is a later named action |

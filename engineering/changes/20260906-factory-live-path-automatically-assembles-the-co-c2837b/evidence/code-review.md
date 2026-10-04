@@ -1,7 +1,7 @@
 # Code review — factory live auto-landing
 
 **Reviewer:** code_reviewer (read-only)
-**Repository:** `/home/pall/grok-projects/adaptive-grok-build-pro-l5-live`
+**Repository:** `<local-path>`
 **Branch:** `feat/factory-live-auto-landing`
 **Base:** `origin/main` `fd51dcfed6b33f4a8707c0db602328146df17cc9`
 **Change:** `engineering/changes/20260906-factory-live-path-automatically-assembles-the-co-c2837b`

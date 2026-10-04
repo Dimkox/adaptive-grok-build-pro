@@ -2,7 +2,86 @@
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
-## Repository startup baseline
+## What it does in five minutes
+
+Adaptive Grok Build Pro installs a local Grok/Codex-style agent workflow into another repository. The short path is:
+
+1. inspect a target repository without changing it;
+2. apply the accepted plan as a reviewed branch change in the target repository;
+3. let the agent turn one task into a route, a change package and a branch;
+4. run local verification and review evidence;
+5. ship through a pull request instead of trusting chat output.
+
+The heavy Trust CI, signed approvals and external holdout checks are the safety layer for merge authority. They are not needed to read the repo, create an install plan, run the local demo, or try the simple agent loop.
+
+## First run: simple path
+
+```bash
+git clone https://github.com/Dimkox/adaptive-grok-build-pro.git
+cd adaptive-grok-build-pro
+python3 scripts/grok_doctor.py --offer-install
+python3 scripts/install_into.py --plan /absolute/path/to/your/repo
+```
+
+For an existing repository the installer only reads and reports a plan. Apply that plan manually as a reviewed change in a normal branch of the target repository. For a brand-new Linux target, use an absent path:
+
+```bash
+python3 scripts/install_into.py --materialize-new /absolute/path/to/new/repo
+```
+
+Then open the target in Grok, trust the project hooks, and give one concrete task. The local loop is:
+
+```bash
+cd /absolute/path/to/your/repo
+python3 scripts/grok_route.py "Добавить поведение с явными критериями приёмки" --session first-task --json
+python3 scripts/grok_change.py start --title "Первая задача"
+python3 scripts/grok_status.py
+python3 scripts/grok_verify.py --mode pr
+```
+
+This gives you a candidate and evidence. It does not merge, deploy, publish, or mutate production systems.
+
+## What this repository contains
+
+- `scripts/install_into.py`: read-only install planning for existing repos and no-replace materialization for absent repos.
+- `.agents/skills/`: domain skills for agent work, including Bitrix, API/events, frontend, data, security and release tasks.
+- `.grok-stack/`: local routing, verification, architecture, governance and receipt code.
+- `factory/`, `delivery/`, `pilot/`: default-off factory, staged delivery and pilot boundaries.
+- `trust-ci/`: optional separately deployed merge authority. It is advanced operator infrastructure, not part of the first run.
+- `engineering/changes/`, `decisions.md`, `mistakes.md`: durable evidence and lessons for later agents.
+
+## What this is not
+
+- It is not a hosted SaaS.
+- It is not a GitHub Actions workflow.
+- It is not an automatic merge bot.
+- It does not make the agent a production operator by default.
+- It does not turn local receipts into merge authority.
+
+## Fail-closed boundaries and current limits
+
+Fail-closed here means that unclear, unknown or out-of-policy input is rejected instead of guessed through.
+
+Boundaries that currently cut execution:
+
+- The installer plans existing repositories read-only. New-target materialization refuses existing targets, symlinks, special files and platforms without the required no-replace filesystem primitives.
+- Closed schemas reject unknown keys, malformed JSON and unsupported versions.
+- Workflow-source adapters parse bounded artifacts. They do not execute imported shell commands, call networks or ask an LLM to interpret foreign workflow text.
+- PR verification leaves the docs/state fast lane when a changed path is outside the explicit allowlist, when Git status is ambiguous, or when the comparison base cannot be trusted.
+- Merge authority is outside chat and local receipts. It requires a pull request, the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact head SHA, and the required human approvals.
+- Providers, pilot flows, Linux setup and factory publication are default-off unless a separate operator action enables them.
+
+Known weak seams this line is closing:
+
+- A prose claim is not evidence that a live check exercised the risky path.
+- An empty acceptance-criteria set is not coverage.
+- A receipt fingerprint without the bound file is not durable evidence.
+- A timeout or interrupted verifier is incomplete, not a pass.
+- A restarted attempt cannot reuse an old model/config/profile identity without requalification.
+
+The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The published release is `v2.1.1`; the external pilot remains unqualified, and publication does not confer production authority.
+
+## Advanced startup baseline
 
 **Step zero, before all other startup work:** [measure resources](AGENTS.md#mandatory-startup-algorithm-measure-then-dispatch)—physical/online logical CPUs, process affinity, effective cpuset and finite cgroup quotas; try a bounded child-only affinity expansion when appropriate, derive verified effective capacity and record the snapshot. Only then inspect backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel, spreading eligible heavy work across that capacity. Isolated writer ownership comes next, followed by verification/delivery gates. Remeasure every startup: the September 26 observation of **14 physical / 28 logical CPUs**, with default affinity exposing 22 and a verified `taskset -c 0-27` child exposing 28, is not a permanent guarantee.
 
@@ -12,28 +91,30 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.1.1 source candidate**. The core integrates verifier recovery, operational routing, bounded language disclosure, architecture preflight, hardened governance inputs, additive architecture compatibility and the local heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) retains F M7 durable evidence and G Trust CI authority as required, not accepted successors. Full verification and independent reviews are pending; no 2.1.1 artifact is built, published or deployed. The published `v2.0.19` record remains immutable.
+Identity: **2.1.1 published release**. [v2.1.1](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.1.1) was published on 2026-10-03 from PR #238, targeting `97a7581238022356b2de8d193a9bd8363fc92dc3`. ZIP SHA-256: `f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1`. Its core includes verifier recovery, architecture and governance hardening, and heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) still retains F durable evidence and G current-authority behavior as required successors; publication establishes no deployment, pilot qualification or activation. This cleanup is a successor PR and requires fresh verification and independent review. Prior release records remain immutable.
 
-The conditional first source also includes the frozen test-only025 [cursor reset seam](factory/tests/postgres_fixture_reset.py), its two unchanged-boundary callers and narrowly typed lock-refusal acceptance controls. Actual joined fitness must pass unchanged limits; source acceptance still requires full verification, reviews and external trust. F's026 inventory/runtime work remains absent.
+Refresh actual PR #241 cleanup state, superseding PR #239, through the [cleanup package](engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6/brief.md) and `PROJECT_STATE.json.current_continuation`; the confirmed repairs are already in this tree. The separate [PR #240 dependency](https://github.com/Dimkox/adaptive-grok-build-pro/pull/240) is merged at actual comparison base `6dbbc7dbe81812d919851c2300db6f4917033d43`. If PR #241 is merged, record delivery and treat unchanged source as a no-op without reopening or reverifying; if open, complete frozen independent review, persist complete reports, run one final full verification and require fresh receipts and external exact-head Trust CI. Historical core plans and prior checks are not instructions or current authority to rebuild or retag the published `v2.1.1`.
 
-The candidate also carries closed default-off BB contracts, an authenticated offline-only model-rotator registry, a bounded explicit-root VibeVM package store, and an opt-in offline Linux setup manager. U4/macOS remains excluded; no component activates providers, models, services, deployment, or production authority.
+Historical pre-publication core observation: the conditional source included the frozen test-only025 [cursor reset seam](factory/tests/postgres_fixture_reset.py), its two unchanged-boundary callers and narrowly typed lock-refusal acceptance controls. Pending joined-fitness/source-acceptance statements in that old record remain dated provenance, not current release instructions. F's026 inventory/runtime work remains absent.
+
+The source tree also carries closed default-off BB contracts, an authenticated offline-only model-rotator registry, a bounded explicit-root VibeVM package store, and an opt-in offline Linux setup manager. U4/macOS remains excluded; no component activates providers, models, services, deployment, or production authority.
 
 | Layer | Dated source and runtime observations |
 | --- | --- |
-| Repository source | Historical `main` observation: `3f41be92161fef451a2dfa7451eb458ce8f022b3`. Core source comparison base is `63799f8760d3a55028d83ab5ff0116ececf8f7d1`; accepted source identity, PR, check, merge and tag are unknown. Historical `2.1.0` custody retains exact source `e5856acfd4bc7a186f40a740b54ec86459462db5`, tree `0dfa04f3ec3ea9c7a04c723e9d127603fc72999b` and its unchanged ZIP/sidecar hashes in `PROJECT_STATE.json`. |
+| Historical core observation | Historical `main` was `3f41be92161fef451a2dfa7451eb458ce8f022b3`; the pre-publication core comparison base was `63799f8760d3a55028d83ab5ff0116ececf8f7d1`, with source/PR/check/merge/tag unknown in that dated candidate record. Current published identity is separately bound by `published_release` (PR #238). Historical `2.1.0` custody retains exact source `e5856acfd4bc7a186f40a740b54ec86459462db5`, tree `0dfa04f3ec3ea9c7a04c723e9d127603fc72999b` and its unchanged ZIP/sidecar hashes in `PROJECT_STATE.json`. |
 | 2.1.0 candidate capabilities | U5 prediction artifacts are observation-only and require declared history before they can report availability. U6's pinned FPF snapshot can only emit deterministic evaluation evidence; external qualification remains `not_qualified`/not established and all authority effects remain `none`. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
 | Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
 
-The post-release source line through PR #193 is recorded by the merged `v2.0.19` release-sync PR #189. Its durable [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) keep source verification, artifact provenance and publication separate. Tagging and GitHub Release publication remain downstream of the artifact-child exact check and merge.
+Historical `v2.0.19` delivery records the source line through PR #193 in release-sync PR #189. Its [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) preserve separate source verification, artifact provenance and publication; they do not instruct another artifact build, tag or release of published `v2.1.1`.
 
 Source templates default to live execution off. The observed Qwen and Grok services use separately provisioned configurations with live execution explicitly enabled.
 
 - Current source adds [`adaptive-landing-submit`](engineering/runbooks/l5-provider-failover.md): durable text/safe-DOCX submission through Qwen → Grok → OpenAI → Claude → OpenRouter, authenticated capability/attempt APIs, and atomic SQLite observations. Ambiguous submissions reconcile the same child; existing artifacts prevent further generation. Grok and primary Qwen now have accepted direct runtime results; the three added providers/full chain remain unqualified for inference. Monetary cost remains unknown; publication stays separate.
 - Trust CI repository-scoped immutable profiles are implemented in code and documented by the example catalog; the worker uses `TRUST_CI_HOLDOUT_PATH` and `TRUST_CI_HOLDOUT_HOST_PATH` as independently configured trusted roots, validated binary-first before dependency construction. The capability is pending a separately reviewed and approved server-side policy/holdout installation; no deployed policy or branch protection is changed by it.
 
-Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). Runtime operation is described in the [L5 runbook](engineering/runbooks/l5-production-runtime.md); milestone acceptance remains in the [roadmap](DARK_FACTORY_ROADMAP.md). Delivery is PR-only: the App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from GitHub App ID `4694114` must cover the exact PR head. Local receipts are preflight evidence. **No GitHub Actions:** this repository keeps deployed verification policy and holdout validation outside the PR-controlled tree, runs checks on the exact SHA, and binds the required result to its GitHub App identity.
+Start with [START_HERE.md](START_HERE.md) and [PROJECT_STATE.json](PROJECT_STATE.json). Runtime operation is described in the [L5 runbook](engineering/runbooks/l5-production-runtime.md); milestone acceptance remains in the [roadmap](DARK_FACTORY_ROADMAP.md). Delivery is PR-only: the App-owned `adaptive-trust-ci/verified@06ecf1c875bc` check from GitHub App ID `<redacted-app-id>` must cover the exact PR head. Local receipts are preflight evidence. **No GitHub Actions:** this repository keeps deployed verification policy and holdout validation outside the PR-controlled tree, runs checks on the exact SHA, and binds the required result to its GitHub App identity.
 
 ## Optional Python test workers
 
@@ -43,9 +124,9 @@ On Linux, `auto` uses the minimum of 28, process affinity or CPU-count fallback,
 
 Where this runner cannot provide its required parallel-process cleanup, a positive request selects the existing `unittest-degraded` engine before execution. Supported parallel execution retains its strict pins; measured serial execution retains pinned coverage. An actual failed parallel run is never retried serially. The implementation lives in `.grok-stack/adaptive_grok/python_test_runner.py` and its private `_cpu_capacity.py` helper; native Windows and older-interpreter qualification remain separate from fixture-based evidence.
 
-## Как пользоваться кандидатом 2.1.1
+## Как пользоваться опубликованной версией 2.1.1
 
-2.1.1 сейчас — исходный кандидат, а не опубликованный ZIP. Опубликованный релиз — v2.0.19. Наличие исходников F/G не означает их принятие, развёртывание Trust CI или готовую автономную фабрику. BB, rotator, VibeVM, FPF, prediction и Linux setup остаются выключенными по умолчанию; полный внешний пилот и эксплуатационная квалификация не подтверждены. U4/macOS в этот объём не входят.
+v2.1.1 опубликован 2026-10-03 из PR #238; ZIP и контрольная сумма доступны в GitHub Releases. Наличие исходников F/G не означает их принятие, развёртывание Trust CI или готовую автономную фабрику. BB, rotator, VibeVM, FPF, prediction и Linux setup остаются выключенными по умолчанию; полный внешний пилот и эксплуатационная квалификация не подтверждены. U4/macOS в этот объём не входят.
 
 1. Получите исходники и зафиксируйте, что именно проверяете:
 
@@ -53,11 +134,11 @@ Where this runner cannot provide its required parallel-process cleanup, a positi
    git clone https://github.com/Dimkox/adaptive-grok-build-pro.git
    cd adaptive-grok-build-pro
    git fetch --all --prune
-   git switch --track origin/feat/v211-combined-source
+   git switch --detach v2.1.1
    git rev-parse HEAD
    ```
 
-   Это ветка Core-кандидата, не подтверждённый полный релиз F/G. Для полного кандидата используйте только точную ветку/commit из актуального PROJECT_STATE.json и принятого PR; если такого указания нет, не подменяйте его тегом 2.1.1. Перед дальнейшей работой выполните измерение CPU/affinity/cgroup по AGENTS.md и сохраните результат локально; затем прочитайте START_HERE.md, PROJECT_STATE.json и AGENTS.md. Команды Git создают локальную копию/обновляют refs, но не меняют удалённый репозиторий.
+   Это неизменяемый опубликованный снимок `97a7581238022356b2de8d193a9bd8363fc92dc3`. Для новой задачи создайте отдельную ветку от принятого снимка; текущая очистка исходников проходит отдельный PR #241, заменяющий PR #239. Перед дальнейшей работой выполните измерение CPU/affinity/cgroup по AGENTS.md и сохраните результат локально; затем прочитайте START_HERE.md, PROJECT_STATE.json и AGENTS.md. Команды Git создают локальную копию/обновляют refs, но не меняют удалённый репозиторий.
 
 2. Проверьте инструменты:
 
@@ -65,7 +146,7 @@ Where this runner cannot provide its required parallel-process cleanup, a positi
    python3 scripts/grok_doctor.py --offer-install
    ```
 
-   Doctor выводит состояние и предложения установки; он не устанавливает зависимости за вас. Для локального стека нужны Python ≥3.10 и Git ≥2.34; для Python-пакета factory — Python ≥3.11. Grok Build CLI нужен для TUI: установите его отдельно и выполните `grok` для входа. Node/npm, PHP/Composer нужны соответствующим профилям, Docker — отдельному операторскому/проверочному окружению. Не используйте scripts/bootstrap.sh: его старый вызов `--force` несовместим с текущим установщиком.
+   Doctor выводит состояние и предложения установки; он не устанавливает зависимости за вас. Для локального стека нужны Python ≥3.10 и Git ≥2.34; для Python-пакета factory — Python ≥3.11. Grok Build CLI нужен для TUI: установите его отдельно и выполните `grok` для входа. Node/npm, PHP/Composer нужны соответствующим профилям, Docker — отдельному операторскому/проверочному окружению. Старый `scripts/bootstrap.sh` удалён; используйте явные команды doctor/install из этого README.
 
 3. Сначала получите план для явно выбранного своего репозитория:
 
@@ -243,26 +324,21 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) — non-indexable Russian showcase
 - [LICENSE](LICENSE)
 
-## What this is
+## Advanced control planes
 
-- Zero-context project handoff through `START_HERE.md` and `PROJECT_STATE.json`
-- Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
-- Quality profiles and change packages under `engineering/changes/`
-- Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
-- Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
-- Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
-- Advisory model-neutral Spec Kit, BMAD, and Superpowers artifact imports with stable task graphs and deterministic convergence (never route, governance, approval, receipt, or merge authority)
-- Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
-- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the L5 landing runtime with bounded artifact generation
-- Separate operator-owned `pilot/` boundary with built-in default-off phased CLI, one exact repository/base, one Codex start, one test command, literal GitHub effect resources, deterministic restart recovery, and no automatic write retry
-- Local verification / review receipts via `scripts/grok_*.py`
-- Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md) via `scripts/grok_history.py` separates observed PRs, source-identified work units, acceptance, intervention coverage and exact-profile metadata; imported history has no M8 qualification or authority effect.
-- [Cross-project confirmations](engineering/project-confirmations/README.md) index dated, source-pinned examples without adding M8 qualifying tasks or activation.
-- Multi-agent discipline described in `AGENTS.md`
-- One-command local browser tour backed by the same read-only route, spec, architecture and governance logic
-- `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
-- Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
-- GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
+The first run above is intentionally small. These subsystems exist for teams that need stricter autonomous-delivery controls:
+
+- Zero-context handoff through `START_HERE.md` and `PROJECT_STATE.json`.
+- Task routing plus domain skills for Bitrix, API/events, data, frontend, security, incidents and releases.
+- Change packages under `engineering/changes/`.
+- Typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints.
+- Executable architecture checks with deterministic digests, exact-state diff, drift, fitness and projection-only diagrams.
+- Governance checks for candidate-owned inputs, reviewed lifecycle, exact evidence digests, canonical examples and intentional-debt records.
+- Advisory Spec Kit, BMAD and Superpowers imports. These are parsed as workflow artifacts; they never become route, approval, receipt, governance or merge authority.
+- Default-off factory, delivery and pilot boundaries under `factory/`, `delivery/` and `pilot/`.
+- Local verification and review receipts via `scripts/grok_*.py`.
+- Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md).
+- Optional independently deployed Trust CI with GitHub App-owned policy checks, external holdout validation and signed exact-SHA attestations.
 
 ## Executable architecture
 

@@ -5,7 +5,7 @@
   "route_id": "cf23849faca6",
   "change_id": "20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384",
   "operation": "exact candidate Git-blob import; no new behavior or repair",
-  "worktree": "/home/pall/grok-projects/adaptive-grok-build-factory-tooling",
+  "worktree": "<local-path>",
   "head_before_import": "93d4c97a4e5e05a05876e0efb70880db5d976d91",
   "head_after_import": "93d4c97a4e5e05a05876e0efb70880db5d976d91",
   "delivery_base": "5674c369c4a427d42bde2a5fb3a3e2f73c853cd0",

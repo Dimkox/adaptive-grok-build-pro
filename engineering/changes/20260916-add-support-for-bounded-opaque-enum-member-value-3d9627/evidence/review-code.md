@@ -3,7 +3,7 @@ PASS
 # Code review — comparator fix for object-valued enum members (#104)
 
 - Reviewed scope: `git diff fc8d9e6f11bb188ee514784d3b6f614a6da72803..3831e2e9ff269fd70a18676b6832576a28cb2689` in
-  `/home/pall/grok-projects/adaptive-grok-build-c104` (branch `feature/comparator-opaque-enum-members`).
+  `<local-path>` (branch `feature/comparator-opaque-enum-members`).
   Exactly 13 files: `.grok-stack/adaptive_grok/architecture.py` (+45), `tests/test_architecture_model.py` (+44),
   and the change package `engineering/changes/20260916-add-support-for-bounded-opaque-enum-member-value-3d9627/`.
 - Verdict: **PASS** — the committed product code is correct, fail-closed and budget-sound; findings 1–2 are

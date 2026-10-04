@@ -64,7 +64,7 @@
   "schema_version": 1,
   "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
   "status": "routed",
-  "task": "The user sent a message while you were working:\n<user_query>\nполный сука ридми сделай со всеми ссылками, графом и тд в продукте, чтобы любой человек или llm agent с ходу подхватил, всё прочитал и имел полнй контекст текущего состояния, хулеты тупишь\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "task": "The user sent a message while you were working:\n<user_query>\nполный [sanitized] ридми сделай со всеми ссылками, графом и тд в продукте, чтобы любой человек или llm agent с ходу подхватил, всё прочитал и имел полнй контекст текущего состояния, хулеты тупишь\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
   "task_domains": [
     "ai"
   ],

@@ -13,7 +13,7 @@
       ],
       "exit": 1,
       "seconds": 0.315,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/red.log"
+      "log": "<local-path>"
     },
     {
       "name": "ruff-before",
@@ -25,7 +25,7 @@
       ],
       "exit": 0,
       "seconds": 0.033,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-before.log"
+      "log": "<local-path>"
     },
     {
       "name": "green",
@@ -38,7 +38,7 @@
       ],
       "exit": 0,
       "seconds": 0.365,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/green.log"
+      "log": "<local-path>"
     },
     {
       "name": "migrations",
@@ -51,7 +51,7 @@
       ],
       "exit": 0,
       "seconds": 0.365,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/migrations.log"
+      "log": "<local-path>"
     },
     {
       "name": "ruff-after",
@@ -63,7 +63,7 @@
       ],
       "exit": 0,
       "seconds": 0.065,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/ruff-after.log"
+      "log": "<local-path>"
     },
     {
       "name": "diff-check",
@@ -74,7 +74,7 @@
       ],
       "exit": 0,
       "seconds": 0.017,
-      "log": "/home/pall/.cache/agbp-run/p155-null-cause-review-fix-7grobyc6/diff-check.log"
+      "log": "<local-path>"
     }
   ],
   "completed_at": "2026-09-21T05:09:01.165263+00:00",

@@ -122,9 +122,9 @@ test_qwen_intl_is_pinned_and_distinct_from_existing_china_profile (factory.tests
 ERROR: test_qwen_compose_seals_complete_artifact_with_mocked_http (factory.tests.test_landing_live_executors.LandingLiveGrokQwenCompositionTests.test_qwen_compose_seals_complete_artifact_with_mocked_http)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/tests/test_landing_live_executors.py", line 430, in test_qwen_compose_seals_complete_artifact_with_mocked_http
+  File "<local-path>", line 430, in test_qwen_compose_seals_complete_artifact_with_mocked_http
     from adaptive_factory.landing_host import LandingHostConfig
-  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory/src/adaptive_factory/landing_host.py", line 11, in <module>
+  File "<local-path>", line 11, in <module>
     import uvicorn
 ModuleNotFoundError: No module named 'uvicorn'
 
@@ -145,8 +145,8 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src:delivery/src:. uv run --project
 ```text
 Using CPython 3.12.3 interpreter at: /usr/bin/python3
 Creating virtual environment at: factory/.venv
-   Building adaptive-factory @ file:///home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory
-      Built adaptive-factory @ file:///home/pall/grok-projects/adaptive-grok-build-pro-l5fix/factory
+   Building adaptive-factory @ file://<local-path>
+      Built adaptive-factory @ file://<local-path>
 Installed 20 packages in 9ms
 test_duplicate_docx_document_members_are_rejected_in_both_orders (factory.tests.test_landing_normalizer.CodexLandingNormalizerTests.test_duplicate_docx_document_members_are_rejected_in_both_orders) ... ok
 test_invalid_text_and_malformed_model_result_fail_closed (factory.tests.test_landing_normalizer.CodexLandingNormalizerTests.test_invalid_text_and_malformed_model_result_fail_closed) ... ok

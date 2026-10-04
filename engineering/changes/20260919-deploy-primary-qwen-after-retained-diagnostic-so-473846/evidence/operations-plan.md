@@ -13,6 +13,6 @@ RUN = first12(TARGET) + `-473846`; release `/opt/adaptive-l5/releases/TARGET`; p
 
 Before operation the scripts receive independent security, data and release review. Runtime acceptance is still pending; 13 offline guard/syntax checks establish only preparedness. Existing source migration/backup code is unchanged, so a full development verification is not repeated for this operational record.
 
-Merged target: `f12807c2b75750072ba768fc95ed492362ae6489`, tree `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`, identical to checked PR154 head. App4694114 check105951303627 passed19:30:18Z; protected squash merged19:35:28Z. See source-gate.json for exact public evidence.
+Merged target: `f12807c2b75750072ba768fc95ed492362ae6489`, tree `c7a020c6293a89d6470ee83c53d5f5a412a3eef1`, identical to checked PR154 head. App<redacted-app-id> check105951303627 passed19:30:18Z; protected squash merged19:35:28Z. See source-gate.json for exact public evidence.
 
 Script names above designate externally extracted commands. The inert repository payloads end in `.py.txt`; the exact path/hash mapping and extraction boundary are in `script-archive-index.json` and `../architecture.md`. Architecture fitness does not inspect those archived payload semantics.

@@ -34,7 +34,7 @@ This is an appropriate fixture repair: it restores the intended branch coverage 
 
 ## Independent commands and results
 
-Executed from `/home/pall/grok-projects/adaptive-grok-build-pro-l5fix` after inspecting the frozen repair:
+Executed from `<local-path>` after inspecting the frozen repair:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=factory/src:delivery/src:. uv run --offline --project factory --locked python3 -m unittest factory.tests.test_landing_pdf_worker factory.tests.test_landing_normalizer factory.tests.test_landing_contracts factory.tests.test_landing_provider factory.tests.test_landing_live_executors -q

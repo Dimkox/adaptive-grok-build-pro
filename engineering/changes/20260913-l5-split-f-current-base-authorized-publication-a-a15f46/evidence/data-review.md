@@ -4,7 +4,7 @@ Verdict: **PASS**. Blocking finding DATA-F2-001 is fixed on this exact source. T
 
 - Reviewer: selected independent read-only `data_reviewer`; implementation owner: `data_implementer`.
 - Route: `a15f467e4575`; change: `20260913-l5-split-f-current-base-authorized-publication-a-a15f46`.
-- Source: `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2`.
+- Source: `<local-path>`.
 - Exact HEAD: `c3f60f09b819c1a246f7af2dcd6664cf3be52dd6`.
 - Genuine unchanged route base: `d33e8d8b2aa06a76f32724d08d79a21f3604ce42`.
 - Current fingerprint: `aa60705bc8c9bbae34517a480ed842254c8b67db86b8b0a6cd3a119b6740cff5`.

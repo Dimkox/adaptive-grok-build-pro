@@ -8,12 +8,12 @@ No application, test, configuration, migration, or reviewed-checkout file was ch
 
 ## Exact command and run
 
-Working directory: `/home/pall/grok-projects/adaptive-grok-build-repair`.
+Working directory: `<local-path>`.
 `selected_workers(root)` returned `None`; `GROK_TEST_WORKERS` was unset and `.grok-test-runner.json` was absent. This selects the legacy branch at `.grok-stack/adaptive_grok/verification.py:966`, with a fresh external `COVERAGE_FILE`.
 
 ```text
-COVERAGE_FILE=/home/pall/.cache/agbp-run/p155-root-unittest-lqk7chp4/.coverage coverage run --rcfile=.coveragerc -m unittest discover -s tests
-COVERAGE_FILE=/home/pall/.cache/agbp-run/p155-root-unittest-lqk7chp4/.coverage coverage report --rcfile=.coveragerc
+COVERAGE_FILE=<local-path> coverage run --rcfile=.coveragerc -m unittest discover -s tests
+COVERAGE_FILE=<local-path> coverage report --rcfile=.coveragerc
 ```
 
 - First command: exit 0, 604.509 s wall time; unittest reports `Ran 785 tests in 603.604s` and `OK`.
@@ -24,11 +24,11 @@ COVERAGE_FILE=/home/pall/.cache/agbp-run/p155-root-unittest-lqk7chp4/.coverage c
 
 ## Confirmed causal control; historical attribution remains inferred
 
-The old `/home/pall/.cache/agbp-run/p155_verify.log` reports architecture failures for seven unowned source helpers under `.qwen/tmp`, and `python-unittest: exit=1`, but has no traceback. Its exact failed root test therefore cannot be recovered conclusively.
+The old `<local-path>` reports architecture failures for seven unowned source helpers under `.qwen/tmp`, and `python-unittest: exit=1`, but has no traceback. Its exact failed root test therefore cannot be recovered conclusively.
 
 The existing `tests.test_architecture_model.ArchitectureModelTests.test_seed_architecture_models_current_boundaries_and_real_contracts` asserts `validate_repository_drift(ROOT, snapshot) == ()` at `tests/test_architecture_model.py:1319`. Architecture validation reports undeclared sources at `.grok-stack/adaptive_grok/architecture.py:1048`.
 
-An isolated external local clone at `/home/pall/.cache/agbp-run/p155-arch-control-ybbd7v9n/checkout` of `4a47c76b3fb37fbac430fd209771a695832610d2` proved the causal mechanism with the same single focused command:
+An isolated external local clone at `<local-path>` of `4a47c76b3fb37fbac430fd209771a695832610d2` proved the causal mechanism with the same single focused command:
 
 ```text
 /usr/bin/python3 -m unittest tests.test_architecture_model.ArchitectureModelTests.test_seed_architecture_models_current_boundaries_and_real_contracts
@@ -38,7 +38,7 @@ An isolated external local clone at `/home/pall/.cache/agbp-run/p155-arch-contro
 2. Added exactly `.qwen/tmp/probe.py` inside that external clone: exit 1; one failure in 0.201 s at the assertion above, with `ArchitectureFinding(code='undeclared_source', path='.qwen/tmp/probe.py')`.
 3. Removed only that synthetic file: exit 0; one test passed in 0.252 s. Clone `git status --short` is empty.
 
-The complete baseline/red/green logs and results JSON are in `/home/pall/.cache/agbp-run/p155-arch-control-ybbd7v9n`. The real checkout never contained this probe and was clean at the end. This supports scratch-source contamination as the inferred historical root-suite cause. It does not assert that no additional historical failure occurred, because the original traceback is unavailable.
+The complete baseline/red/green logs and results JSON are in `<local-path>`. The real checkout never contained this probe and was clean at the end. This supports scratch-source contamination as the inferred historical root-suite cause. It does not assert that no additional historical failure occurred, because the original traceback is unavailable.
 
 ## Preserved boundary and handoff
 

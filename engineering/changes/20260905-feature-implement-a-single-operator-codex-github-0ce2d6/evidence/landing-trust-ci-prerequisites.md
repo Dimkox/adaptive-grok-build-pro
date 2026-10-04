@@ -47,7 +47,7 @@ required context would lock delivery.
 
 The safe expected outcome is a **repository-specific landing policy epoch**,
 `adaptive-trust-ci/verified@<landing-policy-sha12>`, still owned by GitHub App
-ID `4694114`. The existing `@06ecf1c875bc` remains the authority for
+ID `<redacted-app-id>`. The existing `@06ecf1c875bc` remains the authority for
 `Dimkox/adaptive-grok-build-pro`; it is not a portable brand name.
 
 ## What is observable now
@@ -57,8 +57,8 @@ ID `4694114`. The existing `@06ecf1c875bc` remains the authority for
 | Target identity | Repository ID `1357006647`, owner type `User`, visibility `PRIVATE`, default branch `main`; current viewer has `ADMIN`. | The operator can install the App and manage protection once the product tier permits it. |
 | Current target state | `main` is at `699010380f4f90a0193a9c22090c35e6aded7d2c`, reports `protected=false`, has no PRs, and its current head has zero Check Runs. | There is no target-repository proof yet that Trust CI intake or App publication works. Absence of runs is not proof that the App is absent because no PR event exists. |
 | Plan/visibility barrier | Both branch-protection and ruleset reads return the explicit Pro-or-public `403`. | This private repository under its current entitlement cannot enforce the required check. GitHub documents protected branches for public Free repositories and private repositories on Pro/Team/Enterprise. |
-| App public identity | `Adaptive Trust CI`, slug `adaptive-trust-ci`, App ID `4694114`, owner `Dimkox`; permissions are `checks:write`, `contents:read`, `metadata:read`, `pull_requests:write`; subscribed events include `pull_request`. | The registered App has the capabilities needed to receive PR events and create checks. The worker further reduces its installation token to `checks:write`, `contents:read`, `pull_requests:read` (`trust-ci/src/adaptive_trust_ci/github_app.py:75-91`). |
-| App ownership precedent | Historical exact-head check `101099224099` on the source repository is a successful `adaptive-trust-ci/verified@06ecf1c875bc` Check Run owned by App `4694114`. | The App identity and old epoch are real, but that proof is repository- and SHA-specific and cannot transfer to the landing. |
+| App public identity | `Adaptive Trust CI`, slug `adaptive-trust-ci`, App ID `<redacted-app-id>`, owner `Dimkox`; permissions are `checks:write`, `contents:read`, `metadata:read`, `pull_requests:write`; subscribed events include `pull_request`. | The registered App has the capabilities needed to receive PR events and create checks. The worker further reduces its installation token to `checks:write`, `contents:read`, `pull_requests:read` (`trust-ci/src/adaptive_trust_ci/github_app.py:75-91`). |
+| App ownership precedent | Historical exact-head check `101099224099` on the source repository is a successful `adaptive-trust-ci/verified@06ecf1c875bc` Check Run owned by App `<redacted-app-id>`. | The App identity and old epoch are real, but that proof is repository- and SHA-specific and cannot transfer to the landing. |
 | Installation selection | `GET /repos/Dimkox/ai-dark-factory-landing/installation` returned `401` because the current credential is not an App JWT; the user-installations endpoint likewise was unavailable to this token class. | Installation on the landing is **UNKNOWN**, not absent. An authorized human/App-side observation is required. No key should be exposed to an agent. |
 | Landing verification surface | The exact target tree contains a stdlib suite under `tests/`; its README specifies `python -m unittest discover -s tests -v`. It has no GitHub Actions workflow. | A landing profile can use one bounded local unittest command, but still needs a separate external holdout to remain independent. |
 
@@ -106,7 +106,7 @@ creates a new profile digest and invalidates old jobs/approvals by design.
 ### 2. Grant the existing App access to the target repository
 
 From the human-owned GitHub App installation settings, verify whether App
-`4694114` already has `ai-dark-factory-landing` selected. If the existing
+`<redacted-app-id>` already has `ai-dark-factory-landing` selected. If the existing
 personal-account installation uses selected repositories, add exactly this
 repository. Because both repositories are owned by `Dimkox`, this should use
 the existing account installation; verify rather than assume its historical
@@ -138,7 +138,7 @@ For that exact PR head, require all of the following before proceeding:
 4. a signed attestation binds repository, PR, base SHA, head SHA, landing policy
    digest, commands, holdout and required approval scopes; and
 5. GitHub shows one successful
-   `adaptive-trust-ci/verified@<landing-policy-sha12>` owned by App `4694114` on
+   `adaptive-trust-ci/verified@<landing-policy-sha12>` owned by App `<redacted-app-id>` on
    that exact head.
 
 GitHub states that a required status check must have completed successfully in
@@ -170,7 +170,7 @@ fail-closed protection shape to `main`:
 - pull request required;
 - strict up-to-date required status check;
 - `checks=[{"context":"adaptive-trust-ci/verified@<landing-policy-sha12>",
-  "app_id":4694114}]`, not the text-only legacy `contexts` form;
+  "app_id":<redacted-app-id>}]`, not the text-only legacy `contexts` form;
 - administrators enforced, conversations resolved, linear history required;
 - force push and deletion disabled.
 
@@ -184,7 +184,7 @@ the gate enforced.
 If, exceptionally, the deployed trust owner proves that the existing exact
 `06ecf1c875bc...` policy already contains a compatible landing profile, substitute
 the literal `adaptive-trust-ci/verified@06ecf1c875bc` in this step—but only after
-an App-`4694114` success with that exact name has appeared in this repository in
+an App-`<redacted-app-id>` success with that exact name has appeared in this repository in
 the last seven days. GitHub currently shows no such run.
 
 ## Human-signed approval boundary
@@ -218,12 +218,12 @@ Onboarding is complete only when a read-only evidence capture shows all of:
 
 1. target `main` remains the intended base and an exact disposable PR head is
    named;
-2. the target repository is selected in App `4694114`'s installation;
+2. the target repository is selected in App `<redacted-app-id>`'s installation;
 3. the deployed landing policy/holdout full digests and resulting check name are
    recorded without secret material;
 4. one exact-head App-owned check succeeds with an offline-verified attestation;
 5. `main` protection reads back strict, enforced for admins, with the exact
-   context plus `app_id=4694114`; and
+   context plus `app_id=<redacted-app-id>`; and
 6. a same-name result from another actor, a stale SHA, a direct push, force push,
    and deletion do not satisfy or bypass the rule.
 

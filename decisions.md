@@ -1,5 +1,53 @@
 # Decisions
 
+## 2026-10-04 — Bind the closed root inventory to committed compatibility commands
+
+The canonical root set explicitly includes exactly the nine restored thin compatibility commands, without accepting arbitrary Python files or weakening the closed inventory check. Rerun the HEAD-based assertion after commit, alongside the existing launcher behavior regression, so newly tracked entries are actually in its comparison tree.
+
+## 2026-10-04 — Give synthetic focused-test fixtures their own package identity
+
+Exactly three temporary scope fixture constructors now create an empty `tests/__init__.py`, preventing Core's inherited PYTHONPATH from resolving their test modules to the candidate's regular package. Their assertions require exactly five synthetic tests to execute, so fixing the root inventory cannot mask an unintended green run of the real 152 binding tests. Production runners, environment handling, selector admission and gates are unchanged.
+
+## 2026-10-04 — Qualify abort cleanup by staged bytes, not a pre-unlink ctime
+
+Cleanup requires the staged device/inode plus a bounded stable no-follow read whose exact byte count and SHA-256 match the original report reference. This preserves foreign in-place rewrites while allowing our own hardlink unlink to change ctime without stranding unchanged reports. Reused or referenced files stay outside abort ownership; caps, envelope schema and authority bindings remain unchanged.
+
+## 2026-10-04 — Repair PR241 compatibility and publication boundaries
+
+Repair the seven confirmed findings with exact check/reason skip allowances, inventory-bound hook template bytes, additive PR241 continuation, nine tiny shared-dispatch launchers, and ownership-aware aborted-report cleanup. Add deterministic failing controls before each repair, preserve unknown/missing admission failures and immutable historical identities, then run bounded targeted checks and freeze one commit for independent review. The prior exact-head App success is historical after this delta; full verification and external delivery remain coordinator-owned.
+
+## 2026-10-04 — Retain the original while publishing a non-authoritative projection
+
+The exact cancelled preflight original is retained in an ignored private copy with verified 25,603-byte size and SHA-256, while the public projection replaces only one operator-project argv prefix. The private copy is not publicly dereferenceable; the historical Git blob remains unchanged, and neither copy supplies current or complete verification. A canonical body digest pins every unaffected identity, scope, result and log value.
+
+## 2026-10-04 — Separate current continuation from dated delivery records
+
+An additive current_continuation pointer makes PR239 cleanup and its PR240 dependency explicit while preserving historical core/custody identities and unaccepted F/G boundaries. Historical record_scope labels prevent preserved next-action prose from becoming fresh instructions; current checked/merge/external-success identities stay unknown until independently established.
+
+## 2026-10-04 — Measure the serial factory lane separately
+
+The coordinator's historical companion verification at exact HEAD 63cd1e0e6be67d01815a85375f306b09beba8499 measured factory-unit's 1,016 tests at 562.771 seconds, versus Core xdist with 12 workers at 117.955 seconds. More agent slots or CPUs do not accelerate that serial factory lane by themselves; profile or shard it separately without introducing skips. These are companion measurements, not current product verification, and this cleanup changes no runner.
+
+## 2026-10-04 — Preserve complete verification evidence in a bounded runtime artifact
+
+Large verification reports are durably stored in ignored runtime with a finite 8 MiB cap before the unchanged-size receipt publishes a closed path, exact-byte count and SHA-256 reference. Descriptor-safe readers verify the complete report and every immutable envelope binding before hydrating details, preserving all paths, scope, skips, results and logs without invented artifact claims. Small receipts and other receipt kinds remain inline; missing, tampered, unsafe or oversized reports fail closed.
+
+## 2026-10-04 — Distinguish cycle closure from new depth
+
+Cycle membership must be recognized before charging another adapter-depth step, because returning to an existing module does not enter a ninth module. Reordering those checks removes the false limit exception while preserving unsupported cyclic adapters, the depth-eight cap and genuine queue fail-closed behavior.
+
+## 2026-10-04 — Bind replacement discovery to disclosed scope
+
+Focused discovery requires an eligible documentation/state scope, a passing scope check, and explicit skipped records for coverage and its declared replaced runner. Every full discovery runner, including pytest, requires a coverage record; the documented pytest-owned skip stays explicit and valid. Valid YAML comment tampering proves archive rejection depends on its byte digest rather than incidental parse errors.
+
+## 2026-10-04 — Test synthesized payloads and retained historical contracts
+
+Installer parity tests compare generated root hook entries to the retained shim template rather than deleted root copies. Historical package tests keep exact release digest and tag/tree bindings in the retained custody record without requiring removed ZIPs or claiming fresh binary verification; sanitized owner documents have separate provenance with no qualification effect.
+
+## 2026-10-04 — Preserve strict specs through public archive cleanup
+
+Neutral date/route package names prevent every title from leaking into public paths. Explicit original Git blob and retained-byte digest mappings let historical v1 specs be archived while relocated v2 specs still pass the current strict gate; unknown, active, missing or tampered specs fail. A measured 123.1 MB archive batch uses a finite 128 MB aggregate identity budget while analysis-memory and per-blob limits remain unchanged.
+
 ## 2026-10-04 — Bind public operator fields by their documented roles
 
 Read dedicated-host, inbound Funnel webhook and GitHub App identifiers from their named sections and report cells, then validate syntax and cross-document equality. Synthetic concrete fixtures and exact public placeholders keep historical documentation compatible while rejecting missing, duplicate, misplaced or inconsistent declarations. These document relationships provide no live identity or merge authority.
@@ -62,7 +110,7 @@ Many isolated branches and worktrees may preserve implementation evidence, but t
 
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
-Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
+Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `<redacted-app-id>` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
 
 ## 2026-08-24 — Close M0.2 after live GitHub webhook; residual human/runner/policy
 
@@ -70,11 +118,11 @@ User ordered M0.2 closed once Funnel + App `pull_request` + App-owned Check Run 
 
 ## 2026-08-24 — GitHub App pull_request webhook is live
 
-GitHub POSTed `pull_request`/`synchronize` to `https://claw.taild9f611.ts.net/webhooks/github` (HTTP 200) for PR #5 SHA `9d56734`; Check Run `97524725228` App `adaptive-trust-ci` `external_id=0e147461-6de8-415f-b712-d06b2034c735` `conclusion=action_required`. Do not add a repository webhook.
+GitHub POSTed `pull_request`/`synchronize` to `https://<redacted-tailnet-host>/webhooks/github` (HTTP 200) for PR #5 SHA `9d56734`; Check Run `97524725228` App `adaptive-trust-ci` `external_id=0e147461-6de8-415f-b712-d06b2034c735` `conclusion=action_required`. Do not add a repository webhook.
 
 ## 2026-08-24 — «Приложуха» is GitHub App adaptive-trust-ci
 
-Operator «приложуха» is GitHub App `adaptive-trust-ci` at `https://github.com/apps/adaptive-trust-ci`. Webhook configuration lives on that App registration, not on a public website and not as a substitute repository webhook. Do not treat a public website as the app; live intake is Funnel `https://claw.taild9f611.ts.net/webhooks/github` plus loopback HMAC characterization.
+Operator «приложуха» is GitHub App `adaptive-trust-ci` at `https://github.com/apps/adaptive-trust-ci`. Webhook configuration lives on that App registration, not on a public website and not as a substitute repository webhook. Do not treat a public website as the app; live intake is Funnel `https://<redacted-tailnet-host>/webhooks/github` plus loopback HMAC characterization.
 
 ## 2026-08-24 — ChatGPT-invented public webhook hostname is void
 
@@ -82,11 +130,11 @@ User voided a ChatGPT-invented public webhook hostname: do not configure GitHub 
 
 ## 2026-08-24 — Apache HTTP leftover exists; public A is not this NAT host
 
-Host Apache plus an HTTP ACME vhost were installed because 80/443 were free (n8n Caddy is 3001/5678). Certbot HTTP-01 cannot run while public A `157.22.187.237` is not this NAT host (`192.168.0.229`, egress `45.85.105.28`). That leftover is not a live Trust CI edge; leave `TRUST_CI_PUBLIC_BASE_URL` on loopback.
+Host Apache plus an HTTP ACME vhost were installed because 80/443 were free (n8n Caddy is 3001/5678). Certbot HTTP-01 cannot run while public A `<redacted-ip>` is not this NAT host (`<redacted-ip>`, egress `<redacted-ip>`). That leftover is not a live Trust CI edge; leave `TRUST_CI_PUBLIC_BASE_URL` on loopback.
 
 ## 2026-08-24 — Live named volume is backup source and restart subject only
 
-The M0.2 claw drill restored only into a throwaway tmpfs Postgres (`trust_ci_restore`, hostname not `postgres`) on `adaptive-trust-ci_trust-ci`. Volume `adaptive-trust-ci_trust-ci-postgres` was the dump source and `compose restart postgres` subject, never a restore TARGET. Live project was not `down` or `down -v`.
+The M0.2 <ci-host> drill restored only into a throwaway tmpfs Postgres (`trust_ci_restore`, hostname not `postgres`) on `adaptive-trust-ci_trust-ci`. Volume `adaptive-trust-ci_trust-ci-postgres` was the dump source and `compose restart postgres` subject, never a restore TARGET. Live project was not `down` or `down -v`.
 
 ## 2026-08-24 — Unify git for live M0 facts; continue host-local M0.2
 
@@ -94,15 +142,15 @@ User «своди все воедино и продолжай» unifies already-
 
 ## 2026-08-24 — Host-socket overlay produced the first App-owned Check Run
 
-Nested rootless DinD cannot start on this Engine, so `claw` used an untracked overlay mounting the host docker socket on `worker` and `runner-loader` only, plus `host.docker.internal:1080` via a host socat to glider. A loopback HMAC POST for draft PR #5 published Check Run `adaptive-trust-ci/verified@6737355947c2` (id `97390635614`, App `4694114`, `external_id` = job id) with `conclusion=action_required`; public webhook registration and `main` protection remain out of scope.
+Nested rootless DinD cannot start on this Engine, so `<ci-host>` used an untracked overlay mounting the host docker socket on `worker` and `runner-loader` only, plus `host.docker.internal:1080` via a host socat to glider. A loopback HMAC POST for draft PR #5 published Check Run `adaptive-trust-ci/verified@6737355947c2` (id `97390635614`, App `<redacted-app-id>`, `external_id` = job id) with `conclusion=action_required`; public webhook registration and `main` protection remain out of scope.
 
 ## 2026-08-24 — M0.1-complete worker IDs without PEM; webhook still blocked
 
-User-supplied GitHub App ID `4694114` and installation ID `156003193` were patched in-place into gitignored worker env without reading PEM or minting JWT. Compose-up of `docker-engine`/`runner-loader`/`worker` was issued; DinD stayed unhealthy (`rootlesskit` `operation not permitted`), so the worker never reached running. GitHub webhook registration stays blocked until a public HTTPS URL exists.
+User-supplied GitHub App ID `<redacted-app-id>` and installation ID `<redacted-installation-id>` were patched in-place into gitignored worker env without reading PEM or minting JWT. Compose-up of `docker-engine`/`runner-loader`/`worker` was issued; DinD stayed unhealthy (`rootlesskit` `operation not permitted`), so the worker never reached running. GitHub webhook registration stays blocked until a public HTTPS URL exists.
 
-## 2026-08-24 — M0.1 claw listener trust-store public key, worker deferred
+## 2026-08-24 — M0.1 <ci-host> listener trust-store public key, worker deferred
 
-Bootstrap generated one Ed25519 pair only to insert the public key into untracked `runtime/trust-store.json`, then unlinked the private file so no approval private key remains on `claw`. Worker stays off until GitHub App ID and installation ID exist without reading PEM or minting JWT. The live listener is loopback HTTP on `127.0.0.1:18080` (`postgres` + `migrate` + `api` only).
+Bootstrap generated one Ed25519 pair only to insert the public key into untracked `runtime/trust-store.json`, then unlinked the private file so no approval private key remains on `<ci-host>`. Worker stays off until GitHub App ID and installation ID exist without reading PEM or minting JWT. The live listener is loopback HTTP on `<loopback-trust-ci>` (`postgres` + `migrate` + `api` only).
 
 ## 2026-08-23 — M0 live Trust Authority bootstrap exception for M1 start
 
@@ -225,9 +273,9 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 
 Exact repository plus effective content digest works because the existing job, store, approval, and attestation fields already preserve immutable identity, avoiding a migration. Catalog mode therefore selects isolated commands and holdouts while legacy schema-v1 parsing remains unchanged.
 
-## 2026-08-24 — M0 CI host is claw, not a laptop
+## 2026-08-24 — M0 CI host is <ci-host>, not a laptop
 
-The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
+The M0 Trust CI host is hostname `<ci-host>` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `<loopback-service>` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`<loopback-trust-ci>` by default) with compose project `adaptive-trust-ci`.
 
 ## 2026-08-28 — Multi-role CLIs import after command dispatch
 
@@ -614,7 +662,7 @@ No product-side registry exists on `main`, so operator-supplied factory-delivere
 
 ## 2026-09-14 — Check installed L5 state separately from shipped defaults
 
-Read-only host inspection found `adaptive-l5.service` active/running and ready on installed commit `969c4f65f54ef9230f3f94587e228098d1c2ecb9`, with `live_enabled=true` and `selected_profile=qwen-intl`; default-off source documentation does not establish the installed state or successful task delivery. PR #82 merged as `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` after App-owned check `103833535728` passed on `6bd86207ca9955a8ad91224224cf665e16a282da`, and both trees equal `f138beda12d1cf21f24cb26bb95166ffa9b120d7`. A clean upgrade source is staged at `/home/pall/grok-projects/adaptive-l5-pr82-stage-5f6f6ce`; runtime deployment and the synthetic provider probe still require exact operational delegation, with the prepared plan in the l5fix tree's `.grok-stack/runtime/pr82-runtime-upgrade/plan.md`.
+Read-only host inspection found `adaptive-l5.service` active/running and ready on installed commit `969c4f65f54ef9230f3f94587e228098d1c2ecb9`, with `live_enabled=true` and `selected_profile=qwen-intl`; default-off source documentation does not establish the installed state or successful task delivery. PR #82 merged as `5f6f6ce1ecb0cef8e1b3910b037af983c5fb8f8a` after App-owned check `103833535728` passed on `6bd86207ca9955a8ad91224224cf665e16a282da`, and both trees equal `f138beda12d1cf21f24cb26bb95166ffa9b120d7`. A clean upgrade source is staged at `<local-path>`; runtime deployment and the synthetic provider probe still require exact operational delegation, with the prepared plan in the l5fix tree's `.grok-stack/runtime/pr82-runtime-upgrade/plan.md`.
 
 ## 2026-09-14 — Put offline test scaffolding in a non-`test_*` module beside the tests
 
@@ -912,7 +960,7 @@ Nine successful historical Actions runs took 50–64 seconds on 2.0.11, whereas 
 
 ## 2026-10-03 — Сократить расход координатора
 
-Продолжать работу по короткому сохранённому handoff: точный HEAD, результат последней проверки и следующий шаг; читать только нужные изменения, а не всю историю. Передавать субагентам отдельный brief и ссылки на файлы через `fork_turns=none`, выбирать достаточную модель для задачи и выводить краткие результаты вместо полных отчётов. Не повторять законченный общий анализ; выполнять обязательные проверки актуального кандидата и независимые ревью в установленном порядке без ослабления Trust CI.
+Продолжать работу по короткому сохранённому handoff: точный HEAD, результат последней проверки и следующий шаг; читать только нужные изменения, а не всю историю. Передавать субагентам отдельный brief и ссылки на файлы через `fork_turns=none`, выбирать достаточную модель для задачи и выводить краткие результаты вместо полных отчётов. Не повторять за[sanitized]ный общий анализ; выполнять обязательные проверки актуального кандидата и независимые ревью в установленном порядке без ослабления Trust CI.
 
 ## 2026-10-03 — Один райтер на финальный процесс
 
@@ -965,3 +1013,31 @@ The immutable Trust CI image has pinned coverage but no pytest/xdist, so measure
 ## 2026-10-03 — Focused verifier запускает admitted tests как файлы
 
 В immutable Trust CI образе focused profile должен вызывать `python -m unittest tests/test_*.py`, а не преобразовывать пути в module names. File-based запуск совпадает с synthetic fixtures без `tests/__init__.py` и не включает full discovery. Targeted локальный и image-прогон подтвердили новый контракт.
+
+## 2026-10-04 — QG-01 как отдельный admission check
+
+Обязательность verifier-гейтов оформлена отдельным результатом `quality-gate`, а не скрыта в общем вычислении `status`. Это сохраняет видимость всех исходных проверок и явно блокирует PR/release, если обязательный check отсутствует или `skip` не разрешён политикой.
+
+## 2026-10-04 — Публичный вход должен идти от ценности к контролям
+
+Внешний читатель воспринимает проект как governance maze, когда README начинает с Trust CI, CPU-gates и внутренней терминологии. Публичная подача теперь двухуровневая: сначала простой first-run path, затем advanced fail-closed controls. Это сохраняет безопасность, но снижает порог входа.
+
+## 2026-10-04 — Fail-closed надо показывать через реальные режущие контуры
+
+В публичной документации fail-closed описывается не лозунгом, а списком мест, где система фактически отказывает: installer no-replace, closed schemas, workflow parser sandbox, verifier allowlist, exact-SHA Trust CI и default-off providers. Там же явно названы прежние слабые швы и цена режима, чтобы внешний читатель видел границу применимости, а не обещание магической безопасности.
+
+## 2026-10-04 — Public change IDs must not expose raw prompts
+
+Change package directory names now use a public-safe slug, with an opaque `task` fallback when the title contains raw prompt markers or abusive terms. Historical current-tree package paths were renamed to neutral `YYYYMMDD-task-<hash>` identities and tracked references were updated, while history rewrite remains a separate destructive operation.
+
+## 2026-10-04 — Public evidence must redact host/network identity
+
+Public documentation and historical evidence should preserve the control fact without publishing operator topology. Host paths, network addresses, tailnet hostnames and exact app/installation numeric IDs are redacted in the current tree; any true removal from Git history requires a separately planned `git filter-repo` rewrite and coordinated force-push.
+
+## 2026-10-04 — Release archives are assets, not source files
+
+Tracked ZIP releases made clone size larger and preserved stale public paths inside binary blobs. Keep release archive bytes in GitHub Releases or external artifact storage, and keep only hashes, URLs and provenance records in the source tree.
+
+## 2026-10-04 — Root hook shims are install output, not repository root content
+
+The nine root hook shims duplicated one template and made the public root look like compatibility debris. Keep one canonical shim template under `.grok-stack/templates/` and let the installer materialize root hook files into target projects.

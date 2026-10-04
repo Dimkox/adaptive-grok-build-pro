@@ -3,7 +3,7 @@
   "status": "All five analyses adopted; exact parent delivery confirmed. One selected writer may import only the19declared candidate files.",
   "candidates": [
     {
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-165",
+      "worktree": "<local-path>",
       "head": "163847842ccddacd6f179c7a3ea082765530bb84",
       "issues": [
         165
@@ -32,7 +32,7 @@
       }
     },
     {
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-issue-163",
+      "worktree": "<local-path>",
       "head": "d80c5c8d8e5afe938d195401715daf5e69192a81",
       "issues": [
         163
@@ -57,7 +57,7 @@
       }
     },
     {
-      "worktree": "/home/pall/grok-projects/adaptive-grok-build-runner-capacity",
+      "worktree": "<local-path>",
       "head": "08dd467d0dc9c173af01f3b47876a9a3fa1ca639",
       "issues": [
         62,

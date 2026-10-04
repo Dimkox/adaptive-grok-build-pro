@@ -1,7 +1,7 @@
 {
   "acceptance_criteria": [
     {"id":"AC-001","statement":"PROJECT_STATE schema version two records implementation review stack integration main delivery and external gate independently for M0 through M9","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_project_state_has_independent_milestone_axes_and_truthful_facts"}]},
-    {"id":"AC-002","statement":"Current handoff files agree on policy epoch 06ecf1c875bc and GitHub App 4694114","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents"}]},
+    {"id":"AC-002","statement":"Current handoff files agree on policy epoch 06ecf1c875bc and GitHub App `<redacted-app-id>`","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents"}]},
     {"id":"AC-003","statement":"Active open retained unresolved and superseded work remains inventoried for continuation without branch loss","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_work_inventory_preserves_open_and_unresolved_continuation_work"}]},
     {"id":"AC-004","statement":"README retains the exact complete K22 graph with 231 unique undirected edges","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_readme_graph_is_exact_complete_k22"}]},
     {"id":"AC-005","statement":"The durable change package and root cause explain the bounded state-only repair and recovery","evidence":[{"receipt":"code_review"},{"receipt":"test_review"}]}
