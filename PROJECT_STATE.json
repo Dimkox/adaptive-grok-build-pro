@@ -9,6 +9,27 @@
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
+  "current_continuation": {
+    "pull_request": 239,
+    "route_id": "6af9e6eed1d8",
+    "branch": "feat/qg01-gate-artifact-admission",
+    "change_package": "engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6",
+    "source_base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+    "dependency": {
+      "pull_request": 240,
+      "route_id": "e5372ed69c31",
+      "branch": "fix/trust-ci-public-doc-bindings",
+      "change_package": "engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e",
+      "checked_head": null,
+      "merge_commit": null,
+      "external_success": null
+    },
+    "remote_state_refresh_required": true,
+    "checked_head": null,
+    "merge_commit": null,
+    "external_success": null,
+    "next_action": "Refresh remote PR239/PR240 state; deliver the separate PR240 dependency through its exact-head external gates, refresh the actual PR comparison base, then run fresh full verification, independent reviews, receipts and exact-head external Trust CI for PR239. Historical next_action fields are provenance, not continuation instructions; preserve published v2.1.1 without rebuilding or retagging it."
+  },
   "delivered_milestones_on_main": [
     "M0",
     "M1",
@@ -663,6 +684,7 @@
     }
   },
   "current_unreleased_change": {
+    "record_scope": "historical",
     "change_id": "20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
     "route_id": "ffb3d81e031f",
     "branch": "feat/v211-combined-source",
@@ -1558,6 +1580,7 @@
     }
   ],
   "active_delivery": {
+    "record_scope": "historical",
     "route_id": "ffb3d81e031f",
     "branch": "feat/v211-combined-source",
     "change_package": "engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8",
@@ -2213,6 +2236,7 @@
     }
   },
   "fresh_clone": {
+    "continuation_record": "current_continuation",
     "active_route_may_be_absent": true,
     "must_fetch_remote_refs": true,
     "continue_active_work_from_project_state": true,
@@ -2498,6 +2522,7 @@
     "merged_at": "2026-09-19T20:27:56Z"
   },
   "active_source_delivery": {
+    "record_scope": "historical",
     "observed_at": "2026-09-21T12:05:39.938899+00:00",
     "route_id": "cf23849faca6",
     "branch": "fix/factory-tooling-batch-20260921",

@@ -762,8 +762,10 @@ def write_receipt(
     ):
         raise RuntimeError('repository, spec, architecture, or governance changed while receipt was written')
     path = receipt_dir(root, route['route_id']) / f'{kind}.json'
-    spill = kind == 'verification' and len((json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n').encode('utf-8')) > MAX_RECEIPT_BYTES
+    spill = kind == 'verification'
     try:
+        # Classification can fail to serialize; that must retire an older pass too.
+        spill = spill and len((json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + '\n').encode('utf-8')) > MAX_RECEIPT_BYTES
         if spill:
             reference = _publish_verification_report(root, route['route_id'], data, interrupt_check)
             report_architecture = active_architecture_binding(root, route)

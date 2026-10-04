@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Receipt spill classification escaped failure retirement
+
+Moving JSON size classification ahead of the publication guard let circular or unserializable verification details throw while an older pass remained valid. Classification now runs inside that guard with retirement enabled before serialization starts, restoring the original fail-closed behavior. Regressions cover both ValueError and TypeError without changing report caps, bindings or readers.
+
 ## 2026-10-04 — Full verifier output exceeded the receipt envelope
 
 Duplicated mandatory path/scope metadata alone exceeded the unchanged 262,144-byte receipt limit even though all selected checks passed; the first log-only repair therefore could not handle the real 1,442-path/488-rejection inventory. A failing metadata-only regression now drives bounded complete-report runtime publication and integrity-checked receipt hydration, rather than deleting authoritative fields. Publication failures retire prior receipts, and missing, tampered, unsafe or over-cap reports remain non-qualifying.

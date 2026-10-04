@@ -655,6 +655,22 @@ class DurableReceiptRecoveryTests(unittest.TestCase):
                 self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
                 self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('*.tmp')))
 
+    def test_verification_classification_serialization_faults_retire_prior_pass(self):
+        for failure, error in (('circular', ValueError), ('unserializable', TypeError)):
+            with self.subTest(failure=failure), routed_fixture() as (root, route):
+                route['required_evidence'] = ['verification']
+                set_active_route(root, route)
+                receipts.write_receipt(root, 'verification', 'pass')
+                self.assertEqual(receipts.validate_evidence(root, route), [])
+                details = {}
+                details['bad'] = details if failure == 'circular' else object()
+                with self.assertRaises(error):
+                    receipts.write_receipt(root, 'verification', 'pass', details=details)
+                self.assertIsNone(receipts.get_receipt(root, route['route_id'], 'verification'))
+                self.assertEqual(receipts.validate_evidence(root, route), ['verification: missing receipt'])
+                self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('*.tmp')))
+                self.assertFalse(list((root / '.grok-stack/runtime/receipts').rglob('reports/*.json')))
+
     def test_report_publication_rejects_symlink_directory_without_external_write(self):
         with routed_fixture() as (root, route):
             receipts.write_receipt(root, 'verification', 'pass')

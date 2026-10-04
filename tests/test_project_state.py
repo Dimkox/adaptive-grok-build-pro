@@ -112,6 +112,44 @@ def _section(text: str, heading: str) -> str:
 
 
 class ProjectStateTests(unittest.TestCase):
+    def test_current_continuation_binds_cleanup_dependency_and_fresh_clone(self) -> None:
+        state = self.state
+        self.assertTrue('current_continuation' in state, 'missing current continuation record')
+        continuation = state['current_continuation']
+        self.assertEqual(continuation['pull_request'], 239)
+        self.assertEqual(continuation['route_id'], '6af9e6eed1d8')
+        self.assertEqual(continuation['branch'], 'feat/qg01-gate-artifact-admission')
+        package = 'engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6'
+        self.assertEqual(continuation['change_package'], package)
+        self.assertTrue((ROOT / package / 'brief.md').is_file())
+        manifest = json.loads((ROOT / 'engineering/archived-change-specs.json').read_text(encoding='utf-8'))
+        package_route = json.loads((ROOT / package / 'route.json').read_text(encoding='utf-8'))
+        self.assertRegex(continuation['source_base'], r'^[0-9a-f]{40}$')
+        self.assertEqual(continuation['source_base'], manifest['source_base'])
+        self.assertEqual(continuation['source_base'], package_route['base_commit'])
+        dependency = continuation['dependency']
+        self.assertEqual(dependency['pull_request'], 240)
+        self.assertEqual(dependency['route_id'], 'e5372ed69c31')
+        self.assertEqual(dependency['branch'], 'fix/trust-ci-public-doc-bindings')
+        self.assertEqual(dependency['change_package'], 'engineering/changes/20261004-trust-ci-public-operator-documentation-bindings-e5372e')
+        self.assertTrue(continuation['remote_state_refresh_required'])
+        for record in (continuation, dependency):
+            for field in ('checked_head', 'merge_commit', 'external_success'):
+                self.assertIsNone(record[field])
+        self.assertEqual(state['fresh_clone']['continuation_record'], 'current_continuation')
+        for field in ('active_delivery', 'current_unreleased_change', 'active_source_delivery'):
+            self.assertEqual(state[field]['record_scope'], 'historical')
+        start = (ROOT / 'START_HERE.md').read_text(encoding='utf-8')
+        readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+        active_line = next(line for line in start.splitlines() if line.startswith('- **Active delivery:**'))
+        for document in (active_line, _section(readme, 'Current state')):
+            self.assertIn('PR #239', document)
+            self.assertIn('PR #240', document)
+            self.assertIn(package, document)
+        self.assertNotIn('20261002-assemble-2-1-1', active_line)
+        self.assertIn('Historical core observation', start)
+        self.assertIn('Historical pre-publication core observation', readme)
+
     def test_current_published_v211_binds_observed_remote_release(self) -> None:
         published = self.state['published_release']
         self.assertEqual(published['tag'], 'v2.1.1')
@@ -808,13 +846,17 @@ class ProjectStateTests(unittest.TestCase):
             ],
         )
 
-    def test_current_core_source_has_no_artifact_or_successor_acceptance(self) -> None:
+    def test_historical_core_source_record_has_no_artifact_or_successor_acceptance(self) -> None:
         state = self.state
         custody_bytes = json.dumps(state["historical_v2_1_0_artifact_custody"], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
         self.assertEqual(hashlib.sha256(custody_bytes).hexdigest(), "4946161882bdd7509b81e491cfca8f797e90f86c8489884232cc0b3bf67cdfa9")
         local = state["local_candidate"]
         current = state["current_unreleased_change"]
         delivery = state["active_delivery"]
+        self.assertEqual(current['record_scope'], 'historical')
+        self.assertEqual(delivery['record_scope'], 'historical')
+        self.assertEqual(state['active_source_delivery']['record_scope'], 'historical')
+        self.assertIn('Historical pre-publication', local['record_scope'])
         self.assertEqual(local["version"], "2.1.1")
         self.assertEqual(local["status"], "source_candidate")
         self.assertEqual(current["status"], "source_candidate")

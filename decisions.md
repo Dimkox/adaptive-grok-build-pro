@@ -1,5 +1,13 @@
 # Decisions
 
+## 2026-10-04 — Separate current continuation from dated delivery records
+
+An additive current_continuation pointer makes PR239 cleanup and its PR240 dependency explicit while preserving historical core/custody identities and unaccepted F/G boundaries. Historical record_scope labels prevent preserved next-action prose from becoming fresh instructions; current checked/merge/external-success identities stay unknown until independently established.
+
+## 2026-10-04 — Measure the serial factory lane separately
+
+The coordinator's historical companion verification at exact HEAD 63cd1e0e6be67d01815a85375f306b09beba8499 measured factory-unit's 1,016 tests at 562.771 seconds, versus Core xdist with 12 workers at 117.955 seconds. More agent slots or CPUs do not accelerate that serial factory lane by themselves; profile or shard it separately without introducing skips. These are companion measurements, not current product verification, and this cleanup changes no runner.
+
 ## 2026-10-04 — Preserve complete verification evidence in a bounded runtime artifact
 
 Large verification reports are durably stored in ignored runtime with a finite 8 MiB cap before the unchanged-size receipt publishes a closed path, exact-byte count and SHA-256 reference. Descriptor-safe readers verify the complete report and every immutable envelope binding before hydrating details, preserving all paths, scope, skips, results and logs without invented artifact claims. Small receipts and other receipt kinds remain inline; missing, tampered, unsafe or oversized reports fail closed.
