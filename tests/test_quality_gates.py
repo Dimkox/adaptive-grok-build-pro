@@ -30,6 +30,27 @@ BASE_PR_CHECKS = [
 
 
 class QualityGateTests(unittest.TestCase):
+    def test_discovery_status_matrix_requires_execution(self) -> None:
+        for mode in ('pr', 'release'):
+            for runner in ('python-unittest', 'pytest', 'python-focused-unittest'):
+                for status in (None, 'skip', 'cancelled', 'unknown', 'pass', 'fail'):
+                    with self.subTest(mode=mode, runner=runner, status=status):
+                        checks = [item for item in BASE_PR_CHECKS if item.name not in {'python-unittest', 'coverage'}]
+                        scope = None
+                        if runner == 'python-focused-unittest':
+                            scope = {'eligible': True, 'skipped_checks': ['python-unittest', 'coverage']}
+                            checks.extend([check('python-unittest', 'skip'), check('coverage', 'skip')])
+                        else:
+                            checks.append(check('coverage'))
+                        if status is not None:
+                            checks.append(check(runner, status, 'architecture input preflight failed; not started' if status == 'skip' else 'result'))
+                        decision = evaluate_quality_gate(mode=mode, checks=checks, docs_scope=scope)
+                        # A failed executed run has complete admission evidence; the
+                        # verifier's aggregate result still rejects the failing check.
+                        self.assertEqual(decision.status, 'pass' if status in {'pass', 'fail'} else 'fail')
+                        if status not in {'pass', 'fail'}:
+                            self.assertIn('python-discovery', {item['path'] for item in decision.details})
+
     def test_scoped_full_discovery_skips_require_a_focused_result(self) -> None:
         checks = [item for item in BASE_PR_CHECKS if item.name not in {'python-unittest', 'coverage'}]
         checks.extend([check('python-unittest', 'skip'), check('coverage', 'skip')])

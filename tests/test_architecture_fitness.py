@@ -2075,6 +2075,18 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     (),
                 )
 
+    def test_queue_adapter_cycle_at_depth_limit_does_not_enter_a_new_module(self) -> None:
+        self.assertEqual(FIT.MAX_QUEUE_ADAPTER_DEPTH, 8)
+        resolving = {f'adapters.m{index}' for index in range(FIT.MAX_QUEUE_ADAPTER_DEPTH)}
+        ninth = f'adapters.m{FIT.MAX_QUEUE_ADAPTER_DEPTH}'
+        cache = FIT._QueueResolutionCache(tuple(sorted(resolving | {ninth})), (), {})
+        cycle = FIT._local_queue_resolution(ROOT, None, 'adapters.m0', 'head', cache, set(resolving), set(resolving), ())
+        self.assertEqual(cycle.state, 'unsupported')
+        self.assertEqual(cycle.reason, 'cyclic_local_queue_adapter')
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, 'queue adapter depth limit') as raised:
+            FIT._local_queue_resolution(ROOT, None, ninth, 'head', cache, set(resolving), set(resolving), ())
+        self.assertEqual(raised.exception.code, 'limit')
+
     def test_queue_adapter_resolution_bounds_fail_closed_only_for_possible_operations(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

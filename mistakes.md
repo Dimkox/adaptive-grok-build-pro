@@ -1,5 +1,17 @@
 # Mistakes
 
+## 2026-10-04 — An idle writer was messaged without being resumed
+
+The coordinator sent actionable repair work with non-resuming `send_message` to a completed writer, so implementation remained idle. Use `followup_task` for actionable idle-agent work and confirm its running status.
+
+## 2026-10-04 — A closing import cycle was counted as a new module
+
+Queue adapter resolution checked the eight-module depth cap before recognizing an already resolving module, so a cycle closing at depth eight was incorrectly classified as an attempted ninth module. Check cycle membership first; keep cyclic adapters unsupported and genuinely new ninth modules rejected by the unchanged cap.
+
+## 2026-10-04 — Runner presence was confused with execution
+
+The focused admission predicate checked only record presence, while full discovery excluded `skip` but still counted `cancelled` and unknown statuses. Both predicates now admit only executed `pass`/`fail` results, tested across absent, skipped, cancelled, unknown, passing and failing states for both PR and release modes. A failed executed run provides admission evidence but still fails the verifier's aggregate result.
+
 ## 2026-10-04 — Read-only Git commands changed verifier binding metadata
 
 Concurrent Git commands that appear read-only may refresh the index and change `.git/worktrees` metadata while the architecture verifier checks its bound repository. Use `GIT_OPTIONAL_LOCKS=0` for read-only Git operations and serialize all Git mutation outside verifier execution. Keep binding checks strict rather than accepting a changed repository identity.

@@ -2062,10 +2062,10 @@ def _local_queue_resolution(
     prefetched = cache.values.get(module)
     if prefetched is not None and prefetched.state != "prefetched":
         return prefetched
-    if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
-        raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     if module in resolving:
         return _QueueAdapterResolution("unsupported", "cyclic_local_queue_adapter")
+    if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
+        raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     resolving.add(module)
     try:
         sources = prefetched.sources if prefetched is not None else ()

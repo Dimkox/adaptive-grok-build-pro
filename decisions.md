@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Distinguish cycle closure from new depth
+
+Cycle membership must be recognized before charging another adapter-depth step, because returning to an existing module does not enter a ninth module. Reordering those checks removes the false limit exception while preserving unsupported cyclic adapters, the depth-eight cap and genuine queue fail-closed behavior.
+
 ## 2026-10-04 — Bind replacement discovery to disclosed scope
 
 Focused discovery requires an eligible documentation/state scope, a passing scope check, and explicit skipped records for coverage and its declared replaced runner. Every full discovery runner, including pytest, requires a coverage record; the documented pytest-owned skip stays explicit and valid. Valid YAML comment tampering proves archive rejection depends on its byte digest rather than incidental parse errors.

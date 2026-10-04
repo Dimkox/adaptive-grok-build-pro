@@ -105,8 +105,8 @@ def evaluate_quality_gate(
             details.append(_detail("mandatory-check-missing", name, f"{name} did not run"))
 
         full_runners = set(check_map) & FULL_DISCOVERY_RUNNERS
-        full_discovery_reported = any(_value(check_map[name], 'status') != 'skip' for name in full_runners)
-        focused_reported = bool(set(check_map) & FOCUSED_DISCOVERY_RUNNERS)
+        full_discovery_reported = any(_value(check_map[name], 'status') in {'pass', 'fail'} for name in full_runners)
+        focused_reported = any(_value(check_map[name], 'status') in {'pass', 'fail'} for name in set(check_map) & FOCUSED_DISCOVERY_RUNNERS)
         focused_admitted = (
             focused_reported
             and _value(check_map.get('docs-state-scope'), 'status') == 'pass'
@@ -128,7 +128,7 @@ def evaluate_quality_gate(
                 _detail(
                     "mandatory-check-missing",
                     "python-discovery",
-                    "no Python discovery runner reported a result",
+                    "no Python discovery runner reported an executed pass/fail result",
                 )
             )
         if full_runners and "coverage" not in check_map:
