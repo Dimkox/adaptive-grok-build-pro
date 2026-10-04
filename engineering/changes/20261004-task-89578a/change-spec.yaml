@@ -50,7 +50,7 @@
     },
     {
       "id": "AC-005",
-      "statement": "Delivery instructions require batched same-writer fixes, narrow clean agent briefs, complete review persistence before final freeze, and independent exact-head gates.",
+      "statement": "Bounded committed-HEAD observations without receipt or scope admission precede both independent selected reviews; persist both reports, commit and freeze, then run one final full local PR gate in parallel with external App-owned exact-head Trust CI after exact delegated UNVERIFIED transport, preserving fresh receipts, approvals and protected PR eligibility.",
       "evidence": [
         {
           "receipt": "code_review"

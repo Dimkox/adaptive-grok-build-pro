@@ -1045,3 +1045,7 @@ The nine root hook shims duplicated one template and made the public root look l
 ## 2026-10-04 — Stop nonqualifying dispatch, retain final admission
 
 PR/release now share the closed per-result QG policy at dispatch boundaries; actual refusals retain their output, and undispatched checks remain explicit skips while source stability and final QG still run. The first 29 bounded controls passed in 20.390 s, including real Core-import smoke, timeout and unchanged receipt controls; this is targeted evidence, not full verification. Named smoke uses the existing Core environment and subprocess ownership rather than another discovery runner; its 1–180 s process budget adds bounded cleanup and identity-check overhead.
+
+## 2026-10-04 — Qualify once after persisted independent reviews
+
+The user selected bounded committed-HEAD observations → independent reviews → persist both reports/commit/freeze → one final full local PR gate in parallel with App-owned exact-head Trust CI after exact delegated UNVERIFIED transport. This removes the duplicate preliminary full cycle without reducing checks or reusing historical PASS; receipts, approvals and protected PR eligibility remain exact-head requirements. Ten minutes is an unconfirmed target: the observed prior full took about674s, including serial PostgreSQL506.003s, and Core/PostgreSQL overlap is not implemented.

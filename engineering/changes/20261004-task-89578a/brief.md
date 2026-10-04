@@ -31,7 +31,7 @@ Stop local verification after a decisive required refusal, retain the actual fai
 
 - Backward compatibility: successful verification retains its selected checks and receipt contract. Diagnostic continuation may use an explicit opt-in if necessary; unexecuted is never passed or silently reused.
 - Data/privacy: public evidence uses neutral relative paths, no operator home/network identity.
-- Performance: short iteration target180s; no guarantee that the mandatory full successful gates fit that budget.
+- Performance: short iteration target180s; ten-minute delivery is an unconfirmed target. The full set stays unchanged; PostgreSQL is still serial and Core/PostgreSQL overlap is not implemented.
 - Operational: exact original base ee3911869419204154e02900e58bf31492ee744c, one application writer, no edits during final checks.
 
 ## Dependencies and resource schedule
@@ -40,7 +40,7 @@ Startup snapshot recorded before route inspection at 2026-10-04T19:51:32Z:14 phy
 
 1. Four independent read-only route analyses in one wave: repo_explorer (control flow), architect (minimal safe design), docs_researcher (existing fast mode/instructions), integration_architect (receipt consumers). No nested agents. At most four lightweight worker processes across this wave.
 2. Coordinator invokes the startup PR selector with verified allocation before heavy verification. Analysts return concise reports out-of-band; coordinator persists them before assigning sole application writer general_implementer.
-3. Writer reproduces RED then GREEN; committed-HEAD short controls use the actual Core environment. Full preflight precedes the two route-selected independent reviewers, dispatched together.
-4. After all reviews finish, coordinator persists complete reports and commits final candidate. Final local PR and external exact-head gates may overlap after exact delegated unverified transport; no source changes during those gates. An identical merged tree is a no-op, not another full rerun.
+3. Writer reproduces RED then GREEN; bounded committed-HEAD controls use the actual Core environment as observations without receipt or scope admission. Dispatch the two route-selected independent reviewers together after those controls, without a preliminary full local gate.
+4. After all reviews finish, coordinator persists both complete reports, commits and freezes the candidate. Run ONE final full local PR gate in parallel with external App-owned exact-head Trust CI after exact delegated UNVERIFIED branch transport; the unchanged selector selects scope before heavy checks. Current receipts, approvals and protected PR eligibility remain mandatory. An identical merged tree is a no-op. This user-approved order supersedes earlier pre-review full-gate guidance and does not cache or reuse a historical PASS.
 
 No named human gates on route89578a99758f. Prior explicit user implementation approval applies to this bounded existing-flow change. Technical rulings are recorded here rather than prompting again.

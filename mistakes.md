@@ -1779,3 +1779,7 @@ Root cause: the coordinator assumed `.review-scratch` was ignored without checki
 ## 2026-10-04 — Refusal fixtures relied on earlier failures being ignored
 
 Root cause: synthetic PR fixtures omitted a valid spec or contained Ruff-invalid sample Python, then expected a later check to execute despite that earlier refusal. The new boundaries exposed this in a bounded covering run (12 failures, 233 passes, 42.73 s); diagnostic fixtures now explicitly request keep-going, while successful scope fixtures provide lint-valid source and a real typed binding. Establish valid prerequisites before injecting the refusal a behavioral test is meant to observe.
+
+## 2026-10-04 — Preliminary full gate duplicated the serial PostgreSQL cycle
+
+Root cause: delivery guidance required a full local gate before reviews and another after persisting their reports, repeating the expensive serial PostgreSQL checks. The user-approved sequence uses bounded committed-HEAD observations before review and one final qualifying full run on the frozen report-containing candidate. Historical PASS is never cached qualification; the ten-minute target and Core/PostgreSQL overlap remain unproven/unimplemented.
