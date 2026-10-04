@@ -2,7 +2,62 @@
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
-## Repository startup baseline
+## What it does in five minutes
+
+Adaptive Grok Build Pro installs a local Grok/Codex-style agent workflow into another repository. The short path is:
+
+1. inspect a target repository without changing it;
+2. install local hooks, skills and scripts only when the plan is acceptable;
+3. let the agent turn one task into a route, a change package and a branch;
+4. run local verification and review evidence;
+5. ship through a pull request instead of trusting chat output.
+
+The heavy Trust CI, signed approvals and external holdout checks are the safety layer for merge authority. They are not needed to read the repo, create an install plan, run the local demo, or try the simple agent loop.
+
+## First run: simple path
+
+```bash
+git clone https://github.com/Dimkox/adaptive-grok-build-pro.git
+cd adaptive-grok-build-pro
+python3 scripts/grok_doctor.py --offer-install
+python3 scripts/install_into.py --plan /absolute/path/to/your/repo
+```
+
+If the plan looks right, apply it in a normal branch of the target repository. For a brand-new Linux target, use an absent path:
+
+```bash
+python3 scripts/install_into.py --materialize-new /absolute/path/to/new/repo
+```
+
+Then open the target in Grok, trust the project hooks, and give one concrete task. The local loop is:
+
+```bash
+python3 scripts/grok_route.py "Добавить поведение с явными критериями приёмки" --session first-task --json
+python3 scripts/grok_change.py start --title "Первая задача"
+python3 scripts/grok_status.py
+python3 scripts/grok_verify.py --mode pr
+```
+
+This gives you a candidate and evidence. It does not merge, deploy, publish, or mutate production systems.
+
+## What this repository contains
+
+- `scripts/install_into.py`: read-only install planning for existing repos and no-replace materialization for absent repos.
+- `.agents/skills/`: domain skills for agent work, including Bitrix, API/events, frontend, data, security and release tasks.
+- `.grok-stack/`: local routing, verification, architecture, governance and receipt code.
+- `factory/`, `delivery/`, `pilot/`: default-off factory, staged delivery and pilot boundaries.
+- `trust-ci/`: optional separately deployed merge authority. It is advanced operator infrastructure, not part of the first run.
+- `engineering/changes/`, `decisions.md`, `mistakes.md`: durable evidence and lessons for later agents.
+
+## What this is not
+
+- It is not a hosted SaaS.
+- It is not a GitHub Actions workflow.
+- It is not an automatic merge bot.
+- It does not make the agent a production operator by default.
+- It does not turn local receipts into merge authority.
+
+## Advanced startup baseline
 
 **Step zero, before all other startup work:** [measure resources](AGENTS.md#mandatory-startup-algorithm-measure-then-dispatch)—physical/online logical CPUs, process affinity, effective cpuset and finite cgroup quotas; try a bounded child-only affinity expansion when appropriate, derive verified effective capacity and record the snapshot. Only then inspect backlog/routes, build dependencies and dispatch all independent route-permitted work in parallel, spreading eligible heavy work across that capacity. Isolated writer ownership comes next, followed by verification/delivery gates. Remeasure every startup: the September 26 observation of **14 physical / 28 logical CPUs**, with default affinity exposing 22 and a verified `taskset -c 0-27` child exposing 28, is not a permanent guarantee.
 
@@ -243,26 +298,21 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) — non-indexable Russian showcase
 - [LICENSE](LICENSE)
 
-## What this is
+## Advanced control planes
 
-- Zero-context project handoff through `START_HERE.md` and `PROJECT_STATE.json`
-- Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
-- Quality profiles and change packages under `engineering/changes/`
-- Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
-- Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
-- Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
-- Advisory model-neutral Spec Kit, BMAD, and Superpowers artifact imports with stable task graphs and deterministic convergence (never route, governance, approval, receipt, or merge authority)
-- Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
-- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the L5 landing runtime with bounded artifact generation
-- Separate operator-owned `pilot/` boundary with built-in default-off phased CLI, one exact repository/base, one Codex start, one test command, literal GitHub effect resources, deterministic restart recovery, and no automatic write retry
-- Local verification / review receipts via `scripts/grok_*.py`
-- Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md) via `scripts/grok_history.py` separates observed PRs, source-identified work units, acceptance, intervention coverage and exact-profile metadata; imported history has no M8 qualification or authority effect.
-- [Cross-project confirmations](engineering/project-confirmations/README.md) index dated, source-pinned examples without adding M8 qualifying tasks or activation.
-- Multi-agent discipline described in `AGENTS.md`
-- One-command local browser tour backed by the same read-only route, spec, architecture and governance logic
-- `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
-- Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
-- GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
+The first run above is intentionally small. These subsystems exist for teams that need stricter autonomous-delivery controls:
+
+- Zero-context handoff through `START_HERE.md` and `PROJECT_STATE.json`.
+- Task routing plus domain skills for Bitrix, API/events, data, frontend, security, incidents and releases.
+- Change packages under `engineering/changes/`.
+- Typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints.
+- Executable architecture checks with deterministic digests, exact-state diff, drift, fitness and projection-only diagrams.
+- Governance checks for candidate-owned inputs, reviewed lifecycle, exact evidence digests, canonical examples and intentional-debt records.
+- Advisory Spec Kit, BMAD and Superpowers imports. These are parsed as workflow artifacts; they never become route, approval, receipt, governance or merge authority.
+- Default-off factory, delivery and pilot boundaries under `factory/`, `delivery/` and `pilot/`.
+- Local verification and review receipts via `scripts/grok_*.py`.
+- Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md).
+- Optional independently deployed Trust CI with GitHub App-owned policy checks, external holdout validation and signed exact-SHA attestations.
 
 ## Executable architecture
 

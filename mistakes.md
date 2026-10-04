@@ -1664,3 +1664,7 @@ Root cause: the implementation switched the focused runner to path-based unittes
 ## 2026-10-04 — Full PR verifier was run before the new root file was committed
 
 Root cause: `tests/test_structure.py` compares canonical root entries against `git ls-tree HEAD`, so a new root ТЗ file remains invisible until it is committed. Run targeted tests before commit, but run full PR verification only after the candidate tree is frozen and committed.
+
+## 2026-10-04 — README explained internal bureaucracy before user value
+
+Root cause: public documentation led with startup capacity, routing, Trust CI and control-plane vocabulary before answering what the tool does and how to try it. External readers therefore saw overengineering before the simple repo-to-PR workflow. Keep the first screen focused on outcome, first run and boundaries; move heavy controls to an advanced section.
