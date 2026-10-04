@@ -1,5 +1,13 @@
 # Mistakes
 
+## 2026-10-04 — Substring sanitization corrupted ordinary Russian words
+
+The cleanup matched offensive substrings inside the benign words “ослаблять”, “ослабляет” and “дубля”, corrupting requirement text and breaking immutable owner-document hashes. Restore those words and keep the deliberate host redaction separately pinned as a public projection; do not re-label edited bytes as the original owner document.
+
+## 2026-10-04 — Approval failure did not stop a dependent external write
+
+The coordinator mistakenly requested `git-push-branch` under the `external-write` approval scope; grant creation failed, but the shell lacked failure stopping, so the user-authorized isolated branch push of `1e4017b9446efc12d52c34d65fd52ba1fafd2183` and PR edit proceeded without a successfully materialized local grant. Correct grants were created only for future actions; they do not retroactively establish a grant for those completed operations. Run approval-dependent writes in separate checked tool calls, or use failure-stopping shell execution, and proceed only after confirming that the exact required grant exists.
+
 ## 2026-10-04 — Archive cleanup omitted provenance and fresh release observation
 
 Renaming historical packages without a spec migration record made strict Git-range selection treat missing origins and legacy destinations as current gate evidence. The handoff also retained a pre-publication 2.1.1 candidate after the release was published because it was copied without checking remote release identities. Bind migrations to the trusted exact base and retained bytes, and preserve dated candidate observations separately from current remote publication.

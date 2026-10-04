@@ -122,9 +122,9 @@ On Linux, `auto` uses the minimum of 28, process affinity or CPU-count fallback,
 
 Where this runner cannot provide its required parallel-process cleanup, a positive request selects the existing `unittest-degraded` engine before execution. Supported parallel execution retains its strict pins; measured serial execution retains pinned coverage. An actual failed parallel run is never retried serially. The implementation lives in `.grok-stack/adaptive_grok/python_test_runner.py` and its private `_cpu_capacity.py` helper; native Windows and older-interpreter qualification remain separate from fixture-based evidence.
 
-## Как пользоваться кандидатом 2.1.1
+## Как пользоваться опубликованной версией 2.1.1
 
-2.1.1 сейчас — исходный кандидат, а не опубликованный ZIP. Опубликованный релиз — v2.0.19. Наличие исходников F/G не означает их принятие, развёртывание Trust CI или готовую автономную фабрику. BB, rotator, VibeVM, FPF, prediction и Linux setup остаются выключенными по умолчанию; полный внешний пилот и эксплуатационная квалификация не подтверждены. U4/macOS в этот объём не входят.
+v2.1.1 опубликован 2026-10-03 из PR #238; ZIP и контрольная сумма доступны в GitHub Releases. Наличие исходников F/G не означает их принятие, развёртывание Trust CI или готовую автономную фабрику. BB, rotator, VibeVM, FPF, prediction и Linux setup остаются выключенными по умолчанию; полный внешний пилот и эксплуатационная квалификация не подтверждены. U4/macOS в этот объём не входят.
 
 1. Получите исходники и зафиксируйте, что именно проверяете:
 
@@ -132,11 +132,11 @@ Where this runner cannot provide its required parallel-process cleanup, a positi
    git clone https://github.com/Dimkox/adaptive-grok-build-pro.git
    cd adaptive-grok-build-pro
    git fetch --all --prune
-   git switch --track origin/feat/v211-combined-source
+   git switch --detach v2.1.1
    git rev-parse HEAD
    ```
 
-   Это ветка Core-кандидата, не подтверждённый полный релиз F/G. Для полного кандидата используйте только точную ветку/commit из актуального PROJECT_STATE.json и принятого PR; если такого указания нет, не подменяйте его тегом 2.1.1. Перед дальнейшей работой выполните измерение CPU/affinity/cgroup по AGENTS.md и сохраните результат локально; затем прочитайте START_HERE.md, PROJECT_STATE.json и AGENTS.md. Команды Git создают локальную копию/обновляют refs, но не меняют удалённый репозиторий.
+   Это неизменяемый опубликованный снимок `97a7581238022356b2de8d193a9bd8363fc92dc3`. Для новой задачи создайте отдельную ветку от принятого снимка; текущая очистка исходников проходит отдельный PR #239. Перед дальнейшей работой выполните измерение CPU/affinity/cgroup по AGENTS.md и сохраните результат локально; затем прочитайте START_HERE.md, PROJECT_STATE.json и AGENTS.md. Команды Git создают локальную копию/обновляют refs, но не меняют удалённый репозиторий.
 
 2. Проверьте инструменты:
 

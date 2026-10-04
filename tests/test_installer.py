@@ -377,8 +377,8 @@ class InstallerTests(unittest.TestCase):
     def test_target_without_record_delivers_every_source_managed_path_intact(self) -> None:
         # No-record parity is an in-tree property, not a snapshot: the checkout feeding
         # the plan differs by branch, so the test recomputes the source inventory and
-        # verifies every delivered entry (except synthesized consumer documents)
-        # byte-matches its source file - dropping any payload path breaks it anywhere.
+        # verifies every delivered entry against its source file or synthesized
+        # hook template - dropping any payload path breaks it anywhere.
         with tempfile.TemporaryDirectory() as tmp:
             plan = MODULE.plan_install(ROOT, Path(tmp) / "t")
             self.assertEqual(plan["kept"], [])
@@ -389,8 +389,9 @@ class InstallerTests(unittest.TestCase):
             for entry in plan["entries"]:
                 if entry["path"] in {"AGENTS.md", "factory/README.md"}:
                     continue
-                source = (ROOT / entry["path"]).read_bytes()
-                self.assertEqual(entry["sha256"], hashlib.sha256(source).hexdigest(), entry["path"] if False else entry["path"])
+                source_path = MODULE.ROOT_HOOK_SHIM_TEMPLATE if entry["path"] in MODULE.ROOT_HOOK_SHIMS else entry["path"]
+                source = (ROOT / source_path).read_bytes()
+                self.assertEqual(entry["sha256"], hashlib.sha256(source).hexdigest(), entry["path"])
                 self.assertEqual(entry["size"], len(source), entry["path"])
 
     def test_existing_target_modes_are_read_only(self) -> None:

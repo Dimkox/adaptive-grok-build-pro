@@ -1,0 +1,38 @@
+{
+  "head": "1e4017b9446efc12d52c34d65fd52ba1fafd2183",
+  "base": "97a7581238022356b2de8d193a9bd8363fc92dc3",
+  "tree_fingerprint": "d77e2d1350d6927587d575e795bf1f0218e483a3b3b41fd3362ec57243a16b6f",
+  "mode": "pr",
+  "status": "fail",
+  "terminal_state": "completed",
+  "evidence_status": "not_recorded",
+  "profile": "full-pr-suite",
+  "reason_code": "unsafe-file-status",
+  "changed_paths_digest": "4d73bf603e9993885748f5dabcb719ff3b702ebd4ecfdf2aa9857d82ff03eaab",
+  "skipped_checks": [],
+  "core": {
+    "passed": 1153,
+    "failed": 2,
+    "subtests_passed": 1956,
+    "seconds": 102.61,
+    "workers": 12,
+    "coverage_percent": 81.43297990188321,
+    "coverage_qualifies": false,
+    "failures": [
+      "test_admitted_bundle_preserves_owner_bytes_and_exclusions: sanitization changed owner-document bytes",
+      "test_target_without_record_delivers_every_source_managed_path_intact: test reads deleted source hook"
+    ]
+  },
+  "factory_unit": "pass",
+  "factory_postgres_exit": {
+    "status": "fail",
+    "tests": 1016,
+    "errors": 1,
+    "skipped": 2,
+    "seconds": 517.006,
+    "cause": "Historical source-preservation test reads removed v2.0.13 ZIP from Git custody"
+  },
+  "source_stability": "pass",
+  "quality_gate": "pass",
+  "notes": "Historical preflight for this exact source identity. It does not qualify the repaired successor. After targeted repairs, read-only reviews inspect the frozen successor; final full verification binds the reports and final source, avoiding an extra identical full run before report persistence. No current success is inferred from these historical results."
+}

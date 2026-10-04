@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Test synthesized payloads and retained historical contracts
+
+Installer parity tests compare generated root hook entries to the retained shim template rather than deleted root copies. Historical package tests keep exact release digest and tag/tree bindings in the retained custody record without requiring removed ZIPs or claiming fresh binary verification; sanitized owner documents have separate provenance with no qualification effect.
+
 ## 2026-10-04 — Preserve strict specs through public archive cleanup
 
 Neutral date/route package names prevent every title from leaking into public paths. Explicit original Git blob and retained-byte digest mappings let historical v1 specs be archived while relocated v2 specs still pass the current strict gate; unknown, active, missing or tampered specs fail. A measured 123.1 MB archive batch uses a finite 128 MB aggregate identity budget while analysis-memory and per-blob limits remain unchanged.

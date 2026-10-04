@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 from datetime import datetime, timezone
 import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -411,7 +412,7 @@ class LandingApiTests(unittest.TestCase):
         self.assertNotIn("create_task", called_attributes)
         self.assertEqual(1, called_attributes.count("to_thread"))
 
-    def test_predecessor_contract_migration_showcase_and_published_package_are_frozen(self):
+    def test_predecessor_contract_migration_showcase_and_published_release_record_are_frozen(self):
         def aggregate(paths):
             digest = hashlib.sha256()
             values = tuple(sorted(paths, key=lambda item: item.as_posix()))
@@ -466,11 +467,17 @@ class LandingApiTests(unittest.TestCase):
             (6, "f7b4e8b3a53efa226cd198d7ca9449db882ddbc63792af7284457251c8e17c96"),
             aggregate(showcase),
         )
-        package = Path("packages/adaptive-grok-build-pro-v2.0.13.zip")
+        # Historic binary custody is external to the source tree. Bind its
+        # retained immutable record without claiming fresh verification of ZIP bytes.
+        state = json.loads(Path('PROJECT_STATE.json').read_text(encoding='utf-8'))
+        published = next(record for record in state['prior_published_releases'] if record['tag'] == 'v2.0.13')
         self.assertEqual(
             "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c",
-            hashlib.sha256(package.read_bytes()).hexdigest(),
+            published['artifact']['sha256'],
         )
+        self.assertEqual(published['artifact']['binding'], 'immutable_release_tag')
+        self.assertEqual(published['merge_commit'], '8599d45f4f28285381b05a53feb3059de92eb2a8')
+        self.assertEqual(published['tree'], '03e122a30fb2dbb59907f4c4c28e17f93cbf0751')
 
 
 if __name__ == "__main__":
