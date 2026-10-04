@@ -79,7 +79,7 @@ Known weak seams this line is closing:
 - A timeout or interrupted verifier is incomplete, not a pass.
 - A restarted attempt cannot reuse an old model/config/profile identity without requalification.
 
-The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The published release is `v2.1.1`; the external pilot remains unqualified, and publication does not confer production authority.
+The price is deliberate. For a small personal patch this can feel too heavy. For an autonomous agent touching someone else's repository, the route, change package, fitness checks, receipts, external holdout and human merge gate are the safety boundary. The published release is `v2.1.1`. Liqvera is a completed owner-accepted factory-built product; empirical autonomy qualification and production authority remain separate.
 
 ## Advanced startup baseline
 
@@ -105,7 +105,8 @@ The source tree also carries closed default-off BB contracts, an authenticated o
 | 2.1.0 candidate capabilities | U5 prediction artifacts are observation-only and require declared history before they can report availability. U6's pinned FPF snapshot can only emit deterministic evaluation evidence; external qualification remains `not_qualified`/not established and all authority effects remain `none`. |
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
-| Remaining acceptance | A full external pilot with maintainer acceptance, a qualifying M8 cohort/activation, and general M9 operational qualification are **not established**. L5 artifact generation establishes no public-site publication. |
+| Completed product | M8 **DONE**: owner confirms the working Liqvera Mezo Buildathon demo was built by this factory. Released `v0.0.5` source `19284fb07fedd4909672c7e9a641cb066efbb7cc` pins factory `v2.0.19` / `cb9af4073ba6c3d515145164d771c75ebdfa3224`. Accepted-product dependencies and M8/M9 follow-up planning are unblocked; [exact provenance and boundaries](PROJECT_STATE.json) distinguish owner acceptance from runtime telemetry. |
+| Remaining acceptance | M7 durable current lookup, 30 distinct exact-profile tasks, M8 cohort/activation, complete cost/intervention accounting, and general M9 signed environment/recovery qualification remain unestablished. Factory-runtime public-site publication is also unestablished. Another first completed pilot is not required. |
 
 Historical `v2.0.19` delivery records the source line through PR #193 in release-sync PR #189. Its [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) preserve separate source verification, artifact provenance and publication; they do not instruct another artifact build, tag or release of published `v2.1.1`.
 

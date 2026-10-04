@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-04 — Ignored an existing owner-accepted factory result
+
+Root cause: planning treated missing recorded telemetry as absence of the owner's completed factory-built Liqvera product, then proposed a duplicate pilot and unsupported ETA. Record the accepted result and unblock its dependencies; derive remaining technical estimates from actual scope and measurements.
+
 ## 2026-10-04 — Pre-commit HEAD inventory masked newly tracked launchers
 
 The root inventory test reads `git ls-tree HEAD`, so the pre-commit binding run checked the old commit where restored launchers were still absent rather than the pending candidate that introduced them. The exact nine compatibility entries were therefore not added to its closed expected set until committed full verification exposed the mismatch. Tests whose input is HEAD must be rerun after commit; passing a dirty-tree test run alone does not establish the committed candidate's inventory.

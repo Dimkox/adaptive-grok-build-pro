@@ -112,6 +112,31 @@ def _section(text: str, heading: str) -> str:
 
 
 class ProjectStateTests(unittest.TestCase):
+    def test_m8_completed_liqvera_case_unblocks_only_accepted_product_dependencies(self) -> None:
+        self.assertIn("completed_product_case", self.state["milestones"]["M8"])
+        case = self.state["milestones"]["M8"]["completed_product_case"]
+        self.assertEqual(case["status"], "DONE")
+        self.assertEqual(case["repository"], "Dimkox/liqvera")
+        self.assertEqual(case["observed_main_sha"], "97484401d50fa3fb28ebd813cc8320e7e51c72f5")
+        self.assertEqual(case["release_source_sha"], "19284fb07fedd4909672c7e9a641cb066efbb7cc")
+        self.assertEqual(case["release_tag"], "v0.0.5")
+        self.assertEqual(case["factory_source_sha"], V2019_MERGE_COMMIT)
+        self.assertEqual(case["acceptance"]["evidence_kind"], "explicit_owner_confirmation")
+        self.assertTrue(case["acceptance"]["completed_working_factory_built_product"])
+        self.assertFalse(case["acceptance"]["independent_runtime_telemetry"])
+        self.assertEqual(set(case["unblocked_dependencies"]), {
+            "first_completed_factory_product", "external_maintainer_accepted_product",
+            "m8_accepted_product_followup_planning", "m9_accepted_product_followup_planning",
+        })
+        self.assertEqual(set(case["remaining_prerequisites"]), {
+            "m7_durable_current_lookup", "m8_30_distinct_exact_profile_tasks",
+            "m8_activation", "complete_cost_and_intervention_accounting",
+            "m9_signed_environment_recovery_authority", "factory_site_publication",
+        })
+        self.assertTrue(self.state["operational_qualification"]["external_maintainer_accepted_pilot"])
+        self.assertEqual(self.state["next_external_pilot"]["record_scope"], "historical_superseded")
+        self.assertFalse(self.state["next_external_pilot"]["maintainer_acceptance"])
+
     def test_current_continuation_binds_cleanup_dependency_and_fresh_clone(self) -> None:
         state = self.state
         self.assertTrue('current_continuation' in state, 'missing current continuation record')
@@ -202,8 +227,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
-        for milestone in state["milestones"].values():
-            self.assertEqual(set(milestone), set(AXES))
+        for name, milestone in state["milestones"].items():
+            expected_axes = set(AXES)
+            if name == "M8":
+                expected_axes.add("completed_product_case")
+            self.assertEqual(set(milestone), expected_axes)
 
         expected = {
             "M0": ("complete", "passed", "not_applicable", "delivered", "stale"),
@@ -969,7 +997,7 @@ class ProjectStateTests(unittest.TestCase):
         template = json.loads((ROOT / runtime["source_defaults"]["template"]).read_text())
         self.assertFalse(template["live_enabled"])
         self.assertFalse(runtime["source_defaults"]["live_enabled"])
-        for key in ("external_maintainer_accepted_pilot", "m8_qualifying_cohort", "m8_activation",
+        for key in ("m8_qualifying_cohort", "m8_activation",
                     "m9_general_operational_qualification", "factory_site_publication",
                     "complete_pilot_cost_and_human_intervention_accounting"):
             self.assertFalse(state["operational_qualification"][key])
