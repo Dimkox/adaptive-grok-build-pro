@@ -1,0 +1,31 @@
+{
+  "change_id": "20261005-task-249e86",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T02:43:25+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner explicitly approved narrow separate localchecker PR; exact closed migration/contract compatibility, preserve source separation and deployed boundaries",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T02:43:25+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner-approved source-only checker compatibility for additive004 plan; no migration execution or external writes",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    }
+  ],
+  "route_id": "249e86df9131",
+  "schema_version": 1
+}

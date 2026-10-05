@@ -1,0 +1,5 @@
+# Tests and review
+
+Typed authority: change-spec.yaml. Add RED regressions first. Positive closed exact004 fixture/mirror and exact publicmetadata; negatives pairedhashdrift/mirroronly/missingmirror/delete/historicalmutation/gap/duplicate/005/unknownSQL. Production registry initiallyclosed and cannot receive caller authority. Actualmigration pin waits for independentTask1SQLreview and realPG controls; static byte check alone cannot assert additive SQL/roles/quota correctness.
+
+Contract negatives include path/ID/version/kind/role/compatibility/owner, absent/unrelatedpairedsource, oldbindingchanges, worker runtime/secrets/owner/domain/nodes/edges, arbitrarysource, extra schema and mixedfactory/checker/rules. Include executed parameter list, not unreachable branchlabels. Existing named migration/separation tests retained. Bounded tests <=4workers, no preliminaryfullsuite. After complete implementation and selected independentcode/test/security/data/release reviews persist fullreports, freeze, one full PR verifier; external exactheadApp check separately required.
