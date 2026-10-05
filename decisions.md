@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-05 — Keep historical bytes pinned through one explicit approved view
+
+Admit only the named owner-autonomy successor and prove its three closed version1 variants. Historical predecessor comparison excludes only that exact added path and restores only the explicitly asserted floor1 line to30 in its comparison view, retaining the original count/digest and every unrelated byte pin.
+
 ## 2026-10-05 — Separate artifact validation from a live capability
 
 Check the actual producer and consumer before claiming a feature works; a schema and a synthetic explainer label establish neither model execution nor SHAP calculation. Keep U5 explicitly contracts-only/observation-only until a real model, dataset and explainer run establish the narrower live claim.

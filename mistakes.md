@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Additive schema missed other inventory consumers
+
+Root cause: implementation searched the immediate M8 schema bindings but missed the semantic/bridge exact inventories and historical aggregate; the selected factory-unit subset did not include those full factory-exit consumers. Search every contract inventory and historical byte binding when adding a schema, and distinguish focused observation from the complete factory gate.
+
 ## 2026-10-05 — U5 completion scope was unclear
 
 The distinction between prediction/explanation artifact validation and SHAP calculation was not explicit enough in delivery status. Source inspection finds no SHAP computation entrypoint and finds shap-v1 only in a synthetic fixture; report contracts-only/observation-only rather than a working SHAP feature.

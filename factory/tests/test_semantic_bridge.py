@@ -167,6 +167,7 @@ class SemanticBridgeTests(unittest.TestCase):
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
+            "owner-autonomy.v1.schema.json",
             "prediction-explanation.v1.schema.json",
             "prediction-observation.v1.schema.json",
             "ready-for-pr-bundle.v1.schema.json",
@@ -206,6 +207,16 @@ class SemanticBridgeTests(unittest.TestCase):
             self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
             self.assertFalse(schema["additionalProperties"])
             self.assertEqual(schema["properties"]["schema_version"], {"const": version})
+        owner_schema = json.loads((SCHEMAS / "owner-autonomy.v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(owner_schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+        self.assertEqual(set(owner_schema["$defs"]), {"policy", "case", "activation"})
+        self.assertEqual(owner_schema["oneOf"], [{"$ref": "#/$defs/policy"}, {"$ref": "#/$defs/case"},
+                                               {"$ref": "#/$defs/activation"}])
+        for name, variant in owner_schema["$defs"].items():
+            with self.subTest(owner_variant=name):
+                self.assertIs(variant["additionalProperties"], False)
+                self.assertEqual(set(variant["required"]), set(variant["properties"]))
+                self.assertEqual(variant["properties"]["schema_version"], {"const": 1})
         built = self.build()
         for name, value in (
             ("semantic-execution-binding.v1.schema.json", built.binding.to_dict()),

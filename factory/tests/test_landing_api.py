@@ -413,12 +413,21 @@ class LandingApiTests(unittest.TestCase):
         self.assertEqual(1, called_attributes.count("to_thread"))
 
     def test_predecessor_contract_migration_showcase_and_published_release_record_are_frozen(self):
-        def aggregate(paths):
+        def aggregate(paths, *, historical_m8_floor=False):
             digest = hashlib.sha256()
             values = tuple(sorted(paths, key=lambda item: item.as_posix()))
             for path in values:
                 name = path.as_posix().encode()
                 body = path.read_bytes()
+                if historical_m8_floor and path == Path("factory/contracts/jsonschema/earned-autonomy.v1.schema.json"):
+                    # The owner-approved successor changed exactly this floor.
+                    # Compare all other predecessor bytes against the original
+                    # frozen digest; do not claim the current schema is unchanged.
+                    approved = b'        "minimum_human_acceptances": {"type": "integer", "minimum": 1, "maximum": 10000},\n'
+                    self.assertEqual(body.count(approved), 1)
+                    self.assertEqual(json.loads(body)["$defs"]["cohort_evidence"]["properties"]
+                                     ["minimum_human_acceptances"]["minimum"], 1)
+                    body = body.replace(approved, approved.replace(b'"minimum": 1,', b'"minimum": 30,'), 1)
                 digest.update(len(name).to_bytes(4, "big"))
                 digest.update(name)
                 digest.update(len(body).to_bytes(8, "big"))
@@ -451,6 +460,7 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "bb-lifecycle-observation.v1.schema.json"
             and path.name != "prediction-explanation.v1.schema.json"
             and path.name != "prediction-observation.v1.schema.json"
+            and path != Path("factory/contracts/jsonschema/owner-autonomy.v1.schema.json")
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()
@@ -461,7 +471,7 @@ class LandingApiTests(unittest.TestCase):
         )
         self.assertEqual(
             (23, "98818e23ea78821c1c602774072c77bf7d891ef69fe2ba03f0ecbad9220134fc"),
-            aggregate(predecessor_contracts),
+            aggregate(predecessor_contracts, historical_m8_floor=True),
         )
         self.assertEqual(
             (6, "f7b4e8b3a53efa226cd198d7ca9449db882ddbc63792af7284457251c8e17c96"),
