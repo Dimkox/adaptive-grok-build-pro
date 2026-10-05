@@ -24,6 +24,30 @@
       "resource": null,
       "route_id": "249e86df9131",
       "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T03:39:51+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "Explicit owner reply: Да, узкий отдельный PR локальной проверки. Consent is only ordinary transport of fix/trust-public-local-checker to Dimkox/adaptive-grok-build-pro for that separate source PR; no main write, force push, merge, tag, release, deployment or deployed trust-boundary change.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "external-write",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T03:39:51+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Explicit owner-approved narrow separate local-checker PR only: create that source pull request from fix/trust-public-local-checker into main. This gate record is not the exact-HEAD delegated grant, external signed approval or merge authority; no deployed mutation.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
     }
   ],
   "route_id": "249e86df9131",
