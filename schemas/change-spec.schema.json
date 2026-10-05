@@ -21,6 +21,7 @@
     },
     "criterion": {
       "type": "object", "additionalProperties": false, "required": ["id", "statement", "evidence"],
+      "description": "A statement may declare a set of expected outcomes in braces, for example the cutover reds are exactly {key-A, key-B}. An exact set must name every member in at least one test entry of this criterion's own evidence, so each member carries a liveness proof; a member that no rule of the stack can produce is rejected by the typed validator while the specification is still a plan. Where a member cannot be produced, declare the set as an upper bound and assert non-emptiness instead.",
       "properties": {"id": {"$ref": "#/$defs/ac_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/evidence"}}}
     }
   },

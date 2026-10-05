@@ -1573,6 +1573,11 @@ The first copied checksum sidecar still named the private `-a.zip` staging filen
 
 I started a long verifier before saving the completed route review reports, then had to stop it so the reports could be included in the fingerprinted tree. The durable order is implementation, reviews and persisted reports, then one serialized final verifier and fresh receipts.
 
+### 2026-09-25 — Normalized one side of a before/after comparison and invented 15 regressions
+
+**Symptom:** the backward-compatibility sweep over `engineering/changes/**` reported `verdict_diffs=15` against the shipped validator, which would have been reported as a contract break.
+**Root cause:** the harness stripped the repository-root prefix from the repaired validator's messages but applied the strip with a different, non-matching prefix on the baseline side, so the two lists were compared in different normalizations; the underlying verdicts were identical.
+**Durable rule:** in a before/after comparison, normalize both sides with the same function or neither, and print the first concrete diff before believing a count of differences.
 ### 2026-09-26 — Lost jq object context inside an array pipeline
 
 The ad-hoc inventory filter failed with `expected an object but got: array`: in `select([...] | index(.number))`, the pipe changed dot context to the array, so `.number` targeted that array rather than the input object. Bind the field before entering the array pipeline: `.number as $n | select([... ] | index($n))`. The command was immediately corrected and the final inventory was unaffected.

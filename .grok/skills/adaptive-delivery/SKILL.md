@@ -49,6 +49,7 @@ Dispatch every `analysis_agents` entry in one wave. The route already caps that 
 ## 3. Scope and design gate
 
 Write or update the change brief, acceptance criteria, architecture, risk, and test plan.
+A criterion that declares a set of expected outcomes is checked for satisfiability, not only shape: naming an exact set requires a per-member liveness probe in that criterion's own `test` evidence, and declaring an upper bound requires asserting non-emptiness, because an upper bound without it is satisfied by observing nothing.
 
 When `human_gates` contains `scope_and_design_approval`, present the decision and stop before implementation. For ordinary low/medium-risk tasks without a named gate, proceed after recording a bounded design.
 
