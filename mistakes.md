@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Fixture commits invalidated reusable exact-base materialization
+
+Interleaving commits and checks changed the registered Git-directory identity and rebuilt the same immutable baseline for every matrix case, causing unnecessary subprocess work while the external root suite timed out. Prepare all exact case heads before qualification, retain and validate each captured snapshot against its requested SHA, and preserve every acceptance/rejection case; a measured focused speedup is not proof of external timeout recovery. Reviewer scratch must use the explicit project-root absolute parent: one data-review copy escaped to a home scratch directory and was moved back recoverably after STOP, without deleting data or altering the candidate.
+
 ## 2026-10-05 — Ignored scratch still entered source architecture inventory
 
 The coordinator accepted implementer scratch clones inside the candidate because Git ignored them, but the architecture source inventory also walks filesystem code paths. Final qualifier77792 at7c323b3 refused before heavy tests on those unowned .review-scratch Python files; no test pass or receipt resulted. Move only owned temporary copies outside the candidate under the project's trusted0700 scratch parent before qualification, without changing ignore rules or weakening architecture ownership.
