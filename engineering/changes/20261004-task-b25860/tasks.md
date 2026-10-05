@@ -24,11 +24,11 @@ One/zero threshold parity; wrongrepository/source/profile substitution; absent o
 
 **Interfaces:** consumes existing PROJECT_STATE M8 accepted-product exact provenance and explicit owner-confirmation scope; produces owner qualification, local activation, per-use admission and revocation decisions bound to actual current source/profile and policy/case digests, with initialL1/ceilingL2/no externalauthority. Expose CLI status/activate/admit/revoke with structured JSON and nonzero denial, no network or secret requirements. Immutable local activation records live only in ignored runtime, not Git. Do not equate recommendation-only empirical M7 output with this owner-authorized policy.
 
-- [ ] Add failing tests for minimum1/zero and all owner-adapter/activation refusal classes above; report exact expected RED.
-- [ ] Implement smallest coherent typed closed contracts, activation and actual per-decision consumer. Preserve canonical blocked-M7 recommendation semantics and zero-tolerance security behavior.
-- [ ] Reconcile factual owner confirmations, current unmet outcomes, docs/README commands, release candidate2.2.0 and minimal architecture/package bindings; record correct decision and prior process mistake once in decisions/mistakes.
-- [ ] Run bounded relevant controls incl schema/runtime/CLI/state and whitespace; no extra whole repository/full verifier.
-- [ ] Commit application/source changes once coherent, self-review, and write complete implementation report privately; stop candidate writes for independent reviews. Raise concrete integration gaps to controller, never silently substitute prose-only activation or invented telemetry.
+- [x] Add failing tests for minimum1/zero and all owner-adapter/activation refusal classes above; report exact expected RED.
+- [x] Implement smallest coherent typed closed contracts, activation and actual per-decision consumer. Preserve canonical blocked-M7 recommendation semantics and zero-tolerance security behavior.
+- [x] Reconcile factual owner confirmations, current unmet outcomes, docs/README commands, release candidate2.2.0 and minimal architecture/package bindings; record correct decision and prior process mistake once in decisions/mistakes.
+- [x] Run bounded relevant controls incl schema/runtime/CLI/state and whitespace; no extra whole repository/full verifier.
+- [x] Commit application/source changes once coherent, self-review, and write complete implementation report privately; stop candidate writes for independent reviews. Raise concrete integration gaps to controller, never silently substitute prose-only activation or invented telemetry.
 
 ## Controller dependency and review plan
 

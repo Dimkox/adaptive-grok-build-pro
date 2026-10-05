@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — U5 completion scope was unclear
+
+The distinction between prediction/explanation artifact validation and SHAP calculation was not explicit enough in delivery status. Source inspection finds no SHAP computation entrypoint and finds shap-v1 only in a synthetic fixture; report contracts-only/observation-only rather than a working SHAP feature.
+
 ## 2026-10-05 — Later binding refusal masked initial provenance coverage
 
 Wrong-provenance tests changed a case after activation, so the later case digest check hid an untested initial qualification guard; decision tests also omitted explicit external-authority output assertions. Test initial qualification against fresh runtime and assert the bounded authority fields on both allowed and denied decisions.
