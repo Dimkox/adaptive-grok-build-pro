@@ -20,7 +20,7 @@
     "integration_architect"
   ],
   "base_commit": "326908bf6367b05b65b83818ee84a093c1e45872",
-  "base_fingerprint": "b1aa4b58106302a421fc1cf25d761f95b087f3a524e328ca2412ffb273672ddb",
+  "base_fingerprint": "61b2b7a5d58af5bb50bcc95a36097f4d7db06be4a13ea1890147515f0bb8f1c6",
   "change_id": "20261005-task-249e86",
   "complexity": "high-risk",
   "created_at": "2026-10-05T02:36:24+00:00",
