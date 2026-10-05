@@ -16,7 +16,7 @@
     "docs_researcher",
     "integration_architect"
   ],
-  "base_commit": "f97966c4173fff9a3954389498568038dc57776b",
+  "base_commit": "2a8e3839a469b3e05da167e9d8a807bf18e6adbf",
   "base_fingerprint": "ccae83d0f7c8ff9377918e0550ea34d57a3b53605269c4517b3c32da3f8d9a92",
   "complexity": "standard",
   "created_at": "2026-10-04T23:52:45+00:00",

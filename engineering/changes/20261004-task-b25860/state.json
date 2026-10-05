@@ -82,13 +82,25 @@
       "from": "approved",
       "reason": "single selected implementer begins approved vertical",
       "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T00:25:02+00:00",
+      "from": "implementing",
+      "reason": "Writer focused controls passed; actual merged PR244 base aligned with identical source tree. Full qualifying verification remains pending until independent reviews and report freeze.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T00:25:02+00:00",
+      "from": "verifying",
+      "reason": "Independent route-selected code and test review follow bounded writer controls; one final full verifier will run after reports are persisted.",
+      "to": "reviewing"
     }
   ],
   "human_gates": [],
   "human_gates_digest": "7464884d16fa43f794567cda514418e01a92574e635130c2ff17a48ea2eb6f49",
   "route_id": "b258608f2ced",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "reviewing",
   "title": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
-  "updated_at": "2026-10-05T00:03:40+00:00"
+  "updated_at": "2026-10-05T00:25:02+00:00"
 }
