@@ -156,13 +156,22 @@ _MIGRATION_PHASE = re.compile(r"^(?P<group>.+?)[_-](?P<phase>expand|migrate|cont
 # Raw SHA-256 pins originate only from independent review of frozen actual SQL.
 # Reviewed source bacb5346a95d25166e1f7c597b3f91bd5935c234; provenance is
 # engineering/changes/20261005-task-249e86/evidence/reviewed-sql-pin-provenance.md.
+# Forward 005 source 1f48c4ccc84192780395b18957ba8c9779e30f00; provenance is
+# engineering/changes/20261005-task-249e86/evidence/forward-005-pin-provenance.md.
 # Callers, environment and CLI supply no authority or semantic phase proof.
 _REVIEWED_TRUST_CI_MIGRATIONS: dict[str, str] = {
     "trust-ci/sql/004_public_admission.sql":
         "610b8fa6b759c69578bc18b007484db1c4e19cba5f613c7bd482e68badac646e",
+    "trust-ci/sql/005_public_pending_bootstrap.sql":
+        "19b5aa4a0400ba4fae605a0f0b89d77c448c222a20089d39ebfb86f84958cd03",
 }
 _PUBLIC_MIGRATION_PRIMARY = "trust-ci/sql/004_public_admission.sql"
 _PUBLIC_MIGRATION_MIRROR = "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql"
+_PUBLIC_MIGRATION_MIRRORS = {
+    _PUBLIC_MIGRATION_PRIMARY: _PUBLIC_MIGRATION_MIRROR,
+    "trust-ci/sql/005_public_pending_bootstrap.sql":
+        "trust-ci/src/adaptive_trust_ci/resources/005_public_pending_bootstrap.sql",
+}
 _PUBLIC_WORKER_SOURCES = frozenset(
     f"trust-ci/src/adaptive_trust_ci/{filename}" for filename in (
         "public_models.py", "public_admission.py", "public_policy.py", "source_safety.py",
@@ -1222,9 +1231,9 @@ def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, .
 
 
 def _migration_phase(path: str) -> tuple[str, str] | None:
-    if path == _PUBLIC_MIGRATION_PRIMARY:
+    if path in _PUBLIC_MIGRATION_MIRRORS:
         # Identity is counted even when its bytes are unreviewed and denied.
-        return "004_public_admission", "reviewed_bytes"
+        return Path(path).stem, "reviewed_bytes"
     match = _MIGRATION_PHASE.fullmatch(Path(path).stem.lower()) or _MIGRATION_CANONICAL.fullmatch(Path(path).stem.lower())
     if match is None and path.startswith("factory/src/adaptive_factory/resources/"):
         match = re.fullmatch(r"(?P<group>[0-9]{3}_[a-z0-9_]+)", Path(path).stem.lower())
@@ -1366,6 +1375,7 @@ class _MigrationAnalysis:
                 self.record(True, f"{rule_id}: migration phase cannot be derived: {item.path}")
                 continue
             if parsed[1] == "reviewed_bytes":
+                mirror = _PUBLIC_MIGRATION_MIRRORS[item.path]
                 value = blobs.get(item.path)
                 digest = hashlib.sha256(value).hexdigest() if value is not None else None
                 approved = (
@@ -1373,11 +1383,11 @@ class _MigrationAnalysis:
                     and rule["immutable_history"]
                     and rule["path_prefixes"] == ["trust-ci/sql"]
                     and set(rule["required_phases"]) == {"expand", "migrate", "contract"}
-                    and item.path == _PUBLIC_MIGRATION_PRIMARY
+                    and item.path in _PUBLIC_MIGRATION_MIRRORS
                     and digest is not None
                     and digest == _REVIEWED_TRUST_CI_MIGRATIONS.get(item.path)
-                    and plan.copies[item.path] == (_PUBLIC_MIGRATION_MIRROR,)
-                    and blobs.get(_PUBLIC_MIGRATION_MIRROR) == value
+                    and plan.copies[item.path] == (mirror,)
+                    and blobs.get(mirror) == value
                 )
                 if approved:
                     self.reviewed_bytes.append(f"{item.path} raw_sha256={digest}")

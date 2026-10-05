@@ -2,7 +2,7 @@
 
 ## 2026-10-05 — Keep reviewed SQL bytes distinct from semantic phase proof
 
-An exact primary-path/raw-SHA256 registry with an exact byte-identical mirror preserves closed compatibility without pretending the semicolon parser understands PostgreSQL functions and grants; only independently reviewed source bacb5346a95d25166e1f7c597b3f91bd5935c234 authorizes the fixed 004 pin, while synthetic fixtures supply no production authority. Remove only the four exact public contract additions before comparing the original model envelope, and require their changed owner-bound source bytes so incidental legacy edits cannot qualify them. Execute every named negative case in the parameter list: branch labels alone provided no coverage for several existing source-separation claims.
+A separately fixed primary-to-mirror path map and independently reviewed raw SHA256 pins preserve closed compatibility without pretending the semicolon parser understands PostgreSQL functions and grants; 004 remains bound to bacb5346a95d25166e1f7c597b3f91bd5935c234 and forward 005 to 1f48c4ccc84192780395b18957ba8c9779e30f00, while synthetic fixtures and arbitrary digest keys supply no production path authority. Remove only the four exact public contract additions before comparing the original model envelope, and require their changed owner-bound source bytes so incidental legacy edits cannot qualify them. Execute every named negative case in the parameter list: branch labels alone provided no coverage for several existing source-separation claims.
 
 ## 2026-10-05 — Bind the real consumer and version changed wire semantics
 

@@ -6067,11 +6067,53 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def test_public_migration_registry_is_only_the_fixed_independently_reviewed_identity(self) -> None:
         # This portable identity guard does not qualify SQL semantics or obtain
         # actual SQL from an ignored cross-clone path. Those bytes were reviewed
-        # separately at bacb5346a95d25166e1f7c597b3f91bd5935c234.
+        # separately at bacb5346a95d25166e1f7c597b3f91bd5935c234 (004)
+        # and 1f48c4ccc84192780395b18957ba8c9779e30f00 (forward 005).
+        self.assertEqual(getattr(FIT, "_PUBLIC_MIGRATION_MIRRORS", {}), {
+            "trust-ci/sql/004_public_admission.sql":
+                "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql",
+            "trust-ci/sql/005_public_pending_bootstrap.sql":
+                "trust-ci/src/adaptive_trust_ci/resources/005_public_pending_bootstrap.sql",
+        })
         self.assertEqual(FIT._REVIEWED_TRUST_CI_MIGRATIONS, {
             "trust-ci/sql/004_public_admission.sql":
                 "610b8fa6b759c69578bc18b007484db1c4e19cba5f613c7bd482e68badac646e",
+            "trust-ci/sql/005_public_pending_bootstrap.sql":
+                "19b5aa4a0400ba4fae605a0f0b89d77c448c222a20089d39ebfb86f84958cd03",
         })
+
+    def test_synthetic_forward_registry_keeps_membership_separate_from_digest_keys(self) -> None:
+        primary5 = "trust-ci/sql/005_public_pending_bootstrap.sql"
+        mirror5 = "trust-ci/src/adaptive_trust_ci/resources/005_public_pending_bootstrap.sql"
+        forward = self._public_migration_fixture + b"-- Explicitly synthetic forward fixture.\n"
+        for inject_unknown in (False, True):
+            with self.subTest(inject_unknown=inject_unknown):
+                repo, base = self._public_migration_repo()
+                values = {
+                    self._public_migration_primary: self._public_migration_fixture,
+                    self._public_migration_mirror: self._public_migration_fixture,
+                    primary5: forward,
+                    mirror5: forward,
+                }
+                registry = {self._public_migration_primary: hashlib.sha256(self._public_migration_fixture).hexdigest(),
+                            primary5: hashlib.sha256(forward).hexdigest()}
+                if inject_unknown:
+                    unknown = "trust-ci/sql/006_public_pending_bootstrap.sql"
+                    values[unknown] = forward
+                    values["trust-ci/src/adaptive_trust_ci/resources/006_public_pending_bootstrap.sql"] = forward
+                    registry[unknown] = hashlib.sha256(forward).hexdigest()
+                for path, value in values.items():
+                    repo.write_bytes(path, value)
+                head = repo.commit("synthetic forward digest membership control")
+                # Only synthetic hashes are privately patched; fixed path membership
+                # must still refuse an injected digest entry for an unknown migration.
+                with patch.object(FIT, "_REVIEWED_TRUST_CI_MIGRATIONS", registry):
+                    result = self._migration_result(repo, base, head)
+                if inject_unknown:
+                    self.assertNotEqual(result.status, "pass", result.findings)
+                    self.assertIn("migration phase cannot be derived", " ".join(result.findings))
+                else:
+                    self.assertEqual(result.status, "pass", result.findings)
 
     def _public_migration_repo(self):
         snapshot = ARCHITECTURE.load_architecture(ROOT)
