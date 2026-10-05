@@ -70,3 +70,25 @@ Initial evidence accounting (current records are in `state.json`):
   ]
 }
 ```
+
+<!-- checkpoint:implementation -->
+## Implementation checkpoint
+
+Local observation only; not verification or publication evidence.
+
+```json
+{
+  "kind": "implementation",
+  "change_id": "20261004-task-b25860",
+  "route_id": "b258608f2ced",
+  "observed_at": "2026-10-05T00:03:40+00:00",
+  "branch": "feat/m8-one-task-autonomy",
+  "head": "1132b0411bbac058941bc7ae48b97d5196c8aeb6",
+  "detached": false,
+  "git_available": true,
+  "git_findings": [],
+  "dirty_product_state": "clean",
+  "dirty_product_paths": [],
+  "note": "implementation started; preserve work before handoff"
+}
+```

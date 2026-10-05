@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:owner-autonomy:v1",
+  "title": "Owner-confirmed local M8 policy, case and activation",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/policy"
+    },
+    {
+      "$ref": "#/$defs/case"
+    },
+    {
+      "$ref": "#/$defs/activation"
+    }
+  ],
+  "$defs": {
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "policy_id",
+        "repository_id",
+        "enabled",
+        "evidence_kind",
+        "minimum_accepted_tasks",
+        "product_repository",
+        "product_source_sha",
+        "factory_source_sha",
+        "initial_level",
+        "authority_ceiling",
+        "allowed_actions",
+        "activation_ttl_seconds",
+        "expires_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "evidence_kind": {
+          "const": "explicit_owner_confirmation"
+        },
+        "minimum_accepted_tasks": {
+          "const": 1
+        },
+        "product_repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "product_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "factory_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "initial_level": {
+          "const": "L1"
+        },
+        "authority_ceiling": {
+          "const": "L2"
+        },
+        "allowed_actions": {
+          "type": "array",
+          "const": ["local_read", "local_test"],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "activation_ttl_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "product_repository",
+        "product_source_sha",
+        "factory_source_sha",
+        "evidence_kind",
+        "accepted",
+        "accounting_complete",
+        "human_gate_complete",
+        "cost_usd_micros",
+        "human_intervention_count"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "product_repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "product_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "factory_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "evidence_kind": {
+          "const": "explicit_owner_confirmation"
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "accounting_complete": {
+          "type": "boolean"
+        },
+        "human_gate_complete": {
+          "type": "boolean"
+        },
+        "cost_usd_micros": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000000000
+        },
+        "human_intervention_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1000000000000
+        }
+      }
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "policy_digest",
+        "case_digest",
+        "repository_id",
+        "repository_binding_digest",
+        "source_digest",
+        "profile_digest",
+        "level",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "case_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "repository_binding_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "profile_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "level": {
+          "const": "L1"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

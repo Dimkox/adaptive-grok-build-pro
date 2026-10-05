@@ -1418,7 +1418,7 @@ module.main()
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(candidate_version, '2.1.1')
+        self.assertEqual(candidate_version, '2.2.0')
         self.assertEqual(state['product_version'], candidate_version)
         candidate = state['local_candidate']
         self.assertEqual(candidate['status'], 'source_candidate')

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "policy_id": "liqvera-owner-local-m8-20261005",
+  "repository_id": "Dimkox/adaptive-grok-build-pro",
+  "enabled": true,
+  "evidence_kind": "explicit_owner_confirmation",
+  "minimum_accepted_tasks": 1,
+  "product_repository": "Dimkox/liqvera",
+  "product_source_sha": "19284fb07fedd4909672c7e9a641cb066efbb7cc",
+  "factory_source_sha": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+  "initial_level": "L1",
+  "authority_ceiling": "L2",
+  "allowed_actions": ["local_read", "local_test"],
+  "activation_ttl_seconds": 3600,
+  "expires_at": "2026-11-04T00:00:00Z"
+}

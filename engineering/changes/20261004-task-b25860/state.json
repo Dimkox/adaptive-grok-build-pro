@@ -15,6 +15,20 @@
       "note": "draft; implementation not started",
       "observed_at": "2026-10-04T23:53:03+00:00",
       "route_id": "b258608f2ced"
+    },
+    {
+      "branch": "feat/m8-one-task-autonomy",
+      "change_id": "20261004-task-b25860",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "1132b0411bbac058941bc7ae48b97d5196c8aeb6",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-05T00:03:40+00:00",
+      "route_id": "b258608f2ced"
     }
   ],
   "created_at": "2026-10-04T23:53:03+00:00",
@@ -62,13 +76,19 @@
       "from": "scoped",
       "reason": "Explicit user decision and standing routine-design delegation; active route has no named human gates; external production/trust boundaries unchanged",
       "to": "approved"
+    },
+    {
+      "at": "2026-10-05T00:03:40+00:00",
+      "from": "approved",
+      "reason": "single selected implementer begins approved vertical",
+      "to": "implementing"
     }
   ],
   "human_gates": [],
   "human_gates_digest": "7464884d16fa43f794567cda514418e01a92574e635130c2ff17a48ea2eb6f49",
   "route_id": "b258608f2ced",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
-  "updated_at": "2026-10-05T00:01:15+00:00"
+  "updated_at": "2026-10-05T00:03:40+00:00"
 }

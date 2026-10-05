@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Concurrent process metadata obscured ownership
+
+Root cause: branch push with upstream tracking updated shared Git tracking/config/worktree metadata during descriptor-pinned architecture verification, which refused `Git worktree binding changed` before tests despite unchanged source. Complete Git metadata writers before pinned verification; the observed metadata-binding change does not establish which individual inode mutation caused refusal.
+
 ## 2026-10-04 — Ignored an existing owner-accepted factory result
 
 Root cause: planning treated missing recorded telemetry as absence of the owner's completed factory-built Liqvera product, then proposed a duplicate pilot and unsupported ETA. Record the accepted result and unblock its dependencies; derive remaining technical estimates from actual scope and measurements.

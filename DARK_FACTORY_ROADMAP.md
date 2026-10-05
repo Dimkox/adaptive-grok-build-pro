@@ -39,14 +39,14 @@ original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89 (PR #2 merge, 20
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
 v2.0.15 publication snapshot tag target: fd51dcfed6b33f4a8707c0db602328146df17cc9 (GitHub Release published 2026-09-05T20:17:20Z; not a perpetual current-ref assertion)
 L5 landing main SHA: eb9df64bca333f30ec58f8c725a021360e22ed92 (PR #75 union of slices #65-#71, merged 2026-09-13T17:35:51Z; its landed evidence follow-up merged as e737dd5c338793e274285d657354e74ecc812f89 at 2026-09-13T18:26:32Z)
-product version: 2.1.1 published (latest published release: v2.1.1; U5/U6 default-off and not live-qualified)
+product version: 2.2.0 source candidate (latest published release: v2.1.1; U5/U6 default-off and not live-qualified)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
 
 Before implementing any milestone, compare the current `main` SHA with the recorded observation and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match either historical identity.
 
-The current recovery sequence is fixture prerequisite, core A-E/H/local heartbeat-watchdog, F durable evidence, separate G Trust CI authority, then exact-source artifact and publication. F/G remain required and not accepted; source integration does not establish deployment, external pilot, M8 activation or general M9 qualification. The [release-wide ledger](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/release-scope-ledger.md) preserves the original approved scope.
+Current delivery is the bounded owner-local M8 2.2.0 source successor to accepted-product PR #244. One accepted Liqvera case and explicit accounting/human readiness qualify it; per-clone activation and each local admission use the offline consumer. F durable evidence and separate G Trust CI authority remain unaccepted successors, and general M9 qualification remains separate. The [release-wide ledger](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/release-scope-ledger.md) preserves its original dated scope rather than imposing that old release ordering on this bounded additive source.
 
 ## 3. What already exists
 
@@ -136,7 +136,7 @@ These source/release records are historical. Later installation and artifact acc
 | WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
 | Automated PR lifecycle | M7 shadow source delivered; no external PR capability | Add runtime and real outcomes before activation; human merge remains mandatory |
 | Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
-| Earned auto-merge | Corrected M8 evaluation delivered; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
+| Bounded owner autonomy | One accepted factory-built Liqvera case qualifies enabled M8 owner policy; initial L1 local reads/tests, L2 ceiling | Activate per clone through `scripts/grok_m8.py`; each admission rechecks exact bindings, expiry and revocation. External merge authority remains independent |
 | Preview/staging/canary delivery | M9 sealed source delivered; general operational qualification unproven | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
 | L5 multimodal landing dogfood | Source delivered; Qwen primary and Grok secondary observed active/enabled on their distinct installed SHAs; authenticated artifact generation passed; 22-member deploy inventory; source defaults off | Preserve [dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md). Further publication/hosting requires target evidence and exact authority; existing L5 acceptance does not qualify M8 or general M9 |
 | Completed factory product / design-partner outcome | **DONE**: owner accepts working Liqvera Mezo Buildathon demo built by the factory; `v0.0.5` released source pins factory `v2.0.19`. Old `pilot/` target observations stay historical | Accepted-product dependencies and M8/M9 follow-up planning are unblocked. Continue empirical qualification; another first pilot is not required |
@@ -224,7 +224,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-The dependency-ordered M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d` → M9 `64b10689` source is delivered to `main` by PR #22 and published as `v2.0.13`. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains non-operational pending signed input, an operational environment/provider deployment, exercised recovery, and human production authority.
+The dependency-ordered M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d` → M9 `64b10689` source was delivered by PR #22 in `v2.0.13`. That historical empirical evaluator remains recommendation-only. The current 2.2.0 owner-local path uses one accepted product with executable bounded activation; no M4/M5/M6 producer evidence is invented. M9 remains non-operational pending signed input, environment/provider deployment, exercised recovery and human production authority.
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -233,7 +233,7 @@ The dependency-ordered M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 
 | M4 → M5 | M4 emits an immutable task packet bound to `task_id`, accepted base/head SHA, complete frozen-intent/spec/architecture/governance/policy digests, route and budget; M5 accepts only the exact packet digest and M4 product SHA. | Accepted M4 exact-SHA verification/reviews/Trust CI plus a suitable rootless-isolation host; any predecessor SHA, packet field, policy or authority change invalidates dispatch and requires restack/reissue. | Cancel/expire the M4 lease, preserve packet/audit and destroy only the isolated workspace; M5 receives no intake-policy, Trust CI, merge, production or cross-task authority. |
 | M5 → M6 | M5 emits an immutable execution-result/run-manifest digest bound to task packet digest, exact base/head SHA, workspace/image/tool/network/secret-scope evidence and artifacts; M6 verifies all bindings before judging. | Accepted M5 isolation/capability/orphan evidence and predecessor exact SHA; changed code, manifest, artifact, image or policy invalidates the verdict and starts a fresh bounded validation cycle. | Quarantine result/artifacts and return a structured finding to bounded repair; M6 cannot write implementation, mint Trust CI/human approval or mutate execution evidence. |
 | M6 → M7 | M6 emits a signed/immutable semantic-verdict digest bound to execution result, requirement/criterion IDs, exact head SHA, findings, repair count and residual risk; M7 consumes only a PASS verdict with matching local/external checks. | Independent adjudication, repair ceiling and exact-SHA verifier/Trust CI; any source, criterion, policy, holdout or verdict change invalidates the ready-for-PR state. | Revert to needs-human/repair or supersede the bundle while preserving evidence; M7 cannot push/open/update a PR without exact delegated authority and cannot merge or publish Trust CI. |
-| M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
+| M7 → M8 | Empirical M7 emits immutable shadow bundles; its recommendation-only M8 consumer retains exact producer currentness and zero-tolerance checks. The separate owner-local adapter binds accepted product/factory provenance. | Configured minimum admits one task; owner path qualifies from one accepted Liqvera product and explicit accounting/human readiness. Current source/profile/policy/case changes invalidate local activation. | Missing, stale, expired or revoked local evidence denies/demotes L0; initial L1 local reads/tests, L2 ceiling. Human merge and external authority remain independent. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
 M7-M9 repository source is delivered on exact predecessor bindings. That delivery does not establish a factual M8 cohort or activation, real M9 preview/canary evidence, operational deployment, or production authority.
@@ -899,7 +899,7 @@ recommended human action
 
 ## Shadow-mode requirements
 
-Run at least 30 accepted tasks for each candidate low-risk class before considering autonomy. Human merge remains mandatory.
+The configured canonical M8 minimum admits one accepted task; the owner-local policy qualifies from the single accepted Liqvera case. Empirical producer currentness and other zero-tolerance requirements remain enforced on their own recommendation path. Human merge remains mandatory.
 
 Persist:
 
@@ -933,11 +933,11 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: M8 earned-autonomy evaluation is delivered in `v2.0.13` from corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
+Current status: 2.2.0 adds enabled owner-local M8 qualification, activation, admission and revocation with one accepted case. Initial L1 admits named local reads/tests; L2 is a ceiling, and denial demotes L0. The historical empirical evaluator from `v2.0.13` checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` remains recommendation-only with blocked M7 currentness semantics.
 
 Completed-product case: **DONE — Liqvera Mezo Buildathon demo**, accepted by its owner as a completed working product built by this factory. Observed main is `97484401d50fa3fb28ebd813cc8320e7e51c72f5`; published `v0.0.5` resolves to `19284fb07fedd4909672c7e9a641cb066efbb7cc`, whose tooling pins factory `v2.0.19` / `cb9af4073ba6c3d515145164d771c75ebdfa3224`. [PROJECT_STATE.json](PROJECT_STATE.json) records owner-confirmation provenance and all satisfied accepted-product dependencies: first completed factory product, external accepted product, M8 follow-up planning and M9 follow-up planning. No duplicate first pilot is required.
 
-Executable M7 durable lookup/currentness and empirical M8 cohort/activation remain technical prerequisites. The case does not supply 30 distinct exact-profile tasks, full cost/intervention accounting, general M9 signed environment/recovery authority, complete F7 validation or factory-runtime site publication. Historical milestones and old pilot metrics remain unchanged.
+The owner confirms completed cost/intervention accounting and human readiness for this case; unknown numeric telemetry remains null. That qualifies the one-case local policy without synthetic producer records. Per-clone activation binds current source/profile/repository/policy/case, expires within one hour and is revalidated each use; [offline CLI commands](README.md#bounded-local-m8-in-the-220-source-candidate) exercise the actual consumer. Empirical M7 durable currentness, general M9 signed environment/recovery authority, complete F7 validation and factory-runtime site publication remain separate. Historical milestones and old pilot metrics remain unchanged.
 
 ## Objective
 

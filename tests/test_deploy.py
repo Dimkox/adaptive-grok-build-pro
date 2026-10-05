@@ -32,6 +32,10 @@ class DeployTests(unittest.TestCase):
         self.assertIn('git push origin v2.1.0', joined)
         self.assertNotIn('git push origin main', joined)
         self.assertNotIn('gh pr merge', joined)
+        self.assertFalse(any(command.startswith('cp ') for command in commands))
+        self.assertNotIn('packages/', joined)
+        self.assertIn('gh release create v2.1.0 dist/adaptive-grok-build-pro-v2.1.0.zip '
+                      'dist/adaptive-grok-build-pro-v2.1.0.zip.sha256', joined)
 
     def test_prepare_requires_active_route(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

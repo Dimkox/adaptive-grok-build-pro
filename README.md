@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.1.1
+# Adaptive Grok Build Pro v2.2.0
 
 MIT-licensed tooling for task-routed AI-assisted development, external verification and human-controlled delivery with **Grok Build**.
 
@@ -91,9 +91,9 @@ The observed **controller + 12 child-agent slots**, routing cap `max_parallel_an
 
 ## Current state
 
-Identity: **2.1.1 published release**. [v2.1.1](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.1.1) was published on 2026-10-03 from PR #238, targeting `97a7581238022356b2de8d193a9bd8363fc92dc3`. ZIP SHA-256: `f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1`. Its core includes verifier recovery, architecture and governance hardening, and heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) still retains F durable evidence and G current-authority behavior as required successors; publication establishes no deployment, pilot qualification or activation. This cleanup is a successor PR and requires fresh verification and independent review. Prior release records remain immutable.
+Identity: **2.2.0 source candidate** with executable bounded local owner autonomy. The latest published release in this pre-publication snapshot is [v2.1.1](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.1.1), published on 2026-10-03 from PR #238 at `97a7581238022356b2de8d193a9bd8363fc92dc3`, ZIP SHA-256 `f5116c5e1303232ae883ed7a3aa804b71f0b5654d2c385924653b5ffd2d631c1`. Its core includes verifier recovery, architecture and governance hardening, and heartbeat/watchdog. The [approved decomposition](engineering/changes/20261002-assemble-2-1-1-factory-source-with-heartbeat-and-ffb3d8/delivery-topology-addendum.md) retains F durable evidence and G current-authority behavior as successors; owner-local M8 does not establish those empirical interfaces. Prior release records remain immutable.
 
-Refresh actual PR #241 cleanup state, superseding PR #239, through the [cleanup package](engineering/changes/20261004-fix-pr-239-public-cleanup-verifier-blockers-arch-6af9e6/brief.md) and `PROJECT_STATE.json.current_continuation`; the confirmed repairs are already in this tree. The separate [PR #240 dependency](https://github.com/Dimkox/adaptive-grok-build-pro/pull/240) is merged at actual comparison base `6dbbc7dbe81812d919851c2300db6f4917033d43`. If PR #241 is merged, record delivery and treat unchanged source as a no-op without reopening or reverifying; if open, complete frozen independent review, persist complete reports, run one final full verification and require fresh receipts and external exact-head Trust CI. Historical core plans and prior checks are not instructions or current authority to rebuild or retag the published `v2.1.1`.
+PR #244 delivered the accepted-product record at `2a8e3839a469b3e05da167e9d8a807bf18e6adbf`. Continue `feat/m8-one-task-autonomy`, route `b258608f2ced`, through the [M8 change package](engineering/changes/20261004-task-b25860/brief.md) and `PROJECT_STATE.json.current_continuation`: independent review, report freeze, one final full verifier and exact-head external Trust CI precede delivery. The previous cleanup continuation is historical. Release assets require exact merged tested source and separately delegated publication.
 
 Historical pre-publication core observation: the conditional source included the frozen test-only025 [cursor reset seam](factory/tests/postgres_fixture_reset.py), its two unchanged-boundary callers and narrowly typed lock-refusal acceptance controls. Pending joined-fitness/source-acceptance statements in that old record remain dated provenance, not current release instructions. F's026 inventory/runtime work remains absent.
 
@@ -106,7 +106,8 @@ The source tree also carries closed default-off BB contracts, an authenticated o
 | Installed L5 (September 19) | Primary Qwen is accepted at `f12807c2` / `qwen-omni-intl`; Grok stays accepted at `26a0d3d`. Both are **active and enabled**. Separate Omni remains at `e7d0f72`. |
 | Proven runtime result (September 19) | Primary Qwen Omni produced `artifact_ready` in **4.991 s**, usage **766/195**; separate readback made zero POSTs. Grok previously completed in **26.947 s**. [Exact evidence and limits](engineering/runbooks/l5-primary-continuation-2026-09-19.md). |
 | Completed product | M8 **DONE**: owner confirms the working Liqvera Mezo Buildathon demo was built by this factory. Released `v0.0.5` source `19284fb07fedd4909672c7e9a641cb066efbb7cc` pins factory `v2.0.19` / `cb9af4073ba6c3d515145164d771c75ebdfa3224`. Accepted-product dependencies and M8/M9 follow-up planning are unblocked; [exact provenance and boundaries](PROJECT_STATE.json) distinguish owner acceptance from runtime telemetry. |
-| Remaining acceptance | M7 durable current lookup, 30 distinct exact-profile tasks, M8 cohort/activation, complete cost/intervention accounting, and general M9 signed environment/recovery qualification remain unestablished. Factory-runtime public-site publication is also unestablished. Another first completed pilot is not required. |
+| Bounded owner autonomy | One accepted Liqvera case qualifies the enabled local M8 owner policy. Accounting and human readiness are complete by explicit owner confirmation; numeric totals remain unknown. Activate per clone with the commands below. Initial L1 admits only local reads/tests; ceiling L2 confers no external authority. |
+| Remaining acceptance | Empirical M7 durable current lookup and exact-profile evidence, general M9 signed environment/recovery qualification, and factory-runtime public-site publication remain unestablished. Another first completed pilot is not required. |
 
 Historical `v2.0.19` delivery records the source line through PR #193 in release-sync PR #189. Its [release-sync change package](engineering/changes/20260922-release-v2-0-19-from-candidate-5d93fc3-0ea342/brief.md) and [artifact-child package](engineering/changes/20260924-build-v2-0-19-artifact-child-from-merged-release-09407b/brief.md) preserve separate source verification, artifact provenance and publication; they do not instruct another artifact build, tag or release of published `v2.1.1`.
 
@@ -124,6 +125,27 @@ The existing runner remains unchanged without opt-in. To select automatic worker
 On Linux, `auto` uses the minimum of 28, process affinity or CPU-count fallback, and finite CPU quotas visible through actual cgroup membership and mounts. Finite quotas use `max(1, quota // period)`; malformed, unreadable or ambiguous capacity conservatively selects one worker. This does not establish hidden ancestor limits, reserved CPU time or available PID/memory capacity.
 
 Where this runner cannot provide its required parallel-process cleanup, a positive request selects the existing `unittest-degraded` engine before execution. Supported parallel execution retains its strict pins; measured serial execution retains pinned coverage. An actual failed parallel run is never retried serially. The implementation lives in `.grok-stack/adaptive_grok/python_test_runner.py` and its private `_cpu_capacity.py` helper; native Windows and older-interpreter qualification remain separate from fixture-based evidence.
+
+## Bounded local M8 in the 2.2.0 source candidate
+
+The owner-approved policy requires **one** completed owner-accepted factory task; Liqvera supplies that case with immutable product/factory provenance. `factory/src/adaptive_factory/owner_autonomy.py` consumes the typed policy, case and activation contracts in `factory/contracts/jsonschema/owner-autonomy.v1.schema.json`; `scripts/grok_m8.py` invokes the actual admission consumer. This is an additive offline control. It does not invoke providers or execute arbitrary commands. Owner-confirmed accounting and human readiness are not external signed Trust CI approvals; unavailable cost/intervention totals remain `null`.
+
+From this source checkout, run:
+
+```bash
+python3 scripts/grok_m8.py status
+python3 scripts/grok_m8.py activate
+python3 scripts/grok_m8.py admit --action local_read
+python3 scripts/grok_m8.py admit --action local_test
+python3 scripts/grok_m8.py revoke
+python3 scripts/grok_m8.py admit --action local_test
+```
+
+The first status denies with L0 if activation is absent; activate and eligible admissions return L1. Revoke succeeds and subsequent admission denies with L0 and exit 2. Records live only in ignored `.grok-stack/runtime/owner-autonomy/`, are immutable, expire after at most one hour, and bind this clone/worktree, current Git HEAD/source bytes, profile, policy and accepted case. Policy expiry is 2026-11-04. Changed, missing, malformed, disabled, expired or revoked inputs deny each use. To renew an expired activation, remove only that clone's ignored `activation.json` and activate against its current source; a revocation tombstone requires a new explicitly authorized owner policy. L2 is a ceiling, not automatic promotion: local edits or expanded actions require a separately reviewed policy/consumer change and owner authorization. Merge, provider execution, deployment, publication and production retain their independent exact grants and external gates.
+
+M9 already evaluates one-step preview/staging/bounded-canary decisions with an in-memory adapter and stop/reduce/previous-artifact recovery. Actual M9 qualification still requires signed artifact inputs, the applicable environment/provider deployment, exercised recovery and human production authority; this M8 change does not activate M9.
+
+2.2.0 is a release candidate until its exact merged tested source passes the required gates and GitHub Release publication is separately authorized. ZIP/checksum assets are published through GitHub Releases; ZIPs are not source Git content. Published `v2.1.1` and its checksums remain immutable history.
 
 ## Как пользоваться опубликованной версией 2.1.1
 

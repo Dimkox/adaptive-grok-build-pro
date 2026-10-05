@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0 — 2026-10-05 (source candidate)
+
+- Owner-approved minimum of one accepted task, with the completed factory-built Liqvera case and owner-confirmed accounting/human readiness; unknown numeric telemetry remains null.
+- Executable offline local M8 policy, typed evidence/activation and per-use admission/revocation consumer: initial L1 local reads/tests, L2 ceiling, finite expiry and exact source/profile/repository bindings. External authority and empirical M7 recommendation gates remain separate.
+- Release assets require the exact merged tested source and separately authorized GitHub Release publication; v2.1.1 remains the latest published release in this pre-publication snapshot.
+
 ## 2.1.1 — 2026-10-03 (published)
 
 - Integrates reconstructed verifier cancellation and output recovery, operational route precedence, bounded repository language disclosure, located architecture preflight and hostile Git/governance input refusal.

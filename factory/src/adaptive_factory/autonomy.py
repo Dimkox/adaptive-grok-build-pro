@@ -440,7 +440,7 @@ class CohortEvidenceV1(_AutonomyValue):
         _integer(
             self.minimum_human_acceptances,
             "minimum_human_acceptances",
-            30,
+            1,
             MAX_COHORT_TASKS,
         )
         _integer(
@@ -482,7 +482,7 @@ class CohortEvidenceV1(_AutonomyValue):
             M7AutonomyBridgeV1.from_dict(data["m7_handoff"]),
             _timestamp(data["window_started_at"], "window_started_at"),
             _timestamp(data["window_ended_at"], "window_ended_at"),
-            _integer(data["minimum_human_acceptances"], "minimum_human_acceptances", 30, MAX_COHORT_TASKS),
+            _integer(data["minimum_human_acceptances"], "minimum_human_acceptances", 1, MAX_COHORT_TASKS),
             _integer(
                 data["minimum_audit_rate_millionths"],
                 "minimum_audit_rate_millionths",

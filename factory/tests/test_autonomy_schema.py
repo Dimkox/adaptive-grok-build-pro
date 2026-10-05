@@ -109,6 +109,7 @@ class AutonomySchemaTests(unittest.TestCase):
 
     def test_schema_freezes_authority_limits_and_has_no_effect_surface(self):
         definitions = self.schema["$defs"]
+        self.assertEqual(definitions["cohort_evidence"]["properties"]["minimum_human_acceptances"]["minimum"], 1)
         tuple_properties = definitions["autonomy_tuple"]["properties"]
         recommendation = definitions["promotion_recommendation"]["properties"]
         demotion = definitions["demotion_decision"]["properties"]

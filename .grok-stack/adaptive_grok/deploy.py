@@ -28,12 +28,11 @@ def _human_commands(root: Path, version: str) -> tuple[list[str], str | None]:
     zip_name = f'adaptive-grok-build-pro-v{version}.zip'
     return [
         'python3 scripts/package_stack.py',
-        f'cp dist/{zip_name}* packages/',
         'git fetch origin main',
         'test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"',
         f'git tag -a v{version} {head_sha} -m "v{version}"',
         f'git push origin v{version}',
-        f'gh release create v{version} packages/{zip_name} packages/{zip_name}.sha256 --title "Adaptive Grok Build Pro v{version}" --notes-file dist/RELEASE-NOTES.md',
+        f'gh release create v{version} dist/{zip_name} dist/{zip_name}.sha256 --title "Adaptive Grok Build Pro v{version}" --notes-file dist/RELEASE-NOTES.md',
     ], head_sha
 
 

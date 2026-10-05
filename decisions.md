@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-05 — Apply the owner's one-case rule with executable local boundaries
+
+The owner's explicit minimum of one supersedes thirty for the current path, and accepted Liqvera plus owner-confirmed accounting/human readiness qualifies it without fabricated telemetry. A separate typed owner policy and per-use activation/admission/revocation consumer preserves blocked empirical M7 semantics while making bounded L1 local reads/tests usable. Complete shared Git metadata writes before pinned verification; the independent exact-SHA external runner may overlap.
+
 ## 2026-10-04 — Reuse the accepted factory-built product outcome
 
 The owner-accepted completed Liqvera demo satisfies existing-product dependencies, so M8/M9 follow-up planning can reuse this result without another first pilot. Separating product acceptance from empirical cohort, runtime activation and deployment evidence preserves the technical gates while recognizing the achieved outcome.

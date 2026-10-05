@@ -1,5 +1,7 @@
 # Local package status and checkpoints
 
+Current source identity is `2.2.0` with the bounded owner-local M8 policy; the latest published release in this pre-publication snapshot remains immutable `v2.1.1`. The 2.2.0 ZIP/checksum must come from the exact merged tested source through separately authorized GitHub Release publication and are not checked into source Git.
+
 `python3 scripts/grok_status.py` observes the current worktree. It preserves `route`, `change`, `agents`, and `evidence_gaps`, and adds:
 
 | Field | Meaning |

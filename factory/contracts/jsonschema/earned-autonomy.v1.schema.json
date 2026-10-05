@@ -98,7 +98,7 @@
         "m7_handoff": {"$ref": "urn:adaptive-factory:m8:m7-autonomy-bridge:v1#/$defs/handoff"},
         "window_started_at": {"$ref": "#/$defs/timestamp"},
         "window_ended_at": {"$ref": "#/$defs/timestamp"},
-        "minimum_human_acceptances": {"type": "integer", "minimum": 30, "maximum": 10000},
+        "minimum_human_acceptances": {"type": "integer", "minimum": 1, "maximum": 10000},
         "minimum_audit_rate_millionths": {"type": "integer", "minimum": 200000, "maximum": 1000000},
         "minimum_quality_score_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
         "maximum_security_failures": {"const": 0},

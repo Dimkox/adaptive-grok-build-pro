@@ -26,6 +26,22 @@ SYNTHETIC_ALGORITHM_FIXTURES_ONLY = True
 NOW = datetime(2026, 9, 4, 0, 0, tzinfo=timezone.utc)
 
 
+class OneAcceptanceFloorTests(unittest.TestCase):
+    def test_one_acceptance_floor_roundtrips_but_zero_is_rejected(self):
+        payload = valid_cohort_payload(1)
+        payload["minimum_human_acceptances"] = 1
+        cohort = CohortEvidenceV1.from_dict(payload)
+        self.assertEqual(cohort.minimum_human_acceptances, 1)
+        self.assertEqual(CohortEvidenceV1.from_dict(cohort.to_dict()), cohort)
+        for minimum in (0, False):
+            with self.subTest(minimum=minimum):
+                payload["minimum_human_acceptances"] = minimum
+                with self.assertRaises(ContractError):
+                    CohortEvidenceV1.from_dict(payload)
+                with self.assertRaises(ContractError):
+                    replace(cohort, minimum_human_acceptances=minimum)
+
+
 def _canonical(value: object) -> bytes:
     return json.dumps(
         value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
