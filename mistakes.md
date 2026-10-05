@@ -1806,3 +1806,6 @@ Root cause: an analysis inferred alias source-file existence from managed invent
 # 2026-10-05 — Oversized process diagnostic
 
 An unbounded host process listing exposed unrelated infrastructure metadata and produced excessive output while checking one verifier. The root cause was selecting a host-wide diagnostic instead of the known task PID/session. Use targeted task process observations and bounded output; do not inspect unrelated arguments or credentials.
+# 2026-10-05 — Local grant scope is a typed operation bundle
+
+An isolated branch transport grant used external-write scope with git-push-branch, which the approval serializer correctly refused. The root cause was guessing the scope from everyday terminology rather than its validated action mapping; branch transport belongs to production scope with only the exact branch action/resource. Resolve that mapping and use one semantic correction, without granting merge, deployment or broad production authority.
