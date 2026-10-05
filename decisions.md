@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-05 — Probe initial qualification before downstream bindings exist
+
+Use a fresh isolated runtime for each wrong product/factory provenance control, ensuring a later digest comparison cannot mask the initial guard. Explicitly assert external_authority=false and authority_ceiling=L2 on lifecycle outputs; compare activation duration rather than adding an hour to a possibly maximal timestamp.
+
 ## 2026-10-05 — Apply the owner's one-case rule with executable local boundaries
 
 The owner's explicit minimum of one supersedes thirty for the current path, and accepted Liqvera plus owner-confirmed accounting/human readiness qualifies it without fabricated telemetry. A separate typed owner policy and per-use activation/admission/revocation consumer preserves blocked empirical M7 semantics while making bounded L1 local reads/tests usable. Complete shared Git metadata writes before pinned verification; the independent exact-SHA external runner may overlap.

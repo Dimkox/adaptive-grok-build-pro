@@ -29,13 +29,44 @@ class OwnerAutonomyTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.store = owner.OwnerRuntime(Path(self.temp.name) / "runtime")
 
+    def assert_local_authority(self, decision):
+        self.assertIs(decision["external_authority"], False)
+        self.assertEqual(decision["authority_ceiling"], "L2")
+
     def test_one_case_qualifies_activates_and_real_consumer_admits_local_test(self):
         result = self.store.activate(self.policy, self.case, self.context, now=NOW)
+        self.assert_local_authority(result)
         self.assertEqual((result["allowed"], result["level"]), (True, "L1"))
         self.assertIsNone(self.case.cost_usd_micros)
         admitted = self.store.admit(self.policy, self.case, self.context, "local_test", now=NOW)
+        self.assert_local_authority(admitted)
         self.assertEqual((admitted["allowed"], admitted["level"]), (True, "L1"))
-        self.assertEqual(self.store.status(self.policy, self.case, self.context, now=NOW)["level"], "L1")
+        status = self.store.status(self.policy, self.case, self.context, now=NOW)
+        self.assert_local_authority(status)
+        self.assertEqual(status["level"], "L1")
+
+    def test_initial_activation_refuses_each_wrong_provenance_without_existing_record(self):
+        for index, (field, value) in enumerate((("product_repository", "other/product"),
+                                                ("product_source_sha", "d" * 40),
+                                                ("factory_source_sha", "e" * 40))):
+            with self.subTest(field=field):
+                runtime = owner.OwnerRuntime(Path(self.temp.name) / f"fresh-{index}")
+                result = runtime.activate(self.policy, replace(self.case, **{field: value}), self.context, now=NOW)
+                self.assertEqual((result["allowed"], result["level"], result["reason"]),
+                                 (False, "L0", "provenance_mismatch"))
+                self.assert_local_authority(result)
+                self.assertFalse((runtime.path / "activation.json").exists())
+
+    def test_persisted_extreme_future_dates_deny_l0_without_datetime_overflow(self):
+        self.store.activate(self.policy, self.case, self.context, now=NOW)
+        path = self.store.path / "activation.json"
+        value = json.loads(path.read_text())
+        value.update(issued_at="9999-12-31T23:00:00Z", expires_at="9999-12-31T23:59:59.999999Z")
+        path.write_text(json.dumps(value))
+        result = self.store.admit(self.policy, self.case, self.context, "local_test", now=NOW)
+        self.assertEqual((result["allowed"], result["level"], result["reason"]),
+                         (False, "L0", "activation_expired"))
+        self.assert_local_authority(result)
 
     def test_missing_activation_and_all_external_actions_deny_l0(self):
         self.assertFalse(self.store.admit(self.policy, self.case, self.context, "local_test", now=NOW)["allowed"])
@@ -43,6 +74,7 @@ class OwnerAutonomyTests(unittest.TestCase):
         for action in ("merge", "production", "provider_call", "external_action", "local_edit", "unknown"):
             with self.subTest(action=action):
                 result = self.store.admit(self.policy, self.case, self.context, action, now=NOW)
+                self.assert_local_authority(result)
                 self.assertEqual((result["allowed"], result["level"]), (False, "L0"))
 
     def test_each_admission_rechecks_every_binding_and_expiry(self):
@@ -66,7 +98,9 @@ class OwnerAutonomyTests(unittest.TestCase):
 
     def test_revocation_survives_restart_and_prevents_reactivation(self):
         self.store.activate(self.policy, self.case, self.context, now=NOW)
-        self.assertFalse(self.store.revoke(self.policy, now=NOW)["allowed"])
+        revoked = self.store.revoke(self.policy, now=NOW)
+        self.assert_local_authority(revoked)
+        self.assertFalse(revoked["allowed"])
         restarted = owner.OwnerRuntime(self.store.path)
         self.assertEqual(restarted.status(self.policy, self.case, self.context, now=NOW)["reason"], "revoked")
         self.assertFalse(restarted.activate(self.policy, self.case, self.context, now=NOW)["allowed"])
@@ -131,7 +165,8 @@ class OwnerAutonomyTests(unittest.TestCase):
         shutil.copy(ROOT / "scripts/grok_m8.py", root / "scripts/grok_m8.py")
         shutil.copytree(ROOT / "factory/src", root / "factory/src", ignore=shutil.ignore_patterns("__pycache__"))
         (root / "factory/runtime").mkdir()
-        (root / "factory/runtime/owner-autonomy-policy.v1.json").write_text(json.dumps(self.policy_data))
+        fixture_policy = dict(self.policy_data, expires_at=(datetime.now(timezone.utc) + timedelta(days=1)).isoformat())
+        (root / "factory/runtime/owner-autonomy-policy.v1.json").write_text(json.dumps(fixture_policy))
         (root / "PROJECT_STATE.json").write_text(json.dumps(self.state))
         (root / "VERSION").write_text("2.2.0\n")
         for args in (("init", "--quiet"), ("remote", "add", "origin", "https://github.com/Dimkox/adaptive-grok-build-pro.git"),
@@ -141,7 +176,9 @@ class OwnerAutonomyTests(unittest.TestCase):
         def run(*args):
             process = subprocess.run([sys.executable, str(root / "scripts/grok_m8.py"), *args], cwd=root,
                                      capture_output=True, text=True, timeout=10)
-            return process.returncode, json.loads(process.stdout)
+            decision = json.loads(process.stdout)
+            self.assert_local_authority(decision)
+            return process.returncode, decision
         self.assertEqual(run("status")[1]["level"], "L0")
         self.assertEqual(run("activate")[0], 0)
         self.assertEqual(run("admit", "--action", "local_test")[1]["level"], "L1")

@@ -94,6 +94,24 @@
       "from": "verifying",
       "reason": "Independent route-selected code and test review follow bounded writer controls; one final full verifier will run after reports are persisted.",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "reviewing",
+      "reason": "Bounded independent-review follow-up: initial provenance and authority regression gaps plus extreme-date overflow",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "implementing",
+      "reason": "Focused owner13 controls pass; full report-containing qualifying gate remains controller-owned and pending",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "verifying",
+      "reason": "Committed repair candidate prepared for selected bounded independent review follow-up; final full gate remains pending",
+      "to": "reviewing"
     }
   ],
   "human_gates": [],
@@ -102,5 +120,5 @@
   "schema_version": 1,
   "status": "reviewing",
   "title": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
-  "updated_at": "2026-10-05T00:25:02+00:00"
+  "updated_at": "2026-10-05T00:36:47+00:00"
 }

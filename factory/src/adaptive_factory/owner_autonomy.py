@@ -187,7 +187,7 @@ class OwnerActivationV1(_Value):
             raise ContractError("unsupported_level")
         if any(not isinstance(t, datetime) or t.tzinfo is None for t in (self.issued_at, self.expires_at)):
             raise ContractError("invalid_time")
-        if not self.issued_at < self.expires_at <= self.issued_at + timedelta(hours=1):
+        if not timedelta(0) < self.expires_at - self.issued_at <= timedelta(hours=1):
             raise ContractError("invalid_time")
 
 

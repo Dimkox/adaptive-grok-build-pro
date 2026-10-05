@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Later binding refusal masked initial provenance coverage
+
+Wrong-provenance tests changed a case after activation, so the later case digest check hid an untested initial qualification guard; decision tests also omitted explicit external-authority output assertions. Test initial qualification against fresh runtime and assert the bounded authority fields on both allowed and denied decisions.
+
 ## 2026-10-05 — Concurrent process metadata obscured ownership
 
 Root cause: branch push with upstream tracking updated shared Git tracking/config/worktree metadata during descriptor-pinned architecture verification, which refused `Git worktree binding changed` before tests despite unchanged source. Complete Git metadata writers before pinned verification; the observed metadata-binding change does not establish which individual inode mutation caused refusal.
