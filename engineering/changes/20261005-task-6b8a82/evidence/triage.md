@@ -1,0 +1,11 @@
+# Public Trust CI triage
+
+Owner request: Trust CI lives only in this repository and must work for everyone worldwide. There is no separate repository or PR1/PR2 to merge. Proposed interpretation, awaiting owner confirmation: one shared public GitHub App with self-service installation and supported, trusted verification profiles; self-hosted-only packaging is the alternate product choice.
+
+Observed source at 2a8e3839a469b3e05da167e9d8a807bf18e6adbf: WorkerSettings.github_installation_id is a positive integer, one GitHubAppAuth instance shares one installation token/cache across all jobs, and the HMAC-verified API rejects repositories outside the exact deployed policy catalog. Therefore changing the environment to auto alone cannot make arbitrary installations work. Existing explicit catalog profiles, isolated exact-SHA runner, policy-bound external holdout and signed approvals are real capabilities to preserve.
+
+High-risk architectural task: repository-scoped installation discovery/token binding, admission of actual opted-in installations through a reviewed public profile mechanism, tenant-scoped result reads, bounded resource abuse controls, removal/suspension handling, clear public install and onboarding instructions, staged rollout and rollback. Do not assert any new installation or deployment is live from source alone. No arbitrary-repository wildcard replaces authorization, and caller-supplied tests/commands do not replace trusted policy/holdout.
+
+Non-goals: secrets/private keys, changing the running deployed trust boundary from a source PR, modifying protection or holdout, GitHub Actions, automatically approving security changes, unrelated M8 source edits. M8 release PR245 remains an independent frozen candidate. Public source discovery found https://github.com/apps/adaptive-trust-ci ; landing-page presence alone does not prove that another account can install or that the server will serve it.
+
+Only read-only selected analysis is dispatched now. No product implementation, full verifier or reviewer wave is started on this unchanged product tree. After product approach approval, present a written design for owner review, then a written implementation plan and execution choice before implementation.

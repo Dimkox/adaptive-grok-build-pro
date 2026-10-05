@@ -1803,3 +1803,6 @@ Root cause: two fake local-dispatch controls inherited `GROK_VERIFY_CAPABILITY=r
 ## 2026-10-04 — Inventory membership was mistaken for source-file existence
 
 Root cause: an analysis inferred alias source-file existence from managed inventory membership without reading the inventory producer and alias rendering branch. `_SourceTree.inventory()` inserts virtual managed names and `build_payload()` skips their source reads, so the warning was corrected before runtime edits; inspect both sides of this seam before changing the installer.
+# 2026-10-05 — Oversized process diagnostic
+
+An unbounded host process listing exposed unrelated infrastructure metadata and produced excessive output while checking one verifier. The root cause was selecting a host-wide diagnostic instead of the known task PID/session. Use targeted task process observations and bounded output; do not inspect unrelated arguments or credentials.

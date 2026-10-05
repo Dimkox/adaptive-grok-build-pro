@@ -1,0 +1,34 @@
+{
+  "acceptance_criteria": [],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261005-task-6b8a82",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Design public self-service Trust CI GitHub App for any installing repository worldwide: REST API/webhook authentication, tenant isolation, repository-scoped installation tokens and selected trusted verification profiles, per-tenant quotas and rollback. Architectural scope; analyze before implementation. Existing hosted deployment, policy, holdout, GitHub App registration and branch protection stay unchanged until exact separate operational delegation and external approvals. No GitHub Actions, no broad wildcard authorization, no secret/key reads.",
+    "success_metric": "UNKNOWN",
+    "target": "UNKNOWN"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "infra",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
