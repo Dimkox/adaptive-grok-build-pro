@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Ignored scratch still entered source architecture inventory
+
+The coordinator accepted implementer scratch clones inside the candidate because Git ignored them, but the architecture source inventory also walks filesystem code paths. Final qualifier77792 at7c323b3 refused before heavy tests on those unowned .review-scratch Python files; no test pass or receipt resulted. Move only owned temporary copies outside the candidate under the project's trusted0700 scratch parent before qualification, without changing ignore rules or weakening architecture ownership.
+
 ## 2026-10-05 — Keep imported test helpers out of standalone discovery
 
 Root cause: an ignored byte-compatibility probe imported a TestCase class directly into its module namespace, so bare unittest discovery included that helper's architecture tests. Stop the exact probe process, discard its partial observation, import the helper module instead, and select the probe's own test class explicitly.
