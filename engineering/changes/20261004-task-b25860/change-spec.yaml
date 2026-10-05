@@ -1,0 +1,37 @@
+{
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "One distinct owner-accepted task suffices under the explicit V2 cohort constructor/parser/schema; preserve legacy V1 minimum30, nested V1 and exact-V1 M9 boundary; reject zero, bool and unknown versions without relaxing empirical currentness or zero tolerance.", "evidence": [{"test": "factory/tests/test_autonomy.py"}, {"test": "factory/tests/test_autonomy_schema.py"}, {"test": "delivery/tests/test_m8_boundary.py"}]},
+    {"id": "AC-002", "statement": "Executable typed owner qualification and local activation/admission/revocation bind policy, accepted case, repository and current source/profile; finite expiry and failures deny L0; initial L1 and L2 ceiling grant no external authority.", "evidence": [{"test": "factory/tests/test_owner_autonomy.py"}, {"receipt": "code_review"}, {"receipt": "test_review"}]},
+    {"id": "AC-003", "statement": "Current state/docs record one accepted Liqvera case and explicit owner-confirmed accounting/human readiness with unknown numeric telemetry null; historical empirical and release records stay preserved.", "evidence": [{"test": "tests/test_project_state.py"}, {"receipt": "code_review"}]},
+    {"id": "AC-004", "statement": "Current source VERSION/README and required architecture/package bindings identify 2.2.0 candidate; release helper keeps exact merged HEAD/tag commands and uses ignored dist assets without copying ZIPs into source packages; publication remains separately delegated.", "evidence": [{"test": "tests/test_structure.py"}, {"test": "tests/test_deploy.py"}, {"receipt": "verification"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20261004-task-b25860",
+  "contracts": {
+    "events": [],
+    "json_schema": ["factory/contracts/jsonschema/owner-autonomy.v1.schema.json", "factory/contracts/jsonschema/earned-autonomy.v2.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
+    "success_metric": "One accepted owner-confirmed case qualifies executable bounded local activation; per-use refusal controls and final full verification pass",
+    "target": "One Liqvera case, initial L1 local reads/tests, L2 ceiling, zero external authority and unknown numeric totals null"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

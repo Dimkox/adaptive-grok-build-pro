@@ -2,6 +2,12 @@ import unittest
 from copy import deepcopy
 from dataclasses import FrozenInstanceError, replace
 
+from adaptive_factory.autonomy import (
+    AutonomyProfileV1,
+    AutonomyTupleV1,
+    CohortEvidenceV1,
+    PromotionRecommendationV1,
+)
 from delivery.tests.synthetic_fixtures import (
     SYNTHETIC_EVALUATION_TIME,
     synthetic_domain_digest,
@@ -19,12 +25,6 @@ from adaptive_delivery.m8_boundary import (
     M8CohortEvidenceV1,
     M8DeliveryHandoffV1,
     M8PromotionRecommendationV1,
-)
-from adaptive_factory.autonomy import (
-    AutonomyProfileV1,
-    AutonomyTupleV1,
-    CohortEvidenceV1,
-    PromotionRecommendationV1,
 )
 
 
@@ -52,6 +52,19 @@ def rebuilt_handoff(source, *, cohort=None, profile=None, recommendation=None):
 
 
 class M8BoundaryTests(unittest.TestCase):
+    def test_legacy_handoff_rejects_new_v2_cohort_without_widening_m9(self):
+        from adaptive_factory.autonomy import CohortEvidenceV2
+        handoff = synthetic_m8_evidence()
+        body = handoff.cohort.to_dict()
+        body["schema_version"] = 2
+        successor = CohortEvidenceV2.from_dict(body)
+        with self.assertRaises(M8BoundaryError):
+            rebuilt_handoff(handoff, cohort=successor)
+        wire = handoff.to_dict()
+        wire["cohort"] = successor.to_dict()
+        with self.assertRaisesRegex(ValueError, "unsupported_version"):
+            M8DeliveryHandoffV1.from_dict(wire)
+
     def test_bridge_exports_the_actual_m8_producer_types(self):
         self.assertIs(M8AutonomyTupleV1, AutonomyTupleV1)
         self.assertIs(M8CohortEvidenceV1, CohortEvidenceV1)

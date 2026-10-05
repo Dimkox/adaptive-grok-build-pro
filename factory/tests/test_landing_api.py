@@ -451,6 +451,9 @@ class LandingApiTests(unittest.TestCase):
             and path.name != "bb-lifecycle-observation.v1.schema.json"
             and path.name != "prediction-explanation.v1.schema.json"
             and path.name != "prediction-observation.v1.schema.json"
+            and path != Path("factory/contracts/jsonschema/owner-autonomy.v1.schema.json")
+            # Only the explicitly versioned successor is outside predecessor bytes.
+            and path != Path("factory/contracts/jsonschema/earned-autonomy.v2.schema.json")
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()

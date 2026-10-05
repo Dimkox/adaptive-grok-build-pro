@@ -1,0 +1,124 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "2a8e3839a469b3e05da167e9d8a807bf18e6adbf",
+  "base_fingerprint": "ccae83d0f7c8ff9377918e0550ea34d57a3b53605269c4517b3c32da3f8d9a92",
+  "complexity": "standard",
+  "created_at": "2026-10-04T23:52:45+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "detected_languages": [
+      "php",
+      "python"
+    ],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "language_scan": {
+      "bytes": 2593201,
+      "directories": 419,
+      "entries": 4456,
+      "files": 4000,
+      "incomplete_reasons": [
+        "files:4000",
+        "source-bytes:65536"
+      ],
+      "non_regular": 0,
+      "skipped_symlinks": 0,
+      "status": "incomplete",
+      "truncated": true,
+      "unknown": true,
+      "unknown_extensions": {
+        ".in": 1,
+        ".json": 805,
+        ".jsonl": 4,
+        ".patch": 1,
+        ".sh": 1,
+        ".sha256": 3,
+        ".sql": 26,
+        ".toml": 2,
+        ".xml": 1,
+        ".yaml": 139
+      },
+      "unreadable": 0
+    },
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi",
+      "undetected-language",
+      "undetected-language:php=8",
+      "undetected-language:python=190",
+      "undetected-source-extension:.in=1",
+      "undetected-source-extension:.json=805",
+      "undetected-source-extension:.jsonl=4",
+      "undetected-source-extension:.patch=1",
+      "undetected-source-extension:.sh=1",
+      "undetected-source-extension:.sha256=3",
+      "undetected-source-extension:.sql=26",
+      "undetected-source-extension:.toml=2",
+      "undetected-source-extension:.xml=1",
+      "undetected-source-extension:.yaml=139",
+      "language-scan:incomplete=files:4000",
+      "language-scan:incomplete=source-bytes:65536"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "b258608f2ced",
+  "schema_version": 1,
+  "session_id": "m8-one-task-autonomy-20261004",
+  "status": "routed",
+  "task": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

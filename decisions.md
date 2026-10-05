@@ -1,5 +1,25 @@
 # Decisions
 
+## 2026-10-05 — Bind the real consumer and version changed wire semantics
+
+Use actual bounded Git-visible bytes and normalized authoritative route semantics, then exercise the CLI rather than relying on synthetic caller-supplied digests. Give the one-case cohort a distinct V2 version/domain/schema while preserving legacy V1 floor30 and the exact-V1 M9 boundary; historical schema comparison is literal again and excludes only the two named successor schemas. Bootstrap root binding tests from their own repository source path so isolated Trust CI discovery has the same inputs without collection side effects.
+
+## 2026-10-05 — Keep historical bytes pinned through one explicit approved view
+
+This earlier floor-normalization view is superseded by the explicit V2 cohort repair above. The original literal predecessor count/digest now compares unchanged V1 bytes without normalization, excluding only the named owner V1 and earned-autonomy V2 successors.
+
+## 2026-10-05 — Separate artifact validation from a live capability
+
+Check the actual producer and consumer before claiming a feature works; a schema and a synthetic explainer label establish neither model execution nor SHAP calculation. Keep U5 explicitly contracts-only/observation-only until a real model, dataset and explainer run establish the narrower live claim.
+
+## 2026-10-05 — Probe initial qualification before downstream bindings exist
+
+Use a fresh isolated runtime for each wrong product/factory provenance control, ensuring a later digest comparison cannot mask the initial guard. Explicitly assert external_authority=false and authority_ceiling=L2 on lifecycle outputs; compare activation duration rather than adding an hour to a possibly maximal timestamp.
+
+## 2026-10-05 — Apply the owner's one-case rule with executable local boundaries
+
+The owner's explicit minimum of one supersedes thirty for the current path, and accepted Liqvera plus owner-confirmed accounting/human readiness qualifies it without fabricated telemetry. A separate typed owner policy and per-use activation/admission/revocation consumer preserves blocked empirical M7 semantics while making bounded L1 local reads/tests usable. Complete shared Git metadata writes before pinned verification; the independent exact-SHA external runner may overlap.
+
 ## 2026-10-04 — Reuse the accepted factory-built product outcome
 
 The owner-accepted completed Liqvera demo satisfies existing-product dependencies, so M8/M9 follow-up planning can reuse this result without another first pilot. Separating product acceptance from empirical cohort, runtime activation and deployment evidence preserves the technical gates while recognizing the achieved outcome.

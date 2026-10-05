@@ -1,0 +1,178 @@
+{
+  "change_id": "20261004-task-b25860",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feat/m8-one-task-autonomy",
+      "change_id": "20261004-task-b25860",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "82d0b16f822256758f0773ca04e9dc74b1f06b15",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-04T23:53:03+00:00",
+      "route_id": "b258608f2ced"
+    },
+    {
+      "branch": "feat/m8-one-task-autonomy",
+      "change_id": "20261004-task-b25860",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "1132b0411bbac058941bc7ae48b97d5196c8aeb6",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-05T00:03:40+00:00",
+      "route_id": "b258608f2ced"
+    }
+  ],
+  "created_at": "2026-10-04T23:53:03+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T23:53:03+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-05T00:01:14+00:00",
+      "from": "draft",
+      "reason": "Explicit owner minimum1/activation/readiness and release scope, bounded design and acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-05T00:01:15+00:00",
+      "from": "scoped",
+      "reason": "Explicit user decision and standing routine-design delegation; active route has no named human gates; external production/trust boundaries unchanged",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-05T00:03:40+00:00",
+      "from": "approved",
+      "reason": "single selected implementer begins approved vertical",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T00:25:02+00:00",
+      "from": "implementing",
+      "reason": "Writer focused controls passed; actual merged PR244 base aligned with identical source tree. Full qualifying verification remains pending until independent reviews and report freeze.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T00:25:02+00:00",
+      "from": "verifying",
+      "reason": "Independent route-selected code and test review follow bounded writer controls; one final full verifier will run after reports are persisted.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "reviewing",
+      "reason": "Bounded independent-review follow-up: initial provenance and authority regression gaps plus extreme-date overflow",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "implementing",
+      "reason": "Focused owner13 controls pass; full report-containing qualifying gate remains controller-owned and pending",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T00:36:47+00:00",
+      "from": "verifying",
+      "reason": "Committed repair candidate prepared for selected bounded independent review follow-up; final full gate remains pending",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T00:44:17+00:00",
+      "from": "reviewing",
+      "reason": "Independent complete code/test reviews and bounded repair follow-ups PASS; source and reports frozen for the single final full verifier. External exact-head Trust CI, final local receipts and actual publication remain required; this phase is not merge authority.",
+      "to": "ready"
+    },
+    {
+      "at": "2026-10-05T01:02:40+00:00",
+      "from": "ready",
+      "reason": "Repair three full-factory-exit schema binding failures with explicit successor inventory and narrow approved historical floor view",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T01:02:40+00:00",
+      "from": "implementing",
+      "reason": "Three failing named controls now pass and unknown-schema/unapproved-old-byte probes fail as required; fresh full gate remains pending",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T01:02:40+00:00",
+      "from": "verifying",
+      "reason": "Bounded schema binding repair prepared for independent follow-up; prior full failed receipt remains historical",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T01:11:28+00:00",
+      "from": "reviewing",
+      "reason": "Inventory-only independent code/test follow-ups PASS and complete reports persisted; fresh full current-tree gate and exact-head App check remain mandatory after prior b39 full FAIL.",
+      "to": "ready"
+    },
+    {
+      "at": "2026-10-05T01:43:24+00:00",
+      "from": "ready",
+      "reason": "Confirmed review repair: full source inventory, authoritative route binding, versioned one-case cohort.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T01:56:11+00:00",
+      "from": "implementing",
+      "reason": "Bounded actual-CLI, wire compatibility and isolated root-discovery regressions reproduced and repaired; preparing focused final controls only.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T01:57:50+00:00",
+      "from": "verifying",
+      "reason": "Bounded repair controls and isolated Trust CI root discovery pass; independent follow-up and fresh complete local/App qualification remain pending.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T02:09:18+00:00",
+      "from": "reviewing",
+      "reason": "Both independent currentness/version/import follow-ups passed; complete findings and repair reports persisted, prepared for fresh final full qualification only",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "7464884d16fa43f794567cda514418e01a92574e635130c2ff17a48ea2eb6f49",
+  "route_id": "b258608f2ced",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
+  "updated_at": "2026-10-05T02:09:18+00:00"
+}

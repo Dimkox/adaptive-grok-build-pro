@@ -4,12 +4,26 @@
   "default_branch": "main",
   "observed_at": "2026-09-24T20:06:48Z",
   "observed_main_sha": "3f41be92161fef451a2dfa7451eb458ce8f022b3",
-  "product_version": "2.1.1",
+  "product_version": "2.2.0",
   "latest_published_release": "v2.1.1",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
   "current_continuation": {
+    "route_id": "b258608f2ced",
+    "branch": "feat/m8-one-task-autonomy",
+    "pull_request": null,
+    "change_package": "engineering/changes/20261004-task-b25860",
+    "target_version": "2.2.0",
+    "status": "source_candidate_pending_independent_review_and_final_gates",
+    "accepted_product_delivery": {
+      "pull_request": 244,
+      "merge_commit": "2a8e3839a469b3e05da167e9d8a807bf18e6adbf",
+      "merged_at": "2026-10-05T00:07:26Z"
+    },
+    "next_action": "Deliver one-case bounded local owner-autonomy source through independent review, one final full verifier and exact-head external Trust CI. Activate per clone on the final source using scripts/grok_m8.py; GitHub Release publication requires the exact merged tested source and delegated operation. M9 remains separate."
+  },
+  "historical_cleanup_continuation": {
     "pull_request": 241,
     "superseded_pull_requests": [239],
     "historical_pull_requests": [
@@ -2045,15 +2059,21 @@
           "m8_accepted_product_followup_planning",
           "m9_accepted_product_followup_planning"
         ],
+        "owner_readiness": {
+          "observed_at": "2026-10-05",
+          "evidence_kind": "explicit_owner_confirmation",
+          "accounting_complete": true,
+          "human_gate_complete": true,
+          "cost_usd_micros": null,
+          "human_intervention_count": null,
+          "scope": "Owner confirms completed cost/intervention accounting and human-gate readiness for this accepted case. Numeric telemetry is unavailable. This local readiness is not a human-signed Trust CI security approval."
+        },
         "remaining_prerequisites": [
           "m7_durable_current_lookup",
-          "m8_30_distinct_exact_profile_tasks",
-          "m8_activation",
-          "complete_cost_and_intervention_accounting",
           "m9_signed_environment_recovery_authority",
           "factory_site_publication"
         ],
-        "dependency_scope": "All dependencies requiring an existing completed owner-accepted factory product are satisfied. M8/M9 follow-up planning can proceed without another first pilot. Executable M7 durable lookup and empirical M8 activation remain technical prerequisites; this state record changes no runtime gate or default flag.",
+        "dependency_scope": "One owner-accepted product qualifies the separate bounded local M8 owner policy. Accounting and human readiness are owner-confirmed; numeric telemetry remains unknown. Empirical M7 currentness and M9 qualification remain separate, with no fabricated producer receipts.",
         "evidence": "engineering/changes/20261004-task-4e7891/evidence/controller-analysis.md"
       },
       "implementation": {
@@ -2447,12 +2467,16 @@
     "l5_authenticated_artifact_generation": true,
     "external_maintainer_accepted_pilot": true,
     "external_maintainer_accepted_pilot_evidence": "milestones.M8.completed_product_case",
-    "m8_qualifying_cohort": false,
-    "m8_activation": false,
+    "m8_qualifying_cohort": true,
+    "m8_activation": true,
+    "m8_evidence_kind": "explicit_owner_confirmation",
+    "m8_scope": "Source-enabled bounded owner policy with one accepted case, initial L1 local_read/local_test and L2 ceiling. Actual per-clone activation/admission/revocation is consumed by scripts/grok_m8.py from ignored runtime, with finite expiry, complete Git-visible source binding and validated authoritative active-route semantics. Missing/incompatible route denies. Separate CohortEvidenceV2 admits minimum1; legacy V1 minimum30 and exact-V1 M9 boundary remain unchanged. This is not deployed generic worker automation or empirical M7 qualification.",
     "m9_general_operational_qualification": false,
     "factory_site_publication": false,
-    "record_scope": "Accepted external product outcome is established by explicit owner confirmation for Liqvera, corroborated by released factory tooling provenance, not independent runtime telemetry. False means not established: M8 cohort/activation, complete cost accounting, general M9 qualification and factory-runtime site publication remain separate.",
-    "complete_pilot_cost_and_human_intervention_accounting": false
+    "record_scope": "Owner-confirmed Liqvera acceptance, accounting and human readiness qualify the one-case bounded local M8 policy. Numeric telemetry remains null. General M9 and factory-runtime site publication remain unestablished; no external authority is conferred.",
+    "complete_pilot_cost_and_human_intervention_accounting": true,
+    "human_gate_readiness": true,
+    "readiness_evidence_kind": "explicit_owner_confirmation"
   },
   "latest_runtime_operation": {
     "observed_at": "2026-09-19T19:55:00Z",

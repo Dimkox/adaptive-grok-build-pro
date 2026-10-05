@@ -60,10 +60,10 @@ def _field_names(contract: type[Any]) -> set[str]:
     return {field.name for field in fields(contract)}
 
 
-def _version(value: Any, name: str) -> int:
-    if type(value) is not int or value != 1:
+def _version(value: Any, name: str, expected: int = 1) -> int:
+    if type(value) is not int or value != expected:
         raise ContractError("unsupported_version", name)
-    return 1
+    return expected
 
 
 def _identifier(value: Any, name: str) -> str:
@@ -348,9 +348,11 @@ class CohortEvidenceV1(_AutonomyValue):
     maximum_demotion_triggers: int
 
     DOMAIN: ClassVar[str] = "adaptive-factory.m8-cohort-evidence/v1"
+    SCHEMA_VERSION: ClassVar[int] = 1
+    MINIMUM_ACCEPTANCES: ClassVar[int] = 30
 
     def __post_init__(self) -> None:
-        _version(self.schema_version, "cohort_evidence")
+        _version(self.schema_version, "cohort_evidence", self.SCHEMA_VERSION)
         if not isinstance(self.autonomy_tuple, AutonomyTupleV1):
             raise ContractError("invalid_contract", "autonomy_tuple")
         if not isinstance(self.tasks, tuple) or not 1 <= len(self.tasks) <= MAX_COHORT_TASKS:
@@ -440,7 +442,7 @@ class CohortEvidenceV1(_AutonomyValue):
         _integer(
             self.minimum_human_acceptances,
             "minimum_human_acceptances",
-            30,
+            self.MINIMUM_ACCEPTANCES,
             MAX_COHORT_TASKS,
         )
         _integer(
@@ -476,13 +478,13 @@ class CohortEvidenceV1(_AutonomyValue):
         if not 1 <= len(tasks) <= MAX_COHORT_TASKS:
             raise ContractError("invalid_contract", "tasks")
         return cls(
-            _version(data["schema_version"], "cohort_evidence"),
+            _version(data["schema_version"], "cohort_evidence", cls.SCHEMA_VERSION),
             AutonomyTupleV1.from_dict(data["autonomy_tuple"]),
             tuple(CohortTaskEvidenceV1.from_dict(task) for task in tasks),
             M7AutonomyBridgeV1.from_dict(data["m7_handoff"]),
             _timestamp(data["window_started_at"], "window_started_at"),
             _timestamp(data["window_ended_at"], "window_ended_at"),
-            _integer(data["minimum_human_acceptances"], "minimum_human_acceptances", 30, MAX_COHORT_TASKS),
+            _integer(data["minimum_human_acceptances"], "minimum_human_acceptances", cls.MINIMUM_ACCEPTANCES, MAX_COHORT_TASKS),
             _integer(
                 data["minimum_audit_rate_millionths"],
                 "minimum_audit_rate_millionths",
@@ -526,6 +528,15 @@ class CohortEvidenceV1(_AutonomyValue):
             "maximum_latency_ms": self.maximum_latency_ms,
             "maximum_demotion_triggers": self.maximum_demotion_triggers,
         }
+
+
+@dataclass(frozen=True)
+class CohortEvidenceV2(CohortEvidenceV1):
+    """One-case cohort successor; nested M7/tuple/task contracts remain V1."""
+
+    DOMAIN: ClassVar[str] = "adaptive-factory.m8-cohort-evidence/v2"
+    SCHEMA_VERSION: ClassVar[int] = 2
+    MINIMUM_ACCEPTANCES: ClassVar[int] = 1
 
 
 @dataclass(frozen=True)
@@ -827,12 +838,12 @@ def _cohort_gate_reason(
 
 
 def evaluate_autonomy(
-    cohort: CohortEvidenceV1,
+    cohort: CohortEvidenceV1 | CohortEvidenceV2,
     existing_profile: AutonomyProfileV1 | None,
     evaluated_at: datetime,
 ) -> tuple[AutonomyProfileV1, PromotionRecommendationV1]:
     """Compute a recommendation-only profile snapshot from closed factual shapes."""
-    if not isinstance(cohort, CohortEvidenceV1):
+    if type(cohort) not in (CohortEvidenceV1, CohortEvidenceV2):
         raise ContractError("invalid_contract", "cohort")
     evaluated_at = _aware_time(evaluated_at, "evaluated_at")
     if evaluated_at < cohort.window_ended_at:

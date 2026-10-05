@@ -11,6 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# This module also runs alone under isolated unittest discovery in Trust CI.
+sys.path.insert(0, str(ROOT / "factory" / "src"))
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = "<redacted-app-id>"
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
@@ -129,18 +131,17 @@ class ProjectStateTests(unittest.TestCase):
             "m8_accepted_product_followup_planning", "m9_accepted_product_followup_planning",
         })
         self.assertEqual(set(case["remaining_prerequisites"]), {
-            "m7_durable_current_lookup", "m8_30_distinct_exact_profile_tasks",
-            "m8_activation", "complete_cost_and_intervention_accounting",
+            "m7_durable_current_lookup",
             "m9_signed_environment_recovery_authority", "factory_site_publication",
         })
         self.assertTrue(self.state["operational_qualification"]["external_maintainer_accepted_pilot"])
         self.assertEqual(self.state["next_external_pilot"]["record_scope"], "historical_superseded")
         self.assertFalse(self.state["next_external_pilot"]["maintainer_acceptance"])
 
-    def test_current_continuation_binds_cleanup_dependency_and_fresh_clone(self) -> None:
+    def test_historical_cleanup_continuation_preserves_exact_dependency(self) -> None:
         state = self.state
         self.assertTrue('current_continuation' in state, 'missing current continuation record')
-        continuation = state['current_continuation']
+        continuation = state['historical_cleanup_continuation']
         self.assertEqual(continuation['pull_request'], 241)
         self.assertEqual(continuation['superseded_pull_requests'], [239])
         self.assertEqual(continuation['historical_pull_requests'], [{'pull_request': 239, 'record_scope': 'historical', 'status': 'superseded', 'successor_pull_request': 241}])
@@ -192,10 +193,9 @@ class ProjectStateTests(unittest.TestCase):
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         active_line = next(line for line in start.splitlines() if line.startswith('- **Active delivery:**'))
         for document in (active_line, _section(readme, 'Current state')):
-            self.assertIn('PR #241', document)
-            self.assertIn('no-op', document)
-            self.assertIn('PR #240', document)
-            self.assertIn(package, document)
+            self.assertIn('2.2.0', document)
+            self.assertIn('exact-head', document)
+            self.assertIn('engineering/changes/20261004-task-b25860', readme)
         self.assertNotIn('20261002-assemble-2-1-1', active_line)
         self.assertIn('Historical core observation', start)
         self.assertIn('Historical pre-publication core observation', readme)
@@ -215,6 +215,25 @@ class ProjectStateTests(unittest.TestCase):
         self.assertFalse(published['operational_activation'])
         self.assertIsNone(published['trust_ci']['attestation_id'])
 
+    def test_current_owner_policy_is_bound_to_one_real_case_without_numeric_telemetry(self) -> None:
+        from adaptive_factory.owner_autonomy import OwnerCaseV1, OwnerPolicyV1
+        policy = OwnerPolicyV1.from_dict(json.loads((ROOT / 'factory/runtime/owner-autonomy-policy.v1.json').read_text()))
+        case = OwnerCaseV1.from_project_state(self.state)
+        self.assertEqual(policy.minimum_accepted_tasks, 1)
+        self.assertEqual(policy.product_source_sha, case.product_source_sha)
+        self.assertEqual(policy.factory_source_sha, case.factory_source_sha)
+        self.assertTrue(case.accepted and case.accounting_complete and case.human_gate_complete)
+        self.assertIsNone(case.cost_usd_micros)
+        self.assertIsNone(case.human_intervention_count)
+        self.assertEqual(policy.allowed_actions, ('local_read', 'local_test'))
+        continuation = self.state['current_continuation']
+        self.assertEqual(continuation['route_id'], 'b258608f2ced')
+        self.assertEqual(continuation['branch'], 'feat/m8-one-task-autonomy')
+        self.assertEqual(continuation['target_version'], self.state['product_version'])
+        self.assertEqual(continuation['accepted_product_delivery']['merge_commit'], '2a8e3839a469b3e05da167e9d8a807bf18e6adbf')
+        self.assertIn('Source-enabled bounded owner policy', self.state['operational_qualification']['m8_scope'])
+        self.assertFalse(self.state['operational_qualification']['m9_general_operational_qualification'])
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.state = json.loads((ROOT / "PROJECT_STATE.json").read_text(encoding="utf-8"))
@@ -222,7 +241,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.1.1")
+        self.assertEqual(state["product_version"], "2.2.0")
         self.assertEqual(state["latest_published_release"], "v2.1.1")
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-24T\d{2}:\d{2}:\d{2}Z$")
@@ -1000,13 +1019,14 @@ class ProjectStateTests(unittest.TestCase):
         for key in ("m8_qualifying_cohort", "m8_activation",
                     "m9_general_operational_qualification", "factory_site_publication",
                     "complete_pilot_cost_and_human_intervention_accounting"):
-            self.assertFalse(state["operational_qualification"][key])
+            self.assertEqual(state["operational_qualification"][key], key in {
+                "m8_qualifying_cohort", "m8_activation", "complete_pilot_cost_and_human_intervention_accounting"})
         # The preserved pre-publication source candidate is explicitly dated provenance.
         self.assertEqual(state["latest_published_release"], state["published_release"]["tag"])
-        self.assertEqual(state["local_candidate"]["version"], state["product_version"])
+        self.assertEqual(state["local_candidate"]["version"], "2.1.1")
         self.assertFalse(state["local_candidate"]["published"])
         self.assertFalse(state["local_candidate"]["operational_activation"])
-        self.assertEqual("v" + state["product_version"], state["published_release"]["tag"])
+        self.assertEqual(state["published_release"]["tag"], "v2.1.1")
         self.assertIn("Historical pre-publication", state["local_candidate"]["record_scope"])
         self.assertEqual(state["observed_main_sha"], OBSERVED_MAIN_SHA)
 

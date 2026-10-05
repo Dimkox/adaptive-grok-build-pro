@@ -1,5 +1,29 @@
 # Mistakes
 
+## 2026-10-05 — Synthetic currentness and same-version widening hid real boundaries
+
+Root cause: unit-supplied digests masked omitted executable inventory and hardcoded route semantics, while the minimum1 change reused the V1 wire identity instead of testing an existing V1 consumer. Real CLI mutation/refusal controls now bind the complete Git-visible inventory and actual route, and a distinct V2 cohort leaves legacy V1/M9 closed. The root state test also relied on other test collection adding factory/src to sys.path; isolated `python -I` discovery reproduced the external refusal and explicit module-local bootstrap removes that dependency.
+
+## 2026-10-05 — Keep patch markers separate from report content
+
+A controller report template already contained leading plus markers before the AddFile builder prefixed its lines again, leaving literal plus signs in Markdown. Generate patches from plain report content and inspect the persisted file before freeze; no product behavior or recorded identity was changed by this formatting repair.
+
+## 2026-10-05 — Additive schema missed other inventory consumers
+
+Root cause: implementation searched the immediate M8 schema bindings but missed the semantic/bridge exact inventories and historical aggregate; the selected factory-unit subset did not include those full factory-exit consumers. Search every contract inventory and historical byte binding when adding a schema, and distinguish focused observation from the complete factory gate.
+
+## 2026-10-05 — U5 completion scope was unclear
+
+The distinction between prediction/explanation artifact validation and SHAP calculation was not explicit enough in delivery status. Source inspection finds no SHAP computation entrypoint and finds shap-v1 only in a synthetic fixture; report contracts-only/observation-only rather than a working SHAP feature.
+
+## 2026-10-05 — Later binding refusal masked initial provenance coverage
+
+Wrong-provenance tests changed a case after activation, so the later case digest check hid an untested initial qualification guard; decision tests also omitted explicit external-authority output assertions. Test initial qualification against fresh runtime and assert the bounded authority fields on both allowed and denied decisions.
+
+## 2026-10-05 — Concurrent process metadata obscured ownership
+
+Root cause: branch push with upstream tracking updated shared Git tracking/config/worktree metadata during descriptor-pinned architecture verification, which refused `Git worktree binding changed` before tests despite unchanged source. Complete Git metadata writers before pinned verification; the observed metadata-binding change does not establish which individual inode mutation caused refusal.
+
 ## 2026-10-04 — Ignored an existing owner-accepted factory result
 
 Root cause: planning treated missing recorded telemetry as absence of the owner's completed factory-built Liqvera product, then proposed a duplicate pilot and unsupported ETA. Record the accepted result and unblock its dependencies; derive remaining technical estimates from actual scope and measurements.

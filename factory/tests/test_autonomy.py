@@ -26,6 +26,66 @@ SYNTHETIC_ALGORITHM_FIXTURES_ONLY = True
 NOW = datetime(2026, 9, 4, 0, 0, tzinfo=timezone.utc)
 
 
+class OneAcceptanceFloorTests(unittest.TestCase):
+    def test_legacy_v1_retains_thirty_floor_and_rejects_v2(self):
+        cohort = CohortEvidenceV1.from_dict(valid_cohort_payload())
+        self.assertEqual(CohortEvidenceV1.from_dict(cohort.to_dict()), cohort)
+        for minimum in (1, 29, 0, False):
+            with self.subTest(minimum=minimum):
+                payload = valid_cohort_payload()
+                payload["minimum_human_acceptances"] = minimum
+                with self.assertRaises(ContractError):
+                    CohortEvidenceV1.from_dict(payload)
+                with self.assertRaises(ContractError):
+                    replace(cohort, minimum_human_acceptances=minimum)
+        payload = cohort.to_dict()
+        payload["schema_version"] = 2
+        with self.assertRaises(ContractError):
+            CohortEvidenceV1.from_dict(payload)
+
+    def test_v2_one_acceptance_roundtrips_and_has_distinct_wire_and_digest(self):
+        from adaptive_factory import autonomy
+        contract = getattr(autonomy, "CohortEvidenceV2", None)
+        self.assertIsNotNone(contract, "one-case semantics require a distinct V2 producer")
+        payload = valid_cohort_payload(1)
+        payload["schema_version"] = 2
+        payload["minimum_human_acceptances"] = 1
+        cohort = contract.from_dict(payload)
+        self.assertEqual(cohort.minimum_human_acceptances, 1)
+        self.assertEqual(contract.from_dict(cohort.to_dict()), cohort)
+        self.assertEqual(contract.DOMAIN, "adaptive-factory.m8-cohort-evidence/v2")
+        profile, recommendation = evaluate_autonomy(cohort, None, NOW)
+        self.assertEqual(profile.cohort_digest, cohort.digest)
+        self.assertEqual(recommendation.reason_code, "m7_bundle_blocked")
+        self.assertFalse(recommendation.external_action_authorized)
+        self.assertEqual(profile.schema_version, 1)
+        # The cohort alone changes version; existing nested and output wires do not.
+        self.assertEqual(cohort.autonomy_tuple.schema_version, 1)
+        self.assertEqual(cohort.m7_handoff.schema_version, 1)
+        shared = valid_cohort_payload()
+        legacy = CohortEvidenceV1.from_dict(shared)
+        shared["schema_version"] = 2
+        successor = contract.from_dict(shared)
+        self.assertNotEqual(legacy.digest, successor.digest)
+        self.assertNotEqual(evaluate_autonomy(legacy, None, NOW)[0].cohort_digest,
+                            evaluate_autonomy(successor, None, NOW)[0].cohort_digest)
+        for minimum in (0, False):
+            with self.subTest(minimum=minimum):
+                payload["minimum_human_acceptances"] = minimum
+                with self.assertRaises(ContractError):
+                    contract.from_dict(payload)
+                with self.assertRaises(ContractError):
+                    replace(cohort, minimum_human_acceptances=minimum)
+        for version in (1, 3, 0, True, "2"):
+            with self.subTest(version=version):
+                bad = cohort.to_dict()
+                bad["schema_version"] = version
+                with self.assertRaises(ContractError):
+                    contract.from_dict(bad)
+                with self.assertRaises(ContractError):
+                    replace(cohort, schema_version=version)
+
+
 def _canonical(value: object) -> bytes:
     return json.dumps(
         value, ensure_ascii=False, separators=(",", ":"), sort_keys=True

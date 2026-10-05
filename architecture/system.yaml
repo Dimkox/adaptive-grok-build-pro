@@ -442,6 +442,22 @@
       "version": "1"
     },
     {
+      "compatibility": "versioned_break",
+      "id": "CONTRACT-FACTORY-EARNED-AUTONOMY-V2",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/earned-autonomy.v2.schema.json",
+      "role": "producer",
+      "version": "2"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-OWNER-AUTONOMY-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/owner-autonomy.v1.schema.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
       "compatibility": "bidirectional",
       "id": "CONTRACT-FACTORY-LANDING-FAILOVER-OPENAPI-V1",
       "kind": "openapi",
@@ -2328,10 +2344,18 @@
       "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-EARNED-AUTONOMY",
       "owner": "local factory operators and human reviewers",
-      "public_contracts": [],
+      "public_contracts": [
+        "CONTRACT-FACTORY-EARNED-AUTONOMY-V2",
+        "CONTRACT-FACTORY-OWNER-AUTONOMY-V1"
+      ],
       "repository_paths": [
         "factory/src/adaptive_factory/autonomy.py",
-        "factory/src/adaptive_factory/m7_autonomy_bridge.py"
+        "factory/src/adaptive_factory/m7_autonomy_bridge.py",
+        "factory/src/adaptive_factory/owner_autonomy.py",
+        "factory/runtime/owner-autonomy-policy.v1.json",
+        "factory/contracts/jsonschema/earned-autonomy.v2.schema.json",
+        "factory/contracts/jsonschema/owner-autonomy.v1.schema.json",
+        "scripts/grok_m8.py"
       ],
       "runtime": {
         "evidence": "source_described",
