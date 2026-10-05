@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-05 — Keep reviewed SQL bytes distinct from semantic phase proof
+
+An exact primary-path/raw-SHA256 registry with an exact byte-identical mirror preserves closed compatibility without pretending the semicolon parser understands PostgreSQL functions and grants; production admission stays empty pending independent review of actual bytes. Remove only the four exact public contract additions before comparing the original model envelope, and require their changed owner-bound source bytes so incidental legacy edits cannot qualify them. Execute every named negative case in the parameter list: branch labels alone provided no coverage for several existing source-separation claims.
+
 ## 2026-10-05 — Bind the real consumer and version changed wire semantics
 
 Use actual bounded Git-visible bytes and normalized authoritative route semantics, then exercise the CLI rather than relying on synthetic caller-supplied digests. Give the one-case cohort a distinct V2 version/domain/schema while preserving legacy V1 floor30 and the exact-V1 M9 boundary; historical schema comparison is literal again and excludes only the two named successor schemas. Bootstrap root binding tests from their own repository source path so isolated Trust CI discovery has the same inputs without collection side effects.

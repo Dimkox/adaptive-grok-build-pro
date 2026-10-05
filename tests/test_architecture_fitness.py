@@ -3761,7 +3761,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def test_change_separation_metadata_does_not_hide_implementation(self) -> None:
         repo, base, common_system = self._trust_binding_repo()
         common_head = repo.commit("Trust CI source and mandatory metadata")
-        for mutation in ("runtime", "contract_role", "local"):
+        for mutation in ("runtime", "secret", "edge", "owner", "other_source", "wildcard",
+                         "local", "checker", "rules", "schema", "contract", "contract_role"):
             with self.subTest(mutation=mutation):
                 repo.git("reset", "--hard", common_head)
                 system = copy.deepcopy(common_system)
@@ -3805,6 +3806,175 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
                 result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
                 self.assertEqual(result.status, "fail", result.findings)
+
+    def _public_trust_binding_repo(self, contract_indices=(0, 1, 2, 3)):
+        snapshot = ARCHITECTURE.load_architecture(ROOT)
+        system = copy.deepcopy(snapshot.system)
+        repo = GitArchitectureRepo(self)
+        repo.model(system, snapshot.rules)
+        for contract in system["contracts"]:
+            repo.write_bytes(contract["path"], (ROOT / contract["path"]).read_bytes())
+        base = repo.commit("actual registered Trust CI baseline")
+        descriptors = (
+            ("github-public-lifecycle-projection", "CONTRACT-GITHUB-PUBLIC-LIFECYCLE-PROJECTION",
+             "NODE-TRUST-CI-API", "json_schema", "consumer", "consumer_accepts_old", "api.py"),
+            ("trust-ci-public-profile-selection", "CONTRACT-TRUST-CI-PUBLIC-PROFILE-SELECTION",
+             "NODE-TRUST-CI-WORKER", "json_schema", "consumer", "consumer_accepts_old", "public_policy.py"),
+            ("trust-ci-public-effective-policy", "CONTRACT-TRUST-CI-PUBLIC-EFFECTIVE-POLICY",
+             "NODE-TRUST-CI-WORKER", "json_schema", "bidirectional", "bidirectional", "public_policy.py"),
+            ("trust-ci-public-attestation-envelope", "CONTRACT-TRUST-CI-PUBLIC-ATTESTATION-ENVELOPE",
+             "NODE-TRUST-CI-WORKER", "signed_payload", "producer", "producer_accepted_by_old", "public_runner.py"),
+        )
+        nodes = {node["id"]: node for node in system["nodes"]}
+        for index in contract_indices:
+            name, identity, owner, kind, role, compatibility, filename = descriptors[index]
+            path = f"engineering/contracts/schemas/{name}.v1.json"
+            system["contracts"].append({
+                "id": identity, "path": path, "version": "1", "kind": kind,
+                "role": role, "compatibility": compatibility,
+            })
+            nodes[owner]["public_contracts"].append(identity)
+            source = f"trust-ci/src/adaptive_trust_ci/{filename}"
+            if source not in nodes[owner]["repository_paths"]:
+                nodes[owner]["repository_paths"].append(source)
+            repo.write_text(source, "VALUE = 'public fixture'\n")
+            repo.write_json(path, _json_schema({}))
+        repo.model(system, snapshot.rules)
+        return repo, base, system
+
+    def test_change_separation_admits_only_exact_paired_public_contracts(self) -> None:
+        for indices in ((0,), (1,), (2,), (3,), (0, 1, 2, 3)):
+            with self.subTest(indices=indices):
+                repo, base, system = self._public_trust_binding_repo(indices)
+                head = repo.commit("paired public metadata")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
+                self.assertEqual(result.status, "pass", result.findings)
+                qualified = FIT._trust_ci_metadata_paths(diff)
+                self.assertIn("architecture/system.yaml", qualified)
+                for contract in system["contracts"]:
+                    if "PUBLIC" in contract["id"]:
+                        self.assertIn(contract["path"], qualified)
+
+    def test_change_separation_public_contracts_preserve_original_envelope(self) -> None:
+        mutations = (
+            "path", "identity", "version", "kind", "role", "compatibility", "contract_owner",
+            "missing_source", "unrelated_source", "missing_registration", "worker_runtime",
+            "worker_secrets", "worker_owner", "worker_domain", "worker_type", "old_binding",
+            "old_contract", "edge", "node", "new_node", "worker_prefix", "arbitrary_source",
+            "extra_schema", "local", "checker", "rules",
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation):
+                repo, base, system = self._public_trust_binding_repo()
+                nodes = {node["id"]: node for node in system["nodes"]}
+                worker = nodes["NODE-TRUST-CI-WORKER"]
+                contract = system["contracts"][-1]
+                source = "trust-ci/src/adaptive_trust_ci/public_runner.py"
+                if mutation in {"path", "identity", "version", "kind", "role", "compatibility"}:
+                    field = "id" if mutation == "identity" else mutation
+                    value = {"path": "engineering/contracts/schemas/other.v1.json", "identity": "CONTRACT-OTHER",
+                             "version": "2", "kind": "json_schema", "role": "consumer", "compatibility": "exact"}[mutation]
+                    if field == "id":
+                        worker["public_contracts"].remove(contract["id"])
+                        worker["public_contracts"].append(value)
+                    if field == "path":
+                        repo.write_json(value, _json_schema({}))
+                    contract[field] = value
+                elif mutation == "contract_owner":
+                    worker["public_contracts"].remove(contract["id"])
+                    nodes["NODE-TRUST-CI-API"]["public_contracts"].append(contract["id"])
+                elif mutation in {"missing_source", "unrelated_source"}:
+                    (repo.root / source).unlink()
+                    if mutation == "unrelated_source":
+                        repo.write_text("trust-ci/src/adaptive_trust_ci/policy.py", "VALUE = 2\n")
+                elif mutation == "missing_registration":
+                    worker["repository_paths"].remove(source)
+                elif mutation == "worker_runtime":
+                    worker["runtime"]["network"] = "local_only"
+                elif mutation == "worker_secrets":
+                    worker["secrets"].remove("SECRET-CI-SIGNING")
+                elif mutation == "worker_owner":
+                    worker["owner"] = "other operators"
+                elif mutation == "worker_domain":
+                    worker["trust_domain"] = "TD-TRUST-CI-CONTROL"
+                elif mutation == "worker_type":
+                    worker["type"] = "service"
+                elif mutation == "old_binding":
+                    worker["repository_paths"].remove("trust-ci/src/adaptive_trust_ci/signing.py")
+                    repo.write_text("trust-ci/src/adaptive_trust_ci/signing.py", "VALUE = 2\n")
+                elif mutation == "old_contract":
+                    system["contracts"][0]["version"] = "2"
+                elif mutation == "edge":
+                    system["edges"][0]["failure_behavior"]["timeout_ms"] += 1
+                elif mutation == "node":
+                    nodes["NODE-TRUST-CI-POSTGRES"]["owner"] = "other operators"
+                elif mutation == "new_node":
+                    added = copy.deepcopy(nodes["NODE-TRUST-CI-API"])
+                    added.update(id="NODE-TRUST-CI-EXTRA", repository_paths=["trust-ci/src/adaptive_trust_ci/extra.py"], public_contracts=[])
+                    system["nodes"].append(added)
+                    repo.write_text("trust-ci/src/adaptive_trust_ci/extra.py", "VALUE = 2\n")
+                elif mutation == "worker_prefix":
+                    worker["repository_paths"].append("trust-ci/src/adaptive_trust_ci/public")
+                    repo.write_text("trust-ci/src/adaptive_trust_ci/public/module.py", "VALUE = 2\n")
+                elif mutation == "arbitrary_source":
+                    extra = "trust-ci/src/adaptive_trust_ci/public_arbitrary.py"
+                    worker["repository_paths"].append(extra)
+                    repo.write_text(extra, "VALUE = 2\n")
+                elif mutation == "extra_schema":
+                    repo.write_json("engineering/contracts/schemas/extra.v1.json", _json_schema({}))
+                elif mutation == "local":
+                    repo.write_text("factory/src/local.py", "VALUE = 2\n")
+                elif mutation == "checker":
+                    repo.write_text(".grok-stack/adaptive_grok/architecture_fitness.py", "VALUE = 2\n")
+                elif mutation == "rules":
+                    rules = copy.deepcopy(ARCHITECTURE.load_architecture(ROOT).rules)
+                    rules["change_separation_policies"][0]["severity"] = "warning"
+                    repo.write_json("architecture/rules.yaml", rules)
+                repo.write_json("architecture/system.yaml", system)
+                head = repo.commit(mutation)
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status, "fail")
+
+    def test_public_metadata_requires_changed_schema_and_exact_paired_source_bytes(self) -> None:
+        for unchanged in ("schema", "source"):
+            with self.subTest(unchanged=unchanged):
+                repo, _base, system = self._public_trust_binding_repo((3,))
+                path = (system["contracts"][-1]["path"] if unchanged == "schema" else
+                        "trust-ci/src/adaptive_trust_ci/public_runner.py")
+                # Only these bytes enter the comparison base; their later registration
+                # must not turn unchanged bytes into evidence of a paired change.
+                repo.git("add", path)
+                repo.git("commit", "-qm", "unchanged pairing predecessor")
+                base = repo.git("rev-parse", "HEAD")
+                repo.write_text("trust-ci/src/adaptive_trust_ci/policy.py", "VALUE = 'unrelated legacy edit'\n")
+                head = repo.commit("registration without paired byte change")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status, "fail")
+
+    def test_public_lifecycle_metadata_accepts_existing_api_owned_webhook_pair(self) -> None:
+        repo, base, _system = self._public_trust_binding_repo((0,))
+        (repo.root / "trust-ci/src/adaptive_trust_ci/api.py").unlink()
+        repo.write_text("trust-ci/src/adaptive_trust_ci/webhooks.py", "VALUE = 'public ingestion fixture'\n")
+        head = repo.commit("paired lifecycle ingestion")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status, "pass")
+
+    def test_public_worker_source_membership_is_exact_and_envelope_preserving(self) -> None:
+        approved = ("public_models.py", "public_admission.py", "public_policy.py", "source_safety.py",
+                    "public_storage.py", "public_checkout.py", "public_runner.py")
+        for filename in (*approved, "public_extra.py"):
+            with self.subTest(filename=filename):
+                repo, base, system = self._public_trust_binding_repo(())
+                worker = next(node for node in system["nodes"] if node["id"] == "NODE-TRUST-CI-WORKER")
+                source = f"trust-ci/src/adaptive_trust_ci/{filename}"
+                worker["repository_paths"].append(source)
+                repo.write_json("architecture/system.yaml", system)
+                repo.write_text(source, "VALUE = 2\n")
+                head = repo.commit("worker membership")
+                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+                self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status,
+                                 "pass" if filename in approved else "fail")
 
     def test_changed_code_budget_counts_bytes_lines_and_ast_complexity(self) -> None:
         metrics = (
@@ -5885,6 +6055,113 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "FIT-OPENAPI",
             },
         )
+
+    _public_migration_fixture = (
+        b"-- Synthetic fixture only; never reviewed production SQL.\n"
+        b"CREATE FUNCTION fixture_public() RETURNS integer LANGUAGE plpgsql AS $$\n"
+        b"BEGIN RETURN 1; END; $$;\nGRANT EXECUTE ON FUNCTION fixture_public() TO fixture_role;\n"
+    )
+    _public_migration_primary = "trust-ci/sql/004_public_admission.sql"
+    _public_migration_mirror = "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql"
+
+    def _public_migration_repo(self):
+        snapshot = ARCHITECTURE.load_architecture(ROOT)
+        repo = GitArchitectureRepo(self)
+        repo.model(snapshot.system, snapshot.rules)
+        for contract in snapshot.system["contracts"]:
+            repo.write_bytes(contract["path"], (ROOT / contract["path"]).read_bytes())
+        for name in ("001_schema.sql", "002_operational_indexes.sql", "003_database_roles.sql"):
+            for prefix in ("trust-ci/sql", "trust-ci/src/adaptive_trust_ci/resources"):
+                repo.write_bytes(f"{prefix}/{name}", (ROOT / f"{prefix}/{name}").read_bytes())
+        return repo, repo.commit("immutable Trust CI SQL baseline")
+
+    def _migration_result(self, repo, base, head):
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        return FIT._migration_safety(repo.root, FIT.load_architecture(repo.root), diff)
+
+    def test_reviewed_public_migration_uses_named_byte_compatibility_not_phase_proof(self) -> None:
+        repo, base = self._public_migration_repo()
+        for path in (self._public_migration_primary, self._public_migration_mirror):
+            repo.write_bytes(path, self._public_migration_fixture)
+        head = repo.commit("synthetic public migration")
+        digest = hashlib.sha256(self._public_migration_fixture).hexdigest()
+        # Private fixture patch cannot originate production reviewed authority.
+        with patch.object(FIT, "_REVIEWED_TRUST_CI_MIGRATIONS",
+                          {self._public_migration_primary: digest}, create=True):
+            result = self._migration_result(repo, base, head)
+        self.assertEqual(result.status, "pass", result.findings)
+        self.assertEqual(result.applicability.reason_code, "reviewed_trust_ci_migration_byte_compatibility")
+        self.assertIn(digest, result.applicability.predicate)
+        self.assertIn("not semantic phase proof", result.applicability.predicate)
+
+    def test_unreviewed_public_migration_cannot_accept_runtime_digest_authority(self) -> None:
+        repo, base = self._public_migration_repo()
+        for path in (self._public_migration_primary, self._public_migration_mirror):
+            repo.write_bytes(path, self._public_migration_fixture)
+        head = repo.commit("unreviewed public migration")
+        digest = hashlib.sha256(self._public_migration_fixture).hexdigest()
+        with patch.dict(os.environ, {"GROK_REVIEWED_MIGRATION_SHA256": digest,
+                                    "GROK_TRUST_CI_MIGRATION_SHA256": digest}):
+            result = self._migration_result(repo, base, head)
+        self.assertNotEqual(result.status, "pass", result.findings)
+        with self.assertRaises(TypeError):
+            diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+            FIT._migration_safety(repo.root, FIT.load_architecture(repo.root), diff, expected_digest=digest)
+        cli = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(repo.root),
+             "fitness", "--base", base, "--head", head, "--expected-migration-digest", digest],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertNotEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+        self.assertIn("unrecognized arguments", cli.stderr)
+
+    def test_reviewed_public_migration_refuses_drift_and_incomplete_history(self) -> None:
+        cases = ("paired_drift", "mirror_drift", "missing_mirror", "mirror_only", "primary_deleted",
+                 "history_modified", "history_deleted", "history_gap", "duplicate_version", "other_005",
+                 "unknown_sql", "wrong_primary_path", "wrong_mirror_path")
+        digest = hashlib.sha256(self._public_migration_fixture).hexdigest()
+        for mutation in cases:
+            with self.subTest(mutation=mutation):
+                repo, base = self._public_migration_repo()
+                if mutation == "history_gap":
+                    for prefix in ("trust-ci/sql", "trust-ci/src/adaptive_trust_ci/resources"):
+                        (repo.root / prefix / "002_operational_indexes.sql").unlink()
+                    base = repo.commit("gapped historical inventory")
+                for path in (self._public_migration_primary, self._public_migration_mirror):
+                    repo.write_bytes(path, self._public_migration_fixture)
+                if mutation in {"primary_deleted", "mirror_only"}:
+                    base = repo.commit("previously admitted fixture bytes")
+                if mutation in {"paired_drift", "mirror_drift"}:
+                    targets = (self._public_migration_primary, self._public_migration_mirror) if mutation == "paired_drift" else (self._public_migration_mirror,)
+                    for path in targets:
+                        repo.write_bytes(path, self._public_migration_fixture + b"-- changed\n")
+                elif mutation == "missing_mirror":
+                    (repo.root / self._public_migration_mirror).unlink()
+                elif mutation == "mirror_only":
+                    repo.write_bytes(self._public_migration_mirror, self._public_migration_fixture + b"-- changed\n")
+                elif mutation == "primary_deleted":
+                    (repo.root / self._public_migration_primary).unlink()
+                elif mutation == "history_modified":
+                    repo.write_text("trust-ci/sql/001_schema.sql", "CREATE TABLE modified(id integer);\n")
+                elif mutation == "history_deleted":
+                    (repo.root / "trust-ci/sql/001_schema.sql").unlink()
+                elif mutation == "duplicate_version":
+                    repo.write_text("trust-ci/sql/004_expand.sql", "CREATE TABLE duplicate(id integer);\n")
+                elif mutation == "other_005":
+                    repo.write_bytes("trust-ci/sql/005_public_admission.sql", self._public_migration_fixture)
+                elif mutation == "unknown_sql":
+                    repo.write_text("trust-ci/sql/unknown.sql", "CREATE TABLE unknown(id integer);\n")
+                elif mutation == "wrong_primary_path":
+                    (repo.root / self._public_migration_primary).unlink()
+                    repo.write_bytes("trust-ci/sql/nested/004_public_admission.sql", self._public_migration_fixture)
+                elif mutation == "wrong_mirror_path":
+                    (repo.root / self._public_migration_mirror).unlink()
+                    repo.write_bytes("trust-ci/src/adaptive_trust_ci/resources/nested/004_public_admission.sql", self._public_migration_fixture)
+                head = repo.commit(mutation)
+                with patch.object(FIT, "_REVIEWED_TRUST_CI_MIGRATIONS",
+                                  {self._public_migration_primary: digest}, create=True):
+                    result = self._migration_result(repo, base, head)
+                self.assertNotEqual(result.status, "pass", result.findings)
 
     def test_migration_history_and_required_phases_fail_closed(self) -> None:
         rules = _rules()

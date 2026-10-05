@@ -153,6 +153,27 @@ _MAX_GOVERNANCE_NODES = 100_000
 _MAX_GOVERNANCE_DEPTH = 64
 _MIGRATION_CANONICAL = re.compile(r"^(?P<group>00(?:1_schema|2_operational_indexes|3_database_roles))$")
 _MIGRATION_PHASE = re.compile(r"^(?P<group>.+?)[_-](?P<phase>expand|migrate|contract)(?:[_-].*)?$")
+# Raw SHA-256 pins originate only from independent review of frozen actual SQL.
+# Empty until that review exists; callers, environment and CLI supply no authority.
+_REVIEWED_TRUST_CI_MIGRATIONS: dict[str, str] = {}
+_PUBLIC_MIGRATION_PRIMARY = "trust-ci/sql/004_public_admission.sql"
+_PUBLIC_MIGRATION_MIRROR = "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql"
+_PUBLIC_WORKER_SOURCES = frozenset(
+    f"trust-ci/src/adaptive_trust_ci/{filename}" for filename in (
+        "public_models.py", "public_admission.py", "public_policy.py", "source_safety.py",
+        "public_storage.py", "public_checkout.py", "public_runner.py",
+    )
+)
+_PUBLIC_CONTRACT_BINDINGS = (
+    ("github-public-lifecycle-projection", "CONTRACT-GITHUB-PUBLIC-LIFECYCLE-PROJECTION",
+     "NODE-TRUST-CI-API", "json_schema", "consumer", "consumer_accepts_old", ("api.py", "webhooks.py")),
+    ("trust-ci-public-profile-selection", "CONTRACT-TRUST-CI-PUBLIC-PROFILE-SELECTION",
+     "NODE-TRUST-CI-WORKER", "json_schema", "consumer", "consumer_accepts_old", ("public_policy.py",)),
+    ("trust-ci-public-effective-policy", "CONTRACT-TRUST-CI-PUBLIC-EFFECTIVE-POLICY",
+     "NODE-TRUST-CI-WORKER", "json_schema", "bidirectional", "bidirectional", ("public_policy.py",)),
+    ("trust-ci-public-attestation-envelope", "CONTRACT-TRUST-CI-PUBLIC-ATTESTATION-ENVELOPE",
+     "NODE-TRUST-CI-WORKER", "signed_payload", "producer", "producer_accepted_by_old", ("public_runner.py",)),
+)
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -1196,6 +1217,9 @@ def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, .
 
 
 def _migration_phase(path: str) -> tuple[str, str] | None:
+    if path == _PUBLIC_MIGRATION_PRIMARY:
+        # Identity is counted even when its bytes are unreviewed and denied.
+        return "004_public_admission", "reviewed_bytes"
     match = _MIGRATION_PHASE.fullmatch(Path(path).stem.lower()) or _MIGRATION_CANONICAL.fullmatch(Path(path).stem.lower())
     if match is None and path.startswith("factory/src/adaptive_factory/resources/"):
         match = re.fullmatch(r"(?P<group>[0-9]{3}_[a-z0-9_]+)", Path(path).stem.lower())
@@ -1239,6 +1263,7 @@ class _MigrationAnalysis:
         self.scope: tuple[str, ...] = ()
         self.issues: list[tuple[bool, str]] = []
         self.statements = self.work = 0
+        self.reviewed_bytes: list[str] = []
 
     def bound(self, amount: int) -> None:
         self.work += amount
@@ -1309,6 +1334,8 @@ class _MigrationAnalysis:
         for path in plan.head_paths:
             parsed = _migration_phase(path)
             if parsed is None:
+                if Path(path).suffix.lower() == ".sql":
+                    self.record(True, f"{rule_id}: migration phase cannot be derived: {path}")
                 continue
             group, phase = parsed
             phases.setdefault(group, set()).add(phase)
@@ -1332,6 +1359,26 @@ class _MigrationAnalysis:
             parsed = _migration_phase(item.path)
             if parsed is None:
                 self.record(True, f"{rule_id}: migration phase cannot be derived: {item.path}")
+                continue
+            if parsed[1] == "reviewed_bytes":
+                value = blobs.get(item.path)
+                digest = hashlib.sha256(value).hexdigest() if value is not None else None
+                approved = (
+                    rule_id == "FIT-TRUST-CI-SQL-HISTORY"
+                    and rule["immutable_history"]
+                    and rule["path_prefixes"] == ["trust-ci/sql"]
+                    and set(rule["required_phases"]) == {"expand", "migrate", "contract"}
+                    and item.path == _PUBLIC_MIGRATION_PRIMARY
+                    and digest is not None
+                    and digest == _REVIEWED_TRUST_CI_MIGRATIONS.get(item.path)
+                    and plan.copies[item.path] == (_PUBLIC_MIGRATION_MIRROR,)
+                    and blobs.get(_PUBLIC_MIGRATION_MIRROR) == value
+                )
+                if approved:
+                    self.reviewed_bytes.append(f"{item.path} raw_sha256={digest}")
+                else:
+                    self.record(True, f"{rule_id}: unreviewed Trust CI migration bytes or missing exact mirror: {item.path}")
+                # This is named byte compatibility, never generic SQL phase proof.
                 continue
             missing = sorted(set(rule["required_phases"]) - phases.get(parsed[0], set()))
             if missing:
@@ -1407,9 +1454,13 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
         analysis.issues.append((True, str(exc)))
     unsupported = any(item[0] for item in analysis.issues)
     status = "unsupported" if unsupported else ("fail" if analysis.issues else "pass")
+    if analysis.reviewed_bytes:
+        predicate += "; reviewed Trust CI byte compatibility, not semantic phase proof: " + repr(analysis.reviewed_bytes)
     return _result("migration_safety", status=status, rules=(rule["id"] for rule in rules),
                    findings=(item[1] for item in analysis.issues), predicate=predicate, scope=analysis.scope,
-                   reason="unsupported_migration_semantics" if unsupported else "applicable")
+                   reason=("unsupported_migration_semantics" if unsupported else
+                           "reviewed_trust_ci_migration_byte_compatibility" if status == "pass" and analysis.reviewed_bytes
+                           else "applicable"))
 
 
 def _tenant_authorization(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
@@ -1638,6 +1689,47 @@ def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
     base = diff._base_state.snapshot.system
     head = diff._head_state.snapshot.system
     before = {node["id"]: node for node in base["nodes"]}
+    artifacts = {item.path: item for item in diff.artifacts}
+
+    def changed_bytes(path: str) -> bool:
+        item = artifacts.get(path)
+        return bool(item is not None and item.status in {"added", "modified"}
+                    and item.head_digest is not None and item.head_size > 0
+                    and item.head_digest != item.base_digest)
+
+    # Remove only exact newly added public descriptors and owner memberships.
+    # The existing envelope comparison below then checks every surrounding field.
+    old_contracts = {item["id"]: item for item in base["contracts"]}
+    new_contracts = {item["id"]: item for item in head["contracts"]}
+    public_paths: list[str] = []
+    admitted: dict[str, str] = {}
+    for name, identity, owner, kind, role, compatibility, filenames in _PUBLIC_CONTRACT_BINDINGS:
+        if identity in old_contracts or identity not in new_contracts:
+            continue
+        path = f"engineering/contracts/schemas/{name}.v1.json"
+        descriptor = {"id": identity, "path": path, "version": "1", "kind": kind,
+                      "role": role, "compatibility": compatibility}
+        owners = [node for node in head["nodes"] if identity in node["public_contracts"]]
+        if (new_contracts[identity] != descriptor or not changed_bytes(path)
+                or len(owners) != 1 or owners[0]["id"] != owner or owner not in before):
+            return ()
+        paired = tuple(f"trust-ci/src/adaptive_trust_ci/{filename}" for filename in filenames)
+        if not any(
+            changed_bytes(source_path)
+            and source_path in owners[0]["repository_paths"]
+            and [node["id"] for node in head["nodes"] if source_path in node["repository_paths"]] == [owner]
+            for source_path in paired
+        ):
+            return ()
+        admitted[identity] = owner
+        public_paths.append(path)
+    if admitted:
+        head = {
+            **head,
+            "contracts": [item for item in head["contracts"] if item["id"] not in admitted],
+            "nodes": [{**node, "public_contracts": [identity for identity in node["public_contracts"]
+                        if admitted.get(identity) != node["id"]]} for node in head["nodes"]],
+        }
     after = {node["id"]: node for node in head["nodes"]}
     domains = {domain["id"] for domain in base["trust_domains"] if domain["kind"] == "trust_ci_control"}
 
@@ -1651,7 +1743,7 @@ def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
             and not any(character in path for character in "*?[]\\")
             and path.startswith("trust-ci/src/adaptive_trust_ci/")
             and path.endswith(".py")
-            and path in diff.changed_paths
+            and changed_bytes(path)
         )
 
     qualified: list[str] = []
@@ -1673,7 +1765,17 @@ def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
                 continue
             changed_bindings = True
             node = before[identity]
-            if node["trust_domain"] not in domains or node["type"] not in {"service", "datastore", "local_component"}:
+            worker_extension = (
+                identity == "NODE-TRUST-CI-WORKER"
+                and node["type"] == "worker"
+                and node["trust_domain"] == "TD-TRUST-CI-EXECUTION"
+                and node["owner"] == "Trust CI operators"
+                and node["runtime"]["kind"] == "container"
+                and old_paths <= new_paths
+                and new_paths - old_paths <= _PUBLIC_WORKER_SOURCES
+            )
+            if not worker_extension and (node["trust_domain"] not in domains
+                                        or node["type"] not in {"service", "datastore", "local_component"}):
                 bindings_valid = False
             for path in old_paths ^ new_paths:
                 if not source(path):
@@ -1713,6 +1815,8 @@ def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
                 bindings_valid = False
     if bindings_valid and changed_bindings and "architecture/system.yaml" in diff.changed_paths:
         qualified.append("architecture/system.yaml")
+    if bindings_valid and same_envelope and admitted and "architecture/system.yaml" in diff.changed_paths:
+        qualified.extend(("architecture/system.yaml", *public_paths))
 
     contract_path = "engineering/contracts/openapi/trust-ci.v1.json"
     old_contracts = {item["id"]: item for item in base["contracts"]}
@@ -1733,7 +1837,7 @@ def _trust_ci_metadata_paths(diff: ArchitectureDiff) -> tuple[str, ...]:
         and before["NODE-TRUST-CI-API"]["type"] == "service"
     ):
         qualified.append(contract_path)
-    return tuple(sorted(qualified))
+    return tuple(sorted(set(qualified)))
 
 
 def _change_separation(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
