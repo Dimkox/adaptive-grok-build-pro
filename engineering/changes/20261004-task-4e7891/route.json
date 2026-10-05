@@ -1,0 +1,124 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "f97966c4173fff9a3954389498568038dc57776b",
+  "base_fingerprint": "a8008af0218cf66ac4f0cfa3c816c6bad6310b7cf1184bd398da203ce9e1caa2",
+  "complexity": "standard",
+  "created_at": "2026-10-04T23:10:51+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "matched_keywords": {},
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "detected_languages": [
+      "php",
+      "python"
+    ],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "language_scan": {
+      "bytes": 2777820,
+      "directories": 420,
+      "entries": 4462,
+      "files": 4000,
+      "incomplete_reasons": [
+        "files:4000",
+        "source-bytes:65536"
+      ],
+      "non_regular": 0,
+      "skipped_symlinks": 0,
+      "status": "incomplete",
+      "truncated": true,
+      "unknown": true,
+      "unknown_extensions": {
+        ".in": 1,
+        ".json": 808,
+        ".jsonl": 4,
+        ".patch": 1,
+        ".sh": 1,
+        ".sha256": 3,
+        ".sql": 26,
+        ".toml": 2,
+        ".xml": 1,
+        ".yaml": 138
+      },
+      "unreadable": 0
+    },
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi",
+      "undetected-language",
+      "undetected-language:php=8",
+      "undetected-language:python=201",
+      "undetected-source-extension:.in=1",
+      "undetected-source-extension:.json=808",
+      "undetected-source-extension:.jsonl=4",
+      "undetected-source-extension:.patch=1",
+      "undetected-source-extension:.sh=1",
+      "undetected-source-extension:.sha256=3",
+      "undetected-source-extension:.sql=26",
+      "undetected-source-extension:.toml=2",
+      "undetected-source-extension:.xml=1",
+      "undetected-source-extension:.yaml=138",
+      "language-scan:incomplete=files:4000",
+      "language-scan:incomplete=source-bytes:65536"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "4e78915ad1ab",
+  "schema_version": 1,
+  "session_id": "m8-liqvera-20261004",
+  "status": "routed",
+  "task": "feature: record the completed owner-accepted Liqvera Mezo Buildathon case as done in M8 and activate factory dependency gates satisfied by this achievement while retaining unrelated prerequisites",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

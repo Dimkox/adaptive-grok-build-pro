@@ -1,0 +1,104 @@
+{
+  "change_id": "20261004-task-4e7891",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "feat/m8-liqvera-accepted",
+      "change_id": "20261004-task-4e7891",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "f97966c4173fff9a3954389498568038dc57776b",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-04T23:12:04+00:00",
+      "route_id": "4e78915ad1ab"
+    },
+    {
+      "branch": "feat/m8-liqvera-accepted",
+      "change_id": "20261004-task-4e7891",
+      "detached": false,
+      "dirty_product_paths": [
+        "DARK_FACTORY_ROADMAP.md",
+        "PROJECT_STATE.json",
+        "README.md",
+        "START_HERE.md",
+        "decisions.md",
+        "mistakes.md",
+        "tests/test_project_state.py"
+      ],
+      "dirty_product_state": "dirty",
+      "git_available": true,
+      "git_findings": [
+        "uncommitted_product_zero_ahead"
+      ],
+      "head": "f97966c4173fff9a3954389498568038dc57776b",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-04T23:22:24+00:00",
+      "route_id": "4e78915ad1ab"
+    }
+  ],
+  "created_at": "2026-10-04T23:12:04+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "implementation not started",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-04T23:12:04+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-04T23:22:23+00:00",
+      "from": "draft",
+      "reason": "Owner-accepted Liqvera outcome, exact provenance and bounded acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-04T23:22:23+00:00",
+      "from": "scoped",
+      "reason": "Explicit user scope and routine local design delegation; route has no human gates",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-04T23:22:26+00:00",
+      "from": "approved",
+      "reason": "Sole selected writer; missing-case RED observed before state correction",
+      "to": "implementing"
+    }
+  ],
+  "human_gates": [],
+  "human_gates_digest": "73fd77df5569ca053b0cf6282b3257db9ead3e95a5e67ec65145731f49f10967",
+  "route_id": "4e78915ad1ab",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "feature: record the completed owner-accepted Liqvera Mezo Buildathon case as done in M8 and activate factory dependency gates satisfied by this achievement while retaining unrelated prerequisites",
+  "updated_at": "2026-10-04T23:22:26+00:00"
+}

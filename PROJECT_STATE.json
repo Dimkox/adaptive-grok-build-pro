@@ -2018,6 +2018,44 @@
       }
     },
     "M8": {
+      "completed_product_case": {
+        "status": "DONE",
+        "name": "Liqvera Mezo Buildathon demo",
+        "observed_at": "2026-10-04",
+        "repository": "Dimkox/liqvera",
+        "repository_url": "https://github.com/Dimkox/liqvera",
+        "observed_main_sha": "97484401d50fa3fb28ebd813cc8320e7e51c72f5",
+        "release_tag": "v0.0.5",
+        "release_published_at": "2026-10-01T02:41:13Z",
+        "release_tag_object": "00805526092aff474dfbaef94c25079045913d45",
+        "release_source_sha": "19284fb07fedd4909672c7e9a641cb066efbb7cc",
+        "source_zip_sha256": "36e04e8c15403f65ea8aae60e4ba11fe370e51c4d419714aba5fcdb7e627ffc2",
+        "factory_version": "2.0.19",
+        "factory_source_sha": "cb9af4073ba6c3d515145164d771c75ebdfa3224",
+        "public_demo_url": "https://liqvera.site",
+        "acceptance": {
+          "evidence_kind": "explicit_owner_confirmation",
+          "completed_working_factory_built_product": true,
+          "independent_runtime_telemetry": false,
+          "scope": "Owner confirms the completed working Mezo Buildathon demo was built by this factory and accepts this product outcome. Released tooling lock and Git tree corroborate the factory pin; release notes describe demo smoke. This is not a measured task cohort or complete F7 qualification."
+        },
+        "unblocked_dependencies": [
+          "first_completed_factory_product",
+          "external_maintainer_accepted_product",
+          "m8_accepted_product_followup_planning",
+          "m9_accepted_product_followup_planning"
+        ],
+        "remaining_prerequisites": [
+          "m7_durable_current_lookup",
+          "m8_30_distinct_exact_profile_tasks",
+          "m8_activation",
+          "complete_cost_and_intervention_accounting",
+          "m9_signed_environment_recovery_authority",
+          "factory_site_publication"
+        ],
+        "dependency_scope": "All dependencies requiring an existing completed owner-accepted factory product are satisfied. M8/M9 follow-up planning can proceed without another first pilot. Executable M7 durable lookup and empirical M8 activation remain technical prerequisites; this state record changes no runtime gate or default flag.",
+        "evidence": "engineering/changes/20261004-task-4e7891/evidence/controller-analysis.md"
+      },
       "implementation": {
         "status": "delivered_to_main",
         "commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
@@ -2300,7 +2338,7 @@
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
     "evidence_index": "engineering/reviews/l5-delivery-stack.json",
-    "next_action": "Establish a fully evidenced external pilot outcome with maintainer acceptance, then assess the exact-profile M8 cohort and general M9 environment/recovery qualification. Preserve the published release; refresh target policy and exact operational authority before further external effects.",
+    "next_action": "Liqvera completed owner-accepted factory product is DONE under milestones.M8.completed_product_case. Accepted-product dependencies and M8/M9 follow-up planning are unblocked; continue M7 durable current lookup, empirical exact-profile M8 cohort/activation and M9 signed environment/recovery qualification without requiring another first pilot. Preserve published releases; new external effects require exact authority.",
     "slice_branches": [
       "feat/l5-split-a-boundaries",
       "feat/l5-split-b-source-epoch",
@@ -2405,14 +2443,15 @@
     }
   },
   "operational_qualification": {
-    "observed_at": "2026-09-15T09:54:21Z",
+    "observed_at": "2026-10-04",
     "l5_authenticated_artifact_generation": true,
-    "external_maintainer_accepted_pilot": false,
+    "external_maintainer_accepted_pilot": true,
+    "external_maintainer_accepted_pilot_evidence": "milestones.M8.completed_product_case",
     "m8_qualifying_cohort": false,
     "m8_activation": false,
     "m9_general_operational_qualification": false,
     "factory_site_publication": false,
-    "record_scope": "False means not established by available evidence. L5 live artifact acceptance does not qualify the full external pilot, M8 cohort or general M9 production/recovery path.",
+    "record_scope": "Accepted external product outcome is established by explicit owner confirmation for Liqvera, corroborated by released factory tooling provenance, not independent runtime telemetry. False means not established: M8 cohort/activation, complete cost accounting, general M9 qualification and factory-runtime site publication remain separate.",
     "complete_pilot_cost_and_human_intervention_accounting": false
   },
   "latest_runtime_operation": {
@@ -2600,6 +2639,8 @@
     "review_manifest": "engineering/changes/20260921-fix-the-combined-source-delivery-of-issue165-int-cf2384/evidence/final-review-wave.json"
   },
   "next_external_pilot": {
+    "record_scope": "historical_superseded",
+    "superseded_by": "milestones.M8.completed_product_case",
     "observed_at": "2026-09-21T05:31:11.851184Z",
     "status": "local_investigation_and_unposted_issue_draft",
     "repository": "Dimkox/ai-dark-factory-landing",

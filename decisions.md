@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-04 — Reuse the accepted factory-built product outcome
+
+The owner-accepted completed Liqvera demo satisfies existing-product dependencies, so M8/M9 follow-up planning can reuse this result without another first pilot. Separating product acceptance from empirical cohort, runtime activation and deployment evidence preserves the technical gates while recognizing the achieved outcome.
+
 ## 2026-10-04 — Bind the closed root inventory to committed compatibility commands
 
 The canonical root set explicitly includes exactly the nine restored thin compatibility commands, without accepting arbitrary Python files or weakening the closed inventory check. Rerun the HEAD-based assertion after commit, alongside the existing launcher behavior regression, so newly tracked entries are actually in its comparison tree.

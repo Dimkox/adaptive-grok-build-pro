@@ -1,0 +1,104 @@
+{
+  "schema_version": 2,
+  "change_id": "20261004-task-4e7891",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Recognize the existing owner-accepted Liqvera factory product as M8 DONE and unblock satisfied dependencies.",
+    "success_metric": "completed product recorded with bounded dependency transitions",
+    "target": "one DONE case; four accepted-product dependencies unblocked; six technical prerequisite categories retained"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": [
+      "api"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "M8 records the DONE owner-accepted completed Liqvera factory product with exact release and factory provenance.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Accepted-product planning dependencies are unblocked without requiring a duplicate first pilot.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "M7 durable lookup, M8 empirical cohort/activation, full cost accounting, M9 operational qualification and factory-runtime publication remain unestablished.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Historical delivery and old pilot observations retain their exact identities and acceptance; current handoff agrees with the new case.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Historical M8 release delivery and unrelated operational qualification boundaries remain intact.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Owner acceptance is presented as independent runtime telemetry, 30-task cohort, activation, deployment or publication authority.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  },
+  "approvals": {
+    "required_scopes": []
+  }
+}

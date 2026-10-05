@@ -139,7 +139,7 @@ These source/release records are historical. Later installation and artifact acc
 | Earned auto-merge | Corrected M8 evaluation delivered; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
 | Preview/staging/canary delivery | M9 sealed source delivered; general operational qualification unproven | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
 | L5 multimodal landing dogfood | Source delivered; Qwen primary and Grok secondary observed active/enabled on their distinct installed SHAs; authenticated artifact generation passed; 22-member deploy inventory; source defaults off | Preserve [dated runtime evidence](engineering/runbooks/l5-runtime-observation-2026-09-15.md). Further publication/hosting requires target evidence and exact authority; existing L5 acceptance does not qualify M8 or general M9 |
-| Design-partner pilot (`pilot/`) | Default-off single-operator source published in `v2.0.15`; full external outcome with maintainer acceptance is unproven | Refresh the target baseline/policy from the historical blocked attempt, obtain exact authority for external effects, and record the complete issue-to-proposal result plus maintainer acceptance |
+| Completed factory product / design-partner outcome | **DONE**: owner accepts working Liqvera Mezo Buildathon demo built by the factory; `v0.0.5` released source pins factory `v2.0.19`. Old `pilot/` target observations stay historical | Accepted-product dependencies and M8/M9 follow-up planning are unblocked. Continue empirical qualification; another first pilot is not required |
 
 ## 5. Non-negotiable constraints
 
@@ -934,6 +934,10 @@ security escalation rate
 # M8 — Earned and Revocable Low-Risk Autonomy
 
 Current status: M8 earned-autonomy evaluation is delivered in `v2.0.13` from corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
+
+Completed-product case: **DONE — Liqvera Mezo Buildathon demo**, accepted by its owner as a completed working product built by this factory. Observed main is `97484401d50fa3fb28ebd813cc8320e7e51c72f5`; published `v0.0.5` resolves to `19284fb07fedd4909672c7e9a641cb066efbb7cc`, whose tooling pins factory `v2.0.19` / `cb9af4073ba6c3d515145164d771c75ebdfa3224`. [PROJECT_STATE.json](PROJECT_STATE.json) records owner-confirmation provenance and all satisfied accepted-product dependencies: first completed factory product, external accepted product, M8 follow-up planning and M9 follow-up planning. No duplicate first pilot is required.
+
+Executable M7 durable lookup/currentness and empirical M8 cohort/activation remain technical prerequisites. The case does not supply 30 distinct exact-profile tasks, full cost/intervention accounting, general M9 signed environment/recovery authority, complete F7 validation or factory-runtime site publication. Historical milestones and old pilot metrics remain unchanged.
 
 ## Objective
 
