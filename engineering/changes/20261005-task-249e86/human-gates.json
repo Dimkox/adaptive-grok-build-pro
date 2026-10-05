@@ -96,6 +96,54 @@
       "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
       "route_id": "249e86df9131",
       "scope_digest": "80651abf8845ff85d9f85d0901238916b8c89c822233f4a529010552f5ec2837"
+    },
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "external-write",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
     }
   ],
   "route_id": "249e86df9131",
