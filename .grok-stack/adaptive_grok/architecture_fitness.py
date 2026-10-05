@@ -154,8 +154,13 @@ _MAX_GOVERNANCE_DEPTH = 64
 _MIGRATION_CANONICAL = re.compile(r"^(?P<group>00(?:1_schema|2_operational_indexes|3_database_roles))$")
 _MIGRATION_PHASE = re.compile(r"^(?P<group>.+?)[_-](?P<phase>expand|migrate|contract)(?:[_-].*)?$")
 # Raw SHA-256 pins originate only from independent review of frozen actual SQL.
-# Empty until that review exists; callers, environment and CLI supply no authority.
-_REVIEWED_TRUST_CI_MIGRATIONS: dict[str, str] = {}
+# Reviewed source bacb5346a95d25166e1f7c597b3f91bd5935c234; provenance is
+# engineering/changes/20261005-task-249e86/evidence/reviewed-sql-pin-provenance.md.
+# Callers, environment and CLI supply no authority or semantic phase proof.
+_REVIEWED_TRUST_CI_MIGRATIONS: dict[str, str] = {
+    "trust-ci/sql/004_public_admission.sql":
+        "610b8fa6b759c69578bc18b007484db1c4e19cba5f613c7bd482e68badac646e",
+}
 _PUBLIC_MIGRATION_PRIMARY = "trust-ci/sql/004_public_admission.sql"
 _PUBLIC_MIGRATION_MIRROR = "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql"
 _PUBLIC_WORKER_SOURCES = frozenset(

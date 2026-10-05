@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Keep imported test helpers out of standalone discovery
+
+Root cause: an ignored byte-compatibility probe imported a TestCase class directly into its module namespace, so bare unittest discovery included that helper's architecture tests. Stop the exact probe process, discard its partial observation, import the helper module instead, and select the probe's own test class explicitly.
+
 ## 2026-10-05 — Synthetic currentness and same-version widening hid real boundaries
 
 Root cause: unit-supplied digests masked omitted executable inventory and hardcoded route semantics, while the minimum1 change reused the V1 wire identity instead of testing an existing V1 consumer. Real CLI mutation/refusal controls now bind the complete Git-visible inventory and actual route, and a distinct V2 cohort leaves legacy V1/M9 closed. The root state test also relied on other test collection adding factory/src to sys.path; isolated `python -I` discovery reproduced the external refusal and explicit module-local bootstrap removes that dependency.

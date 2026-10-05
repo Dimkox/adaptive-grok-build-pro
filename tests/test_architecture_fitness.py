@@ -6064,6 +6064,15 @@ class ArchitectureFitnessTests(unittest.TestCase):
     _public_migration_primary = "trust-ci/sql/004_public_admission.sql"
     _public_migration_mirror = "trust-ci/src/adaptive_trust_ci/resources/004_public_admission.sql"
 
+    def test_public_migration_registry_is_only_the_fixed_independently_reviewed_identity(self) -> None:
+        # This portable identity guard does not qualify SQL semantics or obtain
+        # actual SQL from an ignored cross-clone path. Those bytes were reviewed
+        # separately at bacb5346a95d25166e1f7c597b3f91bd5935c234.
+        self.assertEqual(FIT._REVIEWED_TRUST_CI_MIGRATIONS, {
+            "trust-ci/sql/004_public_admission.sql":
+                "610b8fa6b759c69578bc18b007484db1c4e19cba5f613c7bd482e68badac646e",
+        })
+
     def _public_migration_repo(self):
         snapshot = ARCHITECTURE.load_architecture(ROOT)
         repo = GitArchitectureRepo(self)
