@@ -90,5 +90,3 @@ Unexecuted claims: actual 004 PostgreSQL syntax/function bodies, additivity/dest
 The controller must obtain frozen actual Task1 bytes with source identity and independent review, then send the actual reviewed raw SHA256 back to this sole writer. Any actual pin is a subsequent source change needing affected controls and fresh review identity. Keep the production registry denying until that handoff. After complete independent reports are persisted and committed, the controller owns the one final full PR verifier and exact-head external Trust CI path. Rollback is a separate protected revert/fix PR; no deployed state/history rewrite is authorized.
 
 Implementer stops at this committed draft.
-
-

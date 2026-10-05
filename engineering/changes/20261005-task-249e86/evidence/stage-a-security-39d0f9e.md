@@ -83,4 +83,3 @@ The complete descriptor positive/negative matrix, worker source matrix, SQL drif
 Before AC-001 or delivery can be qualified, independently review frozen actual Task1 SQL, hand its source identity and raw digest to the single writer, review the subsequent pin delta against its new identity, persist all selected independent reports, freeze, and run the final full PR gate plus the external exact-head Trust CI/required approval path. This report cannot be reused as approval of different pin bytes or a changed candidate.
 
 Reviewer work is complete and stopped. The coordinator owns persistence of this private report and any later receipts.
-

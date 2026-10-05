@@ -77,4 +77,3 @@ reviewed-tree-modified: no
 - Learning for coordinator: prove a negative fence test with a positive bound-authority control first; otherwise an API-shape rejection can hide a surviving race. Combining that positive control with targeted guard mutations demonstrated the intended failure boundary.
 
 STOP. Scoped D1/D2 fix accepted; coordinator owns report persistence, final freeze, remaining selected reviews, qualifying verification and any separately authorized exact-digest registry action.
-
