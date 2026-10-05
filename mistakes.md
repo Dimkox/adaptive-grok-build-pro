@@ -1,5 +1,9 @@
 # Mistakes
 
+## 2026-10-05 — Keep patch markers separate from report content
+
+A controller report template already contained leading plus markers before the AddFile builder prefixed its lines again, leaving literal plus signs in Markdown. Generate patches from plain report content and inspect the persisted file before freeze; no product behavior or recorded identity was changed by this formatting repair.
+
 ## 2026-10-05 — Additive schema missed other inventory consumers
 
 Root cause: implementation searched the immediate M8 schema bindings but missed the semantic/bridge exact inventories and historical aggregate; the selected factory-unit subset did not include those full factory-exit consumers. Search every contract inventory and historical byte binding when adding a schema, and distinguish focused observation from the complete factory gate.
