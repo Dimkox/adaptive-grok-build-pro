@@ -3761,6 +3761,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def test_change_separation_metadata_does_not_hide_implementation(self) -> None:
         repo, base, common_system = self._trust_binding_repo()
         common_head = repo.commit("Trust CI source and mandatory metadata")
+        prepared = []
         for mutation in ("runtime", "secret", "edge", "owner", "other_source", "wildcard",
                          "local", "checker", "rules", "schema", "contract", "contract_role"):
             with self.subTest(mutation=mutation):
@@ -3803,18 +3804,38 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     next(item for item in system["contracts"] if item["id"] == "CONTRACT-TRUST-CI-OPENAPI")["compatibility"] = "exact"
                 repo.write_json("architecture/system.yaml", system)
                 head = repo.commit(mutation)
-                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
-                result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
+                prepared.append((mutation, head, FIT.load_architecture(repo.root)))
+        for mutation, head, snapshot in prepared:
+            with self.subTest(mutation=mutation):
+                diff = self._frozen_fixture_diff(repo, base, head, snapshot)
+                result = FIT._change_separation(snapshot, diff)
                 self.assertEqual(result.status, "fail", result.findings)
 
-    def _public_trust_binding_repo(self, contract_indices=(0, 1, 2, 3)):
+    def _public_trust_baseline(self):
         snapshot = ARCHITECTURE.load_architecture(ROOT)
-        system = copy.deepcopy(snapshot.system)
         repo = GitArchitectureRepo(self)
-        repo.model(system, snapshot.rules)
-        for contract in system["contracts"]:
+        repo.model(snapshot.system, snapshot.rules)
+        for contract in snapshot.system["contracts"]:
             repo.write_bytes(contract["path"], (ROOT / contract["path"]).read_bytes())
         base = repo.commit("actual registered Trust CI baseline")
+        return repo, base, snapshot
+
+    def _frozen_fixture_diff(self, repo, base, head, snapshot):
+        # Prepare all fixture commits first: changing Git registration between
+        # checks invalidates the production cache's immutable baseline identity.
+        # Each public-API snapshot was loaded while this exact head was checked out.
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        self.assertEqual(diff.base_sha, base)
+        self.assertEqual(diff.head_sha, head)
+        self.assertEqual(ARCHITECTURE.architecture_digests(snapshot)["architecture_digest"],
+                         diff.head_architecture_digest)
+        return diff
+
+    def _public_trust_binding_repo(self, contract_indices=(0, 1, 2, 3), *, baseline=None):
+        repo, base, snapshot = baseline or self._public_trust_baseline()
+        if baseline is not None:
+            repo.git("reset", "--hard", base)
+        system = copy.deepcopy(snapshot.system)
         descriptors = (
             ("github-public-lifecycle-projection", "CONTRACT-GITHUB-PUBLIC-LIFECYCLE-PROJECTION",
              "NODE-TRUST-CI-API", "json_schema", "consumer", "consumer_accepts_old", "api.py"),
@@ -3843,16 +3864,21 @@ class ArchitectureFitnessTests(unittest.TestCase):
         return repo, base, system
 
     def test_change_separation_admits_only_exact_paired_public_contracts(self) -> None:
+        baseline = self._public_trust_baseline()
+        prepared = []
         for indices in ((0,), (1,), (2,), (3,), (0, 1, 2, 3)):
             with self.subTest(indices=indices):
-                repo, base, system = self._public_trust_binding_repo(indices)
+                repo, base, system = self._public_trust_binding_repo(indices, baseline=baseline)
                 head = repo.commit("paired public metadata")
-                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
-                result = FIT._change_separation(FIT.load_architecture(repo.root), diff)
+                prepared.append((indices, head, FIT.load_architecture(repo.root)))
+        for indices, head, snapshot in prepared:
+            with self.subTest(indices=indices):
+                diff = self._frozen_fixture_diff(repo, base, head, snapshot)
+                result = FIT._change_separation(snapshot, diff)
                 self.assertEqual(result.status, "pass", result.findings)
                 qualified = FIT._trust_ci_metadata_paths(diff)
                 self.assertIn("architecture/system.yaml", qualified)
-                for contract in system["contracts"]:
+                for contract in snapshot.system["contracts"]:
                     if "PUBLIC" in contract["id"]:
                         self.assertIn(contract["path"], qualified)
 
@@ -3864,9 +3890,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "old_contract", "edge", "node", "new_node", "worker_prefix", "arbitrary_source",
             "extra_schema", "local", "checker", "rules",
         )
+        repo, base, common_system = self._public_trust_binding_repo()
+        common_head = repo.commit("paired public metadata before mutations")
+        prepared = []
         for mutation in mutations:
             with self.subTest(mutation=mutation):
-                repo, base, system = self._public_trust_binding_repo()
+                repo.git("reset", "--hard", common_head)
+                system = copy.deepcopy(common_system)
                 nodes = {node["id"]: node for node in system["nodes"]}
                 worker = nodes["NODE-TRUST-CI-WORKER"]
                 contract = system["contracts"][-1]
@@ -3933,8 +3963,11 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     repo.write_json("architecture/rules.yaml", rules)
                 repo.write_json("architecture/system.yaml", system)
                 head = repo.commit(mutation)
-                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
-                self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status, "fail")
+                prepared.append((mutation, head, FIT.load_architecture(repo.root)))
+        for mutation, head, snapshot in prepared:
+            with self.subTest(mutation=mutation):
+                diff = self._frozen_fixture_diff(repo, base, head, snapshot)
+                self.assertEqual(FIT._change_separation(snapshot, diff).status, "fail")
 
     def test_public_metadata_requires_changed_schema_and_exact_paired_source_bytes(self) -> None:
         for unchanged in ("schema", "source"):
@@ -3963,17 +3996,23 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def test_public_worker_source_membership_is_exact_and_envelope_preserving(self) -> None:
         approved = ("public_models.py", "public_admission.py", "public_policy.py", "source_safety.py",
                     "public_storage.py", "public_checkout.py", "public_runner.py")
+        repo, base, common_system = self._public_trust_binding_repo(())
+        prepared = []
         for filename in (*approved, "public_extra.py"):
             with self.subTest(filename=filename):
-                repo, base, system = self._public_trust_binding_repo(())
+                repo.git("reset", "--hard", base)
+                system = copy.deepcopy(common_system)
                 worker = next(node for node in system["nodes"] if node["id"] == "NODE-TRUST-CI-WORKER")
                 source = f"trust-ci/src/adaptive_trust_ci/{filename}"
                 worker["repository_paths"].append(source)
                 repo.write_json("architecture/system.yaml", system)
                 repo.write_text(source, "VALUE = 2\n")
                 head = repo.commit("worker membership")
-                diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
-                self.assertEqual(FIT._change_separation(FIT.load_architecture(repo.root), diff).status,
+                prepared.append((filename, head, FIT.load_architecture(repo.root)))
+        for filename, head, snapshot in prepared:
+            with self.subTest(filename=filename):
+                diff = self._frozen_fixture_diff(repo, base, head, snapshot)
+                self.assertEqual(FIT._change_separation(snapshot, diff).status,
                                  "pass" if filename in approved else "fail")
 
     def test_changed_code_budget_counts_bytes_lines_and_ast_complexity(self) -> None:
@@ -6086,9 +6125,11 @@ class ArchitectureFitnessTests(unittest.TestCase):
         primary5 = "trust-ci/sql/005_public_pending_bootstrap.sql"
         mirror5 = "trust-ci/src/adaptive_trust_ci/resources/005_public_pending_bootstrap.sql"
         forward = self._public_migration_fixture + b"-- Explicitly synthetic forward fixture.\n"
+        repo, base = self._public_migration_repo()
+        prepared = []
         for inject_unknown in (False, True):
             with self.subTest(inject_unknown=inject_unknown):
-                repo, base = self._public_migration_repo()
+                repo.git("reset", "--hard", base)
                 values = {
                     self._public_migration_primary: self._public_migration_fixture,
                     self._public_migration_mirror: self._public_migration_fixture,
@@ -6105,10 +6146,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 for path, value in values.items():
                     repo.write_bytes(path, value)
                 head = repo.commit("synthetic forward digest membership control")
+                prepared.append((inject_unknown, head, FIT.load_architecture(repo.root), registry))
+        for inject_unknown, head, snapshot, registry in prepared:
+            with self.subTest(inject_unknown=inject_unknown):
                 # Only synthetic hashes are privately patched; fixed path membership
                 # must still refuse an injected digest entry for an unknown migration.
                 with patch.object(FIT, "_REVIEWED_TRUST_CI_MIGRATIONS", registry):
-                    result = self._migration_result(repo, base, head)
+                    result = self._migration_result(repo, base, head, snapshot=snapshot)
                 if inject_unknown:
                     self.assertNotEqual(result.status, "pass", result.findings)
                     self.assertIn("migration phase cannot be derived", " ".join(result.findings))
@@ -6126,9 +6170,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 repo.write_bytes(f"{prefix}/{name}", (ROOT / f"{prefix}/{name}").read_bytes())
         return repo, repo.commit("immutable Trust CI SQL baseline")
 
-    def _migration_result(self, repo, base, head):
-        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
-        return FIT._migration_safety(repo.root, FIT.load_architecture(repo.root), diff)
+    def _migration_result(self, repo, base, head, *, snapshot=None):
+        if snapshot is None:
+            diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+            snapshot = FIT.load_architecture(repo.root)
+        else:
+            diff = self._frozen_fixture_diff(repo, base, head, snapshot)
+        return FIT._migration_safety(repo.root, snapshot, diff)
 
     def test_reviewed_public_migration_uses_named_byte_compatibility_not_phase_proof(self) -> None:
         repo, base = self._public_migration_repo()
@@ -6171,9 +6219,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
                  "history_modified", "history_deleted", "history_gap", "duplicate_version", "other_005",
                  "unknown_sql", "wrong_primary_path", "wrong_mirror_path")
         digest = hashlib.sha256(self._public_migration_fixture).hexdigest()
+        repo, common_base = self._public_migration_repo()
+        prepared = []
         for mutation in cases:
             with self.subTest(mutation=mutation):
-                repo, base = self._public_migration_repo()
+                repo.git("reset", "--hard", common_base)
+                base = common_base
                 if mutation == "history_gap":
                     for prefix in ("trust-ci/sql", "trust-ci/src/adaptive_trust_ci/resources"):
                         (repo.root / prefix / "002_operational_indexes.sql").unlink()
@@ -6209,9 +6260,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     (repo.root / self._public_migration_mirror).unlink()
                     repo.write_bytes("trust-ci/src/adaptive_trust_ci/resources/nested/004_public_admission.sql", self._public_migration_fixture)
                 head = repo.commit(mutation)
+                prepared.append((mutation, base, head, FIT.load_architecture(repo.root)))
+        for mutation, base, head, snapshot in prepared:
+            with self.subTest(mutation=mutation):
                 with patch.object(FIT, "_REVIEWED_TRUST_CI_MIGRATIONS",
                                   {self._public_migration_primary: digest}, create=True):
-                    result = self._migration_result(repo, base, head)
+                    result = self._migration_result(repo, base, head, snapshot=snapshot)
                 self.assertNotEqual(result.status, "pass", result.findings)
 
     def test_migration_history_and_required_phases_fail_closed(self) -> None:

@@ -1089,3 +1089,7 @@ The installer inventory deliberately appends `MANAGED_FILES`, then excludes `ROO
 ## 2026-10-04 — Combine frozen compatible source changes before requalification
 
 The user prefers one product PR, and the external refusal already invalidated qualification, so the same selected writer integrates the exact frozen shim cleanup into PR242 before refreshed reviews and one final gate. This avoids two new expensive full/App cycles without caching PASS, changing selected profiles or reducing the test inventory. Canonical hooks, installer/template bytes, deployed policy, external approvals and protection remain unchanged.
+
+## 2026-10-05 — Freeze fixture commits before qualifying Git-bound matrices
+
+Prepare every disposable fixture head before evaluating exact-base/head diffs, because intervening commits change Git registration identity and invalidate the immutable baseline cache. Retain public-API snapshots per head and assert their architecture digest against the actual diff before calling the unchanged fitness predicate; all real model/contracts and negative cases remain. A private positive/owner-negative profile improved from7.574s to5.522s without a production/cache patch, but this is not proof of meeting the external serial timeout.
