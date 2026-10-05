@@ -1,6 +1,6 @@
 # Acceptance criteria
 
-AC-001: one distinct owner-accepted factory-built task suffices; Liqvera is that factual accepted product. Canonical CohortEvidenceV1 constructor/parser/schema minimum becomes1, zero remains invalid. Keep exact producer-currentness and zero-tolerance checks on the separate empirical M7 route.
+AC-001: one distinct owner-accepted factory-built task suffices; Liqvera is that factual accepted product. Explicit CohortEvidenceV2 constructor/parser/schema minimum is1; legacy CohortEvidenceV1 and its immutable wire/schema retain minimum30. Both reject zero, booleans and unsupported versions. Preserve existing nested V1 contracts, the exact-V1 M9 boundary, producer-currentness and zero-tolerance checks on the separate empirical M7 route.
 
 AC-002: executable owner-accepted-product M8 qualification and bounded activation, not only PROJECT_STATE booleans. Typed/versioned policy, evidence and activation bind exact product/factory provenance and accepted-case/policy/current-profile digests. One accepted product, owner-confirmed accounting and human-gate readiness qualify; initial activation L1, ceilingL2, no merge/deploy/publication/provider authority. Runtime consumer revalidates scope/currentness/expiry/revocation on each decision; absent/stale/mismatched/revoked inputs deny and demoteL0. Local activation and admission commands must exercise this real consumer without credentials or network.
 

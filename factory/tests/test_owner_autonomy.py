@@ -9,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from adaptive_factory import owner_autonomy as owner
 from adaptive_factory.contracts import ContractError
@@ -18,7 +19,32 @@ ROOT = Path(__file__).resolve().parents[2]
 NOW = datetime(2026, 10, 5, tzinfo=timezone.utc)
 
 
+def synthetic_route():
+    return {"schema_version": 1, "route_id": "synthetic-owner-route", "intent": "feature", "risk": "medium",
+            "domains": ["api"], "task_domains": ["api"], "quality_profiles": ["base", "contracts"],
+            "human_gates": [], "status": "ready", "task": "synthetic local read and test scope",
+            "allowed_agents": ["general_implementer", "code_reviewer", "test_reviewer", "repo_explorer"],
+            "analysis_agents": ["repo_explorer"], "review_agents": ["code_reviewer", "test_reviewer"],
+            "write_agent": "general_implementer", "required_evidence": ["verification", "code_review", "test_review"]}
+
+
 class OwnerAutonomyTests(unittest.TestCase):
+    def test_source_reader_bounds_links_and_credentials_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "source.py").write_text("12345")
+            with self.assertRaises(ContractError):
+                owner._source_bytes(root, "source.py", 4)
+            (root / "link").symlink_to(root, target_is_directory=True)
+            with self.assertRaises(OSError):
+                owner._source_bytes(root, "link/source.py", 10)
+            with self.assertRaises(ContractError):
+                owner._source_bytes(root, "../source.py", 10)
+            for name in (".env", "accidentally-tracked.env", "private.key", "credentials/token"):
+                with self.subTest(name=name), patch.object(owner.os, "open", side_effect=AssertionError("secret opened")):
+                    with self.assertRaises(ContractError):
+                        owner._source_bytes(root, name, 10)
+
     def setUp(self):
         self.policy_data = json.loads((ROOT / "factory/runtime/owner-autonomy-policy.v1.json").read_text())
         self.state = json.loads((ROOT / "PROJECT_STATE.json").read_text())
@@ -159,7 +185,7 @@ class OwnerAutonomyTests(unittest.TestCase):
         with self.assertRaises(ContractError):
             owner.OwnerCaseV1.from_project_state(data)
 
-    def test_cli_full_lifecycle_rechecks_actual_current_source_and_missing_inputs(self):
+    def cli_checkout(self):
         root = Path(self.temp.name) / "checkout"
         (root / "scripts").mkdir(parents=True)
         shutil.copy(ROOT / "scripts/grok_m8.py", root / "scripts/grok_m8.py")
@@ -169,16 +195,28 @@ class OwnerAutonomyTests(unittest.TestCase):
         (root / "factory/runtime/owner-autonomy-policy.v1.json").write_text(json.dumps(fixture_policy))
         (root / "PROJECT_STATE.json").write_text(json.dumps(self.state))
         (root / "VERSION").write_text("2.2.0\n")
+        (root / ".gitignore").write_text(".grok-stack/runtime/\n.env\ndist/\n")
+        for name in ("tests/test_structure.py", "scripts/other_command.py", ".grok-stack/hooks/local_guard.py", "unknown_root.py"):
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("# synthetic executable source\n")
         for args in (("init", "--quiet"), ("remote", "add", "origin", "https://github.com/Dimkox/adaptive-grok-build-pro.git"),
                      ("add", "."), ("-c", "user.name=synthetic", "-c", "user.email=synthetic@example.invalid",
                                    "commit", "--quiet", "-m", "synthetic offline context")):
             subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+        route_path = root / ".grok-stack/runtime/active-route.json"
+        route_path.parent.mkdir(parents=True, exist_ok=True)
+        route_path.write_text(json.dumps(synthetic_route()))
         def run(*args):
             process = subprocess.run([sys.executable, str(root / "scripts/grok_m8.py"), *args], cwd=root,
                                      capture_output=True, text=True, timeout=10)
             decision = json.loads(process.stdout)
             self.assert_local_authority(decision)
             return process.returncode, decision
+        return root, run
+
+    def test_cli_full_lifecycle_rechecks_actual_current_source_and_missing_inputs(self):
+        root, run = self.cli_checkout()
         self.assertEqual(run("status")[1]["level"], "L0")
         self.assertEqual(run("activate")[0], 0)
         self.assertEqual(run("admit", "--action", "local_test")[1]["level"], "L1")
@@ -192,6 +230,58 @@ class OwnerAutonomyTests(unittest.TestCase):
         self.assertEqual(run("admit", "--action", "local_test")[1]["reason"], "revoked")
         (root / "factory/runtime/owner-autonomy-policy.v1.json").unlink()
         self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+
+    def test_cli_currentness_includes_root_tests_scripts_hooks_and_unknown_sources(self):
+        root, run = self.cli_checkout()
+        self.assertEqual(run("activate")[0], 0)
+        for name in ("tests/test_structure.py", "scripts/other_command.py", ".grok-stack/hooks/local_guard.py", "unknown_root.py"):
+            with self.subTest(name=name):
+                path = root / name
+                original = path.read_text()
+                path.write_text(original + "# changed executable bytes\n")
+                self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+                path.write_text(original)
+                self.assertEqual(run("admit", "--action", "local_test")[0], 0)
+        # Git status flags must never substitute for reading actual source bytes.
+        subprocess.run(["git", "-C", str(root), "update-index", "--assume-unchanged", "unknown_root.py"], check=True)
+        path = root / "unknown_root.py"
+        original = path.read_text()
+        path.write_text(original + "# hidden from git status\n")
+        self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+        path.write_text(original)
+        extra = root / "new_unknown_source.py"
+        extra.write_text("# new untracked executable\n")
+        self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+        extra.unlink()
+        (root / "dist").mkdir()
+        (root / "dist/ignored.py").write_text("# ignored generated bytes\n")
+        (root / ".env").write_text("synthetic private bytes must not be inventoried")
+        self.assertEqual(run("admit", "--action", "local_test")[0], 0)
+        unsafe = root / "unsafe.py"
+        unsafe.symlink_to(root / "unknown_root.py")
+        self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+
+    def test_cli_profile_requires_actual_compatible_route_and_stable_semantics(self):
+        root, run = self.cli_checkout()
+        route_path = root / ".grok-stack/runtime/active-route.json"
+        route = synthetic_route()
+        self.assertEqual(run("activate")[0], 0)
+        route_path.unlink()
+        self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+        route_path.write_text("{")
+        self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+        for field, value in (("route_id", "changed-route"), ("risk", "high"),
+                             ("domains", ["security", "production"]), ("human_gates", ["security_approval"]),
+                             ("quality_profiles", ["base"]), ("analysis_agents", []),
+                             ("write_agent", "unselected-agent"), ("task", "changed task scope"),
+                             ("domains", ["unknown"]), ("schema_version", True)):
+            with self.subTest(field=field):
+                route_path.write_text(json.dumps(dict(route, **{field: value})))
+                self.assertEqual(run("admit", "--action", "local_test")[0], 2)
+        stable = dict(route, status="reviewing", updated_at="2030-01-01T00:00:00Z")
+        stable["allowed_agents"] = list(reversed(route["allowed_agents"]))
+        route_path.write_text(json.dumps(stable))
+        self.assertEqual(run("admit", "--action", "local_test")[0], 0)
 
     def test_activation_schema_and_runtime_deny_extra_keys_and_level_escalation(self):
         self.store.activate(self.policy, self.case, self.context, now=NOW)

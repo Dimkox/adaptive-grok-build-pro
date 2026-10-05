@@ -342,6 +342,91 @@ class OwnerRuntime:
             return _decision(False, "invalid_runtime")
 
 
+def _source_bytes(root: Path, name: str, limit: int) -> tuple[bytes, int]:
+    """Read a bounded regular file without following any path component link."""
+    parts = name.split("/")
+    if not parts or any(part in ("", ".", "..") for part in parts):
+        raise ContractError("source_unavailable")
+    # Never inspect credential bytes, even if someone accidentally adds them to Git.
+    if any(part in (".ssh", ".aws", ".gnupg", "credentials", "secrets") for part in parts) or (
+        parts[-1].endswith(".env") or parts[-1].startswith(".env.") and parts[-1] != ".env.example"
+        or parts[-1].endswith((".pem", ".key", ".p12", ".pfx"))
+    ):
+        raise ContractError("source_unavailable")
+    directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+            os.close(directory)
+            directory = child
+        file = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+        try:
+            before = os.fstat(file)
+            if not stat.S_ISREG(before.st_mode) or before.st_size > limit:
+                raise ContractError("source_unavailable")
+            chunks, size = [], 0
+            while chunk := os.read(file, min(65536, limit + 1 - size)):
+                chunks.append(chunk)
+                size += len(chunk)
+                if size > limit:
+                    raise ContractError("source_unavailable")
+            after = os.fstat(file)
+            if (before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns, before.st_mode) != (
+                after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns, after.st_mode
+            ) or size != before.st_size:
+                raise ContractError("source_unavailable")
+            return b"".join(chunks), stat.S_IMODE(before.st_mode)
+        finally:
+            os.close(file)
+    finally:
+        os.close(directory)
+
+
+def _route_profile(root: Path) -> dict[str, Any]:
+    raw, _ = _source_bytes(root, ".grok-stack/runtime/active-route.json", 262144)
+    route = json.loads(raw)
+    if not isinstance(route, dict) or type(route.get("schema_version")) is not int or route["schema_version"] != 1:
+        raise ContractError("profile_unavailable")
+    _id(route.get("route_id"), "route_id")
+    if route.get("intent") not in ("feature", "bugfix", "refactor", "docs", "test", "research", "architecture", "review"):
+        raise ContractError("profile_incompatible")
+    if route.get("risk") not in ("low", "medium") or route.get("status") not in (
+        "approved", "implementing", "verifying", "reviewing", "ready"
+    ):
+        raise ContractError("profile_incompatible")
+    profile = {key: route[key] for key in ("schema_version", "route_id", "intent", "risk")}
+    task = route.get("task")
+    if not isinstance(task, str) or not task.strip() or len(task) > 8192:
+        raise ContractError("profile_unavailable")
+    profile["task"] = task
+    for key in ("domains", "task_domains", "allowed_agents", "analysis_agents", "review_agents",
+                "quality_profiles", "human_gates", "required_evidence"):
+        values = route.get(key)
+        if not isinstance(values, list) or len(values) > 64 or any(
+            not isinstance(value, str) or not value or len(value) > 128 for value in values
+        ) or len(set(values)) != len(values):
+            raise ContractError("profile_unavailable")
+        profile[key] = sorted(values)
+    if not set(profile["domains"] + profile["task_domains"]) <= {
+        "bitrix", "php", "frontend", "api", "event", "data", "integration", "ai", "infra"
+    }:
+        raise ContractError("profile_incompatible")
+    if profile["human_gates"] or "base" not in profile["quality_profiles"] or "verification" not in profile["required_evidence"]:
+        raise ContractError("profile_incompatible")
+    if "api" in profile["domains"] + profile["task_domains"] and "contracts" not in profile["quality_profiles"]:
+        raise ContractError("profile_incompatible")
+    selected = set(profile["allowed_agents"])
+    writer = route.get("write_agent")
+    if not selected or not isinstance(writer, str) or writer not in selected or not set(
+        profile["analysis_agents"] + profile["review_agents"]
+    ) <= selected:
+        raise ContractError("profile_unavailable")
+    profile["write_agent"] = writer
+    profile.update(initial_level="L1", authority_ceiling="L2", allowed_actions=list(LOCAL_ACTIONS), external_authority=False)
+    # Phase and timestamps are operational metadata, not changes of authority.
+    return profile
+
+
 def current_context(root: Path) -> OwnerContextV1:
     """Derive actual origin and bytes; never accept caller-supplied current digests."""
     def git(*args: str) -> bytes:
@@ -353,21 +438,23 @@ def current_context(root: Path) -> OwnerContextV1:
         raise ContractError("repository_mismatch")
     repository = origin[len(prefix):].removesuffix(".git")
     _id(repository, "repository_id")
-    inventory = git("ls-files", "-z", "factory/src", "factory/contracts", "factory/runtime/owner-autonomy-policy.v1.json",
-                    "scripts/grok_m8.py", "VERSION").split(b"\0")
-    # Include newly added runtime source, too: untracked files cannot evade binding.
-    inventory += git("ls-files", "--others", "--exclude-standard", "-z", "factory/src", "factory/contracts",
-                     "factory/runtime/owner-autonomy-policy.v1.json", "scripts/grok_m8.py").split(b"\0")
-    paths = sorted(set(path.decode() for path in inventory if path))
-    source = []
+    profile = _route_profile(root)
+    inventory = git("ls-files", "--cached", "--others", "--exclude-standard", "-z")
+    if len(inventory) > 2_000_000:
+        raise ContractError("source_unavailable")
+    paths = sorted(set(path.decode("utf-8") for path in inventory.split(b"\0") if path))
+    if not paths or len(paths) > 20_000:
+        raise ContractError("source_unavailable")
+    head = git("rev-parse", "HEAD").decode().strip()
+    source, total = [], 0
     for name in paths:
-        path = root / name
-        if path.is_symlink() or not path.is_file():
+        raw, mode = _source_bytes(root, name, 16_777_216)
+        total += len(raw)
+        if total > 268_435_456:
             raise ContractError("source_unavailable")
-        source.append([name, hashlib.sha256(path.read_bytes()).hexdigest()])
-    profile = {"task_class": "low_risk_text_only", "initial_level": "L1", "authority_ceiling": "L2",
-               "allowed_actions": list(LOCAL_ACTIONS), "external_authority": False}
+        source.append([name, mode, hashlib.sha256(raw).hexdigest()])
+    if inventory != git("ls-files", "--cached", "--others", "--exclude-standard", "-z") or head != git("rev-parse", "HEAD").decode().strip():
+        raise ContractError("source_unavailable")
     # Distinct clone/worktree identity; only its hash is exposed in runtime.
     git_dir = git("rev-parse", "--absolute-git-dir").decode().strip()
-    head = git("rev-parse", "HEAD").decode().strip()
     return OwnerContextV1(repository, digest(git_dir), digest({"head": head, "files": source}), digest(profile))

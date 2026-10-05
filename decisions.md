@@ -1,8 +1,12 @@
 # Decisions
 
+## 2026-10-05 — Bind the real consumer and version changed wire semantics
+
+Use actual bounded Git-visible bytes and normalized authoritative route semantics, then exercise the CLI rather than relying on synthetic caller-supplied digests. Give the one-case cohort a distinct V2 version/domain/schema while preserving legacy V1 floor30 and the exact-V1 M9 boundary; historical schema comparison is literal again and excludes only the two named successor schemas. Bootstrap root binding tests from their own repository source path so isolated Trust CI discovery has the same inputs without collection side effects.
+
 ## 2026-10-05 — Keep historical bytes pinned through one explicit approved view
 
-Admit only the named owner-autonomy successor and prove its three closed version1 variants. Historical predecessor comparison excludes only that exact added path and restores only the explicitly asserted floor1 line to30 in its comparison view, retaining the original count/digest and every unrelated byte pin.
+This earlier floor-normalization view is superseded by the explicit V2 cohort repair above. The original literal predecessor count/digest now compares unchanged V1 bytes without normalization, excluding only the named owner V1 and earned-autonomy V2 successors.
 
 ## 2026-10-05 — Separate artifact validation from a live capability
 

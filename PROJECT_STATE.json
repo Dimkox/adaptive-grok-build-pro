@@ -2470,7 +2470,7 @@
     "m8_qualifying_cohort": true,
     "m8_activation": true,
     "m8_evidence_kind": "explicit_owner_confirmation",
-    "m8_scope": "Source-enabled bounded owner policy with one accepted case, initial L1 local_read/local_test and L2 ceiling. Actual per-clone activation/admission/revocation is consumed by scripts/grok_m8.py from ignored runtime, with finite expiry and current bindings. This is not deployed generic worker automation or empirical M7 qualification.",
+    "m8_scope": "Source-enabled bounded owner policy with one accepted case, initial L1 local_read/local_test and L2 ceiling. Actual per-clone activation/admission/revocation is consumed by scripts/grok_m8.py from ignored runtime, with finite expiry, complete Git-visible source binding and validated authoritative active-route semantics. Missing/incompatible route denies. Separate CohortEvidenceV2 admits minimum1; legacy V1 minimum30 and exact-V1 M9 boundary remain unchanged. This is not deployed generic worker automation or empirical M7 qualification.",
     "m9_general_operational_qualification": false,
     "factory_site_publication": false,
     "record_scope": "Owner-confirmed Liqvera acceptance, accounting and human readiness qualify the one-case bounded local M8 policy. Numeric telemetry remains null. General M9 and factory-runtime site publication remain unestablished; no external authority is conferred.",

@@ -11,6 +11,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+# This module also runs alone under isolated unittest discovery in Trust CI.
+sys.path.insert(0, str(ROOT / "factory" / "src"))
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = "<redacted-app-id>"
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge

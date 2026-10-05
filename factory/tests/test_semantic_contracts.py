@@ -122,6 +122,7 @@ class SemanticContractTests(unittest.TestCase):
             "bb-lifecycle-observation.v1.schema.json",
             "context-manifest.v1.schema.json",
             "earned-autonomy.v1.schema.json",
+            "earned-autonomy.v2.schema.json",
             "landing-attempt.v1.schema.json",
             "landing-evaluation.v1.schema.json",
             "landing-input.v1.schema.json",
@@ -169,6 +170,14 @@ class SemanticContractTests(unittest.TestCase):
                 self.assertIs(variant["additionalProperties"], False)
                 self.assertEqual(set(variant["required"]), set(variant["properties"]))
                 self.assertEqual(variant["properties"]["schema_version"], {"const": 1})
+        successor = json.loads((SCHEMAS / "earned-autonomy.v2.schema.json").read_text())
+        self.assertEqual(successor["$id"], "urn:adaptive-factory:m8:earned-autonomy:v2")
+        self.assertEqual(successor["$ref"], "#/$defs/cohort_evidence")
+        for name in ("autonomy_tuple", "cohort_task_evidence", "cohort_evidence"):
+            variant = successor["$defs"][name]
+            self.assertIs(variant["additionalProperties"], False)
+            self.assertEqual(set(variant["required"]), set(variant["properties"]))
+            self.assertEqual(variant["properties"]["schema_version"], {"const": 2 if name == "cohort_evidence" else 1})
 
     def test_subject_is_closed_sorted_typed_and_digest_stable(self):
         parsed = SemanticSubjectV1.from_dict(subject())

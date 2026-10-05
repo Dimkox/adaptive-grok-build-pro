@@ -142,13 +142,31 @@
       "from": "reviewing",
       "reason": "Inventory-only independent code/test follow-ups PASS and complete reports persisted; fresh full current-tree gate and exact-head App check remain mandatory after prior b39 full FAIL.",
       "to": "ready"
+    },
+    {
+      "at": "2026-10-05T01:43:24+00:00",
+      "from": "ready",
+      "reason": "Confirmed review repair: full source inventory, authoritative route binding, versioned one-case cohort.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T01:56:11+00:00",
+      "from": "implementing",
+      "reason": "Bounded actual-CLI, wire compatibility and isolated root-discovery regressions reproduced and repaired; preparing focused final controls only.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T01:57:50+00:00",
+      "from": "verifying",
+      "reason": "Bounded repair controls and isolated Trust CI root discovery pass; independent follow-up and fresh complete local/App qualification remain pending.",
+      "to": "reviewing"
     }
   ],
   "human_gates": [],
   "human_gates_digest": "7464884d16fa43f794567cda514418e01a92574e635130c2ff17a48ea2eb6f49",
   "route_id": "b258608f2ced",
   "schema_version": 1,
-  "status": "ready",
+  "status": "reviewing",
   "title": "feature: M8 earned-autonomy policy accepts exactly one owner-accepted task instead of 30, qualify existing completed Liqvera Mezo Buildathon case, enable M8 bounded autonomy, record owner-confirmed completed cost accounting and human gate; explain M9 without changing M9 or deployed Trust CI",
-  "updated_at": "2026-10-05T01:11:28+00:00"
+  "updated_at": "2026-10-05T01:57:50+00:00"
 }

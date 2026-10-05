@@ -53,7 +53,7 @@ class AutonomySchemaTests(unittest.TestCase):
         duplicate_names = set() if not duplicate_root.exists() else {
             path.name for path in duplicate_root.glob("*autonomy*.json")
         }
-        self.assertEqual(actual, {M8_SCHEMA_NAME, M7_BRIDGE_SCHEMA_NAME})
+        self.assertEqual(actual, {M8_SCHEMA_NAME, "earned-autonomy.v2.schema.json", M7_BRIDGE_SCHEMA_NAME})
         self.assertEqual(duplicate_names, set())
         self.assertEqual(self.schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
         self.assertEqual(self.schema["$id"], "urn:adaptive-factory:m8:earned-autonomy:v1")
@@ -109,7 +109,7 @@ class AutonomySchemaTests(unittest.TestCase):
 
     def test_schema_freezes_authority_limits_and_has_no_effect_surface(self):
         definitions = self.schema["$defs"]
-        self.assertEqual(definitions["cohort_evidence"]["properties"]["minimum_human_acceptances"]["minimum"], 1)
+        self.assertEqual(definitions["cohort_evidence"]["properties"]["minimum_human_acceptances"]["minimum"], 30)
         tuple_properties = definitions["autonomy_tuple"]["properties"]
         recommendation = definitions["promotion_recommendation"]["properties"]
         demotion = definitions["demotion_decision"]["properties"]
@@ -136,6 +136,22 @@ class AutonomySchemaTests(unittest.TestCase):
         }
         for node in object_nodes(self.schema):
             self.assertTrue(forbidden.isdisjoint(node.get("properties", {})))
+
+    def test_v2_changes_only_cohort_wire_and_one_case_floor(self):
+        from adaptive_factory.autonomy import CohortEvidenceV2
+        successor = json.loads((SCHEMA_ROOT / "earned-autonomy.v2.schema.json").read_text())
+        self.assertEqual(successor["$id"], "urn:adaptive-factory:m8:earned-autonomy:v2")
+        self.assertEqual(successor["$ref"], "#/$defs/cohort_evidence")
+        self.assertEqual(set(successor["$defs"]), {"identifier", "sha", "digest", "timestamp",
+                                                 "autonomy_tuple", "cohort_task_evidence", "cohort_evidence"})
+        for name, definition in successor["$defs"].items():
+            expected = json.loads(json.dumps(self.schema["$defs"][name]))
+            if name == "cohort_evidence":
+                expected["properties"]["schema_version"] = {"const": 2}
+                expected["properties"]["minimum_human_acceptances"]["minimum"] = 1
+            self.assertEqual(definition, expected, name)
+        self.assertEqual(set(successor["$defs"]["cohort_evidence"]["properties"]),
+                         {field.name for field in fields(CohortEvidenceV2)})
 
         wire_properties = {
             field
