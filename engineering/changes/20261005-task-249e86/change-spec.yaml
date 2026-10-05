@@ -5,7 +5,7 @@
     "id": "OBJ-001",
     "statement": "Reconcile local SQL phase checker with exact independently reviewed numbered Trust CI migration and narrowly admit four bound public contracts without widening source separation or deployed trust.",
     "success_metric": "closed_positive_and_negative_regressions_and_exact_head_qualification_pass",
-    "target": "separate localchecker PR; exact004pin plus four named metadata mappings"
+    "target": "separate localchecker PR; exact reviewed004 and forward005 pins plus four named metadata mappings"
   },
   "risk": {
     "tier": "red",
@@ -17,7 +17,7 @@
   "acceptance_criteria": [
     {
       "id": "AC-001",
-      "statement": "Only exact independently reviewed004 and identical packagedmirror pass explicit named compatibility; immutable history, bounded reads, numeric sequence and general SQL phase checks persist.",
+      "statement": "Only exact independently reviewed004_public_admission and forward005_public_pending_bootstrap with their respective identical packagedmirrors pass explicit named compatibility; immutable history, bounded reads, numeric sequence and general SQL phase checks persist.",
       "evidence": [
         {
           "test": "tests/test_architecture_fitness.py"
