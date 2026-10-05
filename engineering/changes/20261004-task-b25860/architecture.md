@@ -1,0 +1,7 @@
+# Bounded owner-accepted autonomy architecture
+
+Existing empirical M7->M8 bridge is intentionally blocked and recommendation-only; it cannot activate even with a lower count. Do not turn unavailable currentness into unconditionalTrue or invent M4/M5/M6 producer receipts. Add a separate owner-accepted-product policy adapter with explicit provenance/evidence-kind; its currentness is input/profile binding, not a claimed PostgreSQL producer lookup.
+
+Use existing factory contracts/helpers and no new dependencies/services. Prefer one focused owner_autonomy module, one additive closed JSON schema and tests, one thin offline CLI and checked-in owner policy. Persist actual local activation/revocation in ignored .grok-stack/runtime only, bind it to exact current source/profile and policy/evidence digests, revalidate each admission. The offline gate grants bounded local autonomy only; it never runs arbitrary shell/network or confers PR merge/production permission. Keep existing security/demotion/revocation boundaries.
+
+Security review is part of the selected independent code reviewer scope: scrutinize authority provenance, repository/profile substitution, stale/revoked inputs, malformed/extra keys and external-authority escalation. Do not dispatch unselected extra agents. Update only required architecture repository/contract inventory bindings for new executed files; generated views change only if their model inputs affect rendering.

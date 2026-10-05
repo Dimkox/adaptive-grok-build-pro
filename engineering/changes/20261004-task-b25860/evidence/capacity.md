@@ -1,0 +1,5 @@
+# Verified startup capacity
+
+2026-10-04T23:50:15Z. Before route selection and dispatch: lscpu parsable CPU/core/socket/online inventory, nproc --all/nproc, taskset current affinity, actual process cgroup/mount resolution and every quota/cpuset ancestor were observed. Host14physical/28online logical CPUs0-27; controller22allowed CPUs0,1,8-27; effective inheritedcpuset0-27; no finite ancestor CPU quota. Bounded child-only affinity widening succeeded nproc28/affinity0-27 with same cgroup and bounds; controller unchanged. Verified child allocation28logical, testworkers12 maximum during the one final controller gate. Private complete command/result snapshot retained locally; no host username/home path published.
+
+Platform13agent slots; routecap10 and testworkers are independent. Five selected analyses ran concurrently, all read-only with individual private snapshots. Exactly one selected writer follows; selected code/test reviewers run concurrently only after the committed source stops mutating. Metadata/branch transport is serialized before pinned local verification; external exact-SHA isolated TrustCI may overlap with that final gate.

@@ -1,0 +1,3 @@
+# Release 2.2.0 delivery
+
+User explicitly requests immediate release after the requested feature. Use ordinary PR-only source delivery, final current local evidence and App-owned exact-head Trust CI; no direct shared-branch push. Publish v2.2.0 and its immutable ZIP/checksum from the exact merged commit with separately materialized exact tag/push/GitHub Release grants. Build into ignored private dist output, check manifest/version/checksum and reproducibility, upload assets to Releases, not source Git. Before publication README must match2.2.0, architecture links and bounded owner policy; prior published2.1.1 remains historical truth until actual publication. No actual provider deployment or M9 production activation is authorized by this release task.
