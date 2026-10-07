@@ -1,0 +1,154 @@
+{
+  "schema_version": 2,
+  "change_id": "20261005-task-249e86",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Reconcile local SQL phase checker with exact independently reviewed numbered Trust CI migration and narrowly admit four bound public contracts without widening source separation or deployed trust.",
+    "success_metric": "closed_positive_and_negative_regressions_and_exact_head_qualification_pass",
+    "target": "separate localchecker PR; exact reviewed004 and forward005 pins plus four named metadata mappings"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "api",
+      "data"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Only exact independently reviewed004_public_admission and forward005_public_pending_bootstrap with their respective identical packagedmirrors pass explicit named compatibility; immutable history, bounded reads, numeric sequence and general SQL phase checks persist.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "data_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Only four exact public contract descriptors and paired source/owner memberships may be normalized; surrounding model and oldbindings are unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "New worker source admission preserves exact existing execution-domain worker envelope; mixed factory/checker/rule changes with Trust CI remain rejected.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Complete selected reviews and frozen full local gate plus external exactheadApp check precede normal protected PR merge; no deployed trust state or TrustCI implementation included.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "release_review"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Local receipts/digest pins do not establish external approval or deployed migration safety.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Unknown paths, schema tuples, sources or unreviewed hashes remain denied.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Caller-provided digest, directory wildcard, numeric-name fallback or empty phase requirement authorizes arbitrary SQL/metadata.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "This PR contains TrustCI runtime/loader/SQL/schema implementation, factoryruntime/ruledata/selector changes or deployed trust mutations.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "named_reviewed_migration_compatibility_result",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "closed_trust_ci_metadata_separation_result",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "contracts": {
+    "events": [],
+    "openapi": [],
+    "json_schema": []
+  },
+  "approvals": {
+    "required_scopes": [
+      "scope_and_design_approval",
+      "migration_or_external_write_approval",
+      "security_boundary_approval"
+    ]
+  },
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 1
+  }
+}

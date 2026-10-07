@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-10-05 — Keep reviewed SQL bytes distinct from semantic phase proof
+
+A separately fixed primary-to-mirror path map and independently reviewed raw SHA256 pins preserve closed compatibility without pretending the semicolon parser understands PostgreSQL functions and grants; 004 remains bound to bacb5346a95d25166e1f7c597b3f91bd5935c234 and forward 005 to 1f48c4ccc84192780395b18957ba8c9779e30f00, while synthetic fixtures and arbitrary digest keys supply no production path authority. Remove only the four exact public contract additions before comparing the original model envelope, and require their changed owner-bound source bytes so incidental legacy edits cannot qualify them. Execute every named negative case in the parameter list: branch labels alone provided no coverage for several existing source-separation claims.
+
 ## 2026-10-05 — Bind the real consumer and version changed wire semantics
 
 Use actual bounded Git-visible bytes and normalized authoritative route semantics, then exercise the CLI rather than relying on synthetic caller-supplied digests. Give the one-case cohort a distinct V2 version/domain/schema while preserving legacy V1 floor30 and the exact-V1 M9 boundary; historical schema comparison is literal again and excludes only the two named successor schemas. Bootstrap root binding tests from their own repository source path so isolated Trust CI discovery has the same inputs without collection side effects.
@@ -1085,3 +1089,7 @@ The installer inventory deliberately appends `MANAGED_FILES`, then excludes `ROO
 ## 2026-10-04 — Combine frozen compatible source changes before requalification
 
 The user prefers one product PR, and the external refusal already invalidated qualification, so the same selected writer integrates the exact frozen shim cleanup into PR242 before refreshed reviews and one final gate. This avoids two new expensive full/App cycles without caching PASS, changing selected profiles or reducing the test inventory. Canonical hooks, installer/template bytes, deployed policy, external approvals and protection remain unchanged.
+
+## 2026-10-05 — Freeze fixture commits before qualifying Git-bound matrices
+
+Prepare every disposable fixture head before evaluating exact-base/head diffs, because intervening commits change Git registration identity and invalidate the immutable baseline cache. Retain public-API snapshots per head and assert their architecture digest against the actual diff before calling the unchanged fitness predicate; all real model/contracts and negative cases remain. A private positive/owner-negative profile improved from7.574s to5.522s without a production/cache patch, but this is not proof of meeting the external serial timeout.

@@ -1,0 +1,151 @@
+{
+  "change_id": "20261005-task-249e86",
+  "decisions": [
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T02:43:25+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner explicitly approved narrow separate localchecker PR; exact closed migration/contract compatibility, preserve source separation and deployed boundaries",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T02:43:25+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner-approved source-only checker compatibility for additive004 plan; no migration execution or external writes",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T03:39:51+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "Explicit owner reply: Да, узкий отдельный PR локальной проверки. Consent is only ordinary transport of fix/trust-public-local-checker to Dimkox/adaptive-grok-build-pro for that separate source PR; no main write, force push, merge, tag, release, deployment or deployed trust-boundary change.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": "external-write",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T03:39:51+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Explicit owner-approved narrow separate local-checker PR only: create that source pull request from fix/trust-public-local-checker into main. This gate record is not the exact-HEAD delegated grant, external signed approval or merge authority; no deployed mutation.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "249e86df9131",
+      "scope_digest": "5f48bf00cdcaf7a7e9d024ad3e508088c07922eebcdbaf34423ef4990ed3b0a2"
+    },
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:22:31+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Owner approved narrow separate local-checker PR; bounded continuation admits only reviewed exact004+005 byte identities and the same four named public contracts. No new rule, contract or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "80651abf8845ff85d9f85d0901238916b8c89c822233f4a529010552f5ec2837"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:22:31+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Source-only checker compatibility for independently reviewed exact004 and forward005; no SQL execution, loader change, deployment or semantic migration approval.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "80651abf8845ff85d9f85d0901238916b8c89c822233f4a529010552f5ec2837"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:22:31+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "Explicit owner reply: Да, узкий отдельный PR локальной проверки. Ordinary fix/trust-public-local-checker transport only; exact-head grant remains required. No main, force, merge, tag, release or deployment.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "80651abf8845ff85d9f85d0901238916b8c89c822233f4a529010552f5ec2837"
+    },
+    {
+      "action": "external-write",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:22:31+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Owner-approved separate narrow local-checker PR from fix/trust-public-local-checker into main only. Exact-head operation grant still required; no merge or deployed trust-boundary mutation.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "249e86df9131",
+      "scope_digest": "80651abf8845ff85d9f85d0901238916b8c89c822233f4a529010552f5ec2837"
+    },
+    {
+      "action": null,
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "scope_and_design_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "migration-plan",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "git-push-branch",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "production_action_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": null,
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    },
+    {
+      "action": "external-write",
+      "actor": "repository-owner",
+      "change_id": "20261005-task-249e86",
+      "decided_at": "2026-10-05T05:35:46+00:00",
+      "decision": "approved",
+      "gate": "migration_or_external_write_approval",
+      "reason": "Same owner-approved narrow checker source scope: exactly independently reviewed004+005 and the same four public contracts; only factual currentness prose corrected after all reviewers stopped. No additional operation or deployed authority.",
+      "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/pulls",
+      "route_id": "249e86df9131",
+      "scope_digest": "8e566461894f677cde17f598129a7832986e710d11d3324b3e439139218f0db2"
+    }
+  ],
+  "route_id": "249e86df9131",
+  "schema_version": 1
+}

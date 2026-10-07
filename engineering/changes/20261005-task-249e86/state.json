@@ -1,0 +1,137 @@
+{
+  "change_id": "20261005-task-249e86",
+  "checkpoint_mirror_pending": false,
+  "checkpoints": [
+    {
+      "branch": "fix/trust-public-local-checker",
+      "change_id": "20261005-task-249e86",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "2a8e3839a469b3e05da167e9d8a807bf18e6adbf",
+      "kind": "initial",
+      "note": "draft; implementation not started",
+      "observed_at": "2026-10-05T02:36:24+00:00",
+      "route_id": "249e86df9131"
+    },
+    {
+      "branch": "fix/trust-public-local-checker",
+      "change_id": "20261005-task-249e86",
+      "detached": false,
+      "dirty_product_paths": [],
+      "dirty_product_state": "clean",
+      "git_available": true,
+      "git_findings": [],
+      "head": "326908bf6367b05b65b83818ee84a093c1e45872",
+      "kind": "implementation",
+      "note": "implementation started; preserve work before handoff",
+      "observed_at": "2026-10-05T02:43:26+00:00",
+      "route_id": "249e86df9131"
+    }
+  ],
+  "created_at": "2026-10-05T02:36:24+00:00",
+  "evidence_accounting": {
+    "obligations": [
+      {
+        "id": "verification",
+        "kind": "receipt",
+        "reason": "Final frozen-tree full verifier pending; this ledger is the pre-run source freeze.",
+        "receipt_kind": "verification",
+        "status": "not_run"
+      },
+      {
+        "id": "code_review",
+        "kind": "receipt",
+        "reason": "Fresh current-tree receipt pending; independent affected report is evidence/stage-c-code-0321053.md.",
+        "receipt_kind": "code_review",
+        "status": "not_run"
+      },
+      {
+        "id": "test_review",
+        "kind": "receipt",
+        "reason": "Fresh current-tree receipt pending; independent affected report is evidence/stage-c-test-0321053.md.",
+        "receipt_kind": "test_review",
+        "status": "not_run"
+      },
+      {
+        "id": "security_review",
+        "kind": "receipt",
+        "reason": "Fresh current-tree receipt pending; independent affected report is evidence/stage-c-security-0321053.md.",
+        "receipt_kind": "security_review",
+        "status": "not_run"
+      },
+      {
+        "id": "data_review",
+        "kind": "receipt",
+        "reason": "Fresh current-tree receipt pending; independent affected report is evidence/stage-c-data-0321053.md.",
+        "receipt_kind": "data_review",
+        "status": "not_run"
+      },
+      {
+        "id": "release_review",
+        "kind": "receipt",
+        "reason": "Fresh current-tree receipt pending; independent affected report is evidence/stage-c-release-0321053.md.",
+        "receipt_kind": "release_review",
+        "status": "not_run"
+      }
+    ],
+    "schema_version": 1
+  },
+  "history": [
+    {
+      "at": "2026-10-05T02:36:24+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-10-05T02:43:25+00:00",
+      "from": "draft",
+      "reason": "Owner-approved separate narrow checker scope and analysis recorded; actual agreed base refreshed to mergedmain326908bf",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-10-05T02:43:25+00:00",
+      "from": "scoped",
+      "reason": "Recorded owner scope/source-plan consent; operational gates unchanged",
+      "to": "approved"
+    },
+    {
+      "at": "2026-10-05T02:43:26+00:00",
+      "from": "approved",
+      "reason": "One selected isolated data implementer; actual004 digest stays closed until independentreview",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-10-05T05:35:46+00:00",
+      "from": "implementing",
+      "reason": "Bounded RED/GREEN source tests finished; final full current-tree qualifier follows report freeze.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-10-05T05:35:46+00:00",
+      "from": "verifying",
+      "reason": "All five selected independent StageC affected reviews completed after bounded source verification; reports persisted.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-10-05T05:35:47+00:00",
+      "from": "reviewing",
+      "reason": "Owner-approved one final full verifier after reviews; source freeze only, current full receipt and exact-head external App/approvals still pending.",
+      "to": "ready"
+    }
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval",
+    "production_action_approval"
+  ],
+  "human_gates_digest": "c807654505e7e7cbe84b737d6ad21db3d93476009502e7bcaf6662ed97556f33",
+  "route_id": "249e86df9131",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Narrow Trust CI public-contract and reviewed SQL compatibility checks",
+  "updated_at": "2026-10-05T05:35:47+00:00"
+}

@@ -1,0 +1,7 @@
+# Delivery
+
+Separate narrow checker source implementation and exact reviewed004+005 pins are committed. Five selected Stage B reviews passed at2de723c and five bounded affected Stage C reviews passed at0321053; complete reports retain their original identities and limits. Final full local qualification and exact-head external App check/required signed approvals remain pending; reviews and local source/branch/PR consent are not merge authority. No server/App/protection changes.
+
+All reviewers stopped before coordinator report persistence. Their two minor findings are resolved here: delivery wording now distinguishes implementation from qualification, and only extra terminal blank lines in five historical report projections are removed. Original private reports and source identities are unchanged. No executable product change is introduced by this workflow commit.
+
+Public Task2's early-PR pending repair is independently accepted at frozen1f48c4c, preserving reviewed004 and adding forward005 with raw/mirror SHA25619b5aa4a0400ba4fae605a0f0b89d77c448c222a20089d39ebfb86f84958cd03. This checker admits only those two fixed paths, their sole mirrors and exact reviewed digests; unknown006, mismatched paths and changed bytes remain refused. Stage C's minor stale005 wording is corrected only after all reviewers stopped; executable bytes remain exactly reviewed0321053. The one final full local gate and external exact-head qualification are still pending at this workflow freeze; SQL semantics, public integration and deployment remain separate.

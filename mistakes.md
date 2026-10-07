@@ -1,5 +1,17 @@
 # Mistakes
 
+## 2026-10-05 — Fixture commits invalidated reusable exact-base materialization
+
+Interleaving commits and checks changed the registered Git-directory identity and rebuilt the same immutable baseline for every matrix case, causing unnecessary subprocess work while the external root suite timed out. Prepare all exact case heads before qualification, retain and validate each captured snapshot against its requested SHA, and preserve every acceptance/rejection case; a measured focused speedup is not proof of external timeout recovery. Reviewer scratch must use the explicit project-root absolute parent: one data-review copy escaped to a home scratch directory and was moved back recoverably after STOP, without deleting data or altering the candidate.
+
+## 2026-10-05 — Ignored scratch still entered source architecture inventory
+
+The coordinator accepted implementer scratch clones inside the candidate because Git ignored them, but the architecture source inventory also walks filesystem code paths. Final qualifier77792 at7c323b3 refused before heavy tests on those unowned .review-scratch Python files; no test pass or receipt resulted. Move only owned temporary copies outside the candidate under the project's trusted0700 scratch parent before qualification, without changing ignore rules or weakening architecture ownership.
+
+## 2026-10-05 — Keep imported test helpers out of standalone discovery
+
+Root cause: an ignored byte-compatibility probe imported a TestCase class directly into its module namespace, so bare unittest discovery included that helper's architecture tests. Stop the exact probe process, discard its partial observation, import the helper module instead, and select the probe's own test class explicitly.
+
 ## 2026-10-05 — Synthetic currentness and same-version widening hid real boundaries
 
 Root cause: unit-supplied digests masked omitted executable inventory and hardcoded route semantics, while the minimum1 change reused the V1 wire identity instead of testing an existing V1 consumer. Real CLI mutation/refusal controls now bind the complete Git-visible inventory and actual route, and a distinct V2 cohort leaves legacy V1/M9 closed. The root state test also relied on other test collection adding factory/src to sys.path; isolated `python -I` discovery reproduced the external refusal and explicit module-local bootstrap removes that dependency.
